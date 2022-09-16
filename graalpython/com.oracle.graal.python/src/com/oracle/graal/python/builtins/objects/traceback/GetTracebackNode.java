@@ -40,14 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -122,26 +119,10 @@ public abstract class GetTracebackNode extends Node {
         return tb.getTraceback();
     }
 
-    // The simple case when we have both the frame and the exception location
-    @Specialization(guards = {"!tb.isMaterialized()", "!mayBeEmpty(tb)"})
-    PTraceback createTraceback(LazyTraceback tb,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        PTraceback newTraceback = factory.createTraceback(tb);
-        tb.setTraceback(newTraceback);
-        return newTraceback;
-    }
-
-    // The complex case when we have to peek at the Truffle stacktrace to know whether this
-    // traceback segment is not empty
-    // This happens when:
-    // 1) On the top-level (we don't have the catching frame)
-    // 2) On the C boundary (we don't want to show the catching frame)
-    // 3) After raise without arguments or after implicit reraise at the end of finally, __exit__...
-    // (we don't want to show the reraise location)
     @TruffleBoundary
-    @Specialization(guards = {"!tb.isMaterialized()", "mayBeEmpty(tb)"})
+    @Specialization(guards = "!tb.isMaterialized()")
     PTraceback traverse(LazyTraceback tb,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+                    @Cached PythonObjectFactory factory) {
         // The logic of skipping and cutting off frames here and in MaterializeTruffleStacktraceNode
         // must match
         boolean skipFirst = tb.getException().shouldHideLocation();
@@ -168,8 +149,10 @@ public abstract class GetTracebackNode extends Node {
         return newTraceback;
     }
 
-    protected boolean mayBeEmpty(LazyTraceback tb) {
-        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation() || PythonContext.get(this).getOption(PythonOptions.EnableBytecodeInterpreter);
+    private static PTraceback createTraceback(LazyTraceback tb, PythonObjectFactory factory) {
+        PTraceback newTraceback = factory.createTraceback(tb);
+        tb.setTraceback(newTraceback);
+        return newTraceback;
     }
 
     public static GetTracebackNode create() {

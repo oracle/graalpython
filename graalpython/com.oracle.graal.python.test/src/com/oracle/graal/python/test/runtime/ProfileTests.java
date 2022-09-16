@@ -40,21 +40,15 @@
  */
 package com.oracle.graal.python.test.runtime;
 
-import org.junit.Assert;
-import org.junit.Before;
-
-import com.oracle.graal.python.test.PythonTests;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-public class ProfileTests {
+import org.junit.Assert;
+import org.junit.Test;
 
-    @Before
-    public void ensureBytecode() {
-        PythonTests.skipOnLegacyASTInterpreter();
-    }
+import com.oracle.graal.python.test.PythonTests;
+
+public class ProfileTests {
 
     @Test
     public void profileYield() {

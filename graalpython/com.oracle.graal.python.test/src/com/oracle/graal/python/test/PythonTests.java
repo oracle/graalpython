@@ -53,11 +53,9 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
-import org.junit.Assume;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.interop.JavaInteropTest;
@@ -132,14 +130,6 @@ public class PythonTests {
             closeContext(context);
             context = null;
         }
-    }
-
-    public static void skipOnBytecodeInterpreter() {
-        Assume.assumeFalse(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
-    }
-
-    public static void skipOnLegacyASTInterpreter() {
-        Assume.assumeTrue(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {

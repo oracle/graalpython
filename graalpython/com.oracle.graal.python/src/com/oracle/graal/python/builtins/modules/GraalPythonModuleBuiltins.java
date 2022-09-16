@@ -219,7 +219,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute(tsLiteral("capi_home"), capiHome);
         mod.setAttribute(tsLiteral("jni_home"), context.getJNIHome());
         mod.setAttribute(tsLiteral("platform_id"), toTruffleStringUncached(toolchain.getIdentifier()));
-        mod.setAttribute(tsLiteral("uses_bytecode_interpreter"), context.getOption(PythonOptions.EnableBytecodeInterpreter));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute(tsLiteral("executable_list"), executableList);

@@ -8,10 +8,6 @@ import difflib
 import gc
 from functools import wraps
 import asyncio
-import builtins
-
-# only while the bytecode interpreter is not the default
-skip = not getattr(getattr(builtins, '__graalpython__', None), 'uses_bytecode_interpreter', True)
 
 
 class tracecontext:
@@ -329,7 +325,6 @@ class Tracer:
         return self.trace
 
 
-@unittest.skipIf(skip, 'not in bytecode interpreter')
 class TraceTestCase(unittest.TestCase):
 
     # Disable gc collection when tracing, otherwise the
@@ -1196,7 +1191,6 @@ class TraceTestCase(unittest.TestCase):
             (7, 'return')])
 
 
-@unittest.skipIf(skip, 'not in bytecode interpreter')
 class SkipLineEventsTraceTestCase(TraceTestCase):
     """Repeat the trace tests, but with per-line events skipped"""
 
@@ -1225,7 +1219,6 @@ class TraceOpcodesTestCase(TraceTestCase):
         return Tracer(trace_opcode_events=True)
 
 
-@unittest.skipIf(skip, 'not in bytecode interpreter')
 class RaisingTraceFuncTestCase(unittest.TestCase):
     def setUp(self):
         self.addCleanup(sys.settrace, sys.gettrace())
@@ -1382,7 +1375,6 @@ def no_jump_without_trace_function():
         raise AssertionError("Trace-function-less jump failed to fail")
 
 
-@unittest.skipIf(skip, 'not in bytecode interpreter')
 class JumpTestCase(unittest.TestCase):
     def setUp(self):
         self.addCleanup(sys.settrace, sys.gettrace())

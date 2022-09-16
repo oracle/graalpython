@@ -1063,15 +1063,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PythonContext context = getContext();
             ParserMode pm = getParserMode(mode, flags);
             if (pm == ParserMode.File) {
-                // CPython adds a newline and we need to do the same in order to produce
-                // SyntaxError with the same offset when the line is incomplete.
-                // The new parser does this on its own - we must not add a newline here since
-                // that would lead to incorrect line number for the ENDMARKER token.
-                if (!context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                    if (code.isEmpty() || code.codePointAtIndexUncached(code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
-                        code = code.concatUncached(T_NEWLINE, TS_ENCODING, true);
-                    }
-                }
             } else if (pm == ParserMode.FuncType) {
                 if ((flags & PyCF_ONLY_AST) == 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
@@ -1130,10 +1121,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return context.getEnv().parsePublic(source);
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
-                    if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                        return context.getLanguage().parseForBytecodeInterpreter(context, source, InputType.SINGLE, false, optimize, false, null);
-                    }
-                    return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, optimize, getCore(), source, null, null));
+                    return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, null);
                 }
             };
             if (getCore().isCoreInitialized()) {

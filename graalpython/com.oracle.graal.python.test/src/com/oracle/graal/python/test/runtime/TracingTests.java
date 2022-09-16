@@ -40,17 +40,11 @@
  */
 package com.oracle.graal.python.test.runtime;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
 public class TracingTests {
-
-    @Before
-    public void ensureBytecode() {
-        PythonTests.skipOnLegacyASTInterpreter();
-    }
 
     @Test
     public void traceInExistingScopeWithOnlyReturn() {
