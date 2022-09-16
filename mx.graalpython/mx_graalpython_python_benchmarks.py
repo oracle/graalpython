@@ -44,6 +44,7 @@ import glob
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -352,7 +353,7 @@ class GraalPyVm(mx_benchmark.GuestVm):
         return self.__class__(self.config_name(), self._options, host_vm)
 
     def run(self, cwd, args):
-        for idx, arg in enumerate(args):
+        for arg in args:
             if "--vm.Xmx" in arg:
                 mx.log(f"Setting Xmx from {arg}")
                 break
@@ -440,13 +441,13 @@ class WildcardList:
         return True
 
     def __iter__(self):
-        if not benchmarks:
+        if not self.benchmarks:
             mx.abort(
                 "Cannot iterate over benchmark names in foreign benchmark suites. "
                 + "Leave off the benchmark name part to run all, or name the benchmarks yourself."
             )
         else:
-            return iter(benchmarks)
+            return iter(self.benchmarks)
 
 
 class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
