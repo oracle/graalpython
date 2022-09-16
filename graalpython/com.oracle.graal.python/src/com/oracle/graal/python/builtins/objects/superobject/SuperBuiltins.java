@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
-import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -108,10 +106,8 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -230,51 +226,10 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getRootNode() instanceof BuiltinFunctionRootNode;
         }
 
-        protected boolean isInBytecodeRoot() {
-            return getRootNode() instanceof PBytecodeRootNode;
-        }
-
-        protected ReadLocalVariableNode createRead(VirtualFrame frame) {
-            FrameDescriptor descriptor = frame.getFrameDescriptor();
-            for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
-                Object slotName = descriptor.getSlotName(slot);
-                if (slotName instanceof TruffleString && T___CLASS__.equalsUncached((TruffleString) slotName, TS_ENCODING)) {
-                    return ReadLocalVariableNode.create(slot);
-                }
-            }
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
-        }
-
         /**
          * Executed with the frame of the calling method - direct access to the frame.
          */
-        @Specialization(guards = {"!isInBytecodeRoot()", "!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
-        PNone initInPlaceAST(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
-                        @Cached("createRead(frame)") ReadLocalVariableNode readClass,
-                        @Cached("create(0)") ReadIndexedArgumentNode readArgument,
-                        @Cached ConditionProfile isCellProfile) {
-            Object obj = readArgument.execute(frame);
-            if (obj == PNone.NONE || obj == PNone.NO_VALUE) {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
-            }
-            Object cls = readClass.execute(frame);
-            if (isCellProfile.profile(cls instanceof PCell)) {
-                cls = getGetRefNode().execute((PCell) cls);
-            }
-            if (cls == null) {
-                // the cell is empty
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
-            }
-            if (cls == PNone.NONE) {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
-            }
-            return init(frame, self, cls, obj);
-        }
-
-        /**
-         * Executed with the frame of the calling method - direct access to the frame.
-         */
-        @Specialization(guards = {"isInBytecodeRoot()", "!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg) {
             PBytecodeRootNode rootNode = (PBytecodeRootNode) getRootNode();
             PCell classCell = rootNode.readClassCell(frame);
