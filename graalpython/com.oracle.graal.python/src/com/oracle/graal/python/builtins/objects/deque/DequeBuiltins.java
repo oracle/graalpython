@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -116,7 +117,6 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GtNode;

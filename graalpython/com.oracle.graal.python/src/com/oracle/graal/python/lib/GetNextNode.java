@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.control;
+package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.truffle.api.nodes.NodeCost.NONE;

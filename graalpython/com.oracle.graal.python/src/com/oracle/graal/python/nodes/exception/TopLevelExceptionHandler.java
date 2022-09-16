@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.control;
+package com.oracle.graal.python.nodes.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;

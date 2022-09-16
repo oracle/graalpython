@@ -71,7 +71,7 @@ import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.pegparser.InputType;
