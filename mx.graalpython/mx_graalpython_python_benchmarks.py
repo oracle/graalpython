@@ -433,14 +433,20 @@ class WildcardList:
     available, so we just return a wildcard list and assume the caller knows
     what they want to run"""
 
+    def __init__(self, benchmarks=None):
+        self.benchmarks = benchmarks
+
     def __contains__(self, x):
         return True
 
     def __iter__(self):
-        mx.abort(
-            "Cannot iterate over benchmark names in foreign benchmark suites. "
-            + "Leave off the benchmark name part to run all, or name the benchmarks yourself."
-        )
+        if not benchmarks:
+            mx.abort(
+                "Cannot iterate over benchmark names in foreign benchmark suites. "
+                + "Leave off the benchmark name part to run all, or name the benchmarks yourself."
+            )
+        else:
+            return iter(benchmarks)
 
 
 class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite):
@@ -472,7 +478,7 @@ class PyPerformanceSuite(PySuite):
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        return WildcardList()
+        return WildcardList(DEFAULT_PYPERFORMANCE_BENCHMARKS)
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [PyPerfJsonRule(output, self.name())]
@@ -536,7 +542,7 @@ class PyPySuite(PySuite):
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        return WildcardList()
+        return WildcardList(DEFAULT_PYPY_BENCHMARKS)
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [PyPyJsonRule(output, self.name())]
@@ -619,7 +625,7 @@ class NumPySuite(PySuite):
         return "graalpython"
 
     def benchmarkList(self, bmSuiteArgs):
-        return WildcardList()
+        return WildcardList(DEFAULT_NUMPY_BENCHMARKS)
 
     def rules(self, output, benchmarks, bmSuiteArgs):
         return [AsvJsonRule(output, self.name())]
