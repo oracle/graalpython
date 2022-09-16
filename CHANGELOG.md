@@ -4,12 +4,14 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 22.3.0
-* Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy`, for better integration with other tools.
-* New interpreter backend based on interpreting bytecode. This change should bring better startup performance and memory footprint while retaining good JIT-compiled performance.
-* New parser generated from CPython's new PEG grammar definition. It brings better compatibility and enables us to implement the `ast` module.
-* Added support for tracing API (`sys.settrace`) which makes `pdb` and related tools work on GraalPy.
+* Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy` for better integration with other tools.
+* Switched to a new interpreter backend based on interpreting bytecode. This change brings better startup performance and memory footprint while retaining good JIT-compiled performance.
+* Switched to a new parser generated from CPython's new PEG grammar definition. It brings better compatibility and enables us to implement the `ast` module.
+* Added support for tracing API (`sys.settrace`), which makes `pdb` and related tools work on GraalPy.
+* Added support for profiling API (`sys.setprofile`), which makes the `profile` package work.
 * Updated our pip support to automatically choose the best version for known packages. You can use `pip install pandas`, and pip will select the versions of pandas and numpy that we test in the GraalPy CI.
 * Added support for Flask - https://pypi.org/project/Flask/
+* Implement PEP 405 for full support of virtual environments. This fixes issues with the virtualenv package and tox that are used to in PyCharm or in many projects' CI jobs.
 
 ## Version 22.2.0
 * Updated to HPy version 0.0.4, which adds support for the finished HPy port of Kiwi, and the in-progress ports of Matplotlib and NumPy.
