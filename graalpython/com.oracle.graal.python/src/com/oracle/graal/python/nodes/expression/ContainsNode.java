@@ -62,12 +62,8 @@ public abstract class ContainsNode extends BinaryOpNode {
     @Child private GetNextNode next;
     @Child private IsBuiltinClassProfile errorProfile;
 
-    public static ExpressionNode create(ExpressionNode left, ExpressionNode right) {
-        return ContainsNodeGen.create(left, right);
-    }
-
     public static ContainsNode create() {
-        return ContainsNodeGen.create(null, null);
+        return ContainsNodeGen.create();
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)

@@ -25,88 +25,31 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(shortName = J___SETITEM__)
-@NodeChild(value = "primary", type = ExpressionNode.class)
-@NodeChild(value = "slice", type = ExpressionNode.class)
-@NodeChild(value = "right", type = ExpressionNode.class)
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class SetItemNode extends StatementNode implements WriteNode {
+public abstract class SetItemNode extends PNodeWithContext {
+    public abstract void execute(VirtualFrame frame, Object collection, Object key, Object value);
+
     @Child private PRaiseNode raiseNode;
 
-    public abstract ExpressionNode getPrimary();
-
-    public abstract ExpressionNode getSlice();
-
-    public abstract ExpressionNode getRight();
-
-    public static SetItemNode create(ExpressionNode primary, ExpressionNode slice, ExpressionNode right) {
-        return SetItemNodeGen.create(primary, slice, right);
-    }
-
     public static SetItemNode create() {
-        return SetItemNodeGen.create(null, null, null);
+        return SetItemNodeGen.create();
     }
-
-    @Override
-    public ExpressionNode getRhs() {
-        return getRight();
-    }
-
-    @Override
-    public final void executeBoolean(VirtualFrame frame, boolean value) {
-        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
-    }
-
-    @Override
-    public final void executeInt(VirtualFrame frame, int value) {
-        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
-    }
-
-    @Override
-    public final void executeLong(VirtualFrame frame, long value) {
-        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
-    }
-
-    @Override
-    public final void executeDouble(VirtualFrame frame, double value) {
-        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
-    }
-
-    @Override
-    public final void executeObject(VirtualFrame frame, Object value) {
-        executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
-    }
-
-    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, boolean value);
-
-    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, int value);
-
-    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, long value);
-
-    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, double value);
-
-    public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, Object value);
 
     @Specialization
     void doIntIndex(VirtualFrame frame, Object primary, int index, Object value,

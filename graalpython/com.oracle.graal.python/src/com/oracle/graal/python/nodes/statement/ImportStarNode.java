@@ -103,7 +103,7 @@ public class ImportStarNode extends AbstractImportNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dictWriteNode = insert(SetItemNode.create());
             }
-            dictWriteNode.executeWith(frame, globals, name, value);
+            dictWriteNode.execute(frame, globals, name, value);
         } else {
             if (setAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -118,8 +118,7 @@ public class ImportStarNode extends AbstractImportNode {
         this.level = level;
     }
 
-    @Override
-    public void executeVoid(VirtualFrame frame) {
+    public void execute(VirtualFrame frame) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level);
         PythonObject locals = fastGetCustomLocalsOrGlobals(frame, havePyFrame, haveCustomLocals);
 

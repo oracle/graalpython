@@ -40,43 +40,12 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
-
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.TreeSet;
 
-import com.oracle.graal.python.util.BiConsumer;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class PythonFrame {
-
-    public static FrameDescriptor createTestFrameDescriptor(TruffleString... names) {
-        FrameDescriptor.Builder builder = FrameDescriptor.newBuilder();
-        for (TruffleString name : names) {
-            builder.addSlot(FrameSlotKind.Illegal, name, null);
-        }
-        return builder.build();
-    }
-
-    /**
-     * Gets a sorted set of identifiers in the given frame descriptor - this is a potentially slow
-     * operation. Non-string identifiers will be converted using toString, null entries will be
-     * ignored.
-     */
-    public static Collection<String> getIdentifiersAsString(FrameDescriptor descriptor) {
-        TreeSet<String> result = new TreeSet<>();
-        for (int i = 0; i < descriptor.getNumberOfSlots(); i++) {
-            if (descriptor.getSlotName(i) != null) {
-                result.add(descriptor.getSlotName(i).toString());
-            }
-        }
-        return result;
-    }
 
     public static Collection<Object> getIdentifiers(FrameDescriptor descriptor) {
         Collection<Object> result = new ArrayList<>();
@@ -88,24 +57,4 @@ public abstract class PythonFrame {
         return result;
     }
 
-    public static void iterateObjectSlots(Frame frame, BiConsumer<Object, Object> consumer) {
-        FrameDescriptor descriptor = frame.getFrameDescriptor();
-        for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
-            if (frame.isObject(slot)) {
-                consumer.accept(descriptor.getSlotName(slot), frame.getObject(slot));
-            }
-        }
-    }
-
-    public static TruffleString[] extractSlotNames(FrameDescriptor descriptor, int[] slots) {
-        if (slots == null || slots.length == 0) {
-            return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-        }
-        TruffleString[] result = new TruffleString[slots.length];
-        for (int i = 0; i < result.length; i++) {
-            Object identifier = descriptor.getSlotName(slots[i]);
-            result[i] = identifier == FrameSlotIDs.FREEVAR__CLASS__ ? T___CLASS__ : (TruffleString) identifier;
-        }
-        return result;
-    }
 }

@@ -44,7 +44,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
@@ -64,8 +63,6 @@ import com.oracle.truffle.api.source.SourceSection;
  */
 @ExportLibrary(InteropLibrary.class)
 public final class PythonLocalScope implements TruffleObject {
-
-    static final int LIMIT = 3;
 
     final Map<String, Integer> slots;
     final RootNode root;
@@ -87,7 +84,7 @@ public final class PythonLocalScope implements TruffleObject {
         FrameDescriptor fd = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
         for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
             Object identifier = fd.getSlotName(slot);
-            if (FrameSlotIDs.isUserFrameSlot(identifier) && (frame == null || frame.getValue(slot) != null)) {
+            if (identifier != null && (frame == null || frame.getValue(slot) != null)) {
                 slotsMap.put(identifier.toString(), slot);
             }
         }

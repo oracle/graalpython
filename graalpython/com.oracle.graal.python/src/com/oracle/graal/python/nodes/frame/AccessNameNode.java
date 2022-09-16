@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public interface AccessNameNode {
     default boolean hasLocals(VirtualFrame frame) {
@@ -57,6 +56,4 @@ public interface AccessNameNode {
         Object specialArgument = PArguments.getSpecialArgument(frame);
         return specialArgument instanceof PDict && PGuards.isBuiltinDict((PDict) specialArgument);
     }
-
-    public abstract TruffleString getAttributeId();
 }

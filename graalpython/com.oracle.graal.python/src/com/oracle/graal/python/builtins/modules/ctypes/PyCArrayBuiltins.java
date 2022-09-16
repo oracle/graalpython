@@ -123,7 +123,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached SetItemNode pySequenceSetItem) {
             int n = args.length;
             for (int i = 0; i < n; ++i) {
-                pySequenceSetItem.executeWith(frame, self, i, args[i]);
+                pySequenceSetItem.execute(frame, self, i, args[i]);
             }
             return PNone.NONE;
         }

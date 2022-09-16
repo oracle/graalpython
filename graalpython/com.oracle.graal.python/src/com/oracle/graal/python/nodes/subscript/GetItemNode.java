@@ -25,31 +25,17 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
-
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(shortName = J___GETITEM__)
-public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
-    public ExpressionNode getPrimary() {
-        return getLeftNode();
-    }
-
-    public ExpressionNode getSlice() {
-        return getRightNode();
-    }
+public abstract class GetItemNode extends BinaryOpNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
@@ -62,20 +48,11 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     }
 
     public static GetItemNode create() {
-        return GetItemNodeGen.create(null, null);
-    }
-
-    public static GetItemNode create(ExpressionNode primary, ExpressionNode slice) {
-        return GetItemNodeGen.create(primary, slice);
+        return GetItemNodeGen.create();
     }
 
     protected LookupAndCallBinaryNode createLookupAndCallGetItemNode() {
         return LookupAndCallBinaryNode.create(SpecialMethodSlot.GetItem);
-    }
-
-    @Override
-    public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
     @Specialization

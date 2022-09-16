@@ -338,7 +338,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                 PythonUtils.arraycopy(args, 1, callArgs, 1, args.length - 1);
             }
             callNode.execute(frame, superInit, callArgs, kw);
-            setAttrNode.executeVoid(frame, self, args[0]);
+            setAttrNode.execute(frame, self, args[0]);
             return PNone.NONE;
         }
 

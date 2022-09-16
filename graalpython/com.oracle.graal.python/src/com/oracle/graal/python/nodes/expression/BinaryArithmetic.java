@@ -88,7 +88,7 @@ public enum BinaryArithmetic {
     DivMod(BinaryArithmeticFactory.DivModNodeGen::create);
 
     interface CreateBinaryOp {
-        BinaryOpNode create(ExpressionNode left, ExpressionNode right);
+        BinaryOpNode create();
     }
 
     private final CreateBinaryOp create;
@@ -128,12 +128,8 @@ public enum BinaryArithmetic {
         }
     }
 
-    public BinaryOpNode create(ExpressionNode left, ExpressionNode right) {
-        return create.create(left, right);
-    }
-
     public BinaryOpNode create() {
-        return create(null, null);
+        return create.create();
     }
 
     /**
@@ -224,7 +220,7 @@ public enum BinaryArithmetic {
         }
 
         public static AddNode create() {
-            return BinaryArithmeticFactory.AddNodeGen.create(null, null);
+            return BinaryArithmeticFactory.AddNodeGen.create();
         }
     }
 
@@ -523,7 +519,7 @@ public enum BinaryArithmetic {
         }
 
         public static BitAndNode create() {
-            return BinaryArithmeticFactory.BitAndNodeGen.create(null, null);
+            return BinaryArithmeticFactory.BitAndNodeGen.create();
         }
     }
 
@@ -548,7 +544,7 @@ public enum BinaryArithmetic {
         }
 
         public static BitOrNode create() {
-            return BinaryArithmeticFactory.BitOrNodeGen.create(null, null);
+            return BinaryArithmeticFactory.BitOrNodeGen.create();
         }
     }
 
@@ -573,7 +569,7 @@ public enum BinaryArithmetic {
         }
 
         public static BitXorNode create() {
-            return BinaryArithmeticFactory.BitXorNodeGen.create(null, null);
+            return BinaryArithmeticFactory.BitXorNodeGen.create();
         }
     }
 

@@ -279,7 +279,7 @@ public abstract class MaterializeFrameNode extends Node {
             assert cachedFd == target.getFrameDescriptor();
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                if (FrameSlotIDs.isUserFrameSlot(cachedFd.getSlotName(slot))) {
+                if (cachedFd.getSlotName(slot) != null) {
                     PythonUtils.copyFrameSlot(frameToSync, target, slot);
                 }
             }
@@ -294,7 +294,7 @@ public abstract class MaterializeFrameNode extends Node {
             assert cachedFd == target.getFrameDescriptor();
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                if (FrameSlotIDs.isUserFrameSlot(cachedFd.getSlotName(slot))) {
+                if (cachedFd.getSlotName(slot) != null) {
                     PythonUtils.copyFrameSlot(frameToSync, target, slot);
                 }
             }
@@ -310,7 +310,7 @@ public abstract class MaterializeFrameNode extends Node {
                 assert fd == target.getFrameDescriptor();
 
                 for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-                    if (FrameSlotIDs.isUserFrameSlot(fd.getSlotName(slot))) {
+                    if (fd.getSlotName(slot) != null) {
                         PythonUtils.copyFrameSlot(frameToSync, target, slot);
                     }
                 }
@@ -344,7 +344,7 @@ public abstract class MaterializeFrameNode extends Node {
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
                 Object identifier = cachedFd.getSlotName(slot);
-                if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                if (identifier != null) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
                         setItemNode.execute(frame, localsDict, identifier, resolveCellValue(profiles[slot], value));
@@ -385,7 +385,7 @@ public abstract class MaterializeFrameNode extends Node {
 
             for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
                 Object identifier = fd.getSlotName(slot);
-                if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                if (identifier != null) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
                         setItemNode.execute(frame, localsDict, identifier, resolveCellValue(ConditionProfile.getUncached(), value));

@@ -257,7 +257,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 } catch (PException e) {
                     errorProfile.enter();
                     try {
-                        setAttributeNode.executeVoid(frame, self, true);
+                        setAttributeNode.execute(frame, self, true);
                     } catch (PException e1) {
                         PBaseException ee = e1.getEscapedException();
                         ee.setContext(e.setCatchingFrameAndGetEscapedException(frame, this));
@@ -265,7 +265,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     }
                     throw e.getExceptionForReraise();
                 }
-                setAttributeNode.executeVoid(frame, self, true);
+                setAttributeNode.execute(frame, self, true);
             }
             return PNone.NONE;
         }

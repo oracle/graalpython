@@ -180,7 +180,7 @@ public enum InplaceArithmetic {
     }
 
     public LookupAndCallInplaceNode create() {
-        return LookupAndCallInplaceNode.create(this, null, null, null);
+        return LookupAndCallInplaceNode.create(this);
     }
 
     /**

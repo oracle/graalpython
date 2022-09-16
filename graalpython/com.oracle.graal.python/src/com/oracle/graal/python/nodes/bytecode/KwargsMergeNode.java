@@ -40,23 +40,42 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.keywords.ConcatKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class KwargsMergeNode extends PNodeWithContext {
@@ -64,7 +83,7 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
 
     @Specialization
     static int merge(VirtualFrame frame, int initialStackTop,
-                    @Cached ConcatKeywordsNode.ConcatDictToStorageNode concatNode,
+                    @Cached ConcatDictToStorageNode concatNode,
                     @Cached PRaiseNode raise,
                     @Cached BranchProfile keywordsError,
                     @Cached StringNodes.CastToJavaStringCheckedNode castToStringNode) {
@@ -103,5 +122,83 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
 
     public static KwargsMergeNode getUncached() {
         return KwargsMergeNodeGen.getUncached();
+    }
+
+    @GenerateUncached
+    public abstract static class ConcatDictToStorageNode extends PNodeWithContext {
+        public abstract HashingStorage execute(Frame frame, HashingStorage dest, Object other);
+
+        @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
+        static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
+                        @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Cached.Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+            return hlib.copy(other.getDictStorage());
+        }
+
+        @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
+        static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
+                        @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Cached.Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Cached.Shared("hasFrame") @Cached ConditionProfile hasFrame,
+                        @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
+            HashingStorage result = dest;
+            HashingStorage otherStorage = other.getDictStorage();
+            for (Object key : hlib.keys(otherStorage)) {
+                Object value = hlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
+                if (hlib.hasKey(result, key)) {
+                    sameKeyProfile.enter();
+                    throw new SameDictKeyException(key);
+                }
+                result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+            }
+            return result;
+        }
+
+        @Fallback
+        static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
+                        @Cached.Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Cached.Shared("hasFrame") @Cached ConditionProfile hasFrame,
+                        @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
+                        @Cached PyObjectCallMethodObjArgs callKeys,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached ListNodes.FastConstructListNode asList,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
+                        @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
+                        @Cached PyObjectGetItem getItem) {
+            HashingStorage result = dest;
+            try {
+                PSequence keys = asList.execute(frame, callKeys.execute(frame, other, T_KEYS));
+                SequenceStorage keysStorage = getSequenceStorage.execute(keys);
+                int keysLen = keysStorage.length();
+                for (int i = 0; i < keysLen; i++) {
+                    Object key = sequenceGetItem.execute(keysStorage, i);
+                    if (hlib.hasKey(result, key)) {
+                        sameKeyProfile.enter();
+                        throw new SameDictKeyException(key);
+                    }
+                    Object value = getItem.execute(frame, other, key);
+                    result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+                }
+                return result;
+            } catch (PException e) {
+                e.expectAttributeError(errorProfile);
+                throw new NonMappingException(other);
+            }
+        }
+
+        /* CPython tests that tp_iter is dict_iter */
+        protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+            return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == BuiltinMethodDescriptors.DICT_ITER;
+        }
+
+        public static ConcatDictToStorageNode create() {
+            return KwargsMergeNodeGen.ConcatDictToStorageNodeGen.create();
+        }
+
+        public static ConcatDictToStorageNode getUncached() {
+            return KwargsMergeNodeGen.ConcatDictToStorageNodeGen.getUncached();
+        }
     }
 }

@@ -45,8 +45,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class IsExpressionNode extends BinaryOpNode {
-    public static IsExpressionNode create(ExpressionNode left, ExpressionNode right) {
-        return IsExpressionNodeGen.create(left, right);
+    public static IsExpressionNode create() {
+        return IsExpressionNodeGen.create();
     }
 
     @Specialization

@@ -2552,7 +2552,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setSpecialArgument(bodyArguments, ns);
             callBody.executeCall(frame, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {
-                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.T___ORIG_BASES__, origBases);
+                setOrigBases.execute(frame, ns, SpecialAttributeNames.T___ORIG_BASES__, origBases);
             }
             Object cls = callType.execute(frame, init.meta, new Object[]{name, init.bases, ns}, init.mkw);
 

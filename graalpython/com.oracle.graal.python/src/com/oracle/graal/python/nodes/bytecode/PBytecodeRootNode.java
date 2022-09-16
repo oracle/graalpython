@@ -246,7 +246,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @SuppressWarnings("static-method")
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
-    private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create();
+    private static final NodeSupplier<RaiseNode> NODE_RAISENODE = RaiseNode::create;
     private static final NodeSupplier<DeleteItemNode> NODE_DELETE_ITEM = DeleteItemNode::create;
     private static final NodeSupplier<PyObjectDelItem> NODE_OBJECT_DEL_ITEM = PyObjectDelItem::create;
     private static final PyObjectDelItem UNCACHED_OBJECT_DEL_ITEM = PyObjectDelItem.getUncached();
@@ -4562,7 +4562,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop--, null);
         Object container = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        delItem.executeWith(virtualFrame, container, slice);
+        delItem.execute(virtualFrame, container, slice);
         return stackTop;
     }
 
@@ -5158,7 +5158,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int level = (int) virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         ImportStarNode importStarNode = insertChildNode(localNodes, bci, ImportStarNode.class, () -> new ImportStarNode(importName, level));
-        importStarNode.executeVoid(virtualFrame);
+        importStarNode.execute(virtualFrame);
         return stackTop;
     }
 

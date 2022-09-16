@@ -25,50 +25,22 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.util.Supplier;
-
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.strings.TruffleString;
 
 // TODO: (tfel) Duplication here with BinaryOpNode
-@NodeInfo(shortName = J___DELITEM__)
-@NodeChild(value = "leftNode", type = ExpressionNode.class)
-@NodeChild(value = "rightNode", type = ExpressionNode.class)
-public abstract class DeleteItemNode extends StatementNode {
-    public abstract ExpressionNode getLeftNode();
-
-    public abstract ExpressionNode getRightNode();
-
-    public abstract Object executeWith(VirtualFrame frame, PythonObject globals, TruffleString attributeId);
-
-    // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
-    // the lengths we go to to avoid boxing :(
-    public abstract Object executeWith(VirtualFrame frame, Object left, Object right);
-
-    public int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException {
-        return PGuards.expectInteger(executeWith(frame, left, right));
-    }
-
-    public double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException {
-        return PGuards.expectDouble(executeWith(frame, left, right));
-    }
+public abstract class DeleteItemNode extends PNodeWithContext {
+    public abstract Object execute(VirtualFrame frame, Object left, Object right);
 
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
@@ -83,14 +55,6 @@ public abstract class DeleteItemNode extends StatementNode {
         };
     }
 
-    public ExpressionNode getPrimary() {
-        return getLeftNode();
-    }
-
-    public ExpressionNode getSlice() {
-        return getRightNode();
-    }
-
     @Specialization
     Object doObject(VirtualFrame frame, Object primary, Object slice,
                     @Cached("createDelItemNode()") LookupAndCallBinaryNode callDelitemNode) {
@@ -103,11 +67,6 @@ public abstract class DeleteItemNode extends StatementNode {
     }
 
     public static DeleteItemNode create() {
-        return DeleteItemNodeGen.create(null, null);
+        return DeleteItemNodeGen.create();
     }
-
-    public static DeleteItemNode create(ExpressionNode primary, ExpressionNode slice) {
-        return DeleteItemNodeGen.create(primary, slice);
-    }
-
 }

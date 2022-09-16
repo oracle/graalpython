@@ -25,13 +25,10 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.GenerateWrapper;
-import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateWrapper
 public class ImportNode extends AbstractImportNode {
     private final TruffleString moduleName;
 
@@ -43,19 +40,13 @@ public class ImportNode extends AbstractImportNode {
         this.moduleName = original.moduleName;
     }
 
-    @Override
-    public void executeVoid(VirtualFrame frame) {
-        importModule(frame, moduleName);
-    }
-
-    public static final class ImportExpression extends ExpressionNode {
+    public static final class ImportExpression extends PNodeWithContext {
         @Child ImportNode importNode;
 
         private ImportExpression(ImportNode importNode) {
             this.importNode = importNode;
         }
 
-        @Override
         public Object execute(VirtualFrame frame) {
             return importNode.importModule(frame, importNode.moduleName);
         }
@@ -64,11 +55,6 @@ public class ImportNode extends AbstractImportNode {
 
     public ImportExpression asExpression() {
         return new ImportExpression(this);
-    }
-
-    @Override
-    public WrapperNode createWrapper(ProbeNode probe) {
-        return new ImportNodeWrapper(this, this, probe);
     }
 
     public TruffleString getModuleName() {

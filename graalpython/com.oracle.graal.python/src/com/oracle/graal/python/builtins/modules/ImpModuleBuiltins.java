@@ -449,7 +449,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // reinitialization (if reinit is possible)
                 Object loader = lookup.execute(frame, moduleSpec, T_LOADER);
                 if (loader != PNone.NO_VALUE) {
-                    setAttributeNode.executeVoid(frame, builtinModule, loader);
+                    setAttributeNode.execute(frame, builtinModule, loader);
                 }
                 return builtinModule;
             }

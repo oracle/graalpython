@@ -164,7 +164,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         public static LeNode create() {
-            return LeNodeGen.create(null, null);
+            return LeNodeGen.create();
         }
     }
 
@@ -237,7 +237,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         public static LtNode create() {
-            return LtNodeGen.create(null, null);
+            return LtNodeGen.create();
         }
     }
 
@@ -310,7 +310,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         public static GeNode create() {
-            return GeNodeGen.create(null, null);
+            return GeNodeGen.create();
         }
     }
 
@@ -383,7 +383,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         public static GtNode create() {
-            return GtNodeGen.create(null, null);
+            return GtNodeGen.create();
         }
     }
 
@@ -453,7 +453,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         public static EqNode create() {
-            return EqNodeGen.create(null, null);
+            return EqNodeGen.create();
         }
     }
 
@@ -523,7 +523,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         public static NeNode create() {
-            return NeNodeGen.create(null, null);
+            return NeNodeGen.create();
         }
     }
 }

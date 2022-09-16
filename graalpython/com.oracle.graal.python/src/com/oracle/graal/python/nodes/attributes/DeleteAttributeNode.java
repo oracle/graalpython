@@ -40,23 +40,15 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChild(value = "object", type = ExpressionNode.class)
-@NodeChild(value = "key", type = ExpressionNode.class)
-public abstract class DeleteAttributeNode extends StatementNode {
+public abstract class DeleteAttributeNode extends PNodeWithContext {
     public static DeleteAttributeNode create() {
-        return DeleteAttributeNodeGen.create(null, null);
-    }
-
-    public static DeleteAttributeNode create(ExpressionNode object, ExpressionNode key) {
-        return DeleteAttributeNodeGen.create(object, key);
+        return DeleteAttributeNodeGen.create();
     }
 
     public abstract void execute(VirtualFrame frame, Object object, Object key);

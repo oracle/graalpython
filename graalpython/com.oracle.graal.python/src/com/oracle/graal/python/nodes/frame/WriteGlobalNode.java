@@ -42,11 +42,11 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,8 +56,8 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
-    private static final WriteGlobalNode UNCACHED = new WriteGlobalNode(null, null) {
+public abstract class WriteGlobalNode extends PNodeWithContext {
+    private static final WriteGlobalNode UNCACHED = new WriteGlobalNode(null) {
         @Override
         public void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value) {
             throw CompilerDirectives.shouldNotReachHere("uncached WriteGlobalNode must be used with #write");
@@ -74,57 +74,21 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     };
 
     protected final TruffleString attributeId;
-    @Child private ExpressionNode rhs;
 
-    WriteGlobalNode(TruffleString attributeId, ExpressionNode rhs) {
+    WriteGlobalNode(TruffleString attributeId) {
         this.attributeId = attributeId;
-        this.rhs = rhs;
     }
 
     public static WriteGlobalNode create(TruffleString attributeId) {
-        return WriteGlobalNodeGen.create(attributeId, null);
-    }
-
-    public static WriteGlobalNode create(TruffleString attributeId, ExpressionNode rhs) {
-        return WriteGlobalNodeGen.create(attributeId, rhs);
+        return WriteGlobalNodeGen.create(attributeId);
     }
 
     public static WriteGlobalNode getUncached() {
         return UNCACHED;
     }
 
-    @Override
-    public final void executeVoid(VirtualFrame frame) {
-        executeWithGlobals(frame, getGlobals(frame));
-    }
-
-    @Override
-    public final void executeBoolean(VirtualFrame frame, boolean value) {
-        executeObjectWithGlobals(frame, getGlobals(frame), value);
-    }
-
-    @Override
-    public final void executeInt(VirtualFrame frame, int value) {
-        executeObjectWithGlobals(frame, getGlobals(frame), value);
-    }
-
-    @Override
-    public final void executeLong(VirtualFrame frame, long value) {
-        executeObjectWithGlobals(frame, getGlobals(frame), value);
-    }
-
-    @Override
-    public final void executeDouble(VirtualFrame frame, double value) {
-        executeObjectWithGlobals(frame, getGlobals(frame), value);
-    }
-
-    @Override
     public final void executeObject(VirtualFrame frame, Object value) {
-        executeObjectWithGlobals(frame, getGlobals(frame), value);
-    }
-
-    public final void executeWithGlobals(VirtualFrame frame, Object globals) {
-        executeObjectWithGlobals(frame, globals, getRhs().execute(frame));
+        executeObjectWithGlobals(frame, PArguments.getGlobals(frame), value);
     }
 
     public void write(Frame frame, Object globals, TruffleString name, Object value) {
@@ -150,7 +114,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
     void writeGenericDict(VirtualFrame frame, PDict globals, Object value,
                     @Cached SetItemNode storeNode) {
-        storeNode.executeWith(frame, globals, attributeId, value);
+        storeNode.execute(frame, globals, attributeId, value);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
@@ -164,15 +128,5 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
     void writeModule(PythonModule globals, Object value,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {
         write.execute(globals, attributeId, value);
-    }
-
-    @Override
-    public TruffleString getAttributeId() {
-        return attributeId;
-    }
-
-    @Override
-    public final ExpressionNode getRhs() {
-        return rhs;
     }
 }

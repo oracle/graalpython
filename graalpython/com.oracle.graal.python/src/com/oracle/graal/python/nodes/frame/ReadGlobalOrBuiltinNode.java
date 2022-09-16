@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -39,34 +40,26 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeInfo(shortName = "read_global")
-public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
+public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     private static final ReadGlobalOrBuiltinNode UNCACHED = new ReadGlobalOrBuiltinNode(null) {
         @Override
         protected Object executeWithGlobals(VirtualFrame frame, Object globals) {
@@ -102,45 +95,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @CompilationFinal private boolean wasReadFromModule = false;
     @Child private ReadBuiltinNode readFromBuiltinsNode;
 
-    @Override
     public final Object execute(VirtualFrame frame) {
-        return executeWithGlobals(frame, getGlobals(frame));
-    }
-
-    @Override
-    public final int executeInt(VirtualFrame frame) throws UnexpectedResultException {
-        Object value = execute(frame);
-        if (value instanceof Integer) {
-            return (int) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
-    @Override
-    public final long executeLong(VirtualFrame frame) throws UnexpectedResultException {
-        Object value = execute(frame);
-        if (value instanceof Long) {
-            return (long) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
-    @Override
-    public final double executeDouble(VirtualFrame frame) throws UnexpectedResultException {
-        Object o = execute(frame);
-        if (o instanceof Double) {
-            return (double) o;
-        }
-        throw new UnexpectedResultException(o);
-    }
-
-    @Override
-    public final boolean executeBoolean(VirtualFrame frame) throws UnexpectedResultException {
-        Object o = execute(frame);
-        if (o instanceof Boolean) {
-            return (boolean) o;
-        }
-        throw new UnexpectedResultException(o);
+        return executeWithGlobals(frame, PArguments.getGlobals(frame));
     }
 
     protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
@@ -162,11 +118,6 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     public static ReadGlobalOrBuiltinNode getUncached() {
         return UNCACHED;
-    }
-
-    @Override
-    public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return WriteGlobalNode.create(attributeId, rhs);
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
@@ -243,26 +194,9 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
             return readFromBuiltinsNode.execute();
         }
     }
-
-    @Override
-    public TruffleString getAttributeId() {
-        return attributeId;
-    }
-
-    @Override
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return StandardTags.ReadVariableTag.class == tag || super.hasTag(tag);
-    }
-
-    @Override
-    public Object getNodeObject() {
-        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, attributeId);
-    }
 }
 
 abstract class ReadBuiltinNode extends PNodeWithContext {
-    protected static final Assumption singleCoreNotInitialized = Truffle.getRuntime().createAssumption();
-
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
     protected final TruffleString attributeId;
 

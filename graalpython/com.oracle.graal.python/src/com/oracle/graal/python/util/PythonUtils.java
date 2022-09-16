@@ -729,6 +729,13 @@ public final class PythonUtils {
         return Source.newBuilder(PythonLanguage.ID, "", name.toJavaStringUncached()).build();
     }
 
+    public static Object[] prependArgument(Object primary, Object[] arguments) {
+        Object[] result = new Object[arguments.length + 1];
+        result[0] = primary;
+        arraycopy(arguments, 0, result, 1, arguments.length);
+        return result;
+    }
+
     public static final class NodeCounterWithLimit implements NodeVisitor {
         private int count;
         private final int limit;
