@@ -128,7 +128,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -1042,8 +1041,7 @@ public class LZMANodes {
                         @Cached NativeLibrary.InvokeNativeFunction getNextInIndex,
                         @Cached NativeLibrary.InvokeNativeFunction getLzsCheck,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached ConditionProfile errProfile,
-                        @Cached BranchProfile ofProfile) {
+                        @Cached ConditionProfile errProfile) {
             PythonContext context = PythonContext.get(this);
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
             Object inGuest = context.getEnv().asGuestValue(self.getNextIn());
@@ -1058,7 +1056,6 @@ public class LZMANodes {
                 self.setLzsAvailIn(lzsAvailIn);
                 self.setLzsAvailOut(lzsAvailOut);
             } catch (OverflowException of) {
-                ofProfile.enter();
                 throw raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (err == LZMA_STREAM_END) {
@@ -1154,14 +1151,12 @@ public class LZMANodes {
         @Specialization
         byte[] getBuffer(Object lzmast, PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction getBufferSize,
-                        @Cached NativeLibrary.InvokeNativeFunction getBuffer,
-                        @Cached BranchProfile ofProfile) {
+                        @Cached NativeLibrary.InvokeNativeFunction getBuffer) {
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
             int size;
             try {
                 size = PInt.intValueExact(lzmaSupport.getOutputBufferSize(lzmast, getBufferSize));
             } catch (OverflowException of) {
-                ofProfile.enter();
                 throw raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (size == 0) {

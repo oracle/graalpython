@@ -535,7 +535,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached BranchProfile readErrorProfile,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
             try {
                 return posixRead.read(self.getFD(), size, posixLib, readErrorProfile, gil);
@@ -543,7 +542,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
                 }
-                exceptionProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -668,7 +666,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached BranchProfile readErrorProfile,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
             try {
                 int size = bufferLib.getBufferLength(buffer);
@@ -684,7 +681,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     if (e.getErrorCode() == EAGAIN.getNumber()) {
                         return PNone.NONE;
                     }
-                    exceptionProfile.enter();
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
@@ -776,8 +772,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isClosed()")
         Object seek(VirtualFrame frame, PFileIO self, long pos, int whence,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached GilNode gil,
-                        @Cached BranchProfile exceptionProfile) {
+                        @Cached GilNode gil) {
             try {
                 gil.release(true);
                 try {
@@ -786,7 +781,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (PosixException e) {
-                exceptionProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }

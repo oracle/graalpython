@@ -57,7 +57,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
@@ -70,19 +69,16 @@ public abstract class SetupWithNode extends PNodeWithContext {
                     @Cached(parameters = "Enter") LookupSpecialMethodSlotNode lookupEnter,
                     @Cached(parameters = "Exit") LookupSpecialMethodSlotNode lookupExit,
                     @Cached CallUnaryMethodNode callEnter,
-                    @Cached BranchProfile errorProfile,
                     @Cached PRaiseNode raiseNode) {
         int stackTop = stackTopIn;
         Object contextManager = frame.getObject(stackTop);
         Object type = getClassNode.execute(contextManager);
         Object enter = lookupEnter.execute(frame, type, contextManager);
         if (enter == PNone.NO_VALUE) {
-            errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{T___ENTER__});
         }
         Object exit = lookupExit.execute(frame, type, contextManager);
         if (exit == PNone.NO_VALUE) {
-            errorProfile.enter();
             throw raiseNode.raise(AttributeError, new Object[]{T___EXIT__});
         }
         Object res = callEnter.executeObject(frame, enter, contextManager);

@@ -100,7 +100,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -218,13 +217,11 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             protected static TruffleString getReprString(Object obj,
                             LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
                             CastToTruffleStringNode castStr,
-                            BranchProfile nullBranch,
                             PRaiseNode raiseNode) {
                 Object reprObj = reprNode.executeObject(obj, T___REPR__);
                 try {
                     return castStr.execute(reprObj);
                 } catch (CannotCastException e) {
-                    nullBranch.enter();
                     throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprObj);
                 }
             }
@@ -238,9 +235,8 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                             @Cached CastToTruffleStringNode castStrKey,
                             @Cached CastToTruffleStringNode castStrValue,
                             @Cached PRaiseNode raiseNode,
-                            @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                return doStringKey(castStrKey.execute(key), state, valueReprNode, castStrValue, raiseNode, valueNullBranch, lib);
+                return doStringKey(castStrKey.execute(key), state, valueReprNode, castStrValue, raiseNode, lib);
             }
 
             @Specialization
@@ -248,9 +244,8 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                TruffleString valueReprString = getReprString(lib.getItem(state.dictStorage, key), valueReprNode, castStr, valueNullBranch, raiseNode);
+                TruffleString valueReprString = getReprString(lib.getItem(state.dictStorage, key), valueReprNode, castStr, raiseNode);
                 appendItem(state, key, valueReprString);
                 return state;
             }

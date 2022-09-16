@@ -259,7 +259,6 @@ abstract class AccessForeignItemNodes {
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNext,
-                        @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
@@ -270,7 +269,7 @@ abstract class AccessForeignItemNodes {
                 Object value = getNext.execute(frame, iter);
                 gil.release(true);
                 try {
-                    writeForeignIndex(object, i, value, lib, unsupportedType, wrongIndex);
+                    writeForeignIndex(object, i, value, lib, wrongIndex);
                 } finally {
                     gil.acquire();
                 }
@@ -281,15 +280,13 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key, Object value,
                         @Cached NormalizeIndexNode normalize,
-                        @Cached BranchProfile unsupportedMessage,
-                        @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Shared("gil") @Cached GilNode gil) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
                 gil.release(true);
                 try {
-                    writeForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), value, lib, unsupportedType, wrongIndex);
+                    writeForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), value, lib, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -299,7 +296,7 @@ abstract class AccessForeignItemNodes {
             } else if (lib.isBoolean(key)) {
                 gil.release(true);
                 try {
-                    writeForeignIndex(object, lib.asBoolean(key) ? 1 : 0, value, lib, unsupportedType, wrongIndex);
+                    writeForeignIndex(object, lib.asBoolean(key) ? 1 : 0, value, lib, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -307,7 +304,6 @@ abstract class AccessForeignItemNodes {
                     gil.acquire();
                 }
             } else {
-                unsupportedMessage.enter();
                 throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, object, key);
             }
         }
@@ -315,7 +311,6 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key, Object value,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
-                        @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared("gil") @Cached GilNode gil) {
@@ -327,7 +322,6 @@ abstract class AccessForeignItemNodes {
                 } catch (UnsupportedMessageException | UnknownKeyException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 } catch (UnsupportedTypeException e) {
-                    unsupportedType.enter();
                     throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                 } finally {
                     gil.acquire();
@@ -350,7 +344,7 @@ abstract class AccessForeignItemNodes {
             throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, object);
         }
 
-        private void writeForeignIndex(Object object, int idx, Object value, InteropLibrary libForObject, BranchProfile unsupportedType, BranchProfile wrongIndex) {
+        private void writeForeignIndex(Object object, int idx, Object value, InteropLibrary libForObject, BranchProfile wrongIndex) {
             if (libForObject.isArrayElementWritable(object, idx)) {
                 try {
                     libForObject.writeArrayElement(object, idx, value);
@@ -358,7 +352,6 @@ abstract class AccessForeignItemNodes {
                 } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 } catch (UnsupportedTypeException e) {
-                    unsupportedType.enter();
                     throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
                 }
             }

@@ -828,7 +828,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
-        private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode;
         @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
         @Child private PyMappingCheckNode mappingCheckNode;
@@ -837,7 +836,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected void assertNoFreeVars(PCode code) {
             Object[] freeVars = code.getFreeVars();
             if (freeVars.length > 0) {
-                hasFreeVarsBranch.enter();
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CODE_OBJ_NO_FREE_VARIABLES, getMode());
             }
         }
@@ -2251,18 +2249,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Cached ConditionProfile hasStart,
-                        @Cached BranchProfile stringStart,
-                        @Cached BranchProfile bytesStart,
-                        @Cached BranchProfile byteArrayStart) {
+                        @Cached ConditionProfile hasStart) {
             if (PGuards.isString(start)) {
-                stringStart.enter();
                 throw raise(TypeError, ErrorMessages.CANT_SUM_STRINGS);
             } else if (start instanceof PBytes) {
-                bytesStart.enter();
                 throw raise(TypeError, ErrorMessages.CANT_SUM_BYTES);
             } else if (start instanceof PByteArray) {
-                byteArrayStart.enter();
                 throw raise(TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
             }
             Object iterator = getIter.execute(frame, arg1);

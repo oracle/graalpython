@@ -201,7 +201,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     return compiledRegex;
                 }
             } catch (RuntimeException e) {
-                return handleError(e, syntaxError, potentialSyntaxError, exceptionLib, switchEncodingNode);
+                    return handleError(e, syntaxError, potentialSyntaxError, exceptionLib, switchEncodingNode);
             }
         }
 

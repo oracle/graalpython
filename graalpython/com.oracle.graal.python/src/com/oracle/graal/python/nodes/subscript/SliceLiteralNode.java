@@ -336,13 +336,11 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization(guards = "!isPNone(i)")
         protected Object doGeneric(Object i,
-                        @Cached BranchProfile exceptionProfile,
                         @Cached PRaiseNode raise,
                         @Cached CastToJavaBigIntegerNode cast) {
             try {
                 return cast.execute(i);
             } catch (PException e) {
-                exceptionProfile.enter();
                 throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
             }
         }
@@ -386,14 +384,12 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization(guards = "!isPNone(i)")
         protected Object doGeneric(Object i,
-                        @Cached BranchProfile exceptionProfile,
                         @Cached PRaiseNode raise,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             if (indexCheckNode.execute(i)) {
                 return asSizeNode.executeLossy(null, i);
             }
-            exceptionProfile.enter();
             throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
 
         }

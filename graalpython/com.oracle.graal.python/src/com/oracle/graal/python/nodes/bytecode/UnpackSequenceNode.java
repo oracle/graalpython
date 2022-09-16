@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class UnpackSequenceNode extends PNodeWithContext {
@@ -77,7 +76,6 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                    @Cached BranchProfile errorProfile,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
@@ -89,7 +87,6 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
                 frame.setObject(stackTop--, getItemNode.execute(storage, i));
             }
         } else {
-            errorProfile.enter();
             if (len < count) {
                 throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, count, len);
             } else {
