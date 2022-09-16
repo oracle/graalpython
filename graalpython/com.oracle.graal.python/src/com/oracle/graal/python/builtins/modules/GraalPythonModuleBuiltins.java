@@ -104,7 +104,6 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -472,9 +471,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
             RootNode rootNode = CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
-            if (rootNode instanceof FunctionRootNode) {
-                ((FunctionRootNode) rootNode).setPythonInternal(true);
-            } else if (rootNode instanceof PBytecodeRootNode) {
+            if (rootNode instanceof PBytecodeRootNode) {
                 ((PBytecodeRootNode) rootNode).setPythonInternal(true);
             }
             func.setBuiltin(true);
@@ -489,9 +486,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         public Object doIt(PFunction func,
                         @Cached CodeNodes.GetCodeRootNode getRootNode) {
             RootNode rootNode = getRootNode.execute(func.getCode());
-            if (rootNode instanceof FunctionRootNode) {
-                ((FunctionRootNode) rootNode).setPythonInternal(true);
-            } else if (rootNode instanceof PBytecodeRootNode) {
+            if (rootNode instanceof PBytecodeRootNode) {
                 ((PBytecodeRootNode) rootNode).setPythonInternal(true);
             }
             return func;

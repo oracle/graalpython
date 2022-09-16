@@ -68,7 +68,6 @@ import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -241,8 +240,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
-    private final RootNodeFactory nodeFactory;
-
     /**
      * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
      * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
@@ -311,14 +308,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         return -1;
-    }
-
-    public PythonLanguage() {
-        this.nodeFactory = RootNodeFactory.create(this);
-    }
-
-    public RootNodeFactory getNodeFactory() {
-        return nodeFactory;
     }
 
     /**

@@ -79,11 +79,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SortNodes.SortSequenceStorageNode;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
@@ -100,7 +98,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -109,11 +106,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -121,7 +116,6 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -133,9 +127,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
@@ -252,55 +244,10 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class)
-        static PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
-                        @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Cached("createClassProfile()") ValueProfile elementProfile,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) throws UnexpectedResultException {
-            clearStorage(list);
-            Object iterObj = getIter.execute(frame, iterable);
-            SequenceStorage storage = EmptySequenceStorage.INSTANCE;
-
-            PIntRangeIterator range = (PIntRangeIterator) iterable.getIterator();
-            final int estimatedMaxLen = range.getRemainingLength();
-            int realLen = 0;
-            if (estimatedMaxLen > 0) {
-                Object value = null;
-                try {
-                    value = elementProfile.profile(getNextNode.execute(frame, iterObj));
-                    realLen++;
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                }
-                if (value != null) {
-                    storage = SequenceStorageFactory.createStorage(value, estimatedMaxLen);
-                    storage = appendNode.execute(storage, value, ListGeneralizationNode.SUPPLIER);
-                    while (true) {
-                        try {
-                            storage = appendNode.execute(storage, getNextNode.execute(frame, iterObj), ListGeneralizationNode.SUPPLIER);
-                            realLen++;
-                        } catch (PException e) {
-                            e.expectStopIteration(errorProfile);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            list.setSequenceStorage(storage);
-            if (realLen == estimatedMaxLen) {
-                return PNone.NONE;
-            } else {
-                throw new UnexpectedResultException(PNone.NONE);
-            }
-        }
-
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         static PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Cached IteratorNodes.GetLength lenNode,
-                        @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @Cached PyObjectGetIter getIter,
                         @Cached CreateStorageFromIteratorNode storageNode) {
             clearStorage(list);
             int len = lenNode.execute(frame, iterable);

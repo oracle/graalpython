@@ -40,20 +40,13 @@
  */
 package com.oracle.graal.python.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
-
 public final class GeneratorInfo {
-    private final AbstractYieldNode[] yieldNodes;
     private final int numOfActiveFlags;
     private final int numOfBlockNodes;
     private final int numOfIteratorSlots;
     private final int numOfExceptionSlots;
 
     public static class Mutable {
-        private final List<AbstractYieldNode> yieldNodes = new ArrayList<>();
         private int numOfActiveFlags;
         private int numOfBlockNodes;
         private int numOfIteratorSlots;
@@ -61,10 +54,6 @@ public final class GeneratorInfo {
 
         public GeneratorInfo getImmutable() {
             return new GeneratorInfo(this);
-        }
-
-        public List<AbstractYieldNode> getYieldNodes() {
-            return yieldNodes;
         }
 
         public int getNumOfActiveFlags() {
@@ -105,15 +94,10 @@ public final class GeneratorInfo {
     }
 
     public GeneratorInfo(Mutable info) {
-        yieldNodes = info.getYieldNodes().toArray(new AbstractYieldNode[0]);
         numOfActiveFlags = info.getNumOfActiveFlags();
         numOfBlockNodes = info.getNumOfBlockNodes();
         numOfIteratorSlots = info.getNumOfIteratorSlots();
         numOfExceptionSlots = info.getNumOfExceptionSlots();
-    }
-
-    public AbstractYieldNode[] getYieldNodes() {
-        return yieldNodes;
     }
 
     public int getNumOfActiveFlags() {

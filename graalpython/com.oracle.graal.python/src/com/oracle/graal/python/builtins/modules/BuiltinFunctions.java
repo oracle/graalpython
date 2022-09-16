@@ -176,7 +176,6 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -705,14 +704,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         boolean doGeneric(Object object,
                         @Cached PyCallableCheckNode callableCheck) {
-            /*
-             * Added temporarily to skip translation/execution errors in unit testing
-             */
-
-            if (GraalPythonTranslationErrorNode.T_MESSAGE.equals(object)) {
-                return true;
-            }
-
             return callableCheck.execute(object);
         }
     }

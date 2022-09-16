@@ -47,7 +47,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 
-import com.oracle.graal.python.parser.sst.StringUtils;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 
 public class PythonUnicodeEscapeCharsetDecoder extends CharsetDecoder {
     // Decoding octals is annoying, because they are variable length and we don't

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.code;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
@@ -51,7 +52,6 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -61,24 +61,11 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
-import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
-import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
-import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.GlobalNode;
 import com.oracle.graal.python.nodes.frame.PythonFrame;
-import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
-import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
-import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -98,9 +85,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
@@ -112,6 +96,7 @@ public final class PCode extends PythonBuiltinObject {
     public static final int CO_VARKEYWORDS = 0x8;
     public static final int CO_GENERATOR = 0x20;
     /* GraalPy-specific, used to be CO_NOFREE in CPython */
+    // TODO is it still needed?
     public static final int CO_GRAALPYHON_MODULE = 0x40;
     public static final int CO_COROUTINE = 0x80;
     public static final int CO_ITERABLE_COROUTINE = 0x100;
@@ -206,9 +191,7 @@ public final class PCode extends PythonBuiltinObject {
 
     private static TruffleString[] extractFreeVars(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PClosureRootNode) {
-            return ((PClosureRootNode) funcRootNode).getFreeVars();
-        } else if (funcRootNode instanceof PBytecodeRootNode) {
+        if (funcRootNode instanceof PBytecodeRootNode) {
             return ((PBytecodeRootNode) funcRootNode).getCodeUnit().freevars;
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -217,9 +200,7 @@ public final class PCode extends PythonBuiltinObject {
 
     private static TruffleString[] extractCellVars(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PClosureFunctionRootNode) {
-            return ((PClosureFunctionRootNode) funcRootNode).getCellVars();
-        } else if (funcRootNode instanceof PBytecodeRootNode) {
+        if (funcRootNode instanceof PBytecodeRootNode) {
             return ((PBytecodeRootNode) funcRootNode).getCodeUnit().cellvars;
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -362,84 +343,11 @@ public final class PCode extends PythonBuiltinObject {
             }
             constants.addAll(bytecodeConstants);
             return constants.toArray(new Object[0]);
-        } else {
-            ConstantsVisitor visitor = new ConstantsVisitor();
-            return visitor.findConstants(rootNode);
         }
-    }
-
-    private static class ConstantsVisitor implements NodeVisitor {
-        HashSet<Object> constants;
-
-        Object[] findConstants(Node node) {
-            constants = new HashSet<>();
-
-            this.visit(node);
-            return constants.toArray();
-        }
-
-        @Override
-        public boolean visit(Node node) {
-            if (node instanceof FunctionRootNode) {
-                ExpressionNode doc = ((FunctionRootNode) node).getDoc();
-                if (doc != null) {
-                    doc.accept(this);
-                }
-            } else if (node instanceof SimpleLiteralNode) {
-                constants.add(((SimpleLiteralNode) node).getValue());
-            } else if (node instanceof TupleLiteralNode) {
-                List<Object> tlConstants = new ArrayList<>();
-                node.accept(new NodeVisitor() {
-                    @Override
-                    public boolean visit(Node aNode) {
-                        if (aNode instanceof SimpleLiteralNode) {
-                            tlConstants.add(((SimpleLiteralNode) aNode).getValue());
-                        }
-                        return true;
-                    }
-                });
-                if (!tlConstants.isEmpty()) {
-                    constants.add(PythonObjectFactory.getUncached().createTuple(tlConstants.toArray()));
-                }
-                return false;
-            } else if (node instanceof FunctionDefinitionNode) {
-                FunctionDefinitionNode fdNode = (FunctionDefinitionNode) node;
-                constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.get(node)), fdNode.getCallTarget()));
-                constants.add(fdNode.getQualname());
-                return true;
-            } else if (node instanceof GeneratorExpressionNode) {
-                // TODO: we do it this way here since we cannot deserialize generator
-                // expressions right now
-                constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
-            }
-            NodeUtil.forEachChild(node, this);
-            return true;
-        }
-
-    }
-
-    @TruffleBoundary
-    private static Object[] extractNames(RootNode rootNode) {
-        List<Object> names = new ArrayList<>();
-        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
-            public boolean visit(Node node) {
-                if (node instanceof GlobalNode) {
-                    names.add(((GlobalNode) node).getAttributeId());
-                } else if (node instanceof GeneratorExpressionNode) {
-                    // TODO: since we do *not* add GeneratorExpressionNodes in #extractConstants, we
-                    // need to find the names referenced in them here
-                    names.addAll(Arrays.asList(extractNames(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
-                }
-                return true;
-            }
-        });
-        return names.toArray();
+        return EMPTY_OBJECT_ARRAY;
     }
 
     private static RootNode rootNodeForExtraction(RootNode rootNode) {
-        if (rootNode instanceof GeneratorFunctionRootNode) {
-            return ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
-        }
         if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
             return ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
         }
@@ -452,32 +360,13 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFlags(RootNode rootNode) {
         int flags = 0;
-        RootNode funcRootNode = rootNode;
-        if (funcRootNode instanceof ModuleRootNode) {
-            // Not on CPython
-            flags |= CO_GRAALPYHON_MODULE;
-        }
-        if (funcRootNode instanceof PBytecodeRootNode) {
-            CodeUnit codeUnit = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+        if (rootNode instanceof PBytecodeRootNode) {
+            CodeUnit codeUnit = ((PBytecodeRootNode) rootNode).getCodeUnit();
             flags = getFlags(flags, codeUnit);
         }
-        if (funcRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
-            CodeUnit codeUnit = ((PBytecodeGeneratorFunctionRootNode) funcRootNode).getBytecodeRootNode().getCodeUnit();
+        if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+            CodeUnit codeUnit = ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode().getCodeUnit();
             flags = getFlags(flags, codeUnit);
-        } else {
-            // 0x20 - generator
-            if (funcRootNode instanceof GeneratorFunctionRootNode) {
-                flags |= CO_GENERATOR;
-                funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
-            }
-            // 0x04 - *arguments
-            if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarArgsNode.class) != null) {
-                flags |= CO_VARARGS;
-            }
-            // 0x08 - **keywords
-            if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
-                flags |= CO_VARKEYWORDS;
-            }
         }
         return flags;
     }
@@ -519,16 +408,6 @@ public final class PCode extends PythonBuiltinObject {
             for (int i = 0; i < co.constants.length; i++) {
                 if (co.constants[i] instanceof CodeUnit) {
                     context.setCodeUnitFilename((CodeUnit) co.constants[i], filename);
-                }
-            }
-        } else {
-            constants = extractConstants(rootNode);
-            for (int i = 0; i < constants.length; i++) {
-                if (constants[i] instanceof PCode) {
-                    ((PCode) constants[i]).setFilename(filename);
-                } else if (constants[i] instanceof CodeUnit) {
-                    CodeUnit co = (CodeUnit) constants[i];
-                    PythonContext.get(rootNode).setCodeUnitFilename(co, filename);
                 }
             }
         }
@@ -653,9 +532,6 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Object[] getNames() {
-        if (names == null) {
-            names = extractNames(getRootNode());
-        }
         return names;
     }
 

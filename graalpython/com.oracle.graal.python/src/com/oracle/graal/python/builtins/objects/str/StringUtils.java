@@ -66,6 +66,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendCodePointNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendLongNumberNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
+import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
 public final class StringUtils {
 
@@ -595,5 +596,23 @@ public final class StringUtils {
     @TruffleBoundary
     public static TruffleString simpleTruffleStringFormatUncached(String format, Object... args) {
         return SimpleTruffleStringFormatNode.getUncached().format(format, args);
+    }
+
+    @TruffleBoundary
+    public static int getCodePoint(String characterName) {
+        // CPython's logic for resolving these character names goes like this:
+        // 1) handle Hangul Syllables in region AC00-D7A3
+        // 2) handle CJK Ideographs
+        // 3) handle character names as given in UnicodeData.txt
+        // 4) handle all aliases as given in NameAliases.txt
+        // With ICU's UCharacter, we get cases 1), 2) and 3). As for 4), the aliases, ICU only
+        // handles aliases of type 'correction'. Therefore, we extract the contents of
+        // NameAliases.txt and handle aliases by ourselves.
+        String normalizedName = characterName.trim().toUpperCase(Locale.ROOT);
+        if (UnicodeCharacterAliases.CHARACTER_ALIASES.containsKey(normalizedName)) {
+            return UnicodeCharacterAliases.CHARACTER_ALIASES.get(normalizedName);
+        } else {
+            return UCharacter.getCharFromName(characterName);
+        }
     }
 }

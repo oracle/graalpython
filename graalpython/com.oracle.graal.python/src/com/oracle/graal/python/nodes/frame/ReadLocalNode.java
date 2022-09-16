@@ -40,11 +40,5 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
-
 public interface ReadLocalNode extends ReadNode {
-    default StatementNode makeDeleteNode() {
-        return makeWriteNode(new ObjectLiteralNode(null));
-    }
 }

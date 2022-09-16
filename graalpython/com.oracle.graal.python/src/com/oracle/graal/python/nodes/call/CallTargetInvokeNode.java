@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -83,7 +83,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     public static CallTargetInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        boolean isGenerator = callTarget.getRootNode() instanceof GeneratorFunctionRootNode;
+        boolean isGenerator = callTarget.getRootNode() instanceof PBytecodeGeneratorFunctionRootNode;
         return CallTargetInvokeNodeGen.create(callTarget, builtin, isGenerator);
     }
 

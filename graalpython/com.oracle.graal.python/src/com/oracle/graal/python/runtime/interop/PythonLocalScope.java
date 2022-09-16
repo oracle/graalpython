@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
-import static com.oracle.graal.python.nodes.PNodeUtil.getRootSourceSection;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -78,7 +76,7 @@ public final class PythonLocalScope implements TruffleObject {
         assert root != null;
         this.slots = slotsMap;
         this.root = root;
-        this.sourceSection = getRootSourceSection(root);
+        this.sourceSection = root.getSourceSection();
         this.frame = frame;
     }
 

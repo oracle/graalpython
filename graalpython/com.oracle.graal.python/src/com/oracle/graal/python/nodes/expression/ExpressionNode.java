@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
@@ -51,7 +50,6 @@ import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -126,37 +124,6 @@ public abstract class ExpressionNode extends PNode {
         return parent instanceof ExpressionWithSideEffect || parent instanceof ExpressionWithSideEffects;
     }
 
-    public static final class ExpressionStatementNode extends StatementNode {
-        @Child private ExpressionNode node;
-
-        private ExpressionStatementNode(ExpressionNode node) {
-            this.node = node;
-            this.assignSourceSection(node.getSourceSection());
-        }
-
-        @Override
-        public void executeVoid(VirtualFrame frame) {
-            node.execute(frame);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
-
-        public ExpressionNode getExpression() {
-            return node;
-        }
-    }
-
-    /**
-     * If expressions appear in a block of statements, they are wrapped in a {@link StatementNode}
-     * that simply drops the result.
-     */
-    public final StatementNode asStatement() {
-        return new ExpressionStatementNode(this);
-    }
-
     public static final class ExpressionWithSideEffect extends ExpressionNode {
         @Child private StatementNode sideEffect;
         @Child private ExpressionNode node;
@@ -218,22 +185,6 @@ public abstract class ExpressionNode extends PNode {
         public StatementNode[] getSideEffects() {
             return this.sideEffects;
         }
-    }
-
-    /**
-     * Some expressions can have hidden side-effects such as writing to a temporary variable. These
-     * can be wrapped together with their side effecting {@link StatementNode}.
-     */
-    public final ExpressionNode withSideEffect(StatementNode sideEffect) {
-        if (sideEffect instanceof BlockNode) {
-            return new ExpressionWithSideEffects(this, ((BlockNode) sideEffect).getStatements());
-        } else {
-            return new ExpressionWithSideEffect(this, sideEffect);
-        }
-    }
-
-    public final ExpressionNode withSideEffect(StatementNode[] sideEffects) {
-        return new ExpressionWithSideEffects(this, sideEffects);
     }
 
     public static ExpressionNode createComparisonOperation(TruffleString operator, ExpressionNode left, ExpressionNode right) {

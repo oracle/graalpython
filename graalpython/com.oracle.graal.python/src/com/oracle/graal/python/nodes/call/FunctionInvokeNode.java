@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -118,7 +118,7 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     public static FunctionInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return FunctionInvokeNodeGen.create(callee, callTarget, callee.getGlobals(), callee.getClosure(), builtin, callTarget.getRootNode() instanceof GeneratorFunctionRootNode);
+        return FunctionInvokeNodeGen.create(callee, callTarget, callee.getGlobals(), callee.getClosure(), builtin, callTarget.getRootNode() instanceof PBytecodeGeneratorFunctionRootNode);
     }
 
     @TruffleBoundary
