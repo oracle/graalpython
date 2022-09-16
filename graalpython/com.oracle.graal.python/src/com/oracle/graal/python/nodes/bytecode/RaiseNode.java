@@ -23,7 +23,7 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.nodes.statement;
+package com.oracle.graal.python.nodes.bytecode;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -35,16 +35,16 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.exception.ValidExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -54,16 +54,10 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@NodeChild(value = "type", type = ExpressionNode.class)
-@NodeChild(value = "cause", type = ExpressionNode.class)
-public abstract class RaiseNode extends StatementNode {
+public abstract class RaiseNode extends PNodeWithContext {
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
     public abstract void execute(VirtualFrame frame, Object typeOrExceptionObject, Object cause);
-
-    public final void execute(Object typeOrExceptionObject, Object cause) {
-        execute(null, typeOrExceptionObject, cause);
-    }
 
     @ImportStatic(PGuards.class)
     public abstract static class SetExceptionCauseNode extends Node {
@@ -216,8 +210,8 @@ public abstract class RaiseNode extends StatementNode {
         throw raise.raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
     }
 
-    public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {
-        return RaiseNodeGen.create(type, cause);
+    public static RaiseNode create() {
+        return RaiseNodeGen.create();
     }
 
     protected static boolean isBaseExceptionOrPythonClass(Object object) {

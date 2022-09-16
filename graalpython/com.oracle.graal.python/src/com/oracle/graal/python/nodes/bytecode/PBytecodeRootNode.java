@@ -159,6 +159,8 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNodeGen;
+import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
+import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
@@ -182,11 +184,7 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
-import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.statement.ImportStarNode;
-import com.oracle.graal.python.nodes.statement.RaiseNode;
-import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -248,7 +246,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @SuppressWarnings("static-method")
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
-    private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create(null, null);
+    private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create();
     private static final NodeSupplier<DeleteItemNode> NODE_DELETE_ITEM = DeleteItemNode::create;
     private static final NodeSupplier<PyObjectDelItem> NODE_OBJECT_DEL_ITEM = PyObjectDelItem::create;
     private static final PyObjectDelItem UNCACHED_OBJECT_DEL_ITEM = PyObjectDelItem.getUncached();
