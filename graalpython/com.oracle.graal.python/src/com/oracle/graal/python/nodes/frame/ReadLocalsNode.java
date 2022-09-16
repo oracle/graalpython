@@ -40,15 +40,12 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -58,22 +55,15 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * <emph>not</emph> let the frame escape.
  **/
 public abstract class ReadLocalsNode extends Node {
-    public abstract Object execute(VirtualFrame callingFrame, PFrame frame);
+    public abstract Object execute(PFrame frame);
 
     protected static boolean isGeneratorFrame(PFrame frame) {
         return PArguments.isGeneratorFrame(frame.getArguments());
     }
 
-    protected static PFrame getPFrame(Frame frame) {
-        Reference frameInfo = PArguments.getCurrentFrameInfo(frame);
-        return frameInfo != null ? frameInfo.getPyFrame() : null;
-    }
-
     @Specialization(guards = {"isGeneratorFrame(frame)"})
-    static Object doGeneratorFrame(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame) {
-        PDict localsDict = PArguments.getGeneratorFrameLocals(frame.getArguments());
-        assert localsDict != null : "generator locals dict was not eagerly created";
-        return localsDict;
+    static Object doGeneratorFrame(PFrame frame) {
+        return PArguments.getGeneratorFrameLocals(frame.getArguments());
     }
 
     @Specialization(guards = {"!isGeneratorFrame(frame)"})

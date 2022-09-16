@@ -847,8 +847,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setGlobals(args, callerFrame.getGlobals());
         }
 
-        private static void inheritLocals(VirtualFrame frame, PFrame callerFrame, Object[] args, ReadLocalsNode getLocalsNode) {
-            Object callerLocals = getLocalsNode.execute(frame, callerFrame);
+        private static void inheritLocals(PFrame callerFrame, Object[] args, ReadLocalsNode getLocalsNode) {
+            Object callerLocals = getLocalsNode.execute(callerFrame);
             setCustomLocals(args, callerLocals);
         }
 
@@ -882,7 +882,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
-            inheritLocals(frame, callerFrame, args, getLocalsNode);
+            inheritLocals(callerFrame, args, getLocalsNode);
 
             return invokeNode.execute(frame, getCt.execute(code), args);
         }
@@ -2276,9 +2276,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame.getArguments());
             if (inGenerator.profile(generatorFrame == null)) {
-                return readLocalsNode.execute(frame, callerFrame);
+                return readLocalsNode.execute(callerFrame);
             } else {
-                return readLocalsNode.execute(frame, materializeNode.execute(frame, n, false, false, generatorFrame));
+                return readLocalsNode.execute(materializeNode.execute(frame, n, false, false, generatorFrame));
             }
         }
 

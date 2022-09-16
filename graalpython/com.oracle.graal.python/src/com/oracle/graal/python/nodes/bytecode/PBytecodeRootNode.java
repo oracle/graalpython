@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -194,7 +193,6 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
-import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -465,12 +463,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw CompilerDirectives.shouldNotReachHere();
         }
     };
-
-    /*
-     * Create fake GeneratorControlData just to maintain the same generator frame layout as AST
-     * interpreter. TODO remove
-     */
-    public static final GeneratorControlData GENERATOR_CONTROL_DATA = new GeneratorControlData(new GeneratorInfo(new GeneratorInfo.Mutable()));
 
     private final Signature signature;
     private final TruffleString name;
@@ -1018,7 +1010,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // it, otherwise they stay at the initial value, which we must set to null here
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
-        PArguments.setControlData(arguments, GENERATOR_CONTROL_DATA);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         copyArgsAndCells(generatorFrame, arguments);
     }
