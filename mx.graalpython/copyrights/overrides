@@ -307,7 +307,6 @@ graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/dataty
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/datatype/TupleTest.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/generator/BuiltinIntrinsificationTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/generator/GeneratorExpressionTests.java,zippy.copyright
-graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/generator/GeneratorExpressionTranslationTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/generator/GeneratorTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/grammar/ArgumentsTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/grammar/AugAssignmentTests.java,zippy.copyright
@@ -609,12 +608,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/CellFrame
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/CellSlots.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/DefinitionCellSlots.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ExecutionCellSlots.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/LoopInfo.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/LoopsBookKeeper.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/PythonParserImpl.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeInfo.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Lexer.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonParser.java,zippy.copyright

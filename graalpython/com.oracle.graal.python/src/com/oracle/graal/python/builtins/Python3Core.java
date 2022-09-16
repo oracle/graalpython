@@ -352,7 +352,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNo
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -772,7 +771,6 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PInt pyFalse;
     @CompilationFinal private PFloat pyNaN;
 
-    private final PythonParser parser;
     private final SysModuleState sysModuleState = new SysModuleState();
 
     @CompilationFinal private Object globalScopeObject;
@@ -786,9 +784,8 @@ public abstract class Python3Core extends ParserErrorCallback {
     private final PythonLanguage language;
     @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonLanguage language, PythonParser parser, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed) {
         this.language = language;
-        this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
@@ -837,14 +834,6 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     public final PythonLanguage getLanguage() {
         return language;
-    }
-
-    public final PythonParser getParser() {
-        return parser;
-    }
-
-    public final PythonCodeSerializer getSerializer() {
-        return (PythonCodeSerializer) parser;
     }
 
     /**

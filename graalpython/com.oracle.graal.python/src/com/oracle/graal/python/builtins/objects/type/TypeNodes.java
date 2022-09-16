@@ -177,7 +177,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -187,7 +186,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -2015,15 +2013,17 @@ public abstract class TypeNodes {
                     } else {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
+                        TruffleString mangledName;
                         try {
-                            TruffleString mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
+                            mangledName = PythonUtils.mangleName(name, slotName);
 
-                            HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
-                            HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
-                            pythonClass.setAttribute(mangledName, slotDesc);
-                        } catch (OverflowException e) {
+                        } catch (OutOfMemoryError e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
                             throw raise.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                         }
+                        HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
+                        HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
+                        pythonClass.setAttribute(mangledName, slotDesc);
                     }
                     // Make slots into a tuple
                 }
@@ -2341,8 +2341,8 @@ public abstract class TypeNodes {
                 }
 
                 try {
-                    slotName = PythonSSTNodeFactory.mangleName(className, slotName);
-                } catch (OverflowException e) {
+                    slotName = PythonUtils.mangleName(className, slotName);
+                } catch (OutOfMemoryError e) {
                     throw raise.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                 }
                 if (slotName == null) {

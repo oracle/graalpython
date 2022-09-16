@@ -221,34 +221,6 @@ suite = {
     },
 
     "projects": {
-        # GRAALPYTHON ANTLR
-        "com.oracle.graal.python.parser.antlr": {
-            "subDir": "graalpython",
-            "buildEnv": {
-                "ANTLR_JAR": "<path:truffle:ANTLR4_COMPLETE>",
-                "PARSER_PATH": "<src_dir:com.oracle.graal.python>/com/oracle/graal/python/parser/antlr",
-                "PARSER_PKG": "com.oracle.graal.python.parser.antlr",
-                "POSTPROCESSOR": "<suite:graalpython>/graalpython/com.oracle.graal.python.parser.antlr/postprocess.py",
-            },
-            "dependencies": [
-                "truffle:ANTLR4_COMPLETE",
-            ],
-            "jacoco": "include",
-            "native": True,
-            "vpath": False,
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "defaultBuild" : False,
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                    },
-                },
-            },
-        },
-
         "com.oracle.graal.python.pegparser": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -380,7 +352,6 @@ suite = {
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
-                "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
                 "truffle:ICU4J",
@@ -404,17 +375,6 @@ suite = {
             ],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
-                    },
-                },
-            },
         },
 
         # GRAALPYTHON TEST
@@ -666,7 +626,6 @@ suite = {
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "XZ-1.8",
-                "truffle:ANTLR4",
                 "truffle:ICU4J",
                 # TODO this fails native image build for some reason
                 # "truffle:ICU4J-CHARSET",

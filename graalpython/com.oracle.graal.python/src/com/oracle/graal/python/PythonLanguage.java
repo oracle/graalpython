@@ -75,7 +75,6 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
-import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.Parser;
@@ -359,7 +358,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        final PythonContext context = new PythonContext(this, env, new PythonParserImpl(env));
+        final PythonContext context = new PythonContext(this, env);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;

@@ -181,7 +181,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -1177,8 +1176,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             RootNode rootNode = rootCallTarget.getRootNode();
             if (rootNode instanceof PBytecodeRootNode) {
                 ((PBytecodeRootNode) rootNode).triggerDeferredDeprecationWarnings();
-            } else if (rootNode instanceof PRootNode) {
-                ((PRootNode) rootNode).triggerDeprecationWarnings();
             }
             return factory().createCode(rootCallTarget);
         }

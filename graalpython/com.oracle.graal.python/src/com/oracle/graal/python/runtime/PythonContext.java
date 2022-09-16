@@ -1043,8 +1043,8 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonParser parser) {
-        super(language, parser, env.isNativeAccessAllowed());
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env) {
+        super(language, env.isNativeAccessAllowed());
         this.env = env;
         this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);

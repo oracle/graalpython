@@ -300,14 +300,6 @@ JAVA_EMBEDDING_MESO_BENCHMARKS_SMALL = {
 _PARSER_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.parser.'
 PATH_RUNTIME_FILES_PARSER_TESTS = os.path.join(_graalpython_suite.dir, 'graalpython', 'com.oracle.graal.python.test', 'testData', 'testFiles', 'RuntimeFileTests')
 PATH_PYTHON_LIB = os.path.join(_graalpython_suite.dir, 'graalpython', 'lib-python', '3')
-PARSER_JAVA_BENCHMARKS = {
-    'whole-parsing-test-files': [_PARSER_JAVA_PACKAGE + 'ParsingAndTranslating'] + ITER_10 + ['-n', '10'] + [PATH_RUNTIME_FILES_PARSER_TESTS],
-    'whole-parsing-lib-files': [_PARSER_JAVA_PACKAGE + 'ParsingAndTranslating'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
-    'antlr-parsing-lib-files': [_PARSER_JAVA_PACKAGE + 'AntlrParsing'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
-    'sst-translating-lib-files': [_PARSER_JAVA_PACKAGE + 'SSTTranslating'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
-    'serializing-lib-files': [_PARSER_JAVA_PACKAGE + 'Serializing'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
-    'deserializing-lib-files': [_PARSER_JAVA_PACKAGE + 'Deserializing'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
-}
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -335,8 +327,4 @@ WARMUP_BENCHMARKS = {
 
 JBENCHMARKS = {
     "pyjava": [INTEROP_JAVA_BENCHMARKS],
-}
-
-PARSER_BENCHMARKS = {
-    "python-parser" : [PARSER_JAVA_BENCHMARKS],
 }
