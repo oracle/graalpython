@@ -66,9 +66,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -145,17 +145,17 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static ModTy obj2sst(PythonContext context, Object obj, ParserMode mode) {
+    public static ModTy obj2sst(PythonContext context, Object obj, InputType type) {
         AstState state = getAstState(context);
         PythonClass expectedClass;
-        switch (mode) {
-            case File:
+        switch (type) {
+            case FILE:
                 expectedClass = state.clsModule;
                 break;
-            case Eval:
+            case EVAL:
                 expectedClass = state.clsExpression;
                 break;
-            case Statement:
+            case SINGLE:
                 expectedClass = state.clsInteractive;
                 break;
             default:

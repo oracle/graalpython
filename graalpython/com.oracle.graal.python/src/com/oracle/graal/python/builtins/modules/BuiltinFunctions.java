@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
+import static com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback.raiseSyntaxError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ALL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ANY;
@@ -111,11 +112,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
@@ -133,8 +134,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -230,13 +231,14 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.AbstractParser;
+import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1051,9 +1053,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             TruffleString code = expression;
             PythonContext context = getContext();
-            ParserMode pm = getParserMode(mode, flags);
-            if (pm == ParserMode.File) {
-            } else if (pm == ParserMode.FuncType) {
+            InputType type = getParserInputType(mode, flags);
+            if (type == InputType.FUNCTION_TYPE) {
                 if ((flags & PyCF_ONLY_AST) == 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
                 }
@@ -1065,23 +1066,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             if ((flags & PyCF_ONLY_AST) != 0) {
-                InputType type;
-                switch (pm) {
-                    case File:
-                        type = InputType.FILE;
-                        break;
-                    case Eval:
-                        type = InputType.EVAL;
-                        break;
-                    case Statement:
-                        type = InputType.SINGLE;
-                        break;
-                    case FuncType:
-                        type = InputType.FUNCTION_TYPE;
-                        break;
-                    default:
-                        throw CompilerDirectives.shouldNotReachHere();
-                }
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                 RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
 
@@ -1103,10 +1087,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             CallTarget ct;
             TruffleString finalCode = code;
             Supplier<CallTarget> createCode = () -> {
-                if (pm == ParserMode.File) {
+                if (type == InputType.FILE) {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(optimize));
                     return context.getEnv().parsePublic(source);
-                } else if (pm == ParserMode.Eval) {
+                } else if (type == InputType.EVAL) {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(optimize));
                     return context.getEnv().parsePublic(source);
                 } else {
@@ -1153,7 +1137,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 filename = asPath.execute(frame, wFilename);
             }
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
-                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserMode(mode, flags));
+                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserInputType(mode, flags));
                 Source source = PythonUtils.createFakeSource(filename);
                 RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null);
                 return wrapRootCallTarget(rootCallTarget);
@@ -1189,15 +1173,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        private ParserMode getParserMode(TruffleString mode, int flags) {
+        private InputType getParserInputType(TruffleString mode, int flags) {
             if (mode.equalsUncached(T_EXEC, TS_ENCODING)) {
-                return ParserMode.File;
+                return InputType.FILE;
             } else if (mode.equalsUncached(T_EVAL, TS_ENCODING)) {
-                return ParserMode.Eval;
+                return InputType.EVAL;
             } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
-                return ParserMode.Statement;
+                return InputType.SINGLE;
             } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
-                return ParserMode.FuncType;
+                return InputType.FUNCTION_TYPE;
             } else {
                 if ((flags & PyCF_ONLY_AST) != 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE_AST_ONLY);
@@ -1236,12 +1220,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             handleDecodingErrorNode.execute(decoder, T_STRICT, source);
                             throw CompilerDirectives.shouldNotReachHere();
                         } catch (PException e) {
-                            throw raiseInvalidSyntax(filename, ErrorMessages.UNICODE_ERROR, asStrNode.execute(frame, e.getEscapedException()));
+                            throw raiseInvalidSyntax(filename, "(unicode error) %s", asStrNode.execute(frame, e.getEscapedException()));
                         }
                     }
                     return decoder.getString();
                 } catch (PythonFileDetector.InvalidEncodingException e) {
-                    throw raiseInvalidSyntax(filename, ErrorMessages.ENCODING_PROBLEM, e.getEncodingName());
+                    throw raiseInvalidSyntax(filename, "(unicode error) %s", e.getEncodingName());
                 } finally {
                     bufferLib.release(buffer, frame, this);
                 }
@@ -1249,11 +1233,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private RuntimeException raiseInvalidSyntax(TruffleString filename, TruffleString format, Object... args) {
+        private RuntimeException raiseInvalidSyntax(TruffleString filename, String format, Object... args) {
             PythonContext context = getContext();
             // Create non-empty source to avoid overwriting the message with "unexpected EOF"
             Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, null);
-            throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), format, args);
+            SourceRange sourceRange = new SourceRange(1, 0, 1, 0);
+            TruffleString message = toTruffleStringUncached(String.format(format, args));
+            throw raiseSyntaxError(ErrorCallback.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
         }
 
         public static CompileNode create(boolean mapFilenameToUri) {
