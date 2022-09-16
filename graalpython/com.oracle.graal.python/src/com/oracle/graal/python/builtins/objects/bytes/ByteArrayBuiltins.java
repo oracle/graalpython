@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -87,7 +88,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -210,9 +210,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
-                        @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
-                        @Cached SliceLiteralNode.SliceUnpack unpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.CoerceToIntSlice sliceCast,
+                        @Cached SliceNodes.SliceUnpack unpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             SequenceStorage storage = self.getSequenceStorage();
             int otherLen = getSequenceStorageNode.execute(value).length();
             SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
@@ -231,9 +231,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
-                        @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
-                        @Cached SliceLiteralNode.SliceUnpack unpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.CoerceToIntSlice sliceCast,
+                        @Cached SliceNodes.SliceUnpack unpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
@@ -249,9 +249,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
-                        @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
-                        @Cached SliceLiteralNode.SliceUnpack unpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached SliceNodes.CoerceToIntSlice sliceCast,
+                        @Cached SliceNodes.SliceUnpack unpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached ListNodes.ConstructListNode constructListNode) {
             PList values = constructListNode.execute(frame, value);
             return doSliceSequence(frame, self, slice, values, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);

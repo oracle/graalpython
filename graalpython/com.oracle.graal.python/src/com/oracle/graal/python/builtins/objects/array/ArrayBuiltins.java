@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -108,7 +109,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -504,8 +504,8 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(PArray self, PSlice slice,
                         @Cached ConditionProfile simpleStepProfile,
-                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.SliceUnpack sliceUnpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
             int itemsize = self.getFormat().bytesize;
             PArray newArray;
@@ -549,8 +549,8 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile differentLengthProfile,
                         @Cached ConditionProfile growProfile,
                         @Cached ConditionProfile stepAssignProfile,
-                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached SliceNodes.SliceUnpack sliceUnpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices,
                         @Cached DelItemNode delItemNode) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
             int start = sliceInfo.start;
@@ -625,8 +625,8 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object delitem(PArray self, PSlice slice,
                         @Cached ConditionProfile simpleStepProfile,
-                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.SliceUnpack sliceUnpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             self.checkCanResize(this);
             int length = self.getLength();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(length, sliceUnpack.execute(slice));

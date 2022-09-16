@@ -73,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes.AdjustIndices;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceUnpack;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -84,9 +86,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.AdjustIndices;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.SliceUnpack;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -235,8 +234,8 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached SliceUnpack sliceUnpack,
+                        @Cached AdjustIndices adjustIndices,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
