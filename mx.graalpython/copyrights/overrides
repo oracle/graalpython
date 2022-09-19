@@ -517,6 +517,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadIndexedArgumentNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarArgsNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/ReadVarKeywordsNode.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/bytecode/ImportStarNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/bytecode/RaiseNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/CallDispatchNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/InvokeNode.java,zippy.copyright
@@ -527,9 +528,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadGlobalOrBuiltinNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/BuiltinFunctionRootNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/PythonBuiltinNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/subscript/DeleteItemNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/subscript/GetItemNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/subscript/SetItemNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/truffle/PythonArithmeticTypes.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/truffle/PythonTypes.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
