@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
@@ -1118,10 +1118,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_FUNC_STRPTIME_TIME = tsLiteral("_strptime_time");
         static final TruffleString T_DEFAULT_FORMAT = tsLiteral("%a %b %d %H:%M:%S %Y");
 
-        static ImportNode.ImportExpression createImportStrptime() {
-            return ImportNode.createAsExpression(T_MOD_STRPTIME);
-        }
-
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StrptimeNodeClinicProviderGen.INSTANCE;
@@ -1129,9 +1125,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object strptime(VirtualFrame frame, TruffleString dataString, TruffleString format,
-                        @Cached("createImportStrptime()") ImportNode.ImportExpression importNode,
+                        @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callNode) {
-            final Object module = importNode.execute(frame);
+            final Object module = importNode.execute(frame, T_MOD_STRPTIME);
             return callNode.execute(frame, module, T_FUNC_STRPTIME_TIME, dataString, format);
         }
     }

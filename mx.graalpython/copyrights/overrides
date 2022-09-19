@@ -527,8 +527,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadGlobalOrBuiltinNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/BuiltinFunctionRootNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/PythonBuiltinNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/ImportNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/statement/ImportStarNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/subscript/DeleteItemNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/subscript/GetItemNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/subscript/SetItemNode.java,zippy.copyright

@@ -184,7 +184,6 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.statement.ImportStarNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
