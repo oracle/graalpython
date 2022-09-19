@@ -17,8 +17,7 @@ if support.PGO:
 
 
 TIMEOUT = 3
-# GR-28433
-HAS_UNIX_SOCKETS = hasattr(socket, 'AF_UNIX') and sys.implementation.name != 'graalpy'
+HAS_UNIX_SOCKETS = hasattr(socket, 'AF_UNIX')
 
 
 class dummysocket:
