@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -72,7 +73,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
@@ -299,24 +299,6 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeEqNode extends PythonBinaryBuiltinNode {
 
-        @TruffleBoundary
-        static Object[] fixStrings(Object[] array) {
-            Object[] result;
-            if (!hasStrings(array)) {
-                result = array;
-            } else {
-                result = new Object[array.length];
-                for (int i = 0; i < array.length; ++i) {
-                    if (array[i] instanceof TruffleString) {
-                        result[i] = ((TruffleString) array[i]).toJavaStringUncached();
-                    } else {
-                        result[i] = array[i];
-                    }
-                }
-            }
-            return result;
-        }
-
         @Specialization
         @TruffleBoundary
         boolean eq(PCode self, PCode other) {
@@ -324,71 +306,28 @@ public class CodeBuiltins extends PythonBuiltins {
                 return true;
             }
             // it's quite difficult for our deserialized code objects to tell if they are the same
-            if (self.getRootNode() != null) {
-                if (other.getRootNode() == null) {
-                    return false;
-                }
+            if (self.getRootNode() != null && other.getRootNode() != null) {
                 if (!self.getName().equalsUncached(other.getName(), TS_ENCODING)) {
                     return false;
                 }
-                if (!self.getFilename().equalsUncached(other.getFilename(), TS_ENCODING)) {
+                if (self.co_argcount() != other.co_argcount() || self.co_posonlyargcount() != other.co_posonlyargcount() || self.co_kwonlyargcount() != other.co_kwonlyargcount() ||
+                                self.co_nlocals() != other.co_nlocals() || self.co_flags() != other.co_flags() || self.co_firstlineno() != other.co_firstlineno()) {
                     return false;
                 }
-                // we cannot really check the "code string" or AST for equality, so we just compare
-                // the source string
-                if (self.getRootNode() != other.getRootNode()) {
-                    SourceSection selfSrcSec = self.getRootNode().getSourceSection();
-                    SourceSection otherSrcSec = other.getRootNode().getSourceSection();
-                    if (selfSrcSec != otherSrcSec) {
-                        if (selfSrcSec != null) {
-                            if (otherSrcSec == null) {
-                                return false;
-                            }
-                            if (!selfSrcSec.getCharacters().equals(otherSrcSec.getCharacters())) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-                // compare names, varnames, freevars, and cellvars, because those are parsing scope
-                // dependent and cannot be gleaned by comparing the source string
-                Object[] l = fixStrings(self.getNames());
-                Object[] r = fixStrings(other.getNames());
-                Arrays.sort(l);
-                Arrays.sort(r);
-                if (!Arrays.equals(l, r)) {
+                if (!Arrays.equals(self.getCodestring(), other.getCodestring())) {
                     return false;
                 }
-                l = fixStrings(self.getVarnames());
-                r = fixStrings(other.getVarnames());
-                Arrays.sort(l);
-                Arrays.sort(r);
-                if (!Arrays.equals(l, r)) {
-                    return false;
-                }
-                l = fixStrings(self.getFreeVars());
-                r = fixStrings(other.getFreeVars());
-                Arrays.sort(l);
-                Arrays.sort(r);
-                if (!Arrays.equals(l, r)) {
-                    return false;
-                }
-                l = fixStrings(self.getCellVars());
-                r = fixStrings(other.getCellVars());
-                Arrays.sort(l);
-                Arrays.sort(r);
-                if (!Arrays.equals(l, r)) {
-                    return false;
-                }
-                return true;
+                // TODO compare co_const
+                return Arrays.equals(self.getNames(), other.getNames()) && Arrays.equals(self.getVarnames(), other.getVarnames()) && Arrays.equals(self.getFreeVars(), other.getFreeVars()) &&
+                                Arrays.equals(self.getCellVars(), other.getCellVars());
             }
             return false;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        boolean fail(Object self, Object other) {
-            return false;
+        Object fail(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
