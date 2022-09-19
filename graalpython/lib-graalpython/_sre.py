@@ -49,7 +49,6 @@ def _check_pos(pos):
     if pos > maxsize:
         raise OverflowError('Python int too large to convert to Java int')
 
-
 def _normalize_bounds(string, pos, endpos):
     strlen = len(string)
     if endpos < 0:
@@ -65,78 +64,8 @@ def _normalize_bounds(string, pos, endpos):
         substring = string[:endpos]
     return substring, pos, endpos
 
-
-class _SRE_NamedCaptureGroupMap:
-    def __init__(self, groupindex):
-        self.__groupindex = groupindex
-
-    def __dir__(self):
-        return self.__groupindex.keys()
-
-    def __getattr__(self, item):
-        return self.__groupindex[item]
-
-class _SRE_RegexResult:
-    def __init__(self, pattern_input, isMatch, start, end):
-        self.input = pattern_input
-        self.isMatch = isMatch
-        self.__start = start
-        self.__end = end
-
-    def getStart(self, grpidx):
-        return self.__start[grpidx]
-
-    def getEnd(self, grpidx):
-        return self.__end[grpidx]
-
-class _SRE_RegexObject:
-    def __init__(self, compiled_regex, method, must_advance):
-        self.__compiled_regex = compiled_regex
-        self.__method = method
-        self.__must_advance = must_advance
-        self.pattern = self.__compiled_regex.pattern
-        self.flags = {name: bool(self.__compiled_regex.flags & flag) for flag, name in FLAG_NAMES}
-        self.groupCount = 1 + self.__compiled_regex.groups
-        self.groups = _SRE_NamedCaptureGroupMap(self.__compiled_regex.groupindex)
-
-    def exec(self, pattern_input, from_index):
-        # TODO: self.__must_advance__ cannot be passed to the SRE C implementation, we need
-        # to fall back on SRE for the entire findall/finditer/subn/split/Scanner... method
-        if self.__method == "search":
-            result = self.__compiled_regex.search(pattern_input, from_index)
-        elif self.__method == "match":
-            result = self.__compiled_regex.match(pattern_input, from_index)
-        else:
-            assert self.__method == "fullmatch"
-            result = self.__compiled_regex.fullmatch(pattern_input, from_index)
-        is_match = result is not None
-        return _SRE_RegexResult(
-            pattern_input = pattern_input,
-            isMatch = is_match,
-            start = [result.start(i) for i in range(self.groupCount)] if is_match else [],
-            end = [result.end(i) for i in range(self.groupCount)] if is_match else []
-        )
-
-def _sre_compile_internal(pattern, flags):
-    """
-    :param pattern: a str or bytes with the regexp's pattern
-    :param flags: string representation of the regexp's flags
-    """
-    bit_flags = 0
-    for flag in flags:
-        bit_flags = bit_flags | FLAGS[flag]
-    return _sre_compile(pattern, bit_flags)
-
-class _TRegex_RegexObject:
-    def __init__(self, compiled_regex):
-        self.__compiled_regex = compiled_regex
-        self.pattern = self.__compiled_regex.pattern
-        self.flags = self.__compiled_regex.flags
-        self.groupCount = self.__compiled_regex.groupCount
-        self.groups = self.__compiled_regex.groups
-
-    def exec(self, pattern_input, from_index):
-        return tregex_call_exec(self.__compiled_regex.exec, pattern_input, from_index)
+def _is_bytes_like(object):
+    return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
 
 def _new_compile(p, flags=0):
     if _with_tregex and isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
@@ -299,15 +228,6 @@ class Match():
     def __deepcopy__(self, memo):
         return self
 
-def _append_end_assert(pattern):
-    if isinstance(pattern, str):
-        return pattern if pattern.endswith(r"\Z") else pattern + r"\Z"
-    else:
-        return pattern if pattern.endswith(rb"\Z") else pattern + rb"\Z"
-
-def _is_bytes_like(object):
-    return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
-
 class Pattern():
     def __init__(self, pattern, flags):
         self.__binary = _is_bytes_like(pattern)
@@ -322,21 +242,30 @@ class Pattern():
         self.__compiled_fallback = None
         self.__cached_flags = None
         compiled_regex = self.__tregex_compile()
-        self.groups = compiled_regex.groupCount - 1
-        groups = compiled_regex.groups
-        if groups is None:
-            self.groupindex = {}
-            self.__indexgroup = {}
+        if compiled_regex is not None:
+            self.groups = compiled_regex.groupCount - 1
+            groups = compiled_regex.groups
+            if groups is None:
+                self.groupindex = {}
+                self.__indexgroup = {}
+            else:
+                group_names = dir(groups)
+                self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+                self.__indexgroup = {getattr(groups, name): name for name in group_names}
         else:
-            group_names = dir(groups)
-            self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
-            self.__indexgroup = {getattr(groups, name): name for name in group_names}
+            fallback = self.__fallback_compile()
+            self.groups = fallback.groups
+            self.groupindex = fallback.groupindex
+            self.__indexgroup = {index: name for name, index in fallback.groupindex.items()}
 
     @property
     def flags(self):
         # Flags can be specified both in the flag argument or inline in the regex. Extract them back from the regex
         if self.__cached_flags != None:
             return self.__cached_flags
+        compiled_regex = self.__tregex_compile()
+        if compiled_regex is None:
+            return self.__fallback_compile().flags
         flags = self.__input_flags
         regex_flags = self.__tregex_compile().flags
         for flag, name in FLAG_NAMES:
@@ -361,15 +290,6 @@ class Pattern():
             try:
                 extra_options = f"PythonMethod={method},MustAdvance={'true' if must_advance else 'false'}"
                 compiled_regex = tregex_compile_internal(self.pattern, self.__flags_str, extra_options)
-                if compiled_regex is None:
-                    if _with_sre:
-                        if self.__compiled_fallback is None:
-                            self.__compiled_fallback = _sre_compile_internal(self.pattern, self.__flags_str)
-                        compiled_regex = _SRE_RegexObject(self.__compiled_fallback, method, must_advance)
-                    else:
-                        raise ValueError("regular expression not supported, no fallback engine present") from None
-                else:
-                    compiled_regex = _TRegex_RegexObject(compiled_regex)
                 self.__compiled_regexes[(method, must_advance)] = compiled_regex
             except ValueError as e:
                 if len(e.args) == 2:
@@ -384,6 +304,13 @@ class Pattern():
                     raise error(msg, self.pattern, e.args[1]) from None
                 raise
         return self.__compiled_regexes[(method, must_advance)]
+
+    def __fallback_compile(self):
+        if self.__compiled_fallback is None:
+            if not _with_sre:
+                raise ValueError("regular expression not supported, no fallback engine present") from None
+            self.__compiled_fallback = _sre_compile(self.pattern, self.__input_flags)
+        return self.__compiled_fallback
 
     def __repr__(self):
         flags = self.flags
@@ -426,11 +353,16 @@ class Pattern():
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         compiled_regex = self.__tregex_compile(method=method, must_advance=must_advance)
-        result = compiled_regex.exec(substring, pos)
-        if result.isMatch:
-            return Match(self, pos, endpos, result, string, self.__indexgroup)
+        if compiled_regex is not None:
+            result = tregex_call_exec(compiled_regex.exec, substring, pos)
+            if result.isMatch:
+                return Match(self, pos, endpos, result, string, self.__indexgroup)
+            else:
+                return None
         else:
-            return None
+            # We cannot pass must_advance to the SRE fallback implementation.
+            assert not must_advance
+            return getattr(self.__fallback_compile(), method)(string, pos=pos, endpos=endpos)
 
     def search(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method="search")
@@ -452,6 +384,9 @@ class Pattern():
             return str(elem)
 
     def finditer(self, string, pos=0, endpos=maxsize):
+        for must_advance in [False, True]:
+            if self.__tregex_compile(must_advance=must_advance) is None:
+                return self.__fallback_compile().finditer(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
@@ -461,7 +396,7 @@ class Pattern():
         must_advance = False
         while pos <= endpos:
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = compiled_regex.exec(substring, pos)
+            result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
             else:
@@ -471,20 +406,22 @@ class Pattern():
         return
 
     def findall(self, string, pos=0, endpos=maxsize):
+        for must_advance in [False, True]:
+            if self.__tregex_compile(must_advance=must_advance) is None:
+                return self.__fallback_compile().findall(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         matchlist = []
-        group_count = self.__tregex_compile().groupCount
         must_advance = False
         while pos <= endpos:
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            result = compiled_regex.exec(substring, pos)
+            result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
-            elif group_count == 1:
+            elif self.groups == 0:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
-            elif group_count == 2:
+            elif self.groups == 1:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
                 matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, self.__indexgroup).groups())))
@@ -496,6 +433,9 @@ class Pattern():
         return self.subn(repl, string, count)[0]
 
     def subn(self, repl, string, count=0):
+        for must_advance in [False, True]:
+            if self.__tregex_compile(must_advance=must_advance) is None:
+                return self.__fallback_compile().subn(repl, string, count=count)
         self.__check_input_type(string)
         n = 0
         result = []
@@ -516,7 +456,7 @@ class Pattern():
 
         while (count == 0 or n < count) and pos <= len(string):
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = compiled_regex.exec(string, pos)
+            match_result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -538,15 +478,17 @@ class Pattern():
             return "".join(result), n
 
     def split(self, string, maxsplit=0):
+        for must_advance in [False, True]:
+            if self.__tregex_compile(must_advance=must_advance) is None:
+                return self.__fallback_compile().split(string, maxsplit=maxsplit)
         n = 0
-        group_count = self.__tregex_compile().groupCount
         result = []
         collect_pos = 0
         search_pos = 0
         must_advance = False
         while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
             compiled_regex = self.__tregex_compile(must_advance=must_advance)
-            match_result = compiled_regex.exec(string, search_pos)
+            match_result = tregex_call_exec(compiled_regex.exec, string, search_pos)
             if not match_result.isMatch:
                 break
             n += 1
@@ -554,7 +496,7 @@ class Pattern():
             end = match_result.getEnd(0)
             result.append(self.__sanitize_out_type(string[collect_pos:start]))
             # add all group strings
-            for i in range(1, group_count):
+            for i in range(1, self.groups + 1):
                 groupStart = match_result.getStart(i)
                 if groupStart >= 0:
                     result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
@@ -567,33 +509,39 @@ class Pattern():
         return result
 
     def scanner(self, string, pos=0, endpos=maxsize):
+        # We cannot pass the must_advance parameter to the internal SRE implementation.
+        # If TRegex cannot support must_advance in either the 'match' or the 'search' method,
+        # we will need to use the original implementation of the 'scanner' method.
+        for method in ["match", "search"]:
+            if self.__tregex_compile(method=method, must_advance=True) is None:
+                return self.__fallback_compile().scanner(string, pos=pos, endpos=endpos)
         return SREScanner(self, string, pos, endpos)
 
 
 class SREScanner(object):
     def __init__(self, pattern, string, start, end):
         self.pattern = pattern
-        self._string = string
-        self._start = start
-        self._end = end
-        self._must_advance = False
+        self.__string = string
+        self.__start = start
+        self.__end = end
+        self.__must_advance = False
 
-    def _match_search(self, method):
-        if self._start > len(self._string):
+    def __match_search(self, method):
+        if self.__start > len(self.__string):
             return None
-        match = self.pattern._search(self._string, self._start, self._end, method=method, must_advance=self._must_advance)
+        match = self.pattern._search(self.__string, self.__start, self.__end, method=method, must_advance=self.__must_advance)
         if match is None:
-            self._start += 1
+            self.__start += 1
         else:
-            self._start = match.end()
-            self._must_advance = match.start() == self._start
+            self.__start = match.end()
+            self.__must_advance = match.start() == self.__start
         return match
 
     def match(self):
-        return self._match_search("match")
+        return self.__match_search("match")
 
     def search(self):
-        return self._match_search("search")
+        return self.__match_search("search")
 
 
 _t_compile = Pattern
