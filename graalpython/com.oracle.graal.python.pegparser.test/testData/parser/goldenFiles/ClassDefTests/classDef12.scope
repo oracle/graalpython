@@ -9,34 +9,37 @@ ScopeEnvironment
             get_nested_class: [DefLocal, Use, Local]
             t: [DefLocal, Local]
       Scope get_nested_class Function
-            Flags: [HasChildWithFreeVars]
+            Flags: [IsNested, HasFreeVars, HasChildWithFreeVars]
             Symbols:
                   Test: [DefLocal, Use, Local]
                   method_and_var: [DefLocal, Cell]
                   object: [Use, GlobalImplicit]
         Scope Test Class
-                Flags: [HasChildWithFreeVars]
+                Flags: [IsNested, HasChildWithFreeVars]
                 Symbols:
                         actual_global: [DefLocal, Local]
                         method_and_var: [DefLocal, DefFreeClass, Local]
                         str: [DefLocal, Local]
                         test: [DefLocal, Local]
           Scope method_and_var Function
+                    Flags: [IsNested]
                     Varnames: self
                     Symbols:
                               self: [DefParam, Local]
           Scope test Function
-                    Flags: [HasFreeVars]
+                    Flags: [IsNested, HasFreeVars]
                     Varnames: self
                     Symbols:
                               method_and_var: [Use, Free]
                               self: [DefParam, Local]
           Scope actual_global Function
+                    Flags: [IsNested, HasFreeVars]
                     Varnames: self
                     Symbols:
                               self: [DefParam, Local]
                               str: [Use, GlobalImplicit]
           Scope str Function
+                    Flags: [IsNested, HasFreeVars]
                     Varnames: self
                     Symbols:
                               self: [DefParam, Use, Local]

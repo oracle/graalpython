@@ -1,5 +1,0 @@
-AddNodeGen SourceSection: [0,5]`a + b`
-  ReadLocalVariableNodeGen SourceSection: [0,1]`a`
-    Frame: [0,a,Illegal]
-  ReadLocalVariableNodeGen SourceSection: [4,5]`b`
-    Frame: [1,b,Illegal]

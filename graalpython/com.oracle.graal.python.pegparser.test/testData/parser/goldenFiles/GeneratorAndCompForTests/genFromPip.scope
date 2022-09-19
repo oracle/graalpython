@@ -25,7 +25,7 @@ ScopeEnvironment
             path_item_entries: [DefLocal, Use, Local]
             safe_listdir: [Use, GlobalImplicit]
       Scope genexp Function
-            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Flags: [IsNested, HasFreeVars, IsGenerator, IsComprehension]
             Varnames: .0
             Symbols:
                   .0: [DefParam, Local]

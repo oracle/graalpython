@@ -14,7 +14,7 @@ ScopeEnvironment
             cls: [DefParam, Use, Local]
             other: [DefLocal, Use, Local]
       Scope genexp Function
-            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Flags: [IsNested, HasFreeVars, IsGenerator, IsComprehension]
             Varnames: .0
             Symbols:
                   .0: [DefParam, Local]
@@ -22,7 +22,7 @@ ScopeEnvironment
                   base: [Use, Free]
                   issubclass: [Use, GlobalImplicit]
       Scope listcomp Function
-            Flags: [HasFreeVars, IsComprehension]
+            Flags: [IsNested, HasFreeVars, IsComprehension]
             Varnames: .0
             Symbols:
                   .0: [DefParam, Local]

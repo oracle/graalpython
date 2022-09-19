@@ -8,7 +8,7 @@ ScopeEnvironment
         Symbols:
             recursionInner: [DefLocal, Use, Cell]
       Scope recursionInner Function
-            Flags: [HasFreeVars]
+            Flags: [IsNested, HasFreeVars]
             Varnames: arg
             Symbols:
                   arg: [DefParam, Use, Local]

@@ -1,9 +1,0 @@
-ModuleRootNode Name: <module 'dict01'> SourceSection: [0,2]`{}`
-  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-  FreeVars: None
-  NeedsCellFrame: False
-  FrameDescriptor:  Empty
-  Documentation: None
-  InnerRootNode SourceSection: [0,2]`{}`
-    EmptyDictLiteralNode SourceSection: [0,2]`{}`
-      PythonObjectFactoryNodeGen SourceSection: None

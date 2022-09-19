@@ -1,7 +1,7 @@
 Disassembly of <module>:
   1:0   -   6:37        0 LOAD_BUILD_CLASS
   1:0   -   6:37        1 MAKE_FUNCTION                     0    (HandlerTask)
-  1:0   -   6:37        4 LOAD_STRING                       0    ('HandlerTask')
+  1:0   -   6:37        4 LOAD_STRING                       1    ('HandlerTask')
   1:18  -   1:22        6 LOAD_GLOBAL                       0    (Task)
   1:0   -   6:37        8 COLLECTION_FROM_STACK             3    (Object[])
   1:0   -   6:37       10 CALL_FUNCTION_VARARGS

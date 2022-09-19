@@ -1,7 +1,7 @@
 Disassembly of <module>:
   1:0   -   2:14        0 LOAD_BUILD_CLASS
   1:0   -   2:14        1 MAKE_FUNCTION                     0    (Foo)
-  1:0   -   2:14        4 LOAD_STRING                       0    ('Foo')
+  1:0   -   2:14        4 LOAD_STRING                       1    ('Foo')
   1:0   -   2:14        6 COLLECTION_FROM_STACK             2    (Object[])
   1:0   -   2:14        8 CALL_FUNCTION_VARARGS
   1:0   -   2:14        9 STORE_NAME                        0    (Foo)

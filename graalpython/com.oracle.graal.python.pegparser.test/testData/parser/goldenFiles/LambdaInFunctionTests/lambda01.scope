@@ -4,3 +4,4 @@ ScopeEnvironment
       fn: [DefLocal, Local]
     Scope fn Function
       Scope lambda Function
+            Flags: [IsNested]

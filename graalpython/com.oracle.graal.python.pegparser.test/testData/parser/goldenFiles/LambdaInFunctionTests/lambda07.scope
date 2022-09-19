@@ -6,6 +6,7 @@ ScopeEnvironment
         Symbols:
             bar: [Use, GlobalImplicit]
       Scope lambda Function
+            Flags: [IsNested]
             Varnames: foo
             Symbols:
                   foo: [DefParam, Local]

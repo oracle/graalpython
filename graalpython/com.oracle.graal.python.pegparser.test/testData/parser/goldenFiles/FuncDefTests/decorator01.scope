@@ -12,7 +12,7 @@ ScopeEnvironment
             fn: [DefParam, Cell]
             wrap: [DefLocal, Use, Local]
       Scope wrap Function
-            Flags: [HasFreeVars]
+            Flags: [IsNested, HasFreeVars]
             Symbols:
                   fn: [Use, Free]
     Scope getNumber Function

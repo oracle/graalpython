@@ -13,7 +13,7 @@ ScopeEnvironment
                   nonpositive: [DefLocal, Use, Local]
                   self: [DefParam, Use, Local]
         Scope listcomp Function
-                Flags: [IsComprehension]
+                Flags: [IsNested, IsComprehension]
                 Varnames: .0
                 Symbols:
                         .0: [DefParam, Local]

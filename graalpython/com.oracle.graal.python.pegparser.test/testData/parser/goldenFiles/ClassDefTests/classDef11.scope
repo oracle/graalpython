@@ -12,7 +12,7 @@ ScopeEnvironment
             named_tuple: [DefLocal, Use, Local]
             tuple: [Use, GlobalImplicit]
       Scope named_tuple Class
-            Flags: [HasFreeVars, HasChildWithFreeVars]
+            Flags: [IsNested, HasFreeVars, HasChildWithFreeVars]
             Symbols:
                   __name__: [DefLocal, Local]
                   __repr__: [DefLocal, Local]
@@ -21,7 +21,7 @@ ScopeEnvironment
                   n_sequence_fields: [DefLocal, Local]
                   name: [Use, Free]
         Scope __repr__ Function
-                Flags: [HasFreeVars]
+                Flags: [IsNested, HasFreeVars]
                 Varnames: self
                 Symbols:
                         f: [DefLocal, Local]

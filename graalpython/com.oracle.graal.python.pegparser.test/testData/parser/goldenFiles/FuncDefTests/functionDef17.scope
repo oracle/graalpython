@@ -8,13 +8,13 @@ ScopeEnvironment
         Symbols:
             inner: [DefLocal, Use, Local]
       Scope inner Function
-            Flags: [HasChildWithFreeVars]
+            Flags: [IsNested, HasChildWithFreeVars]
             Varnames: end
             Symbols:
                   end: [DefParam, Cell]
                   inner_inner: [DefLocal, Use, Local]
         Scope inner_inner Function
-                Flags: [HasFreeVars]
+                Flags: [IsNested, HasFreeVars]
                 Symbols:
                         end: [Use, Free]
                         print: [Use, GlobalImplicit]

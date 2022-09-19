@@ -4,7 +4,7 @@ ScopeEnvironment
       fn: [DefLocal, Local]
     Scope fn Function
       Scope lambda Function
-            Flags: [HasVarArgs]
+            Flags: [IsNested, HasVarArgs]
             Varnames: y
             Symbols:
                   y: [DefParam, Local]
