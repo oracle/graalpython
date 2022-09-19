@@ -110,6 +110,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -461,7 +462,6 @@ public class SocketTests {
     @Test
     public void streamWriteReadUnix() throws PosixException, IOException {
         assumeTrue("native".equals(backendName));
-
         UnixSockAddr unixSockAddr = new UnixSockAddr(getNulTerminatedTempFileName());
 
         Server srv = new Server(AF_UNIX.value, SOCK_STREAM.value);
@@ -1009,7 +1009,7 @@ public class SocketTests {
             UnixSockAddr expected = (UnixSockAddr) expectedAddr;
             assertEquals(AF_UNIX.value, usaLib.getFamily(actualUsa));
             UnixSockAddr actual = usaLib.asUnixSockAddr(actualUsa);
-            assertArrayEquals(expected.getPath(), actual.getPath());
+            assertNullTerminatedArrayEquals(expected.getPath(), actual.getPath());
         } else {
             fail("Unexpected subclass of FamilySpecificSockAddr: " + expectedAddr.getClass().getName());
         }
@@ -1020,6 +1020,7 @@ public class SocketTests {
         f.delete();
         f.deleteOnExit();
         byte[] fileNameBytes = f.getAbsolutePath().getBytes();
+        assumeTrue(fileNameBytes.length + 1 <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value);
         return Arrays.copyOf(fileNameBytes, fileNameBytes.length + 1);
     }
 
@@ -1108,6 +1109,18 @@ public class SocketTests {
 
     private static boolean runsOnCi() {
         return "true".equals(System.getenv("CI"));
+    }
+
+    private static void assertNullTerminatedArrayEquals(byte[] expected, byte[] actual) {
+        assertArrayEquals(extractBytesUntilZero(expected), extractBytesUntilZero(actual));
+    }
+
+    private static byte[] extractBytesUntilZero(byte[] bytes) {
+        int i = 0;
+        while (i < bytes.length && bytes[i] != 0) {
+            ++i;
+        }
+        return Arrays.copyOf(bytes, i);
     }
 
     private class Socket {

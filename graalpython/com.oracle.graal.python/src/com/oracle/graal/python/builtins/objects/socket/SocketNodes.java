@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -193,7 +194,7 @@ public abstract class SocketNodes {
                     bufferLib.release(buffer, frame, this);
                 }
             }
-            if (path.length > 0 && path[0] != 0) {
+            if (!PosixConstants.IS_LINUX || (path.length > 0 && path[0] != 0)) {
                 // not a linux "abstract" address -> needs a terminating zero
                 path = arrayCopyOf(path, path.length + 1);
             }
@@ -373,7 +374,8 @@ public abstract class SocketNodes {
                 } else if (family == AF_UNIX.value) {
                     UnixSockAddr unixSockAddr = addrLib.asUnixSockAddr(addr);
                     byte[] path = unixSockAddr.getPath();
-                    if (path.length > 0 && path[0] == 0) {
+                    if (PosixConstants.IS_LINUX && path.length > 0 && path[0] == 0) {
+                        // linux-specific "abstract" address
                         return factory.createBytes(arrayCopyOf(path, path.length));
                     }
                     return fromJavaStringNode.execute(bytesToString(path), TS_ENCODING);
