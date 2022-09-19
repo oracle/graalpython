@@ -772,14 +772,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Override
         public abstract PTuple execute(VirtualFrame frame);
 
-        public static Object fast(VirtualFrame frame, GetClassNode getClassNode, GetCaughtExceptionNode getCaughtExceptionNode, PythonObjectFactory factory) {
-            final PException currentException = getCaughtExceptionNode.execute(frame);
-            if (currentException == null) {
-                return factory.createTuple(new PNone[]{PNone.NONE});
-            }
-            return factory.createTuple(new Object[]{getClassNode.execute(currentException.getUnreifiedException())});
-        }
-
         @Specialization
         public PTuple run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
