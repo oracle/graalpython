@@ -301,6 +301,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "tzset")
+    @GenerateNodeFactory
+    public abstract static class TzSetNode extends PythonBuiltinNode {
+        @Specialization
+        public Object tzset() {
+            return PNone.NONE;
+        }
+    }
+
     // time.localtime([seconds])
     @Builtin(name = "localtime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
