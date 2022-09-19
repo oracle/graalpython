@@ -184,7 +184,7 @@ public abstract class SocketNodes {
             byte[] path;
             if (unicodeCheckNode.execute(address)) {
                 // PyUnicode_EncodeFSDefault
-                path = toJavaStringNode.execute(address).getBytes(StandardCharsets.UTF_8);
+                path = stringGetUtf8Bytes(toJavaStringNode.execute(address));
             } else {
                 Object buffer = bufferAcquireLib.acquireReadonly(address, frame, this);
                 try {
@@ -239,6 +239,11 @@ public abstract class SocketNodes {
                 throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
             }
             return port;
+        }
+
+        @TruffleBoundary
+        private static byte[] stringGetUtf8Bytes(String str) {
+            return str.getBytes(StandardCharsets.UTF_8);
         }
     }
 
@@ -386,9 +391,9 @@ public abstract class SocketNodes {
         @TruffleBoundary
         private static String bytesToString(byte[] path) {
             // PyUnicode_DecodeFSDefault
-            int len = path.length;
-            if (len > 0 && path[len - 1] == 0) {
-                --len;
+            int len = 0;
+            while (len < path.length && path[len] != 0) {
+                ++len;
             }
             return new String(path, 0, len, StandardCharsets.UTF_8);
         }

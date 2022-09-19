@@ -532,6 +532,7 @@ def generate_common(filename):
         add_constant(False, 'Int', sizeof_name(struct_name))
         for member in members:
             add_constant(False, 'Int', offsetof_name(struct_name, member))
+            add_constant(False, 'Int', sizeof_name(struct_name, member))
 
     decls.append('\n')
     defs.append('\n')

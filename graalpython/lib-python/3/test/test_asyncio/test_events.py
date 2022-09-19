@@ -514,6 +514,7 @@ class EventLoopTestsMixin:
                 lambda: MyProto(loop=self.loop), *httpd.address)
             self._basetest_create_connection(conn_fut)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     def test_create_unix_connection(self):
         # Issue #20682: On Mac OS X Tiger, getsockname() returns a
@@ -616,6 +617,7 @@ class EventLoopTestsMixin:
             self._test_create_ssl_connection(httpd, create_connection,
                                              peername=httpd.address)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     @unittest.skipIf(ssl is None, 'No ssl module')
     def test_create_ssl_unix_connection(self):
@@ -840,6 +842,7 @@ class EventLoopTestsMixin:
 
         return server, path
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     def test_create_unix_server(self):
         proto = MyProto(loop=self.loop)
@@ -868,6 +871,7 @@ class EventLoopTestsMixin:
         # close server
         server.close()
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'No UNIX Sockets')
     def test_create_unix_server_path_socket_error(self):
         proto = MyProto(loop=self.loop)
@@ -932,6 +936,7 @@ class EventLoopTestsMixin:
         # stop serving
         server.close()
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     @unittest.skipIf(ssl is None, 'No ssl module')
     def test_create_unix_server_ssl(self):
@@ -992,6 +997,7 @@ class EventLoopTestsMixin:
         self.assertIsNone(proto.transport)
         server.close()
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     @unittest.skipIf(ssl is None, 'No ssl module')
     def test_create_unix_server_ssl_verify_failed(self):
@@ -1052,6 +1058,7 @@ class EventLoopTestsMixin:
         self.assertIsNone(proto.transport)
         server.close()
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     @unittest.skipIf(ssl is None, 'No ssl module')
     def test_create_unix_server_ssl_verified(self):

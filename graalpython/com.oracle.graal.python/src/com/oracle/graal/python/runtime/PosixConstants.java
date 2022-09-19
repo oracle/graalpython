@@ -249,11 +249,16 @@ public final class PosixConstants {
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_STORAGE;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
+    public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
+    public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
+    public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN6;
     public static final MandatoryIntConstant SIZEOF_STRUCT_IN_ADDR;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+    public static final MandatoryIntConstant SIZEOF_STRUCT_IN_ADDR_S_ADDR;
+    public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_UN;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 
@@ -362,7 +367,6 @@ public final class PosixConstants {
         AF_UNSPEC = reg.createMandatoryInt("AF_UNSPEC");
         AF_INET = reg.createMandatoryInt("AF_INET");
         AF_INET6 = reg.createMandatoryInt("AF_INET6");
-        // Following two aren't really supported, but we can fail later:
         AF_PACKET = reg.createOptionalInt("AF_PACKET");
         AF_UNIX = reg.createMandatoryInt("AF_UNIX");
         SOCK_DGRAM = reg.createMandatoryInt("SOCK_DGRAM");
@@ -478,14 +482,18 @@ public final class PosixConstants {
         SIZEOF_STRUCT_SOCKADDR_STORAGE = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_STORAGE");
         SIZEOF_STRUCT_SOCKADDR_IN = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN");
         OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY");
+        SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY");
         OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT");
+        SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT");
         OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR");
+        SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR");
         SIZEOF_STRUCT_SOCKADDR_IN6 = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN6");
         SIZEOF_STRUCT_IN_ADDR = reg.createMandatoryInt("SIZEOF_STRUCT_IN_ADDR");
         OFFSETOF_STRUCT_IN_ADDR_S_ADDR = reg.createMandatoryInt("OFFSETOF_STRUCT_IN_ADDR_S_ADDR");
+        SIZEOF_STRUCT_IN_ADDR_S_ADDR = reg.createMandatoryInt("SIZEOF_STRUCT_IN_ADDR_S_ADDR");
+        SIZEOF_STRUCT_SOCKADDR_UN = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN");
         OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH");
         SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH");
-
 
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC, O_TMPFILE};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};
