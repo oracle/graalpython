@@ -170,7 +170,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         addConstant(PosixConstants.SOMAXCONN);
 
         addConstants(PosixConstants.socketType);
-        addConstants(PosixConstants.socketFamily);
+        addFamilies(PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java"));
         addConstants(PosixConstants.socketOptions);
         addConstants(PosixConstants.gaiFlags);
         addConstants(PosixConstants.gaiErrors);
@@ -184,6 +184,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         core.lookupBuiltinModule(T__SOCKET).setAttribute(DEFAULT_TIMEOUT_KEY, -1L);
+    }
+
+    private void addFamilies(boolean emulated) {
+        for (PosixConstants.IntConstant constant : PosixConstants.socketFamily) {
+            if (!(constant == PosixConstants.AF_UNIX && emulated)) {
+                addConstant(constant);
+            }
+        }
     }
 
     private void addConstants(PosixConstants.IntConstant[] constants) {
