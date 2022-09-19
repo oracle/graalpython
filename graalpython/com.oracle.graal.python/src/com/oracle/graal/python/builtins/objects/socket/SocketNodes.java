@@ -49,19 +49,25 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.StringLiterals.T_ZERO;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_BROADCAST;
+import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.net.IDN;
+import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -69,9 +75,11 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -86,6 +94,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressExcepti
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -103,77 +112,133 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:getsockaddrarg}.
      */
-    public abstract static class GetSockAddrArgNode extends PNodeWithRaise {
+    public abstract static class GetSockAddrArgNode extends PNodeWithRaiseAndIndirectCall {
         public abstract UniversalSockAddr execute(VirtualFrame frame, PSocket socket, Object address, String caller);
 
-        @Specialization
-        UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller,
+        @Specialization(guards = "isInet(socket)")
+        UniversalSockAddr doInet(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
-                        @Cached PyLongAsIntNode asIntNode,
-                        @Cached IdnaFromStringOrBytesConverterNode idnaConverter,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached SetIpAddrNode setIpAddrNode) {
+                        @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
+                        @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
+                        @Cached @Shared("errorProfile") IsBuiltinClassProfile errorProfile,
+                        @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode) {
             PythonContext context = PythonContext.get(this);
-            if (socket.getFamily() == AF_INET.value) {
-                if (!(address instanceof PTuple)) {
-                    throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
-                }
-                Object[] hostAndPort = getObjectArrayNode.execute(address);
-                if (hostAndPort.length != 2) {
-                    throw raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
-                }
-                TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
-                int port;
-                try {
-                    port = asIntNode.execute(frame, hostAndPort[1]);
-                } catch (PException e) {
-                    e.expect(OverflowError, errorProfile);
-                    port = -1;
-                }
-                if (port < 0 || port > 0xffff) {
-                    throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
-                }
-                UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
-                Object posixSupport = context.getPosixSupport();
-                return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
-            } else if (socket.getFamily() == AF_INET6.value) {
-                if (!(address instanceof PTuple)) {
-                    throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
-                }
-                Object[] hostAndPort = getObjectArrayNode.execute(address);
-                if (hostAndPort.length < 2 || hostAndPort.length > 4) {
-                    throw raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
-                }
-                TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
-                int port;
-                try {
-                    port = asIntNode.execute(frame, hostAndPort[1]);
-                } catch (PException e) {
-                    e.expect(OverflowError, errorProfile);
-                    port = -1;
-                }
-                if (port < 0 || port > 0xffff) {
-                    throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
-                }
-                int flowinfo = 0;
-                if (hostAndPort.length > 2) {
-                    flowinfo = asIntNode.execute(frame, hostAndPort[2]);
-                    if (flowinfo < 0 || flowinfo > 0xfffff) {
-                        throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
-                    }
-                }
-                int scopeid = 0;
-                if (hostAndPort.length > 3) {
-                    scopeid = asIntNode.execute(frame, hostAndPort[3]);
-                }
-                UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
-                Object posixSupport = context.getPosixSupport();
-                return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, sockAddrLib.asInet6SockAddr(addr).getAddress(), flowinfo, scopeid));
-            } else {
-                throw raise(OSError, ErrorMessages.BAD_FAMILY, caller);
+            if (!(address instanceof PTuple)) {
+                throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
             }
+            Object[] hostAndPort = getObjectArrayNode.execute(address);
+            if (hostAndPort.length != 2) {
+                throw raise(TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
+            }
+            TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
+            int port = parsePort(frame, caller, asIntNode, errorProfile, hostAndPort[1]);
+            UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
+            Object posixSupport = context.getPosixSupport();
+            return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
+        }
+
+        @Specialization(guards = "isInet6(socket)")
+        UniversalSockAddr doInet6(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
+                        @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
+                        @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
+                        @Cached @Shared("errorProfile") IsBuiltinClassProfile errorProfile,
+                        @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode) {
+            PythonContext context = PythonContext.get(this);
+            if (!(address instanceof PTuple)) {
+                throw raise(TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
+            }
+            Object[] hostAndPort = getObjectArrayNode.execute(address);
+            if (hostAndPort.length < 2 || hostAndPort.length > 4) {
+                throw raise(TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
+            }
+            TruffleString host = idnaConverter.execute(frame, hostAndPort[0]);
+            int port = parsePort(frame, caller, asIntNode, errorProfile, hostAndPort[1]);
+            int flowinfo = 0;
+            if (hostAndPort.length > 2) {
+                flowinfo = asIntNode.execute(frame, hostAndPort[2]);
+                if (flowinfo < 0 || flowinfo > 0xfffff) {
+                    throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
+                }
+            }
+            int scopeid = 0;
+            if (hostAndPort.length > 3) {
+                scopeid = asIntNode.execute(frame, hostAndPort[3]);
+            }
+            UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
+            Object posixSupport = context.getPosixSupport();
+            return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, sockAddrLib.asInet6SockAddr(addr).getAddress(), flowinfo, scopeid));
+        }
+
+        @Specialization(guards = "isUnix(socket)")
+        UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+            byte[] path;
+            if (unicodeCheckNode.execute(address)) {
+                // PyUnicode_EncodeFSDefault
+                path = toJavaStringNode.execute(address).getBytes(StandardCharsets.UTF_8);
+            } else {
+                Object buffer = bufferAcquireLib.acquireReadonly(address, frame, this);
+                try {
+                    path = bufferLib.getCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer, frame, this);
+                }
+            }
+            if (path.length > 0 && path[0] != 0) {
+                // not a linux "abstract" address -> needs a terminating zero
+                path = arrayCopyOf(path, path.length + 1);
+            }
+            if (path.length > SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value) {
+                throw raise(OSError, ErrorMessages.AF_UNIX_PATH_TOO_LONG, caller);
+            }
+            PythonContext context = PythonContext.get(this);
+            Object posixSupport = context.getPosixSupport();
+            try {
+                return posixLib.createUniversalSockAddr(posixSupport, new UnixSockAddr(path));
+            } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+                throw raise(OSError, ErrorMessages.AF_UNIX_NOT_SUPPORTED, caller);
+            }
+        }
+
+        @Specialization(guards = {"!isInet(socket)", "!isInet6(socket)", "!isUnix(socket)"})
+        @SuppressWarnings("unused")
+        UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller) {
+            throw raise(OSError, ErrorMessages.BAD_FAMILY, caller);
+        }
+
+        static boolean isInet(PSocket socket) {
+            return socket.getFamily() == AF_INET.value;
+        }
+
+        static boolean isInet6(PSocket socket) {
+            return socket.getFamily() == AF_INET6.value;
+        }
+
+        static boolean isUnix(PSocket socket) {
+            return socket.getFamily() == AF_UNIX.value;
+        }
+
+        private int parsePort(VirtualFrame frame, String caller, PyLongAsIntNode asIntNode, IsBuiltinClassProfile errorProfile, Object portObj) {
+            int port;
+            try {
+                port = asIntNode.execute(frame, portObj);
+            } catch (PException e) {
+                e.expect(OverflowError, errorProfile);
+                port = -1;
+            }
+            if (port < 0 || port > 0xffff) {
+                throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
+            }
+            return port;
         }
     }
 
@@ -300,6 +365,13 @@ public abstract class SocketNodes {
                     Object posixSupport = context.getPosixSupport();
                     TruffleString addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                     return factory.createTuple(new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
+                } else if (family == AF_UNIX.value) {
+                    UnixSockAddr unixSockAddr = addrLib.asUnixSockAddr(addr);
+                    byte[] path = unixSockAddr.getPath();
+                    if (path.length > 0 && path[0] == 0) {
+                        return factory.createBytes(arrayCopyOf(path, path.length));
+                    }
+                    return fromJavaStringNode.execute(bytesToString(path), TS_ENCODING);
                 } else if (family == AF_UNSPEC.value) {
                     // Can be returned from recvfrom when used on a connected socket
                     return PNone.NONE;
@@ -310,6 +382,17 @@ public abstract class SocketNodes {
                 throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
             }
         }
+
+        @TruffleBoundary
+        private static String bytesToString(byte[] path) {
+            // PyUnicode_DecodeFSDefault
+            int len = path.length;
+            if (len > 0 && path[len - 1] == 0) {
+                --len;
+            }
+            return new String(path, 0, len, StandardCharsets.UTF_8);
+        }
+
     }
 
     /**
