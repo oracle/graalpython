@@ -35,13 +35,13 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -168,7 +168,7 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     @InliningCutoff
     @Specialization
     protected Object readGlobalDictGeneric(VirtualFrame frame, PDict globals,
-                    @Cached GetItemNode getItemNode,
+                    @Cached PyObjectGetItem getItemNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
         try {
             Object result = getItemNode.execute(frame, globals, attributeId);

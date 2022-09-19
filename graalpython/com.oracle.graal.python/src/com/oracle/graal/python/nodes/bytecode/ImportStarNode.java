@@ -39,7 +39,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -48,8 +50,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -67,9 +67,9 @@ public class ImportStarNode extends AbstractImportNode {
     private final ConditionProfile havePyFrame = ConditionProfile.createBinaryProfile();
     private final ConditionProfile haveCustomLocals = ConditionProfile.createBinaryProfile();
 
-    @Child private SetItemNode dictWriteNode;
+    @Child private PyObjectSetItem dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
-    @Child private GetItemNode getItemNode;
+    @Child private PyObjectGetItem getItemNode;
     @Child private CastToTruffleStringNode castToStringNode;
     @Child private GetNextNode nextNode;
     @Child private PyObjectSizeNode sizeNode;
@@ -102,7 +102,7 @@ public class ImportStarNode extends AbstractImportNode {
         if (globals instanceof PDict || globals instanceof PMappingproxy) {
             if (dictWriteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                dictWriteNode = insert(SetItemNode.create());
+                dictWriteNode = insert(PyObjectSetItem.create());
             }
             dictWriteNode.execute(frame, globals, name, value);
         } else {
@@ -144,7 +144,7 @@ public class ImportStarNode extends AbstractImportNode {
                 Object attrAll = ensureGetAllNode().execute(frame, importedModule, T___ALL__);
                 int n = ensureSizeNode().execute(frame, attrAll);
                 for (int i = 0; i < n; i++) {
-                    Object attrName = ensureGetItemNode().executeObject(frame, attrAll, i);
+                    Object attrName = ensureGetItemNode().execute(frame, attrAll, i);
                     writeAttributeToLocals(frame, (PythonModule) importedModule, locals, attrName, true);
                 }
             } catch (PException e) {
@@ -185,10 +185,10 @@ public class ImportStarNode extends AbstractImportNode {
         return cpLenNode.execute(s, TS_ENCODING) >= 2 && cpAtIndexNode.execute(s, 0, TS_ENCODING) == '_' && cpAtIndexNode.execute(s, 1, TS_ENCODING) == '_';
     }
 
-    private GetItemNode ensureGetItemNode() {
+    private PyObjectGetItem ensureGetItemNode() {
         if (getItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getItemNode = insert(GetItemNode.create());
+            getItemNode = insert(PyObjectGetItem.create());
         }
         return getItemNode;
     }

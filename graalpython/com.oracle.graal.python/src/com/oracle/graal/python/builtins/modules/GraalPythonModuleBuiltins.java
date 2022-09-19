@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
@@ -112,7 +113,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -451,17 +451,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
-        @Child private GetItemNode getNameNode = GetItemNode.create();
-
         @Specialization
-        public Object doIt(VirtualFrame frame, PFunction func) {
+        public Object doIt(VirtualFrame frame, PFunction func,
+                        @Cached PyObjectGetItem getItem) {
             PFunction builtinFunc = convertToBuiltin(func);
             PythonObject globals = func.getGlobals();
             PythonModule builtinModule;
             if (globals instanceof PythonModule) {
                 builtinModule = (PythonModule) globals;
             } else {
-                TruffleString moduleName = (TruffleString) getNameNode.execute(frame, globals, T___NAME__);
+                TruffleString moduleName = (TruffleString) getItem.execute(frame, globals, T___NAME__);
                 builtinModule = getCore().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }

@@ -145,7 +145,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -1099,7 +1098,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doGeneric(VirtualFrame frame, Object self, Object table,
                         @Cached CastToTruffleStringCheckedNode castSelfNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached SpliceNode spliceNode,

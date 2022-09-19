@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -113,7 +112,7 @@ public abstract class WriteGlobalNode extends PNodeWithContext {
 
     @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
     void writeGenericDict(VirtualFrame frame, PDict globals, Object value,
-                    @Cached SetItemNode storeNode) {
+                    @Cached PyObjectSetItem storeNode) {
         storeNode.execute(frame, globals, attributeId, value);
     }
 

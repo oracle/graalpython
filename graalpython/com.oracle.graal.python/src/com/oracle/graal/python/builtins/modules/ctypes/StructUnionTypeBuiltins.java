@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -99,7 +100,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -211,7 +211,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyCFieldFromDesc cFieldFromDesc,
                         @Cached GetNameNode getNameNode,
                         @Cached CheckIsSequenceNode isSequenceNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetBaseClassNode getBaseClassNode,

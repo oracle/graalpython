@@ -43,8 +43,8 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -78,7 +78,7 @@ public abstract class WriteNameNode extends PNodeWithContext implements AccessNa
 
     @Specialization(guards = "hasLocals(frame)")
     protected void writeLocal(VirtualFrame frame, Object value,
-                    @Cached SetItemNode setItem) {
+                    @Cached PyObjectSetItem setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.execute(frame, frameLocals, attributeId, value);
     }

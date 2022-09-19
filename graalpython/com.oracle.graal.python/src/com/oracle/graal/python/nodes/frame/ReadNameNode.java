@@ -45,9 +45,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -106,7 +106,7 @@ public abstract class ReadNameNode extends PNodeWithContext implements AccessNam
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected Object readFromLocals(VirtualFrame frame,
-                    @Cached GetItemNode getItem) {
+                    @Cached PyObjectGetItem getItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             return getItem.execute(frame, frameLocals, attributeId);

@@ -42,10 +42,11 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
-import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -66,13 +67,13 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
     void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @Cached DeleteItemNode deleteNode) {
+                    @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
         deleteNode.execute(frame, cachedGlobals, attributeId);
     }
 
     @Specialization(replaces = "deleteDictCached")
     void deleteDict(VirtualFrame frame, PDict globals,
-                    @Cached DeleteItemNode deleteNode) {
+                    @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
         deleteNode.execute(frame, globals, attributeId);
     }
 

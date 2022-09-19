@@ -172,6 +172,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -225,7 +226,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -2433,7 +2433,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CallVarargsMethodNode callType,
                         @Cached CallDispatchNode callBody,
                         @Cached UpdateBasesNode update,
-                        @Cached SetItemNode setOrigBases,
+                        @Cached PyObjectSetItem setOrigBases,
                         @Cached GetClassNode getClass,
                         @Cached IsBuiltinClassProfile noAttributeProfile) {
 

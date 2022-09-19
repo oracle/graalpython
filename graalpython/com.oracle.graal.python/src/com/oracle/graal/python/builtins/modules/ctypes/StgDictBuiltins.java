@@ -50,8 +50,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SIZEOF__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -173,7 +173,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached SetAttributeNode.Dynamic setAttributeNode,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached("create(T__fields_)") GetAttributeNode getAttrString) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
@@ -277,7 +277,7 @@ public class StgDictBuiltins extends PythonBuiltins {
         void MakeAnonFields(VirtualFrame frame, Object type, PythonObjectFactory factory,
                         @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached MakeFieldsNode makeFieldsNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttr,

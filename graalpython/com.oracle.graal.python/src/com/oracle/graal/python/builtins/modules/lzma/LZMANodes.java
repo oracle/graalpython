@@ -49,10 +49,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FILTERS;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.INITIAL_BUFFER_SIZE;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_FILTERS_MAX;
-import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_TELL_ANY_CHECK;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_TELL_NO_CHECK;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.PRESET_DEFAULT;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -108,7 +109,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -440,7 +440,7 @@ public class LZMANodes {
 
         @Specialization
         long[][] parseFilter(VirtualFrame frame, Object filterSpecs,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached LZMAFilterConverter converter,
                         @Cached ConditionProfile errProfile,
                         @Cached SequenceNodes.CheckIsSequenceNode checkIsSequenceNode,

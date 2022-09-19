@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -123,7 +124,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -578,7 +578,7 @@ public abstract class ObjectNodes {
         @Fallback
         Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
             /*
              * CPython looks at tp_dict of the type and assumes that it must be a builtin
