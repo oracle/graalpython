@@ -91,15 +91,19 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
+    public static final int CO_OPTIMIZED = 0x1;
+    public static final int CO_NEWLOCALS = 0x2;
     public static final int CO_VARARGS = 0x4;
     public static final int CO_VARKEYWORDS = 0x8;
+    public static final int CO_NESTED = 0x10;
     public static final int CO_GENERATOR = 0x20;
-    /* GraalPy-specific, used to be CO_NOFREE in CPython */
-    // TODO is it still needed?
-    public static final int CO_GRAALPYHON_MODULE = 0x40;
+    public static final int CO_NOFREE = 0x40;
     public static final int CO_COROUTINE = 0x80;
     public static final int CO_ITERABLE_COROUTINE = 0x100;
     public static final int CO_ASYNC_GENERATOR = 0x200;
+
+    /* GraalPy-specific */
+    public static final int CO_GRAALPYHON_MODULE = 0x1000;
 
     // callTargetSupplier may be null, in which case callTarget and signature will be
     // set. Otherwise, these are lazily created from the supplier.
@@ -184,9 +188,8 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static TruffleString[] extractFreeVars(RootNode rootNode) {
-        RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+        CodeUnit code = getCodeUnit(rootNode);
+        if (code != null) {
             return Arrays.copyOf(code.freevars, code.freevars.length);
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -194,9 +197,8 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static TruffleString[] extractCellVars(RootNode rootNode) {
-        RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+        CodeUnit code = getCodeUnit(rootNode);
+        if (code != null) {
             return Arrays.copyOf(code.cellvars, code.cellvars.length);
         } else {
             return PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
@@ -281,9 +283,8 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static TruffleString[] extractVarnames(RootNode node) {
-        RootNode rootNode = rootNodeForExtraction(node);
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+        CodeUnit code = getCodeUnit(node);
+        if (code != null) {
             return Arrays.copyOf(code.varnames, code.varnames.length);
         }
         return EMPTY_TRUFFLESTRING_ARRAY;
@@ -319,7 +320,10 @@ public final class PCode extends PythonBuiltinObject {
             }
             List<Object> constants = new ArrayList<>();
             for (int i = 0; i < co.constants.length; i++) {
-                constants.add(convertConstantToPythonSpace(rootNode, co.constants[i]));
+                Object constant = convertConstantToPythonSpace(rootNode, co.constants[i]);
+                if (constant != PNone.NONE || !bytecodeConstants.contains(PNone.NONE)) {
+                    constants.add(constant);
+                }
             }
             constants.addAll(bytecodeConstants);
             return constants.toArray(new Object[0]);
@@ -329,9 +333,8 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static TruffleString[] extractNames(RootNode node) {
-        RootNode rootNode = rootNodeForExtraction(node);
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit code = ((PBytecodeRootNode) rootNode).getCodeUnit();
+        CodeUnit code = getCodeUnit(node);
+        if (code != null) {
             return Arrays.copyOf(code.names, code.names.length);
         }
         return EMPTY_TRUFFLESTRING_ARRAY;
@@ -350,19 +353,19 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFlags(RootNode node) {
         int flags = 0;
-        RootNode rootNode = rootNodeForExtraction(node);
-        if (rootNode instanceof PBytecodeRootNode) {
-            CodeUnit codeUnit = ((PBytecodeRootNode) rootNode).getCodeUnit();
-            flags = getFlags(flags, codeUnit);
+        CodeUnit code = getCodeUnit(node);
+        if (code != null) {
+            flags = code.flags;
         }
         return flags;
     }
 
-    private static int getFlags(int flags, CodeUnit codeUnit) {
-        flags |= codeUnit.isGenerator() ? CO_GENERATOR : 0;
-        flags |= codeUnit.takesVarArgs() ? CO_VARARGS : 0;
-        flags |= codeUnit.takesVarKeywordArgs() ? CO_VARKEYWORDS : 0;
-        return flags;
+    private static CodeUnit getCodeUnit(RootNode node) {
+        RootNode rootNode = rootNodeForExtraction(node);
+        if (rootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) rootNode).getCodeUnit();
+        }
+        return null;
     }
 
     RootNode getRootNode() {
