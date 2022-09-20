@@ -413,6 +413,9 @@ public abstract class BuiltinNames {
     public static final String J_ADD = "add";
     public static final TruffleString T_ADD = tsLiteral(J_ADD);
 
+    public static final String J_DISCARD = "discard";
+    public static final TruffleString T_DISCARD = tsLiteral(J_DISCARD);
+
     public static final String J_APPEND = "append";
     public static final TruffleString T_APPEND = tsLiteral(J_APPEND);
 
@@ -421,4 +424,7 @@ public abstract class BuiltinNames {
 
     public static final String J_BZ2 = "_bz2";
     public static final TruffleString T_BZ2 = tsLiteral(J_BZ2);
+
+    public static final String J__ASYNCIO = "_asyncio";
+    public static final TruffleString T__ASYNCIO = tsLiteral(J__ASYNCIO);
 }

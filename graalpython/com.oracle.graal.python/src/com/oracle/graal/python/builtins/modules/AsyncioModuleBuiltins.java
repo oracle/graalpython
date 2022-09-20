@@ -1,5 +1,9 @@
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J__ASYNCIO;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ADD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_DISCARD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__ASYNCIO;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -7,18 +11,26 @@ import java.util.Objects;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyDictDelItem;
+import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -27,7 +39,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_asyncio")
+@CoreFunctions(defineModule = J__ASYNCIO)
 public class AsyncioModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -96,5 +108,90 @@ public class AsyncioModuleBuiltins extends PythonBuiltins {
                 return eventLoop;
             }
         }
+    }
+
+    public static final TruffleString CURRENT_TASKS_ATTR = tsLiteral("_current_tasks");
+
+    @Builtin(name = "_enter_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class EnterTask extends PythonBuiltinNode {
+        @Specialization
+        public Object enterTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
+                        @Cached PyDictSetItem set,
+                        @Cached PyDictGetItem get,
+                        @Cached PRaiseNode raise) {
+            PDict dict = (PDict) self.getAttribute(CURRENT_TASKS_ATTR);
+            Object item = get.execute(frame, dict, loop);
+            if (item == null) {
+                set.execute(frame, dict, loop, task);
+            } else {
+                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.CANT_ENTER_TASK_ALREADY_RUNNING, task, item);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_leave_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class LeaveTask extends PythonBuiltinNode {
+        @Specialization
+        public Object leaveTask(VirtualFrame frame, PythonModule self, Object loop, Object task,
+                        @Cached PyDictDelItem del,
+                        @Cached PyDictGetItem get,
+                        @Cached PRaiseNode raise) {
+            PDict dict = (PDict) self.getAttribute(CURRENT_TASKS_ATTR);
+            Object item = get.execute(frame, dict, loop);
+            if (item == null) {
+                item = PNone.NONE;
+            }
+            if (item != task) {
+                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TASK_NOT_ENTERED, task, item);
+            }
+            del.execute(frame, dict, loop);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_register_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class RegisterTask extends PythonBuiltinNode {
+        private static final TruffleString ADD = tsLiteral("add");
+
+        @Specialization
+        public Object registerTask(VirtualFrame frame, PythonModule self, Object task,
+                        @Cached PyObjectCallMethodObjArgs callmethod) {
+            Object weakset = self.getAttribute(ALL_TASKS_ATTR);
+            callmethod.execute(frame, weakset, T_ADD, task);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_unregister_task", declaresExplicitSelf = true, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class UnregisterTask extends PythonBuiltinNode {
+
+        @Specialization
+        public Object unregisterTask(VirtualFrame frame, PythonModule self, Object task,
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            Object weakset = self.getAttribute(ALL_TASKS_ATTR);
+            callMethod.execute(frame, weakset, T_DISCARD, task);
+            return PNone.NONE;
+        }
+    }
+
+    public static final TruffleString ALL_TASKS_ATTR = tsLiteral("_all_tasks");
+
+    private static final TruffleString WEAKREF = tsLiteral("weakref");
+    private static final TruffleString WEAKSET = tsLiteral("WeakSet");
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        PythonObjectSlowPathFactory factory = core.factory();
+        PythonModule self = core.lookupBuiltinModule(T__ASYNCIO);
+        self.setAttribute(CURRENT_TASKS_ATTR, factory.createDict());
+        Object weakref = AbstractImportNode.importModule(WEAKREF);
+        Object weakSetCls = PyObjectGetAttr.getUncached().execute(null, weakref, WEAKSET);
+        Object weakSet = CallNode.getUncached().execute(weakSetCls);
+        self.setAttribute(ALL_TASKS_ATTR, weakSet);
     }
 }
