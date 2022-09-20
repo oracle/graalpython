@@ -977,7 +977,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall]) as task:
         if task:
-            run_ginstall(python_gvm_with_assertions(), args=["--quiet"])
+            run_ginstall(python_gvm(), args=["--quiet"])
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
