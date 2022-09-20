@@ -237,7 +237,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BufferToTruffleStringNode bufferToTruffleStringNode,
-                        @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
@@ -255,9 +254,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 Object state = IndirectCallContext.enter(frame, language, context, this);
                 try {
                     return interop.execute(callable, input, fromIndex);
-                } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-                    typeError.enter();
-                    throw raise(TypeError, ErrorMessages.M, e);
+                } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e2) {
+                    throw CompilerDirectives.shouldNotReachHere("could not call TRegex exec method", e2);
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
                 }
