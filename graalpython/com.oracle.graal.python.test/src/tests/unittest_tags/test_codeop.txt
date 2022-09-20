@@ -1,2 +1,3 @@
 *graalpython.lib-python.3.test.test_codeop.CodeopTests.test_filename
 *graalpython.lib-python.3.test.test_codeop.CodeopTests.test_invalid
+*graalpython.lib-python.3.test.test_codeop.CodeopTests.test_valid

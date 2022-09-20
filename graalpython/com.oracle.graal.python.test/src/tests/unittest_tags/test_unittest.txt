@@ -389,6 +389,7 @@
 *unittest.test.test_suite.Test_TestSuite.test_countTestCases_zero_simple
 *unittest.test.test_suite.Test_TestSuite.test_eq
 *unittest.test.test_suite.Test_TestSuite.test_function_in_suite
+*unittest.test.test_suite.Test_TestSuite.test_garbage_collect_test_after_run_BaseTestSuite
 *unittest.test.test_suite.Test_TestSuite.test_init__TestSuite_instances_in_tests
 *unittest.test.test_suite.Test_TestSuite.test_init__empty_tests
 *unittest.test.test_suite.Test_TestSuite.test_init__tests_from_any_iterable

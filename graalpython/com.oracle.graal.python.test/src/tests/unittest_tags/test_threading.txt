@@ -130,6 +130,7 @@
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_enumerate_after_join
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalization_shutdown
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalize_runnning_thread
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalize_with_trace
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_foreign_thread
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_frame_tstate_tracing
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_ident_of_no_threading_threads
