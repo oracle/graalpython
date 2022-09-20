@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -61,6 +60,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -91,15 +91,22 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static TruffleString doMMap(PMMap mmap,
+    TruffleString doMMap(PMMap mmap,
                     int byteOffset,
-                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @Cached PConstructAndRaiseNode raiseNode,
-                    @Cached CastToJavaIntExactNode castToIntNode,
-                    @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
-        Object ptr = new MMapPointer(posixLib.mmapGetPointer(PythonContext.get(raiseNode).getPosixSupport(), mmap.getPosixSupportHandle()));
-        int bytesLen = castToIntNode.execute(mmap.getLength());
-        return fromNativePointerNode.execute(ptr, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
+                    @Cached BranchProfile unsupportedPosix,
+                    @CachedLibrary(limit = "4") PosixSupportLibrary posixLib,
+                    @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+        int bytesLen = bufferLib.getBufferLength(mmap);
+        try {
+            Object ptr = new MMapPointer(posixLib.mmapGetPointer(PythonContext.get(this).getPosixSupport(), mmap.getPosixSupportHandle()));
+            return fromNativePointerNode.execute(ptr, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
+        } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+            unsupportedPosix.enter();
+            byte[] bytes = bufferLib.getInternalOrCopiedByteArray(mmap);
+            return fromByteArrayNode.execute(bytes, byteOffset, bytesLen - byteOffset, TruffleString.Encoding.ISO_8859_1, false);
+        }
     }
 
     @Specialization
