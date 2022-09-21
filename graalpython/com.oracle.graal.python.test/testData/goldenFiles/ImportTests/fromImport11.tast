@@ -20,6 +20,6 @@ ModuleRootNode Name: <module 'fromImport11'> SourceSection: [0,52]`from sys.path
             Identifier: basename
             EmptyNode SourceSection: None
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None

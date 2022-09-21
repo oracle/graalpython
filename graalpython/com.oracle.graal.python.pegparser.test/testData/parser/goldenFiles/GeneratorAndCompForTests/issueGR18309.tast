@@ -1,0 +1,11 @@
+Module[0, 34]
+    ListComp[0, 34]
+        Element: Name[2, 3] Value: "b"
+        ComprehensionTy[4, 21]
+            Target: Name[8, 9] Value: "a" Store
+            Iterator: Name[13, 15] Value: "d1"
+            Ifs:
+                Name[19, 21] Value: "d1"
+        ComprehensionTy[22, 33]
+            Target: Name[26, 27] Value: "b" Store
+            Iterator: Name[31, 33] Value: "d2"

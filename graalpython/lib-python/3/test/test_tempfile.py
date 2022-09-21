@@ -15,7 +15,7 @@ from unittest import mock
 
 import unittest
 from test import support
-from test.support import script_helper
+from test.support import script_helper, impl_detail
 
 
 has_textmode = (tempfile._text_openflags != tempfile._bin_openflags)
@@ -1441,6 +1441,7 @@ class TestTemporaryDirectory(BaseTestCase):
             self.assertNotIn("Exception ", err)
             self.assertIn("ResourceWarning: Implicitly cleaning up", err)
 
+    @impl_detail("finalization", graalvm=False)
     def test_warnings_on_cleanup(self):
         # ResourceWarning will be triggered by __del__
         with self.do_create() as dir:

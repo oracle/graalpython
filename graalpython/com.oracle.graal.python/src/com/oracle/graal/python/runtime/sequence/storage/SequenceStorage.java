@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,16 +25,7 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-
 public abstract class SequenceStorage {
-
-    // Mutations lock
-    protected boolean lock;
-    @CompilationFinal private boolean lockingEnabled = false;
 
     public enum ListStorageType {
         Uninitialized,
@@ -44,8 +35,6 @@ public abstract class SequenceStorage {
         Int,
         Long,
         Double,
-        List,
-        Tuple,
         Generic;
 
         public boolean generalizesFrom(ListStorageType other) {
@@ -56,9 +45,6 @@ public abstract class SequenceStorage {
                 case Boolean:
                 case Byte:
                 case Double:
-                case List:
-                case Tuple:
-                    return other == Uninitialized || other == Empty;
                 case Int:
                     return other == Uninitialized || other == Empty || other == Byte;
                 case Long:
@@ -69,29 +55,35 @@ public abstract class SequenceStorage {
         }
     }
 
-    public final void setLock() {
-        if (!lockingEnabled) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            lockingEnabled = true;
-        }
-        this.lock = true;
+    // nominated storage length
+    protected int length;
+
+    // physical storage length
+    protected int capacity;
+
+    protected SequenceStorage() {
     }
 
-    public final void releaseLock() {
-        this.lock = false;
+    protected SequenceStorage(int length, int capacity) {
+        this.length = length;
+        this.capacity = capacity;
     }
 
-    protected final void checkLock() {
-        if (lockingEnabled) {
-            if (lock) {
-                PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError);
-            }
-        }
+    public final int length() {
+        return length;
     }
 
-    public abstract int length();
+    public void setNewLength(int length) {
+        this.length = length;
+    }
 
-    public abstract void setNewLength(int length);
+    protected final void incLength() {
+        this.length++;
+    }
+
+    public final int getCapacity() {
+        return capacity;
+    }
 
     public abstract SequenceStorage copy();
 

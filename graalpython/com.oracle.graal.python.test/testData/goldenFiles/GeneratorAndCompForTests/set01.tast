@@ -9,10 +9,9 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,24]`x**y for x in range(...`
         Name: <genexpr>
-        FrameDescriptor: 2 slots [x, <return_val>]
+        FrameDescriptor: 2 slots [<return_val>, x]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -25,7 +24,7 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 2 slots [x, <return_val>]
+          FrameDescriptor: 2 slots [<return_val>, x]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
@@ -36,32 +35,26 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
                 ExpressionStatementNode SourceSection: [1,5]`x**y`
                   YieldNode SourceSection: [1,5]`x**y`
                     flagSlot: 0
-                    BinaryArithmeticExpression SourceSection: [1,5]`x**y`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __pow__
-                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                    PowNodeGen SourceSection: [1,5]`x**y`
+                      ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
                         Identifier: y
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                  Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextNode SourceSection: None
+                GetNextCached SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
-                Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
+                  GetClassNodeGen SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
+                Frame: [1,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
@@ -71,7 +64,7 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,25]`{x**y for x in range
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [21,23]`20`
               Value: 20
         PythonObjectFactoryNodeGen SourceSection: None

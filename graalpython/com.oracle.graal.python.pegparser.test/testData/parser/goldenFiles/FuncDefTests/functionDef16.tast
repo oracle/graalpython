@@ -1,0 +1,33 @@
+Module[0, 132]
+    FunctionDef[0, 125]
+        Name:test
+        ArgumentsTy[0, 0]
+        ---- Function body of test ----
+        FunctionDef[14, 107]
+            Name:inner
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[25, 28] end
+            ---- Function body of inner ----
+            FunctionDef[35, 89]
+                Name:inner_inner
+                ArgumentsTy[0, 0]
+                ---- Function body of inner_inner ----
+                Call[60, 89]
+                    Target: Name[60, 65] Value: "print"
+                    Args:
+                        RAW[66, 79] Value: "inner_inner"
+                    KWArgs:
+                        KeywordTy[81, 88]
+                            end: Name[85, 88] Value: "end"
+                ---- End of inner_inner function ----
+            Call[94, 107]
+                Target: Name[94, 105] Value: "inner_inner"
+            ---- End of inner function ----
+        Call[110, 125]
+            Target: Name[110, 115] Value: "inner"
+            Args:
+                RAW[116, 124] Value: " baf\n"
+        ---- End of test function ----
+    Call[126, 132]
+        Target: Name[126, 130] Value: "test"

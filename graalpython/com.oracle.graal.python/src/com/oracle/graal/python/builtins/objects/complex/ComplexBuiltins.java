@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,35 +41,35 @@
 package com.oracle.graal.python.builtins.objects.complex;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
@@ -90,8 +90,8 @@ import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -112,11 +112,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PComplex)
 public class ComplexBuiltins extends PythonBuiltins {
@@ -126,7 +126,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __ABS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ABS__, minNumOfPositionalArgs = 1)
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
 
         public abstract double executeDouble(Object arg);
@@ -270,8 +270,8 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RADD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -298,13 +298,13 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = __TRUEDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RTRUEDIV__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___TRUEDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DivNode extends PythonBinaryBuiltinNode {
@@ -338,8 +338,8 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplex(PComplex left, PComplex right,
-                        @Cached("createBinaryProfile()") ConditionProfile topConditionProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroDivisionProfile) {
+                        @Cached ConditionProfile topConditionProfile,
+                        @Cached ConditionProfile zeroDivisionProfile) {
             double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
             double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
             double real;
@@ -386,7 +386,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -405,14 +405,14 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class RDivNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = __DIVMOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
     abstract static class DivModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
@@ -423,8 +423,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2)
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RMUL__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MUL__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -449,7 +449,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -461,8 +461,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -492,16 +492,15 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
-    @Builtin(name = __POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___RPOW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, reverseOperation = true)
+    @Builtin(name = J___POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    @ReportPolymorphism
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
 
         static boolean isSmallPositive(long l) {
@@ -590,143 +589,119 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
+        static boolean doComplex(PComplex left, PComplex right) {
             return left.equals(right);
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, long right,
+        static boolean doComplexInt(PComplex left, long right,
                         @Cached ConditionProfile longFitsToDoubleProfile) {
             return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, PInt right) {
+        static boolean doComplexInt(PComplex left, PInt right) {
             return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, double right) {
+        static boolean doComplexInt(PComplex left, double right) {
             return left.getImag() == 0 && left.getReal() == right;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
+        static boolean doComplex(PComplex left, PComplex right) {
             return left.notEqual(right);
         }
 
         @Specialization
-        boolean doComplex(PComplex left, long right,
+        static boolean doComplex(PComplex left, long right,
                         @Cached ConditionProfile longFitsToDoubleProfile) {
             return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
-        boolean doComplex(PComplex left, PInt right) {
+        static boolean doComplex(PComplex left, PInt right) {
             return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
         }
 
         @Specialization
-        boolean doComplex(PComplex left, double right) {
+        static boolean doComplex(PComplex left, double right) {
             return left.getImag() != 0 || left.getReal() != right;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String repr(PComplex self) {
+        TruffleString repr(PComplex self) {
             return repr(self, getRaiseNode());
         }
 
         @TruffleBoundary
-        private static String repr(PComplex self, PRaiseNode raiseNode) {
+        private static TruffleString repr(PComplex self, PRaiseNode raiseNode) {
             ComplexFormatter formatter = new ComplexFormatter(raiseNode, new Spec(-1, Spec.NONE));
             formatter.format(self);
             return formatter.pad().getResult();
@@ -734,12 +709,12 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___STR__, minNumOfPositionalArgs = 1)
     abstract static class StrNode extends ReprNode {
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
-    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
+    @Builtin(name = J___FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FormatNode extends FormatNodeBase {
@@ -749,14 +724,14 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
-        Object format(PComplex self, String formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, __FORMAT__);
+        TruffleString format(PComplex self, TruffleString formatString) {
+            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString);
             validateSpec(spec);
             return doFormat(getRaiseNode(), self, spec);
         }
 
         @TruffleBoundary
-        private static Object doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
+        private static TruffleString doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
             ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateAndPrepareForFloat(raiseNode, spec, "complex"));
             formatter.format(self);
             return formatter.pad().getResult();
@@ -775,16 +750,16 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___BOOL__, minNumOfPositionalArgs = 1)
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean bool(PComplex self) {
+        static boolean bool(PComplex self) {
             return self.getReal() != 0.0 || self.getImag() != 0.0;
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __NEG__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEG__, minNumOfPositionalArgs = 1)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
         PComplex neg(PComplex self) {
@@ -793,7 +768,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __POS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___POS__, minNumOfPositionalArgs = 1)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
         PComplex pos(PComplex self) {
@@ -802,7 +777,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___GETNEWARGS__, minNumOfPositionalArgs = 1)
     abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple get(PComplex self) {
@@ -814,7 +789,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends PythonBuiltinNode {
         @Specialization
-        double get(PComplex self) {
+        static double get(PComplex self) {
             return self.getReal();
         }
     }
@@ -823,19 +798,19 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "imag", minNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     abstract static class ImagNode extends PythonBuiltinNode {
         @Specialization
-        double get(PComplex self) {
+        static double get(PComplex self) {
             return self.getImag();
         }
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(PComplex self) {
+        static long hash(PComplex self) {
             // just like CPython
-            long realHash = PythonObjectLibrary.hash(self.getReal());
-            long imagHash = PythonObjectLibrary.hash(self.getImag());
+            long realHash = PyObjectHashNode.hash(self.getReal());
+            long imagHash = PyObjectHashNode.hash(self.getImag());
             return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
         }
     }
@@ -850,7 +825,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorDivNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -861,7 +836,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ModNode extends PythonBinaryBuiltinNode {
         @Specialization

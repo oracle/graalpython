@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,22 @@ def assert_raises(err, fn, *args, **kwargs):
     except err:
         raised = True
     assert raised
+
+
+def test_reduce_ex_with_slots():
+    # Adapted from test_desc.test_issue24097
+    class A:
+        __slotnames__ = ['spam']
+
+        def __getattr__(self, attr):
+            if attr == 'spam':
+                return 42
+            else:
+                raise AttributeError
+
+    import copyreg
+    expected = (copyreg.__newobj__, (A,), (None, {'spam': 42}), None, None)
+    assert A().__reduce_ex__(2) == expected
 
 
 def test_set_dict_attr_builtin_extension():
@@ -151,3 +167,6 @@ def test_class_attr():
 
     AAA().foo()
     CCC().bar()
+
+def test_reduce_ex_with_none():
+    assert_raises(TypeError, object(), None)

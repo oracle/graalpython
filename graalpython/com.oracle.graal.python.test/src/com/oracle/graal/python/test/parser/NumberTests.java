@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -280,4 +280,23 @@ public class NumberTests extends ParserTestBase {
         checkSyntaxError("0o5__77");
     }
 
+    @Test
+    public void Float01() throws Exception {
+        checkTreeResult("1.0");
+    }
+
+    @Test
+    public void Float02() throws Exception {
+        checkTreeResult("0.0");
+    }
+
+    @Test
+    public void Float03() throws Exception {
+        checkTreeResult("-0.0");
+    }
+
+    @Test
+    public void Float04() throws Exception {
+        checkTreeResult("--0.0");
+    }
 }

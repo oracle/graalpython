@@ -1,0 +1,5 @@
+Disassembly of <module>:
+  1:0   -   1:17        0 LOAD_BYTE_O                       0
+  1:0   -   1:17        2 IMPORT_STAR                       0
+  1:0   -   1:17        4 LOAD_NONE
+  1:0   -   1:17        5 RETURN_VALUE

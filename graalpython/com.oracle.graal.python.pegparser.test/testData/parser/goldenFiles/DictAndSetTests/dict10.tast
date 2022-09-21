@@ -1,0 +1,17 @@
+Module[0, 46]
+    Dict[0, 46]
+        Values:
+            Val: 
+                Dict[3, 31]
+                    Values:
+                        Key: RAW[4, 7] Value: "a"
+                        Val: RAW[9, 16] Value: "hello"
+                        Key: RAW[18, 21] Value: "b"
+                        Val: RAW[23, 30] Value: "world"
+            Val: 
+                Dict[35, 45]
+                    Values:
+                        Key: LONG[36, 37] Value: 3
+                        Val: LONG[38, 39] Value: 4
+                        Key: LONG[41, 42] Value: 5
+                        Val: LONG[43, 44] Value: 6

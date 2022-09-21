@@ -1,5 +1,5 @@
 import unittest
-from test.support import cpython_only, impl_detail
+from test.support import cpython_only
 try:
     import _testcapi
 except ImportError:
@@ -548,7 +548,6 @@ def testfunction_kw(self, *, kw):
 
 class TestPEP590(unittest.TestCase):
 
-    @impl_detail("_testcapi missing", graalvm=False)
     def test_method_descriptor_flag(self):
         import functools
         cached = functools.lru_cache(1)(testfunction)
@@ -568,7 +567,6 @@ class TestPEP590(unittest.TestCase):
             pass
         self.assertFalse(MethodDescriptorHeap.__flags__ & Py_TPFLAGS_METHOD_DESCRIPTOR)
 
-    @impl_detail("_testcapi missing", graalvm=False)
     def test_vectorcall_flag(self):
         self.assertTrue(_testcapi.MethodDescriptorBase.__flags__ & Py_TPFLAGS_HAVE_VECTORCALL)
         self.assertTrue(_testcapi.MethodDescriptorDerived.__flags__ & Py_TPFLAGS_HAVE_VECTORCALL)
@@ -580,7 +578,6 @@ class TestPEP590(unittest.TestCase):
             pass
         self.assertFalse(MethodDescriptorHeap.__flags__ & Py_TPFLAGS_HAVE_VECTORCALL)
 
-    @impl_detail("_testcapi missing", graalvm=False)
     def test_vectorcall_override(self):
         # Check that tp_call can correctly override vectorcall.
         # MethodDescriptorNopGet implements tp_call but it inherits from
@@ -591,7 +588,6 @@ class TestPEP590(unittest.TestCase):
         f = _testcapi.MethodDescriptorNopGet()
         self.assertIs(f(*args), args)
 
-    @impl_detail("_testcapi missing", graalvm=False)
     def test_vectorcall(self):
         # Test a bunch of different ways to call objects:
         # 1. vectorcall using PyVectorcall_Call()

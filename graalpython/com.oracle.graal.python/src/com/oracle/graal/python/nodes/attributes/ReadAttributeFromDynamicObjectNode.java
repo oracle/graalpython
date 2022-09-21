@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,22 +44,22 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
-@ReportPolymorphism
 @GenerateUncached
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromDynamicObjectNode create() {
@@ -72,7 +72,9 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
 
     public abstract Object execute(Object object, Object key);
 
-    protected static Object getAttribute(DynamicObject object, String key) {
+    public abstract Object execute(Object object, HiddenKey key);
+
+    protected static Object getAttribute(DynamicObject object, TruffleString key) {
         return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
     }
 
@@ -80,19 +82,25 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }
 
+    protected static boolean isPrimitive(Object value) {
+        return value instanceof Integer || value instanceof Long || value instanceof Boolean || value instanceof Double;
+    }
+
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
                     guards = {
+                                    "isSingleContext()",
                                     "dynamicObject == cachedObject",
                                     "isLongLivedObject(cachedObject)",
                                     "key == cachedKey",
                                     "dynamicObject.getShape() == cachedShape",
                                     "loc != null",
-                                    "loc.isAssumedFinal()"
+                                    "loc.isAssumedFinal()",
+                                    "!isPrimitive(value)"
                     }, //
-                    assumptions = {"singleContextAssumption()", "cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected Object readFinalAttr(DynamicObject dynamicObject, String key,
-                    @Cached("key") String cachedKey,
+                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
+    protected Object readFinalAttr(DynamicObject dynamicObject, TruffleString key,
+                    @Cached("key") TruffleString cachedKey,
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
@@ -101,16 +109,44 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return value;
     }
 
-    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "readFinalAttr")
-    protected Object readDirect(DynamicObject dynamicObject, @SuppressWarnings("unused") String key,
-                    @Cached("key") String cachedKey,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, cachedKey, PNone.NO_VALUE);
+    @SuppressWarnings("unused")
+    @Specialization(limit = "1", //
+                    guards = {
+                                    "isSingleContext()",
+                                    "dynamicObject == cachedObject",
+                                    "isLongLivedObject(cachedObject)",
+                                    "key == cachedKey",
+                                    "dynamicObject.getShape() == cachedShape",
+                                    "loc != null",
+                                    "loc.isAssumedFinal()",
+                                    "isPrimitive(value)"
+                    }, //
+                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
+    protected Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key,
+                    @Cached("key") TruffleString cachedKey,
+                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
+                    @Cached("dynamicObject.getShape()") Shape cachedShape,
+                    @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
+                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
+                    @Cached(value = "getAttribute(dynamicObject, key)") Object value) {
+        return value;
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readDirect", "readFinalAttr"})
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
+    protected Object readDirect(DynamicObject dynamicObject, TruffleString key,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
+    }
+
+    @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected Object readDirectHidden(DynamicObject dynamicObject, Object key,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
+    }
+
+    @Specialization(guards = "!isHiddenKey(key)", replaces = {"readDirect", "readFinalAttr"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object read(DynamicObject dynamicObject, Object key,
-                    @Cached CastToJavaStringNode castNode,
+                    @Cached CastToTruffleStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         return dylib.getOrDefault(dynamicObject, attrKey(key, castNode), PNone.NO_VALUE);
     }

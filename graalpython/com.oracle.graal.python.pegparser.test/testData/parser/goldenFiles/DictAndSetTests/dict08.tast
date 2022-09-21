@@ -1,0 +1,17 @@
+Module[0, 30]
+    Dict[0, 30]
+        Values:
+            Key: LONG[1, 2] Value: 1
+            Val: LONG[3, 4] Value: 2
+            Val: 
+                Dict[8, 10]
+                    Values:
+            Key: LONG[12, 13] Value: 3
+            Val: LONG[14, 15] Value: 4
+            Val: 
+                Dict[19, 29]
+                    Values:
+                        Key: LONG[20, 21] Value: 5
+                        Val: LONG[22, 23] Value: 6
+                        Key: LONG[25, 26] Value: 7
+                        Val: LONG[27, 28] Value: 8

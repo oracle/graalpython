@@ -1,0 +1,22 @@
+Module[0, 77]
+    FunctionDef[0, 77]
+        Name:outer
+        ArgumentsTy[0, 0]
+        ---- Function body of outer ----
+        FunctionDef[15, 43]
+            Name:decorator1
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[30, 32] fn
+            ---- Function body of decorator1 ----
+            Pass[39, 43]
+            ---- End of decorator1 function ----
+        FunctionDef[60, 77]
+            Name:inner
+            Decorators:
+            Name[47, 57] Value: "decorator1"
+            ArgumentsTy[0, 0]
+            ---- Function body of inner ----
+            Pass[73, 77]
+            ---- End of inner function ----
+        ---- End of outer function ----

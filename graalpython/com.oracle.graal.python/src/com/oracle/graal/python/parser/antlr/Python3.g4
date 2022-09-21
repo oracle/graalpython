@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2022, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -70,11 +70,62 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
 
   @Override
   public void emit(Token t) {
+    // The code below handle situation, when in the source code is used unicode of various length (bigger then XFFFF)
+    // Lexer works with CodePointStream (antlr class) that is able to count positions 
+    // of the text with such codepoints. For example if there is code:
+    // `a = '𝔘𝔫𝔦𝔠𝔬𝔡𝔢'`
+    // then the range of the string literal (from CodePointStream) is [4, 13],
+    // but the java string substring(4,13)  returns `'𝔘𝔫𝔦𝔠`, because 
+    // the letter is represented with code point of length 2. The problem is
+    // that we don't work in python implementation with code point stream, 
+    // but just with the strings. So the lexer converts the ranges of tokens 
+    // to the "string" representation. 
+    int type = t.getType();
+    lastCodePointCheckOffset = t.getStopIndex();  // remember of the last index of checked string (we needed it in the skip comment actions)
+    int delta = 0;
+    String text = null;
+    if (type == NAME || type == STRING || type == STRING_LITERAL) {
+        // We expect that such string can be onlyb in tokens NAME, STRING and STRING_LITERAL
+        // get the text from CodePointStream
+        text = t.getText();
+        int len = text.length();
+        // find if there is code point and how big is
+        for (int i = 0; i < len; i++) {
+            // check if there is a codepoint with char count bigger then 1
+            int codePoint = Character.codePointAt(text, i);
+            delta += Character.charCount(codePoint);
+        }
+        delta = delta - len;
+    }
+    if (codePointDelta > 0 || delta > 0) { // until codePointDelta is zero, we don't have to change the tokens. 
+        CommonToken ctoken = (CommonToken) t;
+        text = text == null ? t.getText() : text; // we need to read before changing offsets
+        if (delta > 0) {
+            // the token text contains a code point with more chars than 1
+            if (codePointDelta > 0) {
+                // set the new start of the token, if this is not the first token with a code point
+                ctoken.setStartIndex(ctoken.getStartIndex() + codePointDelta);
+            }
+            // increse the codePointDelta with the char length of the code points in the text
+            codePointDelta += delta;
+        } else {
+            // we have to shift all the tokens if there is a code point with more bytes. 
+            ctoken.setStartIndex(t.getStartIndex() + codePointDelta);
+        }
+        // correct the end offset
+        ctoken.setStopIndex(ctoken.getStopIndex() + codePointDelta);
+        // TODO this is not nice. This expect the current implementation
+        // of CommonToken, is done in the way that reads the text from CodePointStream until
+        // the private field text is not set. 
+        ctoken.setText(text);
+    }
     super.setToken(t);
     tokens.offer(t);
+    //System.out.println("token: " + t.getText() + "[" + t.getStartIndex() + ", " + t.getStopIndex() + "]");
   }
 
   int codePointDelta = 0; // keeps the length of code points that have more chars that one.
+  int lastCodePointCheckOffset = 0; // this is offset in token stream, where we checked the last codePoints
 
   @Override
   public Token nextToken() {
@@ -109,53 +160,6 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     }
 
     Token result = tokens.isEmpty() ? next : tokens.poll();
-    // The code below handle situation, when in the source code is used unicode of various length (bigger then XFFFF)
-    // Lexer works with CodePointStream (antlr class) that is able to count positions 
-    // of the text with such codepoints. For example if there is code:
-    // `a = '𝔘𝔫𝔦𝔠𝔬𝔡𝔢'`
-    // then the range of the string literal (from CodePoiintStream) is [4, 13],
-    // but the java string substring(4,13)  returns `'𝔘𝔫𝔦𝔠`, because every
-    // the letter is represented with code point of length 2. The problem is
-    // that we don't work in python implementation with code point stream, 
-    // but just with the strings. So the lexer converts the ranges of tokens 
-    // to the "string" representation. 
-    if (result.getType() != Python3Parser.EOF) {
-        // get the text from CodePointStream
-        String text = result.getText();
-        int len = text.length();
-        int delta = 0;
-        // find if there is code point and how big is
-        if (result.getType() != NEWLINE) {
-            // we don't have to check the new line token
-            for (int i = 0; i < len; i++) {
-                // check if there is a codepoint with char count bigger then 1
-                int codePoint = Character.codePointAt(text, i);
-                delta += Character.charCount(codePoint);
-            }
-            delta = delta - len;
-        }
-        if (codePointDelta > 0 || delta > 0) { // until codePointDelta is zerou, we don't have to change the tokens. 
-            CommonToken ctoken = (CommonToken) result;
-            if (delta > 0) {
-                // the token text contains a code point with more chars than 1
-                if (codePointDelta > 0) {
-                    // set the new start of the token, if this is not the first token with a code point
-                    ctoken.setStartIndex(ctoken.getStartIndex() + codePointDelta);
-                }
-                // increse the codePointDelta with the char length of the code points in the text
-                codePointDelta += delta;
-            } else {
-                // we have to shift all the tokens if there is a code point with more bytes. 
-                ctoken.setStartIndex(result.getStartIndex() + codePointDelta);
-            }
-            // correct the end offset
-            ctoken.setStopIndex(ctoken.getStopIndex() + codePointDelta);
-            // TODO this is not nice. This expect the current implementation
-            // of CommonToken, is done in the way that reads the text from CodePointStream until
-            // the private field text is not set. 
-            ctoken.setText(text);
-        }
-    }
     return result;
   }
 
@@ -253,6 +257,8 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
 
 @parser::header
 {
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -279,6 +285,7 @@ import java.util.Arrays;
     }
 	private PythonSSTNodeFactory factory;
 	private ParserMode parserMode;
+        private int optimizeLevel = 0;
 	private ScopeEnvironment scopeEnvironment;
 	private LoopState loopState;
 
@@ -359,7 +366,26 @@ import java.util.Arrays;
         this.parserMode = parserMode;
     }
 
-    private static class PythonRecognitionException extends RecognitionException{
+    public void setOptimizeLevel(int optimizeLevel) {
+        this.optimizeLevel = optimizeLevel;
+    }
+
+    private SSTNode optimize(SSTNode node) {
+        if (optimizeLevel > 1) {
+            if (node instanceof BlockSSTNode) {
+                BlockSSTNode block  = (BlockSSTNode)node;
+                SSTNode[] statements = block.getStatements();
+                if (statements.length > 0 && statements[0] instanceof ExpressionStatementSSTNode
+                        && ((ExpressionStatementSSTNode)statements[0]).getExpression() instanceof StringLiteralSSTNode) {
+                    //optimize >=2 -> documentation needs to be remove from the block
+                    return new BlockSSTNode(Arrays.copyOfRange(statements, 1, statements.length));
+                }
+            }
+        }
+        return node;
+    }
+
+    protected static class PythonRecognitionException extends RecognitionException{
         static final long serialVersionUID = 1L;
             
         public PythonRecognitionException(String message, Recognizer<?, ?> recognizer, IntStream input, ParserRuleContext ctx, Token offendingToken) {
@@ -434,7 +460,7 @@ locals
 		| simple_stmt
 		| compound_stmt
 	)* EOF
-	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
+	{ $result = optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx))); }
 	{
             if ($interactive || $curInlineLocals != null) {
                scopeEnvironment.popScope();
@@ -456,8 +482,8 @@ locals
 	)* EOF
 	{ 
             Token stopToken = $stmt.stop;
-            $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
-                stopToken != null ?  getStopIndex(stopToken) : getLastIndex($ctx)); }
+            $result = optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
+                stopToken != null ?  getStopIndex(stopToken) : getLastIndex($ctx))); }
 	{ 
            scopeEnvironment.popScope(); 
         }
@@ -479,7 +505,7 @@ locals
 		NEWLINE
 		| stmt
 	)* EOF
-	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
+	{ $result = optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx))); }
 	{
             scopeEnvironment.popScope();
 	}
@@ -512,7 +538,7 @@ decorator:
         } else {
             factory.getScopeEnvironment().addSeenVar(dottedName);
         }
-        push( new DecoratorSSTNode(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+        push( factory.createDecorator(dottedName, args, getStartIndex($ctx), getLastIndex($ctx)));
     }
 ;
 
@@ -537,13 +563,14 @@ decorated:
 
 async_funcdef: ASYNC funcdef;
 funcdef
-:
+:       
+        { SSTNode resultType = null; }
 	'def' n=NAME parameters
 	(
-		'->' test
+		'->' test { resultType = $test.result; }
 	)? ':' 
 	{ 
-            String name = $n.getText(); 
+            String name = factory.mangleNameInCurrentScope($n.getText());
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -553,11 +580,11 @@ funcdef
         }
 	s = suite
 	{ 
-            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
-            scopeEnvironment.popScope();
-            loopState = savedLoopState;
-            push(funcDef);
-        }
+        SSTNode funcDef = factory.createFunctionDef(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), factory.createAnnotationType(resultType), getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+        scopeEnvironment.popScope();
+        loopState = savedLoopState;
+        push(funcDef);
+    }
 ;
 
 parameters returns [ArgDefListBuilder result]
@@ -609,7 +636,10 @@ defparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, factory.createAnnotationType(type), defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
@@ -628,7 +658,7 @@ splatparameter [ArgDefListBuilder args]
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.addSplat(name, type); }
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, factory.createAnnotationType(type)); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
@@ -641,7 +671,10 @@ kwargsparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
-            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            if (args.addKwargs(name, factory.createAnnotationType(type)) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
@@ -691,7 +724,10 @@ vdefparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
@@ -707,14 +743,18 @@ vsplatparameter [ArgDefListBuilder args]
 	'*'
 	{ String name = null; }
 	( NAME { name = $NAME.text; } )?
-	{ args.addSplat(name, null);}
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, null);}
 ;
 
 vkwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
 	{
-            if (args.addKwargs($NAME.text, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+            String name = $NAME.text;
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
@@ -758,10 +798,13 @@ expr_stmt
 		)?
 		{ 
                     rhsStopIndex = getStopIndex($test.stop);
+                    AnnotationSSTNode annotation = factory.createAnnotation($lhs.result, $t.result, getStartIndex($ctx), rhsStopIndex);
+                    // the rhs can be null, then we need to process just the annotation
                     if (rhs == null) {
-                        rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
+                        push(annotation);
+                    } else {
+                        push(factory.createAnnAssignment(annotation, rhs, getStartIndex($ctx), rhsStopIndex)); 
                     }
-                    push(factory.createAnnAssignment($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
                 }
 		|
 		augassign
@@ -787,7 +830,7 @@ expr_stmt
                     if (value instanceof StarSSTNode) {
                         throw new PythonRecognitionException("can't use starred expression here", this, _input, $ctx, $ctx.start);
                     }
-                    if (start == start()) {
+                    if (start == start()) { 
                         push(new ExpressionStatementSSTNode(value));
                     } else {
                         push(factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex(_localctx), rhsStopIndex));
@@ -985,7 +1028,11 @@ assert_stmt
 		',' test
 		{ message = $test.result; }
 	)?
-	{ push(new AssertSSTNode($e.result, message, getStartIndex($ctx), getLastIndex($ctx))); }
+	{   
+            if (optimizeLevel < 1) {
+                push(new AssertSSTNode($e.result, message, getStartIndex($ctx), getLastIndex($ctx))); 
+            }
+        }
 ;
 
 compound_stmt
@@ -1331,6 +1378,16 @@ factor returns [SSTNode result]
                         fResult.setStartOffset($m.getStartIndex());
                         $result =  fResult;
                     }
+                } else if (isNeg && fResult instanceof FloatLiteralSSTNode) {
+                    FloatLiteralSSTNode floatResult = (FloatLiteralSSTNode) fResult;
+                    if (floatResult.isNegative() || floatResult.isImaginary()) {
+                        // solving cases like --0.0
+                        $result =  new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex($ctx), getStopIndex($factor.stop)); 
+                    } else {
+                        floatResult.negate();
+                        floatResult.setStartOffset($m.getStartIndex());
+                        $result =  floatResult;
+                    }
                 } else {
                     $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 
                 }
@@ -1357,7 +1414,7 @@ atom_expr returns [SSTNode result]
 		| '.' NAME 
                 {   
                     assert $NAME != null;
-                    $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
+                    $result = factory.createGetAttribute($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
                 }
 	)*
 ;
@@ -1648,7 +1705,7 @@ locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
         }
     { LoopState savedLoopState = saveLoopState(); }
 	':' suite
-	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop))); }
+	{ push(factory.createClassDefinition($NAME.text, baseClasses, optimize($suite.result), getStartIndex($ctx), getStopIndex($suite.stop))); }
 	{ scopeEnvironment.popScope(); }
 	{ loopState = savedLoopState; }
 ;
@@ -1689,7 +1746,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
                    scopeEnvironment.popScope();
                 }
 	|
-                { 
+                {
                     String name = getCurrentToken().getText();
                     if (isForbiddenName(name)) {
                         factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
@@ -1740,7 +1797,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
 
 comp_for
 [SSTNode target, SSTNode name, PythonBuiltinClassType resultType, int level]
-returns [SSTNode result]
+returns [ForComprehensionSSTNode result]
 :
 	{ 
             if (target instanceof StarSSTNode) {
@@ -1755,6 +1812,7 @@ returns [SSTNode result]
 	{ 
             SSTNode iterator; 
             SSTNode[] variables;
+            ForComprehensionSSTNode innerFor = null;
             int lineNumber;
         }
 	f = 'for' exprlist 'in' 
@@ -1782,12 +1840,20 @@ returns [SSTNode result]
 	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
 	
 	(
-            comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
+            comp_for [null, null, PythonBuiltinClassType.PGenerator, level + 1]
             { 
-                iterator = $comp_for.result; 
+                innerFor = $comp_for.result;
             }
 	)?
-	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, $name != null ? $name.getStartOffset() : $target.getStartOffset(), getLastIndex(_localctx)); }
+	{
+	    int startOffset = getStartIndex($ctx);
+	    if ($name != null) {
+	        startOffset = $name.getStartOffset();
+	    } else if ($target != null) {
+	        startOffset = $target.getStartOffset();
+	    }
+	    $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, innerFor, $resultType, lineNumber, level, startOffset, getLastIndex($ctx));
+	}
 ;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
@@ -2010,7 +2076,26 @@ LONG_QUOTES2 : '\'\'\'' {usedQuote2();};
 
 SKIP_
  : ( SPACES 
-| COMMENT 
+| COMMENT
+    {
+        int startIndex = lastCodePointCheckOffset + 1;
+        int endIndex = _input.index();
+        String text = _input.getText(Interval.of(startIndex, endIndex));
+        int len = text.length();
+        int delta = 0;
+        // find if there is code point and how big is
+        for (int i = 0; i < len; i++) {
+           // check if there is a codepoint with char count bigger then 1
+            int codePoint = Character.codePointAt(text, i);
+            delta += Character.charCount(codePoint);
+        }
+        delta = delta - len;
+
+        if (delta > 0) {
+            codePointDelta += delta;
+        }
+        lastCodePointCheckOffset = endIndex;  // and the last checked offset
+    }
 | LINE_JOINING 
     {   
         // We need to hanle line continuation here, because normally is hidden for the parser

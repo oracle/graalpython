@@ -31,6 +31,9 @@ from copy import copy
 if sys.flags.no_site:
     raise unittest.SkipTest("Python was invoked with -S")
 
+# Make sure sysconfig._CONFIG_VARS is initialized for the tests below
+sysconfig.get_config_vars()
+
 import site
 
 

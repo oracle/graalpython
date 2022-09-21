@@ -1,0 +1,8 @@
+Module[1, 65]
+    FunctionDef[1, 65]
+        Name:test
+        ArgumentsTy[0, 0]
+        ---- Function body of test ----
+        RAW[18, 48] Value: "this should be documentation"
+        Return[53, 65] RAW[60, 65] Value: "bla"
+        ---- End of test function ----

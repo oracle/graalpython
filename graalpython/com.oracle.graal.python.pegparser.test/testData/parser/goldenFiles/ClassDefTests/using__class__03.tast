@@ -1,0 +1,32 @@
+Module[0, 257]
+    ClassDef[0, 257] XN
+        ---- Class body of XN ----
+        FunctionDef[22, 102]
+            Name:fn1
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[30, 34] self
+            ---- Function body of fn1 ----
+            Nonlocal[53, 71]: __class__ 
+            Assign[88, 102]
+                LHS: Name[88, 97] Value: "__class__" Store
+                RHS: Name[100, 102] Value: "YN"
+            ---- End of fn1 function ----
+        FunctionDef[115, 162]
+            Name:fn2
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[123, 127] self
+            ---- Function body of fn2 ----
+            Return[146, 162] Name[153, 162] Value: "__class__"
+            ---- End of fn2 function ----
+        FunctionDef[175, 257]
+            Name:fn3
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[183, 187] slef
+            ---- Function body of fn3 ----
+            Nonlocal[206, 224]: __class__ 
+            Return[241, 257] Name[248, 257] Value: "__class__"
+            ---- End of fn3 function ----
+        ---- End of XN class ----

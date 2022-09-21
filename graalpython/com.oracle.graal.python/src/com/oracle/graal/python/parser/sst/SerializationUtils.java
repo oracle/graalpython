@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,11 +45,25 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 
 public class SerializationUtils {
-    public static byte VERSION = 6;
+    // version 7 - mangle names of private properties in classes
+    // version 8 - rework starargs handling
+    // version 9 - refactoring of parsing fstring
+    // version 10 - adding AnnotationSSTNode
+    // version 11 - the identifiers of frame slots for return, temp and free__class_ slots, were
+    // changed from string to objectsand we serialized only string frame slots. This version is able
+    // serialized the return and free__class__ slots again. The tmp slots are not serialized, we
+    // don't need them.
+    // version 12 - changes needed for AST sharing
+    // version 13 - adding function result annotations
+    // version 14 - update marshal format to be mostly compatible with CPython
+    // version 15 - change serialization of comprehensions
 
-    public static enum SSTId {
+    public static byte VERSION = 15;
+
+    public enum SSTId {
         AndID,
         AnnAssignmentID,
+        AnnotationID,
         AssertID,
         AssignmentID,
         AugAssignmentID,
@@ -85,6 +99,7 @@ public class SerializationUtils {
         StarID,
         RawStringLiteralID,
         BytesLiteralID,
+        FormatExpressionID,
         FormatStringLiteralID,
         SubscriptID,
         TernaryIfID,
@@ -198,6 +213,36 @@ public class SerializationUtils {
                 return BinaryArithmetic.Pow;
             default:
                 throw new UnsupportedOperationException("Deserialization of BinaryArithmetic with id " + id + " is not supported.");
+        }
+    }
+
+    public static byte getFormatStringConversionTypeId(StringLiteralSSTNode.FormatStringConversionType ct) {
+        switch (ct) {
+            case NO_CONVERSION:
+                return 0;
+            case ASCII_CONVERSION:
+                return 1;
+            case REPR_CONVERSION:
+                return 2;
+            case STR_CONVERTION:
+                return 3;
+            default:
+                throw new UnsupportedOperationException("Serialization of " + ct.name() + " is not supported.");
+        }
+    }
+
+    public static StringLiteralSSTNode.FormatStringConversionType getFormatStringConversionTypeFromId(byte id) {
+        switch (id) {
+            case 0:
+                return StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION;
+            case 1:
+                return StringLiteralSSTNode.FormatStringConversionType.ASCII_CONVERSION;
+            case 2:
+                return StringLiteralSSTNode.FormatStringConversionType.REPR_CONVERSION;
+            case 3:
+                return StringLiteralSSTNode.FormatStringConversionType.STR_CONVERTION;
+            default:
+                throw new UnsupportedOperationException("Deserialization of FormatStringConversionType with id " + id + " is not supported.");
         }
     }
 

@@ -17,6 +17,13 @@
 *graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_encoding
 *graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_lines
 *graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_locale
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_months
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_spacing
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_type
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_option_width
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_output_current_year
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_output_month
+*graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_output_year
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_leapdays
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_leapdays_upper_boundary
 *graalpython.lib-python.3.test.test_calendar.LeapdaysTestCase.test_no_range

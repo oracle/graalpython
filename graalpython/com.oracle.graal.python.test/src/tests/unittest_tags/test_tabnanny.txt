@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_tabnanny.TestCheck.test_errored_directory
 *graalpython.lib-python.3.test.test_tabnanny.TestCheck.test_when_nannynag_error
 *graalpython.lib-python.3.test.test_tabnanny.TestCheck.test_when_nannynag_error_verbose
+*graalpython.lib-python.3.test.test_tabnanny.TestCheck.test_when_no_file
 *graalpython.lib-python.3.test.test_tabnanny.TestCheck.test_when_tokenize_tokenerror
 *graalpython.lib-python.3.test.test_tabnanny.TestCheck.test_when_wrong_indented
 *graalpython.lib-python.3.test.test_tabnanny.TestCommandLine.test_double_verbose_mode

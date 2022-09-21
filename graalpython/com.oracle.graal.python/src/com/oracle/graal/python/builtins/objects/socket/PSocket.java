@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,186 +40,62 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.Channel;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
-public class PSocket extends PythonBuiltinObject implements Channel {
-    public static final int AF_UNSPEC = 0;
-    public static final int AF_INET = 2;
-    public static final int AF_INET6 = 23;
+public class PSocket extends PythonBuiltinObject {
+    public static final int INVALID_FD = -1;
 
-    public static final int SOCK_DGRAM = 1;
-    public static final int SOCK_STREAM = 2;
+    private int family;
+    private int type;
+    private int proto;
 
-    public static final int AI_PASSIVE = 1;
-    public static final int AI_CANONNAME = 2;
-    public static final int AI_NUMERICHOST = 4;
+    private int fd = INVALID_FD;
 
-    public static final int AI_ALL = 256;
-    public static final int AI_V4MAPPED_CFG = 512;
-    public static final int AI_ADDRCONFIG = 1024;
-    public static final int AI_V4MAPPED = 2048;
+    // nanoseconds
+    private long timeoutNs;
 
-    public static final int AI_MASK = (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST);
-
-    public static final int AI_DEFAULT = (AI_V4MAPPED_CFG | AI_ADDRCONFIG);
-
-    public static final int NI_NOFQDN = 1;
-    public static final int NI_NUMERICHOST = 2;
-    public static final int NI_NAMEREQD = 4;
-    public static final int NI_NUMERICSERV = 8;
-    public static final int NI_DGRAM = 10;
-
-    public static final int IPPROTO_TCP = 6;
-
-    @CompilationFinal private static InetSocketAddress EPHEMERAL_ADDRESS;
-
-    private static InetSocketAddress getEphemeralAddress() {
-        if (EPHEMERAL_ADDRESS == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            EPHEMERAL_ADDRESS = new InetSocketAddress(0);
-        }
-        return EPHEMERAL_ADDRESS;
-    }
-
-    private final int family;
-    private final int type;
-    private final int proto;
-
-    private int fileno;
-
-    public int serverPort;
-    public String serverHost;
-
-    private double timeout;
-
-    private InetSocketAddress address = getEphemeralAddress();
-
-    private SocketChannel socket;
-
-    private ServerSocketChannel serverSocket;
-    private boolean blocking;
-
-    private HashMap<Object, Object> options;
-
-    public PSocket(Object cls, Shape instanceShape, int family, int type, int proto) {
+    public PSocket(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        this.family = family;
-        this.proto = proto;
-        this.type = type;
-        this.fileno = -1;
-    }
-
-    public PSocket(Object cls, Shape instanceShape, int family, int type, int proto, int fileno) {
-        super(cls, instanceShape);
-        this.fileno = fileno;
-        this.family = family;
-        this.proto = proto;
-        this.type = type;
     }
 
     public int getFamily() {
         return family;
     }
 
+    public void setFamily(int family) {
+        this.family = family;
+    }
+
     public int getType() {
         return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 
     public int getProto() {
         return proto;
     }
 
-    public int getFileno() {
-        return fileno;
+    public void setProto(int proto) {
+        this.proto = proto;
     }
 
-    public void setFileno(int fileno) {
-        this.fileno = fileno;
+    public int getFd() {
+        return fd;
     }
 
-    public double getTimeout() {
-        return timeout;
+    public void setFd(int fd) {
+        this.fd = fd;
     }
 
-    public void setTimeout(double timeout) {
-        this.timeout = timeout;
+    public long getTimeoutNs() {
+        return timeoutNs;
     }
 
-    public InetSocketAddress getAddress() {
-        return address;
-    }
-
-    public ServerSocketChannel getServerSocket() {
-        return serverSocket;
-    }
-
-    public SocketChannel getSocket() {
-        return socket;
-    }
-
-    public void setServerSocket(ServerSocketChannel serverSocket) {
-        if (this.getSocket() != null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new Error();
-        }
-        this.serverSocket = serverSocket;
-    }
-
-    public void setSocket(SocketChannel socket) {
-        if (this.getServerSocket() != null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new Error();
-        }
-        this.socket = socket;
-    }
-
-    public boolean isBlocking() {
-        return blocking;
-    }
-
-    public void setBlocking(boolean blocking) {
-        this.blocking = blocking;
-    }
-
-    @TruffleBoundary
-    public boolean isOpen() {
-        return (getSocket() != null && getSocket().isOpen()) || (getServerSocket() != null && getServerSocket().isOpen());
-    }
-
-    @TruffleBoundary
-    public void close() throws IOException {
-        if (getSocket() != null) {
-            getSocket().close();
-        } else if (getServerSocket() != null) {
-            getServerSocket().close();
-        }
-    }
-
-    @TruffleBoundary
-    public void setSockOpt(Object option, Object value) {
-        if (options == null) {
-            options = new HashMap<>();
-        }
-        options.put(option, value);
-    }
-
-    @TruffleBoundary
-    public Object getSockOpt(Object option) {
-        if (options != null) {
-            return options.getOrDefault(option, PNone.NONE);
-        }
-        return PNone.NONE;
+    public void setTimeoutNs(long timeoutNs) {
+        this.timeoutNs = timeoutNs;
     }
 }

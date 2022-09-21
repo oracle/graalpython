@@ -1,0 +1,71 @@
+Disassembly of <module>:
+  1:0   -   1:5         0 LOAD_NAME                         0    (print)
+  1:6   -   1:14        2 LOAD_STRING                       0    ('before')
+  1:0   -   1:15        4 CALL_FUNCTION                     1
+  1:0   -   1:15        6 POP_TOP
+  3:2   -   3:7         7 LOAD_NAME                         0    (print)
+  3:8   -   3:13        9 LOAD_STRING                       1    ('try')
+  3:2   -   3:14       11 CALL_FUNCTION                     1
+  3:2   -   3:14       13 POP_TOP
+  3:2   -   3:14       14 JUMP_FORWARD                      73   (to 87)
+  3:2   -   3:14       16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
+  4:7   -   4:16       17 LOAD_NAME                         1    (TypeError)
+  4:0   -   4:6        19 MATCH_EXC_OR_JUMP                 31   (to 50)
+  4:0   -   4:6        23 UNWRAP_EXC
+  4:0   -   4:6        24 STORE_NAME                        2    (e)
+  5:2   -   5:7        26 LOAD_NAME                         0    (print)
+  5:8   -   5:17       28 LOAD_STRING                       2    ('except1')
+  5:2   -   5:18       30 CALL_FUNCTION                     1
+  5:2   -   5:18       32 POP_TOP
+  5:2   -   5:18       33 LOAD_NONE
+  5:2   -   5:18       34 STORE_NAME                        2    (e)
+  5:2   -   5:18       36 DELETE_NAME                       2    (e)
+  5:2   -   5:18       38 POP_EXCEPT
+  5:2   -   5:18       39 JUMP_FORWARD                      66   (to 105)
+  5:2   -   5:18       41 LOAD_NONE                                                               (exc handler 26 - 33; stack: 1)
+  5:2   -   5:18       42 STORE_NAME                        2    (e)
+  5:2   -   5:18       44 DELETE_NAME                       2    (e)
+  5:2   -   5:18       46 ROT_TWO
+  5:2   -   5:18       47 POP_EXCEPT
+  5:2   -   5:18       48 JUMP_FORWARD                      48   (to 96)
+  6:7   -   6:17  >>   50 LOAD_NAME                         3    (ValueError)
+  6:0   -   6:6        52 MATCH_EXC_OR_JUMP                 45   (to 97)
+  6:0   -   6:6        56 UNWRAP_EXC
+  6:0   -   6:6        57 STORE_NAME                        2    (e)
+  7:2   -   7:7        59 LOAD_NAME                         0    (print)
+  7:8   -   7:17       61 LOAD_STRING                       3    ('except2')
+  7:2   -   7:18       63 CALL_FUNCTION                     1
+  7:2   -   7:18       65 POP_TOP
+  7:2   -   7:18       66 LOAD_NONE
+  7:2   -   7:18       67 STORE_NAME                        2    (e)
+  7:2   -   7:18       69 DELETE_NAME                       2    (e)
+  7:2   -   7:18       71 POP_EXCEPT
+  7:2   -   7:18       72 JUMP_FORWARD                      33   (to 105)
+  7:2   -   7:18       74 LOAD_NONE                                                               (exc handler 59 - 66; stack: 1)
+  7:2   -   7:18       75 STORE_NAME                        2    (e)
+  7:2   -   7:18       77 DELETE_NAME                       2    (e)
+  7:2   -   7:18       79 ROT_TWO
+  7:2   -   7:18       80 POP_EXCEPT
+  7:2   -   7:18       81 JUMP_FORWARD                      15   (to 96)
+  7:2   -   7:18       83 ROT_TWO                                                                 (exc handler 17 - 26; stack: 1 | exc handler 33 - 59; stack: 1 | exc handler 66 - 83; stack: 1)
+  7:2   -   7:18       84 POP_EXCEPT
+  7:2   -   7:18       85 JUMP_FORWARD                      11   (to 96)
+  9:2   -   9:7   >>   87 LOAD_NAME                         0    (print)
+  9:8   -   9:14       89 LOAD_STRING                       4    ('else')
+  9:2   -   9:15       91 CALL_FUNCTION                     1
+  9:2   -   9:15       93 POP_TOP
+  9:2   -   9:15       94 JUMP_FORWARD                      11   (to 105)
+  9:2   -   9:15  >>   96 PUSH_EXC_INFO                                                           (exc handler 16 - 17; stack: 0 | exc handler 83 - 96; stack: 0)
+ 11:2   -  11:7   >>   97 LOAD_NAME                         0    (print)
+ 11:8   -  11:17       99 LOAD_STRING                       5    ('finally')
+ 11:2   -  11:18      101 CALL_FUNCTION                     1
+ 11:2   -  11:18      103 POP_TOP
+ 11:2   -  11:18      104 END_EXC_HANDLER                                                         (exc handler 97 - 104; stack: 1)
+ 11:2   -  11:7   >>  105 LOAD_NAME                         0    (print)
+ 11:8   -  11:17      107 LOAD_STRING                       5    ('finally')
+ 11:2   -  11:18      109 CALL_FUNCTION                     1
+ 11:2   -  11:18      111 POP_TOP
+ 12:0   -  12:5       112 LOAD_NAME                         0    (print)
+ 12:6   -  12:13      114 LOAD_STRING                       6    ('after')
+ 12:0   -  12:14      116 CALL_FUNCTION                     1
+ 12:0   -  12:14      118 RETURN_VALUE

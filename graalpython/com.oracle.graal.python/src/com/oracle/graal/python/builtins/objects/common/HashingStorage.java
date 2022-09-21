@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,63 +40,58 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(HashingStorageLibrary.class)
@@ -120,8 +115,7 @@ public abstract class HashingStorage {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class, PGuards.class, PythonOptions.class})
-    public abstract static class InitNode extends Node implements IndirectCallNode {
+    public abstract static class InitNode extends PNodeWithContext implements IndirectCallNode {
 
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -145,12 +139,12 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "isEmpty(kwargs)"})
-        HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return new EmptyStorage();
+        static HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            return EmptyStorage.INSTANCE;
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "!isEmpty(kwargs)"})
-        HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
+        static HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
             return new KeywordsStorage(kwargs);
         }
 
@@ -161,82 +155,81 @@ public abstract class HashingStorage {
         protected boolean hasKeysAttribute(Object o) {
             if (lookupKeysAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create(KEYS));
+                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create(T_KEYS));
             }
             return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, dictLib)"}, limit = "1")
-        HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary("dictLike") PythonObjectLibrary dictLib,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
-            return lib.copy(getDictStorageNode.execute(dictLike));
+        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, getClassNode, lookupIter)"}, limit = "1")
+        static HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            return lib.copy(dictLike.getDictStorage());
         }
 
-        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
+        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, getClassNode, lookupIter)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            PythonContext contextRef = PythonContext.get(this);
+            PythonLanguage language = PythonLanguage.get(this);
+            Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
-                HashingStorage iterableDictStorage = getDictStorageNode.execute(iterable);
+                HashingStorage iterableDictStorage = iterable.getDictStorage();
                 HashingStorage dictStorage = lib.copy(iterableDictStorage);
                 return lib.addAllToOther(new KeywordsStorage(kwargs), dictStorage);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, language, contextRef, state);
             }
         }
 
-        @Specialization(guards = "hasIterAttrButNotBuiltin(col, colLib)", limit = "1")
+        @Specialization(guards = "hasIterAttrButNotBuiltin(col, getClassNode, lookupIter)", limit = "1")
         HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage lang,
-                        @SuppressWarnings("unused") @CachedLibrary("col") PythonObjectLibrary colLib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(lang, false, 0);
-            return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Shared("getItem") @Cached PyObjectGetItem getItemNode,
+                        @Shared("getNext") @Cached GetNextNode nextNode,
+                        @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, lib);
         }
 
-        protected boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
-            Object attr = lib.lookupAttributeOnType(col, SpecialMethodNames.__ITER__);
+        protected static boolean hasIterAttrButNotBuiltin(PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+            Object attr = lookupIter.execute(getClassNode.execute(col));
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage lang,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
-                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(lang, false, 0);
-            return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
+                        @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Shared("getItem") @Cached PyObjectGetItem getItemNode,
+                        @Shared("getNext") @Cached GetNextNode nextNode,
+                        @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, lib);
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage lang,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @CachedLibrary("iterable") PythonObjectLibrary iterableLib,
+        @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
+        HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PRaiseNode raise,
-                        @Cached GetNextNode nextNode,
+                        @Shared("getNext") @Cached GetNextNode nextNode,
                         @Cached FastConstructListNode createListNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Cached SequenceNodes.LenNode seqLenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
-                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached ConditionProfile lengthTwoProfile,
+                        @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
 
-            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(lang, isStringKey, expectedSize), iterableLib, nextNode, createListNode,
+            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(isStringKey, expectedSize), getIter, nextNode, createListNode,
                             seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
                             errorProfile, lib);
         }
@@ -332,30 +325,22 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public boolean equalsWithState(HashingStorage other, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+    public boolean equalsWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
         if (this == other) {
             return true;
         }
-        if (gotState.profile(state != null)) {
-            if (lib.lengthWithState(this, state) == lib.lengthWithState(other, state)) {
-                return lib.compareEntriesWithState(this, other, state) == 0;
-            }
-        } else {
-            if (lib.length(this) == lib.length(other)) {
-                return lib.compareEntries(this, other) == 0;
-            }
+        if (lib.length(this) == lib.length(other)) {
+            return lib.compareEntries(this, other) == 0;
         }
         return false;
-
     }
 
     @GenerateUncached
     protected abstract static class HasKeyNodeForSubsetKeys extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] other, Object key,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             if (!lib.hasKey(other[0], key)) {
                 throw AbortIteration.INSTANCE;
             }
@@ -370,7 +355,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public int compareKeys(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Cached HasKeyNodeForSubsetKeys hasKeyNode) {
         if (this == other) {
             return 0;
@@ -397,7 +382,7 @@ public abstract class HashingStorage {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary hashLib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
@@ -409,7 +394,7 @@ public abstract class HashingStorage {
             if (selfValue == null) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.DICT_CHANGED_DURING_COMPARISON);
             }
-            if (hashLib.equals(selfValue, otherValue, hashLib)) {
+            if (eqNode.execute(null, selfValue, otherValue)) {
                 return accumulator;
             } else {
                 throw AbortIteration.INSTANCE;
@@ -418,21 +403,14 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public int compareEntriesWithState(HashingStorage other, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached TestKeyValueEqual testNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+    public int compareEntriesWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Cached TestKeyValueEqual testNode) {
         if (this == other) {
             return 0;
         }
-        int otherLen, selfLen;
-        if (gotState.profile(state != null)) {
-            otherLen = lib.lengthWithState(other, state);
-            selfLen = lib.lengthWithState(this, state);
-        } else {
-            otherLen = lib.length(other);
-            selfLen = lib.length(this);
-        }
+        int otherLen = lib.length(other);
+        int selfLen = lib.length(this);
         if (selfLen > otherLen) {
             return 1;
         }
@@ -472,7 +450,7 @@ public abstract class HashingStorage {
     public HashingStorage intersect(HashingStorage other,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Cached IntersectInjectionNode injectNode) {
-        HashingStorage newStore = EconomicMapStorage.create();
+        HashingStorage newStore = EmptyStorage.INSTANCE;
         return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
     }
 
@@ -505,13 +483,12 @@ public abstract class HashingStorage {
     @ExportMessage
     public boolean isDisjointWithState(HashingStorage other, ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile selfIsShorterProfile,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
                     @Cached IsDisjointForEachNode isDisjointForEachNode) {
         try {
-            int selfLen = libSelf.lengthWithState(this, state);
-            int otherLen = libOther.lengthWithState(other, state);
-            if (selfIsShorterProfile.profile(selfLen < otherLen)) {
+            int selfLen = libSelf.length(this);
+            int otherLen = libOther.length(other);
+            if (selfLen < otherLen) {
                 libSelf.forEach(this, isDisjointForEachNode, new IsDisjoinForEachAcc(other, libOther, state));
             } else {
                 libOther.forEach(other, isDisjointForEachNode, new IsDisjoinForEachAcc(this, libSelf, state));
@@ -527,7 +504,7 @@ public abstract class HashingStorage {
     protected abstract static class DiffInjectNode extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
             HashingStorage output = accumulator[2];
@@ -545,11 +522,11 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage xor(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached DiffInjectNode injectNode) {
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("diffInjectNode") @Cached DiffInjectNode injectNode) {
         // could also be done with lib.union(lib.diff(self, other),
         // lib.diff(other, self)), but that uses one more iteration.
-        HashingStorage newStore = EconomicMapStorage.create();
+        HashingStorage newStore = EmptyStorage.INSTANCE;
         // add all keys in self that are not in other
         newStore = lib.injectInto(this, new HashingStorage[]{this, other, newStore}, injectNode)[2];
         // add all keys in other that are not in self
@@ -558,7 +535,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage union(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
         HashingStorage newStore = lib.copy(this);
         return lib.addAllToOther(other, newStore);
     }
@@ -566,8 +543,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Exclusive @Cached DiffInjectNode diffNode) {
-        HashingStorage newStore = EconomicMapStorage.create();
+                    @Shared("diffInjectNode") @Cached DiffInjectNode diffNode) {
+        HashingStorage newStore = EmptyStorage.INSTANCE;
         return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
     }
 
@@ -641,32 +618,21 @@ public abstract class HashingStorage {
         }
     }
 
-    protected long getHash(Object key, PythonObjectLibrary lib) {
-        return lib.hash(key);
-    }
-
-    protected long getHashWithState(Object key, PythonObjectLibrary lib, ThreadState state, ConditionProfile gotState) {
-        if (gotState.profile(state == null)) {
-            return getHash(key, lib);
-        }
-        return lib.hashWithState(key, state);
-    }
-
     /**
      * Adds all items from the given mapping object to storage. It is the caller responsibility to
      * ensure, that mapping has the 'keys' attribute.
      */
     public static HashingStorage copyToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
-                    LookupAndCallUnaryNode callKeysNode, LookupAndCallBinaryNode callGetItemNode,
-                    PythonObjectLibrary keysIterableLib, GetNextNode nextNode,
+                    LookupAndCallUnaryNode callKeysNode, PyObjectGetItem callGetItemNode,
+                    PyObjectGetIter getIter, GetNextNode nextNode,
                     IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) {
         Object keysIterable = callKeysNode.executeObject(frame, mapping);
-        Object keysIt = keysIterableLib.getIteratorWithFrame(keysIterable, frame);
+        Object keysIt = getIter.execute(frame, keysIterable);
         HashingStorage curStorage = storage;
         while (true) {
             try {
                 Object keyObj = nextNode.execute(frame, keysIt);
-                Object valueObj = callGetItemNode.executeObject(frame, mapping, keyObj);
+                Object valueObj = callGetItemNode.execute(frame, mapping, keyObj);
 
                 curStorage = lib.setItem(curStorage, keyObj, valueObj);
             } catch (PException e) {
@@ -686,42 +652,38 @@ public abstract class HashingStorage {
     }
 
     public static HashingStorage addSequenceToStorage(VirtualFrame frame, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
-                    PythonObjectLibrary iterableLib, GetNextNode nextNode, FastConstructListNode createListNode, LenNode seqLenNode,
-                    ConditionProfile lengthTwoProfile, PRaiseNode raise, LookupAndCallBinaryNode getItemNode, IsBuiltinClassProfile isTypeErrorProfile,
+                    PyObjectGetIter getIter, GetNextNode nextNode, FastConstructListNode createListNode, LenNode seqLenNode,
+                    ConditionProfile lengthTwoProfile, PRaiseNode raise, PyObjectGetItem getItemNode, IsBuiltinClassProfile isTypeErrorProfile,
                     IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) throws PException {
-        Object it = iterableLib.getIteratorWithFrame(iterable, frame);
-        ArrayList<PSequence> elements = new ArrayList<>();
-        boolean isStringKey = false;
+        Object it = getIter.execute(frame, iterable);
+        ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
         try {
             while (true) {
                 Object next = nextNode.execute(frame, it);
-                PSequence element = createListNode.execute(next);
+                PSequence element = createListNode.execute(frame, next);
                 assert element != null;
                 // This constructs a new list using the builtin type. So, the object cannot
                 // be subclassed and we can directly call 'len()'.
                 int len = seqLenNode.execute(element);
 
                 if (lengthTwoProfile.profile(len != 2)) {
-                    throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, arrayListSize(elements), len);
+                    throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
                 }
 
-                // really check for Java String since PString can be subclassed
-                isStringKey = isStringKey || getItemNode.executeObject(frame, element, 0) instanceof String;
-
-                arrayListAdd(elements, element);
+                elements.add(element);
             }
         } catch (PException e) {
             if (isTypeErrorProfile.profileException(e, TypeError)) {
-                throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, arrayListSize(elements));
+                throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
             } else {
                 e.expectStopIteration(errorProfile);
             }
         }
-        HashingStorage storage = storageSupplier.get(isStringKey, arrayListSize(elements) + kwargs.length);
-        for (int j = 0; j < arrayListSize(elements); j++) {
-            PSequence element = arrayListGet(elements, j);
-            Object key = getItemNode.executeObject(frame, element, 0);
-            Object value = getItemNode.executeObject(frame, element, 1);
+        HashingStorage storage = storageSupplier.get(false, elements.size() + kwargs.length);
+        for (int j = 0; j < elements.size(); j++) {
+            PSequence element = elements.get(j);
+            Object key = getItemNode.execute(frame, element, 0);
+            Object value = getItemNode.execute(frame, element, 1);
             storage = lib.setItem(storage, key, value);
         }
         if (kwargs.length > 0) {
@@ -730,18 +692,4 @@ public abstract class HashingStorage {
         return storage;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    private static PSequence arrayListGet(ArrayList<PSequence> elements, int j) {
-        return elements.get(j);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static boolean arrayListAdd(ArrayList<PSequence> elements, PSequence element) {
-        return elements.add(element);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static int arrayListSize(ArrayList<PSequence> elements) {
-        return elements.size();
-    }
 }

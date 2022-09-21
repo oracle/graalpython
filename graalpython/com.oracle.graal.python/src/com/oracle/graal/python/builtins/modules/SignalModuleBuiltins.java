@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,40 +45,45 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
+
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
@@ -96,23 +101,23 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("SIG_DFL", Signals.SIG_DFL);
-        builtinConstants.put("SIG_IGN", Signals.SIG_IGN);
+        addBuiltinConstant("SIG_DFL", Signals.SIG_DFL);
+        addBuiltinConstant("SIG_IGN", Signals.SIG_IGN);
         for (int i = 0; i < Signals.signalNames.length; i++) {
             String name = Signals.signalNames[i];
             if (name != null) {
-                builtinConstants.put("SIG" + name, i);
+                addBuiltinConstant("SIG" + name, i);
             }
         }
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
-        PythonModule signalModule = core.lookupBuiltinModule("_signal");
+        PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
         signalModule.setAttribute(signalQueueKey, signalQueue);
         signalModule.setAttribute(signalSemaKey, signalSema);
 
@@ -197,19 +202,19 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
+    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1, parameterNames = {"signalnum"})
+    @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
-    abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
+    abstract static class GetSignalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getsignal(int signum) {
+        static Object getsignal(int signum) {
             return handlerToPython(Signals.getCurrentSignalHandler(signum), signum);
         }
 
-        @Specialization(limit = "3")
-        Object getsignal(Object signum,
-                        @CachedLibrary("signum") PythonObjectLibrary lib) {
-            return getsignal(lib.asSize(signum));
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.GetSignalNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -227,15 +232,21 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!idNumLib.isCallable(idNum)", limit = "1")
-        Object signalId(@SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
-                        @SuppressWarnings("unused") @CachedLibrary("idNum") PythonObjectLibrary idNumLib,
-                        @CachedLibrary("signal") PythonObjectLibrary signalLib) {
+        @Specialization(guards = "!callableCheck.execute(idNum)", limit = "1")
+        Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
+                        @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
+                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached CastToJavaIntExactNode cast) {
             // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
             // are instances of Handlers enum
             // The -1 fallback will be correctly reported as an error later on
-            int id = idNum instanceof Integer ? (int) idNum : -1;
-            return signal(signalLib.asSize(signal), id);
+            int id;
+            try {
+                id = cast.execute(idNum);
+            } catch (CannotCastException | PException e) {
+                id = -1;
+            }
+            return signal(asSizeNode.executeExact(frame, signal), id);
         }
 
         @TruffleBoundary
@@ -255,13 +266,13 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
-        Object signalHandler(PythonModule self, Object signal, Object handler,
-                        @SuppressWarnings("unused") @CachedLibrary("handler") PythonObjectLibrary handlerLib,
-                        @CachedLibrary("signal") PythonObjectLibrary signalLib,
-                        @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            return signal(self, signalLib.asSize(signal), handler, readQueueNode, readSemaNode);
+        @Specialization(guards = "callableCheck.execute(handler)", limit = "1")
+        Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
+                        @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
+                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached ReadAttributeFromObjectNode readQueueNode,
+                        @Cached ReadAttributeFromObjectNode readSemaNode) {
+            return signal(self, asSizeNode.executeExact(frame, signal), handler, readQueueNode, readSemaNode);
         }
 
         @TruffleBoundary
@@ -315,9 +326,10 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "raise_signal", minNumOfPositionalArgs = 1)
+    @Builtin(name = "raise_signal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"signalnum"})
+    @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class RaiseSignalNode extends PythonBuiltinNode {
+    abstract static class RaiseSignalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
         static PNone doInt(int signum) {
@@ -325,18 +337,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1", replaces = "doInt")
-        static PNone doGeneric(VirtualFrame frame, Object signumObj,
-                        @CachedLibrary("signumObj") PythonObjectLibrary signumLib,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
-
-            int signum;
-            try {
-                signum = castToJavaIntExactNode.execute(signumLib.asPIntWithState(signumObj, PArguments.getThreadState(frame)));
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            return doInt(signum);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.RaiseSignalNodeClinicProviderGen.INSTANCE;
         }
     }
 }
@@ -353,7 +356,9 @@ final class Signals {
     static final String[] signalNames = new String[SIGMAX + 1];
 
     static {
-        for (String signal : new String[]{"HUP", "INT", "QUIT", "TRAP", "ABRT", "KILL", "ALRM", "TERM", "USR1", "USR2"}) {
+        for (String signal : new String[]{"ABRT", "ALRM", "BUS", "FPE", "HUP", "ILL", "INFO", "INT", "KILL", "LOST",
+                        "PIPE", "PWR", "QUIT", "SEGV", "SYS", "TERM", "TRAP", "TSTP", "TTIN", "TTOUT", "USR1", "USR2",
+                        "VTALRM", "WINCH"}) {
             try {
                 int number = new sun.misc.Signal(signal).getNumber();
                 if (number > SIGMAX) {

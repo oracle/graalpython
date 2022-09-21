@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import java.util.List;
+
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class BlockNode extends BaseBlockNode {
 
@@ -39,7 +39,7 @@ public final class BlockNode extends BaseBlockNode {
         int length = statements.length;
 
         if (length == 0) {
-            return new BlockNode(new StatementNode[0]);
+            return createEmptyBlock();
         } else if (length == 1) {
             return statements[0];
         } else {
@@ -47,11 +47,12 @@ public final class BlockNode extends BaseBlockNode {
         }
     }
 
-    @Override
-    @ExplodeLoop
-    public void executeVoid(VirtualFrame frame) {
-        for (int i = 0; i < statements.length; i++) {
-            statements[i].executeVoid(frame);
-        }
+    public static StatementNode createEmptyBlock() {
+        return new BlockNode(StatementNode.EMPTY_STATEMENT_ARRAY);
+    }
+
+    public static StatementNode create(List<StatementNode> statements) {
+        StatementNode[] array = statements.toArray(new StatementNode[statements.size()]);
+        return create(array);
     }
 }

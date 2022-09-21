@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,8 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import com.oracle.graal.python.nodes.StringLiterals;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(value = Builtins.class)
 public @interface Builtin {
@@ -36,6 +38,12 @@ public @interface Builtin {
     String name() default "";
 
     String doc() default "";
+
+    /**
+     * Most builtins are not OS specific. If specified, the builtin is included only if the os
+     * matches
+     */
+    PythonOS os() default PythonOS.PLATFORM_ANY;
 
     PythonBuiltinClassType constructsClass() default PythonBuiltinClassType.nil;
 
@@ -97,4 +105,7 @@ public @interface Builtin {
      * @see com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode BuiltinFunctionRootNode
      */
     boolean reverseOperation() default false;
+
+    String raiseErrorName() default StringLiterals.J_EMPTY_STRING;
+
 }

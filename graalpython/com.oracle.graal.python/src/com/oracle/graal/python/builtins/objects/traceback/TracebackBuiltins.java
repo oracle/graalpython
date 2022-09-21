@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,11 +27,11 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_FRAME;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LASTI;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_LINENO;
-import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.TB_NEXT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_FRAME;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LASTI;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LINENO;
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_NEXT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 
 import java.util.List;
 
@@ -43,11 +43,16 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -58,6 +63,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
@@ -69,7 +75,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         return TracebackBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __DIR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___DIR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
@@ -84,7 +90,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
      *
      * @see GetTracebackNode
      */
-    abstract static class MaterializeTruffleStacktraceNode extends Node {
+    public abstract static class MaterializeTruffleStacktraceNode extends Node {
         public abstract void execute(PTraceback tb);
 
         @Specialization(guards = "tb.isMaterialized()")
@@ -116,6 +122,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
              * doesn't belong to the traceback, contains the desired location from which we can get
              * the lineno.
              */
+            boolean usingBytecodeIntepreter = PythonContext.get(this).getOption(PythonOptions.EnableBytecodeInterpreter);
             int lineno = -2;
             PTraceback next = null;
             if (tb.getLazyTraceback().getNextChain() != null) {
@@ -136,33 +143,59 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     continue;
                 }
                 if (LazyTraceback.elementWantedForTraceback(element)) {
+                    /*
+                     * Bytecode tracebacks pull location data from corresponding stacktrace element.
+                     * AST tracebacks pull locations from the call node of the element "above".
+                     */
+                    if (usingBytecodeIntepreter) {
+                        if (LazyTraceback.elementWantedForTraceback(element)) {
+                            nextElement = element;
+                            PFrame pFrame = materializeFrame(element, materializeFrameNode);
+                            next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        }
+                    } else {
+                        if (nextElement != null) {
+                            PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
+                            next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        }
+                        nextElement = element;
+                    }
+                }
+            }
+            if (usingBytecodeIntepreter) {
+                if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
+                    PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
+                    tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
+                    tb.setNext(next);
+                } else {
+                    assert next != null;
+                    tb.setLineno(next.getLineno());
+                    tb.setFrame(next.getFrame());
+                    tb.setNext(next.getNext());
+                }
+            } else {
+                if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
+                    // We already have a pFrame as tb_frame, so what we compute here is the tb_next
+                    // chain.
                     if (nextElement != null) {
                         PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
                         next = factory.createTraceback(pFrame, pFrame.getLine(), next);
                     }
-                    nextElement = element;
-                }
-            }
-            if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
-                // We already have a pFrame as tb_frame, so what we compute here is the tb_next
-                // chain.
-                if (nextElement != null) {
+                    // Additionally, we obtained tb_lineno from the "fake current" frame element
+                    tb.setLineno(lineno);
+                } else {
+                    // GetTracebackNode is responsible for making sure that an "empty" PTraceback
+                    // with
+                    // no PFrame[Ref] and no usable stacktrace elements is never constructed
+                    assert nextElement != null;
+                    // We don't have a pFrame, so the first element (now in nextElement) needs to go
+                    // into tb_frame and the rest into tb_next.
                     PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                    next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                    tb.setFrame(pFrame);
+                    tb.setLineno(pFrame.getLine());
                 }
-                // Additionally, we obtained tb_lineno from the "fake current" frame element
-                tb.setLineno(lineno);
-            } else {
-                // GetTracebackNode is responsible for making sure that an "empty" PTraceback with
-                // no PFrame[Ref] and no usable stacktrace elements is never constructed
-                assert nextElement != null;
-                // We don't have a pFrame, so the first element (now in nextElement) needs to go
-                // into tb_frame and the rest into tb_next.
-                PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                tb.setFrame(pFrame);
-                tb.setLineno(pFrame.getLine());
+                tb.setNext(next);
             }
-            tb.setNext(next);
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }
 
@@ -178,14 +211,25 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
 
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
+            Node location = element.getLocation();
+            RootNode rootNode = element.getTarget().getRootNode();
+            if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode) {
+                location = rootNode;
+            }
             // create the PFrame and refresh frame values
-            return materializeFrameNode.execute(null, element.getLocation(), false, true, element.getFrame());
+            return materializeFrameNode.execute(null, location, false, true, element.getFrame());
         }
     }
 
-    @Builtin(name = TB_FRAME, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_TB_FRAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
+        public abstract PFrame execute(VirtualFrame frame, Object traceback);
+
+        public static GetTracebackFrameNode create() {
+            return TracebackBuiltinsFactory.GetTracebackFrameNodeFactory.create(null);
+        }
+
         @Specialization(guards = "hasPFrame(tb)")
         PFrame getExisting(PTraceback tb) {
             return tb.getFrame();
@@ -211,7 +255,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         PFrame doOnStack(VirtualFrame frame, PTraceback tb,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
-                        @Cached("createBinaryProfile()") ConditionProfile isCurFrameProfile) {
+                        @Cached ConditionProfile isCurFrameProfile) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
 
@@ -266,7 +310,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J_TB_NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
@@ -284,7 +328,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             PTraceback tb = next;
             while (loopProfile.profile(tb != null)) {
                 if (tb == self) {
-                    throw raise(ValueError, "traceback loop detected");
+                    throw raise(ValueError, ErrorMessages.TRACEBACK_LOOP_DETECTED);
                 }
                 tb = tb.getNext();
             }
@@ -307,11 +351,11 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPNone(next)", "!isPTraceback(next)"})
         Object setError(@SuppressWarnings("unused") PTraceback self, Object next) {
-            throw raise(TypeError, "expected traceback object, got '%p'", next);
+            throw raise(TypeError, ErrorMessages.EXPECTED_TRACEBACK_OBJ, next);
         }
     }
 
-    @Builtin(name = TB_LASTI, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_TB_LASTI, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
@@ -320,7 +364,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LINENO, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J_TB_LINENO, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization

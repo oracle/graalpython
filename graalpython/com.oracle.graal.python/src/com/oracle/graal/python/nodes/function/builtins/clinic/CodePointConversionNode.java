@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,19 +41,21 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise {
     private final String builtinName;
@@ -77,9 +79,11 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
     }
 
     @Specialization
-    int doString(String value) {
-        if (PString.codePointCount(value, 0, value.length()) == 1) {
-            return PString.codePointAt(value, 0);
+    int doString(TruffleString value,
+                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        if (codePointLengthNode.execute(value, TS_ENCODING) == 1) {
+            return codePointAtIndexNode.execute(value, 0, TS_ENCODING);
         } else {
             throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
         }
@@ -87,9 +91,11 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
 
     @Specialization(guards = {"!isHandledPNone(useDefaultForNone, value)"}, replaces = "doString")
     int doOthers(Object value,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
+                    @Cached CastToTruffleStringNode castToStringNode,
+                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         try {
-            return doString(castToJavaStringNode.execute(value));
+            return doString(castToStringNode.execute(value), codePointLengthNode, codePointAtIndexNode);
         } catch (CannotCastException ex) {
             throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
         }
@@ -98,5 +104,11 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
     @ClinicConverterFactory
     public static CodePointConversionNode create(@BuiltinName String builtinName, @DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return CodePointConversionNodeGen.create(builtinName, defaultValue, useDefaultForNone);
+    }
+
+    @ClinicConverterFactory
+    public static CodePointConversionNode create(@BuiltinName String builtinName, @UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return CodePointConversionNodeGen.create(builtinName, -1, false);
     }
 }

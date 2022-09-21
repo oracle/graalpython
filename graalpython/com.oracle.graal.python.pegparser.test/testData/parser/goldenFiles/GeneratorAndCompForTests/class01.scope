@@ -1,0 +1,15 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      OrderedDict: [DefLocal, Local]
+      dict: [Use, GlobalImplicit]
+    Scope OrderedDict Class
+        Symbols:
+            __reversed__: [DefLocal, Local]
+      Scope __reversed__ Function
+            Flags: [IsGenerator]
+            Varnames: self
+            Symbols:
+                  curr: [DefLocal, Use, Local]
+                  root: [DefLocal, Use, Local]
+                  self: [DefParam, Use, Local]

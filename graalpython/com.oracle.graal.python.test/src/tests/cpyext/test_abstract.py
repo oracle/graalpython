@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,8 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+import sys, array, collections
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtType, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -51,8 +51,26 @@ def _safe_check(v, type_check):
 
 def _reference_checknumber(args):
     v = args[0]
+    if isinstance(v, str):
+        return False
     return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
 
+def _reference_tobase(args):
+    n = args[0]
+    base = args[1]
+    if base not in (2, 8, 10, 16):
+        raise SystemError("PyNumber_ToBase: base must be 2, 8, 10 or 16")
+    if not hasattr(n, "__index__"):
+        raise TypeError
+    b_index = n.__index__()
+    if base == 2:
+        return bin(b_index)
+    elif base == 8:
+        return oct(b_index)
+    elif base == 10:
+        return str(b_index)
+    elif base == 16:
+        return hex(b_index)
 
 def _reference_index(args):
     v = args[0]
@@ -87,15 +105,84 @@ def _reference_next(args):
     except BaseException:
         raise SystemError
 
+def raise_type_error():
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        raise TypeError
 
-def _reference_size(args):
+def _reference_seq_size(args):
     seq = args[0]
-    if isinstance(seq, dict):
-        return -1
-    if not hasattr(seq, '__len__'):
-        raise TypeError()
-    return len(seq)
+           
+    if istypeof(seq, [dict, type(type.__dict__)]):
+        # checking for the exact type 
+        # even if a dict or mappingproxy isn't accepted
+        # a subclass with overriden __len__ is 
+        raise_type_error()  
+        
+    try:
+        return len(seq)
+    except:
+        pass
+    
+    raise_type_error()
 
+def _reference_mapping_size(args):
+    m = args[0]
+    
+    if istypeof(m, [set, frozenset, collections.deque]):
+        # checking for the exact type 
+        # even if a set or deque isn't accepted
+        # a subclass with overriden __len__ is 
+        raise_type_error()            
+    
+    try:
+        return len(m)    
+    except:
+        pass
+    
+    raise_type_error()
+        
+def _reference_object_size(args):
+    obj = args[0]        
+    
+    try:
+        return len(obj)
+    except:
+        pass
+    
+    raise_type_error()
+
+def _reference_sequence_check(args):
+    obj = args[0]
+
+    if isinstanceof(obj, [dict, type(type.__dict__), set, frozenset]):
+        return False  
+    
+    return hasattr(obj, '__getitem__')
+
+def _reference_mapping_check(args):
+    obj = args[0]
+    
+    if isinstanceof(obj, [collections.deque]):
+        return False  
+    
+    if isinstanceof(obj, [array.array, bytearray, bytes, dict, type(type.__dict__), list, memoryview, range]):
+        return True
+    
+    return hasattr(obj, '__getitem__')
+
+def isinstanceof(obj, types):
+    for t in types:
+        if isinstance(obj, t):
+            return True
+    return False
+
+def istypeof(obj, types):
+    for t in types:
+        if type(obj) == t:
+            return True
+    return False
 
 def _reference_getitem(args):
     seq = args[0]
@@ -121,6 +208,15 @@ def _reference_fast(args):
         return obj
     return list(obj)
 
+def _wrap_slice_fun(fun, since=0, default=None):
+    def wrapped_fun(args):
+        if not isinstance(args[0], list) and not isinstance(args[0], set) and not isinstance(args[0], tuple) and not isinstance(args[0], str):
+            if sys.version_info.minor >= since:
+                raise SystemError("expected list type")
+            else:
+                return default
+        return fun(args)
+    return wrapped_fun
 
 class NoNumber():
     pass
@@ -159,12 +255,40 @@ class DummyFloatSubclass(float):
 class DummySequence():
 
     def __getitem__(self, idx):
-        return idx * 10
+        raise IndexError
+    
+class DummyLen():
+    def __len__(self):
+        return 42
+    
+class DummyDict(dict):
+    pass
 
+class DummyDictLen(dict):    
+    def __len__(self):
+        return 42
+    
 
 class DummyListSubclass(list):
     pass
 
+class DummyListLen(list):    
+    def __len__(self):
+        return 42
+    
+class DummySet(set):    
+    pass
+    
+class DummySetLen(set):    
+    def __len__(self):
+        return 42
+    
+class DummyDeque(set):    
+    pass
+    
+class DummyDequeLen(set):    
+    def __len__(self):
+        return 42
 
 def _default_bin_arith_args():
     return (
@@ -205,6 +329,7 @@ def _default_unarop_args():
         (False,),
         (True,),
         ("hello",),
+        ("1",),
         ((1, 2, 3),),
         (0x7fffffff,),
         (0xffffffffffffffffffffffffffffffff,),
@@ -216,7 +341,239 @@ def _default_unarop_args():
         (DummyFloatSubclass(),),
     )
 
+def _size_and_check_args():
+        return (
+            (42,),
+            (object(),),
+            (DummySequence(),),
+            (DummyLen(),),
+            (DummyListSubclass(),),
+            (DummyListSubclass([1,2,3]),),
+            ('hello',),
+            (tuple(),),
+            ((1, 2, 3),),
+            ((None,),),
+            ([],),
+            (['a', 'b', 'c'],),
+            ([None],),
+            (DummyListLen(),),
+            (DummyListLen((1,2,3)),),
+            (set(),),
+            (frozenset(),),
+            (DummySet(),),
+            (DummySet([1,2,3]),),
+            (DummySetLen(),),
+            (DummySetLen([1,2,3]),),
+            ({1,2,3},),            
+            (frozenset({1,2,3}),),
+            (dict(),),
+            ({'a':0, 'b':1},),
+            (type.__dict__,), #mappingproxy
+            (DummyDict(),),
+            (DummyDict({'a1': 1, 'b': 2}),),
+            (DummyDictLen(),),
+            (DummyDictLen({'a2': 1, 'b': 2}),),
+            (sys.modules,),
+            (NoNumber(),),
+            (range(2),),
+            (b'abc',),
+            (bytearray(b'abc'),),
+            (memoryview(b'abc'),),
+            (array.array('I', [1,2,3]),),
+            (collections.deque([1,2,3,]),),  
+            (DummyDeque(),),  
+            (DummyDeque([1,2,3]),),  
+            (DummyDequeLen(),),  
+            (DummyDequeLen([1,2,3]),),              
+        )
+        
+class TestAbstractWithNative(object):
+    def test_sequence_check(self):
+        TestSequenceCheck = CPyExtType("TestSequenceCheck",
+                             """
+                             PyObject* test_sq_item(PyObject *a, Py_ssize_t i) {
+                                 Py_INCREF(a);
+                                 return a;
+                             }
+                             PyObject* callCheck(PyObject* a) {
+                                 return PyLong_FromLong(PySequence_Check(a));
+                             }
+                             """,
+                             tp_methods='{"callCheck", (PyCFunction)callCheck, METH_O, ""}',
+                             sq_item="&test_sq_item",
+        )
+        tester = TestSequenceCheck()
+        assert tester.callCheck(tester)
 
+    def test_sequence_size(self):
+        TestSequenceSize = CPyExtType("TestSequenceSize",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 return 10;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             sq_length="&test_sq_length",
+        )
+        tester = TestSequenceSize()
+        assert tester.callSize(tester) == 10
+        
+    def test_sequence_size_err(self):
+        TestSequenceSizeErr = CPyExtType("TestSequenceSizeErr",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -1;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             sq_length="&test_sq_length",
+        )
+        tester = TestSequenceSizeErr()        
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False
+            
+    def test_sequence_size_err2(self):
+        TestSequenceSizeErr2 = CPyExtType("TestSequenceSizeErr2",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -2;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PySequence_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             sq_length="&test_sq_length",
+        )
+        tester = TestSequenceSizeErr2()        
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False            
+        
+    def test_mapping_check(self):
+        TestMappingCheck = CPyExtType("TestMappingCheck",
+                             """
+                             PyObject* test_mp_subscript(PyObject* a, PyObject* b) {
+                                 Py_INCREF(a);
+                                 return a;
+                             }
+                             PyObject* callCheck(PyObject* a) {
+                                 return PyLong_FromLong(PyMapping_Check(a));
+                             }
+                             """,
+                             tp_methods='{"callCheck", (PyCFunction)callCheck, METH_O, ""}',
+                             mp_subscript="&test_mp_subscript",
+        )
+        tester = TestMappingCheck()
+        assert tester.callCheck(tester)
+        
+    def test_mapping_size(self):
+        TestMappingSize = CPyExtType("TestMappingSize",
+                             """
+                             Py_ssize_t test_mp_length(PyObject* a) {
+                                 return 11;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyMapping_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             mp_length="&test_mp_length",
+        )
+        tester = TestMappingSize()
+        assert tester.callSize(tester) == 11
+        
+    def test_mapping_size_err(self):
+        TestMappingSizeErr = CPyExtType("TestMappingSizeErr",
+                             """
+                             Py_ssize_t test_mp_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -1;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyMapping_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             mp_length="&test_mp_length",
+        )
+        tester = TestMappingSizeErr()   
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False
+        
+    def test_object_size_sq(self):
+        TestObjectSizeSQ = CPyExtType("TestObjectSizeSQ",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 return 12;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             sq_length="&test_sq_length",
+        )
+        tester = TestObjectSizeSQ()
+        assert tester.callSize(tester) == 12
+        
+    def test_object_size_mp(self):
+        TestObjectSizeMP = CPyExtType("TestObjectSizeMP",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 return 13;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             mp_length="&test_sq_length",
+        )
+        tester = TestObjectSizeMP()
+        assert tester.callSize(tester) == 13            
+        
+    def test_object_size_err(self):
+        TestObjectSizeErr = CPyExtType("TestObjectSizeErr",
+                             """
+                             Py_ssize_t test_sq_length(PyObject* a) {
+                                 PyErr_Format(PyExc_TypeError, "test type error");
+                                 return -1;
+                             }
+                             PyObject* callSize(PyObject* a) {
+                                 return PyLong_FromSsize_t(PyObject_Size(a));
+                             }
+                             """,
+                             tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
+                             mp_length="&test_sq_length",
+        )
+        tester = TestObjectSizeErr()
+        try:
+            tester.callSize(tester)
+        except SystemError:
+            assert True
+        else:
+            assert False         
+        
 class TestAbstract(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -256,6 +613,55 @@ class TestAbstract(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyNumber_ToBase = CPyExtFunction(
+        _reference_tobase,
+        lambda: (
+            (2, 0),
+            ("hello", 0),
+            (1.1, 0),
+            (NoNumber(), 0),
+            (2, 0),
+            (2, 0),
+            (2, 2),
+            (2, 8),
+            (2, 10),
+            (2, 16),
+            ("1", 2),
+            ("1", 8),
+            ("1", 10),
+            ("1", 16),
+            (1.1, 2),
+            (1.1, 8),
+            (1.1, 10),
+            (1.1, 16),
+            (False, 2),
+            (False, 8),
+            (False, 10),
+            (False, 16),
+            (True, 16),
+            ("hello, ", 2),
+            ("hello, ", 8),
+            ("hello, ", 10),
+            ("hello, ", 16),
+            (DummyIntable(), 2),
+            (DummyIntable(), 8),
+            (DummyIntable(), 10),
+            (DummyIntable(), 16),
+            (DummyIntSubclass(), 2),
+            (DummyIntSubclass(), 8),
+            (DummyIntSubclass(), 10),
+            (DummyIntSubclass(), 16),
+            (NoNumber(), 2),
+            (NoNumber(), 8),
+            (NoNumber(), 10),
+            (NoNumber(), 16),
+        ),
+        resultspec="O",
+        argspec='Oi',
+        arguments=["PyObject* n", "int base"],
         cmpfunc=unhandled_error_compare
     )
 
@@ -482,6 +888,7 @@ class TestAbstract(CPyExtTestCase):
             (1,),
             (-1,),
             (1.0,),
+            ("1",),
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
@@ -522,6 +929,7 @@ class TestAbstract(CPyExtTestCase):
             (1,),
             (-1,),
             (1.0,),
+            ("1",),
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
@@ -555,7 +963,7 @@ class TestAbstract(CPyExtTestCase):
 
     test_PySequence_Fast_GET_SIZE = CPyExtFunction(
         lambda args: len(args[0]),
-        lambda: (
+        lambda: (    
             (tuple(),),
             (list(),),
             ((1, 2, 3),),
@@ -649,38 +1057,16 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PySequence_Check = CPyExtFunction(
-        lambda args: not isinstance(args[0], dict) and hasattr(args[0], '__getitem__'),
-        lambda: (
-            (tuple(),),
-            ((1, 2, 3),),
-            ((None,),),
-            ([],),
-            (['a', 'b', 'c'],),
-            ([None],),
-            (dict(),),
-            (set(),),
-            ({'a', 'b'},),
-            ({'a':0, 'b':1},),
-            (DummySequence(),),
-            (DummyListSubclass(),),
-        ),
+        _reference_sequence_check,
+        _size_and_check_args,
         resultspec="i",
         argspec='O',
         arguments=["PyObject* sequence"],
     )
 
     test_PySequence_Size = CPyExtFunction(
-        _reference_size,
-        lambda: (
-            (tuple(),),
-            ((1, 2, 3),),
-            ((None,),),
-            ([],),
-            (['a', 'b', 'c'],),
-            ([None],),
-            (set(),),
-            (DummyListSubclass(),),
-        ),
+        _reference_seq_size,
+        _size_and_check_args,
         resultspec="n",
         argspec='O',
         arguments=["PyObject* sequence"],
@@ -702,13 +1088,58 @@ class TestAbstract(CPyExtTestCase):
             (set(), 0),
             ({'a', 'b'}, 0),
             (DummyListSubclass(), 1),
+            ('hello', 1),
         ),
         resultspec="O",
         argspec='On',
         arguments=["PyObject* sequence", "Py_ssize_t idx"],
         cmpfunc=unhandled_error_compare
     )
-
+    
+    test_PySequence_GetSlice = CPyExtFunction(
+        _wrap_slice_fun(lambda args: args[0][args[1]:args[2]]),
+        lambda: (
+            (tuple(), 0, 1),
+            ((1, 2, 3), 1, 2),
+            ((None,), 1, 2),
+            ([], 0, 1),
+            (['a', 'b', 'c'], 1, 2),
+            ([None], 0, 1),
+            (set(), 0, 1),
+            ({'a', 'b'}, 1, 2),
+            (DummyListSubclass(), 0, 1),
+            ('hello', 0, 1),
+        ),
+        resultspec="O",
+        argspec='Onn',
+        arguments=["PyObject* sequence", "Py_ssize_t ilow", "Py_ssize_t ihigh"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PySequence_Contains = CPyExtFunction(
+        lambda args: args[1] in args[0],
+        lambda: (
+            (tuple(), 1),
+            ((1, 2, 3), 1),
+            ((1, 2, 3), 4),
+            ((None,), 1),
+            ([], 1),
+            (['a', 'b', 'c'], 'a'),
+            (['a', 'b', 'c'], 'd'),
+            ([None], 1),
+            (set(), 1),
+            ({'a', 'b'}, 'a'),
+            ({'a', 'b'}, 'c'),
+            (DummyListSubclass(), 1),
+            ('hello', 'e'),
+            ('hello', 'x'),
+        ),
+        resultspec="i",
+        argspec='OO',
+        arguments=["PyObject* haystack", "PyObject* needle"],
+        cmpfunc=unhandled_error_compare
+    )
+    
     test_PySequence_ITEM = CPyExtFunction(
         _reference_getitem,
         lambda: (
@@ -718,6 +1149,7 @@ class TestAbstract(CPyExtTestCase):
             ([], 10),
             (['a', 'b', 'c'], 2),
             ([None], 0),
+            ('hello', 0),
         ),
         resultspec="O",
         argspec='On',
@@ -733,6 +1165,7 @@ class TestAbstract(CPyExtTestCase):
             ((None,), 1, None),
             ([], 10, 1),
             (['a', 'b', 'c'], 2, 'z'),
+            ('hello', 2, 'z'),
         ),
         code=''' PyObject* wrap_PySequence_SetItem(PyObject* sequence, Py_ssize_t idx, PyObject* value) {
             if (PySequence_SetItem(sequence, idx, value) < 0) {
@@ -760,6 +1193,27 @@ class TestAbstract(CPyExtTestCase):
             ({'a': 0, 'b': 1, 'c': 2},),
             (None,),
             (0,),
+            ('hello',),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* sequence"],
+        cmpfunc=unhandled_error_compare
+    )
+    
+    test_PySequence_List = CPyExtFunction(
+        lambda args: list(args[0]),
+        lambda: (
+            (list(),),
+            ((1, 2, 3),),
+            ((None,),),
+            ([],),
+            (['a', 'b', 'c'],),
+            ({'a', 'b', 'c'},),
+            ({'a': 0, 'b': 1, 'c': 2},),
+            (None,),
+            (0,),
+            ('hello',),
         ),
         resultspec="O",
         argspec='O',
@@ -802,6 +1256,23 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyMapping_Check = CPyExtFunction(
+        _reference_mapping_check,
+        _size_and_check_args,
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* mapping"],
+    )
+    
+    test_PyMapping_Size = CPyExtFunction(
+        _reference_mapping_size,
+        _size_and_check_args,
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* mapping"],
+        cmpfunc=unhandled_error_compare
+    )    
+    
     test_PyIndex_Check = CPyExtFunction(
         lambda args: hasattr(args[0], "__index__"),
         lambda: (
@@ -905,3 +1376,14 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* s", "PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyObject_Size = CPyExtFunction(
+        _reference_object_size,
+        _size_and_check_args,
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyObject_Length = test_PyObject_Size

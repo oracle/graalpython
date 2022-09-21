@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,9 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 /**
  * Contains helper methods for parsing float numbers in float() and complex() constructors.
  */
-public class FloatUtils {
+public final class FloatUtils {
+    private FloatUtils() {
+    }
 
     public static int skipAsciiWhitespace(String str, int start, int len) {
         int offset = start;
@@ -220,15 +222,23 @@ public class FloatUtils {
         }
         try {
             String substr = str.substring(start, i);
-            double d = Double.parseDouble(substr);
-            if (!Double.isFinite(d)) {
-                d = new BigDecimal(substr).doubleValue();
-            }
+            double d = parseValidString(substr);
             return new StringToDoubleResult(d, i);
         } catch (NumberFormatException e) {
             // Should not happen since the input to Double.parseDouble() / BigDecimal(String) should
             // be correct
             return null;
         }
+    }
+
+    /**
+     * Parses a string that contains a valid string representation of a float number.
+     */
+    public static double parseValidString(String substr) {
+        double d = Double.parseDouble(substr);
+        if (!Double.isFinite(d)) {
+            d = new BigDecimal(substr).doubleValue();
+        }
+        return d;
     }
 }

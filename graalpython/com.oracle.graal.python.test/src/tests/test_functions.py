@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -249,3 +249,21 @@ def test_function_text_signature_writable():
     def foo(): pass
     foo.__text_signature__ = 'foo()'
     assert foo.__text_signature__ == 'foo()'
+
+
+def test_function_no_module():
+    def wrapper_2(func):
+        ns = {}
+        exec('def fail_func(): raise ValueError("fail")', ns)
+        return ns['fail_func']
+
+    def wrapper_1(func):
+        assert hasattr(func, '__name__')
+        assert hasattr(func, '__module__')
+        assert func.__module__ is None
+        return func
+
+    @wrapper_1
+    @wrapper_2
+    def test_func():
+        pass

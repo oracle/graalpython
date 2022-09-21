@@ -1,4 +1,4 @@
-# Contributing GraalPython
+# Contributing GraalPy
 
 Thanks for considering to contribute! To get you started, here is a bit of
 information about the structure of this implementation.
@@ -42,9 +42,9 @@ of useable development setups with that, but it's not something we support.
 
 Besides the source code of the Python interpreter, we have some useful `mx`
 functions defined under the `mx.graalpython` directory. As you make changes, you
-can test always test them with `mx build && mx python`. Additionally, there are
+can always test them with `mx build && mx python`. Additionally, there are
 various "gates" that we use on our CI systems to check any code that goes
-in. You can run all of these using `mx python-gate` or just some by using `mx
+in. You can run all gates with `mx python-gate` or just some by using `mx
 python-gate --tags [TAG]`. Two interesting gates to run that cover most things
 are:
 
@@ -86,7 +86,7 @@ that library. If something is missing that is commonly used, we probably have
 some Node for it, but it may be a good idea to add it to the
 `PythonObjectLibrary` for easier discovery.
 
-GraalPython has its own variant of the argument clinic preprocessor. It is
+GraalPy has its own variant of the argument clinic preprocessor. It is
 activated by: extending `PythonXXXClinicBuiltinNode` (e.g.,
 `PythonBinaryClinicBuiltinNode`), using `@ArgumentClinic` annotations
 on the builtin node class, and overriding the `getArgumentClinic` method
@@ -111,12 +111,12 @@ modules that we have adapted from C Python.
 
 The GraalVM implementation of Python provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
 or the java code, using your preferred IDE.
-The following commands should be executed in a virtualenv environment, which provides a graalpython executable.
+The following commands should be executed in a virtualenv environment, which provides a graalpy executable.
 
 For debug Python side code call this:
 
 ```
-graalpython --inspect your_script.py
+graalpy --inspect your_script.py
 ```
 
 This will open a debug server, which can be accessed in Chrome Browser under URL `chrome://inspect`.
@@ -124,7 +124,7 @@ This will open a debug server, which can be accessed in Chrome Browser under URL
 For debugging java implemented code execute:
 
 ```
-graalpython --experimental-options -debug-java your_script.py
+graalpy --experimental-options -debug-java your_script.py
 ```
 
 The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly
@@ -191,7 +191,7 @@ eclipse executable.
 
 Another important gate is the gate that checks if you broke the native image
 building. To test if building a native image still works, you can use the
-following command. This will create a native executable called `graalpython` and
+following command. This will create a native executable called `graalpy` and
 print its path as the last output, if successful.
 
     mx python-svm
@@ -199,10 +199,14 @@ print its path as the last output, if successful.
 If you made changes to the parser, you may have to regenerate the golden files
 like so:
 
-    find graalpython -name *.scope -delete
-    find graalpython -name *.tast -delete
+    find graalpython -name '*.scope' -delete
+    find graalpython -name '*.tast' -delete
     mx punittest com.oracle.graal.python.test.parser
 
+If you made changes to the bytecode compiler, you may have to regenerate its golden files:
+
+    find graalpython -name '*.co' -delete
+    mx punittest com.oracle.graal.python.test.compiler
 
 ### Benchmarking
 
@@ -263,11 +267,11 @@ Finally, there are the `--jvm` and `--jvm-config` configuration options for `mx
 benchmark`. By default, the commands presented above will run on the JVM in
 *server* mode, using the Graal compiler in what we call *hosted* mode. This is
 almost the same but not quite the `--jvm` mode you will get when running the
-`graalpython` executable from a full GraalVM, and usually good enough if you
+`graalpy` executable from a full GraalVM, and usually good enough if you
 want to look at the compiler graphs or peak performance numbers. In our CI,
 however, we always build a full GraalVM and benchmark using that, since that is
 what we ship. There, we have two different configurations corresponding to the
-launcher flags available for the GraalVM `graalpython` executable: *jvm* and
+launcher flags available for the GraalVM `graalpy` executable: *jvm* and
 *native*. The first runs on top of Hotspot using the Graal compiler, the second
 runs the AOT compiled GraalVM native image of Python.
 

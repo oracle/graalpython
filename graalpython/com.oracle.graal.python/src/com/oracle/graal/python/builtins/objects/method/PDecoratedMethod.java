@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,13 +44,13 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
 /**
- * Storage for both classmethods and staticmethods
+ * Storage for classmethods, staticmethods and instancemethods
  */
 public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
     private Object callable;
@@ -75,8 +75,14 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
 
     @SuppressWarnings("unchecked")
     public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
-        if (PythonObjectLibrary.getUncached().getLazyPythonClass(this) != PythonBuiltinClassType.PStaticmethod && callable instanceof BoundBuiltinCallable) {
-            return factory.createBuiltinClassmethodFromCallableObj(((BoundBuiltinCallable<Object>) callable).boundToObject(binding, factory));
+        if (GetClassNode.getUncached().execute(this) != PythonBuiltinClassType.PStaticmethod) {
+            if (callable instanceof BoundBuiltinCallable) {
+                return factory.createBuiltinClassmethodFromCallableObj(((BoundBuiltinCallable<Object>) callable).boundToObject(binding, factory));
+            }
+        } else {
+            if (callable instanceof PBuiltinMethod) {
+                return factory.createStaticmethodFromCallableObj(((PBuiltinMethod) callable).getFunction().boundToObject(binding, factory));
+            }
         }
         return this;
     }

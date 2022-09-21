@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,20 +42,31 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
+import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -66,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -74,13 +86,15 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -88,16 +102,21 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
+
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 public abstract class PGuards {
     /**
@@ -111,16 +130,23 @@ public abstract class PGuards {
         return expected.equals(other);
     }
 
+    public static boolean stringEquals(TruffleString expected, TruffleString other, TruffleString.EqualNode equalNode, ConditionProfile profile) {
+        if (profile.profile(expected == other)) {
+            return true;
+        }
+        return equalNode.execute(expected, other, TS_ENCODING);
+    }
+
+    public static boolean stringEquals(TruffleString key, TruffleString cachedKey, TruffleString.EqualNode equalNode) {
+        return equalNode.execute(cachedKey, key, TS_ENCODING);
+    }
+
     public static boolean isSameObject(Object left, Object right) {
         return left == right;
     }
 
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
-    }
-
-    public static boolean isEmpty(String string) {
-        return string.length() == 0;
     }
 
     public static boolean isNone(Object value) {
@@ -139,12 +165,24 @@ public abstract class PGuards {
         return object instanceof PMemoryView;
     }
 
+    public static boolean isMMap(Object object) {
+        return object instanceof PMMap;
+    }
+
     public static boolean isDeleteMarker(Object object) {
         return object == DescriptorDeleteMarker.INSTANCE;
     }
 
     public static boolean isDict(Object object) {
         return object instanceof PDict;
+    }
+
+    public static boolean isCode(Object object) {
+        return object instanceof PCode;
+    }
+
+    public static boolean isStgDict(Object dict) {
+        return dict instanceof StgDictObject;
     }
 
     public static boolean isFunction(Object value) {
@@ -161,6 +199,19 @@ public abstract class PGuards {
 
     public static boolean isCallable(Object value) {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
+    }
+
+    /**
+     * Use instead of {@link #isCallable(Object)} for objects coming from
+     * {@link com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode}. Note that such
+     * objects can be then forwarded only to call nodes that support them.
+     */
+    public static boolean isCallableOrDescriptor(Object value) {
+        return isCallable(value) || BuiltinMethodDescriptor.isInstance(value);
+    }
+
+    public static boolean isBuiltinDescriptor(Object value) {
+        return BuiltinMethodDescriptor.isInstance(value);
     }
 
     public static boolean isClass(Object obj, InteropLibrary lib) {
@@ -213,15 +264,7 @@ public abstract class PGuards {
         return first.getSequenceStorage() instanceof DoubleSequenceStorage && second.getSequenceStorage() instanceof DoubleSequenceStorage;
     }
 
-    public static boolean isListStorage(PList list) {
-        return list.getSequenceStorage() instanceof ListSequenceStorage;
-    }
-
-    public static boolean isTupleStorage(PList list) {
-        return list.getSequenceStorage() instanceof TupleSequenceStorage;
-    }
-
-    public static boolean isObjectStorage(PList list) {
+    public static boolean isObjectStorage(PSequence list) {
         return list.getSequenceStorage() instanceof ObjectSequenceStorage;
     }
 
@@ -288,7 +331,7 @@ public abstract class PGuards {
     }
 
     public static boolean isPythonUserClass(Object klass) {
-        return !isPythonBuiltinClass(klass);
+        return klass instanceof PythonClass || PythonNativeClass.isInstance(klass);
     }
 
     public static boolean isPythonBuiltinClassType(Object klass) {
@@ -304,7 +347,7 @@ public abstract class PGuards {
     }
 
     public static boolean isManagedClass(Object klass) {
-        return klass instanceof PythonManagedClass;
+        return PythonManagedClass.isInstance(klass);
     }
 
     public static boolean isNativeClass(Object klass) {
@@ -312,7 +355,7 @@ public abstract class PGuards {
     }
 
     public static boolean isPythonClass(Object klass) {
-        return PythonAbstractClass.isInstance(klass);
+        return PythonAbstractClass.isInstance(klass) || klass instanceof PythonBuiltinClassType;
     }
 
     public static boolean isPRange(Object obj) {
@@ -320,15 +363,15 @@ public abstract class PGuards {
     }
 
     public static boolean isString(Object obj) {
-        return obj instanceof String || obj instanceof PString;
+        return isJavaString(obj) || obj instanceof TruffleString || obj instanceof PString;
+    }
+
+    public static boolean isTruffleString(Object obj) {
+        return obj instanceof TruffleString;
     }
 
     public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
-        return obj instanceof String || profile.profileObject(obj, PythonBuiltinClassType.PString);
-    }
-
-    public static boolean isNativeString(PString x) {
-        return x.getCharSequence() instanceof NativeCharSequence;
+        return isJavaString(obj) || obj instanceof TruffleString || profile.profileObject(obj, PythonBuiltinClassType.PString);
     }
 
     public static boolean isBuiltinFunction(Object obj) {
@@ -359,8 +402,21 @@ public abstract class PGuards {
         return isBoolean(idx) || isInteger(idx) || isPInt(idx);
     }
 
+    public static boolean isNumber(Object num) {
+        return isPFloat(num) || isDouble(num) || canBeInteger(num);
+    }
+
     public static boolean isPInt(Object obj) {
         return obj instanceof PInt;
+    }
+
+    public static boolean isBuiltinPInt(PInt obj) {
+        /*
+         * int's __class__ cannot be reassigned and other objects cannot have their class assigned
+         * to builtin int, so it is enough to look at the initial class. PInt constructor ensures
+         * that it cannot be PythonBuiltinClass.
+         */
+        return obj.getInitialPythonClass() == PythonBuiltinClassType.PInt;
     }
 
     public static boolean isPString(Object obj) {
@@ -399,6 +455,14 @@ public abstract class PGuards {
         return obj instanceof PTraceback;
     }
 
+    public static boolean isInt(Object obj) {
+        return obj instanceof Integer;
+    }
+
+    public static boolean isLong(Object obj) {
+        return obj instanceof Long;
+    }
+
     public static boolean isInteger(Object obj) {
         return obj instanceof Long || obj instanceof Integer;
     }
@@ -413,6 +477,10 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytesLike;
+    }
+
+    public static boolean isPBytes(Object obj) {
+        return obj instanceof PBytes;
     }
 
     public static boolean isArray(Object obj) {
@@ -443,20 +511,32 @@ public abstract class PGuards {
         return o instanceof PSet;
     }
 
-    public static boolean isPBaseSet(Object o) {
-        return o instanceof PBaseSet;
-    }
-
     public static boolean isPFrozenSet(Object o) {
         return o instanceof PFrozenSet;
     }
 
     public static boolean canDoSetBinOp(Object o) {
-        return isPBaseSet(o) || isDictView(o);
+        return isAnySet(o) || isDictView(o);
     }
 
     public static boolean isPSlice(Object obj) {
         return obj instanceof PSlice;
+    }
+
+    public static boolean isPyCArg(Object obj) {
+        return obj instanceof PyCArgObject;
+    }
+
+    public static boolean isCDataObject(Object obj) {
+        return obj instanceof CDataObject;
+    }
+
+    public static boolean isHPyHandle(Object obj) {
+        return obj instanceof GraalHPyHandle;
+    }
+
+    public static boolean isHPyObject(Object obj) {
+        return obj instanceof PythonHPyObject;
     }
 
     public static boolean expectBoolean(Object result) throws UnexpectedResultException {
@@ -469,6 +549,16 @@ public abstract class PGuards {
     public static int expectInteger(Object result) throws UnexpectedResultException {
         if (result instanceof Integer) {
             return (Integer) result;
+        }
+        throw new UnexpectedResultException(result);
+    }
+
+    public static int expectInt(Object result) throws UnexpectedResultException, OverflowException {
+        if (result instanceof Integer) {
+            return (Integer) result;
+        }
+        if (result instanceof Long) {
+            return PInt.intValueExact((Long) result);
         }
         throw new UnexpectedResultException(result);
     }
@@ -495,7 +585,63 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
+    @InliningCutoff
+    public static boolean cannotBeOverridden(Object object, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(object);
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    /**
+     * Tests if the class of this Python object is a builtin class. This method is supposed to be
+     * used for builtin types that do not support __class__ assignment at all, so we can safely read
+     * the initialPythonClass field and assume that is the current class as well.
+     */
+    public static boolean cannotBeOverriddenForImmutableType(PythonObject object) {
+        Object clazz = object.getInitialPythonClass();
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    public static boolean isBuiltinDict(PDict dict) {
+        /*
+         * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
+         * to builtin dict, so it is enough to look at the initial class. PDict constructor ensures
+         * that it cannot be PythonBuiltinClass.
+         */
+        return dict.getInitialPythonClass() == PythonBuiltinClassType.PDict;
+    }
+
     public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    public static boolean isUnaryBuiltinDescriptor(Object value) {
+        return value instanceof UnaryBuiltinDescriptor;
+    }
+
+    public static boolean isBinaryBuiltinDescriptor(Object value) {
+        return value instanceof BinaryBuiltinDescriptor;
+    }
+
+    public static boolean isTernaryBuiltinDescriptor(Object value) {
+        return value instanceof TernaryBuiltinDescriptor;
+    }
+
+    public static boolean isMinusOne(long l) {
+        return l == -1;
+    }
+
+    public static boolean isAscii(TruffleString str, TruffleString.GetCodeRangeNode getCodeRangeNode) {
+        return getCodeRangeNode.execute(str, TS_ENCODING) == CodeRange.ASCII;
+    }
+
+    @InliningCutoff
+    public static boolean isIndexOrSlice(PyIndexCheckNode indexCheckNode, Object key) {
+        return indexCheckNode.execute(key) || isPSlice(key);
+    }
+
+    @InliningCutoff
+    public static boolean isNativeWrapper(PythonAbstractObject object) {
+        Object wrapper = object.getNativeWrapper();
+        return wrapper != null && PythonNativeWrapperLibrary.getUncached().isNative(wrapper);
     }
 }

@@ -1,0 +1,39 @@
+Module[0, 125]
+    Assign[0, 5]
+        LHS: Name[0, 1] Value: "x" Store
+        RHS: LONG[4, 5] Value: 0
+    FunctionDef[6, 119]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        For[18, 119]
+            Target: Name[22, 23] Value: "x" Store
+            Iter: 
+                Call[27, 35]
+                    Target: Name[27, 32] Value: "range"
+                    Args:
+                        LONG[33, 34] Value: 3
+            Body:
+                Assign[41, 46]
+                    LHS: Name[41, 42] Value: "x" Store
+                    RHS: LONG[45, 46] Value: 4
+                If[51, 119]
+                    Test: 
+                        Compare[54, 60]
+                            LHS: Name[54, 55] Value: "x"
+                            Op: Eq
+                            RHS: LONG[59, 60] Value: 1
+                    Then:
+                        Call[68, 82]
+                            Target: Name[68, 73] Value: "print"
+                            Args:
+                                RAW[74, 81] Value: "jedna"
+                        Break[89, 94]
+                    Else:
+                        Call[111, 119]
+                            Target: Name[111, 116] Value: "print"
+                            Args:
+                                Name[117, 118] Value: "x"
+        ---- End of fn function ----
+    Call[121, 125]
+        Target: Name[121, 123] Value: "fn"

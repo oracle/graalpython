@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,10 @@ import java.math.BigInteger;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
@@ -58,7 +58,7 @@ public final class PObjectSlice extends PSlice {
 
     protected final Object startObject;
     protected final Object stopObject;
-    @CompilationFinal protected Object stepObject;
+    protected final Object stepObject;
 
     public PObjectSlice(PythonLanguage lang, Object start, Object stop, Object step) {
         super(lang);
@@ -136,7 +136,7 @@ public final class PObjectSlice extends PSlice {
         length = (BigInteger) lengthIn;
         if (pySign(length) < 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
         if (slice.getStep() == PNone.NONE) {
             step = ONE;
@@ -146,7 +146,7 @@ public final class PObjectSlice extends PSlice {
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

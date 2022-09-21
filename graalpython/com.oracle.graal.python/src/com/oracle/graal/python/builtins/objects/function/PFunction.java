@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,73 +28,66 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
-public class PFunction extends PythonObject {
-    private String name;
-    private String qualname;
-    private final String enclosingClassName;
+public final class PFunction extends PythonObject {
+    private TruffleString name;
+    private TruffleString qualname;
     private final Assumption codeStableAssumption;
     private final Assumption defaultsStableAssumption;
     private final PythonObject globals;
+    @CompilationFinal private boolean isBuiltin;
     @CompilationFinal(dimensions = 1) private final PCell[] closure;
     @CompilationFinal private PCode code;
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        this(lang, name, qualname, enclosingClassName, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
+    public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
+        this(lang, name, qualname, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        this(lang, name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+        this(lang, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
-    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues,
+                    PKeyword[] kwDefaultValues,
                     PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
         assert code != null;
         this.code = code;
-        this.enclosingClassName = enclosingClassName;
         this.globals = globals;
         this.defaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
         this.defaultsStableAssumption = defaultsStableAssumption;
-    }
-
-    public RootCallTarget getCallTarget() {
-        return getCode().getRootCallTarget();
     }
 
     public Assumption getCodeStableAssumption() {
@@ -109,36 +102,32 @@ public class PFunction extends PythonObject {
         return globals;
     }
 
-    public RootNode getFunctionRootNode() {
-        return getCallTarget().getRootNode();
-    }
-
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(TruffleString name) {
         this.name = name;
     }
 
-    public String getQualname() {
+    public TruffleString getQualname() {
         return this.qualname;
     }
 
-    public void setQualname(String qualname) {
+    public void setQualname(TruffleString qualname) {
         this.qualname = qualname;
-    }
-
-    public Signature getSignature() {
-        return getCode().getSignature();
     }
 
     public PCell[] getClosure() {
         return closure;
     }
 
-    public boolean isGeneratorFunction() {
-        return code.getRootCallTarget().getRootNode() instanceof GeneratorFunctionRootNode;
+    public boolean isBuiltin() {
+        return isBuiltin;
+    }
+
+    public void setBuiltin(boolean builtin) {
+        isBuiltin = builtin;
     }
 
     @Override
@@ -156,10 +145,6 @@ public class PFunction extends PythonObject {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";
         this.code = code;
-    }
-
-    public String getEnclosingClassName() {
-        return enclosingClassName;
     }
 
     public Object[] getDefaults() {
@@ -183,8 +168,8 @@ public class PFunction extends PythonObject {
     }
 
     @TruffleBoundary
-    public String getSourceCode() {
-        RootNode rootNode = getCallTarget().getRootNode();
+    String getSourceCode() {
+        RootNode rootNode = GetCallTargetNode.getUncached().execute(this).getRootNode();
         if (rootNode instanceof GeneratorFunctionRootNode) {
             rootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
         }
@@ -196,34 +181,42 @@ public class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    public boolean isCallable() {
-        return true;
-    }
-
-    @ExportMessage
     @SuppressWarnings("static-method")
     boolean hasExecutableName() {
         return true;
     }
 
     @ExportMessage
-    String getExecutableName() {
-        return getName();
+    String getExecutableName(@Shared("gil") @Cached GilNode gil,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return toJavaStringNode.execute(getName());
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() throws UnsupportedMessageException {
-        SourceSection result = getSourceLocationDirect();
-        if (result == null) {
-            throw UnsupportedMessageException.create();
-        } else {
-            return result;
+    public SourceSection getSourceLocation(
+                    @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            SourceSection result = getSourceLocationDirect(getCt);
+            if (result == null) {
+                throw UnsupportedMessageException.create();
+            } else {
+                return result;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @TruffleBoundary
-    private SourceSection getSourceLocationDirect() {
-        RootNode rootNode = getCallTarget().getRootNode();
+    private SourceSection getSourceLocationDirect(GetCodeCallTargetNode getCt) {
+        RootNode rootNode = getCt.execute(code).getRootNode();
         SourceSection result;
         if (rootNode instanceof PRootNode) {
             result = ((PRootNode) rootNode).getSourceSection();
@@ -239,32 +232,14 @@ public class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    public boolean hasSourceLocation() {
-        return getSourceLocationDirect() != null;
-    }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PFunction;
-    }
-
-    @ExportMessage
-    public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallNode call) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+    public boolean hasSourceLocation(
+                    @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getSourceLocationDirect(getCt) != null;
+        } finally {
+            gil.release(mustRelease);
         }
-        return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
-    }
-
-    @ExportMessage
-    public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallNode call) {
-        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
     }
 }

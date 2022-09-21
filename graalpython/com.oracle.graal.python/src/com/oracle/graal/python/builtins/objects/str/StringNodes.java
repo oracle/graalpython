@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,42 +40,53 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_SEQ_ITEM;
+import static com.oracle.graal.python.nodes.PGuards.cannotBeOverridden;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,74 +96,57 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class StringNodes {
-
-    public static boolean isNativeCharSequence(PString x) {
-        return x.getCharSequence() instanceof NativeCharSequence;
-    }
-
-    public static boolean isNativeMaterialized(PString seq) {
-        return ((NativeCharSequence) seq.getCharSequence()).isMaterialized();
-    }
-
-    public static boolean isLazyCharSequence(PString x) {
-        return x.getCharSequence() instanceof LazyString;
-    }
-
-    public static boolean isMaterialized(PString x) {
-        return x.getCharSequence() instanceof String;
-    }
 
     @GenerateUncached
     @ImportStatic(StringNodes.class)
     public abstract static class StringMaterializeNode extends Node {
 
-        public abstract String execute(PString materialize);
+        public abstract TruffleString execute(PString materialize);
 
-        @Specialization(guards = {"isNativeCharSequence(x)", "isNativeMaterialized(x)"})
-        static String doMaterializedNative(PString x) {
-            return ((NativeCharSequence) x.getCharSequence()).getMaterialized();
+        @Specialization(guards = {"x.isNativeCharSequence()", "x.isNativeMaterialized()"})
+        static TruffleString doMaterializedNative(PString x) {
+            return x.getNativeCharSequence().getMaterialized();
         }
 
-        @Specialization(guards = {"isNativeCharSequence(x)"}, replaces = "doMaterializedNative")
-        static String doNative(PString x,
+        @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
+        static TruffleString doNative(PString x,
                         @Cached PCallCapiFunction callCStringToStringNode,
                         @Cached UnicodeFromWcharNode fromWcharNode) {
-            // cast guaranteed by the guard
-            String materialized = materializeNativeCharSequence((NativeCharSequence) x.getCharSequence(), callCStringToStringNode, fromWcharNode);
-            x.setCharSequence(materialized);
+            TruffleString materialized = materializeNativeCharSequence(x.getNativeCharSequence(), callCStringToStringNode, fromWcharNode);
+            x.setMaterialized(materialized);
             return materialized;
         }
 
-        @Specialization(guards = "isLazyCharSequence(x)")
-        static String doLazyString(PString x) {
-            // cast guaranteed by the guard
-            String materialized = ((LazyString) x.getCharSequence()).materialize();
-            x.setCharSequence(materialized);
-            return materialized;
+        @Specialization(guards = "x.isMaterialized()")
+        static TruffleString doMaterialized(PString x) {
+            return x.getMaterialized();
         }
 
-        @Specialization(guards = "isMaterialized(x)")
-        static String doMaterialized(PString x) {
-            // cast guaranteed by the guard
-            return (String) x.getCharSequence();
-        }
-
-        public static String materializeNativeCharSequence(NativeCharSequence nativeCharSequence,
+        public static TruffleString materializeNativeCharSequence(NativeCharSequence nativeCharSequence,
                         PCallCapiFunction callCStringToStringNode,
                         UnicodeFromWcharNode fromWcharNode) {
             // cast guaranteed by the guard
-            String materialized;
+            TruffleString materialized;
             if (nativeCharSequence.isAsciiOnly()) {
-                materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
+                materialized = (TruffleString) callCStringToStringNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
             } else {
                 switch (nativeCharSequence.getElementSize()) {
                     case 1:
-                        materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
+                        materialized = (TruffleString) callCStringToStringNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
                         break;
                     case 2:
                     case 4:
+                        /*
+                         * TODO(fa): Attach LLVM type to pointer depending on the element size. In
+                         * order that UnicodeFromWcharNode works properly, the pointer must be typed
+                         * since it will try to read the elements via interop. We should do that
+                         * here since we want this to be done as late as possible.
+                         */
                         materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
                         break;
                     default:
@@ -161,60 +155,61 @@ public abstract class StringNodes {
             }
             return materialized;
         }
+
+        public static StringMaterializeNode create() {
+            return StringNodesFactory.StringMaterializeNodeGen.create();
+        }
     }
 
     @GenerateUncached
     @ImportStatic(StringNodes.class)
-    public abstract static class StringLenNode extends Node {
+    public abstract static class StringLenNode extends PNodeWithContext {
 
         public abstract int execute(Object str);
 
         @Specialization
-        static int doString(String str) {
-            return str.length();
+        static int doString(TruffleString str,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
-        @Specialization(guards = "isMaterialized(x)")
-        static int doMaterialized(PString x) {
-            // cast guaranteed by the guard
-            return CompilerDirectives.castExact(x.getCharSequence(), String.class).length();
+        @Specialization(guards = "x.isMaterialized()")
+        static int doMaterialized(PString x,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return doString(x.getMaterialized(), codePointLengthNode);
         }
 
-        @Specialization(guards = "isNativeCharSequence(x)")
-        static int doNativeCharSequence(PString x, @Cached StringMaterializeNode materializeNode) {
-            return materializeNode.execute(x).length();
+        @Specialization(guards = "x.isNativeCharSequence()")
+        static int doNativeCharSequence(PString x,
+                        @Cached StringMaterializeNode materializeNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return doString(materializeNode.execute(x), codePointLengthNode);
         }
 
-        @Specialization(guards = "isLazyCharSequence(x)")
-        static int doLazyString(PString x) {
-            // cast guaranteed by the guard
-            return CompilerDirectives.castExact(x.getCharSequence(), LazyString.class).length();
+        @Specialization(guards = {"x.isNativeCharSequence()", "x.isNativeMaterialized()"})
+        static int nativeString(PString x,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+            return doString(x.getNativeCharSequence().getMaterialized(), codePointLengthNode);
         }
 
-        @Specialization(guards = {"isNativeCharSequence(x)", "isNativeMaterialized(x)"})
-        static int nativeString(PString x) {
-            // cast guaranteed by the guard
-            return CompilerDirectives.castExact(x.getCharSequence(), NativeCharSequence.class).getMaterialized().length();
-        }
-
-        @Specialization(guards = {"isNativeCharSequence(x)", "!isNativeMaterialized(x)"}, replaces = "nativeString", limit = "3")
+        @Specialization(guards = {"x.isNativeCharSequence()", "!x.isNativeMaterialized()"}, replaces = "nativeString", limit = "3")
         static int nativeStringMat(@SuppressWarnings("unused") PString x,
-                        @Bind("getNativeCharSequence(x)") NativeCharSequence ncs,
+                        @Bind("x.getNativeCharSequence()") NativeCharSequence ncs,
                         @CachedLibrary("ncs") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
             return ncs.length(lib, castToJavaIntNode);
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         static int doNativeObject(PythonNativeObject x,
-                        @CachedLibrary("x") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
+            if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
                 // read the native data
-                Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
+                Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
                 return intValue((Number) result);
             }
@@ -226,21 +221,24 @@ public abstract class StringNodes {
         private static int intValue(Number result) {
             return result.intValue();
         }
-
-        static NativeCharSequence getNativeCharSequence(PString self) {
-            return (NativeCharSequence) self.getCharSequence();
-        }
     }
 
-    public abstract static class CastToJavaStringCheckedNode extends Node {
-        public final String cast(Object object, String errMsgFormat, Object... errMsgArgs) {
-            return execute(object, errMsgFormat, errMsgArgs);
+    @GenerateUncached
+    public abstract static class CastToJavaStringCheckedNode extends PNodeWithContext {
+        public final String cast(Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
+            return executeInternal(object, errMsgFormat, errMsgArgs);
         }
 
-        public abstract String execute(Object object, String errMsgFormat, Object[] errMsgArgs);
+        protected abstract String executeInternal(Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
 
         @Specialization
-        static String doConvert(Object self, String errMsgFormat, Object[] errMsgArgs,
+        static String doConvert(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return toJavaStringNode.execute(self);
+        }
+
+        @Specialization(guards = "!isTruffleString(self)")
+        static String doConvert(Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached BranchProfile errorBranch,
                         @Cached PRaiseNode raiseNode) {
@@ -257,104 +255,136 @@ public abstract class StringNodes {
         }
     }
 
-    @ImportStatic({PGuards.class, PythonOptions.class})
-    public abstract static class JoinInternalNode extends PNodeWithContext {
-
-        public static final String INVALID_SEQ_ITEM = "sequence item %d: expected str instance, %p found";
-
-        public abstract String execute(VirtualFrame frame, String self, Object iterable);
-
-        @Specialization
-        static String doString(String self, String arg) {
-            if (arg.isEmpty()) {
-                return "";
-            }
-            return joinString(self, arg);
+    @ImportStatic(PGuards.class)
+    public abstract static class CastToTruffleStringCheckedNode extends PNodeWithContext {
+        public final TruffleString cast(Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
+            return execute(object, errMsgFormat, errMsgArgs);
         }
 
-        @TruffleBoundary
-        private static String joinString(String self, String arg) {
-            StringBuilder sb = new StringBuilder();
-            char[] joinString = arg.toCharArray();
-            assert joinString.length > 0;
-            for (int i = 0; i < joinString.length - 1; i++) {
-                sb.append(joinString[i]);
-                sb.append(self);
+        public abstract TruffleString execute(Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
+
+        @Specialization
+        static TruffleString doTruffleString(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs) {
+            return self;
+        }
+
+        @Specialization(guards = "!isTruffleString(self)")
+        static TruffleString doConvert(Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached BranchProfile errorBranch,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return castToTruffleStringNode.execute(self);
+            } catch (CannotCastException e) {
+                errorBranch.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
-            sb.append(joinString[joinString.length - 1]);
-            return sb.toString();
+        }
+
+        public static CastToTruffleStringCheckedNode create() {
+            return StringNodesFactory.CastToTruffleStringCheckedNodeGen.create();
+        }
+    }
+
+    @ImportStatic({PGuards.class, PythonOptions.class})
+    public abstract static class JoinInternalNode extends PNodeWithContext {
+        public abstract TruffleString execute(VirtualFrame frame, TruffleString self, Object iterable);
+
+        @Specialization
+        static TruffleString doString(TruffleString self, TruffleString arg,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            if (arg.isEmpty()) {
+                return T_EMPTY_STRING;
+            }
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
+            assert it.hasNext();
+            appendCodePointNode.execute(sb, nextNode.execute(it), 1, true);
+            while (it.hasNext()) {
+                appendStringNode.execute(sb, self);
+                appendCodePointNode.execute(sb, nextNode.execute(it), 1, true);
+            }
+            return toStringNode.execute(sb);
         }
 
         // This specialization is just for better interpreter performance.
         // IMPORTANT: only do this if the sequence is exactly list or tuple (not subclassed); for
         // semantics, see CPython's 'abstract.c' function 'PySequence_Fast'
-        @Specialization(guards = "isExactlyListOrTuple(plib, tupleProfile, listProfile, sequence)")
-        static String doPSequence(VirtualFrame frame, String self, PSequence sequence,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile tupleProfile,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile listProfile,
+        @Specialization(guards = "isExactlyListOrTuple(getClassNode, sequence)", limit = "1")
+        static TruffleString doPSequence(VirtualFrame frame, TruffleString self, PSequence sequence,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ConditionProfile isEmptyProfile,
                         @Cached ConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode,
-                        @Cached PRaiseNode raise) {
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PRaiseNode raise,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
 
             SequenceStorage storage = getSequenceStorageNode.execute(sequence);
             int len = lenNode.execute(storage);
 
             // shortcut
             if (isEmptyProfile.profile(len == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
 
-            StringBuilder sb = PythonUtils.newStringBuilder();
             int i = 0;
 
+            // manually peel first iteration
+            Object item = getItemNode.execute(frame, storage, i);
             try {
-                // manually peel first iteration
-                Object item = getItemNode.execute(frame, storage, i);
                 // shortcut
                 if (isSingleItemProfile.profile(len == 1)) {
-                    return castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item);
+                    return castToStringNode.execute(item);
                 }
-                PythonUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                appendStringNode.execute(sb, castToStringNode.execute(item));
 
                 for (i = 1; i < len; i++) {
-                    PythonUtils.append(sb, self);
+                    appendStringNode.execute(sb, self);
                     item = getItemNode.execute(frame, storage, i);
-                    PythonUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                    appendStringNode.execute(sb, castToStringNode.execute(item));
                 }
-                return PythonUtils.sbToString(sb);
+                return toStringNode.execute(sb);
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, INVALID_SEQ_ITEM, i, item);
             }
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static String doGeneric(VirtualFrame frame, String string, Object iterable,
+        @Specialization
+        static TruffleString doGeneric(VirtualFrame frame, TruffleString string, Object iterable,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile0,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached CastToJavaStringNode castStrNode) {
+                        @Cached CastToTruffleStringNode castStrNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object iterator;
             try {
-                iterator = lib.getIteratorWithFrame(iterable, frame);
+                iterator = getIter.execute(frame, iterable);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
-                StringBuilder str = PythonUtils.newStringBuilder();
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
                 try {
-                    PythonUtils.append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
+                    appendStringNode.execute(sb, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
-                    return "";
+                    return T_EMPTY_STRING;
                 }
                 int i = 1;
                 while (true) {
@@ -363,17 +393,17 @@ public abstract class StringNodes {
                         value = nextNode.execute(frame, iterator);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile2);
-                        return PythonUtils.sbToString(str);
+                        return toStringNode.execute(sb);
                     }
-                    PythonUtils.append(str, string);
-                    PythonUtils.append(str, checkItem(value, i++, castStrNode, raise));
+                    appendStringNode.execute(sb, string);
+                    appendStringNode.execute(sb, checkItem(value, i++, castStrNode, raise));
                 }
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
             }
         }
 
-        private static String checkItem(Object item, int pos, CastToJavaStringNode castNode, PRaiseNode raise) {
+        private static TruffleString checkItem(Object item, int pos, CastToTruffleStringNode castNode, PRaiseNode raise) {
             try {
                 return castNode.execute(item);
             } catch (CannotCastException e) {
@@ -381,39 +411,40 @@ public abstract class StringNodes {
             }
         }
 
-        static boolean isExactlyListOrTuple(PythonObjectLibrary lib, IsBuiltinClassProfile tupleProfile, IsBuiltinClassProfile listProfile, PSequence sequence) {
-            Object cls = lib.getLazyPythonClass(sequence);
-            return tupleProfile.profileClass(cls, PythonBuiltinClassType.PTuple) || listProfile.profileClass(cls, PythonBuiltinClassType.PList);
+        static boolean isExactlyListOrTuple(GetClassNode getClassNode, PSequence sequence) {
+            Object clazz = getClassNode.execute(sequence);
+            return clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple;
         }
     }
 
     @ImportStatic(PGuards.class)
     public abstract static class SpliceNode extends PNodeWithContext {
 
-        public abstract void execute(StringBuilder sb, Object translated);
+        public abstract void execute(TruffleStringBuilder sb, Object translated);
 
         @Specialization(guards = "isNone(none)")
         @SuppressWarnings("unused")
-        static void doNone(StringBuilder sb, PNone none) {
+        static void doNone(TruffleStringBuilder sb, PNone none) {
         }
 
         @Specialization
-        @TruffleBoundary(allowInlining = true)
-        static void doInt(StringBuilder sb, int translated,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+        static void doInt(TruffleStringBuilder sb, int translated,
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             if (Character.isValidCodePoint(translated)) {
-                sb.appendCodePoint(translated);
+                appendCodePointNode.execute(sb, translated, 1, true);
             } else {
-                throw raise.raise(ValueError, "invalid unicode code poiont");
+                throw raise.raise(ValueError, ErrorMessages.INVALID_UNICODE_CODE_POINT);
             }
         }
 
         @Specialization
-        static void doLong(StringBuilder sb, long translated,
+        static void doLong(TruffleStringBuilder sb, long translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Shared("overflow") @Cached BranchProfile ovf) {
+                        @Shared("overflow") @Cached BranchProfile ovf,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
-                doInt(sb, PInt.intValueExact(translated), raise);
+                doInt(sb, PInt.intValueExact(translated), raise, appendCodePointNode);
             } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
@@ -421,11 +452,12 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static void doPInt(StringBuilder sb, PInt translated,
+        static void doPInt(TruffleStringBuilder sb, PInt translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Shared("overflow") @Cached BranchProfile ovf) {
+                        @Shared("overflow") @Cached BranchProfile ovf,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
-                doInt(sb, translated.intValueExact(), raise);
+                doInt(sb, translated.intValueExact(), raise, appendCodePointNode);
             } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
@@ -433,19 +465,20 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        @TruffleBoundary(allowInlining = true)
-        static void doString(StringBuilder sb, String translated) {
-            sb.append(translated);
+        static void doString(TruffleStringBuilder sb, TruffleString translated,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+            appendStringNode.execute(sb, translated);
         }
 
         @Specialization(guards = {"!isInteger(translated)", "!isPInt(translated)", "!isNone(translated)"})
-        static void doObject(StringBuilder sb, Object translated,
+        static void doObject(TruffleStringBuilder sb, Object translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
 
             try {
-                String translatedStr = castToJavaStringNode.execute(translated);
-                doString(sb, translatedStr);
+                TruffleString translatedStr = castToStringNode.execute(translated);
+                doString(sb, translatedStr, appendStringNode);
             } catch (CannotCastException e) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
             }
@@ -454,59 +487,194 @@ public abstract class StringNodes {
         private static PException raiseError(PRaiseNode raise) {
             return raise.raise(ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
         }
-
     }
 
-    public abstract static class FindNode extends PNodeWithContext {
-
-        public abstract int execute(String self, String sub, int start, int end);
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class InternStringNode extends Node {
+        public abstract PString execute(Object string);
 
         @Specialization
-        int find(String haystack, String needle, int start, int end) {
-            int len1 = haystack.length();
-            int len2 = needle.length();
+        static PString doString(TruffleString string,
+                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @Cached PythonObjectFactory factory) {
+            final PString interned = factory.createString(string);
+            writeNode.execute(interned, PString.INTERNED, true);
+            return interned;
+        }
 
-            if (len2 == 0 && start <= len1) {
-                return emptySubIndex(start, end);
+        @Specialization
+        static PString doPString(PString string,
+                        @Cached GetClassNode getClassNode,
+                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode) {
+            if (cannotBeOverridden(getClassNode.execute(string))) {
+                writeNode.execute(string, PString.INTERNED, true);
+                return string;
             }
-            if (start >= len1 || len1 < len2) {
-                return -1;
-            }
-
-            return findWithBounds(haystack, needle, start, end > len1 ? len1 : end);
+            return null;
         }
 
-        // Overridden in RFind
-        @SuppressWarnings("unused")
-        protected int emptySubIndex(int start, int end) {
-            return start;
+        @Fallback
+        static PString doOthers(@SuppressWarnings("unused") Object string) {
+            return null;
         }
 
-        protected int findWithBounds(String haystack, String needle, int start, int end) {
-            int idx = PString.indexOf(haystack, needle, start);
-            return idx + needle.length() <= end ? idx : -1;
+        public static InternStringNode create() {
+            return StringNodesFactory.InternStringNodeGen.create();
         }
 
-        public static FindNode create() {
-            return StringNodesFactory.FindNodeGen.create();
+        public static InternStringNode getUncached() {
+            return StringNodesFactory.InternStringNodeGen.getUncached();
         }
     }
 
-    public abstract static class RFindNode extends FindNode {
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class IsInternedStringNode extends Node {
+        public abstract boolean execute(PString string);
 
-        @Override
-        protected int emptySubIndex(int start, int end) {
-            return (end - start) + start;
+        @Specialization
+        static boolean doIt(PString string,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+            final Object isInterned = readNode.execute(string, PString.INTERNED);
+            return isInterned instanceof Boolean && (boolean) isInterned;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class StringReplaceNode extends Node {
+        public abstract TruffleString execute(TruffleString str, TruffleString old, TruffleString with, int maxCount);
+
+        @Specialization
+        static TruffleString doReplace(TruffleString self, TruffleString old, TruffleString with, int maxCountArg,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfStringNode indexOfStringNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            int maxCount = maxCountArg < 0 ? Integer.MAX_VALUE : maxCountArg;
+            if (maxCount == 0) {
+                return self;
+            }
+            if (old.isEmpty()) {
+                if (self.isEmpty() && maxCountArg >= 0) {
+                    // corner case: "".replace("","x", <m>) returns "" for m >=0
+                    return self;
+                }
+                int selfLen = self.byteLength(TS_ENCODING);
+                int selfCpLen = codePointLengthNode.execute(self, TS_ENCODING);
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, selfLen + with.byteLength(TS_ENCODING) * Math.min(maxCount, selfCpLen + 1));
+                int replacements = 0;
+                TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
+                int i = 0;
+                while (it.hasNext()) {
+                    if (replacements++ >= maxCount) {
+                        TruffleString rest = substringNode.execute(self, i, selfCpLen - i, TS_ENCODING, true);
+                        appendStringNode.execute(sb, rest);
+                        return toStringNode.execute(sb);
+                    }
+                    appendStringNode.execute(sb, with);
+                    int codePoint = nextNode.execute(it);
+                    appendCodePointNode.execute(sb, codePoint, 1, true);
+                    ++i;
+                }
+                if (replacements < maxCount) {
+                    appendStringNode.execute(sb, with);
+                }
+                return toStringNode.execute(sb);
+            } else {
+                int selfCpLen = codePointLengthNode.execute(self, TS_ENCODING);
+                int oldCpLen = codePointLengthNode.execute(old, TS_ENCODING);
+                int idx = indexOfStringNode.execute(self, old, 0, selfCpLen, TS_ENCODING);
+                if (idx < 0) {
+                    return self;
+                } else {
+                    TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                    int start = 0;
+                    int replacements = 0;
+                    do {
+                        TruffleString substr = substringNode.execute(self, start, idx - start, TS_ENCODING, true);
+                        appendStringNode.execute(sb, substr);
+                        appendStringNode.execute(sb, with);
+                        start = idx + oldCpLen;
+                        if (++replacements >= maxCount || start >= selfCpLen) {
+                            break;
+                        }
+                        idx = indexOfStringNode.execute(self, old, start, selfCpLen, TS_ENCODING);
+                    } while (idx >= 0);
+                    TruffleString rest = substringNode.execute(self, start, selfCpLen - start, TS_ENCODING, true);
+                    appendStringNode.execute(sb, rest);
+                    return toStringNode.execute(sb);
+                }
+            }
         }
 
-        @Override
-        protected int findWithBounds(String haystack, String needle, int start, int end) {
-            int idx = PString.lastIndexOf(haystack, needle, end - needle.length());
-            return idx >= start ? idx : -1;
+        public static StringReplaceNode getUncached() {
+            return StringNodesFactory.StringReplaceNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class StringReprNode extends Node {
+        public abstract TruffleString execute(TruffleString self);
+
+        @Specialization
+        static TruffleString doString(TruffleString self,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
+            boolean hasSingleQuote = indexOfCodePointNode.execute(self, '\'', 0, selfLen, TS_ENCODING) >= 0;
+            boolean hasDoubleQuote = indexOfCodePointNode.execute(self, '"', 0, selfLen, TS_ENCODING) >= 0;
+            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
+
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(selfLen + 2));
+            TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
+            byte[] buffer = new byte[12];
+            appendCodePointNode.execute(sb, useDoubleQuotes ? '"' : '\'', 1, true);
+            while (it.hasNext()) {
+                int codepoint = nextNode.execute(it);
+                switch (codepoint) {
+                    case '"':
+                        if (useDoubleQuotes) {
+                            appendCodePointNode.execute(sb, '\\', 1, true);
+                        }
+                        appendCodePointNode.execute(sb, '"', 1, true);
+                        break;
+                    case '\'':
+                        if (!useDoubleQuotes) {
+                            appendCodePointNode.execute(sb, '\\', 1, true);
+                        }
+                        appendCodePointNode.execute(sb, '\'', 1, true);
+                        break;
+                    case '\\':
+                        appendCodePointNode.execute(sb, '\\', 1, true);
+                        appendCodePointNode.execute(sb, '\\', 1, true);
+                        break;
+                    default:
+                        if (StringUtils.isPrintable(codepoint)) {
+                            appendCodePointNode.execute(sb, codepoint, 1, true);
+                        } else {
+                            int len = BytesUtils.unicodeEscape(codepoint, 0, buffer);
+                            for (int i = 0; i < len; i++) {
+                                appendCodePointNode.execute(sb, buffer[i], 1, true);
+                            }
+                        }
+                        break;
+                }
+            }
+            appendCodePointNode.execute(sb, (byte) (useDoubleQuotes ? '"' : '\''), 1, true);
+            return toStringNode.execute(sb);
         }
 
-        public static RFindNode create() {
-            return StringNodesFactory.RFindNodeGen.create();
+        public static StringReprNode getUncached() {
+            return StringNodesFactory.StringReprNodeGen.getUncached();
         }
     }
 }

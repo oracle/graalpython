@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -73,16 +73,16 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         return DestructuringAssignmentNodeGen.create(rhs, slots, starredIndex, assignments);
     }
 
-    public abstract void executeWith(VirtualFrame frame, Object rhsValue);
+    public abstract void executeObject(VirtualFrame frame, Object rhsValue);
 
     @Override
     public final void executeVoid(VirtualFrame frame) {
         Object rhsValue = rhs.execute(frame);
-        executeWith(frame, rhsValue);
+        executeObject(frame, rhsValue);
     }
 
-    public final void doWrite(VirtualFrame frame, Object rhsValue) {
-        executeWith(frame, rhsValue);
+    public final void writeObject(VirtualFrame frame, Object rhsValue) {
+        executeObject(frame, rhsValue);
     }
 
     public ExpressionNode getRhs() {
@@ -128,7 +128,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         } else {
             for (int i = 0; i < slots.length; i++) {
                 Object value = getItemNode.execute(frame, sequenceStorage, i);
-                slots[i].doWrite(frame, value);
+                slots[i].executeObject(frame, value);
             }
         }
     }
@@ -217,7 +217,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
                 CompilerAsserts.partialEvaluationConstant(starredLength);
                 Object[] array = consumeStarredItems(frame, storage, starredLength, getItemNode, starredIndex);
                 assert starredLength == array.length;
-                slots[starredIndex].doWrite(frame, factory().createList(array));
+                slots[starredIndex].executeObject(frame, factory().createList(array));
                 performAssignmentsAfterStar(frame, storage, starredIndex + starredLength, getItemNode, slots, starredIndex);
             }
         }
@@ -239,10 +239,10 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
                 for (int i = 0; i < starredLength; i++) {
                     array[i] = getItemNode.execute(frame, storage, pos++);
                 }
-                slots[starredIndex].doWrite(frame, factory().createList(array));
+                slots[starredIndex].executeObject(frame, factory().createList(array));
                 for (int i = starredIndex + 1; i < slots.length; i++) {
                     Object value = getItemNode.execute(frame, storage, pos++);
-                    slots[i].doWrite(frame, value);
+                    slots[i].executeObject(frame, value);
                 }
             }
         }
@@ -251,7 +251,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         private static void writeSlots(VirtualFrame frame, SequenceStorage storage, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
             for (int i = 0; i < starredIndex; i++) {
                 Object value = getItemNode.execute(frame, storage, i);
-                slots[i].doWrite(frame, value);
+                slots[i].executeObject(frame, value);
             }
         }
 
@@ -270,7 +270,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
                         int starredIndex) {
             for (int i = starredIndex + 1, pos = startPos; i < slots.length; i++, pos++) {
                 Object value = getItemNode.execute(frame, sequenceStorage, pos);
-                slots[i].doWrite(frame, value);
+                slots[i].executeObject(frame, value);
             }
         }
 

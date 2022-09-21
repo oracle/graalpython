@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,12 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-
+def raise_Py6_SystemError():
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        return -1
+    
 def _reference_aslong(args):
     # We cannot be sure if we are on 32-bit or 64-bit architecture. So, assume the smaller one.
     n = int(args[0])
@@ -88,6 +93,14 @@ def _reference_fromlong(args):
     n = args[0]
     return n
 
+def _reference_sign(args):
+    n = args[0]
+    if n==0:
+        return 0
+    elif n < 0:
+        return -1
+    else:
+        return 1
 
 class DummyNonInt():
     pass
@@ -175,6 +188,8 @@ class TestPyLong(CPyExtTestCase):
             (0,),
             (-1,),
             (-2,),
+            (True,),
+            (False,),
             (0x7fffffff,),
             (0xffffffff,),
             # we could use larger values on 64-bit systems but how should we know?
@@ -392,4 +407,20 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec="OniiO",
         arguments=["PyObject* object", "Py_ssize_t n", "int little_endian", "int is_signed", "PyObject* unused"],
+    )
+    
+    test__PyLong_Sign = CPyExtFunction(
+        _reference_sign,
+        lambda: (
+            (0,),
+            (-1,),
+            (0xffffffff,),
+            (0xfffffffffffffffffffffff,),
+            (True,),
+            (False,),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
     )

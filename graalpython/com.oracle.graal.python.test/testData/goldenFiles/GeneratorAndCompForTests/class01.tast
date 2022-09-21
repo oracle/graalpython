@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
           Identifier: OrderedDict
           PythonCallTernary SourceSection: [0,192]`class OrderedDict(di...`
             CallTernaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: OrderedDict SourceSection: None
               Arguments: None
               KwArguments: None
@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,192]`class OrderedDict(di...`
                 Name: OrderedDict
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,19 +40,15 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                         QualName: OrderedDict
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [29,192]`def __reversed__(sel...`
-                        SetItemNodeGen SourceSection: [29,192]`def __reversed__(sel...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [29,192]`def __reversed__(sel...`
+                          Identifier: __reversed__
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                            FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                            FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                             Active Flags: 3
                             For Nodes: 0
                             Block Nodes: 2
@@ -71,7 +66,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, root, curr, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, curr, root, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -82,88 +77,63 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                     GeneratorBlockNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: [61,79]`root = self.__root`
                                         Identifier: root
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,root,Illegal]
-                                        GetAttributeNodeGen SourceSection: [68,79]`self.__root`
+                                        Frame: [1,root,Illegal]
+                                        GetAttributeNode SourceSection: [68,79]`self.__root`
                                           GetFixedAttributeNodeGen SourceSection: None
-                                            Key: __root
-                                            CachedDispatchFirst SourceSection: None
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            Key: _OrderedDict__root
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [68,72]`self`
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: [68,72]`self`
                                             Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: [88,104]`curr = root.prev`
                                         Identifier: curr
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,curr,Illegal]
-                                        GetAttributeNodeGen SourceSection: [95,104]`root.prev`
+                                        Frame: [2,curr,Illegal]
+                                        GetAttributeNode SourceSection: [95,104]`root.prev`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: prev
-                                            CachedDispatchFirst SourceSection: None
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [95,99]`root`
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: [95,99]`root`
                                             Frame: [1,root,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                       ElseNode SourceSection: [113,192]`while curr is not ro...`
                                         GeneratorWhileNode SourceSection: None
                                           GeneratorBlockNode SourceSection: None
                                             ExpressionStatementNode SourceSection: [149,163]`yield curr.key`
                                               YieldNode SourceSection: [149,163]`yield curr.key`
                                                 flagSlot: 0
-                                                GetAttributeNodeGen SourceSection: [155,163]`curr.key`
+                                                GetAttributeNode SourceSection: [155,163]`curr.key`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: key
-                                                    CachedDispatchFirst SourceSection: None
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
-                                                  ReadGeneratorFrameVariableNode SourceSection: [155,159]`curr`
+                                                  ReadGeneratorFrameVariableNodeGen SourceSection: [155,159]`curr`
                                                     Frame: [2,curr,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             WriteGeneratorFrameVariableNodeGen SourceSection: [176,192]`curr = curr.prev`
                                               Identifier: curr
-                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [2,curr,Illegal]
-                                              GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
+                                              Frame: [2,curr,Illegal]
+                                              GetAttributeNode SourceSection: [183,192]`curr.prev`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: prev
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                ReadGeneratorFrameVariableNode SourceSection: [183,187]`curr`
+                                                ReadGeneratorFrameVariableNodeGen SourceSection: [183,187]`curr`
                                                   Frame: [2,curr,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [119,135]`curr is not root`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
+                                              ReadGeneratorFrameVariableNodeGen SourceSection: [119,123]`curr`
                                                 Frame: [2,curr,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [131,135]`root`
+                                              ReadGeneratorFrameVariableNodeGen SourceSection: [131,135]`root`
                                                 Frame: [1,root,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                         BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                    Frame: [3,<return_val>,Object]
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: self
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,self,Illegal]
+                                    Frame: [0,self,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -174,4 +144,4 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
             ReadNameNodeGen SourceSection: [18,22]`dict`
               Identifier: dict
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

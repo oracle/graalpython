@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,10 +25,29 @@ from .support import HPyTest
 
 class TestTuple(HPyTest):
 
+    def test_Check(self):
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                if (HPyTuple_Check(ctx, arg))
+                    return HPy_Dup(ctx, ctx->h_True);
+                return HPy_Dup(ctx, ctx->h_False);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        class MyTuple(tuple):
+            pass
+
+        assert mod.f(()) is True
+        assert mod.f([]) is False
+        assert mod.f(MyTuple()) is True
+
     def test_FromArray(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy x = HPyLong_FromLong(ctx, 42);
                 if (HPy_IsNull(x))
@@ -46,12 +65,14 @@ class TestTuple(HPyTest):
     def test_Pack(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy x = HPyLong_FromLong(ctx, 42);
                 if (HPy_IsNull(x))
                      return HPy_NULL;
-                return HPyTuple_Pack(ctx, 3, self, arg, x);
+                HPy result = HPyTuple_Pack(ctx, 3, self, arg, x);
+                HPy_Close(ctx, x);
+                return result;
             }
             @EXPORT(f)
             @INIT
@@ -61,7 +82,7 @@ class TestTuple(HPyTest):
     def test_TupleBuilder(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy h_self, HPy h_arg)
+            static HPy f_impl(HPyContext *ctx, HPy h_self, HPy h_arg)
             {
                 HPyTupleBuilder builder = HPyTupleBuilder_New(ctx, 3);
                 HPyTupleBuilder_Set(ctx, builder, 0, h_arg);

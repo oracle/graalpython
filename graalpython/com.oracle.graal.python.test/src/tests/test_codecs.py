@@ -1,7 +1,8 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import sys
 
 
 def coding_checker(self, coder):
@@ -31,16 +32,17 @@ def test_import():
 def test_decode():
     import codecs
 
-    # TODO: this does not work yet due to the fact that we do not handle all strings literal types yet
-    # assert codecs.decode(b'\xe4\xf6\xfc', 'latin-1') == '\xe4\xf6\xfc'
-    # assert_raises(TypeError, codecs.decode)
+    assert codecs.decode(b'\xe4\xf6\xfc', 'latin-1') == '\xe4\xf6\xfc'
+    assert_raises(TypeError, codecs.decode)
     assert codecs.decode(b'abc') == 'abc'
-    # assert_raises(UnicodeDecodeError, codecs.decode, b'\xff', 'ascii')
+    assert_raises(UnicodeDecodeError, codecs.decode, b'\xff', 'ascii')
 
     # test keywords
-    # assert codecs.decode(obj=b'\xe4\xf6\xfc', encoding='latin-1') == '\xe4\xf6\xfc'
-    # assert codecs.decode(b'[\xff]', 'ascii', errors='ignore') == '[]'
+    assert codecs.decode(obj=b'\xe4\xf6\xfc', encoding='latin-1') == '\xe4\xf6\xfc'
+    assert codecs.decode(b'[\xff]', 'ascii', errors='ignore') == '[]'
     assert codecs.decode(b'[]', 'ascii') == '[]'
+    assert codecs.decode(memoryview(b'[]'), 'ascii') == '[]'
+    assert_raises(TypeError, codecs.decode, 'asdf', 'ascii')
 
     data0 = b'\xc5'
     data1 = b'\x91'
@@ -52,16 +54,15 @@ def test_decode():
 def test_encode():
     import codecs
 
-    # TODO: this does not work yet due to the fact that we do not handle all strings literal types yet
-    # assert codecs.encode('\xe4\xf6\xfc', 'latin-1') == b'\xe4\xf6\xfc'
-    # assert_raises(TypeError, codecs.encode)
+    assert codecs.encode('\xe4\xf6\xfc', 'latin-1') == b'\xe4\xf6\xfc'
+    assert_raises(TypeError, codecs.encode)
     assert_raises(LookupError, codecs.encode, "foo", "__spam__")
-    # assert codecs.encode('abc') == b'abc'
-    # assert_raises(UnicodeEncodeError, codecs.encode, '\xffff', 'ascii')
+    assert codecs.encode('abc') == b'abc'
+    assert_raises(UnicodeEncodeError, codecs.encode, '\xffff', 'ascii')
 
     # test keywords
-    # assert codecs.encode(obj='\xe4\xf6\xfc', encoding='latin-1') == b'\xe4\xf6\xfc'
-    # assert codecs.encode('[\xff]', 'ascii', errors='ignore') == b'[]'
+    assert codecs.encode(obj='\xe4\xf6\xfc', encoding='latin-1') == b'\xe4\xf6\xfc'
+    assert codecs.encode('[\xff]', 'ascii', errors='ignore') == b'[]'
     assert codecs.encode('[]', 'ascii') == b'[]'
 
 
@@ -152,6 +153,9 @@ class UnicodeEscapeTest(unittest.TestCase):
             check(chr(b), ('\\x%02x' % b).encode())
         check('\u20ac', br'\u20ac')
         check('\U0001d120', br'\U0001d120')
+        check('\U0001d120A', br'\U0001d120A')
+        check('\ud800', b'\\ud800')
+        check('\ud800A', b'\\ud800A')
 
     def test_escape_decode(self):
         decode = codecs.unicode_escape_decode
@@ -193,3 +197,167 @@ def test_decode_report_consumed():
     dec, consumed = codecs.utf_8_decode(data)
     assert dec == "memory of “unsigned bytes” of the given length."
     assert consumed == len(data)
+
+
+class EscapeEncodeTest(unittest.TestCase):
+
+    def test_escape_encode(self):
+        tests = [
+            (b'', (b'', 0)),
+            (b'foobar', (b'foobar', 6)),
+            (b'spam\0eggs', (b'spam\\x00eggs', 9)),
+            (b'a\'b', (b"a\\'b", 3)),
+            (b'b\\c', (b'b\\\\c', 3)),
+            (b'c\nd', (b'c\\nd', 3)),
+            (b'd\re', (b'd\\re', 3)),
+            (b'f\x7fg', (b'f\\x7fg', 3)),
+        ]
+        for data, output in tests:
+            self.assertEqual(codecs.escape_encode(data), output)
+        self.assertRaises(TypeError, codecs.escape_encode, 'spam')
+        self.assertRaises(TypeError, codecs.escape_encode, bytearray(b'spam'))
+
+
+class EscapeDecodeTest(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual(codecs.escape_decode(b""), (b"", 0))
+        self.assertEqual(codecs.escape_decode(bytearray()), (b"", 0))
+
+    def test_raw(self):
+        decode = codecs.escape_decode
+        for b in range(256):
+            b = bytes([b])
+            if b != b'\\':
+                self.assertEqual(decode(b + b'0'), (b + b'0', 2))
+
+    def test_escape(self):
+        decode = codecs.escape_decode
+        check = coding_checker(self, decode)
+        check(b"[\\\n]", b"[]")
+        check(br'[\"]', b'["]')
+        check(br"[\']", b"[']")
+        check(br"[\\]", b"[\\]")
+        check(br"[\a]", b"[\x07]")
+        check(br"[\b]", b"[\x08]")
+        check(br"[\t]", b"[\x09]")
+        check(br"[\n]", b"[\x0a]")
+        check(br"[\v]", b"[\x0b]")
+        check(br"[\f]", b"[\x0c]")
+        check(br"[\r]", b"[\x0d]")
+        check(br"[\7]", b"[\x07]")
+        check(br"[\78]", b"[\x078]")
+        check(br"[\41]", b"[!]")
+        check(br"[\418]", b"[!8]")
+        check(br"[\101]", b"[A]")
+        check(br"[\1010]", b"[A0]")
+        check(br"[\501]", b"[A]")
+        check(br"[\x41]", b"[A]")
+        check(br"[\x410]", b"[A0]")
+        for i in range(97, 123):
+            b = bytes([i])
+            if b not in b'abfnrtvx':
+                check(b"\\" + b, b"\\" + b)
+            check(b"\\" + b.upper(), b"\\" + b.upper())
+        check(br"\8", b"\\8")
+        check(br"\9", b"\\9")
+        check(b"\\\xfa", b"\\\xfa")
+
+    def test_errors(self):
+        decode = codecs.escape_decode
+        self.assertRaises(ValueError, decode, br"\x")
+        self.assertRaises(ValueError, decode, br"[\x]")
+        self.assertEqual(decode(br"[\x]\x", "ignore"), (b"[]", 6))
+        self.assertEqual(decode(br"[\x]\x", "replace"), (b"[?]?", 6))
+        self.assertRaises(ValueError, decode, br"\x0")
+        self.assertRaises(ValueError, decode, br"[\x0]")
+        self.assertEqual(decode(br"[\x0]\x0", "ignore"), (b"[]", 8))
+        self.assertEqual(decode(br"[\x0]\x0", "replace"), (b"[?]?", 8))
+
+class LookupTest(unittest.TestCase):
+    def test_lookup(self):
+        self.assertEqual(codecs.lookup('UTF-8').name, "utf-8")
+
+    def test_lookup_error(self):
+        def errhandler():
+            pass
+        self.assertRaises(TypeError, codecs.register_error, 1)
+        self.assertRaises(TypeError, codecs.register_error, 'a', 1)
+        self.assertRaises(LookupError, codecs.lookup_error, 'a')
+        codecs.register_error('testhandler', errhandler)
+        self.assertEqual(codecs.lookup_error('testhandler'), errhandler)
+
+    def test_codecs_builtins(self):
+        s = "abc"
+
+        encoded = codecs.utf_8_encode(s)
+        self.assertEqual(s, codecs.utf_8_decode(encoded[0])[0])
+
+        encoded = codecs.utf_7_encode(s)
+        self.assertEqual(s, codecs.utf_7_decode(encoded[0])[0])
+
+        encoded = codecs.utf_16_encode(s)
+        self.assertEqual(s, codecs.utf_16_decode(encoded[0])[0])
+
+        encoded = codecs.utf_16_le_encode(s)
+        self.assertEqual(s, codecs.utf_16_le_decode(encoded[0])[0])
+
+        encoded = codecs.utf_16_be_encode(s)
+        self.assertEqual(s, codecs.utf_16_be_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_encode(s)
+        self.assertEqual(s, codecs.utf_32_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_le_encode(s)
+        self.assertEqual(s, codecs.utf_32_le_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_be_encode(s)
+        self.assertEqual(s, codecs.utf_32_be_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_be_encode(s)
+        self.assertEqual(s, codecs.utf_32_be_decode(encoded[0])[0])
+
+        encoded = codecs.raw_unicode_escape_encode(s)
+        self.assertEqual(s, codecs.raw_unicode_escape_decode(encoded[0])[0])
+
+        encoded = codecs.unicode_escape_encode(s)
+        self.assertEqual(s, codecs.unicode_escape_decode(encoded[0])[0])
+
+        encoded = codecs.latin_1_encode(s)
+        self.assertEqual(s, codecs.latin_1_decode(encoded[0])[0])
+
+        encoded = codecs.ascii_encode(s)
+        self.assertEqual(s, codecs.ascii_decode(encoded[0])[0])
+
+
+class UTFByteOrderTest(unittest.TestCase):
+    def test_utf16_byteorder(self):
+        self.assertEqual("😂".encode("utf-16-le"), b'=\xd8\x02\xde')
+        self.assertEqual("😂".encode("utf-16-be"), b'\xd8=\xde\x02')
+        if sys.byteorder == 'little':
+            self.assertEqual("😂".encode("utf-16"), b'\xff\xfe=\xd8\x02\xde')
+        else:
+            self.assertEqual("😂".encode("utf-16"), b'\xfe\xff\xd8=\xde\x02')
+        self.assertEqual(b'=\xd8\x02\xde'.decode('utf-16-le'), "😂")
+        self.assertEqual(b'\xd8=\xde\x02'.decode('utf-16-be'), "😂")
+        self.assertEqual(b'\xff\xfe=\xd8\x02\xde'.decode('utf-16'), "😂")
+        self.assertEqual(b'\xfe\xff\xd8=\xde\x02'.decode('utf-16'), "😂")
+        if sys.byteorder == 'little':
+            self.assertEqual(b'=\xd8\x02\xde'.decode('utf-16'), "😂")
+        else:
+            self.assertEqual(b'\xd8=\xde\x02'.decode('utf-16'), "😂")
+
+    def test_utf32_byteorder(self):
+        self.assertEqual("😂".encode("utf-32-le"), b'\x02\xf6\x01\x00')
+        self.assertEqual("😂".encode("utf-32-be"), b'\x00\x01\xf6\x02')
+        if sys.byteorder == 'little':
+            self.assertEqual("😂".encode("utf-32"), b'\xff\xfe\x00\x00\x02\xf6\x01\x00')
+        else:
+            self.assertEqual("😂".encode("utf-32"), b'\x00\x00\xfe\xff\xd8=\xde\x02')
+        self.assertEqual(b'\x02\xf6\x01\x00'.decode('utf-32-le'), "😂")
+        self.assertEqual(b'\x00\x01\xf6\x02'.decode('utf-32-be'), "😂")
+        self.assertEqual(b'\xff\xfe\x00\x00\x02\xf6\x01\x00'.decode('utf-32'), "😂")
+        self.assertEqual(b'\x00\x00\xfe\xff\x00\x01\xf6\x02'.decode('utf-32'), "😂")
+        if sys.byteorder == 'little':
+            self.assertEqual(b'\x02\xf6\x01\x00'.decode('utf-32'), "😂")
+        else:
+            self.assertEqual(b'\x00\x01\xf6\x02'.decode('utf-32'), "😂")

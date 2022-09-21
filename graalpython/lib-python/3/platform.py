@@ -187,7 +187,7 @@ def libc_ver(executable=None, lib='', version='', chunksize=16384):
 
         executable = sys.executable
 
-    if sys.implementation.name == "graalpython":
+    if sys.implementation.name == "graalpy":
         if executable == sys.executable and not os.path.exists(executable):
             return lib, version
     V = _comparable_version
@@ -422,7 +422,11 @@ def _mac_ver_xml():
     # this would require xml parsing
     # with open(fn, 'rb') as f:
     #     pl = plistlib.load(f)
-    pl = {'ProductVersion': '10.14.1'}
+    import re
+    with open(fn, 'r') as f:
+        content = f.read()
+    m = re.search(r'ProductVersion</key>\s*<string>(.*?)</string>', content)
+    pl = {'ProductVersion': '10.14.1' if not m else m.group(1)}
     release = pl['ProductVersion']
     versioninfo = ('', '', '')
     machine = os.uname().machine

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,26 +41,25 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class LookupInheritedAttributeNode extends PNodeWithContext {
 
     @Child private LookupAttributeInMRONode lookupInMRONode;
-    @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(4);
+    @Child private GetClassNode getClassNode = GetClassNode.create();
 
-    private LookupInheritedAttributeNode(String key) {
+    private LookupInheritedAttributeNode(TruffleString key) {
         lookupInMRONode = LookupAttributeInMRONode.create(key);
     }
 
-    public static LookupInheritedAttributeNode create(String key) {
+    public static LookupInheritedAttributeNode create(TruffleString key) {
         return new LookupInheritedAttributeNode(key);
     }
 
@@ -77,19 +76,19 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
      *         object.
      */
     public Object execute(Object object) {
-        return lookupInMRONode.execute(lib.getLazyPythonClass(object));
+        return lookupInMRONode.execute(getClassNode.execute(object));
     }
 
     @GenerateUncached
     public abstract static class Dynamic extends Node {
-        public abstract Object execute(Object object, String key);
+        public abstract Object execute(Object object, TruffleString key);
 
-        @Specialization(limit = "3")
-        Object doCached(Object object, String key,
-                        @CachedLibrary("object") PythonObjectLibrary plib,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupAttrInMroNode) {
+        @Specialization
+        Object doCached(Object object, TruffleString key,
+                        @Cached GetClassNode getClassNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrInMroNode) {
 
-            return lookupAttrInMroNode.execute(plib.getLazyPythonClass(object), key);
+            return lookupAttrInMroNode.execute(getClassNode.execute(object), key);
         }
 
         public static Dynamic create() {

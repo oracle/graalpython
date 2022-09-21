@@ -1,0 +1,8 @@
+Disassembly of <module>:
+  1:11  -   1:24        0 LOAD_CONST_COLLECTION             0    ([1, 2, 3, 4, 5] type int into tuple)
+  1:0   -   1:8         3 UNPACK_EX                         1    (1, 1)
+  1:0   -   1:1         6 STORE_NAME                        0    (a)
+  1:4   -   1:5         8 STORE_NAME                        1    (b)
+  1:7   -   1:8        10 STORE_NAME                        2    (c)
+  1:0   -   1:24       12 LOAD_NONE
+  1:0   -   1:24       13 RETURN_VALUE

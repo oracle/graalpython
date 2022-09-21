@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,21 +41,21 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -68,45 +68,44 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     public abstract String execute(Object x) throws CannotCastException;
 
     @Specialization
-    static String doString(String x) {
-        return x;
+    static String doString(TruffleString x,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return toJavaStringNode.execute(x);
     }
 
-    @Specialization(guards = "isMaterialized(x)")
-    static String doPStringMaterialized(PString x) {
-        // cast guaranteed by the guard
-        return (String) x.getCharSequence();
+    @Specialization(guards = "x.isMaterialized()")
+    static String doPStringMaterialized(PString x,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return toJavaStringNode.execute(x.getMaterialized());
     }
 
-    @Specialization(guards = "!isMaterialized(x)")
+    @Specialization(guards = "!x.isMaterialized()")
     static String doPStringGeneric(PString x,
-                    @Cached StringMaterializeNode materializeNode) {
-        return materializeNode.execute(x);
+                    @Cached StringMaterializeNode materializeNode,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return toJavaStringNode.execute(materializeNode.execute(x));
     }
 
-    @Specialization(limit = "2")
+    @Specialization
     static String doNativeObject(PythonNativeObject x,
-                    @CachedLibrary("x") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
-                    @Cached ToSulongNode toSulongNode) {
-        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
+                    @Cached ToSulongNode toSulongNode,
+                    @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
             // read the native data
-            Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
-            assert result instanceof String;
-            return (String) result;
+            Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
+            assert result instanceof TruffleString;
+            return toJavaStringNode.execute((TruffleString) result);
         }
         // the object's type is not a subclass of 'str'
         throw CannotCastException.INSTANCE;
     }
 
-    @Specialization(guards = "!isString(x)")
+    @Specialization(guards = {"!isString(x)", "!isNativeObject(x)"})
     static String doUnsupported(@SuppressWarnings("unused") Object x) {
         throw CannotCastException.INSTANCE;
-    }
-
-    static boolean isMaterialized(PString x) {
-        return x.getCharSequence() instanceof String;
     }
 
     public static CastToJavaStringNode create() {

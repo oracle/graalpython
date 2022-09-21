@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF_UNDERSCORE_8;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -53,6 +58,7 @@ import java.util.regex.Pattern;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
 
@@ -63,7 +69,7 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
     @Override
     public String findMimeType(TruffleFile file) throws IOException {
         String fileName = file.getName();
-        if (fileName != null && fileName.endsWith(PythonLanguage.EXTENSION)) {
+        if (fileName != null && fileName.endsWith(J_PY_EXTENSION)) {
             return PythonLanguage.MIME_TYPE;
         }
         return null;
@@ -93,10 +99,11 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
             // Files with UTF-8 BOM but different encoding declared are a SyntaxError
             // Note that CPython ignores UTF-8 aliases for the BOM check
             String encoding = matcher.group(1);
-            if (hasBOM && !CharsetMapping.normalize(encoding).equals("utf_8")) {
+            TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(toTruffleStringUncached(encoding));
+            if (hasBOM && !normalizedEncoding.equalsUncached(T_UTF_UNDERSCORE_8, TS_ENCODING)) {
                 throw new InvalidEncodingException(encoding + " with BOM");
             }
-            Charset charset = CharsetMapping.getCharset(encoding);
+            Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
             if (charset == null) {
                 throw new InvalidEncodingException(encoding);
             }
@@ -147,9 +154,9 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
     }
 
     @TruffleBoundary
-    public static Charset findEncodingStrict(byte[] source) {
+    public static Charset findEncodingStrict(byte[] source, int sourceLen) {
         // Using Latin-1 to read the header avoids exceptions on non-ascii characters
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(source), StandardCharsets.ISO_8859_1))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(source, 0, sourceLen), StandardCharsets.ISO_8859_1))) {
             return findEncodingStrict(reader);
         } catch (IOException e) {
             // Shouldn't happen on a string

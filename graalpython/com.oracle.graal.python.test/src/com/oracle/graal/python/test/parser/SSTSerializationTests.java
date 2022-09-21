@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,6 @@
  */
 package com.oracle.graal.python.test.parser;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
-import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.runtime.PythonCodeSerializer;
-import com.oracle.graal.python.runtime.PythonParser;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -57,11 +48,23 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.runtime.PythonCodeSerializer;
+import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 
 public class SSTSerializationTests extends ParserTestBase {
 
@@ -84,7 +87,6 @@ public class SSTSerializationTests extends ParserTestBase {
         checkFileSerialization("RuntimeFileTests/sre_compile.py");
         checkFileSerialization("RuntimeFileTests/sre_constants.py");
         checkFileSerialization("RuntimeFileTests/sre_parse.py");
-        checkFileSerialization("RuntimeFileTests/sys.py");
         checkFileSerialization("RuntimeFileTests/traceback.py");
         checkFileSerialization("RuntimeFileTests/types.py");
         // TODO test of these two files are disabled because the comparing framedescriptors
@@ -211,6 +213,14 @@ public class SSTSerializationTests extends ParserTestBase {
         checkSerialization("@decorator1\n" +
                         "@decorator1\n" +
                         "class foo():pass");
+    }
+
+    @Test
+    public void classSuperTest() throws Exception {
+        checkSerialization(
+                        "class Foo():\n" +
+                                        "  def bar():\n" +
+                                        "    super()");
     }
 
     @Test
@@ -365,6 +375,8 @@ public class SSTSerializationTests extends ParserTestBase {
         checkSerialization("(i for i in range(3))");
         checkSerialization("[project_name for pkg in working_set\n" +
                         "    if name in [required.name for required in requires()]]\n");
+        checkSerialization("[x for y in ([z] for z in range(5)) for x in y]");
+        checkSerialization("[x for y in range(3) for z in (v for v in range(10))]");
     }
 
     @Test
@@ -453,6 +465,13 @@ public class SSTSerializationTests extends ParserTestBase {
                                         "        for (i, row) in something:\n" +
                                         "            pass\n" +
                                         "        return 10");
+    }
+
+    @Test
+    public void functionAnnotationsTest() throws Exception {
+        checkSerialization("def a() -> int: pass");
+        checkSerialization("def a() -> max(1,3): pass");
+        checkSerialization("def fn(a:'x', b:int, c: list, d: 5+ 6) -> int: pass");
     }
 
     @Test
@@ -1249,23 +1268,25 @@ public class SSTSerializationTests extends ParserTestBase {
     }
 
     public void checkSerialization(Source source) throws Exception {
-        PythonCodeSerializer serializer = context.getCore().getSerializer();
+        PythonCodeSerializer serializer = context.getSerializer();
 
         // at first parse the source and obtain the parse result
         RootNode parserResult = (RootNode) parse(source, PythonParser.ParserMode.File);
+        parserResult.getCallTarget(); // set parent pointers
         ScopeInfo parserScope = getLastGlobalScope();
         checkScopeSerialization(parserScope);
         Assert.assertNotNull("Parser result is null", parserResult);
         // serialize the source
-        byte[] serializeResult = serializer.serialize(parserResult);
+        byte[] serializeResult = serializer.serialize(context, parserResult);
         Assert.assertNotNull("Serialized data are null", serializeResult);
         // and get the tree from serialized data
-        RootNode deserialize = serializer.deserialize(source, serializeResult);
+        RootNode deserialize = serializer.deserialize(context, serializeResult);
+        deserialize.getCallTarget(); // set parent pointers
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
         // compare the tree from parser with the tree from serializer
-        String parserTree = printTreeToString(parserResult);
-        String deserializedTree = printTreeToString(deserialize);
+        String parserTree = printTreeToString(parserResult, false);
+        String deserializedTree = printTreeToString(deserialize, false);
         assertDescriptionMatches(parserTree, deserializedTree, null);
     }
 
@@ -1319,13 +1340,13 @@ public class SSTSerializationTests extends ParserTestBase {
         }
     }
 
-    private static void printSet(StringBuilder sb, Set<String> set) {
+    private static void print(StringBuilder sb, Collection<String> set) {
         if (set == null || set.isEmpty()) {
             sb.append("Empty");
         } else {
             sb.append("[");
             boolean first = true;
-            for (String name : set) {
+            for (String name : new TreeSet<>(set)) {
                 if (first) {
                     sb.append(name);
                     first = false;
@@ -1337,23 +1358,6 @@ public class SSTSerializationTests extends ParserTestBase {
         }
     }
 
-    private static void printFrameSlots(StringBuilder sb, FrameSlot[] slots) {
-        if (slots.length == 0) {
-            sb.append("Empty");
-        } else {
-            sb.append("[");
-            boolean first = true;
-            for (FrameSlot slot : slots) {
-                if (first) {
-                    sb.append(slot.getIdentifier());
-                    first = false;
-                } else {
-                    sb.append(", ").append(slot.getIdentifier());
-                }
-            }
-        }
-    }
-
     // here we can not use the ScopeInfo.debugPrint(), because we need exclude the temporary
     // variables.
     private static void printScope(ScopeInfo scope, StringBuilder sb, int indent) {
@@ -1362,23 +1366,22 @@ public class SSTSerializationTests extends ParserTestBase {
         indent(sb, indent + 1);
         sb.append("Kind: ").append(scope.getScopeKind()).append("\n");
         Set<String> names = new HashSet<>();
-        scope.getFrameDescriptor().getIdentifiers().forEach((id) -> {
-            String name = (String) id;
-            if (!name.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX) && !name.startsWith(FrameSlotIDs.RETURN_SLOT_ID)) {
-                names.add((String) id);
+        for (Object id : scope.getFrameIdentifiers()) { // sorted
+            if (id instanceof String || id == FrameSlotIDs.FREEVAR__CLASS__ || id == FrameSlotIDs.RETURN_SLOT_ID) {
+                names.add(id.toString());
             }
-        });
+        }
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
-        printSet(sb, names);
+        print(sb, names);
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("CellVars: ");
-        printFrameSlots(sb, scope.getCellVarSlots());
+        print(sb, scope.getCellVars());
         sb.append("\n");
         indent(sb, indent + 1);
         sb.append("FreeVars: ");
-        printFrameSlots(sb, scope.getFreeVarSlots());
+        print(sb, scope.getFreeVars());
         sb.append("\n");
         ScopeInfo child = scope.getFirstChildScope();
         while (child != null) {
@@ -1394,13 +1397,13 @@ public class SSTSerializationTests extends ParserTestBase {
          * Processor Intel(R) Core(TM) i7-6820HQ CPU @ 2.70GHz Memory 32801MB Operating System
          * Ubuntu 18.04.2 LTS the result should be : Memory times: parsing: 6,674,919,690ns (100%)
          * serialization: 435,290,014ns(+6%) deserialization: 2,220,701,051ns (-67%)
-         * 
+         *
          * Average times: parsing: 4,171,824ns (100%) serialization: 272,056ns (+6%)
          * deserialization: 1,387,938ns(-67%)
-         * 
+         *
          * Times with file operations: parsing: 6,879,809,367ns (100%) serialization:
          * 583,667,690ns(+8%) deserialization: 2,270,131,909ns (-68%)
-         * 
+         *
          * Average times: parsing: 4,299,880ns (100%) serialization: 364,792ns (+8%)
          * deserialization: 1,418,832ns(-68%)
          */
@@ -1521,9 +1524,9 @@ public class SSTSerializationTests extends ParserTestBase {
         result[0] = end - startMemory;
         result[3] = end - startFile;
 
-        PythonCodeSerializer serializer = context.getCore().getSerializer();
+        PythonCodeSerializer serializer = context.getSerializer();
         startFile = System.nanoTime();
-        byte[] serializeResult = serializer.serialize(parserResult);
+        byte[] serializeResult = serializer.serialize(context, parserResult);
         end = System.nanoTime();
         result[1] = end - startFile;
         TruffleFile serFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
@@ -1538,7 +1541,7 @@ public class SSTSerializationTests extends ParserTestBase {
         TruffleFile tFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
         byte[] desbytes = tFile.readAllBytes();
         startMemory = System.nanoTime();
-        serializer.deserialize(source, desbytes);
+        serializer.deserialize(context, desbytes);
         end = System.nanoTime();
         result[2] = end - startMemory;
         result[5] = end - startFile;

@@ -1,0 +1,13 @@
+Module[0, 29]
+    FunctionDef[0, 29]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        Assign[12, 29]
+            LHS: 
+                Name[12, 13] Value: "a" Store
+                Name[16, 17] Value: "b" Store
+                Name[20, 21] Value: "c" Store
+                Name[24, 25] Value: "d" Store
+            RHS: Name[28, 29] Value: "e"
+        ---- End of fn function ----

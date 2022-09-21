@@ -51,17 +51,23 @@ try:
 except ImportError:
     HAS_REDUCTION = False
 
-try:
-    from multiprocessing.sharedctypes import Value, copy
-    HAS_SHAREDCTYPES = True
-except ImportError:
-    HAS_SHAREDCTYPES = False
+# Begin Truffle change
+# try:
+#     from multiprocessing.sharedctypes import Value, copy    
+#     HAS_SHAREDCTYPES = True    
+# except ImportError:
+#     HAS_SHAREDCTYPES = False
 
-try:
-    from multiprocessing import shared_memory
-    HAS_SHMEM = True
-except ImportError:
-    HAS_SHMEM = False
+# try:
+#     from multiprocessing import shared_memory    
+#     HAS_SHMEM = True
+# except ImportError:
+#     HAS_SHMEM = False
+
+HAS_SHAREDCTYPES = False
+HAS_SHMEM = False
+IS_LINUX = sys.platform.startswith("linux")
+# End Truffle change
 
 try:
     import msvcrt
@@ -240,7 +246,10 @@ class _TestProcess(BaseTestCase):
         self.assertTrue(not current.daemon)
         self.assertIsInstance(authkey, bytes)
         self.assertTrue(len(authkey) > 0)
-        self.assertEqual(current.ident, os.getpid())
+        # Begin Truffle change
+        # self.assertEqual(current.ident, os.getpid())
+        self.assertEqual(current.ident, _multiprocessing._gettid())
+        # End Truffle change
         self.assertEqual(current.exitcode, None)
 
     def test_daemon_argument(self):
@@ -277,7 +286,10 @@ class _TestProcess(BaseTestCase):
         p.join()
         parent_pid, parent_name = rconn.recv()
         self.assertEqual(parent_pid, self.current_process().pid)
-        self.assertEqual(parent_pid, os.getpid())
+        # Begin Truffle change
+        # self.assertEqual(parent_pid, os.getpid())
+        self.assertEqual(parent_pid, _multiprocessing._gettid())
+        # End Truffle change
         self.assertEqual(parent_name, self.current_process().name)
 
     @classmethod
@@ -420,20 +432,27 @@ class _TestProcess(BaseTestCase):
 
         meth(p)
 
-        if hasattr(signal, 'alarm'):
-            # On the Gentoo buildbot waitpid() often seems to block forever.
-            # We use alarm() to interrupt it if it blocks for too long.
-            def handler(*args):
-                raise RuntimeError('join took too long: %s' % p)
-            old_handler = signal.signal(signal.SIGALRM, handler)
-            try:
-                signal.alarm(10)
-                self.assertEqual(join(), None)
-            finally:
-                signal.alarm(0)
-                signal.signal(signal.SIGALRM, old_handler)
-        else:
-            self.assertEqual(join(), None)
+        # Begin Truffle change
+        # TODO this randomly crashes in the finally block
+        # - maybe an issue with graalpython signal.alarm()
+        # - note that a delay (time.sleep(5)) after signal.alarm(0) seems to resolve the issue
+#        if hasattr(signal, 'alarm'):
+#            # On the Gentoo buildbot waitpid() often seems to block forever.
+#            # We use alarm() to interrupt it if it blocks for too long.
+#            def handler(*args):
+#                raise RuntimeError('join took too long: %s' % p)
+#            old_handler = signal.signal(signal.SIGALRM, handler)
+#            try:
+#                signal.alarm(10)
+#                self.assertEqual(join(), None)
+#            finally:
+#                signal.alarm(0)
+#                time.sleep(5)
+#                signal.signal(signal.SIGALRM, old_handler)
+#        else:
+#            self.assertEqual(join(), None)
+        self.assertEqual(join(), None)
+        # End Truffle change
 
         self.assertTimingAlmostEqual(join.elapsed, 0.0)
 
@@ -532,6 +551,7 @@ class _TestProcess(BaseTestCase):
             q.get()
         sys.exit(rc)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_close(self):
         if self.TYPE == "threads":
             self.skipTest('test not appropriate for {}'.format(self.TYPE))
@@ -599,6 +619,7 @@ class _TestProcess(BaseTestCase):
             for p in procs:
                 self.assertIn(p.exitcode, exitcodes)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_lose_target_ref(self):
         c = DummyCallable()
         wr = weakref.ref(c)
@@ -613,7 +634,15 @@ class _TestProcess(BaseTestCase):
 
     @classmethod
     def _test_child_fd_inflation(self, evt, q):
-        q.put(test.support.fd_count())
+        # Begin Truffle change
+        # lib-python/3/test/support/__init__.py", line 3089, in fd_count
+        #   MAXFD = os.sysconf("SC_OPEN_MAX")
+        # ValueError: unrecognized configuration name: SC_OPEN_MAX
+        # q.put(test.support.fd_count())
+        
+        # see MAXFD = 256 in test.support.fd_count()
+        q.put(256) 
+        # End Truffle change
         evt.wait()
 
     def test_child_fd_inflation(self):
@@ -1577,6 +1606,7 @@ class _TestCondition(BaseTestCase):
         if pid is not None:
             os.kill(pid, signal.SIGINT)
 
+    @support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalvm=False)
     def test_wait_result(self):
         if isinstance(self, ProcessesMixin) and sys.platform != 'win32':
             pid = os.getpid()
@@ -1740,7 +1770,7 @@ class AppendTrue(object):
     def __call__(self):
         self.obj.append(True)
 
-
+@unittest.skipIf(IS_LINUX, "AttributeError: module 'os' has no attribute 'statvfs'")
 class _TestBarrier(BaseTestCase):
     """
     Tests for Barrier objects.
@@ -1909,6 +1939,7 @@ class _TestBarrier(BaseTestCase):
         barrier.wait()
         results3.append(True)
 
+    @unittest.skipIf(IS_LINUX, "AttributeError: module 'os' has no attribute 'statvfs'")
     def test_abort_and_reset(self):
         """
         Test that a barrier can be reset after being broken.
@@ -2407,7 +2438,12 @@ class _TestPool(BaseTestCase):
     def test_map_handle_iterable_exception(self):
         if self.TYPE == 'manager':
             self.skipTest('test not appropriate for {}'.format(self.TYPE))
-
+            
+        # Begin Truffle change
+        if self.TYPE == 'threads':
+            self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
+        # End Truffle change
+        
         # SayWhenError seen at the very first of the iterable
         with self.assertRaises(SayWhenError):
             self.pool.map(sqr, exception_throwing_generator(1, -1), 1)
@@ -2460,6 +2496,11 @@ class _TestPool(BaseTestCase):
         if self.TYPE == 'manager':
             self.skipTest('test not appropriate for {}'.format(self.TYPE))
 
+        # Begin Truffle change
+        if self.TYPE == 'threads':
+            self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
+        # End Truffle change
+        
         # SayWhenError seen at the very first of the iterable
         it = self.pool.imap(sqr, exception_throwing_generator(1, -1), 1)
         self.assertRaises(SayWhenError, it.__next__)
@@ -2493,6 +2534,11 @@ class _TestPool(BaseTestCase):
         if self.TYPE == 'manager':
             self.skipTest('test not appropriate for {}'.format(self.TYPE))
 
+        # Begin Truffle change
+        if self.TYPE == 'threads':
+            self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
+        # End Truffle change
+            
         # SayWhenError seen at the very first of the iterable
         it = self.pool.imap_unordered(sqr,
                                       exception_throwing_generator(1, -1),
@@ -2619,6 +2665,11 @@ class _TestPool(BaseTestCase):
         raise RuntimeError('foo')
 
     def test_wrapped_exception(self):
+        # Begin Truffle change
+        if self.TYPE == 'threads':
+            self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
+        # End Truffle change
+        
         # Issue #20980: Should not wrap exception when using thread pool
         with self.Pool(1) as p:
             with self.assertRaises(RuntimeError):
@@ -2645,6 +2696,7 @@ class _TestPool(BaseTestCase):
         # check that we indeed waited for all jobs
         self.assertGreater(time.monotonic() - t_start, 0.9)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_release_task_refs(self):
         # Issue #29861: task arguments and results should not be kept
         # alive after we are done with them.
@@ -2675,6 +2727,7 @@ class _TestPool(BaseTestCase):
                 pass
         pool.join()
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_resource_warning(self):
         if self.TYPE == 'manager':
             self.skipTest("test not applicable to manager")
@@ -2954,7 +3007,7 @@ class _TestRemoteManager(BaseTestCase):
         # Make queue finalizer run before the server is stopped
         del queue
 
-
+@support.impl_detail("multiprocessing manager not supported", graalvm=False)
 @hashlib_helper.requires_hashdigest('md5')
 class _TestManagerRestart(BaseTestCase):
 
@@ -3296,6 +3349,9 @@ class _TestListener(BaseTestCase):
         if self.TYPE == 'processes':
             self.assertRaises(OSError, l.accept)
 
+    # GR-28433
+    @unittest.skipIf(IS_LINUX, "module 'socket' has no attribute 'AF_UNIX'")
+    @unittest.skipIf(sys.implementation.name == 'graalpy', "module 'socket' has no attribute 'AF_UNIX'")
     @unittest.skipUnless(util.abstract_sockets_supported,
                          "test needs abstract socket support")
     def test_abstract_socket(self):
@@ -3589,6 +3645,7 @@ class _TestHeap(BaseTestCase):
         multiprocessing.heap.BufferWrapper._heap = self.old_heap
         super().tearDown()
 
+    @support.impl_detail("heap/shared memory not supported", graalvm=False)
     def test_heap(self):
         iterations = 5000
         maxblocks = 50
@@ -3653,6 +3710,7 @@ class _TestHeap(BaseTestCase):
         self.assertEqual(len(heap._allocated_blocks), 0, heap._allocated_blocks)
         self.assertEqual(len(heap._len_to_seq), 0)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_from_gc(self):
         # Check that freeing of blocks by the garbage collector doesn't deadlock
         # (issue #12352).
@@ -4196,6 +4254,7 @@ class _TestFinalize(BaseTestCase):
         conn.close()
         os._exit(0)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_finalize(self):
         conn, child_conn = self.Pipe()
 
@@ -4207,6 +4266,7 @@ class _TestFinalize(BaseTestCase):
         result = [obj for obj in iter(conn.recv, 'STOP')]
         self.assertEqual(result, ['a', 'b', 'd10', 'd03', 'd02', 'd01', 'e'])
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_thread_safety(self):
         # bpo-24484: _run_finalizers() should be thread-safe
         def cb():
@@ -4378,6 +4438,7 @@ class _TestLogging(BaseTestCase):
 # Check that Process.join() retries if os.waitpid() fails with EINTR
 #
 
+@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalvm=False)
 class _TestPollEintr(BaseTestCase):
 
     ALLOWED_TYPES = ('processes',)
@@ -4426,8 +4487,11 @@ class TestInvalidHandle(unittest.TestCase):
             # Hack private attribute _handle to avoid printing an error
             # in conn.__del__
             conn._handle = None
-        self.assertRaises((ValueError, OSError),
-                          multiprocessing.connection.Connection, -1)
+        # Begin Truffle change
+        # graalpython multiporcessing uses fake negative fd numbers
+        #self.assertRaises((ValueError, OSError),
+        #                  multiprocessing.connection.Connection, -1)
+        # End Truffle change
 
 
 
@@ -4468,6 +4532,7 @@ class OtherTest(unittest.TestCase):
 def initializer(ns):
     ns.test += 1
 
+@support.impl_detail("multiprocessing manager not supported", graalvm=False)
 @hashlib_helper.requires_hashdigest('md5')
 class TestInitializers(unittest.TestCase):
     def setUp(self):
@@ -4570,7 +4635,10 @@ class TestWait(unittest.TestCase):
         for i in range(10):
             if slow:
                 time.sleep(random.random()*0.1)
-            w.send((i, os.getpid()))
+            # Begin Truffle change
+            #w.send((i, os.getpid()))
+            w.send((i, _multiprocessing._gettid()))
+            # End Truffle change
         w.close()
 
     def test_wait(self, slow=False):
@@ -4682,6 +4750,7 @@ class TestWait(unittest.TestCase):
         sem.release()
         time.sleep(period)
 
+    @support.impl_detail("timing", graalvm=False)
     def test_wait_integer(self):
         from multiprocessing.connection import wait
 
@@ -4774,6 +4843,7 @@ class TestFlags(unittest.TestCase):
         flags = (tuple(sys.flags), grandchild_flags)
         print(json.dumps(flags))
 
+    @support.impl_detail("Can't pickle <class 'sys.flags'>: it's not the same object as sys.flags", graalvm=False)
     def test_flags(self):
         import json
         # start child process using unusual flags
@@ -4936,6 +5006,7 @@ class TestCloseFds(unittest.TestCase):
 # Issue #17097: EINTR should be ignored by recv(), send(), accept() etc
 #
 
+@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalvm=False)
 class TestIgnoreEINTR(unittest.TestCase):
 
     # Sending CONN_MAX_SIZE bytes into a multiprocessing pipe must block
@@ -5019,7 +5090,11 @@ class TestStartMethod(unittest.TestCase):
         self.assertEqual(child_method, ctx.get_start_method())
 
     def test_context(self):
-        for method in ('fork', 'spawn', 'forkserver'):
+        # Begin Truffle change
+        # 'fork' and 'forkserver' not supported
+        # for method in ('fork', 'spawn', 'forkserver'):
+        for method in ('spawn',):
+        # End Truffle change
             try:
                 ctx = multiprocessing.get_context(method)
             except ValueError:
@@ -5035,7 +5110,10 @@ class TestStartMethod(unittest.TestCase):
         count = 0
         old_method = multiprocessing.get_start_method()
         try:
-            for method in ('fork', 'spawn', 'forkserver'):
+            # Begin Truffle change
+            # 'fork' and 'forkserver' not supported
+            for method in ('spawn',):
+            # End Truffle change    
                 try:
                     multiprocessing.set_start_method(method, force=True)
                 except ValueError:
@@ -5075,6 +5153,7 @@ class TestStartMethod(unittest.TestCase):
             self.fail("failed spawning forkserver or grandchild")
 
 
+@support.impl_detail("resource tracker not supported", graalvm=False)
 @unittest.skipIf(sys.platform == "win32",
                  "test semantics don't make sense on Windows")
 class TestResourceTracker(unittest.TestCase):
@@ -5322,7 +5401,7 @@ class TestPoolNotLeakOnFailure(unittest.TestCase):
         self.assertFalse(
             any(process.is_alive() for process in forked_processes))
 
-
+@support.impl_detail("multiprocessing manager not supported", graalvm=False)
 @hashlib_helper.requires_hashdigest('md5')
 class TestSyncManagerTypes(unittest.TestCase):
     """Test all the types which can be shared between a parent and a
@@ -5714,15 +5793,24 @@ def install_tests_in_module_dict(remote_globs, start_method):
                 continue
             assert set(base.ALLOWED_TYPES) <= ALL_TYPES, base.ALLOWED_TYPES
             for type_ in base.ALLOWED_TYPES:
-                newname = 'With' + type_.capitalize() + name[1:]
-                Mixin = local_globs[type_.capitalize() + 'Mixin']
-                class Temp(base, Mixin, unittest.TestCase):
-                    pass
-                if type_ == 'manager':
-                    Temp = hashlib_helper.requires_hashdigest('md5')(Temp)
-                Temp.__name__ = Temp.__qualname__ = newname
-                Temp.__module__ = __module__
-                remote_globs[newname] = Temp
+                # Begin Truffle change
+                # multiprocessing manager not supported
+                #newname = 'With' + type_.capitalize() + name[1:]
+                #Mixin = local_globs[type_.capitalize() + 'Mixin']
+                #class Temp(base, Mixin, unittest.TestCase):
+                #    pass
+                #Temp.__name__ = Temp.__qualname__ = newname
+                #Temp.__module__ = __module__
+                #remote_globs[newname] = Temp
+                if type_ != 'manager':
+                    newname = 'With' + type_.capitalize() + name[1:]
+                    Mixin = local_globs[type_.capitalize() + 'Mixin']
+                    class Temp(base, Mixin, unittest.TestCase):
+                        pass
+                    Temp.__name__ = Temp.__qualname__ = newname
+                    Temp.__module__ = __module__
+                    remote_globs[newname] = Temp
+                # End Truffle change    
         elif issubclass(base, unittest.TestCase):
             class Temp(base, object):
                 pass

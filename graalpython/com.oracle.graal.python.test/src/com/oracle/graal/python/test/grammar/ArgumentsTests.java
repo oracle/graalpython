@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,10 +28,9 @@ package com.oracle.graal.python.test.grammar;
 import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
 
 public class ArgumentsTests {
 
@@ -51,16 +50,6 @@ public class ArgumentsTests {
                         "    print(b)\n" + //
                         "foo(a=1)\n";
         assertPrints("1\n3\n", source);
-    }
-
-    /**
-     * TODO: (zwei) Default args are not behaving correctly. Maybe we want to consider using
-     * assumptions.
-     */
-    // @Test
-    public void defaultArgUsingVariable() {
-        Path script = Paths.get("function-default-args-test.py");
-        assertPrints("do stuff A\ndo stuff B\n", script);
     }
 
     @Test
@@ -152,6 +141,31 @@ public class ArgumentsTests {
                         "def update(E=None, **F):\n" +
                         "  print(F)\n" +
                         "update(42)");
+    }
+
+    @Test
+    public void kwargsMerge() {
+        // TODO AST interpreter doesn't maintain the order correctly
+        PythonTests.skipOnLegacyASTInterpreter();
+        assertPrints("{'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n", "\n" +
+                        "def foo(**kwargs):\n" +
+                        "  print(kwargs)\n" +
+                        "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'e': 5})\n");
+
+        assertPrints("32\n0\n31\n", "\n" +
+                        "def f(**kw): \n" +
+                        "  print(len(kw)) == 32\n" +
+                        "  print(kw[\"a0\"])\n" +
+                        "  print(kw[\"a31\"])  \n" +
+                        "f(a0=0, a1=1, a2=2, a3=3, a4=4, a5=5, a6=6, a7=7, a8=8, a9=9, a10=10, a11=11, a12=12, a13=13, a14=14, a15=15, a16=16, a17=17, a18=18, a19=19, a20=20, a21=21, a22=22, a23=23, a24=24, a25=25, a26=26, a27=27, a28=28, a29=29, a30=30, a31=31)\n");
+    }
+
+    @Test
+    public void kwargsDuplicate() {
+        assertLastLineErrorContains("TypeError: foo() got multiple values for keyword argument 'd'", "\n" +
+                        "def foo(**kwargs):\n" +
+                        "  print(kwargs)\n" +
+                        "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'d': 5})\n");
     }
 
     private static String call(String source, String args) {

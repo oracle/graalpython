@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,94 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMATTER_FIELD_NAME_SPLIT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMATTER_PARSER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__STRING;
+
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.str.TemplateFormatter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "_string")
+@CoreFunctions(defineModule = J__STRING)
 public class StringModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return StringModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J_FORMATTER_PARSER, minNumOfPositionalArgs = 1, parameterNames = {"self"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class FormaterParserNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringModuleBuiltinsClinicProviders.FormaterParserNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self) {
+            TemplateFormatter formatter = new TemplateFormatter(self);
+            List<Object[]> parserList;
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, this);
+            try {
+                parserList = formatter.formatterParser(this);
+            } finally {
+                ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
+            }
+            return parserListToIterator(parserList, factory());
+        }
+    }
+
+    private static PSequenceIterator parserListToIterator(List<Object[]> parserList, PythonObjectFactory factory) {
+        Object[] tuples = new Object[parserList.size()];
+        for (int i = 0; i < tuples.length; i++) {
+            tuples[i] = factory.createTuple(parserList.get(i));
+        }
+        return factory.createSequenceIterator(factory.createList(tuples));
+    }
+
+    @Builtin(name = J_FORMATTER_FIELD_NAME_SPLIT, minNumOfPositionalArgs = 1, parameterNames = {"self"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class FormatterFieldNameSplitNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringModuleBuiltinsClinicProviders.FormatterFieldNameSplitNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object formatterParser(VirtualFrame frame, TruffleString self) {
+            TemplateFormatter formatter = new TemplateFormatter(self);
+            TemplateFormatter.FieldNameSplitResult result;
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, this);
+            try {
+                result = formatter.formatterFieldNameSplit(this);
+            } finally {
+                ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
+            }
+            PythonObjectFactory factory = factory();
+            return factory.createTuple(new Object[]{result.first, parserListToIterator(result.parserList, factory)});
+        }
     }
 }

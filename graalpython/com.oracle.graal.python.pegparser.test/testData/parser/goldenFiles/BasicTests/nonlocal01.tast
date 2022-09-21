@@ -1,0 +1,32 @@
+Module[0, 168]
+    FunctionDef[0, 159]
+        Name:outer
+        ArgumentsTy[0, 0]
+        ---- Function body of outer ----
+        Assign[17, 28]
+            LHS: Name[17, 18] Value: "x" Store
+            RHS: RAW[21, 28] Value: "local"
+        FunctionDef[38, 119]
+            Name:inner
+            ArgumentsTy[0, 0]
+            ---- Function body of inner ----
+            Nonlocal[59, 69]: x 
+            Assign[78, 92]
+                LHS: Name[78, 79] Value: "x" Store
+                RHS: RAW[82, 92] Value: "nonlocal"
+            Call[101, 119]
+                Target: Name[101, 106] Value: "print"
+                Args:
+                    RAW[107, 115] Value: "inner:"
+                    Name[117, 118] Value: "x"
+            ---- End of inner function ----
+        Call[129, 136]
+            Target: Name[129, 134] Value: "inner"
+        Call[141, 159]
+            Target: Name[141, 146] Value: "print"
+            Args:
+                RAW[147, 155] Value: "outer:"
+                Name[157, 158] Value: "x"
+        ---- End of outer function ----
+    Call[161, 168]
+        Target: Name[161, 166] Value: "outer"

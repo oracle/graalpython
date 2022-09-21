@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,13 +26,13 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -40,37 +40,33 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinMethod})
 public class BuiltinMethodBuiltins extends PythonBuiltins {
@@ -80,122 +76,76 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         return BuiltinMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        boolean isBuiltinFunction(PBuiltinMethod self) {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        static boolean isBuiltinFunction(PBuiltinMethod self) {
             return self.getSelf() instanceof PythonModule;
         }
 
-        boolean isBuiltinFunction(PMethod self) {
-            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).getEnclosingClassName() == null;
+        static boolean isBuiltinFunction(PMethod self) {
+            return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).isBuiltin();
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
-        Object reprBuiltinFunction(VirtualFrame frame, PMethod self,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
+        static TruffleString reprBuiltinFunction(VirtualFrame frame, PMethod self,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             // (tfel): this only happens for builtin modules ... I think
-            return PythonUtils.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
+            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
-        String reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
-            return PythonUtils.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
+        static TruffleString reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
-        @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
-        Object reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
-                        @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
+        @Specialization(guards = "!isBuiltinFunction(self)")
+        static TruffleString reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
+                        @Cached GetClassNode getClassNode,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached("create()") GetNameNode getTypeNameNode) {
-            String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return PythonUtils.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
+                        @Cached GetNameNode getTypeNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+                            PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
-        @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
-        Object reprBuiltinMethod(VirtualFrame frame, PMethod self,
-                        @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
+        @Specialization(guards = "!isBuiltinFunction(self)")
+        static TruffleString reprBuiltinMethod(VirtualFrame frame, PMethod self,
+                        @Cached GetClassNode getClassNode,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached("create()") GetNameNode getTypeNameNode) {
-            String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return PythonUtils.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
+                        @Cached GetNameNode getTypeNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+                            PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
         protected static GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
+            return GetAttributeNode.create(T___NAME__, null);
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        String doBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
-            String name;
-            try {
-                name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-            return doMethod(name, self.getSelf());
-        }
-
-        @Specialization
-        String doBuiltinMethod(VirtualFrame frame, PMethod self,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
-            String name;
-            try {
-                name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-            return doMethod(name, self.getSelf());
-        }
-
-        private String doMethod(String name, Object owner) {
-            if (owner == null || owner == PNone.NONE || owner instanceof PythonModule) {
-                return name;
-            }
-            throw raiseCannotPickle();
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            throw raiseCannotPickle();
-        }
-
-        protected static GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
-        }
-
-        private PException raiseCannotPickle() {
-            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
-        }
-    }
-
-    @Builtin(name = __TEXT_SIGNATURE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___TEXT_SIGNATURE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonBinaryBuiltinNode {
         @Child AbstractFunctionBuiltins.TextSignatureNode subNode = AbstractFunctionBuiltins.TextSignatureNode.create();
 
         @Specialization
         Object getTextSignature(VirtualFrame frame, PBuiltinMethod self, Object value) {
-            return subNode.call(frame, self.getFunction(), value);
+            return subNode.execute(frame, self.getFunction(), value);
         }
 
         @Specialization
         Object getTextSignature(VirtualFrame frame, PMethod self, Object value) {
-            return subNode.call(frame, self.getFunction(), value);
+            return subNode.execute(frame, self.getFunction(), value);
         }
     }
 
-    @Builtin(name = __OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
@@ -207,73 +157,76 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getFunction().getEnclosingType() != null")
         @TruffleBoundary
         Object objclass(PBuiltinMethod self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             return getPythonClass(self.getFunction().getEnclosingType(), profile);
         }
     }
 
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class MethodName extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getName(VirtualFrame frame, PBuiltinMethod method,
-                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
+        static Object getName(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode) {
             return getNameAttrNode.executeObject(frame, method.getFunction());
         }
 
         @Specialization
-        Object getName(VirtualFrame frame, PMethod method,
-                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
+        static Object getName(VirtualFrame frame, PMethod method,
+                        @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode) {
             return getNameAttrNode.executeObject(frame, method.getFunction());
         }
     }
 
-    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        Object getQualName(VirtualFrame frame, PMethod method,
-                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
-                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
+        @Specialization
+        TruffleString getQualName(VirtualFrame frame, PMethod method,
+                        @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode,
+                        @Cached("create(T___QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached ConditionProfile isGlobalProfile,
-                        @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
-            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode, isGlobalProfile);
+                        @Cached GetClassNode getClassNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile, simpleTruffleStringFormatNode);
         }
 
-        @Specialization(limit = "3")
-        Object getQualName(VirtualFrame frame, PBuiltinMethod method,
-                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
-                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
+        @Specialization
+        TruffleString getQualName(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached("create(T___NAME__)") GetAttributeNode getNameAttrNode,
+                        @Cached("create(T___QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached ConditionProfile isGlobalProfile,
-                        @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
-            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode, isGlobalProfile);
+                        @Cached GetClassNode getClassNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToStringNode, getClassNode, isTypeNode, isGlobalProfile, simpleTruffleStringFormatNode);
         }
 
-        private Object makeQualname(VirtualFrame frame, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode, CastToJavaStringNode castToJavaStringNode,
-                        PythonObjectLibrary pol, TypeNodes.IsTypeNode isTypeNode, ConditionProfile isGlobalProfile) {
-            String methodName;
+        private TruffleString makeQualname(VirtualFrame frame, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode,
+                        CastToTruffleStringNode castToStringNode, GetClassNode getClassNode, TypeNodes.IsTypeNode isTypeNode, ConditionProfile isGlobalProfile,
+                        SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString methodName;
             try {
-                methodName = castToJavaStringNode.execute(getNameAttrNode.executeObject(frame, method));
+                methodName = castToStringNode.execute(getNameAttrNode.executeObject(frame, method));
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __NAME__, "unicode object");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___NAME__);
             }
             if (isGlobalProfile.profile(self == null || self instanceof PythonModule)) {
                 return methodName;
             }
 
-            Object type = isTypeNode.execute(self) ? self : pol.getLazyPythonClass(self);
-            String typeQualName;
+            Object type = isTypeNode.execute(self) ? self : getClassNode.execute(self);
+            TruffleString typeQualName;
             try {
-                typeQualName = castToJavaStringNode.execute(getQualNameAttrNode.executeObject(frame, type));
+                typeQualName = castToStringNode.execute(getQualNameAttrNode.executeObject(frame, type));
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, T___QUALNAME__);
             }
 
-            return PythonUtils.format("%s.%s", typeQualName, methodName);
+            return simpleTruffleStringFormatNode.format("%s.%s", typeQualName, methodName);
         }
     }
 }

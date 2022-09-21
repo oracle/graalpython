@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.parser;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
-import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_PRINT;
 
 import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.InputMismatchException;
@@ -65,7 +65,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         super.recover(recognizer, e);
     }
 
-    static SourceSection getPosition(Source source, Exception e) {
+    public static SourceSection getPosition(Source source, Exception e) {
         RecognitionException r;
         if (e instanceof RecognitionException) {
             r = (RecognitionException) e;
@@ -81,17 +81,17 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         return source.createSection(token.getStartIndex(), Math.max(0, token.getStopIndex() - token.getStartIndex()));
     }
 
-    static ErrorType getErrorType(Exception e, SourceSection section) {
+    public static ErrorType getErrorType(Exception e, SourceSection section) {
         if (e instanceof DescriptiveBailErrorListener.EmptyRecognitionException) {
             DescriptiveBailErrorListener.EmptyRecognitionException except = ((DescriptiveBailErrorListener.EmptyRecognitionException) e);
             ErrorType type = except.getErrorType();
             if (section.isAvailable() && type == ErrorType.Generic) {
                 String prev = except.getPreviousToken();
                 if (prev != null) {
-                    if (prev.equals(PRINT)) {
+                    if (prev.equals(J_PRINT)) {
                         return ErrorType.Print;
                     }
-                    if (prev.equals(EXEC)) {
+                    if (prev.equals(J_EXEC)) {
                         return ErrorType.Exec;
                     }
                 }

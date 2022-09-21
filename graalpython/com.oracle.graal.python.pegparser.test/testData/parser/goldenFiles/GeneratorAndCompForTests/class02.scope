@@ -1,0 +1,21 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      Counter: [DefLocal, Local]
+      dict: [Use, GlobalImplicit]
+    Scope Counter Class
+        Symbols:
+            _keep_positive: [DefLocal, Local]
+      Scope _keep_positive Function
+            Varnames: self
+            Symbols:
+                  elem: [DefLocal, Use, Local]
+                  nonpositive: [DefLocal, Use, Local]
+                  self: [DefParam, Use, Local]
+        Scope listcomp Function
+                Flags: [IsComprehension]
+                Varnames: .0
+                Symbols:
+                        .0: [DefParam, Local]
+                        count: [DefLocal, Use, DefCompIter, Local]
+                        elem: [DefLocal, Use, DefCompIter, Local]

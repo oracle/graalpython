@@ -1,0 +1,4 @@
+Disassembly of <module>:
+  1:4   -   1:5         0 DELETE_NAME                       0    (a)
+  1:0   -   1:5         2 LOAD_NONE
+  1:0   -   1:5         3 RETURN_VALUE

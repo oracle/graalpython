@@ -1,0 +1,28 @@
+Disassembly of <module>:
+  1:0   -   4:22        0 LOAD_BUILD_CLASS
+  1:0   -   4:22        1 MAKE_FUNCTION                     0    (Foo)
+  1:0   -   4:22        4 LOAD_STRING                       0    ('Foo')
+  1:0   -   4:22        6 COLLECTION_FROM_STACK             2    (Object[])
+  1:0   -   4:22        8 CALL_FUNCTION_VARARGS
+  1:0   -   4:22        9 STORE_NAME                        0    (Foo)
+  1:0   -   4:22       11 LOAD_NONE
+  1:0   -   4:22       12 RETURN_VALUE
+
+Disassembly of Foo:
+  1:0   -   4:22        0 LOAD_NAME                         0    (__name__)
+  1:0   -   4:22        2 STORE_NAME                        1    (__module__)
+  1:0   -   4:22        4 LOAD_STRING                       0    ('Foo')
+  1:0   -   4:22        6 STORE_NAME                        2    (__qualname__)
+  2:8   -   2:10        8 LOAD_BYTE_O                       64
+  2:4   -   2:5        10 STORE_NAME                        3    (c)
+  3:4   -   4:22       12 MAKE_FUNCTION                     0    (Foo.__init__)
+  3:4   -   4:22       15 STORE_NAME                        4    (__init__)
+  3:4   -   4:22       17 LOAD_NONE
+  3:4   -   4:22       18 RETURN_VALUE
+
+Disassembly of Foo.__init__:
+  4:19  -   4:22        0 LOAD_FAST                         1    (arg)
+  4:8   -   4:12        2 LOAD_FAST                         0    (self)
+  4:8   -   4:12        4 STORE_ATTR                        0    (var)
+  4:8   -   4:22        6 LOAD_NONE
+  4:8   -   4:22        7 RETURN_VALUE

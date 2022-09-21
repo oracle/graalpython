@@ -1,0 +1,14 @@
+Module[0, 34]
+    FunctionDef[0, 34]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        Lambda[12, 34]
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[19, 22] foo
+                Kwarg: ArgTy[30, 31] z
+                Defaults:
+                    Name[23, 26] Value: "bar"
+            Body: LONG[33, 34] Value: 0
+        ---- End of fn function ----

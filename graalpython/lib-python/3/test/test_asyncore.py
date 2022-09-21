@@ -17,7 +17,9 @@ if support.PGO:
     raise unittest.SkipTest("test is not helpful for PGO")
 
 
-HAS_UNIX_SOCKETS = hasattr(socket, 'AF_UNIX')
+# GR-28433
+HAS_UNIX_SOCKETS = hasattr(socket, 'AF_UNIX') and sys.implementation.name != 'graalpy'
+
 
 class dummysocket:
     def __init__(self):

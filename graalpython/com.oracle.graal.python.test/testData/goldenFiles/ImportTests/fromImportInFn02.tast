@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [dirname, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, dirname]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -40,13 +40,11 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
                         FromList: dirname
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: dirname
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,dirname,Illegal]
+                          Frame: [0,dirname,Illegal]
                           EmptyNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                          GetClassNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [1,<return_val>,Object]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,32 +49,31 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
+@GenerateUncached
 public abstract class ExecutePositionalStarargsNode extends Node {
-    public abstract Object[] executeWith(VirtualFrame frame, Object starargs);
+    public abstract Object[] executeWith(Frame frame, Object starargs);
 
     @Specialization
     static Object[] doObjectArray(Object[] starargs) {
@@ -122,17 +121,18 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    static Object[] doNone(@SuppressWarnings("unused") PNone none) {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
+    static Object[] doNone(PNone none,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
-    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
                     @Cached PRaiseNode raise,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode nextNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
-        Object iterator = lib.getIteratorWithFrame(object, frame);
+        Object iterator = getIter.execute(frame, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
@@ -161,64 +161,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         return ExecutePositionalStarargsNodeGen.create();
     }
 
-    @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithContext {
-        public abstract Object[] executeWithGlobalState(Object starargs);
-
-        @Specialization
-        static Object[] starargs(Object[] starargs) {
-            return ExecutePositionalStarargsNode.doObjectArray(starargs);
-        }
-
-        @Specialization
-        static Object[] doTuple(PTuple starargs,
-                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
-            return ExecutePositionalStarargsNode.doTuple(starargs, toArray);
-        }
-
-        @Specialization
-        static Object[] doList(PList starargs,
-                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
-            return ExecutePositionalStarargsNode.doList(starargs, toArray);
-        }
-
-        @Specialization
-        static Object[] doDict(PDict starargs,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return ExecutePositionalStarargsNode.doDict(starargs, lib);
-        }
-
-        @Specialization
-        static Object[] doSet(PSet starargs,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return ExecutePositionalStarargsNode.doSet(starargs, lib);
-        }
-
-        @Specialization
-        static Object[] starargs(@SuppressWarnings("unused") PNone none) {
-            return ExecutePositionalStarargsNode.doNone(none);
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object[] starargs(Object object,
-                        @Cached PRaiseNode raise,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached GetNextWithoutFrameNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = lib.getIterator(object);
-            if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
-                ArrayList<Object> internalStorage = new ArrayList<>();
-                while (true) {
-                    try {
-                        addToList(internalStorage, nextNode.executeWithGlobalState(iterator));
-                    } catch (PException e) {
-                        e.expectStopIteration(errorProfile);
-                        return toArray(internalStorage);
-                    }
-                }
-            }
-            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
-        }
+    public static ExecutePositionalStarargsNode getUncached() {
+        return ExecutePositionalStarargsNodeGen.getUncached();
     }
 }

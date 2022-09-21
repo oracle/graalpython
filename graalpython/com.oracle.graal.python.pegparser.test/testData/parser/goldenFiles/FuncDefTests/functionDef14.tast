@@ -1,0 +1,24 @@
+Module[0, 71]
+    FunctionDef[0, 36]
+        Name:bla
+        ArgumentsTy[0, 0]
+        ---- Function body of bla ----
+        Call[13, 36]
+            Target: Name[13, 20] Value: "install"
+            KWArgs:
+                KeywordTy[21, 35]
+                    extra_opts: List[32, 35]
+                        Values:
+                            LONG[33, 34] Value: 1
+        ---- End of bla function ----
+    FunctionDef[37, 71]
+        Name:install
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[49, 59] extra_opts
+            Defaults:
+                List[60, 62]
+                    Values:
+        ---- Function body of install ----
+        Pass[67, 71]
+        ---- End of install function ----

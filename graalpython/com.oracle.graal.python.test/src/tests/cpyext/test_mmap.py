@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,33 @@ class TestPyMmap(CPyExtTestCase):
                 data[i] = ((char *) buf.buf)[i];
             }
             return PyBytes_FromStringAndSize(data, len); 
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* mmapObj"],
+        callfunction="get_mmap_buf",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # Exercises conversion to native and copying from the actual mmap pointer
+    test_buffer_memcpy = CPyExtFunction(
+        lambda args: b"hello, world",
+        lambda: (
+            (create_and_map_file(),),
+        ),
+        code="""
+        static PyObject* get_mmap_buf(PyObject* mmapObj) {
+            Py_buffer buf;
+            Py_ssize_t len, i;
+            char* data = NULL;
+            if (PyObject_GetBuffer(mmapObj, &buf, PyBUF_SIMPLE)) {
+                return NULL;
+            }
+            len = buf.len;
+            data = (char*) malloc(sizeof(char)*len);
+            memcpy(data, buf.buf, len);
+            return PyBytes_FromStringAndSize(data, len);
         }
         """,
         resultspec="O",

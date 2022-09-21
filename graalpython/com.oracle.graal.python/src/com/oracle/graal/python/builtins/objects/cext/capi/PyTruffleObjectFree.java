@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,15 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.util.logging.Level;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,7 +64,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public class PyTruffleObjectFree implements TruffleObject {
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectFree.class);
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PyTruffleObjectFree.class);
 
     @ExportMessage
     boolean isExecutable() {
@@ -70,12 +73,18 @@ public class PyTruffleObjectFree implements TruffleObject {
 
     @ExportMessage
     Object execute(Object[] arguments,
-                    @Cached FreeNode freeNode) throws ArityException {
-        if (arguments.length != 1) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw ArityException.create(1, arguments.length);
+                    @Cached FreeNode freeNode,
+                    @Exclusive @Cached GilNode gil) throws ArityException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (arguments.length != 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(1, 1, arguments.length);
+            }
+            return freeNode.execute(arguments[0]);
+        } finally {
+            gil.release(mustRelease);
         }
-        return freeNode.execute(arguments[0]);
     }
 
     @GenerateUncached
@@ -84,7 +93,7 @@ public class PyTruffleObjectFree implements TruffleObject {
 
         public abstract int execute(Object pointerObject);
 
-        @Specialization(limit = "3")
+        @Specialization(guards = "!isCArrayWrapper(nativeWrapper)", limit = "3")
         static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
@@ -102,10 +111,21 @@ public class PyTruffleObjectFree implements TruffleObject {
             return 1;
         }
 
+        @Specialization
+        static int arrayWrapper(@SuppressWarnings("unused") CArrayWrapper object) {
+            // It's a pointer to a managed object but doesn't need special handling, so we just
+            // ignore it.
+            return 1;
+        }
+
         @Specialization(guards = "!isNativeWrapper(object)")
         static int doOther(@SuppressWarnings("unused") Object object) {
             // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
             return 0;
+        }
+
+        protected static boolean isCArrayWrapper(Object obj) {
+            return obj instanceof CArrayWrapper;
         }
     }
 
@@ -126,9 +146,9 @@ public class PyTruffleObjectFree implements TruffleObject {
                 // necessary distinction.
                 Object nativePointer = lib.getNativePointer(nativeWrapper);
                 if (LOGGER.isLoggable(Level.FINER)) {
-                    LOGGER.finer(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
+                    LOGGER.finer(() -> PythonUtils.formatJString("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
                 }
-                callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
+                callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
             }
         }
     }

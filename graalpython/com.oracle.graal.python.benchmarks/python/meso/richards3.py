@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2022, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -448,14 +448,17 @@ def measure(iteration):
 def __benchmark__(num=200):
     measure(num)
 
+def java_embedded_bench_entrypoint(num=200):
+    measure(int(num))
 
 if __name__ == '__main__':
     import sys
-    import time
-    start = time.time()
-    if len(sys.argv) >= 2:
-        num = int(sys.argv[1])
-        __benchmark__(num)
-    else:
-        __benchmark__()
-    print("%s took %s s" % (__file__, time.time() - start))
+    if not (len(sys.argv) == 1 and sys.argv[0] == 'java_embedding_bench'):
+        import time
+        start = time.time()
+        if len(sys.argv) >= 2:
+            num = int(sys.argv[1])
+            __benchmark__(num)
+        else:
+            __benchmark__()
+        print("%s took %s s" % (__file__, time.time() - start))

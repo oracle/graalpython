@@ -1,0 +1,28 @@
+Module[0, 52]
+    FunctionDef[0, 52]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        For[12, 52]
+            Target: 
+                Tuple[16, 20] Context: Store
+                    Values:
+                        Name[16, 17] Value: "a" Store
+                        Name[19, 20] Value: "b" Store
+            Iter: 
+                Tuple[24, 38]
+                    Values:
+                        Tuple[25, 30]
+                            Values:
+                                LONG[26, 27] Value: 1
+                                LONG[28, 29] Value: 2
+                        Tuple[32, 37]
+                            Values:
+                                LONG[33, 34] Value: 3
+                                LONG[35, 36] Value: 4
+            Body:
+                Call[44, 52]
+                    Target: Name[44, 49] Value: "print"
+                    Args:
+                        Name[50, 51] Value: "a"
+        ---- End of fn function ----

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,5 +47,15 @@ class AssertionsTest(unittest.TestCase):
         except:
             pass
         else:
-            raise Exception("Assertions doesn't work!")
+            raise Exception("Assertions don't work!")
+
+    def test_assert_message(self):
+        try:
+            assert False, 1
+        except AssertionError as e:
+            if e.args != (1,):
+                raise Exception(f"Expected AssertionError.args to be {(1,)}, was {e.args}")
+        else:
+            raise Exception("Assertions don't work!")
+
     

@@ -1,0 +1,11 @@
+Module[0, 40]
+    FunctionDef[0, 40]
+        Name:f
+        ArgumentsTy[0, 0]
+        ---- Function body of f ----
+        If[13, 40]
+            Test: Yield[17, 22]
+            Then:
+                Yield[33, 40]
+                    Name[39, 40] Value: "x"
+        ---- End of f function ----

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,8 @@ package com.oracle.graal.python.nodes.function.builtins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class SlotWrapper extends BuiltinCallNode {
-    @Child BuiltinCallNode func;
+abstract class SlotWrapper extends BuiltinCallNode {
+    @Child private BuiltinCallNode func;
 
     public SlotWrapper(BuiltinCallNode func) {
         this.func = func;

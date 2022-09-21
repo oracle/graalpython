@@ -241,8 +241,8 @@
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_hashability
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_instantiation_and_attributes
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_inv_cdf
-*graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_overlap
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_pdf
+*graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_pickle_and_copy
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_properties
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_quantiles
 *graalpython.lib-python.3.test.test_statistics.TestNormalDistPython.test_repr

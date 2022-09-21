@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.math.BigInteger;
+
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -50,11 +55,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-
-import java.math.BigInteger;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 /**
  * Casts a Python {@code int} to Java {@code long}. This method follows the semantics of CPython's
@@ -96,7 +96,7 @@ public abstract class CastToJavaUnsignedLongNode extends PNodeWithContext {
 
     @Fallback
     long doUnsupported(@SuppressWarnings("unused") Object x) {
-        throw getRaiseNode().raise(TypeError, ErrorMessages.INTEGER_IS_REQUIRED);
+        throw getRaiseNode().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
     }
 
     private void checkNegative(boolean negative) {

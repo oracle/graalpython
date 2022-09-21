@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,15 +43,13 @@ import subprocess
 import sys
 import test
 
-
 if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
     TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
 else:
     TAGS_DIR = "null"
 
-
 RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
-
+LINE = "=" * 80
 
 def working_selectors(tagfile):
     if os.path.exists(tagfile):
@@ -61,7 +59,7 @@ def working_selectors(tagfile):
         return None
 
 
-def working_tests():
+def collect_working_tests():
     working_tests = []
     glob_pattern = os.path.join(TAGS_DIR, "*.txt")
     for arg in sys.argv:
@@ -72,39 +70,93 @@ def working_tests():
     for tagfile in glob.glob(glob_pattern):
         test = os.path.splitext(os.path.basename(tagfile))[0]
         working_tests.append((test, working_selectors(tagfile)))
-    return working_tests
+    return sorted(working_tests)
 
 
-class TestAllWorkingTests():
-    pass
+def make_test_function(working_test):
+    testmod = working_test[0].rpartition(".")[2]
 
-WORKING_TESTS = working_tests()
-for idx, working_test in enumerate(WORKING_TESTS):
-    def make_test_func(working_test):
-        def fun(self):
-            cmd = [sys.executable]
-            if "--inspect" in sys.argv:
-                cmd.append("--inspect")
-            if "-debug-java" in sys.argv:
-                cmd.append("-debug-java")
-            cmd += ["-S", RUNNER]
-            for testpattern in working_test[1]:
-                cmd.extend(["-k", testpattern])
-            testmod = working_test[0].rpartition(".")[2]
-            print("Running test:", working_test[0])
-            testfile = os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod)
-            if not os.path.isfile(testfile):
-                testfile = os.path.join(os.path.dirname(test.__file__), "%s/__init__.py" % testmod)
-            cmd.append(testfile)
+    def test_tagged():
+        cmd = [sys.executable]
+        if "--inspect" in sys.argv:
+            cmd.append("--inspect")
+        if "-debug-java" in sys.argv:
+            cmd.append("-debug-java")
+        cmd += [RUNNER]
+        if "-vv" in sys.argv:
+            cmd += ['-v']
+        for testpattern in working_test[1]:
+            cmd.extend(["-k", testpattern])
+        print("Running test:", working_test[0])
+        testfile = os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod)
+        if not os.path.isfile(testfile):
+            testfile = os.path.join(os.path.dirname(test.__file__), "%s/__init__.py" % testmod)
+        cmd.append(testfile)
+        if os.environ.get("ENABLE_THREADED_GRAALPYTEST") == "true":
+            run_serialize_out(cmd)
+        else:
             subprocess.check_call(cmd)
             print(working_test[0], "was finished.")
 
-        fun.__name__ = "%s[%d/%d]" % (working_test[0], idx + 1, len(WORKING_TESTS))
-        return fun
+    def run_serialize_out(cmd):
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        append_out = "-v" in sys.argv
+        if result.returncode:
+            message = f"{working_test[0]} failed with exit code {result.returncode}.\n"
+            append_out = True
+        else:
+            message = f"{working_test[0]} was finished\n"
+        if append_out:
+            message += LINE + "\n"
+            message += "output:\n"
+            message += result.stdout.decode('utf-8')
+            message += LINE + "\n"
+        print(message)
+        if result.returncode:
+            raise subprocess.CalledProcessError(result.returncode, cmd)
 
-    test_f = make_test_func(working_test)
-    setattr(TestAllWorkingTests, test_f.__name__, test_f)
-    del test_f
+    if testmod.startswith('test_'):
+        test_tagged.__name__ = testmod
+    else:
+        test_tagged.__name__ = 'test_' + testmod
+    return test_tagged
+
+
+def make_tests_class():
+    import unittest
+
+    global TestTaggedUnittests
+
+    class TestTaggedUnittests(unittest.TestCase):
+        pass
+
+    partial = os.environ.get('TAGGED_UNITTEST_PARTIAL')
+    if partial:
+        selected_str, total_str = partial.split('/', 1)
+        selected = int(selected_str) - 1
+        total = int(total_str)
+    else:
+        selected = 0
+        total = 1
+    assert selected < total
+
+    working_tests = collect_working_tests()
+    selection = os.environ.get('TAGGED_UNITTEST_SELECTION')
+    if not selection:
+        working_tests = working_tests[selected::total]
+    else:
+        selection = set(s.strip() for s in selection.split(","))
+        working_tests = [x for x in working_tests if x[0] in selection]
+    print("-----------------------------------------------------------------------------------------------------------")
+    print("working tests: ")
+    print([x[0] for x in working_tests])
+    print("-----------------------------------------------------------------------------------------------------------")
+
+    for idx, working_test in enumerate(working_tests):
+        fn = make_test_function(working_test)
+        fn.__name__ = "%s[%d/%d]" % (fn.__name__, idx + 1, len(working_tests))
+        fn.__qualname__ = "%s.%s" % (TestTaggedUnittests.__name__, fn.__name__)
+        setattr(TestTaggedUnittests, fn.__name__, staticmethod(fn))
 
 
 # This function has a unittest in test_tagger
@@ -130,21 +182,21 @@ def parse_unittest_output(output):
             return
 
 
-if __name__ == "__main__":
-    # find working tests
-    import re
-
-    executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
+def main():
+    executable = sys.executable.split(" ")  # HACK: our sys.executable on Java is a cmdline
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
     maxrepeats = 4
+    tout = "360"
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
         elif arg.startswith("--maxrepeats="):
             maxrepeats = int(arg.partition("=")[2])
+        elif arg.startswith("--timeout="):
+            tout = arg.partition("=")[2]
         elif arg == "--help":
             print(sys.argv[0] + " [--retag] [--maxrepeats=n] [glob]")
         else:
@@ -174,13 +226,13 @@ if __name__ == "__main__":
             else:
                 testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", "240"] + executable
+            cmd = [timeout, "-s", "9", tout] + executable
             if repeat == 0:
                 # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
                 # the tests catching all exceptions somewhere
                 cmd += ['--experimental-options', '--python.CatchAllExceptions']
-            cmd += ["-S", RUNNER, "-v"]
+            cmd += [RUNNER, "-v"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
             if retag and repeat == 0:
                 test_selectors = []
@@ -192,35 +244,43 @@ if __name__ == "__main__":
                 # shouldn't be tried).
                 continue
 
-            print("[%d/%d, Try %d] Testing %s" %(idx + 1, len(testfiles), repeat + 1, testmod))
+            print("[%d/%d, Try %d] Testing %s" % (idx + 1, len(testfiles), repeat + 1, testmod))
             for selector in test_selectors:
                 cmd += ["-k", selector]
             cmd.append(testfile)
 
             print(" ".join(cmd))
-            p = subprocess.run(cmd, **kwargs)
+            p = subprocess.run(cmd, errors='backslashreplace', **kwargs)
             print("*stdout*")
             print(p.stdout)
             print("*stderr*")
             print(p.stderr)
 
-            passing_tests = []
+            if p.returncode == -9:
+                print(
+                    f"\nTimeout (return code -9)\nyou can try to increase the current timeout {tout}s by using --timeout=NNN")
+
+            passing_tests = set()
+            failing_tests = set()
 
             # n.b.: we add a '*' in the front, so that unittests doesn't add
             # its own asterisks, because now this is already a pattern
             for funcname, classname, result in parse_unittest_output(p.stderr):
                 # We consider skipped tests as passing in order to avoid a situation where a Linux run
                 # untags a Darwin-only test and vice versa
+                pattern = f"*{classname}.{funcname}"
                 if result == 'ok' or result.startswith('skipped'):
-                    passing_tests.append(f"*{classname}.{funcname}")
+                    passing_tests.add(pattern)
+                else:
+                    failing_tests.add(pattern)
 
             with open(tagfile, "w") as f:
-                for passing_test in sorted(passing_tests):
+                for passing_test in sorted(passing_tests - failing_tests):
                     f.write(passing_test)
                     f.write("\n")
             if not passing_tests:
                 os.unlink(tagfile)
-                print("No successful tests remaining")
+                print("No successful tests detected")
                 break
 
             if p.returncode == 0:
@@ -240,3 +300,9 @@ if __name__ == "__main__":
                 os.unlink(tagfile)
             except Exception:
                 pass
+
+
+if __name__ == '__main__':
+    main()
+else:
+    make_tests_class()

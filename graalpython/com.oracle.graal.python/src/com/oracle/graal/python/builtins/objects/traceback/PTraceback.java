@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,12 +45,16 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public final class PTraceback extends PythonBuiltinObject {
+    public static final int UNKNOWN_LINE_NUMBER = -2;
 
     private PFrame frame;
     private PFrame.Reference frameInfo;
-    private int lineno = -2;
+    private int lineno = UNKNOWN_LINE_NUMBER;
     private int lasti;
     private PTraceback next;
     private LazyTraceback lazyTraceback;
@@ -72,6 +76,7 @@ public final class PTraceback extends PythonBuiltinObject {
         this.lazyTraceback = lazyTraceback;
         this.frameInfo = lazyTraceback.getFrameInfo();
         this.frame = lazyTraceback.getFrame();
+        this.lineno = lazyTraceback.getLineNo();
     }
 
     public PFrame getFrame() {
@@ -118,12 +123,17 @@ public final class PTraceback extends PythonBuiltinObject {
         return lazyTraceback == null;
     }
 
-    public static final String TB_FRAME = "tb_frame";
-    public static final String TB_NEXT = "tb_next";
-    public static final String TB_LASTI = "tb_lasti";
-    public static final String TB_LINENO = "tb_lineno";
+    static final String J_TB_FRAME = "tb_frame";
+    static final String J_TB_NEXT = "tb_next";
+    static final String J_TB_LASTI = "tb_lasti";
+    static final String J_TB_LINENO = "tb_lineno";
 
-    @CompilationFinal(dimensions = 1) private static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
+    private static final TruffleString T_TB_FRAME = tsLiteral(J_TB_FRAME);
+    private static final TruffleString T_TB_NEXT = tsLiteral(J_TB_NEXT);
+    private static final TruffleString T_TB_LASTI = tsLiteral(J_TB_LASTI);
+    private static final TruffleString T_TB_LINENO = tsLiteral(J_TB_LINENO);
+
+    @CompilationFinal(dimensions = 1) private static final Object[] TB_DIR_FIELDS = new Object[]{T_TB_FRAME, T_TB_NEXT, T_TB_LASTI, T_TB_LINENO};
 
     static Object[] getTbFieldNames() {
         return TB_DIR_FIELDS.clone();

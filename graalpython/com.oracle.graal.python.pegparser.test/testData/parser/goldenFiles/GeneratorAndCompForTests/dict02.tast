@@ -1,0 +1,37 @@
+Module[0, 98]
+    Assign[0, 48]
+        LHS: Name[0, 5] Value: "dict1" Store
+        RHS: 
+            Dict[8, 48]
+                Values:
+                    Key: RAW[9, 12] Value: "a"
+                    Val: LONG[14, 15] Value: 1
+                    Key: RAW[17, 20] Value: "b"
+                    Val: LONG[22, 23] Value: 2
+                    Key: RAW[25, 28] Value: "c"
+                    Val: LONG[30, 31] Value: 3
+                    Key: RAW[33, 36] Value: "d"
+                    Val: LONG[38, 39] Value: 4
+                    Key: RAW[41, 44] Value: "e"
+                    Val: LONG[46, 47] Value: 5
+    Assign[49, 98]
+        LHS: Name[49, 61] Value: "double_dict1" Store
+        RHS: 
+            DictComp[64, 98]
+                Key: Name[65, 66] Value: "k"
+                Value: BinOp[67, 70]
+                    Op: Mult
+                    LHS: Name[67, 68] Value: "v"
+                    RHS: LONG[69, 70] Value: 2
+                ComprehensionTy[71, 97]
+                    Target: 
+                        Tuple[75, 80] Context: Store
+                            Values:
+                                Name[76, 77] Value: "k" Store
+                                Name[78, 79] Value: "v" Store
+                    Iterator: 
+                        Call[84, 97]
+                            Target: 
+                                Attribute[84, 89] 
+                                    Receiver: Name[84, 89] Value: "dict1"
+                                    Attr: items

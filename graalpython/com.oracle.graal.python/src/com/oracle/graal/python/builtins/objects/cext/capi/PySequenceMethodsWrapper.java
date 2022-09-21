@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_CONCAT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_ITEM;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_LENGTH;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_REPEAT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -67,7 +73,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
@@ -86,7 +92,8 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        return SQ_REPEAT.getMemberName().equals(member) || SQ_ITEM.getMemberName().equals(member);
+        return SQ_REPEAT.getMemberNameJavaString().equals(member) || SQ_ITEM.getMemberNameJavaString().equals(member) || SQ_CONCAT.getMemberNameJavaString().equals(member) ||
+                        SQ_LENGTH.getMemberNameJavaString().equals(member);
     }
 
     @ExportMessage
@@ -97,28 +104,36 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
+                    @Cached LookupAttributeInMRONode.Dynamic lookup,
                     @Cached ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
-        Object result;
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
         try {
-            if (SQ_REPEAT.getMemberName().equals(member)) {
-                result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
-            } else if (SQ_ITEM.getMemberName().equals(member)) {
-                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
-            } else {
-                // TODO extend list
-                throw UnknownIdentifierException.create(member);
+            Object result;
+            try {
+                if (SQ_REPEAT.getMemberNameJavaString().equals(member)) {
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), T___MUL__));
+                } else if (SQ_ITEM.getMemberNameJavaString().equals(member)) {
+                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(lib), T___GETITEM__), true);
+                } else if (SQ_CONCAT.getMemberNameJavaString().equals(member)) {
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), T___ADD__));
+                } else if (SQ_LENGTH.getMemberNameJavaString().equals(member)) {
+                    result = PyProcsWrapper.createLenfuncWrapper(lookup.execute(getPythonClass(lib), T___LEN__));
+                } else {
+                    // TODO extend list
+                    throw UnknownIdentifierException.create(member);
+                }
+            } catch (PException e) {
+                errorProfile.enter();
+                transformExceptionToNativeNode.execute(null, e);
+                result = PythonContext.get(gil).getNativeNull();
             }
-        } catch (PException e) {
-            errorProfile.enter();
-            transformExceptionToNativeNode.execute(null, e);
-            result = getNativeNullNode.execute(null);
+            return result;
+        } finally {
+            gil.release(mustRelease);
         }
-        return result;
     }
 
     @ExportMessage

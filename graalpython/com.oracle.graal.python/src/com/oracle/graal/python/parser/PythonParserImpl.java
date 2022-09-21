@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,26 +25,35 @@
  */
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_PROBLEM;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_INTENT;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
-import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
@@ -57,12 +66,12 @@ import com.oracle.graal.python.parser.sst.SSTNodeWithScope;
 import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
 import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
-import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -74,10 +83,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer, FStringExprParser {
 
+    private static final String HOME_PREFIX = "%/";
     private final boolean logFiles;
     private final int timeStatistics;
     private long timeInParser = 0;
@@ -106,99 +118,137 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory) {
-        Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").build();
-        return parseWithANTLR(ParserMode.FStringExpression, PythonLanguage.getCore(), nodeFactory, source, null,
+    public SSTNode parseExpression(ParserErrorCallback errorCallback, String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource) {
+        Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").interactive(fromInteractiveSource).build();
+        return parseWithANTLR(ParserMode.FStringExpression, 0, errorCallback.getContext(), nodeFactory, source, null,
                         null).antlrResult;
     }
 
-    @Override
-    @TruffleBoundary
-    public byte[] serialize(RootNode rootNode) {
-        Source source = rootNode.getSourceSection().getSource();
-        assert source != null;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(source.getLength() * 2);
+    public static byte[] serialize(SourceSection section, SSTNode node, ScopeInfo scope, boolean isModule) {
+        Source source = section.getSource();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
-        CacheItem lastParserResult = cachedLastAntlrResult;
-        if (!source.equals(lastParserResult.source)) {
-            // we need to parse the source again
-            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source, this);
-            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null, null);
-        }
         try {
             dos.writeByte(SerializationUtils.VERSION);
-            if (rootNode instanceof ModuleRootNode) {
-                // serialize whole module
-                ScopeInfo.write(dos, lastParserResult.globalScope);
-                dos.writeInt(0);
-                lastParserResult.antlrResult.accept(new SSTSerializerVisitor(dos));
-            } else {
-                // serialize just the part
-                SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
-                SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
-                // store with parent scope
-                ScopeInfo.write(dos, rootSST.getScope().getParent());
-                dos.writeInt(rootSST.getStartOffset());
-                rootSST.accept(new SSTSerializerVisitor(dos));
-            }
+            dos.writeUTF(source.getName() == null ? "" : encodeHome(source.getName()));
+            dos.writeUTF(source.getPath() == null ? "" : encodeHome(source.getPath()));
+            byte[] bytes = section.getCharacters().toString().getBytes(StandardCharsets.UTF_8);
+            dos.writeInt(bytes.length);
+            dos.write(bytes);
+            ScopeInfo.write(dos, scope);
+            dos.writeInt(isModule ? 0 : node.getStartOffset());
+            node.accept(new SSTSerializerVisitor(dos));
             dos.close();
         } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, ErrorMessages.ERROR_DURING_SERIALIZATION, e.getMessage());
         }
 
         return baos.toByteArray();
     }
 
-    @Override
-    public RootNode deserialize(Source source, byte[] data) {
-        return deserialize(source, data, null, null);
+    private static String encodeHome(String path) {
+        String home = PythonLanguage.get(null).getHome();  // behind @TruffleBoundary
+        if (path.startsWith(home)) {
+            return HOME_PREFIX + path.substring(home.length());
+        }
+        return path;
+    }
+
+    private static String decodeHome(String path) {
+        if (path.startsWith(HOME_PREFIX)) {
+            String home = PythonLanguage.get(null).getHome();  // behind @TruffleBoundary
+            return home + path.substring(HOME_PREFIX.length());
+        }
+        return path;
     }
 
     @Override
     @TruffleBoundary
-    public RootNode deserialize(Source source, byte[] data, String[] cellvars, String[] freevars) {
+    public byte[] serialize(ParserErrorCallback errorCallback, RootNode rootNode) {
+        Source source = rootNode.getSourceSection().getSource();
+        assert source != null;
+        CacheItem lastParserResult = cachedLastAntlrResult;
+        if (source != lastParserResult.source && !source.equals(lastParserResult.source)) {
+            // we need to parse the source again
+            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errorCallback, source, this);
+            lastParserResult = parseWithANTLR(ParserMode.File, 0, errorCallback, sstFactory, source, null, null);
+        }
+        if (rootNode instanceof ModuleRootNode) {
+            // serialize whole module
+            return serialize(rootNode.getSourceSection(), lastParserResult.antlrResult, lastParserResult.globalScope, true);
+        } else {
+            // serialize just the part
+            SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
+            SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
+            // store with parent scope
+            return serialize(rootNode.getSourceSection(), rootSST, rootSST.getScope().getParent(), false);
+        }
+    }
+
+    @Override
+    public RootNode deserialize(ParserErrorCallback errorCallback, byte[] data) {
+        return deserialize(errorCallback, data, null, null);
+    }
+
+    @Override
+    @TruffleBoundary
+    public RootNode deserialize(ParserErrorCallback errorCallback, byte[] data, String[] cellvars, String[] freevars) {
+        assert data.length > 0 : "should be caught earlier";
+
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
         DataInputStream dis = new DataInputStream(bais);
-        ScopeInfo globalScope = null;
-        SSTNode sstNode = null;
-        if (data.length != 0) {
-            try {
-                // Just to be sure that the serialization version is ok.
-                byte version = dis.readByte();
-                if (version != SerializationUtils.VERSION) {
-                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
-                }
-                globalScope = ScopeInfo.read(dis, null);
-                int offset = dis.readInt();
-                sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
-                if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
-                    ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
-                    if (cellvars != null) {
-                        rootScope.setCellVars(cellvars);
-                    }
-                    if (freevars != null) {
-                        rootScope.setFreeVars(freevars);
-                    }
-                }
-            } catch (IOException e) {
-                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
+        ScopeInfo globalScope;
+        Source source;
+        SSTNode sstNode;
+        try {
+            // Just to be sure that the serialization version is ok.
+            byte version = dis.readByte();
+            if (version != SerializationUtils.VERSION) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, ErrorMessages.BAD_DATA_OF_SERIALIZATION);
             }
-        } else {
-            return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
+            String name = decodeHome(dis.readUTF()).intern();
+            String path = decodeHome(dis.readUTF()).intern();
+            byte[] bytes = new byte[dis.readInt()];
+            dis.readFully(bytes);
+            String contents = new String(bytes, StandardCharsets.UTF_8);
+            globalScope = ScopeInfo.read(dis, null);
+            int offset = dis.readInt();
+
+            SourceBuilder sb;
+            if (path.isEmpty() || offset != 0) {
+                sb = Source.newBuilder(PythonLanguage.ID, contents, name);
+            } else {
+                sb = Source.newBuilder(PythonLanguage.ID, PythonContext.get(null).getEnv().getPublicTruffleFile(path)).content(contents).name(name);
+            }
+            if (!errorCallback.getContext().getCore().isCoreInitialized()) {
+                sb = sb.internal(true).cached(false);
+            }
+            source = sb.build();
+            sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
+        } catch (IOException e) {
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, ErrorMessages.NOT_POSSIBLE_GET_CORRECT_BYTECODE, e.getClass().getSimpleName(), e.getMessage());
         }
-        PythonCore core = PythonLanguage.getCore();
-        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, this);
+        if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
+            ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
+            if (cellvars != null) {
+                rootScope.setCellVars(cellvars);
+            }
+            if (freevars != null) {
+                rootScope.setFreeVars(freevars);
+            }
+        }
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errorCallback, source, this);
 
         sstFactory.getScopeEnvironment().setGlobalScope(globalScope);
         ParserMode mode = sstNode instanceof BlockSSTNode ? ParserMode.File : ParserMode.Deserialization;
         try {
-            Node result = sstFactory.createParserResult(sstNode, mode, null);
+            Node result = sstFactory.createParserResult(sstNode, mode, null, null);
             if (mode == ParserMode.Deserialization) {
                 // find function RootNode
                 final Node[] fromVisitor = new Node[1];
                 result.accept((Node node) -> {
                     if (node instanceof GeneratorFunctionDefinitionNode) {
-                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.getContext());
+                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.get(node));
                         return false;
                     } else if (node instanceof FunctionDefinitionNode) {
                         fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();
@@ -208,13 +258,14 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 });
                 result = fromVisitor[0];
             }
+            ((PRootNode) result).setCode(data);
             return (RootNode) result;
         } catch (Exception e) {
-            throw handleParserError(core, source, e);
+            throw handleParserError(errorCallback, source, e);
         }
     }
 
-    private static class CacheItem {
+    public static class CacheItem {
         Source source;
         SSTNode antlrResult;
         ScopeInfo globalScope;
@@ -224,6 +275,23 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             this.antlrResult = antlrResult;
             this.globalScope = globalScope;
         }
+
+        public Source getSource() {
+            return source;
+        }
+
+        public SSTNode getAntlrResult() {
+            return antlrResult;
+        }
+
+        public ScopeInfo getGlobalScope() {
+            return globalScope;
+        }
+
+        public CacheItem copy() {
+            return new CacheItem(source, antlrResult, globalScope);
+        }
+
     }
 
     private final CacheItem cachedLastAntlrResult = new CacheItem(null, null, null);
@@ -238,7 +306,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
+    public Node parse(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
         if (logFiles) {
             if (source.getPath() == null) {
                 System.out.println("Parsing source without path " + source.getCharacters().length());
@@ -252,11 +320,12 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
 
         Node result;
+        MaterializedFrame materializedFrame = currentFrame != null ? currentFrame.materialize() : null;
         if (timeStatistics <= 0) {
-            result = parseN(mode, errors, source, currentFrame, argumentNames);
+            result = parseN(mode, optimizeLevel, errors, source, materializedFrame, argumentNames);
         } else {
             long start = System.currentTimeMillis();
-            result = parseN(mode, errors, source, currentFrame, argumentNames);
+            result = parseN(mode, optimizeLevel, errors, source, materializedFrame, argumentNames);
             long end = System.currentTimeMillis();
             if (timeStatistics > 0) {
                 timeInParser = timeInParser + (end - start);
@@ -272,7 +341,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         return result;
     }
 
-    private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
+    public CacheItem parseWithANTLR(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         String sourceText = source.getCharacters().toString();
         // Preprocessing
@@ -288,19 +357,20 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             try {
                 PythonFileDetector.findEncodingStrict(sourceText);
             } catch (PythonFileDetector.InvalidEncodingException e) {
-                throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
+                throw errors.raiseInvalidSyntax(source, source.createUnavailableSection(), ENCODING_PROBLEM, e.getEncodingName());
             }
         }
         // We need to reject inputs starting with indent, but doing it in ANTLR is expensive, so we
         // do it here manually
         Matcher matcher = START_INDENT_REGEX.matcher(sourceText);
         if (matcher.find()) {
-            throw errors.raiseInvalidSyntax(ErrorType.Indentation, source, source.createSection(0, matcher.end(1)), "unexpected indent");
+            throw errors.raiseInvalidSyntax(ErrorType.Indentation, source, source.createSection(0, matcher.end(1)), UNEXPECTED_INTENT);
         }
         // ANTLR parsing
         Python3Parser parser = getPython3Parser(sourceText);
         parser.setFactory(sstFactory);
         parser.setParserMode(mode);
+        parser.setOptimizeLevel(optimizeLevel);
         SSTNode parserSSTResult = null;
 
         try {
@@ -357,58 +427,73 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @TruffleBoundary
-    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
-        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source, this);
-        CacheItem parserSSTResult = parseWithANTLR(mode, errors, sstFactory, source, currentFrame, argumentNames);
+    public Node parseN(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, MaterializedFrame currentFrame, String[] argumentNames) {
+        ArrayList<String> warnings = new ArrayList<>();
+        // this wrapper tracks the warnings in a list instead of raising them immediately
+        ParserErrorCallback collectWarnings = new ParserErrorCallback() {
+
+            @Override
+            public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, TruffleString message, Object... arguments) {
+                return errors.raiseInvalidSyntax(type, src, section, message, arguments);
+            }
+
+            @Override
+            public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, TruffleString message, Object... arguments) {
+                return errors.raiseInvalidSyntax(type, location, message, arguments);
+            }
+
+            @Override
+            public void warn(PythonBuiltinClassType type, TruffleString format, Object... args) {
+                assert type == PythonBuiltinClassType.DeprecationWarning;
+                warnings.add(String.format(format.toJavaStringUncached(), args));
+            }
+
+            @Override
+            public PythonContext getContext() {
+                return errors.getContext();
+            }
+
+        };
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(collectWarnings, source, this);
+        CacheItem parserSSTResult = parseWithANTLR(mode, optimizeLevel, collectWarnings, sstFactory, source, currentFrame, argumentNames);
         try {
-            return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame);
+            return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame, warnings);
         } catch (Exception e) {
             throw handleParserError(errors, source, e);
         }
     }
 
-    @Override
-    @TruffleBoundary
-    public boolean isIdentifier(PythonCore core, String snippet) {
-        if (snippet.length() != snippet.trim().length()) {
-            // identifier cannot start or end with any whitspace
-            return false;
-        }
-        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(snippet));
-        Token t = lexer.nextToken();
-        if (t.getType() == Python3Lexer.NAME) {
-            // the first token is identifier
-            t = lexer.nextToken();
-            if (t.getType() == Python3Lexer.NEWLINE) {
-                // lexer alwayes add new line at the end
-                t = lexer.nextToken();
-                if (t.getType() == Python3Lexer.EOF) {
-                    // now we are sure that this is identifer
-                    return true;
+    public static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
+        TruffleString message = null;
+        Object[] messageArgs = PythonUtils.EMPTY_OBJECT_ARRAY;
+        if (e instanceof PException) {
+            PException pException = (PException) e;
+            try {
+                InteropLibrary uncached = InteropLibrary.getUncached(pException);
+                // If the exception is already a syntax error then just re-throw.
+                if (uncached.getExceptionType(pException) == ExceptionType.PARSE_ERROR) {
+                    throw pException;
                 }
+            } catch (UnsupportedMessageException unsupportedMessageException) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-        return false;
-    }
-
-    @Override
-    @TruffleBoundary
-    public String unescapeJavaString(PythonCore core, String str) {
-        return StringUtils.unescapeJavaString(core, str);
-    }
-
-    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
-        try {
-            if (e instanceof PException && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR) {
-                throw (PException) e;
+            /*
+             * If we got a Python exception but it's not a syntax error then we need to pass the
+             * message format AND the message arguments. Also, there is no need to reify the Python
+             * exception since we just drop it.
+             */
+            PBaseException unreifiedException = pException.getUnreifiedException();
+            if (unreifiedException.hasMessageFormat()) {
+                message = unreifiedException.getMessageFormat();
+                messageArgs = unreifiedException.getMessageArgs();
             }
-        } catch (UnsupportedMessageException unsupportedMessageException) {
-            throw CompilerDirectives.shouldNotReachHere();
+        } else {
+            // from parser we are getting RuntimeExceptions
+            message = e instanceof RuntimeException ? toTruffleStringUncached(e.getMessage()) : null;
         }
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
-        // from parser we are getting RuntimeExceptions
-        String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
         ErrorType errorType = PythonErrorStrategy.getErrorType(e, section);
-        throw errors.raiseInvalidSyntax(errorType, source, section, message);
+        TruffleString tmessage = message != null ? message : ErrorMessages.INVALID_SYNTAX;
+        throw errors.raiseInvalidSyntax(errorType, source, section, tmessage, messageArgs);
     }
 }

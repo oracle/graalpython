@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,18 +42,20 @@ import _frozen_importlib
 
 
 class JavaPackageLoader:
+    @staticmethod
+    def is_java_package(name):
+        try:
+            package = type("java.lang.Package")
+            return any(p.getName().startswith(name) for p in package.getPackages())
+        except KeyError:
+            if name in ("java.lang", "java.util"):
+                # Some well-known packages that we always allow
+                return True
+            if sys.flags.verbose:
+                from _warnings import warn
+                warn("Host lookup allowed, but java.lang.Package not available. Importing from Java cannot work.")
+            return False
     if __graalpython__.jython_emulation_enabled:
-        @staticmethod
-        def is_java_package(name):
-            try:
-                package = type("java.lang.Package")
-                return any(p.getName().startswith(name) for p in package.getPackages())
-            except KeyError:
-                if sys.flags.verbose:
-                    from _warnings import warn
-                    warn("Host lookup allowed, but java.lang.Package not available. Importing from Java cannot work.")
-                return False
-
         @staticmethod
         def _make_getattr(modname):
             modname = modname + "."
@@ -87,6 +89,8 @@ class JavaPackageLoader:
                         return type(modname_wo + key)
                     except KeyError:
                         pass
+                if JavaPackageLoader.is_java_package(modname + key):
+                    return JavaPackageLoader._create_module(modname + key)
                 raise AttributeError(key)
             return __getattr__
 
@@ -198,5 +202,3 @@ if __graalpython__.jython_emulation_enabled:
 
 
 sys.meta_path.append(JavaImportFinder())
-if __graalpython__.jython_emulation_enabled:
-    __getattr__ = JavaPackageLoader._make_getattr("java")

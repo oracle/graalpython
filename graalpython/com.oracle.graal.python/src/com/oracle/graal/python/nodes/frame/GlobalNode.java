@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,14 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public interface GlobalNode {
     default Object getGlobals(VirtualFrame frame) {
         return PArguments.getGlobals(frame);
     }
 
-    default boolean isModule(Object globals) {
-        return globals instanceof PythonModule;
-    }
-
-    default boolean isBuiltinDict(Object globals, IsBuiltinClassProfile profile) {
-        if (globals instanceof PDict) {
-            return profile.profileObject(globals, PythonBuiltinClassType.PDict);
-        }
-        return false;
-    }
-
-    default boolean isDict(Object globals) {
-        return globals instanceof PDict;
-    }
-
-    public String getAttributeId();
+    public TruffleString getAttributeId();
 }

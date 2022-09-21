@@ -1,0 +1,21 @@
+Module[0, 120]
+    FunctionDef[0, 120]
+        Name:test_isidentifier
+        ArgumentsTy[0, 0]
+        ---- Function body of test_isidentifier ----
+        Call[39, 120]
+            Target: 
+                Attribute[39, 43] 
+                    Receiver: Name[39, 43] Value: "self"
+                    Attr: checkequal
+            Args:
+                BOOLEAN[55, 59] Value: true
+                RAW[61, 73] Value: "helloworld"
+                RAW[75, 87] Value: "startswith"
+                Tuple[89, 116]
+                    Values:
+                        RAW[90, 99] Value: "hellowo"
+                        RAW[102, 107] Value: "rld"
+                        RAW[109, 115] Value: "lowo"
+                LONG[118, 119] Value: 3
+        ---- End of test_isidentifier function ----

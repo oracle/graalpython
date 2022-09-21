@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,18 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
 
@@ -60,12 +59,12 @@ public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
         super(defaultValue, useDefaultForNone);
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    @Specialization(guards = "!isHandledPNone(value)")
     int doOthers(VirtualFrame frame, Object value,
-                    @Cached CastToJavaIntLossyNode castToInt,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (lib.canBeIndex(value)) {
-            return castToInt.execute(lib.asIndexWithFrame(value, frame));
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberAsSizeNode asSizeNode) {
+        if (indexCheckNode.execute(value)) {
+            return asSizeNode.executeLossy(frame, value);
         }
         throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
     }
@@ -73,5 +72,11 @@ public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
     public static SliceIndexConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return SliceIndexConversionNodeGen.create(defaultValue, useDefaultForNone);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static SliceIndexConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return SliceIndexConversionNodeGen.create(0, false);
     }
 }

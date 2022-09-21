@@ -1,0 +1,5 @@
+Disassembly of <module>:
+  1:4   -   1:6         0 LOAD_BYTE_O                       12
+  1:0   -   1:1         2 STORE_NAME                        0    (a)
+  1:0   -   1:6         4 LOAD_NONE
+  1:0   -   1:6         5 RETURN_VALUE

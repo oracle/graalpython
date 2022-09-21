@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,10 +109,19 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.rhs.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.type.accept(this)) != null) {
+            return node.annotation.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(AnnotationSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if ((result = node.lhs.accept(this)) != null) {
                 return result;
             }
-            return visitNodes(node.lhs);
+            return node.type.accept(this);
         }
         return null;
     }
@@ -487,6 +496,11 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     @Override
     public SSTNodeWithScope visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
         return null;
     }
 

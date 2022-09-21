@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,20 +45,81 @@ PyObject * PyThreadState_GetDict() {
 	return PyThreadState_Get()->dict;
 }
 
+PyThreadState *
+_PyThreadState_UncheckedGet(void)
+{
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+}
+
 PyThreadState * PyThreadState_Get() {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
 }
 
+int64_t
+PyInterpreterState_GetID(PyInterpreterState *interp)
+{
+    return 0;
+}
+
+typedef PyGILState_STATE (*py_gil_state_ensure_fun_t)();
+UPCALL_TYPED_ID(PyGILState_Ensure, py_gil_state_ensure_fun_t);
 PyGILState_STATE PyGILState_Ensure() {
-    // ignore for the time being
-    return PyGILState_UNLOCKED;
+    return _jls_PyGILState_Ensure();
 }
 
-void PyGILState_Release(PyGILState_STATE state) {
-    // ignore for the time being
+typedef void (*py_gil_state_release_fun_t)(PyGILState_STATE);
+UPCALL_TYPED_ID(PyGILState_Release, py_gil_state_release_fun_t);
+void PyGILState_Release(PyGILState_STATE oldstate) {
+    _jls_PyGILState_Release(oldstate);
 }
 
-UPCALL_ID(PyState_FindModule)
+PyThreadState* PyGILState_GetThisThreadState(void) {
+    // TODO this should return NULL when called from a thread that is not known to python
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+}
+
+typedef PyObject* (*find_module_fun_t)(long index);
+UPCALL_TYPED_ID(PyState_FindModule, find_module_fun_t);
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
-    return UPCALL_CEXT_O(_jls_PyState_FindModule, polyglot_from_string(module->m_name, SRC_CS));
+    Py_ssize_t index = module->m_base.m_index;
+    if (module->m_slots) {
+        return NULL;
+    } else if (index == 0) {
+        return NULL;
+    } else {
+        return _jls_PyState_FindModule(index);
+    }
+}
+
+int PyState_AddModule(PyObject* module, struct PyModuleDef* def) {
+    Py_ssize_t index;
+    if (!def) {
+        Py_FatalError("PyState_AddModule: Module Definition is NULL");
+        return -1;
+    }
+    // TODO(fa): check if module was already added
+
+    if (def->m_slots) {
+        PyErr_SetString(PyExc_SystemError,
+                        "PyState_AddModule called on module with slots");
+        return -1;
+    }
+
+    // TODO(fa): implement
+    return 0;
+}
+
+int PyState_RemoveModule(struct PyModuleDef* def) {
+    Py_ssize_t index = def->m_base.m_index;
+    if (def->m_slots) {
+        PyErr_SetString(PyExc_SystemError,
+                        "PyState_RemoveModule called on module with slots");
+        return -1;
+    }
+    if (index == 0) {
+        Py_FatalError("PyState_RemoveModule: Module index invalid.");
+        return -1;
+    }
+    // TODO(fa): implement
+    return 0;
 }

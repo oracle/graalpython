@@ -1,0 +1,4 @@
+Module[0, 20]
+    UnaryOp[0, 20]
+        Op: USub
+        Value: BIGINTEGER[1, 20] Value: 9223372036854775808

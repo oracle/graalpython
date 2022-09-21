@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,154 +26,68 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.WriteLocalVariableNodeGen.WriteLocalFrameSlotNodeGen;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "write_local")
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
-public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode {
-    @Child private WriteLocalFrameSlotNode writeNode;
+@ImportStatic(FrameSlotGuards.class)
+public abstract class WriteLocalVariableNode extends StatementNode implements WriteIdentifierNode, FrameSlotNode {
 
-    public abstract static class WriteLocalFrameSlotNode extends FrameSlotNode {
-        public WriteLocalFrameSlotNode(FrameSlot slot) {
-            super(slot);
-        }
+    protected final int frameSlot;
 
-        @Override
-        public final Object execute(VirtualFrame frame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final int executeInt(VirtualFrame frame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final long executeLong(VirtualFrame frame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final double executeDouble(VirtualFrame frame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public final boolean executeBoolean(VirtualFrame frame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
-        }
-
-        public abstract Object executeWith(VirtualFrame frame, boolean value);
-
-        public abstract Object executeWith(VirtualFrame frame, int value);
-
-        public abstract Object executeWith(VirtualFrame frame, long value);
-
-        public abstract Object executeWith(VirtualFrame frame, double value);
-
-        public abstract Object executeWith(VirtualFrame frame, Object value);
-
-        @Specialization(guards = "isBooleanKind(frame)")
-        public boolean writeBool(VirtualFrame frame, boolean value) {
-            frame.setBoolean(frameSlot, value);
-            return value;
-        }
-
-        @Specialization(guards = "isIntegerKind(frame)")
-        public int writeInt(VirtualFrame frame, int value) {
-            frame.setInt(frameSlot, value);
-            return value;
-        }
-
-        @Specialization(guards = "isLongKind(frame)")
-        public long writeLong(VirtualFrame frame, long value) {
-            frame.setLong(frameSlot, value);
-            return value;
-        }
-
-        @Specialization(guards = "isDoubleKind(frame)")
-        public double writeDouble(VirtualFrame frame, double value) {
-            frame.setDouble(frameSlot, value);
-            return value;
-        }
-
-        @Specialization(replaces = {"writeBool", "writeInt", "writeDouble", "writeLong"})
-        public Object write(VirtualFrame frame, Object value) {
-            ensureObjectKind(frame);
-            frame.setObject(frameSlot, value);
-            return value;
-        }
+    public WriteLocalVariableNode(int frameSlot) {
+        this.frameSlot = frameSlot;
     }
 
-    public WriteLocalVariableNode(FrameSlot slot) {
-        this.writeNode = WriteLocalFrameSlotNodeGen.create(slot);
-    }
-
-    public static WriteLocalVariableNode create(FrameSlot slot, ExpressionNode right) {
-        return WriteLocalVariableNodeGen.create(slot, right);
+    public static WriteLocalVariableNode create(int frameSlot, ExpressionNode right) {
+        return WriteLocalVariableNodeGen.create(frameSlot, right);
     }
 
     public abstract ExpressionNode getRightNode();
 
     @Override
-    public ExpressionNode getRhs() {
+    public final ExpressionNode getRhs() {
         return getRightNode();
     }
 
     @Override
-    public Object getIdentifier() {
-        return writeNode.getSlot().getIdentifier();
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, boolean value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, int value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, long value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, double value) {
-        writeNode.executeWith(frame, value);
-    }
-
-    @Specialization
-    @Override
-    public void doWrite(VirtualFrame frame, Object value) {
-        writeNode.executeWith(frame, value);
+    public final int getSlotIndex() {
+        return frameSlot;
     }
 
     @Override
-    public NodeCost getCost() {
-        return NodeCost.NONE;
+    public final Object getIdentifier() {
+        return getRootNode().getFrameDescriptor().getSlotName(frameSlot);
     }
 
-    public final FrameSlot getSlot() {
-        return writeNode.getSlot();
+    @Specialization(guards = "isBooleanKind(frame, frameSlot)")
+    void writeBoolean(VirtualFrame frame, boolean value) {
+        frame.setBoolean(frameSlot, value);
+    }
+
+    @Specialization(guards = "isIntegerKind(frame, frameSlot)")
+    void writeInt(VirtualFrame frame, int value) {
+        frame.setInt(frameSlot, value);
+    }
+
+    @Specialization(guards = "isLongKind(frame, frameSlot)")
+    void writeLong(VirtualFrame frame, long value) {
+        frame.setLong(frameSlot, value);
+    }
+
+    @Specialization(guards = "isDoubleKind(frame, frameSlot)")
+    void writeDouble(VirtualFrame frame, double value) {
+        frame.setDouble(frameSlot, value);
+    }
+
+    @Specialization(replaces = {"writeBoolean", "writeInt", "writeDouble", "writeLong"})
+    void writeObject(VirtualFrame frame, Object value) {
+        FrameSlotGuards.ensureObjectKind(frame, frameSlot);
+        frame.setObject(frameSlot, value);
     }
 }

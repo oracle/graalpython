@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,25 @@
  */
 package com.oracle.graal.python.processor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.processor.ConverterFactory.Param;
 
 public class ArgumentClinicModel {
 
@@ -62,10 +69,13 @@ public class ArgumentClinicModel {
     public static final class BuiltinAnnotation {
         public final String name;
         public final String[] argumentNames;
+        /** Set to {@code -1} if unknown. */
+        public final int minNumOfPositionalArgs;
 
-        public BuiltinAnnotation(String name, String[] argumentNames) {
+        public BuiltinAnnotation(String name, String[] argumentNames, int minNumOfPositionalArgs) {
             this.name = name;
             this.argumentNames = argumentNames;
+            this.minNumOfPositionalArgs = minNumOfPositionalArgs;
         }
     }
 
@@ -116,12 +126,12 @@ public class ArgumentClinicModel {
             this.imports = imports;
         }
 
-        private static ConverterFactory getFactory(ArgumentClinic annotation, TypeElement type, ConverterFactory factory) throws ProcessingError {
-            if (factory == null && annotation.args().length != 0) {
+        private static ConverterFactory[] getFactories(ArgumentClinic annotation, TypeElement type, ConverterFactory[] annotationFactories) throws ProcessingError {
+            if (annotationFactories == null && annotation.args().length != 0) {
                 throw new ProcessingError(type, "No conversionClass specified but arguments were provided");
             }
-            if (factory != null) {
-                return factory;
+            if (annotationFactories != null) {
+                return annotationFactories;
             }
             if (annotation.conversion() == ClinicConversion.None && annotation.defaultValue().isEmpty()) {
                 throw new ProcessingError(type, "ArgumentClinic annotation must declare either builtin conversion or custom conversion.");
@@ -129,50 +139,116 @@ public class ArgumentClinicModel {
             return ConverterFactory.getBuiltin(annotation);
         }
 
-        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index, ConverterFactory annotationFactory)
+        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index, ConverterFactory[] annotationFactories)
                         throws ProcessingError {
             if (annotation == null) {
                 return new ArgumentClinicData(null, index, new HashSet<>(Arrays.asList(PrimitiveType.values())), null, Collections.emptySet());
             }
-            ConverterFactory factory = getFactory(annotation, type, annotationFactory);
-            if (annotation.args().length != factory.extraParamCount) {
-                throw new ProcessingError(type, "Conversion %s.%s expects %d arguments", factory.fullClassName, factory.methodName, factory.extraParamCount);
+            if (!annotation.useDefaultForNone() && !annotation.defaultValue().isEmpty() &&
+                            builtinAnnotation.minNumOfPositionalArgs != -1 && index < builtinAnnotation.minNumOfPositionalArgs) {
+                throw new ProcessingError(type, "Argument clinic for argument '%s': defaultValue will have no effect, because " +
+                                "useDefaultForNone is false and the argument is required positional argument.",
+                                annotation.name());
             }
 
-            String[] args = new String[factory.params.length];
-            int extraParamIndex = 0;
-            for (int i = 0; i < args.length; ++i) {
-                switch (factory.params[i]) {
-                    case BuiltinName:
-                        args[i] = String.format("\"%s\"", builtinAnnotation.name);
-                        break;
-                    case ArgumentIndex:
-                        args[i] = String.valueOf(index);
-                        break;
-                    case ArgumentName:
-                        args[i] = String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
-                        break;
-                    case DefaultValue:
-                        args[i] = annotation.defaultValue();
-                        break;
-                    case UseDefaultForNone:
-                        args[i] = String.valueOf(annotation.useDefaultForNone());
-                        break;
-                    case Extra:
-                        args[i] = annotation.args()[extraParamIndex++];
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported ClinicArgument: " + factory.params[i]);
+            ConverterFactory[] factories = getFactories(annotation, type, annotationFactories);
+            ArrayList<ConverterFactory> applicableFactories = new ArrayList<>(Arrays.asList(factories));
+            // Fixed order helps reproducing potential issues:
+            applicableFactories.sort(Comparator.comparing(a -> a.id));
+
+            // Validate extra arguments count
+            applicableFactories.removeIf(x -> x.extraParamCount != annotation.args().length);
+            if (applicableFactories.size() == 0) {
+                throw new ProcessingError(type, "None of the factory methods of conversion %s expects %d extra arguments. Found factories: %s",
+                                factories[0].fullClassName, annotation.args().length, Arrays.toString(factories));
+            }
+
+            // Validate default value
+            if (!annotation.defaultValue().equals("")) {
+                applicableFactories.removeIf(x -> !x.hasParameter(Param.DefaultValue));
+                if (applicableFactories.size() == 0) {
+                    throw new ProcessingError(type, "None of the factory methods of conversion %s takes the provided default value '%s'. Found factories: %s",
+                                    factories[0].fullClassName, annotation.defaultValue(), Arrays.toString(factories));
                 }
             }
-            String castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, String.join(", ", args));
-            Set<String> imports = new HashSet<>();
-            imports.add(factory.fullClassName);
-            if (annotation.defaultValue().startsWith("PNone.")) {
-                imports.add("com.oracle.graal.python.builtins.objects.PNone");
+
+            // Validate the defaultForNone
+            if (annotation.useDefaultForNone()) {
+                applicableFactories.removeIf(x -> !x.hasParameter(Param.UseDefaultForNone));
+                if (applicableFactories.size() == 0) {
+                    throw new ProcessingError(type, "None of the factory methods of conversion %s takes the 'UseDefaultForNone' argument. Found factories: %s",
+                                    factories[0].fullClassName, Arrays.toString(factories));
+                }
             }
 
-            return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(factory.acceptedPrimitiveTypes)), castNodeFactory, imports);
+            factoryLoop: for (ConverterFactory factory : applicableFactories) {
+                if (annotation.args().length != factory.extraParamCount) {
+                    continue;
+                }
+                String[] args = new String[factory.params.length];
+                int extraParamIndex = 0;
+                for (int i = 0; i < args.length; ++i) {
+                    switch (factory.params[i]) {
+                        case BuiltinName:
+                            args[i] = String.format("\"%s\"", builtinAnnotation.name);
+                            break;
+                        case ArgumentIndex:
+                            args[i] = String.valueOf(index);
+                            break;
+                        case ArgumentName:
+                            args[i] = String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
+                            break;
+                        case DefaultValue:
+                            if (annotation.defaultValue().isEmpty()) {
+                                // value for this argument is not available, try with the next
+                                // factory method
+                                continue factoryLoop;
+                            }
+                            args[i] = getLiteralOrFieldReference(type, annotation.defaultValue());
+                            break;
+                        case UseDefaultForNone:
+                            args[i] = String.valueOf(annotation.useDefaultForNone());
+                            break;
+                        case Extra:
+                            args[i] = getLiteralOrFieldReference(type, annotation.args()[extraParamIndex++]);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unsupported ClinicArgument: " + factory.params[i]);
+                    }
+                }
+                String castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, String.join(", ", args));
+                Set<String> imports = new HashSet<>();
+                imports.add(factory.fullClassName);
+                if (annotation.defaultValue().startsWith("PNone.")) {
+                    imports.add("com.oracle.graal.python.builtins.objects.PNone");
+                }
+                if (annotation.defaultValue().startsWith("T_")) {
+                    imports.add("static com.oracle.graal.python.nodes.StringLiterals.*");
+                }
+
+                return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(factory.acceptedPrimitiveTypes)), castNodeFactory, imports);
+            }
+            throw new ProcessingError(type, "None of the @ClinicConverterFactory annotated methods in %s is applicable. " +
+                            "Common issue is not providing defaultValue: either provide the defaultValue or add @ClinicConverterFactory annotated method that does not require the @DefaultValue parameter to class %s.",
+                            factories[0].fullClassName, factories[0].fullClassName);
+        }
+
+        private static String getLiteralOrFieldReference(TypeElement type, String defaultValue) {
+            Stream<? extends Element> enclosedElements = type.getEnclosedElements().stream();
+            Element enclosingElement = type.getEnclosingElement();
+            if (enclosingElement instanceof TypeElement) {
+                enclosedElements = Stream.concat(enclosedElements, enclosingElement.getEnclosedElements().stream());
+            }
+            enclosedElements = enclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
+            Optional<? extends Element> typeElement = enclosedElements.findFirst();
+            String result;
+            if (typeElement.isPresent()) {
+                TypeElement fieldEnclosingType = (TypeElement) typeElement.get().getEnclosingElement();
+                result = fieldEnclosingType.getQualifiedName() + "." + typeElement.get().getSimpleName();
+            } else {
+                result = defaultValue;
+            }
+            return result;
         }
     }
 }

@@ -702,11 +702,13 @@ class CompressObjectTestCase(BaseCompressTestCase, unittest.TestCase):
         self.assertRaises(ValueError, copy.copy, d)
         self.assertRaises(ValueError, copy.deepcopy, d)
 
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
     def test_compresspickle(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             with self.assertRaises((TypeError, pickle.PicklingError)):
                 pickle.dumps(zlib.compressobj(zlib.Z_BEST_COMPRESSION), proto)
 
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
     def test_decompresspickle(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             with self.assertRaises((TypeError, pickle.PicklingError)):

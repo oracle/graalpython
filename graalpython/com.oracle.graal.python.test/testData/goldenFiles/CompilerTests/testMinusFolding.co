@@ -1,0 +1,5 @@
+Disassembly of <module>:
+  1:1   -   1:2         0 LOAD_BYTE_O                      -1                                      can quicken
+  1:6   -   1:9         2 LOAD_DOUBLE_O                     0    (-7.0)                            can quicken
+  1:0   -   1:9         4 BINARY_OP                         4    (MUL)                             generalizes: 2, 0
+  1:0   -   1:9         6 RETURN_VALUE

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [decorator1, inner, <return_val>]
+              FrameDescriptor: 3 slots [<return_val>, decorator1, inner]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,8 +36,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                     FunctionBodyNode SourceSection: [15,77]`def decorator1(fn):â†µ...`
                       WriteLocalVariableNodeGen SourceSection: [15,46]`def decorator1(fn):â†µ...`
                         Identifier: decorator1
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,decorator1,Illegal]
+                        Frame: [0,decorator1,Illegal]
                         FunctionDefinitionNode Name: decorator1 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -53,7 +52,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 2 slots [fn, <return_val>]
+                            FrameDescriptor: 2 slots [<return_val>, fn]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -62,26 +61,22 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                 Body: BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: fn
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,fn,Illegal]
+                                    Frame: [0,fn,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                   FunctionBodyNode SourceSection: [39,43]`pass`
                                     ExpressionStatementNode SourceSection: [39,43]`pass`
                                       EmptyNode SourceSection: [39,43]`pass`
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                  Frame: [1,<return_val>,Object]
                       WriteLocalVariableNodeGen SourceSection: [46,77]`@decorator1â†µ  def in...`
                         Identifier: inner
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,inner,Illegal]
+                        Frame: [1,inner,Illegal]
                         PythonCallUnary SourceSection: [46,57]`@decorator1`
                           CallUnaryMethodNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [46,57]`@decorator1`
+                          ReadLocalVariableNodeGen SourceSection: [46,57]`@decorator1`
                             Frame: [0,decorator1,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           FunctionDefinitionNode Name: inner SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -107,9 +102,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                     FunctionBodyNode SourceSection: [73,77]`pass`
                                       ExpressionStatementNode SourceSection: [73,77]`pass`
                                         EmptyNode SourceSection: [73,77]`pass`
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [0,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [0,<return_val>,Object]
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [2,<return_val>,Object]

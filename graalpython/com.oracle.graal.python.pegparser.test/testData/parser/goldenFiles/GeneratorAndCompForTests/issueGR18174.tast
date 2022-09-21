@@ -1,0 +1,15 @@
+Module[0, 31]
+    ListComp[0, 31]
+        Element: Name[1, 2] Value: "b"
+        ComprehensionTy[3, 30]
+            Target: Name[7, 8] Value: "b" Store
+            Iterator: 
+                ListComp[12, 30]
+                    Element: Name[13, 14] Value: "a"
+                    ComprehensionTy[15, 29]
+                        Target: Name[19, 20] Value: "a" Store
+                        Iterator: 
+                            Tuple[24, 29]
+                                Values:
+                                    LONG[25, 26] Value: 1
+                                    LONG[27, 28] Value: 2

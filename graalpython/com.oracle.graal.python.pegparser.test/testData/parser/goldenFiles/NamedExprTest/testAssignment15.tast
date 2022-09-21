@@ -1,0 +1,8 @@
+Module[0, 22]
+    While[0, 22]
+        Condition: 
+            NamedExpr[6, 16]
+                Target: Name[6, 7] Value: "a" Store
+                Value: BOOLEAN[11, 16] Value: false
+        Body:
+            Pass[18, 22]

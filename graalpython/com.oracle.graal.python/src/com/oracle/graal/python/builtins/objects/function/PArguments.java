@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,11 +28,12 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -46,7 +47,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * The layout of an argument array for a Python frame.
  *
  *                                         +-------------------+
- * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |
+ * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |  This slot is also used to pass parent frame reference in bytecode OSR compilation.
  *                                         +-------------------+
  * INDEX_KEYWORD_ARGUMENTS              -> | PKeyword[]        |
  *                                         +-------------------+
@@ -176,8 +177,8 @@ public final class PArguments {
      * <ul>
      * <li>The value sent to a generator via <code>send</code></li>
      * <li>An exception thrown through a generator via <code>throw</code></li>
-     * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
-     * <li>The custom locals in a module scope when called through <code>exec</code></li>
+     * <li>The custom locals in a module or class scope when called through <code>exec</code> or
+     * <code>__build_class__</code></li>
      * </ul>
      */
     public static Object getSpecialArgument(Frame frame) {
@@ -251,12 +252,16 @@ public final class PArguments {
         arguments[INDEX_CURRENT_FRAME_INFO] = info;
     }
 
-    public static PException getException(Frame frame) {
-        return (PException) getExceptionUnchecked(frame);
+    public static PException getException(Object[] arguments) {
+        return (PException) getExceptionUnchecked(arguments);
     }
 
-    public static Object getExceptionUnchecked(Frame frame) {
-        return frame.getArguments()[INDEX_CURRENT_EXCEPTION];
+    public static PException getException(Frame frame) {
+        return (PException) getExceptionUnchecked(frame.getArguments());
+    }
+
+    public static Object getExceptionUnchecked(Object[] arguments) {
+        return arguments[INDEX_CURRENT_EXCEPTION];
     }
 
     public static void setException(Frame frame, PException exc) {
@@ -277,6 +282,19 @@ public final class PArguments {
 
     public static PCell[] getClosure(Object[] arguments) {
         return (PCell[]) arguments[INDEX_CLOSURE];
+    }
+
+    /*
+     * We repurpose the varargs slot for storing the OSR frame. In the bytecode interpreter, varargs
+     * should only be read once at the beginning of execute which is before OSR.
+     */
+    public static void setOSRFrame(Object[] arguments, VirtualFrame parentFrame) {
+        CompilerAsserts.neverPartOfCompilation();
+        arguments[INDEX_VARIABLE_ARGUMENTS] = parentFrame;
+    }
+
+    public static Frame getOSRFrame(Object[] arguments) {
+        return (Frame) arguments[INDEX_VARIABLE_ARGUMENTS];
     }
 
     public static PCell[] getClosure(Frame frame) {
@@ -381,9 +399,35 @@ public final class PArguments {
         return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
     }
 
+    /**
+     * Synchronizes the arguments array of a Truffle frame with a {@link PFrame}. Copies only those
+     * arguments that are necessary to be synchronized between the two.
+     *
+     * NOTE: such arguments usually need to be preserved in {@link ThreadState} so that when we are
+     * materializing a frame restored from {@link ThreadState}, the newly created instance of
+     * {@link PFrame} will contain those arguments.
+     */
+    public static void synchronizeArgs(Frame frameToMaterialize, PFrame escapedFrame) {
+        Object[] arguments = frameToMaterialize.getArguments();
+        Object[] copiedArgs = new Object[arguments.length];
+
+        // copy only some carefully picked internal arguments
+        setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
+        setGeneratorFrame(copiedArgs, getGeneratorFrameSafe(arguments));
+        setGlobals(copiedArgs, getGlobals(arguments));
+        setClosure(copiedArgs, getClosure(arguments));
+
+        // copy all user arguments
+        PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
+
+        escapedFrame.setArguments(copiedArgs);
+    }
+
     public static ThreadState getThreadState(VirtualFrame frame) {
         assert frame != null : "cannot get thread state without a frame";
-        return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getExceptionUnchecked(frame));
+        return new ThreadState(PArguments.getCurrentFrameInfo(frame),
+                        PArguments.getExceptionUnchecked(frame.getArguments()),
+                        PArguments.getGlobals(frame));
     }
 
     public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
@@ -394,6 +438,7 @@ public final class PArguments {
         Object[] args = PArguments.create();
         PArguments.setCurrentFrameInfo(args, frame.info);
         PArguments.setExceptionUnchecked(args, frame.exc);
+        args[INDEX_GLOBALS_ARGUMENT] = frame.globals;
         return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
     }
 
@@ -405,10 +450,12 @@ public final class PArguments {
         private final PFrame.Reference info;
         // The type is object because it is Object in the frame and casting it slows things down
         private final Object exc;
+        private final Object globals;
 
-        private ThreadState(PFrame.Reference info, Object exc) {
+        private ThreadState(Reference info, Object exc, Object globals) {
             this.info = info;
             this.exc = exc;
+            this.globals = globals;
         }
     }
 }

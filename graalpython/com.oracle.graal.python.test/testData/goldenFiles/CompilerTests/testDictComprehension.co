@@ -1,0 +1,21 @@
+Disassembly of <module>:
+  1:0   -   1:30        0 MAKE_FUNCTION                     0    (<dictcomp>)
+  1:20  -   1:25        3 LOAD_NAME                         0    (range)
+  1:26  -   1:28        5 LOAD_BYTE_O                       10
+  1:20  -   1:29        7 CALL_FUNCTION                     1
+  1:0   -   1:30        9 GET_ITER
+  1:0   -   1:30       10 CALL_FUNCTION                     1
+  1:0   -   1:30       12 RETURN_VALUE
+
+Disassembly of <dictcomp>:
+  1:0   -   1:30        0 COLLECTION_FROM_STACK             0    (dict)
+  1:0   -   1:30        2 LOAD_FAST                         0    (.0)
+  1:0   -   1:30  >>    4 FOR_ITER                          16   (to 20)                           can quicken
+  1:15  -   1:16        6 STORE_FAST                        1    (x)                               generalizes: 4
+  1:1   -   1:2         8 LOAD_FAST                         1    (x)
+  1:4   -   1:7        10 LOAD_GLOBAL                       0    (str)
+  1:8   -   1:9        12 LOAD_FAST                         1    (x)
+  1:4   -   1:10       14 CALL_FUNCTION                     1
+  1:0   -   1:30       16 ADD_TO_COLLECTION                 3    (dict)
+  1:0   -   1:30       18 JUMP_BACKWARD                     14   (to 4)
+  1:0   -   1:30  >>   20 RETURN_VALUE

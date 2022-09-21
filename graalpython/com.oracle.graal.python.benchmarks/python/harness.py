@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,13 @@ import os
 import sys
 import types
 
-GRAALPYTHON = sys.implementation.name == "graalpython"
+try:
+    import statistics
+except ImportError:
+    statistics = None
+
+# for compatibility with Jython 2.7
+GRAALPYTHON = getattr(getattr(sys, "implementation", None), "name", None) == "graalpy"
 
 # Try to use the timer with best accuracy. Unfortunately, 'monotonic_ns' is not available everywhere.
 if GRAALPYTHON:
@@ -57,7 +63,7 @@ if GRAALPYTHON:
 else:
     monotonic_best_accuracy = time
     UNITS_PER_SECOND = 1.0
-    
+
 _HRULE = '-'.join(['' for i in range(80)])
 
 #: this function is used to pre-process the arguments as expected by the __benchmark__ and __setup__ entry points
@@ -329,8 +335,7 @@ class BenchRunner(object):
                 # a bit of fuzzy logic to avoid timing out on configurations
                 # that are slow, without having to rework our logic for getting
                 # default iterations
-                if os.environ.get("CI") and iteration >= 4 and duration > 20:
-                    import statistics
+                if statistics and os.environ.get("CI") and iteration >= 4 and duration > 20:
                     v = durations[-4:]
                     if statistics.stdev(v) / min(v) < 0.03:
                         # with less than 3 percent variance across ~20s

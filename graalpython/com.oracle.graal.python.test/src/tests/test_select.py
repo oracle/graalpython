@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,10 +37,61 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def test_select_raises_on_object_with_no_fileno_func():    
-    import select
-    try :
-        select.select('abc', [], [], 0)
-    except TypeError:
-        raised = True
-    assert raised
+import os
+import select
+import sys
+import tempfile
+import unittest
+
+PREFIX = 'select_graalpython_test'
+TEMP_DIR = tempfile.gettempdir()
+TEST_FILENAME = f'{PREFIX}_{os.getpid()}_tmp1'
+TEST_FILENAME_FULL_PATH = os.path.join(TEMP_DIR, TEST_FILENAME)
+
+try:
+    __graalpython__.posix_module_backend()
+except:
+    class GP:
+        def posix_module_backend(self):
+            return 'cpython'
+    __graalpython__ = GP()
+
+class SelectTests(unittest.TestCase):
+    def test_select_raises_on_object_with_no_fileno_func(self):
+        self.assertRaises(TypeError, select.select, 'abc', [], [], 0)
+
+    def test_select_uses_dunder_index_of_timeout_obj(self):
+        class MyVal:
+            def __init__(self):
+                self.called_index = 0
+            def __index__(self):
+                self.called_index += 1
+                return 1
+
+        v = MyVal()
+        select.select([], [], [], v)
+        assert v.called_index == 1
+
+    def test_select_timeout_arg_validation(self):
+        self.assertRaises(ValueError, select.select, [], [], [], float("nan"))
+        self.assertRaises(OverflowError, select.select, [], [], [], 1234567891234567891234567.5)
+        # Still in long range, but once converted to ns, it will overflow
+        self.assertRaises(OverflowError, select.select, [], [], [], 9223372036854775806)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java',
+                         'The java backend does not support select for ordinary files, only sockets.')
+    def test_select_result_duplicate_fds_preserve_objs_order(self):
+        class F:
+            def __init__(self, fd):
+                self.fd = fd
+            def fileno(self):
+                return self.fd
+
+        os.close(os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY | os.O_CREAT))
+        with open(TEST_FILENAME_FULL_PATH, 'r') as f:
+            stdout_fd = sys.__stdout__.fileno()
+            # stdout is not ready for reading, but the file should be,
+            # we should get back both objects and in the right order
+            fds = [F(f.fileno()), F(stdout_fd), F(f.fileno())]
+            res = select.select(fds, [], [], 1)
+            assert res == ([fds[0], fds[2]], [], [])

@@ -1,0 +1,36 @@
+Module[0, 104]
+    FunctionDef[0, 104]
+        Name:merge
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[10, 11] h
+        ---- Function body of merge ----
+        For[18, 62]
+            Target: 
+                Tuple[22, 31] Context: Store
+                    Values:
+                        Name[22, 27] Value: "order" Store
+                        Name[29, 31] Value: "it" Store
+            Iter: 
+                Call[35, 38]
+                    Target: Name[35, 36] Value: "b"
+            Body:
+                Assign[48, 62]
+                    LHS: Name[48, 53] Value: "value" Store
+                    RHS: 
+                        Call[56, 62]
+                            Target: Name[56, 60] Value: "next"
+        While[67, 104]
+            Condition: 
+                Compare[73, 83]
+                    LHS: 
+                        Call[73, 79]
+                            Target: Name[73, 76] Value: "len"
+                            Args:
+                                Name[77, 78] Value: "h"
+                    Op: Gt
+                    RHS: LONG[82, 83] Value: 1
+            Body:
+                Yield[93, 104]
+                    Name[99, 104] Value: "value"
+        ---- End of merge function ----

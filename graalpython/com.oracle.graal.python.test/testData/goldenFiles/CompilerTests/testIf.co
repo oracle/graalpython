@@ -1,0 +1,14 @@
+Disassembly of <module>:
+  1:3   -   1:8         0 LOAD_FALSE_B                                                             can quicken
+  1:0   -   4:15        1 POP_AND_JUMP_IF_FALSE             12   (to 13)                           generalizes: 0
+  2:3   -   2:8         5 LOAD_NAME                         0    (print)
+  2:9   -   2:13        7 LOAD_TRUE_O
+  2:3   -   2:14        8 CALL_FUNCTION                     1
+  2:3   -   2:14       10 POP_TOP
+  2:3   -   2:14       11 JUMP_FORWARD                      8    (to 19)
+  4:3   -   4:8   >>   13 LOAD_NAME                         0    (print)
+  4:9   -   4:14       15 LOAD_FALSE_O
+  4:3   -   4:15       16 CALL_FUNCTION                     1
+  4:3   -   4:15       18 POP_TOP
+  4:3   -   4:15  >>   19 LOAD_NONE
+  4:3   -   4:15       20 RETURN_VALUE

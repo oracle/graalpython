@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [p1, p2, p_or_kw, *, kw, <return_val>]
+              FrameDescriptor: 6 slots [*, <return_val>, kw, p1, p2, p_or_kw]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -37,35 +37,30 @@ ModuleRootNode Name: <module 'positionalOnlyArg01'> SourceSection: [0,41]`def na
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: p1
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,p1,Illegal]
+                        Frame: [0,p1,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: p2
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,p2,Illegal]
+                        Frame: [1,p2,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: p_or_kw
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,p_or_kw,Illegal]
+                        Frame: [2,p_or_kw,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kw
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,kw,Illegal]
+                        Frame: [4,kw,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
                     FunctionBodyNode SourceSection: [37,41]`pass`
                       ExpressionStatementNode SourceSection: [37,41]`pass`
                         EmptyNode SourceSection: [37,41]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [5,<return_val>,Object]

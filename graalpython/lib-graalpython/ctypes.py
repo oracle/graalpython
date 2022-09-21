@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -97,7 +97,9 @@ class c_void_p(_SimpleCData):
 
 class c_double(_SimpleCData):
     _type_ = "d"
-
+    
+class c_float(_SimpleCData):
+    _type_ = "f"
 
 class c_int(_SimpleCData):
     _type_ = "i"
@@ -115,7 +117,16 @@ class c_uint32(c_uint):
     pass
 
 
+class c_long(_SimpleCData):
+    _type_ = "l"
+    
 class c_ulong(_SimpleCData):
+    _type_ = "L"
+    
+class c_longlong(_SimpleCData):
+    _type_ = "l"
+    
+class c_ulonglong(_SimpleCData):
     _type_ = "L"
 
 
@@ -125,7 +136,21 @@ class c_uint64(c_ulong):
 
 class c_char(_SimpleCData):
     _type_ = "c"
-
+    
+class c_wchar(_SimpleCData):
+    _type_ = "u"
+    
+class c_byte(_SimpleCData):
+    _type_ = "b"
+    
+class c_ubyte(_SimpleCData):
+    _type_ = "B"
+    
+class c_short(_SimpleCData):
+    _type_ = "h"
+    
+class c_ushort(_SimpleCData):
+    _type_ = "H"
 
 class py_object(_SimpleCData):
     _type_ = "O"

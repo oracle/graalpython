@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,13 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.Objects;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -55,7 +54,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -65,6 +63,8 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wraps a native library loaded via NFI and provides caching for functions looked up in the
@@ -106,6 +106,25 @@ public class NativeLibrary {
         }
     }
 
+    /**
+     * This is a helper exception that will be thrown in case a library is {@link #optional} and not
+     * available.
+     */
+    public static final class NativeLibraryCannotBeLoaded extends RuntimeException {
+        private static final NativeLibraryCannotBeLoaded INSTANCE = new NativeLibraryCannotBeLoaded();
+        private static final long serialVersionUID = 6066722947025284374L;
+
+        private NativeLibraryCannotBeLoaded() {
+            super(null, null);
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
     private final int functionsCount;
     private final String name;
     private final NFIBackend nfiBackend;
@@ -116,17 +135,19 @@ public class NativeLibrary {
      * fails.
      */
     private final String noNativeAccessHelp;
+    private final boolean optional;
 
     private volatile Object[] cachedFunctions;
     private volatile Object cachedLibrary;
     private volatile InteropLibrary cachedLibraryInterop;
     private volatile Object dummy;
 
-    public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp) {
+    public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp, boolean optional) {
         this.functionsCount = functionsCount;
         this.name = name;
         this.nfiBackend = nfiBackend;
         this.noNativeAccessHelp = noNativeAccessHelp;
+        this.optional = optional;
     }
 
     private Object getCachedLibrary(PythonContext context) {
@@ -136,8 +157,11 @@ public class NativeLibrary {
             synchronized (this) {
                 if (cachedLibrary == null) {
                     Object lib = loadLibrary(context);
-                    cachedLibraryInterop = InteropLibrary.getUncached(lib);
-                    cachedLibrary = lib;
+                    if (lib != null) {
+                        // order matters due to multi-threading cases.
+                        cachedLibraryInterop = InteropLibrary.getUncached(lib);
+                        cachedLibrary = lib;
+                    }
                 }
             }
         }
@@ -160,7 +184,7 @@ public class NativeLibrary {
             // This should be a one-off thing for each context
             CompilerDirectives.transferToInterpreter();
             synchronized (this) {
-                dummy = getFunction(lib, function);
+                dummy = getFunction(context, lib, function);
                 // it is OK to overwrite cachedFunctions[functionIndex] that may have been
                 // written from another thread: no need to double check that it's still null.
                 // dummy is volatile, the object must be fully initialized at this point
@@ -173,74 +197,102 @@ public class NativeLibrary {
     private Object getFunction(PythonContext context, NativeFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         Object lib = getCachedLibrary(context);
-        return getFunction(lib, function);
+        return getFunction(context, lib, function);
     }
 
-    private Object getFunction(Object lib, NativeFunction function) {
+    private Object parseSignature(PythonContext context, String signature) {
+        Source sigSource = Source.newBuilder("nfi", nfiBackend.withClause + signature, "python-nfi-signature").build();
+        return context.getEnv().parseInternal(sigSource).call();
+    }
+
+    private Object getFunction(PythonContext context, Object lib, NativeFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         try {
+            Object signature = parseSignature(context, function.signature());
             Object symbol = cachedLibraryInterop.readMember(lib, function.name());
-            return InteropLibrary.getUncached().invokeMember(symbol, "bind", function.signature());
-        } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException e) {
+            return SignatureLibrary.getUncached().bind(signature, symbol);
+        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw new IllegalStateException(String.format("Cannot load symbol '%s' from the internal shared library '%s'", function.name(), name), e);
         }
     }
 
     private Object loadLibrary(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        if (!context.getEnv().isNativeAccessAllowed()) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError,
+        if (context.isNativeAccessAllowed()) {
+            String path = getLibPath(context, name);
+            String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
+            }
+            Source loadSrc = Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
+            try {
+                return context.getEnv().parseInternal(loadSrc).call();
+            } catch (RuntimeException ex) {
+                Level level = optional ? Level.FINE : Level.SEVERE;
+                if (LOGGER.isLoggable(level)) {
+                    LOGGER.log(level, ex, () -> String.format("Error while opening shared library at '%s'.\nFull NFI source: %s.", path, src));
+                }
+                if (!optional) {
+                    throw new RuntimeException(String.format(
+                                    "Cannot load supporting native library '%s'. " +
+                                                    "Either the shared library file does not exist, or your system may be missing some dependencies. " +
+                                                    "Turn on logging with --log.%s.level=INFO for more details. %s",
+                                    name,
+                                    NativeLibrary.class.getName(),
+                                    noNativeAccessHelp));
+                }
+            }
+        } else {
+            throw new RuntimeException(String.format(
                             "Cannot load supporting native library '%s' because the native access is not allowed. " +
                                             "The native access should be allowed when running GraalPython via the graalpython command. " +
                                             "If you are embedding GraalPython using the Context API, make sure to allow native access using 'allowNativeAccess(true)'. %s",
                             name,
-                            noNativeAccessHelp);
+                            noNativeAccessHelp));
         }
-        String path = getLibPath(context);
-        String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
-        }
-        Source loadSrc = Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
-        try {
-            return context.getEnv().parseInternal(loadSrc).call();
-        } catch (UnsatisfiedLinkError ex) {
-            LOGGER.log(Level.SEVERE, ex, () -> String.format("Error while opening shared library at '%s'.\nFull NFI source: %s.", path, src));
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError,
-                            "Cannot load supporting native library '%s'. " +
-                                            "Either the shared library file does not exist, or your system may be missing some dependencies. " +
-                                            "Turn on logging with --log.%s.level=INFO for more details. %s",
-                            name,
-                            NativeLibrary.class.getName(),
-                            noNativeAccessHelp);
-        }
+        throw NativeLibraryCannotBeLoaded.INSTANCE;
     }
 
-    private String getLibPath(PythonContext context) {
+    private static String getLibPath(PythonContext context, String name) {
         CompilerAsserts.neverPartOfCompilation();
-        String libPythonName = name + ImpModuleBuiltins.ExtensionSuffixesNode.getSoAbi(context);
-        TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
-        TruffleFile file = homePath.resolve(libPythonName);
+        TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+        TruffleFile file = homePath.resolve(name + context.getSoAbi().toJavaStringUncached());
         return file.getPath();
     }
 
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String noNativeAccessHelp) {
-        return create(name, functions, NFIBackend.NATIVE, noNativeAccessHelp);
+    protected Object callUncached(PythonContext context, NativeFunction f, Object... args) {
+        CompilerAsserts.neverPartOfCompilation();
+        final Object lib = getCachedLibrary(context);
+        if (lib != null) {
+            try {
+                Object signature = parseSignature(context, f.signature());
+                Object symbol = cachedLibraryInterop.readMember(lib, f.name());
+                return SignatureLibrary.getUncached().call(signature, symbol, args);
+            } catch (Exception e) {
+                throw CompilerDirectives.shouldNotReachHere(f.name(), e);
+            }
+        }
+        return null;
     }
 
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, NFIBackend nfiBackendName, String noNativeAccessHelp) {
-        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName, noNativeAccessHelp);
+    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String noNativeAccessHelp, boolean canIgnore) {
+        return create(name, functions, NFIBackend.NATIVE, noNativeAccessHelp, canIgnore);
+    }
+
+    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, NFIBackend nfiBackendName, String noNativeAccessHelp, boolean canIgnore) {
+        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName, noNativeAccessHelp, canIgnore);
     }
 
     public static final class TypedNativeLibrary<T extends Enum<T> & NativeFunction> extends NativeLibrary {
-        public TypedNativeLibrary(String name, int functionsCount, NFIBackend nfiBackendName, String noNativeAccessHelp) {
-            super(name, functionsCount, nfiBackendName, noNativeAccessHelp);
+        public TypedNativeLibrary(String name, int functionsCount, NFIBackend nfiBackendName, String noNativeAccessHelp, boolean canIgnore) {
+            super(name, functionsCount, nfiBackendName, noNativeAccessHelp, canIgnore);
         }
     }
 
     public abstract static class InvokeNativeFunction extends PNodeWithContext {
         private static final InvokeNativeFunction UNCACHED = InvokeNativeFunctionNodeGen.create(InteropLibrary.getUncached());
         @Child private InteropLibrary resultInterop;
+        @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
 
         public InvokeNativeFunction(InteropLibrary resultInterop) {
             this.resultInterop = resultInterop;
@@ -274,9 +326,17 @@ public class NativeLibrary {
             }
         }
 
+        public <T extends Enum<T> & NativeFunction> TruffleString callString(TypedNativeLibrary<T> lib, T function, Object... args) {
+            try {
+                return ensureSwitchEncoding().execute(ensureResultInterop().asTruffleString(call(lib, function, args)), TS_ENCODING);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(function.name(), e);
+            }
+        }
+
         protected abstract Object execute(NativeLibrary lib, NativeFunction function, Object[] args);
 
-        @Specialization(guards = {"function == cachedFunction", "lib == cachedLib"}, assumptions = "singleContextAssumption()", limit = "3")
+        @Specialization(guards = {"isSingleContext()", "function == cachedFunction", "lib == cachedLib"}, limit = "3")
         static Object doSingleContext(@SuppressWarnings("unused") NativeLibrary lib, @SuppressWarnings("unused") NativeFunction function, Object[] args,
                         @SuppressWarnings("unused") @Cached(value = "lib", weak = true) NativeLibrary cachedLib,
                         @Cached("function") NativeFunction cachedFunction,
@@ -287,12 +347,10 @@ public class NativeLibrary {
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
-                        @Cached("createIdentityProfile()") ValueProfile functionProfile,
                         @Cached("createClassProfile()") ValueProfile functionClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @CachedLibrary(limit = "1") InteropLibrary funInterop) {
-            NativeFunction function = functionClassProfile.profile(functionProfile.profile(functionIn));
-            Object funObj = lib.getCachedFunction(ctx, function);
+            NativeFunction function = functionClassProfile.profile(functionIn);
+            Object funObj = lib.getCachedFunction(PythonContext.get(funInterop), function);
             return invoke(function, args, funObj, funInterop);
         }
 
@@ -311,8 +369,8 @@ public class NativeLibrary {
             }
         }
 
-        protected static Object getFunction(NativeLibrary lib, NativeFunction fun) {
-            return lib.getFunction(PythonLanguage.getContext(), fun);
+        protected Object getFunction(NativeLibrary lib, NativeFunction fun) {
+            return lib.getFunction(PythonContext.get(this), fun);
         }
 
         @TruffleBoundary
@@ -341,9 +399,18 @@ public class NativeLibrary {
         public InteropLibrary ensureResultInterop() {
             if (resultInterop == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                resultInterop = insert(InteropLibrary.getFactory().createDispatched(2));
+                resultInterop = insert(InteropLibrary.getFactory().createDispatched(3));
             }
             return resultInterop;
         }
+
+        public TruffleString.SwitchEncodingNode ensureSwitchEncoding() {
+            if (switchEncodingNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                switchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
+            }
+            return switchEncodingNode;
+        }
+
     }
 }

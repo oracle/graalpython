@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,84 +25,97 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CACHED__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SPEC__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@ImportStatic(HiddenAttributes.class)
 public final class PythonModule extends PythonObject {
+
+    @CompilationFinal(dimensions = 1) static final Object[] INITIAL_MODULE_ATTRS = new Object[]{T___NAME__, T___DOC__, T___PACKAGE__, T___LOADER__, T___SPEC__, T___CACHED__, T___FILE__};
+
+    /**
+     * Stores the native {@code PyModuleDef *} structure if this modules was created via the
+     * multi-phase extension module initialization mechanism.
+     */
+    private Object nativeModuleDef;
+
+    private PythonBuiltins builtins;
+
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
+        setAttribute(T___NAME__, PNone.NO_VALUE);
+        setAttribute(T___DOC__, PNone.NO_VALUE);
+        setAttribute(T___PACKAGE__, PNone.NO_VALUE);
+        setAttribute(T___LOADER__, PNone.NO_VALUE);
+        setAttribute(T___SPEC__, PNone.NO_VALUE);
+        setAttribute(T___CACHED__, PNone.NO_VALUE);
+        setAttribute(T___FILE__, PNone.NO_VALUE);
     }
 
-    private PythonModule(PythonLanguage lang, String moduleName) {
+    /**
+     * This constructor is just used to created built-in modules such that we can avoid the call to
+     * {code __init__}.
+     */
+    private PythonModule(PythonLanguage lang, TruffleString moduleName) {
         super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape(lang));
-        setAttribute(__NAME__, moduleName);
-        setAttribute(__DOC__, PNone.NONE);
-        setAttribute(__PACKAGE__, PNone.NONE);
-        setAttribute(__LOADER__, PNone.NONE);
-        setAttribute(__SPEC__, PNone.NONE);
+        setAttribute(T___NAME__, moduleName);
+        setAttribute(T___DOC__, PNone.NONE);
+        setAttribute(T___PACKAGE__, PNone.NONE);
+        setAttribute(T___LOADER__, PNone.NONE);
+        setAttribute(T___SPEC__, PNone.NONE);
+        setAttribute(T___CACHED__, PNone.NO_VALUE);
+        setAttribute(T___FILE__, PNone.NO_VALUE);
     }
 
     /**
      * Only to be used during context creation
      */
-    public static PythonModule createInternal(String moduleName) {
-        PythonModule pythonModule = new PythonModule(PythonLanguage.getCurrent(), moduleName);
-        PDict dict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonModule);
-        try {
-            PythonObjectLibrary.getUncached().setDict(pythonModule, dict);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere("BuiltinModule: could not set __dict__");
-        }
+    @TruffleBoundary
+    public static PythonModule createInternal(TruffleString moduleName) {
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
+        PDict dict = factory.createDictFixedStorage(pythonModule);
+        SetDictNode.getUncached().execute(pythonModule, dict);
         return pythonModule;
+    }
+
+    public PythonBuiltins getBuiltins() {
+        return builtins;
+    }
+
+    public void setBuiltins(PythonBuiltins builtins) {
+        this.builtins = builtins;
     }
 
     @Override
     public String toString() {
-        return "<module '" + this.getAttribute(__NAME__) + "'>";
+        Object attribute = this.getAttribute(T___NAME__);
+        return "<module '" + (PGuards.isNoValue(attribute) ? "?" : attribute) + "'>";
     }
 
-    @ExportMessage
-    static class GetDict {
-        protected static boolean dictExists(Object dict) {
-            return dict instanceof PDict;
-        }
+    public Object getNativeModuleDef() {
+        return nativeModuleDef;
+    }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
-        static PDict getConstant(PythonModule self,
-                        @Cached(value = "self", weak = true) PythonModule cachedModule,
-                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
-            // module.__dict__ is a read-only attribute
-            return (PDict) dict;
-        }
-
-        @Specialization(replaces = "getConstant")
-        static PDict getDict(PythonModule self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return (PDict) dylib.getOrDefault(self, DICT, null);
-        }
+    public void setNativeModuleDef(Object nativeModuleDef) {
+        this.nativeModuleDef = nativeModuleDef;
     }
 }

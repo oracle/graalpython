@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -49,32 +49,37 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
+    private final int bytesLength;
 
-    public BytesFormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes) {
+    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
         super(core, raiseNode, getItemNode, getTupleItemNode, new BytesFormattingBuffer());
         this.formatBytes = formatBytes;
+        this.bytesLength = bytesLength;
     }
 
     @Override
@@ -99,7 +104,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
     @Override
     boolean hasNext() {
-        return index < formatBytes.length;
+        return index < bytesLength;
     }
 
     @Override
@@ -114,6 +119,12 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     @Override
+    protected boolean isMapping(Object obj) {
+        // bytesobject.c _PyBytes_FormatEx()
+        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.getUncached().execute(obj);
+    }
+
+    @Override
     protected double asFloat(Object arg) {
         try {
             return super.asFloat(arg);
@@ -124,29 +135,18 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     @Override
-    protected boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass) {
-        return !isString(args1, lazyClass) && isMapping(args1) && //
-                        !isSubtype(lazyClass, PythonBuiltinClassType.PBytes) && //
-                        !isSubtype(lazyClass, PythonBuiltinClassType.PByteArray);
-    }
-
-    @Override
     protected Formatter handleSingleCharacterFormat(Spec spec) {
-        // %c for bytes supports length one bytes buffer object (no __bytes__ coercion) or an
+        // %c for bytes supports length one bytes/bytearray object (no __bytes__ coercion) or an
         // integer value fitting byte range
         Object arg = getArg();
 
-        // Bytes
-        PythonObjectLibrary pyLib = PythonObjectLibrary.getFactory().getUncached(arg);
-        if (pyLib.isBuffer(arg)) {
-            try {
-                if (pyLib.getBufferLength(arg) == 1) {
-                    BytesFormatter f = new BytesFormatter(raiseNode, buffer, spec);
-                    f.format(pyLib.getBufferBytes(arg));
-                    return f;
-                }
-            } catch (UnsupportedMessageException ex) {
-                throw new IllegalStateException();
+        // Bytes: CPython checks only for bytes and bytearray (not other buffers)
+        if (arg instanceof PBytesLike) {
+            PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().getUncached(arg);
+            if (bufferLib.getBufferLength(arg) == 1) {
+                BytesFormatter f = new BytesFormatter(raiseNode, buffer, spec);
+                f.format(bufferLib.readByte(arg, 0));
+                return f;
             }
         }
 
@@ -194,35 +194,23 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
     @Override
     protected InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec) {
-        Object arg, attribute;
         byte[] bytes;
         switch (spec.type) {
             case 'b':
             case 's':
                 // According to the spec: if object is Py_buffer, get the bytes directly, otherwise
                 // call __bytes__
-                arg = getArg();
-                bytes = asBytes(arg);
+                bytes = asBytes(getArg());
                 BytesFormatter fb = new BytesFormatter(raiseNode, buffer, spec);
                 fb.format(bytes);
                 return fb;
 
             case 'r':
-            case 'a': // ascii: from spec: should be equivalent to repr(x).encode('ascii',
-                      // 'backslashreplace')
-                arg = getArg();
-                attribute = lookupAttribute(arg, __REPR__);
-                if (attribute != PNone.NO_VALUE) {
-                    Object result = call(attribute, arg);
-                    if (PGuards.isString(result)) {
-                        bytes = BytesUtils.unicodeNonAsciiEscape(result.toString());
-                        fb = new BytesFormatter(raiseNode, buffer, spec);
-                        fb.format(bytes);
-                        return fb;
-                    }
-                }
-                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, __REPR__);
-
+            case 'a': // ascii
+                String result = PyObjectAsciiNode.getUncached().execute(null, getArg()).toJavaStringUncached();
+                fb = new BytesFormatter(raiseNode, buffer, spec);
+                fb.formatAsciiString(result);
+                return fb;
             default:
                 return null;
         }
@@ -234,18 +222,18 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             return toBytes((PBytesLike) arg);
         }
         // try calling __bytes__
-        Object attribute = lookupAttribute(arg, __BYTES__);
+        Object attribute = lookupAttribute(arg, T___BYTES__);
         if (attribute != PNone.NO_VALUE) {
             Object bytesResult = call(attribute, arg);
             if (!(bytesResult instanceof PBytes)) {
-                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, arg);
+                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__, arg);
             }
             return toBytes((PBytes) bytesResult);
         }
         // otherwise: use the buffer protocol
         byte[] result = byteBufferAsBytesOrNull(arg);
         if (result == null) {
-            throw raiseNode.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, __BYTES__, arg);
+            throw raiseNode.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, T___BYTES__, arg);
         }
         return result;
     }
@@ -255,12 +243,15 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     private static byte[] byteBufferAsBytesOrNull(Object obj) {
-        PythonObjectLibrary pyLib = PythonObjectLibrary.getFactory().getUncached(obj);
-        if (pyLib.isBuffer(obj)) {
+        PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getFactory().getUncached(obj);
+        if (acquireLib.hasBuffer(obj)) {
+            // TODO PyBUF_FULL_RO
+            Object buffer = acquireLib.acquire(obj, BufferFlags.PyBUF_ND);
+            PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().getUncached(buffer);
             try {
-                return pyLib.getBufferBytes(obj);
-            } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException();
+                return bufferLib.getCopiedByteArray(buffer);
+            } finally {
+                bufferLib.release(buffer);
             }
         }
         return null;

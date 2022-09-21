@@ -3,6 +3,7 @@
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.testReadNoArgs
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.testSeek
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.testTell
+*graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_bytes_array
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_cow_mutable
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_cow_setstate
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_cow_truncate
@@ -10,6 +11,8 @@
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_detach
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_flags
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_flush
+*graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_getbuffer
+*graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_getstate
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_getvalue
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_init
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_instance_dict_leak
@@ -19,10 +22,12 @@
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_pickling
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_read
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_read1
+*graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_readinto
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_readline
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_readlines
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_relative_seek
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_seek
+*graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_setstate
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_sizeof
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_subclassing
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_tell
@@ -50,6 +55,7 @@
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_detach
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_flags
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_flush
+*graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_getstate
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_getvalue
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_init
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_instance_dict_leak
@@ -71,10 +77,12 @@
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_readlines
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_relative_seek
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_seek
+*graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_setstate
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_subclassing
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_tell
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_textio_properties
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_truncate
+*graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_widechar
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_write
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_writelines
 *graalpython.lib-python.3.test.test_memoryio.CStringIOTest.test_writelines_error
@@ -83,9 +91,11 @@
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.testReadNoArgs
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.testSeek
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.testTell
+*graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_bytes_array
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_detach
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_flags
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_flush
+*graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_getbuffer
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_getvalue
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_init
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_instance_dict_leak
@@ -95,6 +105,7 @@
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_pickling
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_read
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_read1
+*graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_readinto
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_readline
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_readlines
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_relative_seek

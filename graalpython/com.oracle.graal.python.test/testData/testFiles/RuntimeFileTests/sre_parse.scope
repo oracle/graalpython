@@ -5,207 +5,207 @@ Scope: []
     FreeVars: Empty
     Scope: expand_template
         Kind: Function
-        FrameDescriptor: [template, g, literals, match, <>temp10, groups, index, <>temp11, empty, <>temp8, <>temp9, <return_val>, group]
+        FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp8, <>temp9, <return_val>, empty, g, group, groups, index, literals, match, template]
         CellVars: Empty
         FreeVars: Empty
     Scope: parse_template
         Kind: Function
-        FrameDescriptor: [lappend, c, literals, pattern, groupindex, this, groups, index, source, literal, s, sget, isoctal, addgroup, name, <return_val>]
+        FrameDescriptor: [<return_val>, addgroup, c, groupindex, groups, index, isoctal, lappend, literal, literals, name, pattern, s, sget, source, this]
         CellVars: [groups, literal, literals, pattern, s]
         FreeVars: Empty
         Scope: <genexpr>
             Kind: ListComp
-            FrameDescriptor: [s, <return_val>]
+            FrameDescriptor: [<return_val>, s]
             CellVars: Empty
             FreeVars: Empty
         Scope: addgroup
             Kind: Function
-            FrameDescriptor: [s, pos, literals, pattern, index, groups, <return_val>, literal]
+            FrameDescriptor: [<return_val>, groups, index, literal, literals, pattern, pos, s]
             CellVars: Empty
             FreeVars: [groups, literal, literals, pattern, s]
     Scope: parse
         Kind: Function
-        FrameDescriptor: [str, p, flags, pattern, source, <return_val>]
+        FrameDescriptor: [<return_val>, flags, p, pattern, source, str]
         CellVars: Empty
         FreeVars: Empty
     Scope: fix_flags
         Kind: Function
-        FrameDescriptor: [src, flags, <return_val>]
+        FrameDescriptor: [<return_val>, flags, src]
         CellVars: Empty
         FreeVars: Empty
     Scope: _parse_flags
         Kind: Function
-        FrameDescriptor: [msg, flag, add_flags, char, source, state, del_flags, <return_val>, sourceget]
+        FrameDescriptor: [<return_val>, add_flags, char, del_flags, flag, msg, source, sourceget, state]
         CellVars: Empty
         FreeVars: Empty
     Scope: _parse
         Kind: Function
-        FrameDescriptor: [subpattern, msg, hi, lookbehindgroups, lo, source, dir, nested, _ord, item_yes, that, condgroup, state, sourceget, group, item, this, <>temp65, <>temp64, <>temp67, <>temp66, <>temp61, <>temp60, <>temp63, <>temp62, setappend, subpatternappend, av, name, sourcematch, <return_val>, here, code2, code, code1, gid, <>temp58, <>temp57, <>temp59, flags, <>temp54, <>temp53, <>temp56, <>temp55, del_flags, <>temp50, <>temp52, item_no, <>temp51, min, add_flags, op, set, err, <>temp47, max, <>temp49, warnings, <>temp48, start, i, verbose, p, negate, char, _len, condname, first, sub_verbose]
+        FrameDescriptor: [<>temp47, <>temp48, <>temp49, <>temp50, <>temp51, <>temp52, <>temp53, <>temp54, <>temp55, <>temp56, <>temp57, <>temp58, <>temp59, <>temp60, <>temp61, <>temp62, <>temp63, <>temp64, <>temp65, <>temp66, <>temp67, <>temp68, <return_val>, _len, _ord, add_flags, av, char, code, code1, code2, condgroup, condname, del_flags, dir, err, first, flags, gid, group, here, hi, i, item, item_no, item_yes, lo, lookbehindgroups, max, min, msg, name, negate, nested, op, p, set, setappend, source, sourceget, sourcematch, start, state, sub_verbose, subpattern, subpatternappend, that, this, verbose, warnings]
         CellVars: Empty
         FreeVars: Empty
     Scope: _parse_sub
         Kind: Function
-        FrameDescriptor: [subpattern, op, item, set, prefix, <>temp16, <>temp15, start, source, nested, verbose, av, state, sourcematch, items, <return_val>, itemsappend]
+        FrameDescriptor: [<>temp15, <>temp16, <>temp17, <>temp18, <return_val>, av, item, items, itemsappend, nested, op, prefix, set, source, sourcematch, start, state, subpattern, verbose]
         CellVars: Empty
         FreeVars: Empty
     Scope: _uniq
         Kind: Function
-        FrameDescriptor: [item, newitems, items, <return_val>]
+        FrameDescriptor: [<>temp4, <return_val>, item, items, newitems]
         CellVars: Empty
         FreeVars: Empty
     Scope: _escape
         Kind: Function
-        FrameDescriptor: [code, c, source, state, escape, <return_val>, group]
+        FrameDescriptor: [<return_val>, c, code, escape, group, source, state]
         CellVars: Empty
         FreeVars: Empty
     Scope: _class_escape
         Kind: Function
-        FrameDescriptor: [code, c, source, escape, <return_val>]
+        FrameDescriptor: [<return_val>, c, code, escape, source]
         CellVars: Empty
         FreeVars: Empty
     Scope: Tokenizer
         Kind: Class
-        FrameDescriptor: [getwhile, pos, get, tell, match, __next, __init__, error, getuntil, seek]
+        FrameDescriptor: [_Tokenizer__next, __init__, error, get, getuntil, getwhile, match, pos, seek, tell]
         CellVars: Empty
         FreeVars: Empty
         Scope: error
             Kind: Function
-            FrameDescriptor: [msg, offset, self, <return_val>]
+            FrameDescriptor: [<return_val>, msg, offset, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: seek
             Kind: Function
-            FrameDescriptor: [self, index, <return_val>]
+            FrameDescriptor: [<return_val>, index, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: tell
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: pos
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: getuntil
             Kind: Function
-            FrameDescriptor: [result, c, self, terminator, <return_val>]
+            FrameDescriptor: [<return_val>, c, result, self, terminator]
             CellVars: Empty
             FreeVars: Empty
         Scope: getwhile
             Kind: Function
-            FrameDescriptor: [result, charset, c, self, <return_val>, n, _]
+            FrameDescriptor: [<>temp6, <return_val>, _, c, charset, n, result, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: get
             Kind: Function
-            FrameDescriptor: [this, self, <return_val>]
+            FrameDescriptor: [<return_val>, self, this]
             CellVars: Empty
             FreeVars: Empty
         Scope: match
             Kind: Function
-            FrameDescriptor: [char, self, <return_val>]
+            FrameDescriptor: [<return_val>, char, self]
             CellVars: Empty
             FreeVars: Empty
-        Scope: __next
+        Scope: _Tokenizer__next
             Kind: Function
-            FrameDescriptor: [char, self, index, <return_val>]
+            FrameDescriptor: [<return_val>, char, index, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [string, self, <return_val>]
+            FrameDescriptor: [<return_val>, self, string]
             CellVars: Empty
             FreeVars: Empty
     Scope: SubPattern
         Kind: Class
-        FrameDescriptor: [__setitem__, __len__, __repr__, __getitem__, insert, dump, __init__, append, getwidth, __delitem__]
+        FrameDescriptor: [__delitem__, __getitem__, __init__, __len__, __repr__, __setitem__, append, dump, getwidth, insert]
         CellVars: Empty
         FreeVars: Empty
         Scope: getwidth
             Kind: Function
-            FrameDescriptor: [<>temp18, hi, <>temp17, lo, <>temp19, <>temp14, <>temp13, <>temp16, <>temp15, <>temp10, <>temp12, <>temp11, op, <>temp25, <>temp24, <>temp26, h, <>temp21, i, <>temp20, j, <>temp23, <>temp22, l, av, self, <return_val>]
+            FrameDescriptor: [<>temp10, <>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <>temp22, <>temp23, <>temp24, <>temp25, <>temp26, <>temp27, <>temp28, <return_val>, av, h, hi, i, j, l, lo, op, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: append
             Kind: Function
-            FrameDescriptor: [code, self, <return_val>]
+            FrameDescriptor: [<return_val>, code, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: insert
             Kind: Function
-            FrameDescriptor: [code, self, index, <return_val>]
+            FrameDescriptor: [<return_val>, code, index, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __setitem__
             Kind: Function
-            FrameDescriptor: [code, self, index, <return_val>]
+            FrameDescriptor: [<return_val>, code, index, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [self, index, <return_val>]
+            FrameDescriptor: [<return_val>, index, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __delitem__
             Kind: Function
-            FrameDescriptor: [self, index, <return_val>]
+            FrameDescriptor: [<return_val>, index, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __len__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: dump
             Kind: Function
-            FrameDescriptor: [<>temp18, op, a, <>temp17, <>temp19, <>temp14, level, <>temp13, <>temp16, <>temp15, i, <>temp12, <>temp11, item_yes, item_no, seqtypes, condgroup, av, self, <return_val>, nl]
+            FrameDescriptor: [<>temp11, <>temp12, <>temp13, <>temp14, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19, <>temp20, <>temp21, <return_val>, a, av, condgroup, i, item_no, item_yes, level, nl, op, self, seqtypes]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [data, pattern, self, <return_val>]
+            FrameDescriptor: [<return_val>, data, pattern, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: Pattern
         Kind: Class
-        FrameDescriptor: [closegroup, groups, __init__, checkgroup, opengroup, checklookbehindgroup]
+        FrameDescriptor: [__init__, checkgroup, checklookbehindgroup, closegroup, groups, opengroup]
         CellVars: Empty
         FreeVars: Empty
         Scope: checklookbehindgroup
             Kind: Function
-            FrameDescriptor: [gid, self, source, <return_val>]
+            FrameDescriptor: [<return_val>, gid, self, source]
             CellVars: Empty
             FreeVars: Empty
         Scope: checkgroup
             Kind: Function
-            FrameDescriptor: [gid, self, <return_val>]
+            FrameDescriptor: [<return_val>, gid, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: closegroup
             Kind: Function
-            FrameDescriptor: [p, gid, self, <return_val>]
+            FrameDescriptor: [<return_val>, gid, p, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: opengroup
             Kind: Function
-            FrameDescriptor: [gid, ogid, name, self, <return_val>]
+            FrameDescriptor: [<return_val>, gid, name, ogid, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: groups
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [self, <return_val>]
+            FrameDescriptor: [<return_val>, self]
             CellVars: Empty
             FreeVars: Empty
     Scope: Verbose

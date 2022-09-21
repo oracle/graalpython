@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,9 +52,16 @@ def _reference_bytes(args):
         res = obj.__bytes__()
         if not isinstance(res, bytes):
             raise TypeError("__bytes__ returned non-bytes (type %s)" % type(res).__name__)
+        return res
     if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
         return bytes(obj)
     raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
+
+def _reference_hash(args):
+    try:
+        return hash(args[0])
+    except TypeError as e:
+        return SystemError(e)
 
 
 class AttroClass(object):
@@ -174,6 +181,43 @@ class TestObject(object):
             assert False
         assert True
 
+    def test_base_type(self):
+        AcceptableBaseType = CPyExtType("AcceptableBaseType", 
+                            '''
+                            PyTypeObject TestBase_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "TestBase",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                            };
+
+                            static int
+                            AcceptableBaseType_traverse(AcceptableBaseTypeObject *self, visitproc visit, void *arg) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+
+                            static int
+                            AcceptableBaseType_clear(AcceptableBaseTypeObject *self) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+                             ''',
+                             tp_traverse="(traverseproc)AcceptableBaseType_traverse",
+                             tp_clear="(inquiry)AcceptableBaseType_clear",
+                             ready_code='''
+                                TestBase_Type.tp_base = &PyType_Type;
+                                if (PyType_Ready(&TestBase_Type) < 0)
+                                    return NULL;
+                                    
+                                Py_SET_TYPE(&AcceptableBaseTypeType, &TestBase_Type); 
+                                AcceptableBaseTypeType.tp_base = &PyType_Type;''',
+                             )
+        class Foo(AcceptableBaseType):
+            # This shouldn't fail
+            pass
+
     def test_new(self):
         TestNew = CPyExtType("TestNew", 
                              '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
@@ -198,6 +242,32 @@ class TestObject(object):
         tester = TestNew()
         assert tester.get_none() is None
 
+    def test_init(self):
+        TestInit = CPyExtType("TestInit", 
+                             '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 PyObject* obj;
+                                 TestInitObject* typedObj;
+                                 obj = PyBaseObject_Type.tp_new(cls, a, b);
+
+                                 typedObj = ((TestInitObject*)obj);
+                                 typedObj->dict = (PyDictObject*) PyDict_Type.tp_new(&PyDict_Type, a, b);
+                                 PyDict_Type.tp_init((PyObject*) typedObj->dict, a, b);
+                                 PyDict_SetItemString((PyObject*) typedObj->dict, "test", PyLong_FromLong(42));
+                                 
+                                 Py_XINCREF(obj);
+                                 return obj;
+                            }
+                            static PyObject* get_dict_item(PyObject* self) {
+                                return PyDict_GetItemString((PyObject*) ((TestInitObject*)self)->dict, "test");
+                            }
+                             ''',
+                             cmembers="PyDictObject *dict;",
+                             tp_new="testnew_new",
+                             tp_methods='{"get_dict_item", (PyCFunction)get_dict_item, METH_NOARGS, ""}'
+                             )
+        tester = TestInit()
+        assert tester.get_dict_item() == 42
+
     def test_slots(self):
         TestSlots = CPyExtType("TestSlots", 
                                '''
@@ -218,6 +288,22 @@ class TestObject(object):
         tester = TestSlots(1, 1, 1)
         assert tester.year == 1, "year was %s "% tester.year
         assert tester.is_binary_compatible()
+
+    def test_tp_name(self):
+        TestTpName = CPyExtType("TestTpName",
+                                '''
+                                static PyObject* testslots_tp_name(PyObject* self, PyObject *cls) {
+                                    return PyUnicode_FromString(((PyTypeObject*)cls)->tp_name);
+                                }
+                                ''',
+                                tp_methods='{"get_tp_name", (PyCFunction)testslots_tp_name, METH_O, ""}',
+                                )
+        tester = TestTpName()
+        class MyClass:
+            pass
+        assert tester.get_tp_name(MyClass) == 'MyClass'
+        assert tester.get_tp_name(int) == 'int'
+        assert tester.get_tp_name(type(tester)) == 'TestTpName.TestTpName'
 
     def test_slots_initialized(self):
         TestSlotsInitialized = CPyExtType("TestSlotsInitialized", 
@@ -257,13 +343,13 @@ class TestObject(object):
         TestFloatSubclass = CPyExtType("TestFloatSubclass",
                                        """
                                        static PyTypeObject* testFloatSubclassPtr = NULL;
- 
+
                                        static PyObject* new_fp(double val) {
                                            PyFloatObject* fp = PyObject_New(PyFloatObject, testFloatSubclassPtr);
                                            fp->ob_fval = val;
                                            return (PyObject*)fp;
                                        }
- 
+
                                        static PyObject* fp_tpnew(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
                                             double dval = 0.0;
                                             Py_XINCREF(args);
@@ -272,7 +358,7 @@ class TestObject(object):
                                             }}
                                             return new_fp(dval);
                                        }
-                                        
+
                                        static PyObject* fp_add(PyObject* l, PyObject* r) {
                                            if (PyFloat_Check(l)) {
                                                if (PyFloat_Check(r)) {
@@ -291,7 +377,7 @@ class TestObject(object):
                                        }
                                        """,
                                        cmembers="PyFloatObject base;",
-                                       tp_base="&PyFloat_Type", 
+                                       tp_base="&PyFloat_Type",
                                        nb_add="fp_add",
                                        tp_new="fp_tpnew",
                                        post_ready_code="testFloatSubclassPtr = &TestFloatSubclassType; Py_INCREF(testFloatSubclassPtr);"
@@ -299,7 +385,8 @@ class TestObject(object):
         tester = TestFloatSubclass(41.0)
         res = tester + 1
         assert res == 42.0, "expected 42.0 but was %s" % res
-        
+        assert hash(tester) != 0
+
     def test_custom_basicsize(self):
         TestCustomBasicsize = CPyExtType("TestCustomBasicsize", 
                                       '''
@@ -331,6 +418,35 @@ class TestObject(object):
         actual_basicsize = TestCustomBasicsizeSubclass.__basicsize__
         assert expected_basicsize == actual_basicsize, "expected = %s, actual = %s" % (expected_basicsize, actual_basicsize)
 
+    def test_descrget(self):
+        TestDescrGet = CPyExtType(
+            "TestDescrGet",
+            '''
+            PyObject* testdescr_get(PyObject* self, PyObject* obj, PyObject* type) {
+                if (obj == NULL) {
+                    obj = Py_Ellipsis;
+                }
+                if (type == NULL) {
+                    type = Py_Ellipsis;
+                }
+                return Py_BuildValue("OOO", self, obj, type);
+            }
+            ''',
+            tp_descr_get="(descrgetfunc) testdescr_get",
+        )
+
+        descr = TestDescrGet()
+
+        class Test:
+            getter = descr
+
+        obj = Test()
+        # Using Ellipsis as a placeholder for C NULL
+        assert obj.getter == (descr, obj, Test)
+        assert Test.getter == (descr, ..., Test)
+        assert descr.__get__(1, int) == (descr, 1, int)
+        assert descr.__get__(1, None) == (descr, 1, ...)
+        assert descr.__get__(None, int) == (descr, ..., int)
 
     def test_descrset(self):
         TestDescrSet = CPyExtType("TestDescrSet",
@@ -567,6 +683,34 @@ class TestObject(object):
         assert tester.replace("o", "uff") == "helluff\nwuffrld"
         assert tester.replace("o", "uff", 1) == "helluff\nworld"
 
+    def test_doc(self):
+        TestDoc = CPyExtType("TestDoc",
+                                         '''
+                                             Py_ssize_t global_basicsize = -1;
+   
+                                             static PyObject* some_member(PyObject* self) {
+                                                 return PyLong_FromLong(42);
+                                             }
+                                         ''',
+                                         tp_methods='{"some_member", (PyCFunction)some_member, METH_NOARGS, "This is some member that returns some value."}',
+                                         )
+        obj = TestDoc()
+        expected_doc = "This is some member that returns some value."
+        assert obj.some_member() == 42
+        assert len(obj.some_member.__doc__) == len(expected_doc)
+        assert obj.some_member.__doc__ == expected_doc
+
+class CBytes: 
+    def __bytes__(self):
+        return b'abc'
+    
+class CBytesWrongReturn: 
+    def __bytes__(self):
+        return 'abc'
+    
+class DummyBytes(bytes): 
+    pass     
+
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -595,6 +739,10 @@ class TestObjectFunctions(CPyExtTestCase):
             (memoryview(b"world"),),
             (1.234,),
             (bytearray(b"blah"),),
+            (CBytes(),),
+            (CBytesWrongReturn(),),
+            (DummyBytes(),),
+            ([1,2,3],),
         ),
         arguments=["PyObject* obj"],
         resultspec="O",
@@ -607,6 +755,8 @@ class TestObjectFunctions(CPyExtTestCase):
         lambda: (
             (0, 0),
             (1, 1),
+            (False, 0),
+            (True, 1),
             (-1, -1),
             (1, 1),
             (1<<29, 1),
@@ -659,3 +809,28 @@ class TestObjectFunctions(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    class MyObject():
+        def __hash__(self):
+            return 42
+
+    __MyObject_SINGLETON = MyObject()
+
+    test_PyObject_Hash = CPyExtFunction(
+        _reference_hash,
+        lambda: (
+            (0,),
+            ("hello",),
+            (memoryview(b"world"),),
+            (1.234,),
+            (bytearray(b"blah"),),
+            ({1: 2, 3: 4},),
+            ([1,2,3,4],),
+            ({1,2,3,4},),
+            (slice(1,100,2),),
+            (TestObjectFunctions.__MyObject_SINGLETON,)
+        ),
+        arguments=["PyObject* obj"],
+        resultspec="n",
+        argspec="O",
+        cmpfunc=unhandled_error_compare
+    )

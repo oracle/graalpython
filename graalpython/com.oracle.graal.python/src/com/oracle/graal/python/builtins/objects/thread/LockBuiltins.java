@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,41 +40,41 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_BLOCKING;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.UNSET_TIMEOUT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PLock, PythonBuiltinClassType.PRLock})
 public class LockBuiltins extends PythonBuiltins {
@@ -83,104 +83,154 @@ public class LockBuiltins extends PythonBuiltins {
         return LockBuiltinsFactory.getFactories();
     }
 
+    public static final boolean DEFAULT_BLOCKING = AbstractPythonLock.DEFAULT_BLOCKING;
+    public static final double UNSET_TIMEOUT = AbstractPythonLock.UNSET_TIMEOUT;
+
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "LockBuiltins.DEFAULT_BLOCKING", useDefaultForNone = true)
+    @ArgumentClinic(name = "timeout", conversion = ArgumentClinic.ClinicConversion.Double, defaultValue = "LockBuiltins.UNSET_TIMEOUT", useDefaultForNone = true)
+    @ImportStatic({LockBuiltins.class, AbstractPythonLock.class})
     @GenerateNodeFactory
-    abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
-        private @Child CoerceToBooleanNode castToBooleanNode;
-        private @Child PythonObjectLibrary pythonObjectLibrary;
-        private @CompilationFinal ConditionProfile isBlockingProfile = ConditionProfile.createBinaryProfile();
-        private @CompilationFinal ConditionProfile defaultTimeoutProfile = ConditionProfile.createBinaryProfile();
+    public abstract static class AcquireLockNode extends PythonTernaryClinicBuiltinNode {
 
-        private CoerceToBooleanNode getCastToBooleanNode() {
-            if (castToBooleanNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
-            }
-            return castToBooleanNode;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return LockBuiltinsClinicProviders.AcquireLockNodeClinicProviderGen.INSTANCE;
         }
 
-        private PythonObjectLibrary getPythonObjectLibrary() {
-            if (pythonObjectLibrary == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pythonObjectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(1));
-            }
-            return pythonObjectLibrary;
-        }
-
-        @TruffleBoundary
-        private static boolean acquireBlocking(AbstractPythonLock self) {
-            return self.acquireBlocking();
-        }
-
-        @Specialization
-        boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
-            // args setup
-            boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
-            double timeoutSeconds = UNSET_TIMEOUT;
-            if (!(timeout instanceof PNone)) {
-                timeoutSeconds = getPythonObjectLibrary().asJavaDouble(timeout);
-
-                if (timeoutSeconds != UNSET_TIMEOUT) {
-                    if (!isBlocking) {
-                        throw raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
-                    }
-
-                    if (timeoutSeconds < 0) {
-                        throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
-                    } else if (timeoutSeconds > TIMEOUT_MAX) {
-                        throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
-                    }
-                }
-            }
-
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "!blocking"})
+        static boolean nonBlocking(PLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout) {
             // acquire lock
-            if (isBlockingProfile.profile(!isBlocking)) {
-                return self.acquireNonBlocking();
-            } else {
-                if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
-                    return acquireBlocking(self);
-                } else {
-                    return self.acquireTimeout(timeoutSeconds);
-                }
+            return self.acquireNonBlocking();
+        }
+
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "!blocking"})
+        static boolean nonBlocking(PRLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout) {
+            // acquire lock
+            return self.acquireNonBlocking();
+        }
+
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "!blocking"})
+        static boolean nonBlocking(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout) {
+            // acquire lock
+            return self.acquireNonBlocking();
+        }
+
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
+        boolean acBlocking(PLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
+                        @Cached.Shared("g") @Cached GilNode gil) {
+            // acquire lock
+            gil.release(true);
+            try {
+                return self.acquireBlocking(this);
+            } finally {
+                gil.acquire();
             }
         }
 
-        public static AcquireLockNode create() {
-            return AcquireLockNodeFactory.create();
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
+        boolean acBlocking(PRLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
+                        @Cached.Shared("g") @Cached GilNode gil) {
+            // acquire lock
+            gil.release(true);
+            try {
+                return self.acquireBlocking(this);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
+        boolean acBlocking(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
+                        @Cached.Shared("g") @Cached GilNode gil) {
+            // acquire lock
+            gil.release(true);
+            try {
+                return self.acquireBlocking(this);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "blocking"})
+        boolean acTimeOut(AbstractPythonLock self, @SuppressWarnings("unused") boolean blocking, double timeout,
+                        @Cached.Shared("g") @Cached GilNode gil) {
+            // acquire lock
+            gil.release(true);
+            try {
+                return self.acquireTimeout(this, timeout);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "!blocking"})
+        boolean err1(AbstractPythonLock self, boolean blocking, double timeout) {
+            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "isNeg(timeout)"})
+        boolean err2(AbstractPythonLock self, boolean blocking, double timeout) {
+            throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "timeout > TIMEOUT_MAX"})
+        boolean err3(AbstractPythonLock self, boolean blocking, double timeout) {
+            throw raise(OverflowError, ErrorMessages.TIMEOUT_VALUE_TOO_LARGE);
+        }
+
+        protected static boolean invalidArgs(boolean blocking, double timeout) {
+            return timeout != UNSET_TIMEOUT && (!blocking || timeout < 0 || timeout > TIMEOUT_MAX);
+        }
+
+        protected boolean isNeg(double timeout) {
+            return timeout < 0;
         }
     }
 
     @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
-    abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
+    public abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object acquire(VirtualFrame frame, PLock self, Object blocking, Object timeout,
-                        @Cached("create()") AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+                        @Cached AcquireLockNode acquireLockNode) {
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object acquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
-                        @Cached("create()") AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+                        @Cached AcquireLockNode acquireLockNode) {
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 
     @Builtin(name = "release", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doRelease(AbstractPythonLock self) {
+        Object doRelease(PLock self) {
+            self.release();
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doRelease(PRLock self) {
+            if (!self.isOwned()) {
+                throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOCK_NOT_HELD);
+            }
             self.release();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization
@@ -200,26 +250,24 @@ public class LockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        @TruffleBoundary
-        String repr(PLock self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return String.format("<%s %s object at %s>",
+        @Specialization
+        TruffleString repr(PLock self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<%s %s object at %d>",
                             (self.locked()) ? "locked" : "unlocked",
-                            GetNameNode.doSlowPath(lib.getLazyPythonClass(self)),
+                            GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
                             self.hashCode());
         }
 
-        @Specialization(limit = "2")
-        @TruffleBoundary
-        String repr(PRLock self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return String.format("<%s %s object owner=%d count=%d at %s>",
+        @Specialization
+        TruffleString repr(PRLock self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<%s %s object owner=%d count=%d at %d>",
                             (self.locked()) ? "locked" : "unlocked",
-                            GetNameNode.doSlowPath(lib.getLazyPythonClass(self)),
+                            GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());

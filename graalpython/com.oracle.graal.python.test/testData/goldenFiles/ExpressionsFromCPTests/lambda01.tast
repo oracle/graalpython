@@ -28,13 +28,8 @@ ModuleRootNode Name: <module 'lambda01'> SourceSection: [0,9]`lambda: 0`
             Body: BlockNode SourceSection: None
               BlockNode SourceSection: None
               FrameReturnNode SourceSection: None
-                FunctionBodyNode SourceSection: [8,9]`0`
-                  WriteLocalVariableNodeGen SourceSection: None
-                    Identifier: <return_val>
-                    WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
-                    IntegerLiteralNode SourceSection: [8,9]`0`
-                      Value: 0
-            Return Expresssion: ReadLocalVariableNode SourceSection: None
-              Frame: [0,<return_val>,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None
+                LambdaBodyNode SourceSection: [8,9]`0`
+                  IntegerLiteralNode SourceSection: [8,9]`0`
+                    Value: 0
+            Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+              Frame: [0,<return_val>,Object]

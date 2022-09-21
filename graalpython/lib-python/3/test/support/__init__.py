@@ -939,7 +939,7 @@ def change_cwd(path, quiet=False):
 
 
 @contextlib.contextmanager
-def temp_cwd(name='tempcwd', quiet=False):
+def temp_cwd(name=None, quiet=False): # GR-27905
     """
     Context manager that temporarily creates and changes the CWD.
 
@@ -1750,7 +1750,7 @@ def check_impl_detail(**guards):
 
 def no_tracing(func):
     """Decorator to temporarily turn off tracing for the duration of a test."""
-    if not hasattr(sys, 'gettrace'):
+    if not hasattr(sys, 'settrace'):
         return func
     else:
         @functools.wraps(func)
@@ -1926,7 +1926,6 @@ def run_unittest(*classes):
 def _check_docstrings():
     """Just used to check if docstrings are enabled"""
 
-
 MISSING_C_DOCSTRINGS = (check_impl_detail() and
                         sys.platform != 'win32' and
                         not sysconfig.get_config_var('WITH_DOC_STRINGS'))
@@ -2018,7 +2017,7 @@ def threading_setup():
 def threading_cleanup(*original_values):
     global environment_altered
 
-    _MAX_COUNT = 100
+    _MAX_COUNT = 10
 
     for count in range(_MAX_COUNT):
         values = _thread._count(), threading._dangling
@@ -2059,7 +2058,7 @@ def reap_threads(func):
 
 
 @contextlib.contextmanager
-def wait_threads_exit(timeout=None):
+def wait_threads_exit(timeout=30.0):
     """
     bpo-31234: Context manager to wait until all threads created in the with
     statement exit.
@@ -2095,7 +2094,7 @@ def wait_threads_exit(timeout=None):
             gc_collect()
 
 
-def join_thread(thread, timeout=None):
+def join_thread(thread, timeout=3.0):
     """Join a thread. Raise an AssertionError if the thread is still alive
     after timeout seconds.
     """
@@ -2603,12 +2602,13 @@ class SuppressCrashReport:
                 self.resource = resource
             except ImportError:
                 self.resource = None
-            if self.resource is not None:
-                try:
-                    self.old_value = self.resource.getrlimit(self.resource.RLIMIT_CORE)
-                    self.resource.setrlimit(self.resource.RLIMIT_CORE,
-                                            (0, self.old_value[1]))
-                except (ValueError, OSError):
+            # Graalpython does not support getrlimit/setrlimit yet
+            # if self.resource is not None:
+            #     try:
+            #         self.old_value = self.resource.getrlimit(self.resource.RLIMIT_CORE)
+            #         self.resource.setrlimit(self.resource.RLIMIT_CORE,
+            #                                 (0, self.old_value[1]))
+            #     except (ValueError, OSError):
                     pass
 
             if sys.platform == 'darwin':
@@ -2645,10 +2645,11 @@ class SuppressCrashReport:
                     msvcrt.CrtSetReportMode(report_type, old_mode)
                     msvcrt.CrtSetReportFile(report_type, old_file)
         else:
-            if self.resource is not None:
-                try:
-                    self.resource.setrlimit(self.resource.RLIMIT_CORE, self.old_value)
-                except (ValueError, OSError):
+            # Graalpython does not support getrlimit/setrlimit yet
+            # if self.resource is not None:
+            #     try:
+            #         self.resource.setrlimit(self.resource.RLIMIT_CORE, self.old_value)
+            #     except (ValueError, OSError):
                     pass
 
 
@@ -2702,6 +2703,7 @@ def run_in_subinterp(code):
             raise unittest.SkipTest("run_in_subinterp() cannot be used "
                                      "if tracemalloc module is tracing "
                                      "memory allocations")
+    assert sys.implementation.name != "graalpy", "Truffle change - we do not support subinterp yet"
     import _testcapi
     return _testcapi.run_in_subinterp(code)
 

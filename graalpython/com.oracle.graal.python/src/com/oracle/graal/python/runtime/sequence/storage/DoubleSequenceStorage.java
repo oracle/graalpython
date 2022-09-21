@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class DoubleSequenceStorage extends TypedSequenceStorage {
 
@@ -70,7 +69,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new DoubleSequenceStorage(Arrays.copyOf(values, length));
+        return new DoubleSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
@@ -160,32 +159,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return new DoubleSequenceStorage(newArray);
     }
 
-    public void setDoubleSliceInBound(int start, int stop, int step, DoubleSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        length = length > stop ? length : stop;
-    }
-
-    public double popDouble() {
-        double pop = values[length - 1];
-        length--;
-        return pop;
-    }
-
     public int indexOfDouble(double value) {
         for (int i = 0; i < length; i++) {
             if (Double.compare(values[i], value) == 0) {
@@ -194,24 +167,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    public void appendDouble(double value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
-    }
-
-    public void extendWithDoubleStorage(DoubleSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        double[] otherValues = other.values;
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        length = extendedLength;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -51,23 +52,20 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum TernaryArithmetic {
-    Pow(SpecialMethodNames.__POW__, "**", "pow");
+    Pow(SpecialMethodNames.T___POW__, "**", "pow");
 
-    private final String methodName;
-    private final String operator;
+    private final TruffleString methodName;
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
-    TernaryArithmetic(String methodName, String operator, String operatorFunction) {
+    TernaryArithmetic(TruffleString methodName, @SuppressWarnings("unused") String operator, String operatorFunction) {
         this.methodName = methodName;
-        this.operator = operator;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
@@ -82,34 +80,8 @@ public enum TernaryArithmetic {
         };
     }
 
-    public String getMethodName() {
+    public TruffleString getMethodName() {
         return methodName;
-    }
-
-    public String getOperator() {
-        return operator;
-    }
-
-    public static final class TernaryArithmeticExpression extends ExpressionNode {
-        @Child private LookupAndCallTernaryNode callNode;
-        @Child private ExpressionNode left;
-        @Child private ExpressionNode right;
-
-        private TernaryArithmeticExpression(LookupAndCallTernaryNode callNode, ExpressionNode left, ExpressionNode right) {
-            this.callNode = callNode;
-            this.left = left;
-            this.right = right;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            return callNode.execute(frame, left.execute(frame), right.execute(frame), PNone.NONE);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
     }
 
     /**
@@ -119,13 +91,13 @@ public enum TernaryArithmetic {
      * signature checking.
      */
     static final class CallTernaryArithmeticRootNode extends CallArithmeticRootNode {
-        static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
+        static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, tsArray("x", "y", "z"), null);
 
         @Child private LookupAndCallTernaryNode callTernaryNode;
 
         private final TernaryArithmetic ternaryOperator;
 
-        CallTernaryArithmeticRootNode(PythonLanguage language, TernaryArithmetic ternaryOperator) {
+        private CallTernaryArithmeticRootNode(PythonLanguage language, TernaryArithmetic ternaryOperator) {
             super(language);
             this.ternaryOperator = ternaryOperator;
         }
@@ -145,22 +117,15 @@ public enum TernaryArithmetic {
         }
     }
 
-    public ExpressionNode create(ExpressionNode x, ExpressionNode y) {
-        return new TernaryArithmeticExpression(LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler), x, y);
-    }
-
     public LookupAndCallTernaryNode create() {
         return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler);
     }
 
     /**
-     * Creates a call target with a specific root node for this ternary operator such that the
-     * operator can be executed via a full call. This is in particular useful, if you want to
-     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
-     * method directly. In order to enable AST sharing, you should use
-     * {@link PythonLanguage#getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic)}.
+     * Creates a root node for this ternary operator such that the operator can be executed via a
+     * full call.
      */
-    public RootCallTarget createCallTarget(PythonLanguage language) {
-        return PythonUtils.getOrCreateCallTarget(new CallTernaryArithmeticRootNode(language, this));
+    public RootNode createRootNode(PythonLanguage language) {
+        return new CallTernaryArithmeticRootNode(language, this);
     }
 }

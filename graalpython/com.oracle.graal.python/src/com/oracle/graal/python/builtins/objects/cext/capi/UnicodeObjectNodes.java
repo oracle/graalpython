@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -53,61 +53,54 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class UnicodeObjectNodes {
 
     @GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends Node {
-        private static final int NATIVE_ORDER = 0;
-        private static final int LITTLE_ENDIAN = -1;
-        private static final int BIG_ENDIAN = 1;
-        private static Charset UTF32;
-        private static Charset UTF32LE;
-        private static Charset UTF32BE;
 
-        public final PBytes executeNativeOrder(Object obj, long elementSize, long elements) {
-            return execute(obj, elementSize, elements, UnicodeAsWideCharNode.NATIVE_ORDER);
+        public final PBytes executeNativeOrder(Object obj, long elementSize) {
+            return execute(obj, elementSize, ByteOrder.nativeOrder());
         }
 
-        public final PBytes executeLittleEndian(Object obj, long elementSize, long elements) {
-            return execute(obj, elementSize, elements, UnicodeAsWideCharNode.LITTLE_ENDIAN);
+        public final PBytes executeLittleEndian(Object obj, long elementSize) {
+            return execute(obj, elementSize, ByteOrder.LITTLE_ENDIAN);
         }
 
-        public final PBytes executeBigEndian(Object obj, long elementSize, long elements) {
-            return execute(obj, elementSize, elements, UnicodeAsWideCharNode.BIG_ENDIAN);
+        public final PBytes executeBigEndian(Object obj, long elementSize) {
+            return execute(obj, elementSize, ByteOrder.BIG_ENDIAN);
         }
 
-        public abstract PBytes execute(Object obj, long elementSize, long elements, int byteOrder);
+        public abstract PBytes execute(Object obj, long elementSize, ByteOrder byteOrder);
 
         @Specialization
-        static PBytes doUnicode(PString s, long elementSize, long elements, int byteOrder,
+        static PBytes doUnicode(PString s, long elementSize, ByteOrder byteOrder,
                         @Cached StringMaterializeNode materializeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return doUnicode(materializeNode.execute(s), elementSize, elements, byteOrder, factory);
+            return doUnicode(materializeNode.execute(s), elementSize, byteOrder, switchEncodingNode, copyToByteArrayNode, factory);
         }
 
         @Specialization
         @TruffleBoundary
-        static PBytes doUnicode(String s, long elementSize, long elements, int byteOrder,
+        static PBytes doUnicode(TruffleString s, long elementSize, ByteOrder byteOrder,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            // use native byte order
-            Charset utf32Charset = getUTF32Charset(-1);
+            TruffleString.Encoding encoding = byteOrder == ByteOrder.LITTLE_ENDIAN ? TruffleString.Encoding.UTF_32LE : TruffleString.Encoding.UTF_32BE;
 
             // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
             // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
             // MSBs.
             if (elementSize == 2L) {
-                ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(utf32Charset));
+                ByteBuffer bytes = ByteBuffer.wrap(getBytes(s, switchEncodingNode, copyToByteArrayNode, encoding));
                 // FIXME unsafe narrowing
-                int size;
-                if (elements >= 0) {
-                    size = Math.min(bytes.remaining() / 2, (int) (elements * elementSize));
-                } else {
-                    size = bytes.remaining() / 2;
-                }
+                int size = bytes.remaining() / 2;
                 ByteBuffer buf = ByteBuffer.allocate(size);
                 while (bytes.remaining() >= 4) {
-                    if (byteOrder < NATIVE_ORDER) {
+                    if (byteOrder != ByteOrder.nativeOrder()) {
                         buf.putChar((char) ((bytes.getInt() & 0xFFFF0000) >> 16));
                     } else {
                         buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
@@ -118,41 +111,18 @@ public abstract class UnicodeObjectNodes {
                 buf.get(barr);
                 return factory.createBytes(barr);
             } else if (elementSize == 4L) {
-                return factory.createBytes(s.getBytes(utf32Charset));
+                return factory.createBytes(getBytes(s, switchEncodingNode, copyToByteArrayNode, encoding));
             } else {
                 throw new RuntimeException("unsupported wchar size; was: " + elementSize);
             }
         }
 
-        protected static Charset getUTF32Charset(int byteorder) {
-            String utf32Name = getUTF32Name(byteorder);
-            if (byteorder == NATIVE_ORDER) {
-                if (UTF32 == null) {
-                    UTF32 = Charset.forName(utf32Name);
-                }
-                return UTF32;
-            } else if (byteorder < NATIVE_ORDER) {
-                if (UTF32LE == null) {
-                    UTF32LE = Charset.forName(utf32Name);
-                }
-                return UTF32LE;
-            }
-            if (UTF32BE == null) {
-                UTF32BE = Charset.forName(utf32Name);
-            }
-            return UTF32BE;
-        }
-
-        protected static String getUTF32Name(int byteorder) {
-            String csName;
-            if (byteorder == 0) {
-                csName = "UTF-32";
-            } else if (byteorder < 0) {
-                csName = "UTF-32LE";
-            } else {
-                csName = "UTF-32BE";
-            }
-            return csName;
+        private static byte[] getBytes(TruffleString s, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode, TruffleString.Encoding encoding) {
+            TruffleString utf32String = switchEncodingNode.execute(s, encoding);
+            int len = utf32String.byteLength(encoding);
+            byte[] b = new byte[len];
+            copyToByteArrayNode.execute(utf32String, 0, b, 0, len, encoding);
+            return b;
         }
     }
 }

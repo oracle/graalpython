@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,12 +48,23 @@ extern "C" {
 #endif
 
 PyAPI_FUNC(Py_hash_t) _Py_HashDouble(double);
+PyAPI_FUNC(Py_hash_t) _Py_HashPointer(void*);
 PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void*, Py_ssize_t);
 
 extern long _PyHASH_INF;
 extern long _PyHASH_NAN;
 extern long _PyHASH_IMAG;
 #define _PyHASH_MULTIPLIER _PyHASH_IMAG;
+
+typedef union {
+    /* ensure 24 bytes */
+    unsigned char uc[24];
+    struct {
+        unsigned char padding[16];
+        Py_hash_t hashsalt;
+    } expat;
+} _Py_HashSecret_t;
+PyAPI_DATA(_Py_HashSecret_t) _Py_HashSecret;
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,95 +25,18 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.FrameUtil;
 
-public abstract class FrameSlotNode extends ExpressionNode {
+public interface FrameSlotNode {
 
-    protected final FrameSlot frameSlot;
+    int getSlotIndex();
 
-    public FrameSlotNode(FrameSlot slot) {
-        this.frameSlot = slot;
+    default Object getSlotIdentifier(FrameDescriptor descriptor) {
+        return descriptor.getSlotName(getSlotIndex());
     }
 
-    public final FrameSlot getSlot() {
-        return frameSlot;
-    }
-
-    protected final void setObject(Frame frame, Object value) {
-        frame.setObject(frameSlot, value);
-    }
-
-    protected final int getInteger(Frame frame) {
-        return FrameUtil.getIntSafe(frame, frameSlot);
-    }
-
-    protected final long getLong(Frame frame) {
-        return FrameUtil.getLongSafe(frame, frameSlot);
-    }
-
-    protected final boolean getBoolean(Frame frame) {
-        return FrameUtil.getBooleanSafe(frame, frameSlot);
-    }
-
-    protected final double getDouble(Frame frame) {
-        return FrameUtil.getDoubleSafe(frame, frameSlot);
-    }
-
-    protected final Object getObject(Frame frame) {
-        return FrameUtil.getObjectSafe(frame, frameSlot);
-    }
-
-    protected final boolean isNotIllegal(Frame frame) {
-        return frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Illegal;
-    }
-
-    protected final boolean isBooleanKind(Frame frame) {
-        return isKind(frame, FrameSlotKind.Boolean);
-    }
-
-    protected final boolean isIntegerKind(Frame frame) {
-        return isKind(frame, FrameSlotKind.Int);
-    }
-
-    protected final boolean isLongKind(Frame frame) {
-        return isKind(frame, FrameSlotKind.Long);
-    }
-
-    protected final boolean isDoubleKind(Frame frame) {
-        return isKind(frame, FrameSlotKind.Double);
-    }
-
-    protected final boolean isIntOrObjectKind(Frame frame) {
-        return isKind(frame, FrameSlotKind.Int) || isKind(frame, FrameSlotKind.Object);
-    }
-
-    protected final boolean isLongOrObjectKind(Frame frame) {
-        return isKind(frame, FrameSlotKind.Long) || isKind(frame, FrameSlotKind.Object);
-    }
-
-    protected final boolean ensureObjectKind(Frame frame) {
-        if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Object) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
-        }
-        return true;
-    }
-
-    private boolean isKind(Frame frame, FrameSlotKind kind) {
-        return frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == kind || initialSetKind(frame, kind);
-    }
-
-    private boolean initialSetKind(Frame frame, FrameSlotKind kind) {
-        if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == FrameSlotKind.Illegal) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, kind);
-            return true;
-        }
-        return false;
+    default FrameSlotKind getSlotKind(FrameDescriptor descriptor) {
+        return descriptor.getSlotKind(getSlotIndex());
     }
 }

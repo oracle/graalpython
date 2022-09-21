@@ -163,20 +163,21 @@ class ExceptionTests(unittest.TestCase):
             else:
                 self.fail("failed to get expected SyntaxError")
 
-        s = '''print "old style"'''
-        ckmsg(s, "Missing parentheses in call to 'print'. "
-                 "Did you mean print(\"old style\")?")
+        if not support.isBCI():
+            s = '''print "old style"'''
+            ckmsg(s, "Missing parentheses in call to 'print'. "
+                     "Did you mean print(\"old style\")?")
 
-        s = '''print "old style",'''
-        ckmsg(s, "Missing parentheses in call to 'print'. "
-                 "Did you mean print(\"old style\", end=\" \")?")
+            s = '''print "old style",'''
+            ckmsg(s, "Missing parentheses in call to 'print'. "
+                     "Did you mean print(\"old style\", end=\" \")?")
 
-        s = '''exec "old style"'''
-        ckmsg(s, "Missing parentheses in call to 'exec'")
+            s = '''exec "old style"'''
+            ckmsg(s, "Missing parentheses in call to 'exec'")
 
-        # should not apply to subclasses, see issue #31161
-        s = '''if True:\nprint "No indent"'''
-        ckmsg(s, "expected an indented block", IndentationError)
+            # should not apply to subclasses, see issue #31161
+            s = '''if True:\nprint "No indent"'''
+            ckmsg(s, "expected an indented block", IndentationError)
 
         s = '''if True:\n        print()\n\texec "mixed tabs and spaces"'''
         ckmsg(s, "inconsistent use of tabs and spaces in indentation", TabError)

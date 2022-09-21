@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,78 +25,77 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
-    private final String name;
-    private final String qualname;
+    private final TruffleString name;
+    private final TruffleString qualname;
     private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final Signature signature;
+    private final int flags;
+    private BuiltinMethodDescriptor descriptor;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
-        this(lang, name, enclosingType, generateDefaults(numDefaults), null, callTarget);
+    public PBuiltinFunction(PythonLanguage lang, TruffleString name, Object enclosingType, int numDefaults, int flags, RootCallTarget callTarget) {
+        this(lang, name, enclosingType, generateDefaults(numDefaults), null, flags, callTarget);
     }
 
-    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, RootCallTarget callTarget) {
-        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
+    public PBuiltinFunction(PythonLanguage lang, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+        this(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang), name, enclosingType, defaults, kwDefaults, flags, callTarget);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+        super(cls, shape);
         this.name = name;
         if (enclosingType != null) {
-            this.qualname = PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name);
+            this.qualname = StringUtils.cat(GetNameNode.doSlowPath(enclosingType), T_DOT, name);
         } else {
             this.qualname = name;
         }
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
         this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
+        this.flags = flags;
         this.defaults = defaults;
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
     }
 
     private static PKeyword[] generateKwDefaults(Signature signature) {
-        String[] keywordNames = signature.getKeywordNames();
-        PKeyword[] kwDefaults = new PKeyword[keywordNames.length];
+        TruffleString[] keywordNames = signature.getKeywordNames();
+        PKeyword[] kwDefaults = PKeyword.create(keywordNames.length);
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
         }
@@ -135,6 +134,46 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
+    public int getFlags() {
+        return flags;
+    }
+
+    public boolean isStatic() {
+        return (flags & CExtContext.METH_STATIC) != 0;
+    }
+
+    @TruffleBoundary
+    public static int getFlags(Builtin builtin, RootCallTarget callTarget) {
+        return getFlags(builtin, ((PRootNode) callTarget.getRootNode()).getSignature());
+    }
+
+    @TruffleBoundary
+    public static int getFlags(Builtin builtin, Signature signature) {
+        if (builtin == null) {
+            return 0;
+        }
+        int flags = 0;
+        if (builtin.isClassmethod()) {
+            flags |= CExtContext.METH_CLASS;
+        }
+        if (builtin.isStaticmethod()) {
+            flags |= CExtContext.METH_STATIC;
+        }
+        int params = signature.getParameterIds().length;
+        if (signature.takesKeywordArgs() || signature.takesVarArgs()) {
+            flags |= CExtContext.METH_VARARGS;
+            if (signature.takesKeywordArgs()) {
+                flags |= CExtContext.METH_KEYWORDS;
+            }
+        } else if (params == 1) {
+            // only 'self'
+            flags |= CExtContext.METH_NOARGS;
+        } else if (params == 2) {
+            flags |= CExtContext.METH_O;
+        }
+        return flags;
+    }
+
     public Class<? extends PythonBuiltinBaseNode> getNodeClass() {
         return getBuiltinNodeFactory() != null ? getBuiltinNodeFactory().getNodeClass() : null;
     }
@@ -147,11 +186,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return callTarget;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 
-    public String getQualname() {
+    public TruffleString getQualname() {
         return qualname;
     }
 
@@ -165,12 +204,13 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return String.format("PBuiltinFunction %s at 0x%x", qualname, hashCode());
     }
 
+    @Override
     public PBuiltinFunction boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
         if (klass == enclosingType) {
             return this;
         } else {
-            PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, callTarget);
-            func.setAttribute(__DOC__, getAttribute(__DOC__));
+            PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, flags, callTarget);
+            func.setAttribute(T___DOC__, getAttribute(T___DOC__));
             return func;
         }
     }
@@ -185,81 +225,31 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isCallable() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
     boolean hasExecutableName() {
         return true;
     }
 
     @ExportMessage
-    String getExecutableName() {
+    TruffleString getExecutableName() {
         return getName();
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PBuiltinFunction;
+    public void setDescriptor(BuiltinMethodDescriptor value) {
+        assert value.getName().equals(getName().toJavaStringUncached()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
+        // Only make sure that info is fully initialized, otherwise it is fine if it is set multiple
+        // times from different threads, all of them should set the same value
+        VarHandle.storeStoreFence();
+        BuiltinMethodDescriptor local = descriptor;
+        assert local == null || local == value : value;
+        this.descriptor = value;
     }
 
-    @ExportMessage
-    // Note: Avoiding calling __get__ for builtin functions seems like just an optimization, but it
-    // is actually necessary for being able to correctly call special methods on None, because
-    // type(None).__eq__.__get__(None, type(None)) wouldn't bind the method correctly
-    public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallUnboundMethodNode call) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
-        }
-        return call.execute(frame, this, receiver, arguments);
-    }
-
-    @ExportMessage
-    public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallUnboundMethodNode call) {
-        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
-    }
-
-    @GenerateUncached
-    public abstract static class CallUnboundMethodNode extends Node {
-        public abstract Object execute(Frame frame, PBuiltinFunction method, Object receiver, Object[] arguments);
-
-        @Specialization(guards = "arguments.length == 0")
-        static Object unary(VirtualFrame frame, PBuiltinFunction method, Object receiver, @SuppressWarnings("unused") Object[] arguments,
-                        @Cached CallUnaryMethodNode callNode) {
-            return callNode.executeObject(frame, method, receiver);
-        }
-
-        @Specialization(guards = "arguments.length == 1")
-        static Object binary(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
-                        @Cached CallBinaryMethodNode callNode) {
-            return callNode.executeObject(frame, method, receiver, arguments[0]);
-        }
-
-        @Specialization(guards = "arguments.length == 2")
-        static Object ternary(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
-                        @Cached CallTernaryMethodNode callNode) {
-            return callNode.execute(frame, method, receiver, arguments[0], arguments[1]);
-        }
-
-        @Specialization(guards = "arguments.length == 3")
-        static Object quaternary(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
-                        @Cached CallQuaternaryMethodNode callNode) {
-            return callNode.execute(frame, method, receiver, arguments[0], arguments[1], arguments[2]);
-        }
-
-        @Specialization(replaces = {"unary", "binary", "ternary", "quaternary"})
-        static Object generic(VirtualFrame frame, PBuiltinFunction method, Object receiver, Object[] arguments,
-                        @Cached CallNode callNode) {
-            return callNode.execute(frame, method, PositionalArgumentsNode.prependArgument(receiver, arguments));
-        }
+    /**
+     * The descriptor is set lazily once this builtin function is stored in any special method slot.
+     * I.e., one can assume that any builtin function looked up via special method slots has its
+     * descriptor set.
+     */
+    public BuiltinMethodDescriptor getDescriptor() {
+        return descriptor;
     }
 }

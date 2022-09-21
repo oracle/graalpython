@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -37,20 +37,20 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class ModuleRootNode extends PClosureRootNode {
     private final String name;
-    private final String doc;
+    private final TruffleString doc;
     @Child private ExpressionNode body;
     @Child private WriteGlobalNode writeModuleDoc;
     @Child private WriteGlobalNode writeAnnotations;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
-        super(language, descriptor, freeVarSlots, hasAnnotations);
+    public ModuleRootNode(PythonLanguage language, String name, TruffleString doc, ExpressionNode file, FrameDescriptor descriptor, boolean hasAnnotations) {
+        super(language, descriptor, null, hasAnnotations);
         if (name.startsWith("<")) {
             this.name = "<module>";
         } else {
@@ -63,7 +63,7 @@ public class ModuleRootNode extends PClosureRootNode {
     private WriteGlobalNode getWriteModuleDoc() {
         if (writeModuleDoc == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            writeModuleDoc = insert(WriteGlobalNode.create(__DOC__));
+            writeModuleDoc = insert(WriteGlobalNode.create(T___DOC__));
         }
         return writeModuleDoc;
     }
@@ -71,12 +71,12 @@ public class ModuleRootNode extends PClosureRootNode {
     private WriteGlobalNode getWriteAnnotations() {
         if (writeAnnotations == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            writeAnnotations = insert(WriteGlobalNode.create(SpecialAttributeNames.__ANNOTATIONS__));
+            writeAnnotations = insert(WriteGlobalNode.create(SpecialAttributeNames.T___ANNOTATIONS__));
         }
         return writeAnnotations;
     }
 
-    public String getDoc() {
+    public TruffleString getDoc() {
         return doc;
     }
 
@@ -94,10 +94,10 @@ public class ModuleRootNode extends PClosureRootNode {
     public void initializeFrame(VirtualFrame frame) {
         addClosureCellsToLocals(frame);
         if (doc != null) {
-            getWriteModuleDoc().doWrite(frame, doc);
+            getWriteModuleDoc().executeObject(frame, doc);
         }
         if (hasAnnotations()) {
-            getWriteAnnotations().doWrite(frame, new PDict(lookupLanguageReference(PythonLanguage.class).get()));
+            getWriteAnnotations().executeObject(frame, new PDict(PythonLanguage.get(this)));
         }
     }
 

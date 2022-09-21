@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 
 import unittest
 
@@ -83,9 +84,9 @@ def test_destructuring():
 
     a, b, c = "\u0430\u0431\u0432"
     assert a == 'а' and b == 'б' and c == 'в'
-    # TODO not supported yet
-#     a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
-#     assert a == '𝒜' and b == '𝒞' and c == '𝒵
+    
+    a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
+    assert a == '𝒜' and b == '𝒞' and c == '𝒵'
 
     # starred desctructuring assignment
     a, b, *s, c, d = tuple(range(4))
@@ -103,6 +104,77 @@ def test_destructuring():
     b = -1
     *s, c, d = tuple(range(10))
     assert a == -1 and b == -1 and s == [0, 1, 2, 3, 4, 5, 6, 7] and c == 8 and d == 9
+
+
+def test_augassign_evaluation_subsc():
+    if sys.implementation.name == 'graalpy' and not __graalpython__.uses_bytecode_interpreter:
+        # FIXME AST interpreter fails this test
+        return
+    calls = []
+
+    class C(list):
+        def __getitem__(self, item):
+            calls.append("get")
+            return super().__getitem__(item)
+
+        def __setitem__(self, key, value):
+            calls.append("set")
+            super().__setitem__(key, value)
+
+    class I:
+        def __iadd__(self, other):
+            calls.append("iadd")
+            return 3
+
+    def index():
+        calls.append("index")
+        return 0
+
+    def value():
+        calls.append("value")
+        return 1
+
+    x = C([I()])
+
+    def container():
+        calls.append("container")
+        return x
+
+    container()[index()] += value()
+    assert calls == ["container", "index", "get", "value", "iadd", "set"]
+
+
+def test_augassign_evaluation_attr():
+    if sys.implementation.name == 'graalpy' and not __graalpython__.uses_bytecode_interpreter:
+        # FIXME AST interpreter fails this test
+        return
+    calls = []
+
+    class C(list):
+        def __getattr__(self, item):
+            calls.append("get")
+            return I()
+
+        def __setattr__(self, key, value):
+            calls.append("set")
+
+    class I:
+        def __iadd__(self, other):
+            calls.append("iadd")
+            return 3
+
+    def value():
+        calls.append("value")
+        return 1
+
+    x = C()
+
+    def container():
+        calls.append("container")
+        return x
+
+    container().attr += value()
+    assert calls == ["container", "get", "value", "iadd", "set"]
 
 
 def test_assigning_hidden_keys():
@@ -124,24 +196,24 @@ class IllegaAssigmentTest(unittest.TestCase):
         with self.assertRaisesRegex(SyntaxError, "assign to function call"):
             compile("a() = 1", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call|'function call' is an illegal expression for augmented assignment"):
             compile("a() += 1", "<test>", "exec")
 
         with self.assertRaisesRegex(SyntaxError, "assign to function call"):
             str = "def set() :\n\tprint(42)\n\nset() = 5"
             compile(str, "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("a(), b, c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to function call"):
+        with self.assertRaisesRegex(SyntaxError, "assign to function call|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("a, b(), c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to dict comprehension"):
+        with self.assertRaisesRegex(SyntaxError, "assign to dict comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("{s:s for s in [1]}, b, c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to set comprehension"):
+        with self.assertRaisesRegex(SyntaxError, "assign to set comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("{s for s in [1]}, b, c = (1, 2, 3)", "<test>", "exec")
 
-        with self.assertRaisesRegex(SyntaxError, "assign to list comprehension"):
+        with self.assertRaisesRegex(SyntaxError, "assign to list comprehension|invalid syntax\. Maybe you meant '==' or ':=' instead of '='\?"):
             compile("[s for s in [1]], b, c = (1, 2, 3)", "<test>", "exec")

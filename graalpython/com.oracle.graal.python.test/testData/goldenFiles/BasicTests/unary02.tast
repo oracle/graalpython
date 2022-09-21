@@ -5,10 +5,8 @@ ModuleRootNode Name: <module 'unary02'> SourceSection: [0,2]`-u`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,2]`-u`
-    UnaryArithmeticExpression SourceSection: [0,2]`-u`
-      LookupAndCallUnaryNodeGen SourceSection: None
-        Op: __neg__
+    NegNodeGen SourceSection: [0,2]`-u`
       ReadNameNodeGen SourceSection: [1,2]`u`
         Identifier: u
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None

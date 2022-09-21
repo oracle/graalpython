@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,7 @@ PTRN_OK = re.compile(
 PTRN_JAVA_EXCEPTION = re.compile(r'^(?P<exception>com\.oracle\.[^:]*):(?P<message>.*)')
 PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
 PTRN_IMPORT_ERROR = re.compile(r".*cannot import name \'(?P<module>.*)\'.*", re.DOTALL)
-PTRN_REMOTE_HOST = re.compile(r"(?P<user>\w+)@(?P<host>[\w.]+):(?P<path>.+)")
+PTRN_REMOTE_HOST = re.compile(r"(?P<user>[^@]+)@(?P<host>[^:]+):(?P<path>.+)")
 PTRN_VALID_CSV_NAME = re.compile(r"unittests-\d{4}-\d{2}-\d{2}.csv")
 PTRN_TEST_STATUS_INDIVIDUAL = re.compile(r"(?P<name>test[\w_]+ \(.+?\)) ... (?P<status>.+)")
 PTRN_TEST_STATUS_ERROR = re.compile(r"(?P<status>.+): (?P<name>test[\w_]+ \(.+?\))")

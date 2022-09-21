@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -144,6 +144,7 @@ PyInit_c_method_module(void)
 ccompile("c_method_module", code)
 from c_method_module import NativeCustomType
 
+# ~igv~: function_root_count_at
 def count(num):
     print("###### NUM: " + str(num))
     obj = NativeCustomType()

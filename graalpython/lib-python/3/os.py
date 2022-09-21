@@ -1114,3 +1114,6 @@ if name == 'nt':
             cookie,
             nt._remove_dll_directory
         )
+
+
+__file__ = f"{__graalpython__.stdlib_home}/os.py"

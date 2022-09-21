@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'slice04'> SourceSection: [0,6]`a[::1]`
       ReadNameNodeGen SourceSection: None
         Identifier: a
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       SliceLiteralNodeGen SourceSection: [2,5]`::1`
         PythonObjectFactoryNodeGen SourceSection: None
         EmptyNode SourceSection: None

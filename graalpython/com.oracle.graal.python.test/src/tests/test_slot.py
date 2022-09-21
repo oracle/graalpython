@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,15 @@ class TestSlots(unittest.TestCase):
             obj.world
         obj.world = "world"
         self.assertEqual(obj.world, "world")
+        
+    def test_slots_must_be_identifiers(self):
+        class C: __slots__ = ['a', '_1', '_', 'a1']
+        with self.assertRaises(TypeError):
+            class C: __slots__ = ['']
+            class C: __slots__ = ['1']
+            class C: __slots__ = ['1']
+            class C: __slots__ = ['a$']
+        
         
     def test_dict_and_weakref_are_listed_in_slots(self):
         class D: __slots__ = ['__dict__']
@@ -157,7 +166,12 @@ class TestSlots(unittest.TestCase):
             class C(tuple): __slots__ = ['a']
         except TypeError:
             raised = True
-        assert raised        
-        
+        assert raised
+
+    def test_write_attr(self):
+        class C:
+            __slots__ = ('a', 'b')
+        self.assertRaises(AttributeError, setattr, C(), 'c', 42)
+
 if __name__ == "__main__":
     unittest.main()

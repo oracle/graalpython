@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,6 +107,13 @@ void* PyMem_Malloc(size_t size) {
 	ptr_with_head->size = size;
     alloc_upcall(ptr, size);
     return ptr;
+}
+
+void* PyMem_Calloc(size_t nelem, size_t elsize) {
+    if (elsize != 0 && nelem > (size_t)PY_SSIZE_T_MAX / elsize) {
+        return NULL;
+    }
+    return PyMem_RawCalloc(nelem, elsize);
 }
 
 void* PyMem_RawMalloc(size_t size) {

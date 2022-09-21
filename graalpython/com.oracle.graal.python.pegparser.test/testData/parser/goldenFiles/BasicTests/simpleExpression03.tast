@@ -1,0 +1,4 @@
+Module[0, 14]
+    RAW[0, 6] Value: "ahoj"
+    LONG[8, 9] Value: 2
+    DOUBLE[11, 14] Value: 1.0

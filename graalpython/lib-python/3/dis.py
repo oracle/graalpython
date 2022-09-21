@@ -318,6 +318,7 @@ def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
     arguments.
 
     """
+    return # Truffle change: GR-40956
     labels = findlabels(code)
     starts_line = None
     for offset, op, arg in _unpack_opargs(code):

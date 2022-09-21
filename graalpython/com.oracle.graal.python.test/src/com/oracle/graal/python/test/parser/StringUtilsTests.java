@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,43 +43,39 @@ package com.oracle.graal.python.test.parser;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.parser.sst.StringUtils;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser.ErrorType;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class StringUtilsTests extends ParserTestBase {
     private static final ParserErrorCallback errorCallback = new ParserErrorCallback() {
+
         @Override
-        public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
-            Assert.fail("Unexpected error: " + String.format(message, args));
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, TruffleString message, Object... arguments) {
+            Assert.fail("Unexpected error: " + String.format(message.toJavaStringUncached(), arguments));
             return null;
         }
 
         @Override
-        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
-            Assert.fail("Unexpected error: " + String.format(message, arguments));
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, TruffleString message, Object... arguments) {
+            Assert.fail("Unexpected error: " + String.format(message.toJavaStringUncached(), arguments));
             return null;
         }
 
         @Override
-        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
-            Assert.fail("Unexpected error: " + String.format(message, arguments));
-            return null;
+        public void warn(PythonBuiltinClassType type, TruffleString format, Object... args) {
+            Assert.fail("Unexpected warning: " + String.format(format.toJavaStringUncached(), args));
         }
 
         @Override
-        public void warn(PythonBuiltinClassType type, String format, Object... args) {
-            Assert.fail("Unexpected warning: " + String.format(format, args));
-        }
-
-        @Override
-        public PythonLanguage getLanguage() {
-            return null;
+        public PythonContext getContext() {
+            return PythonContext.get(null);
         }
     };
 
@@ -116,6 +112,14 @@ public class StringUtilsTests extends ParserTestBase {
         checkUnknownChar("CJK Unified Ideograph-4DFF");
         checkUnknownChar("CJK Unified Ideograph-33FF");
         checkUnknownChar("CJK Unified Ideograph-2A6E0");
+    }
+
+    @Test
+    public void controlCharacters() {
+        Assert.assertEquals("\f", StringUtils.unescapeJavaString(errorCallback, "\\N{FORM FEED}"));
+        Assert.assertEquals("\f", StringUtils.unescapeJavaString(errorCallback, "\\N{FF}"));
+        Assert.assertEquals("\u0096", StringUtils.unescapeJavaString(errorCallback, "\\N{START OF GUARDED AREA}"));
+        Assert.assertEquals("\udb40\udd57", StringUtils.unescapeJavaString(errorCallback, "\\N{VS104}"));
     }
 
     @Test

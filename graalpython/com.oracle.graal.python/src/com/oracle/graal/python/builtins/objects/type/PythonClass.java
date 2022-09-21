@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,19 +25,37 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.util.SuppressFBWarnings;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 /**
  * Mutable class.
@@ -45,15 +63,64 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, instanceShape, null, name, baseClasses);
+    private static final int MRO_SUBTYPES_MAX = 64;
+    private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
+
+    public long flags;
+    public long basicSize = -1;
+    public long itemSize = -1;
+    public Object hpyDestroyFunc;
+    public Object tpName;
+
+    private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
+    private MroShape mroShape;
+    /**
+     * Array of all classes that contain this class in their MRO and that have non-null mroShape,
+     * i.e., classes whose mro shape depends on this class. Including this class itself as long as
+     * it is in its own MRO. The size of this array is bounded by {@link #MRO_SUBTYPES_MAX}. This
+     * array may be over-allocated and padded with nulls at the end.
+     */
+    private TruffleWeakReference<PythonClass>[] mroShapeSubTypes;
+    private byte mroShapeInvalidationsCount;
+
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, classShape, null, name, baseClasses);
     }
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, instanceShape, null, name, invokeMro, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, classShape, null, name, invokeMro, false, baseClasses);
     }
 
-    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
+    public Assumption getSlotsFinalAssumption() {
+        Assumption result = slotsFinalAssumption.get();
+        if (result == null) {
+            result = Truffle.getRuntime().createAssumption("slots");
+            if (!slotsFinalAssumption.compareAndSet(null, result)) {
+                result = slotsFinalAssumption.get();
+            }
+        }
+        return result;
+    }
+
+    public void invalidateSlotsFinalAssumption() {
+        Assumption assumption = slotsFinalAssumption.get();
+        if (assumption != null) {
+            assumption.invalidate();
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")
+    public void setAttribute(Object key, Object value) {
+        if (slotsFinalAssumption != null) {
+            // It is OK when slotsFinalAssumption is null during the super ctor call
+            invalidateSlotsFinalAssumption();
+        }
+        super.setAttribute(key, value);
+        invalidateMroShapeSubTypes();
+    }
+
     @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {
@@ -62,19 +129,38 @@ public final class PythonClass extends PythonManagedClass {
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                    @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
+                    @Cached GetClassNode getClassNode,
+                    @Cached PForeignToPTypeNode convert,
+                    @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaSimpleName() {
-        return getName();
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return toJavaStringNode.execute(getName());
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaQualifiedName() {
-        return getQualName();
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return toJavaStringNode.execute(getQualName());
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     /*
@@ -87,7 +173,7 @@ public final class PythonClass extends PythonManagedClass {
      */
     protected static SourceSection findSourceSection(PythonManagedClass self) {
         for (Object key : self.getShape().getKeys()) {
-            if (key instanceof String) {
+            if (key instanceof TruffleString) {
                 Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(self, key);
                 InteropLibrary uncached = InteropLibrary.getFactory().getUncached();
                 if (uncached.hasSourceLocation(value)) {
@@ -105,18 +191,190 @@ public final class PythonClass extends PythonManagedClass {
     @ExportMessage
     @SuppressWarnings("static-method")
     protected SourceSection getSourceLocation(
+                    @Exclusive @Cached GilNode gil,
+                    @Bind("gil.acquire()") boolean mustRelease,
                     @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) throws UnsupportedMessageException {
-        if (section != null) {
-            return section;
-        } else {
-            throw UnsupportedMessageException.create();
+        try {
+            if (section != null) {
+                return section;
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     protected boolean hasSourceLocation(
+                    @Exclusive @Cached GilNode gil,
+                    @Bind("gil.acquire()") boolean mustRelease,
                     @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) {
-        return section != null;
+        try {
+            return section != null;
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @Override
+    public void setMRO(PythonAbstractClass[] mro) {
+        super.setMRO(mro);
+        mroShape = null;
+        invalidateMroShapeSubTypes();
+    }
+
+    public void setMRO(PythonAbstractClass[] mro, PythonLanguage language) {
+        super.setMRO(mro);
+        if (!language.isSingleContext()) {
+            mroShape = null;
+            invalidateMroShapeSubTypes();
+        }
+    }
+
+    public void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
+        dylib.put(this, DICT, value);
+        if (mroShapeSubTypes != null) {
+            hasMroShapeProfile.enter();
+            invalidateMroShapeSubTypes();
+        }
+    }
+
+    public void makeStaticBase(DynamicObjectLibrary dylib) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | IS_STATIC_BASE);
+    }
+
+    public boolean isStaticBase(DynamicObjectLibrary dylib) {
+        return (dylib.getShapeFlags(this) & IS_STATIC_BASE) != 0;
+    }
+
+    public MroShape getMroShape() {
+        return mroShape;
+    }
+
+    public void initializeMroShape(PythonLanguage language) {
+        assert mroShapeSubTypes == null;
+        assert mroShape == null;
+        if (!language.isSingleContext()) {
+            reinitializeMroShape(language);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @TruffleBoundary
+    private void reinitializeMroShape(PythonLanguage language) {
+        MroSequenceStorage mro = getMethodResolutionOrder();
+        mroShape = MroShape.create(mro, language);
+        if (mroShape != null) {
+            // add this class as a subtype of all classes in the mro (including itself)
+            mroLoop: for (int mroIdx = 0; mroIdx < mro.length(); mroIdx++) {
+                PythonManagedClass managedClass = (PythonManagedClass) mro.getItemNormalized(mroIdx);
+                if (managedClass instanceof PythonBuiltinClass) {
+                    // builtin classes are assumed immutable, so we do not need to register in their
+                    // mro subtypes array (in fact they do not have such array)
+                    continue;
+                }
+                PythonClass klass = (PythonClass) managedClass;
+                TruffleWeakReference<PythonClass>[] subTypes = klass.mroShapeSubTypes;
+                if (subTypes == null) {
+                    klass.mroShapeSubTypes = (TruffleWeakReference<PythonClass>[]) new TruffleWeakReference<?>[8];
+                    klass.mroShapeSubTypes[0] = new TruffleWeakReference<>(this);
+                    continue;
+                }
+                for (int subTypesIdx = 0; subTypesIdx < subTypes.length; subTypesIdx++) {
+                    if (subTypes[subTypesIdx] == null) {
+                        subTypes[subTypesIdx] = new TruffleWeakReference<>(this);
+                        continue mroLoop;
+                    } else if (subTypes[subTypesIdx].get() == this) {
+                        continue mroLoop;
+                    }
+                }
+                if (subTypes.length >= MRO_SUBTYPES_MAX) {
+                    mroShape = null;
+                    mroShapeSubTypes = null;
+                    break;
+                } else {
+                    klass.mroShapeSubTypes = Arrays.copyOf(subTypes, subTypes.length * 2);
+                    klass.mroShapeSubTypes[subTypes.length] = new TruffleWeakReference<>(this);
+                }
+            }
+        }
+    }
+
+    public boolean hasMroShapeSubTypes() {
+        return mroShapeSubTypes != null;
+    }
+
+    @Override
+    public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object newValue, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        return super.canSkipOnAttributeUpdate(key, newValue, codePointLengthNode, codePointAtIndexNode) && mroShapeSubTypes == null;
+    }
+
+    @TruffleBoundary
+    @Override
+    public void onAttributeUpdate(TruffleString key, Object newValue) {
+        super.onAttributeUpdate(key, newValue);
+        if (hasMroShapeSubTypes()) {
+            if (newValue == PNone.NO_VALUE || mroShapeInvalidationsCount >= MRO_SHAPE_INVALIDATIONS_MAX) {
+                // Any NO_VALUE means that we cannot rely on Shapes anymore, because they do not
+                // reflect the actual properties
+                invalidateMroShapeSubTypes();
+            } else {
+                mroShapeInvalidationsCount++;
+                updateMroShapeSubTypes(PythonLanguage.get(null));
+            }
+        }
+    }
+
+    private void invalidateMroShapeSubTypes() {
+        // Note: intentionally not a TruffleBoundary
+        if (hasMroShapeSubTypes()) {
+            for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
+                if (subTypeRef == null) {
+                    break;
+                }
+                PythonClass subType = subTypeRef.get();
+                if (subType != null) {
+                    subType.mroShape = null;
+                }
+            }
+            mroShapeSubTypes = null;
+        }
+    }
+
+    @TruffleBoundary
+    private void updateMroShapeSubTypes(PythonLanguage lang) {
+        if (hasMroShapeSubTypes()) {
+            for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
+                if (subTypeRef == null) {
+                    break;
+                }
+                PythonClass subType = subTypeRef.get();
+                if (subType != null) {
+                    subType.mroShape = MroShape.create(subType.getMethodResolutionOrder(), lang);
+                }
+            }
+        }
+    }
+
+    /**
+     * Can be used to update MRO shapes in inheritance hierarchy of a builtin.
+     */
+    @TruffleBoundary
+    static void updateMroShapeSubTypes(PythonBuiltinClass klass) {
+        ArrayDeque<Object> toProcess = new ArrayDeque<>();
+        toProcess.add(klass);
+        PythonLanguage lang = PythonLanguage.get(null);
+        while (toProcess.size() > 0) {
+            Object next = toProcess.pop();
+            if (next instanceof PythonClass) {
+                ((PythonClass) next).updateMroShapeSubTypes(lang);
+            } else {
+                toProcess.addAll(((PythonBuiltinClass) next).getSubClasses());
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,10 @@ public class ComplexFormatter extends InternalFormat.Formatter {
     }
 
     public ComplexFormatter format(PComplex value) {
+        return format(value.getReal(), value.getImag());
+    }
+
+    public ComplexFormatter format(double real, double imag) {
         setStart();
 
         // Note: the spec is validated in the __format__ builtin
@@ -108,9 +112,9 @@ public class ComplexFormatter extends InternalFormat.Formatter {
         boolean closeParen = false;
         if (hasNoSpecType()) {
             // no type spec: should be like the default __str__
-            if (value.getReal() == 0 && Math.copySign(1.0, value.getReal()) == 1.0) {
+            if (real == 0 && Math.copySign(1.0, real) == 1.0) {
                 // we intentionally use reFormatter to avoid unwanted '+' sign
-                reFormatter.format(value.getImag());
+                reFormatter.format(imag);
                 result.append('j');
                 return this;
             }
@@ -118,8 +122,8 @@ public class ComplexFormatter extends InternalFormat.Formatter {
             closeParen = true;
         }
 
-        reFormatter.format(value.getReal());
-        imFormatter.format(value.getImag());
+        reFormatter.format(real);
+        imFormatter.format(imag);
         result.append('j');
 
         if (closeParen) {

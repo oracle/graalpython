@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,132 +25,107 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
-import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
-import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
-import static com.oracle.truffle.api.TruffleFile.IS_SYMBOLIC_LINK;
-import static com.oracle.truffle.api.TruffleFile.LAST_ACCESS_TIME;
-import static com.oracle.truffle.api.TruffleFile.LAST_MODIFIED_TIME;
-import static com.oracle.truffle.api.TruffleFile.SIZE;
-import static com.oracle.truffle.api.TruffleFile.UNIX_CTIME;
-import static com.oracle.truffle.api.TruffleFile.UNIX_DEV;
-import static com.oracle.truffle.api.TruffleFile.UNIX_GID;
-import static com.oracle.truffle.api.TruffleFile.UNIX_GROUP;
-import static com.oracle.truffle.api.TruffleFile.UNIX_INODE;
-import static com.oracle.truffle.api.TruffleFile.UNIX_MODE;
-import static com.oracle.truffle.api.TruffleFile.UNIX_NLINK;
-import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
-import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
-import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.ProcessBuilder.Redirect;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.LinkOption;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.GroupPrincipal;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.nio.file.attribute.UserPrincipal;
-import java.security.NoSuchAlgorithmException;
+import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.nativeimage.ProcessProperties;
-
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentName;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsClinicProviders.StatNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemDynamicNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.socket.PSocket;
-import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyOSFSPathNode;
+import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
-import com.oracle.graal.python.runtime.PosixResources;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.util.FileDeleteShutdownHook;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -160,282 +135,306 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
-import com.sun.security.auth.UnixNumericGroupPrincipal;
-import com.sun.security.auth.UnixNumericUserPrincipal;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
-@CoreFunctions(defineModule = "posix")
+@CoreFunctions(defineModule = "posix", isEager = true)
 public class PosixModuleBuiltins extends PythonBuiltins {
-    private static final int TMPFILE = 4259840;
-    private static final int TEMPORARY = 4259840;
-    private static final int SYNC = 1052672;
-    private static final int RSYNC = 1052672;
-    private static final int DIRECT = 16384;
-    private static final int DSYNC = 4096;
-    private static final int NDELAY = 2048;
-    private static final int NONBLOCK = 2048;
-    private static final int APPEND = 1024;
-    private static final int TRUNC = 512;
-    private static final int EXCL = 128;
-    private static final int CREAT = 64;
-    private static final int RDWR = 2;
-    private static final int WRONLY = 1;
-    private static final int RDONLY = 0;
 
-    private static final int SEEK_SET = 0;
-    private static final int SEEK_CUR = 1;
-    private static final int SEEK_END = 2;
+    static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PStatResult,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "stat_result: Result from stat, fstat, or lstat.\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "  (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)\n" +
+                    "or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.\n" +
+                    "\n" +
+                    "Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,\n" +
+                    "or st_flags, they are available as attributes only.\n" +
+                    "\n" +
+                    "See os.stat for more information.",
+                    // @formatter:on
+                    10,
+                    new String[]{
+                                    "st_mode", "st_ino", "st_dev", "st_nlink", "st_uid", "st_gid", "st_size",
+                                    null, null, null,
+                                    "st_atime", "st_mtime", "st_ctime",
+                                    "st_atime_ns", "st_mtime_ns", "st_ctime_ns"
+                    },
+                    new String[]{
+                                    "protection bits", "inode", "device", "number of hard links",
+                                    "user ID of owner", "group ID of owner", "total size, in bytes",
+                                    "integer time of last access", "integer time of last modification", "integer time of last change",
+                                    "time of last access", "time of last modification", "time of last change",
+                                    "time of last access in nanoseconds", "time of last modification in nanoseconds", "time of last change in nanoseconds"
+                    });
 
-    private static final int WNOHANG = 1;
-    private static final int WUNTRACED = 3;
+    private static final StructSequence.BuiltinTypeDescriptor TERMINAL_SIZE_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PTerminalSize,
+                    "A tuple of (columns, lines) for holding terminal window size",
+                    2,
+                    new String[]{"columns", "lines"},
+                    new String[]{"width of the terminal window in characters", "height of the terminal window in characters"});
 
-    private static final int F_OK = 0;
-    private static final int X_OK = 1;
-    private static final int W_OK = 2;
-    private static final int R_OK = 4;
-
-    private static PosixFilePermission[][] otherBitsToPermission = new PosixFilePermission[][]{
-                    new PosixFilePermission[]{},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_WRITE},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_READ},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE},
-                    new PosixFilePermission[]{PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE},
-    };
-    private static PosixFilePermission[][] groupBitsToPermission = new PosixFilePermission[][]{
-                    new PosixFilePermission[]{},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_WRITE},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_READ},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE},
-                    new PosixFilePermission[]{PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE},
-    };
-    private static PosixFilePermission[][] ownerBitsToPermission = new PosixFilePermission[][]{
-                    new PosixFilePermission[]{},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_WRITE},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_READ},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE},
-                    new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
-    };
-
-    private static boolean terminalIsInteractive(PythonContext context) {
-        return context.getOption(PythonOptions.TerminalIsInteractive);
-    }
+    private static final StructSequence.BuiltinTypeDescriptor UNAME_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PUnameResult,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "uname_result: Result from os.uname().\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "  (sysname, nodename, release, version, machine),\n" +
+                    "or via the attributes sysname, nodename, release, version, and machine.\n" +
+                    "\n" +
+                    "See os.uname for more information.",
+                    // @formatter:on
+                    5,
+                    new String[]{"sysname", "nodename", "release", "version", "machine"},
+                    new String[]{
+                                    "operating system name", "name of machine on network (implementation-defined)",
+                                    "operating system release", "operating system version", "hardware identifier"
+                    });
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixModuleBuiltinsFactory.getFactories();
     }
 
-    public abstract static class PythonFileNode extends PythonBuiltinNode {
-        protected PosixResources getResources() {
-            return getContext().getResources();
+    public PosixModuleBuiltins() {
+        addConstants(PosixConstants.openFlags);
+        addConstants(PosixConstants.waitOptions);
+        addConstants(PosixConstants.accessMode);
+        addConstants(PosixConstants.rtld);
+
+        addConstant(PosixConstants.SEEK_DATA);
+        addConstant(PosixConstants.SEEK_HOLE);
+    }
+
+    private void addConstant(IntConstant c) {
+        if (c.defined) {
+            addBuiltinConstant(c.name, c.getValueIfDefined());
         }
     }
 
-    public PosixModuleBuiltins() {
-        builtinConstants.put("O_RDONLY", RDONLY);
-        builtinConstants.put("O_WRONLY", WRONLY);
-        builtinConstants.put("O_RDWR", RDWR);
-        builtinConstants.put("O_CREAT", CREAT);
-        builtinConstants.put("O_EXCL", EXCL);
-        builtinConstants.put("O_TRUNC", TRUNC);
-        builtinConstants.put("O_APPEND", APPEND);
-        builtinConstants.put("O_NONBLOCK", NONBLOCK);
-        builtinConstants.put("O_NDELAY", NDELAY);
-        builtinConstants.put("O_DSYNC", DSYNC);
-        builtinConstants.put("O_DIRECT", DIRECT);
-        builtinConstants.put("O_RSYNC", RSYNC);
-        builtinConstants.put("O_SYNC", SYNC);
-        builtinConstants.put("O_TEMPORARY", TEMPORARY);
-        builtinConstants.put("O_TMPFILE", TMPFILE);
-        builtinConstants.put("SEEK_SET", SEEK_SET);
-        builtinConstants.put("SEEK_CUR", SEEK_CUR);
-        builtinConstants.put("SEEK_END", SEEK_END);
-
-        builtinConstants.put("WNOHANG", WNOHANG);
-        builtinConstants.put("WUNTRACED", WUNTRACED);
-
-        builtinConstants.put("F_OK", F_OK);
-        builtinConstants.put("X_OK", X_OK);
-        builtinConstants.put("W_OK", W_OK);
-        builtinConstants.put("R_OK", R_OK);
+    private void addConstants(IntConstant[] constants) {
+        for (IntConstant c : constants) {
+            addConstant(c);
+        }
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("_have_functions", core.factory().createList());
-        builtinConstants.put("environ", core.factory().createDict());
+        ArrayList<TruffleString> haveFunctions = new ArrayList<>();
+        Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
+                        tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
+                        tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
+        // Not implemented yet:
+        // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
+        // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
+        // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
+        if (PosixConstants.HAVE_FUTIMENS.value) {
+            haveFunctions.add(tsLiteral("HAVE_FUTIMENS"));
+        }
+        if (PosixConstants.HAVE_UTIMENSAT.value) {
+            haveFunctions.add(tsLiteral("HAVE_UTIMENSAT"));
+        }
+        addBuiltinConstant("_have_functions", core.factory().createList(haveFunctions.toArray()));
+        addBuiltinConstant("environ", core.factory().createDict());
+
+        StructSequence.initType(core, STAT_RESULT_DESC);
+        StructSequence.initType(core, TERMINAL_SIZE_DESC);
+        StructSequence.initType(core, UNAME_RESULT_DESC);
+
+        // The stat_result and terminal_size classes are formally part of the 'os' module, although
+        // they are exposed by the 'posix' module. In CPython, they are defined in posixmodule.c,
+        // with their __module__ being set to 'os', and later they are imported by os.py.
+        // Our infrastructure in PythonBuiltinClassType currently does not allow us to
+        // define a class in one module (os) and make it public in another (posix), so we create
+        // them directly in the 'os' module, and expose them in the `posix` module as well.
+        // Note that the classes are still re-imported by os.py.
+        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        posix.setAttribute(PythonBuiltinClassType.PStatResult.getName(), core.lookupType(PythonBuiltinClassType.PStatResult));
+        posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
+
+        posix.setAttribute(tsLiteral("error"), core.lookupType(PythonBuiltinClassType.OSError));
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
         // fill the environ dictionary with the current environment
+        // TODO we should probably use PosixSupportLibrary to get environ
         Map<String, String> getenv = System.getenv();
         PDict environ = core.factory().createDict();
+        String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
-            String value;
-            if ("__PYVENV_LAUNCHER__".equals(entry.getKey())) {
+            if (pyenvLauncherKey.equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
-                value = core.getContext().getOption(PythonOptions.Executable);
+                TruffleString value = core.getContext().getOption(PythonOptions.Executable);
+
+                try {
+                    PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+                    Object posixSupport = core.getContext().getPosixSupport();
+                    Object k = posixLib.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
+                    Object v = posixLib.createPathFromString(posixSupport, value);
+                    posixLib.setenv(posixSupport, k, v, true);
+                } catch (PosixException ignored) {
+                }
+                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.toJavaStringUncached().getBytes()));
             } else {
-                value = entry.getValue();
+                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes((entry.getValue().getBytes())));
             }
-            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.getBytes()));
         }
-        PythonModule posix = core.lookupBuiltinModule("posix");
-        Object environAttr = posix.getAttribute("environ");
+        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }
 
-    @Builtin(name = "execv", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
+    @ImportStatic(PosixModuleBuiltins.class)
     @GenerateNodeFactory
-    public abstract static class ExecvNode extends PythonBuiltinNode {
-        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+    public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object execute(VirtualFrame frame, PythonModule thisModule, String path, PList args) {
-            return doExecute(frame, thisModule, path, args);
-        }
-
-        @Specialization
-        Object execute(VirtualFrame frame, PythonModule thisModule, String path, PTuple args) {
-            // in case of execl the PList happens to be in the tuples first entry
-            Object list = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), 0);
-            return doExecute(frame, thisModule, path, list instanceof PList ? (PList) list : args);
-        }
-
-        @Specialization(limit = "1")
-        Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PTuple args,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return execute(frame, thisModule, lib.asPath(path), args);
-        }
-
-        @Specialization(limit = "1")
-        Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PList args,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return doExecute(frame, thisModule, lib.asPath(path), args);
-        }
-
-        Object doExecute(VirtualFrame frame, PythonModule thisModule, String path, PSequence args) {
-            if (!getContext().isExecutableAccessAllowed()) {
-                throw raiseOSError(frame, OSErrorEnum.EPERM);
+        public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
+                        @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
+            PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
+            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
+            for (int i = 7; i <= 9; i++) {
+                if (data[i + 3] == PNone.NONE) {
+                    data[i + 3] = data[i];
+                }
             }
-            try {
-                return doExecuteInternal(thisModule, path, args);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
-            }
-        }
-
-        @TruffleBoundary
-        Object doExecuteInternal(PythonModule thisModule, String path, PSequence args) throws IOException {
-            int size = args.getSequenceStorage().length();
-            if (size == 0) {
-                throw raise(ValueError, ErrorMessages.ARG_D_MUST_NOT_BE_EMPTY, 2);
-            }
-            String[] cmd = new String[size];
-            // We don't need the path variable because it's already in the array
-            // but I need to process it for CI gate
-            cmd[0] = path;
-            for (int i = 0; i < size; i++) {
-                cmd[i] = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), i).toString();
-            }
-            PDict environ = (PDict) thisModule.getAttribute("environ");
-            ProcessBuilder builder = new ProcessBuilder(cmd);
-            Map<String, String> environment = builder.environment();
-            environ.entries().forEach(entry -> {
-                environment.put(new String(toBytes.execute(entry.key)), new String(toBytes.execute(entry.value)));
-            });
-            Process pr = builder.start();
-            BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-            OutputStream stream = getContext().getEnv().out();
-            String line = "";
-            while ((line = bfr.readLine()) != null) {
-                stream.write(line.getBytes());
-                stream.write("\n".getBytes());
-            }
-            BufferedReader stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
-            OutputStream errStream = getContext().getEnv().err();
-            line = "";
-            while ((line = stderr.readLine()) != null) {
-                errStream.write(line.getBytes());
-                errStream.write("\n".getBytes());
-            }
-            try {
-                pr.waitFor();
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            }
-            throw new PythonExitException(this, pr.exitValue());
+            return p;
         }
     }
 
-    @Builtin(name = "getcwd", minNumOfPositionalArgs = 0)
+    @Builtin(name = "putenv", minNumOfPositionalArgs = 2, parameterNames = {"name", "value"})
+    @ArgumentClinic(name = "name", conversionClass = FsConverterNode.class)
+    @ArgumentClinic(name = "value", conversionClass = FsConverterNode.class)
     @GenerateNodeFactory
-    public abstract static class CwdNode extends PythonBuiltinNode {
+    public abstract static class PutenvNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.PutenvNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        String cwd(VirtualFrame frame) {
+        PNone putenv(VirtualFrame frame, PBytes nameBytes, PBytes valueBytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
+            // conversions for emulated backend because the bytes version after fsencode conversion
+            // is subject to sys.audit.
+            byte[] name = toBytesNode.execute(nameBytes);
+            byte[] value = toBytesNode.execute(valueBytes);
+            Object nameOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), name));
+            Object valueOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), value));
+            checkEqualSign(name);
+            auditNode.audit("os.putenv", nameBytes, valueBytes);
             try {
-                return getContext().getEnv().getCurrentWorkingDirectory().getPath();
-            } catch (SecurityException e) {
-                throw raiseOSError(frame, OSErrorEnum.EPERM);
+                posixLib.setenv(getPosixSupport(), nameOpaque, valueOpaque, true);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        private Object checkNull(Object value) {
+            if (value == null) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
+            return value;
+        }
+
+        private void checkEqualSign(byte[] bytes) {
+            for (byte b : bytes) {
+                if (b == '=') {
+                    throw raise(ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
+                }
             }
         }
     }
 
-    @Builtin(name = "chdir", minNumOfPositionalArgs = 1)
+    @Builtin(name = "execv", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "argv"})
+    @ArgumentClinic(name = "pathname", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @GenerateNodeFactory
-    public abstract static class ChdirNode extends PythonBuiltinNode {
-        @Specialization
-        PNone chdir(VirtualFrame frame, String spath) {
-            Env env = getContext().getEnv();
-            try {
-                TruffleFile dir = env.getPublicTruffleFile(spath).getAbsoluteFile();
-                env.setCurrentWorkingDirectory(dir);
-                return PNone.NONE;
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, spath);
-            }
+    public abstract static class ExecvNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ExecvNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "1")
-        PNone chdirPath(VirtualFrame frame, Object path,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return chdir(frame, lib.asPath(path));
+        @Specialization
+        Object execvArgsList(VirtualFrame frame, PosixPath path, PList argv,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached ObjectToOpaquePathNode toOpaquePathNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
+            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
+        }
+
+        @Specialization
+        Object execvArgsTuple(VirtualFrame frame, PosixPath path, PTuple argv,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached ObjectToOpaquePathNode toOpaquePathNode,
+                        @Cached AuditNode auditNode,
+                        @Cached GilNode gil) {
+            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
+            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
+        }
+
+        @Specialization(guards = {"!isList(argv)", "!isPTuple(argv)"})
+        @SuppressWarnings("unused")
+        Object execvInvalidArgs(VirtualFrame frame, PosixPath path, Object argv) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
+        }
+
+        private void execv(VirtualFrame frame, PosixPath path, Object argv, SequenceStorage argvStorage,
+                        PosixSupportLibrary posixLib,
+                        SequenceStorageNodes.ToArrayNode toArrayNode,
+                        ObjectToOpaquePathNode toOpaquePathNode,
+                        SysModuleBuiltins.AuditNode auditNode,
+                        GilNode gil) {
+            Object[] args = toArrayNode.execute(argvStorage);
+            if (args.length < 1) {
+                throw raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
+            }
+            Object[] opaqueArgs = new Object[args.length];
+            for (int i = 0; i < args.length; ++i) {
+                opaqueArgs[i] = toOpaquePathNode.execute(frame, args[i], i == 0);
+            }
+            // TODO ValueError "execv() arg 2 first element cannot be empty"
+
+            auditNode.audit("os.exec", path.originalObject, argv, PNone.NONE);
+
+            gil.release(true);
+            try {
+                posixLib.execv(getPosixSupport(), path.value, opaqueArgs);
+            } catch (PosixException e) {
+                gil.acquire();
+                throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                gil.acquire();
+            }
+            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
     }
 
     @Builtin(name = "getpid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
-        @Specialization(rewriteOn = Exception.class)
-        @TruffleBoundary
-        long getPid() throws Exception {
-            if (ImageInfo.inImageRuntimeCode()) {
-                return ProcessProperties.getProcessID();
-            }
-            TruffleFile statFile = getContext().getPublicTruffleFileRelaxed("/proc/self/stat");
-            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
-        }
-
         @Specialization
-        @TruffleBoundary
-        static long getPidFallback() {
-            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-            return Long.parseLong(info.split("@")[0]);
+        long getPid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getpid(getPosixSupport());
         }
     }
 
@@ -443,1295 +442,1595 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetUidNode extends PythonBuiltinNode {
         @Specialization
-        static int getPid() {
-            return getSystemUid();
-        }
-
-        @TruffleBoundary
-        static int getSystemUid() {
-            String osName = System.getProperty("os.name");
-            if (osName.contains("Linux")) {
-                return (int) new com.sun.security.auth.module.UnixSystem().getUid();
-            }
-            return 1000;
+        long getUid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getuid(getPosixSupport());
         }
     }
 
-    @Builtin(name = "fstat", minNumOfPositionalArgs = 1)
+    @Builtin(name = "getppid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class FstatNode extends PythonFileNode {
-        @Child private StatNode statNode;
-
-        protected abstract Object executeWith(VirtualFrame frame, Object fd);
-
-        @Specialization(guards = {"fd >= 0", "fd <= 2"})
-        Object fstatStd(@SuppressWarnings("unused") int fd) {
-            return factory().createTuple(new Object[]{
-                            8592,
-                            0, // ino
-                            0, // dev
-                            0, // nlink
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0
-            });
-        }
-
-        @Specialization(guards = "fd > 2")
-        Object fstat(VirtualFrame frame, int fd,
-                        @Cached("create()") BranchProfile fstatForNonFile,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            PosixResources resources = getResources();
-            String filePath = resources.getFilePath(fd);
-            if (filePath != null) {
-                if (statNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    statNode = insert(StatNode.create());
-                }
-                return statNode.call(frame, resources.getFilePath(fd), PNone.NO_VALUE);
-            } else {
-                fstatForNonFile.enter();
-                return fstatWithoutPath(resources, fd, channelClassProfile);
-            }
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private PTuple fstatWithoutPath(PosixResources resources, int fd, ValueProfile channelClassProfile) {
-            Channel fileChannel = resources.getFileChannel(fd, channelClassProfile);
-            int mode = 0;
-            if (fileChannel instanceof ReadableByteChannel) {
-                mode |= 0444;
-            }
-            if (fileChannel instanceof WritableByteChannel) {
-                mode |= 0222;
-            }
-            return factory().createTuple(new Object[]{
-                            mode,
-                            0, // ino
-                            0, // dev
-                            0, // nlink
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-            });
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object fstatPInt(VirtualFrame frame, Object fd,
-                        @CachedLibrary("fd") PythonObjectLibrary lib,
-                        @Cached("create()") FstatNode recursive) {
-            return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)));
-        }
-
-        protected static FstatNode create() {
-            return PosixModuleBuiltinsFactory.FstatNodeFactory.create(null);
+    public abstract static class GetPpidNode extends PythonBuiltinNode {
+        @Specialization
+        long getPpid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getppid(getPosixSupport());
         }
     }
 
-    @Builtin(name = "set_inheritable", minNumOfPositionalArgs = 2)
+    @Builtin(name = "getsid", minNumOfPositionalArgs = 1, parameterNames = {"pid"})
+    @ArgumentClinic(name = "pid", conversionClass = PidtConversionNode.class)
     @GenerateNodeFactory
-    public abstract static class SetInheritableNode extends PythonFileNode {
-        @Specialization(guards = {"fd >= 0", "fd <= 2"})
-        static Object setInheritableStd(@SuppressWarnings("unused") int fd, @SuppressWarnings("unused") Object inheritable) {
-            // TODO: investigate if for the stdout/in/err this flag can be set
-            return PNone.NONE;
+    public abstract static class GetSidNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.GetSidNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "fd > 2")
-        Object setInheritable(VirtualFrame frame, int fd, @SuppressWarnings("unused") Object inheritable) {
-            Channel ch = getResources().getFileChannel(fd);
-            if (ch == null || ch instanceof PSocket) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
+        @Specialization
+        long getSid(VirtualFrame frame, long pid,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getsid(getPosixSupport(), pid);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            // TODO: investigate how to map this to the truffle file api (if supported)
-            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"path", "follow_symlinks"})
-    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    @ImportStatic(SpecialMethodNames.class)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class StatNode extends PythonBinaryClinicBuiltinNode {
-        private static final int S_IFIFO = 0010000;
-        private static final int S_IFCHR = 0020000;
-        private static final int S_IFBLK = 0060000;
-        private static final int S_IFSOCK = 0140000;
-        private static final int S_IFLNK = 0120000;
-        private static final int S_IFDIR = 0040000;
-        private static final int S_IFREG = 0100000;
+    public abstract static class OpenNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return StatNodeClinicProviderGen.INSTANCE;
+            return PosixModuleBuiltinsClinicProviders.OpenNodeClinicProviderGen.INSTANCE;
         }
-
-        @Specialization(limit = "2")
-        Object doStatPath(VirtualFrame frame, Object path, boolean followSymlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return stat(frame, lib.asPath(path), followSymlinks);
-        }
-
-        @TruffleBoundary
-        static long fileTimeToSeconds(FileTime t) {
-            return t.to(TimeUnit.SECONDS);
-        }
-
-        Object stat(VirtualFrame frame, String path, boolean followSymlinks) {
-            try {
-                return statInternal(path, followSymlinks);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
-            }
-        }
-
-        @TruffleBoundary
-        Object statInternal(String path, boolean followSymlinks) throws IOException {
-            TruffleFile f = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-            LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-            try {
-                return unixStat(f, linkOptions);
-            } catch (UnsupportedOperationException unsupported) {
-                try {
-                    return posixStat(f, linkOptions);
-                } catch (UnsupportedOperationException unsupported2) {
-                    return basicStat(f, linkOptions);
-                }
-            }
-        }
-
-        private PTuple unixStat(TruffleFile file, LinkOption... linkOptions) throws IOException {
-            TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
-                            UNIX_MODE,
-                            UNIX_INODE,
-                            UNIX_DEV,
-                            UNIX_NLINK,
-                            UNIX_UID,
-                            UNIX_GID,
-                            SIZE,
-                            LAST_ACCESS_TIME,
-                            LAST_MODIFIED_TIME,
-                            UNIX_CTIME), linkOptions);
-            return factory().createTuple(new Object[]{
-                            attributes.get(UNIX_MODE),
-                            attributes.get(UNIX_INODE),
-                            attributes.get(UNIX_DEV),
-                            attributes.get(UNIX_NLINK),
-                            attributes.get(UNIX_UID),
-                            attributes.get(UNIX_GID),
-                            attributes.get(SIZE),
-                            fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME)),
-                            fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME)),
-                            fileTimeToSeconds(attributes.get(UNIX_CTIME)),
-            });
-        }
-
-        private PTuple posixStat(TruffleFile file, LinkOption... linkOptions) throws IOException {
-            int mode = 0;
-            long size = 0;
-            long ctime = 0;
-            long atime = 0;
-            long mtime = 0;
-            long gid = 0;
-            long uid = 0;
-            TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
-                            IS_DIRECTORY,
-                            IS_SYMBOLIC_LINK,
-                            IS_REGULAR_FILE,
-                            LAST_MODIFIED_TIME,
-                            LAST_ACCESS_TIME,
-                            CREATION_TIME,
-                            SIZE,
-                            UNIX_OWNER,
-                            UNIX_GROUP,
-                            UNIX_PERMISSIONS), linkOptions);
-            mode |= fileTypeBitsFromAttributes(attributes);
-            mtime = fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME));
-            ctime = fileTimeToSeconds(attributes.get(CREATION_TIME));
-            atime = fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME));
-            size = attributes.get(SIZE);
-            UserPrincipal owner = attributes.get(UNIX_OWNER);
-            if (owner instanceof UnixNumericUserPrincipal) {
-                try {
-                    uid = strToLong(((UnixNumericUserPrincipal) owner).getName());
-                } catch (NumberFormatException e2) {
-                }
-            }
-            GroupPrincipal group = attributes.get(UNIX_GROUP);
-            if (group instanceof UnixNumericGroupPrincipal) {
-                try {
-                    gid = strToLong(((UnixNumericGroupPrincipal) group).getName());
-                } catch (NumberFormatException e2) {
-                }
-            }
-            final Set<PosixFilePermission> posixFilePermissions = attributes.get(UNIX_PERMISSIONS);
-            mode = posixPermissionsToMode(mode, posixFilePermissions);
-            int inode = getInode(file);
-            return factory().createTuple(new Object[]{
-                            mode,
-                            inode, // ino
-                            0, // dev
-                            0, // nlink
-                            uid,
-                            gid,
-                            size,
-                            atime,
-                            mtime,
-                            ctime,
-            });
-        }
-
-        private PTuple basicStat(TruffleFile file, LinkOption... linkOptions) throws IOException {
-            int mode = 0;
-            long size = 0;
-            long ctime = 0;
-            long atime = 0;
-            long mtime = 0;
-            long gid = 0;
-            long uid = 0;
-            TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
-                            IS_DIRECTORY,
-                            IS_SYMBOLIC_LINK,
-                            IS_REGULAR_FILE,
-                            LAST_MODIFIED_TIME,
-                            LAST_ACCESS_TIME,
-                            CREATION_TIME,
-                            SIZE), linkOptions);
-            mode |= fileTypeBitsFromAttributes(attributes);
-            mtime = fileTimeToSeconds(attributes.get(LAST_MODIFIED_TIME));
-            ctime = fileTimeToSeconds(attributes.get(CREATION_TIME));
-            atime = fileTimeToSeconds(attributes.get(LAST_ACCESS_TIME));
-            size = attributes.get(SIZE);
-            if (file.isReadable()) {
-                mode |= 0004;
-                mode |= 0040;
-                mode |= 0400;
-            }
-            if (file.isWritable()) {
-                mode |= 0002;
-                mode |= 0020;
-                mode |= 0200;
-            }
-            if (file.isExecutable()) {
-                mode |= 0001;
-                mode |= 0010;
-                mode |= 0100;
-            }
-            int inode = getInode(file);
-            return factory().createTuple(new Object[]{
-                            mode,
-                            inode, // ino
-                            0, // dev
-                            0, // nlink
-                            uid,
-                            gid,
-                            size,
-                            atime,
-                            mtime,
-                            ctime,
-            });
-        }
-
-        private static int fileTypeBitsFromAttributes(TruffleFile.Attributes attributes) {
-            int mode = 0;
-            if (attributes.get(IS_REGULAR_FILE)) {
-                mode |= S_IFREG;
-            } else if (attributes.get(IS_DIRECTORY)) {
-                mode |= S_IFDIR;
-            } else if (attributes.get(IS_SYMBOLIC_LINK)) {
-                mode |= S_IFLNK;
-            } else {
-                // TODO: differentiate these
-                mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
-            }
-            return mode;
-        }
-
-        private int getInode(TruffleFile file) {
-            TruffleFile canonical;
-            try {
-                canonical = file.getCanonicalFile();
-            } catch (IOException | SecurityException e) {
-                // best effort
-                canonical = file.getAbsoluteFile();
-            }
-            return getContext().getResources().getInodeId(canonical.getPath());
-        }
-
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static long strToLong(String name) throws NumberFormatException {
-            return Long.decode(name).longValue();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int posixPermissionsToMode(int inputMode, final Set<PosixFilePermission> posixFilePermissions) {
-            int mode = inputMode;
-            if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
-                mode |= 0004;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.OTHERS_WRITE)) {
-                mode |= 0002;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.OTHERS_EXECUTE)) {
-                mode |= 0001;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.GROUP_READ)) {
-                mode |= 0040;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.GROUP_WRITE)) {
-                mode |= 0020;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.GROUP_EXECUTE)) {
-                mode |= 0010;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.OWNER_READ)) {
-                mode |= 0400;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.OWNER_WRITE)) {
-                mode |= 0200;
-            }
-            if (posixFilePermissions.contains(PosixFilePermission.OWNER_EXECUTE)) {
-                mode |= 0100;
-            }
-            return mode;
-        }
-
-        public static StatNode create() {
-            return StatNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = "listdir", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ListdirNode extends PythonBuiltinNode {
-        @Specialization(limit = "3")
-        Object listdir(VirtualFrame frame, Object pathArg,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String path = lib.asPath(pathArg);
-            try {
-                TruffleFile file = getContext().getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-                Collection<TruffleFile> listFiles = file.list();
-                Object[] filenames = listToArray(listFiles);
-                return factory().createList(filenames);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
-            }
-        }
-
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static Object[] listToArray(Collection<TruffleFile> listFiles) {
-            Object[] filenames = new Object[listFiles.size()];
-            int i = 0;
-            for (TruffleFile f : listFiles) {
-                filenames[i] = f.getName();
-                i += 1;
-            }
-            return filenames;
-        }
-    }
-
-    @Builtin(name = "ScandirIterator", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = true)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ScandirIterNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        Object doit(VirtualFrame frame, Object cls, Object pathArg,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String path = lib.asPath(pathArg);
-            try {
-                TruffleFile file = getContext().getEnv().getPublicTruffleFile(path);
-                return factory().createScandirIterator(cls, path, file.newDirectoryStream(), PGuards.isBytes(pathArg));
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
-            }
-        }
-    }
-
-    @Builtin(name = "DirEntry", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class DirEntryNode extends PythonTernaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        Object doit(VirtualFrame frame, Object cls, String name, Object pathArg,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String path = lib.asPath(pathArg);
-            try {
-                TruffleFile dir = getContext().getEnv().getPublicTruffleFile(path);
-                TruffleFile file = dir.resolve(name);
-                return factory().createDirEntry(cls, name, file);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
-            }
-        }
-    }
-
-    @Builtin(name = "dup", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class DupNode extends PythonFileNode {
-        @Specialization
-        int dupInt(int fd) {
-            return getResources().dup(fd);
-        }
-
-        @Specialization(replaces = "dupInt")
-        int dupGeneric(Object fd,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return getResources().dup(castToJavaIntNode.execute(fd));
-        }
-    }
-
-    @Builtin(name = "dup2", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class Dup2Node extends PythonFileNode {
-        @Specialization
-        int dup(VirtualFrame frame, int fd, int fd2) {
-            try {
-                return getResources().dup2(fd, fd2);
-            } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        int dupPInt(VirtualFrame frame, PInt fd, PInt fd2) throws OverflowException {
-            try {
-                return getResources().dup2(fd.intValueExact(), fd2.intValueExact());
-            } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-        }
-
-        @Specialization(replaces = "dupPInt")
-        int dupOvf(VirtualFrame frame, PInt fd, PInt fd2) {
-            try {
-                return dupPInt(frame, fd, fd2);
-            } catch (OverflowException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-        }
-    }
-
-    @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "flags", "mode", "dir_fd"})
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class OpenNode extends PythonFileNode {
-
-        @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"}, limit = "3")
-        Object open(VirtualFrame frame, Object pathname, long flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
-                        @CachedLibrary("pathname") PythonObjectLibrary lib) {
-            return openMode(frame, pathname, flags, 0777, dir_fd, lib);
-        }
-
-        @Specialization(guards = {"isNoValue(dir_fd)"}, limit = "3")
-        Object openMode(VirtualFrame frame, Object pathArg, long flags, long fileMode, @SuppressWarnings("unused") PNone dir_fd,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String pathname = lib.asPath(pathArg);
-            Set<StandardOpenOption> options = flagsToOptions((int) flags);
-            FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes((int) fileMode);
-            try {
-                return doOpenFile(pathname, options, attributes);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, pathname);
-            }
-        }
-
-        @TruffleBoundary
-        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>> attributes) throws IOException {
-            SeekableByteChannel fc;
-            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-            if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
-                truffleFile = getContext().getEnv().createTempFile(truffleFile, null, null);
-                options.remove(StandardOpenOption.CREATE_NEW);
-                options.remove(StandardOpenOption.DELETE_ON_CLOSE);
-                options.add(StandardOpenOption.CREATE);
-                getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
-            }
-
-            fc = truffleFile.newByteChannel(options, attributes);
-            return getResources().open(truffleFile, fc);
-        }
-
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        @TruffleBoundary(allowInlining = true)
-        private static FileAttribute<Set<PosixFilePermission>> modeToAttributes(int fileMode) {
-            HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7]));
-            perms.addAll(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7]));
-            perms.addAll(Arrays.asList(otherBitsToPermission[fileMode & 7]));
-            return PosixFilePermissions.asFileAttribute(perms);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static Set<StandardOpenOption> flagsToOptions(int flags) {
-            Set<StandardOpenOption> options = new HashSet<>();
-            if ((flags & WRONLY) != 0) {
-                options.add(StandardOpenOption.WRITE);
-            } else if ((flags & RDWR) != 0) {
-                options.add(StandardOpenOption.READ);
-                options.add(StandardOpenOption.WRITE);
-            } else {
-                options.add(StandardOpenOption.READ);
-            }
-            if ((flags & CREAT) != 0) {
-                options.add(StandardOpenOption.WRITE);
-                options.add(StandardOpenOption.CREATE);
-            }
-            if ((flags & EXCL) != 0) {
-                options.add(StandardOpenOption.WRITE);
-                options.add(StandardOpenOption.CREATE_NEW);
-            }
-            if ((flags & APPEND) != 0) {
-                options.add(StandardOpenOption.WRITE);
-                options.add(StandardOpenOption.APPEND);
-            }
-            if ((flags & NDELAY) != 0 || (flags & DIRECT) != 0) {
-                options.add(StandardOpenOption.DSYNC);
-            }
-            if ((flags & SYNC) != 0) {
-                options.add(StandardOpenOption.SYNC);
-            }
-            if ((flags & TRUNC) != 0) {
-                options.add(StandardOpenOption.WRITE);
-                options.add(StandardOpenOption.TRUNCATE_EXISTING);
-            }
-            if ((flags & TMPFILE) != 0) {
-                options.add(StandardOpenOption.DELETE_ON_CLOSE);
-            }
-            return options;
-        }
-    }
-
-    @Builtin(name = "lseek", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class LseekNode extends PythonFileNode {
-        private final BranchProfile gotException = BranchProfile.create();
-        private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        Object lseek(VirtualFrame frame, long fd, long pos, int how,
-                        @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            Channel channel = getResources().getFileChannel((int) fd, channelClassProfile);
-            if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
-                throw raiseOSError(frame, OSErrorEnum.ESPIPE);
-            }
-            SeekableByteChannel fc = (SeekableByteChannel) channel;
+        int open(VirtualFrame frame, PosixPath path, int flags, int mode, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
+            int fixedFlags = flags | O_CLOEXEC.value;
+            auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
+            gil.release(true);
             try {
-                return setPosition(pos, how, fc);
-            } catch (Exception e) {
-                gotException.enter();
-                throw raiseOSError(frame, e);
+                while (true) {
+                    try {
+                        return posixLib.openat(getPosixSupport(), dirFd, path.value, fixedFlags, mode);
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(this);
+                        } else {
+                            gil.acquire(); // need GIL to construct OSError
+                            throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+                        }
+                    }
+                }
+            } finally {
+                gil.acquire();
             }
-        }
-
-        @Specialization(limit = "1")
-        Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
-                        @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @CachedLibrary("fd") PythonObjectLibrary libFd,
-                        @CachedLibrary("pos") PythonObjectLibrary libPos,
-                        @Cached CastToJavaIntExactNode castHowNode) {
-
-            return lseek(frame, libFd.asJavaLong(fd), libPos.asJavaLong(pos), castHowNode.execute(how), channelClassProfile);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static Object setPosition(long pos, int how, SeekableByteChannel fc) throws IOException {
-            switch (how) {
-                case SEEK_CUR:
-                    fc.position(fc.position() + pos);
-                    break;
-                case SEEK_END:
-                    fc.position(fc.size() + pos);
-                    break;
-                case SEEK_SET:
-                    fc.position(pos);
-                    break;
-                default:
-                    throw new IllegalArgumentException();
-            }
-            return fc.position();
         }
     }
 
-    @Builtin(name = "close", minNumOfPositionalArgs = 1)
+    @Builtin(name = "close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class CloseNode extends PythonFileNode {
-        private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
+    public abstract static class CloseNode extends PythonUnaryClinicBuiltinNode {
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object close(VirtualFrame frame, Object fdObject,
-                        @CachedLibrary("fdObject") PythonObjectLibrary lib,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            int fd = lib.asSizeWithState(fdObject, PArguments.getThreadState(frame));
-            PosixResources resources = getResources();
-            Channel channel = resources.getFileChannel(fd, channelClassProfile);
-            if (noFile.profile(channel == null)) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            } else {
-                resources.close(fd);
-            }
-            return PNone.NONE;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.CloseNodeClinicProviderGen.INSTANCE;
         }
 
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static void closeChannel(Channel channel) throws IOException {
-            channel.close();
-        }
-    }
-
-    @Builtin(name = "unlink", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class UnlinkNode extends PythonFileNode {
-
-        @Specialization(limit = "3")
-        Object unlink(VirtualFrame frame, Object pathArg,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String path = lib.asPath(pathArg);
+        @Specialization
+        PNone close(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
             try {
-                getContext().getEnv().getPublicTruffleFile(path).delete();
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
+                PythonContext ctx = getContext();
+                if (ctx.getSharedMultiprocessingData().decrementFDRefCount(fd)) {
+                    return PNone.NONE;
+                }
+                gil.release(true);
+                try {
+                    posixLib.close(getPosixSupport(), fd);
+                } finally {
+                    gil.acquire();
+                }
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "remove", minNumOfPositionalArgs = 1)
+    @Builtin(name = "read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
-    public abstract static class RemoveNode extends UnlinkNode {
-    }
+    public abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
 
-    @Builtin(name = "rmdir", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class RmdirNode extends UnlinkNode {
-    }
-
-    @Builtin(name = "mkdir", minNumOfPositionalArgs = 1, parameterNames = {"path", "mode", "dir_fd"})
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class MkdirNode extends PythonFileNode {
-
-        @Specialization(limit = "3")
-        Object mkdir(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone mode, PNone dirFd,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return mkdirMode(frame, path, 511, dirFd, lib);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ReadNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "3")
-        Object mkdirMode(VirtualFrame frame, Object pathArg, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") PNone dirFd,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String path = lib.asPath(pathArg);
+        @Specialization
+        PBytes doRead(VirtualFrame frame, int fd, int length,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
+            if (length < 0) {
+                int error = OSErrorEnum.EINVAL.getNumber();
+                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
+            }
             try {
-                getContext().getEnv().getPublicTruffleFile(path).createDirectory();
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
+                return read(fd, length, posixLib, errorProfile, gil);
+            } catch (PosixException e) {
+                errorProfile.enter();
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            return PNone.NONE;
+        }
+
+        public PBytes read(int fd, int length,
+                        PosixSupportLibrary posixLib,
+                        BranchProfile errorProfile, GilNode gil) throws PosixException {
+            gil.release(true);
+            try {
+                while (true) {
+                    try {
+                        Buffer result = posixLib.read(getPosixSupport(), fd, length);
+                        if (result.length > Integer.MAX_VALUE) {
+                            // sanity check that it is safe to cast result.length to int, to be
+                            // removed once we support large arrays
+                            throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
+                        }
+                        return factory().createBytes(result.data, 0, (int) result.length);
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(this);
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+            } finally {
+                gil.acquire();
+            }
         }
     }
 
-    @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "str"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
-    @ArgumentClinic(name = "str", conversion = ClinicConversion.Buffer)
+    @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "data"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
+
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PosixModuleBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
 
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static int doWriteOp(byte[] data, WritableByteChannel channel) throws IOException {
-            return channel.write(ByteBuffer.wrap(data));
-        }
-
-        @Specialization
-        Object write(VirtualFrame frame, int fd, byte[] data,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached BranchProfile gotExceptionProfile,
-                        @Cached BranchProfile nonWritableChannelProfile) {
-            Channel channel = getContext().getResources().getFileChannel(fd, channelClassProfile);
-            if (!(channel instanceof WritableByteChannel)) {
-                nonWritableChannelProfile.enter();
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
+        @Specialization(limit = "3")
+        long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
+                        @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
             try {
-                return doWriteOp(data, (WritableByteChannel) channel);
-            } catch (Exception e) {
-                gotExceptionProfile.enter();
-                throw raiseOSError(frame, e);
+                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), posixLib, errorProfile, gil);
+            } catch (PosixException e) {
+                errorProfile.enter();
+                throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                bufferLib.release(dataBuffer, frame, this);
+            }
+        }
+
+        public long write(int fd, byte[] dataBytes,
+                        int dataLen, PosixSupportLibrary posixLib,
+                        BranchProfile errorProfile, GilNode gil) throws PosixException {
+            gil.release(true);
+            try {
+                while (true) {
+                    try {
+                        return posixLib.write(getPosixSupport(), fd, new Buffer(dataBytes, dataLen));
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(this);
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+            } finally {
+                gil.acquire();
             }
         }
     }
 
-    @Builtin(name = "read", minNumOfPositionalArgs = 2)
+    @Builtin(name = "dup", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ReadNode extends PythonFileNode {
+    abstract static class DupNode extends PythonUnaryClinicBuiltinNode {
 
-        @CompilationFinal private BranchProfile tooLargeProfile = BranchProfile.create();
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.DupNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object readLong(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
-                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Shared("readNode") @Cached ReadFromChannelNode readNode) {
-            int size = (int) requestedSize;
-            if (size != requestedSize) {
-                tooLargeProfile.enter();
-                size = ReadFromChannelNode.MAX_READ;
+        int dup(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dup(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-            ByteSequenceStorage array = readNode.execute(channel, size);
-            return factory().createBytes(array);
-        }
-
-        @Specialization(limit = "1")
-        Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
-                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize) {
-            return readLong(frame, fd, libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
-        }
-
-        @Specialization(limit = "1")
-        Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
-                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @CachedLibrary("requestedSize") PythonObjectLibrary libSize,
-                        @Cached CastToJavaIntExactNode castToIntNode) {
-            return readLong(frame, castToIntNode.execute(fd), libSize.asJavaLong(requestedSize), channelClassProfile, readNode);
         }
     }
 
-    @Builtin(name = "isatty", minNumOfPositionalArgs = 1)
+    @Builtin(name = "dup2", minNumOfPositionalArgs = 2, parameterNames = {"fd", "fd2", "inheritable"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "fd2", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class IsATTYNode extends PythonBuiltinNode {
+    abstract static class Dup2Node extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.Dup2NodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        boolean isATTY(long fd) {
-            if (fd >= 0 && fd <= 2) {
-                return terminalIsInteractive(getContext());
-            } else {
-                return false;
+        int dup2(VirtualFrame frame, int fd, int fd2, boolean inheritable,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            if (fd < 0 || fd2 < 0) {
+                // CPython does not set errno here and raises a 'random' OSError
+                // (possibly with errno=0 Success)
+                int error = OSErrorEnum.EINVAL.getNumber();
+                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
+            }
+
+            try {
+                return posixLib.dup2(getPosixSupport(), fd, fd2, inheritable);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "get_inheritable", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class GetInheritableNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.GetInheritableNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean getInheritable(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getInheritable(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "set_inheritable", minNumOfPositionalArgs = 2, parameterNames = {"fd", "inheritable"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class SetInheritableNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SetInheritableNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone setInheritable(VirtualFrame frame, int fd, int inheritable,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                // not sure why inheritable is not a boolean, but that is how they do it in CPython
+                posixLib.setInheritable(getPosixSupport(), fd, inheritable != 0);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "pipe", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class PipeNode extends PythonBuiltinNode {
+
+        @Specialization
+        PTuple pipe(VirtualFrame frame,
+                        @Cached GilNode gil,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            int[] pipe;
+            gil.release(true);
+            try {
+                pipe = posixLib.pipe(getPosixSupport());
+            } catch (PosixException e) {
+                gil.acquire(); // need to acquire the gil to construct the OSError object
+                throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                gil.acquire();
+            }
+            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
+        }
+    }
+
+    public static int mapPythonSeekWhenceToPosix(int pythonWhence) {
+        // See os.py
+        switch (pythonWhence) {
+            case 0:
+                return PosixConstants.SEEK_SET.value;
+            case 1:
+                return PosixConstants.SEEK_CUR.value;
+            case 2:
+                return PosixConstants.SEEK_END.value;
+            default:
+                return pythonWhence;
+        }
+    }
+
+    @Builtin(name = "lseek", minNumOfPositionalArgs = 3, parameterNames = {"fd", "pos", "how"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "pos", conversionClass = OffsetConversionNode.class)
+    @ArgumentClinic(name = "how", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class LseekNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.LseekNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        long lseek(VirtualFrame frame, int fd, long pos, int how,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile) {
+            try {
+                return posixLib.lseek(getPosixSupport(), fd, pos, mapPythonSeekWhenceToPosix(how));
+            } catch (PosixException e) {
+                errorProfile.enter();
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "ftruncate", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "length", conversionClass = OffsetConversionNode.class)
+    @GenerateNodeFactory
+    public abstract static class FtruncateNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FtruncateNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone ftruncate(VirtualFrame frame, int fd, long length,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil,
+                        @Cached BranchProfile errorProfile) {
+            auditNode.audit("os.truncate", fd, length);
+            while (true) {
+                try {
+                    gil.release(true);
+                    try {
+                        posixLib.ftruncate(getPosixSupport(), fd, length);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return PNone.NONE;
+                } catch (PosixException e) {
+                    errorProfile.enter();
+                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                        PythonContext.triggerAsyncActions(this);
+                    } else {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Builtin(name = "fsync", minNumOfPositionalArgs = 1, parameterNames = "fd")
+    @ArgumentClinic(name = "fd", conversionClass = FileDescriptorConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class FSyncNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FSyncNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone fsync(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile) {
+            while (true) {
+                try {
+                    posixLib.fsync(getPosixSupport(), fd);
+                    return PNone.NONE;
+                } catch (PosixException e) {
+                    errorProfile.enter();
+                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                        PythonContext.triggerAsyncActions(this);
+                    } else {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Builtin(name = "get_blocking", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class GetBlockingNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.GetBlockingNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean getBlocking(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getBlocking(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "set_blocking", minNumOfPositionalArgs = 2, parameterNames = {"fd", "blocking"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "blocking", conversion = ClinicConversion.IntToBoolean)
+    @GenerateNodeFactory
+    abstract static class SetBlockingNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SetBlockingNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone setBlocking(VirtualFrame frame, int fd, boolean blocking,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.setBlocking(getPosixSupport(), fd, blocking);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_terminal_size", minNumOfPositionalArgs = 0, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "1")
+    @GenerateNodeFactory
+    abstract static class GetTerminalSizeNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.GetTerminalSizeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple getTerminalSize(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // TODO default value should be fileno(stdout)
+            try {
+                int[] result = posixLib.getTerminalSize(getPosixSupport(), fd);
+                return factory().createStructSeq(TERMINAL_SIZE_DESC, result[0], result[1]);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class StatNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.StatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+            try {
+                long[] out = posixLib.fstatat(getPosixSupport(), dirFd, path.value, followSymlinks);
+                return createStatResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
         }
 
-        @Fallback
-        static boolean isATTY(@SuppressWarnings("unused") Object fd) {
-            return false;
+        @Specialization(guards = "!isDefault(dirFd)")
+        @SuppressWarnings("unused")
+        PTuple doStatFdWithDirFd(PosixFd fd, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "stat");
+        }
+
+        @Specialization(guards = {"isDefault(dirFd)", "!followSymlinks"})
+        @SuppressWarnings("unused")
+        PTuple doStatFdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "stat");
+        }
+
+        @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
+        PTuple doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+            try {
+                long[] out = posixLib.fstat(getPosixSupport(), fd.fd);
+                return createStatResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+        }
+
+        protected static boolean isDefault(int dirFd) {
+            return dirFd == AT_FDCWD.value;
+        }
+    }
+
+    @Builtin(name = "lstat", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class LStatNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.LStatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile positiveLongProfile) {
+            try {
+                // TODO we used to return all zeros when the filename was equal to sys.executable
+                long[] out = posixLib.fstatat(getPosixSupport(), dirFd, path.value, false);
+                return createStatResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+    }
+
+    @Builtin(name = "fstat", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class FStatNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FStatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple doStatFd(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile positiveLongProfile,
+                        @Cached BranchProfile errorProfile) {
+            while (true) {
+                try {
+                    long[] out = posixLib.fstat(getPosixSupport(), fd);
+                    return createStatResult(factory(), positiveLongProfile, out);
+                } catch (PosixException e) {
+                    errorProfile.enter();
+                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                        PythonContext.triggerAsyncActions(this);
+                    } else {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Builtin(name = "uname", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class UnameNode extends PythonBuiltinNode {
+
+        @Specialization
+        PTuple uname(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return factory().createStructSeq(UNAME_RESULT_DESC, posixLib.uname(getPosixSupport()));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class UnlinkNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.UnlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone unlink(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.remove", path.originalObject, dirFdForAudit(dirFd));
+            try {
+                posixLib.unlinkat(getPosixSupport(), dirFd, path.value, false);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "remove", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class RemoveNode extends UnlinkNode {
+
+        // although this built-in is the same as unlink(), we need to provide our own
+        // ArgumentClinicProvider because the error messages contain the name of the built-in
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.RemoveNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "symlink", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst", "target_is_directory"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "target_is_directory", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class SymlinkNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SymlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, @SuppressWarnings("unused") boolean targetIsDir, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.symlinkat(getPosixSupport(), src.value, dirFd, dst.value);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "mkdir", minNumOfPositionalArgs = 1, parameterNames = {"path", "mode"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class MkdirNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.MkdirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone mkdir(VirtualFrame frame, PosixPath path, int mode, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.mkdir", path.originalObject, mode, dirFdForAudit(dirFd));
+            try {
+                posixLib.mkdirat(getPosixSupport(), dirFd, path.value, mode);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "rmdir", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class RmdirNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.RmdirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone rmdir(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.rmdir", path.originalObject, dirFdForAudit(dirFd));
+            try {
+                posixLib.unlinkat(getPosixSupport(), dirFd, path.value, true);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "getcwd", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetcwdNode extends PythonBuiltinNode {
+        @Specialization
+        TruffleString getcwd(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.getcwd(getPosixSupport()));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "getcwdb", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetcwdbNode extends PythonBuiltinNode {
+        @Specialization
+        PBytes getcwdb(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return opaquePathToBytes(posixLib.getcwd(getPosixSupport()), posixLib, getPosixSupport(), factory());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "chdir", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @GenerateNodeFactory
+    abstract static class ChdirNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ChdirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone chdirPath(VirtualFrame frame, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.chdir(getPosixSupport(), path.value);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        PNone chdirFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.fchdir(getPosixSupport(), fd.fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "fchdir", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversionClass = FileDescriptorConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class FchdirNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.FchdirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone fchdir(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile) {
+            while (true) {
+                try {
+                    posixLib.fchdir(getPosixSupport(), fd);
+                    return PNone.NONE;
+                } catch (PosixException e) {
+                    errorProfile.enter();
+                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                        PythonContext.triggerAsyncActions(this);
+                    } else {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Builtin(name = "isatty", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class IsattyNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.IsattyNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean isatty(int fd,
+                        @Cached GilNode gil,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            gil.release(true);
+            try {
+                return posixLib.isatty(getPosixSupport(), fd);
+            } finally {
+                gil.acquire();
+            }
+        }
+    }
+
+    @Builtin(name = "ScandirIterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PScandirIterator, isPublic = false)
+    @GenerateNodeFactory
+    abstract static class ScandirIteratorNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object scandirIterator(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.ScandirIterator");
+        }
+    }
+
+    @Builtin(name = "DirEntry", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PDirEntry, isPublic = true)
+    @GenerateNodeFactory
+    abstract static class DirEntryNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object dirEntry(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.DirEntry");
+        }
+    }
+
+    @Builtin(name = "scandir", minNumOfPositionalArgs = 0, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"true", "true"})
+    @GenerateNodeFactory
+    abstract static class ScandirNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ScandirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PScandirIterator scandirPath(VirtualFrame frame, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
+            try {
+                return factory().createScandirIterator(getContext(), posixLib.opendir(getPosixSupport(), path.value), path, false);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Specialization
+        PScandirIterator scandirFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.scandir", fd.originalObject);
+            Object dirStream = dupAndFdopendir(frame, posixLib, getPosixSupport(), fd, this);
+            return factory().createScandirIterator(getContext(), dirStream, fd, true);
+        }
+    }
+
+    @Builtin(name = "listdir", minNumOfPositionalArgs = 0, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"true", "true"})
+    @GenerateNodeFactory
+    abstract static class ListdirNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ListdirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PList listdirPath(VirtualFrame frame, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.listdir", path.originalObject == null ? PNone.NONE : path.originalObject);
+            try {
+                return listdir(frame, posixLib.opendir(getPosixSupport(), path.value), path.wasBufferLike, false, posixLib);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Specialization
+        PList listdirFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.listdir", fd.originalObject);
+            Object dirStream = dupAndFdopendir(frame, posixLib, getPosixSupport(), fd, this);
+            return listdir(frame, dirStream, false, true, posixLib);
+        }
+
+        private PList listdir(VirtualFrame frame, Object dirStream, boolean produceBytes, boolean needsRewind, PosixSupportLibrary posixLib) {
+            List<Object> list = new ArrayList<>();
+            try {
+                while (true) {
+                    Object dirEntry = posixLib.readdir(getPosixSupport(), dirStream);
+                    if (dirEntry == null) {
+                        return factory().createList(listToArray(list));
+                    }
+                    Object name = posixLib.dirEntryGetName(getPosixSupport(), dirEntry);
+                    if (produceBytes) {
+                        addToList(list, opaquePathToBytes(name, posixLib, getPosixSupport(), factory()));
+                    } else {
+                        addToList(list, posixLib.getPathAsString(getPosixSupport(), name));
+                    }
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                if (needsRewind) {
+                    posixLib.rewinddir(getPosixSupport(), dirStream);
+                }
+                try {
+                    posixLib.closedir(getPosixSupport(), dirStream);
+                } catch (PosixException e) {
+                    // ignored (CPython does not chek the return value of closedir)
+                }
+            }
+        }
+
+        @TruffleBoundary
+        private static void addToList(List<Object> list, Object element) {
+            list.add(element);
+        }
+
+        @TruffleBoundary
+        private static Object[] listToArray(List<Object> list) {
+            return list.toArray();
+        }
+    }
+
+    static Object dupAndFdopendir(VirtualFrame frame, PosixSupportLibrary posixLib, Object posixSupport, PosixFd fd, PythonBuiltinBaseNode node) {
+        int dupFd = -1;
+        try {
+            dupFd = posixLib.dup(posixSupport, fd.fd);
+            // when fdopenddir succeeds, we are no longer responsible for closing dupFd
+            return posixLib.fdopendir(posixSupport, dupFd);
+        } catch (PosixException e) {
+            if (dupFd != -1) {
+                try {
+                    posixLib.close(posixSupport, dupFd);
+                } catch (PosixException e1) {
+                    // ignored
+                }
+            }
+            throw node.raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+        }
+    }
+
+    abstract static class UtimeArgsToTimespecNode extends PythonBuiltinBaseNode {
+        abstract long[] execute(VirtualFrame frame, Object times, Object ns);
+
+        Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
+            long[] timespec = execute(frame, times, ns);
+            return timespec == null ? null : new Timeval[]{new Timeval(timespec[0], timespec[1] / 1000), new Timeval(timespec[2], timespec[3] / 1000)};
+        }
+
+        @Specialization(guards = {"isNoValue(ns)"})
+        @SuppressWarnings("unused")
+        static long[] now(VirtualFrame frame, PNone times, PNone ns) {
+            return null;
+        }
+
+        @Specialization(guards = {"isNoValue(ns)"})
+        long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
+                        @Cached LenNode lenNode,
+                        @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Cached ObjectToTimespecNode objectToTimespecNode) {
+            return convertToTimespec(frame, times, lenNode, getItemNode, objectToTimespecNode);
+        }
+
+        @Specialization
+        long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
+                        @Cached LenNode lenNode,
+                        @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode) {
+            return convertToTimespec(frame, ns, lenNode, getItemNode, splitLongToSAndNsNode);
+        }
+
+        @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
+        @SuppressWarnings("unused")
+        long[] bothSpecified(VirtualFrame frame, Object times, Object ns) {
+            throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
+        }
+
+        @Specialization(guards = {"!isPNone(times)", "!isPTuple(times)", "isNoValue(ns)"})
+        @SuppressWarnings("unused")
+        long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns) {
+            throw timesTupleError();
+        }
+
+        @Specialization(guards = {"!isNoValue(ns)", "!isPTuple(ns)"})
+        @SuppressWarnings("unused")
+        long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns) {
+            // ns can actually also contain objects implementing __divmod__, but CPython produces
+            // this error message
+            throw raise(TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
+        }
+
+        private PException timesTupleError() {
+            // times can actually also contain floats, but CPython produces this error message
+            throw raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
+        }
+
+        private long[] convertToTimespec(VirtualFrame frame, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode) {
+            if (lenNode.execute(times) != 2) {
+                throw timesTupleError();
+            }
+            long[] timespec = new long[4];
+            convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 0), timespec, 0);
+            convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 1), timespec, 2);
+            return timespec;
+        }
+    }
+
+    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times"}, varArgsMarker = true, keywordOnlyNames = {"ns", "dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    @ImportStatic(PosixConstants.class)
+    abstract static class UtimeNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.UtimeNodeClinicProviderGen.INSTANCE;
+        }
+
+        private static Object checkNone(Object o) {
+            return PGuards.isPNone(o) ? PNone.NONE : o;
+        }
+
+        @Specialization(guards = "HAVE_UTIMENSAT.value")
+        PNone utimensat(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            long[] timespec = timespecNode.execute(frame, times, ns);
+            auditNode.audit("os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.utimensat(getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "isDefault(dirFd)", "followSymlinks"})
+        PNone utimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
+            auditNode.audit("os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.utimes(getPosixSupport(), path.value, timeval);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "isDefault(dirFd)", "!followSymlinks"})
+        PNone lutimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
+            auditNode.audit("os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.lutimes(getPosixSupport(), path.value, timeval);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "!isDefault(dirFd)", "followSymlinks"})
+        @SuppressWarnings("unused")
+        PNone dirFdNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC, "dir_fd");
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "!isDefault(dirFd)", "!followSymlinks"})
+        @SuppressWarnings("unused")
+        PNone dirFdAndFollowSymlinksNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS, "dir_fd");
+        }
+
+        @Specialization(guards = {"HAVE_FUTIMENS.value", "isDefault(dirFd)", "followSymlinks"})
+        PNone futimens(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            long[] timespec = timespecNode.execute(frame, times, ns);
+            auditNode.audit("os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.futimens(getPosixSupport(), fd.fd, timespec);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_FUTIMENS.value", "isDefault(dirFd)", "followSymlinks"})
+        PNone futimes(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
+            auditNode.audit("os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.futimes(getPosixSupport(), fd.fd, timeval);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "!isDefault(dirFd)"})
+        @SuppressWarnings("unused")
+        PNone fdWithDirFd(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "utime");
+        }
+
+        @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "isDefault(dirFd)", "!followSymlinks"})
+        @SuppressWarnings("unused")
+        PNone fdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "utime");
+        }
+
+        protected static boolean isDefault(int dirFd) {
+            return dirFd == AT_FDCWD.value;
+        }
+    }
+
+    @Builtin(name = "rename", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, varArgsMarker = true, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class RenameNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.RenameNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone rename(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.rename", src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
+            try {
+                posixLib.renameat(getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "replace", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, varArgsMarker = true, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class ReplaceNode extends RenameNode {
+
+        // although this built-in is the same as rename(), we need to provide our own
+        // ArgumentClinicProvider because the error messages contain the name of the built-in
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "access", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "effective_ids", defaultValue = "false", conversion = ClinicConversion.Boolean)
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @GenerateNodeFactory
+    abstract static class AccessNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.AccessNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean access(PosixPath path, int mode, int dirFd, boolean effectiveIds, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.faccessat(getPosixSupport(), dirFd, path.value, mode, effectiveIds, followSymlinks);
+        }
+    }
+
+    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @GenerateNodeFactory
+    abstract static class ChmodNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ChmodNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone chmodFollow(VirtualFrame frame, PosixPath path, int mode, int dirFd, boolean followSymlinks,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("os.chmod", path.originalObject, mode, dirFdForAudit(dirFd));
+            try {
+                posixLib.fchmodat(getPosixSupport(), dirFd, path.value, mode, followSymlinks);
+            } catch (PosixException e) {
+                // TODO CPython checks for ENOTSUP as well
+                if (e.getErrorCode() == OSErrorEnum.EOPNOTSUPP.getNumber() && !followSymlinks) {
+                    if (dirFd != AT_FDCWD.value) {
+                        throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chmod");
+                    } else {
+                        throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM, "chmod", "follow_symlinks");
+                    }
+                }
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        PNone chmodFollow(VirtualFrame frame, PosixFd fd, int mode, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("os.chmod", fd.originalObject, mode, dirFdForAudit(dirFd));
+            // Unlike stat and utime which raise CANT_SPECIFY_DIRFD_WITHOUT_PATH or
+            // CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER when an inappropriate combination of
+            // arguments is used, CPython's implementation of chmod simply ignores dir_fd and
+            // follow_symlinks if a fd is specified instead of a path.
+            try {
+                posixLib.fchmod(getPosixSupport(), fd.fd, mode);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
+                    "\nReturn a string representing the path to which the symbolic link points.\n")
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class ReadlinkNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ReadlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "path.wasBufferLike")
+        PBytes readlinkAsBytes(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return opaquePathToBytes(posixLib.readlinkat(getPosixSupport(), dirFd, path.value), posixLib, getPosixSupport(), factory());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Specialization(guards = "!path.wasBufferLike")
+        TruffleString readlinkAsString(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path.value));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+    }
+
+    @Builtin(name = "strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
+    @ArgumentClinic(name = "code", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class StrErrorNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.StrErrorNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        TruffleString getStrError(int code,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.strerror(getPosixSupport(), code);
         }
     }
 
     @Builtin(name = "_exit", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ExitNode extends PythonBuiltinNode {
+    public abstract static class ExitNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object exit(int status) {
+            // TODO: use a safepoint action to throw this exception to all running threads
             throw new PythonExitException(this, status);
         }
     }
 
-    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode", "dir_fd", "follow_symlinks"})
+    @Builtin(name = "waitpid", minNumOfPositionalArgs = 2, parameterNames = {"pid", "options"})
+    @ArgumentClinic(name = "pid", conversionClass = PidtConversionNode.class)
+    @ArgumentClinic(name = "options", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class ChmodNode extends PythonBuiltinNode {
-        private final BranchProfile gotException = BranchProfile.create();
-
-        @Specialization(limit = "1")
-        Object chmod(VirtualFrame frame, Object path, long mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone follow_symlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return chmodFollow(frame, path, mode, dir_fd, true, lib);
+    abstract static class WaitpidNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WaitpidNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "1")
-        Object chmodFollow(VirtualFrame frame, Object pathArg, long mode, @SuppressWarnings("unused") PNone dir_fd, boolean follow_symlinks,
-                        @CachedLibrary("pathArg") PythonObjectLibrary lib) {
-            String path = lib.asPath(pathArg);
-            Set<PosixFilePermission> permissions = modeToPermissions(mode);
-            try {
-                TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
-                if (!follow_symlinks) {
-                    truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
-                } else {
-                    truffleFile = truffleFile.getCanonicalFile();
-                }
-                truffleFile.setPosixPermissions(permissions);
-            } catch (Exception e) {
-                gotException.enter();
-                throw raiseOSError(frame, e, path);
-            }
-            return PNone.NONE;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static Set<PosixFilePermission> modeToPermissions(long mode) {
-            Set<PosixFilePermission> permissions = new HashSet<>(Arrays.asList(otherBitsToPermission[(int) (mode & 7)]));
-            permissions.addAll(Arrays.asList(groupBitsToPermission[(int) (mode >> 3 & 7)]));
-            permissions.addAll(Arrays.asList(ownerBitsToPermission[(int) (mode >> 6 & 7)]));
-            return permissions;
-        }
-    }
-
-    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times", "ns", "dir_fd", "follow_symlinks"})
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class UtimeNode extends PythonBuiltinNode {
-        @Child private GetItemNode getItemNode;
-        @Child private LenNode lenNode;
-
-        @SuppressWarnings("unused")
-        @Specialization(limit = "1")
-        Object utime(VirtualFrame frame, Object path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            long time = ((Double) TimeModuleBuiltins.timeSeconds()).longValue();
-            TruffleFile file = getFile(frame, lib.asPath(path), true);
-            setMtime(frame, file, time);
-            setAtime(frame, file, time);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(limit = "1")
-        Object utime(VirtualFrame frame, Object path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            long atime = getTime(frame, times, 0, "times");
-            long mtime = getTime(frame, times, 1, "times");
-            TruffleFile file = getFile(frame, lib.asPath(path), true);
-            setMtime(frame, file, mtime);
-            setAtime(frame, file, atime);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(limit = "1")
-        Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            long atime = getTime(frame, ns, 0, "ns") / 1000;
-            long mtime = getTime(frame, ns, 1, "ns") / 1000;
-            TruffleFile file = getFile(frame, lib.asPath(path), true);
-            setMtime(frame, file, mtime);
-            setAtime(frame, file, atime);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(limit = "1")
-        Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            long atime = getTime(frame, ns, 0, "ns") / 1000;
-            long mtime = getTime(frame, ns, 1, "ns") / 1000;
-            TruffleFile file = getFile(frame, lib.asPath(path), true);
-            setMtime(frame, file, mtime);
-            setAtime(frame, file, atime);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPNone(times)", "!isPTuple(times)"})
-        Object utimeWrongTimes(VirtualFrame frame, Object path, Object times, Object ns, Object dir_fd, Object follow_symlinks) {
-            throw tupleError("times");
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPTuple(ns)", "!isPNone(ns)"})
-        Object utimeWrongNs(VirtualFrame frame, Object path, PNone times, Object ns, Object dir_fd, Object follow_symlinks) {
-            throw tupleError("ns");
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPNone(ns)"})
-        Object utimeWrongNs(VirtualFrame frame, Object path, PTuple times, Object ns, Object dir_fd, Object follow_symlinks) {
-            throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object utimeError(VirtualFrame frame, Object path, Object times, Object ns, Object dir_fd, Object follow_symlinks) {
-            throw raise(NotImplementedError, "utime");
-        }
-
-        private long getTime(VirtualFrame frame, PTuple times, int index, String argname) {
-            if (getLength(times) <= index) {
-                throw tupleError(argname);
-            }
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemNode.createNotNormalized());
-            }
-            Object mtimeObj = getItemNode.execute(frame, times.getSequenceStorage(), index);
-            long mtime;
-            if (mtimeObj instanceof Integer) {
-                mtime = ((Integer) mtimeObj).longValue();
-            } else if (mtimeObj instanceof Long) {
-                mtime = ((Long) mtimeObj).longValue();
-            } else if (mtimeObj instanceof PInt) {
-                mtime = ((PInt) mtimeObj).longValue();
-            } else if (mtimeObj instanceof Double) {
-                mtime = ((Double) mtimeObj).longValue();
-            } else if (mtimeObj instanceof PFloat) {
-                mtime = (long) ((PFloat) mtimeObj).getValue();
-            } else {
-                throw tupleError(argname);
-            }
-            if (mtime < 0) {
-                throw raise(ValueError, ErrorMessages.CANNOT_BE_NEGATIVE, "time");
-            }
-            return mtime;
-        }
-
-        private PException tupleError(String argname) {
-            return raise(TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", argname, "a tuple of two ints", "None");
-        }
-
-        private void setMtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
-            try {
-                truffleFile.setLastModifiedTime(fileTimeFrom(mtime));
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, truffleFile.getName());
-            }
-        }
-
-        @TruffleBoundary
-        private static FileTime fileTimeFrom(long mtime) {
-            return FileTime.from(mtime, TimeUnit.SECONDS);
-        }
-
-        private void setAtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
-            try {
-                truffleFile.setLastAccessTime(fileTimeFrom(mtime));
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, truffleFile.getName());
-            }
-        }
-
-        private TruffleFile getFile(VirtualFrame frame, String path, boolean followSymlinks) {
-            TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
-            if (!followSymlinks) {
-                try {
-                    truffleFile = truffleFile.getCanonicalFile(LinkOption.NOFOLLOW_LINKS);
-                } catch (Exception e) {
-                    throw raiseOSError(frame, e, truffleFile.getName());
-                }
-            }
-            return truffleFile;
-        }
-
-        private int getLength(PTuple times) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceNodes.LenNode.create());
-            }
-            return lenNode.execute(times);
-        }
-    }
-
-    @Builtin(name = "waitpid", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class WaitpidNode extends PythonFileNode {
-        @SuppressWarnings("unused")
         @Specialization
-        PTuple waitpid(VirtualFrame frame, int pid, int options) {
+        PTuple waitpid(VirtualFrame frame, long pid, int options,
+                        @Cached GilNode gil,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile) {
+            gil.release(true);
             try {
-                if (options == 0) {
-                    int exitStatus = getResources().waitpid(pid);
-                    return factory().createTuple(new Object[]{pid, exitStatus});
-                } else if (options == WNOHANG) {
-                    int[] res = getResources().exitStatus(pid);
-                    return factory().createTuple(new Object[]{res[0], res[1]});
-                } else {
-                    throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
-                }
-            } catch (IndexOutOfBoundsException e) {
-                if (pid <= 0) {
-                    throw raiseOSError(frame, OSErrorEnum.ECHILD);
-                } else {
-                    throw raiseOSError(frame, OSErrorEnum.ESRCH);
-                }
-            } catch (InterruptedException e) {
-                throw raiseOSError(frame, OSErrorEnum.EINTR);
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        PTuple waitpidFallback(VirtualFrame frame, Object pid, Object options,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            ThreadState threadState = PArguments.getThreadState(frame);
-            return waitpid(frame, lib.asSizeWithState(pid, threadState), lib.asSizeWithState(options, threadState));
-        }
-    }
-
-    @Builtin(name = "system", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class SystemNode extends PythonBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SystemNode.class);
-
-        static final String[] shell;
-        static {
-            String osProperty = System.getProperty("os.name");
-            shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
-                            : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
-        }
-
-        static class PipePump extends Thread {
-            private static final int MAX_READ = 8192;
-            private final InputStream in;
-            private final OutputStream out;
-            private final byte[] buffer;
-            private volatile boolean finish;
-
-            public PipePump(String name, InputStream in, OutputStream out) {
-                this.setName(name);
-                this.in = in;
-                this.out = out;
-                this.buffer = new byte[MAX_READ];
-                this.finish = false;
-            }
-
-            @Override
-            public void run() {
-                try {
-                    while (!finish || in.available() > 0) {
-                        if (Thread.interrupted()) {
-                            finish = true;
+                while (true) {
+                    try {
+                        long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
+                        return factory().createTuple(new Object[]{result[0], result[1]});
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(this);
+                        } else {
+                            gil.acquire();
+                            throw raiseOSErrorFromPosixException(frame, e);
                         }
-                        int read = in.read(buffer, 0, Math.min(MAX_READ, in.available()));
-                        if (read == -1) {
-                            return;
-                        }
-                        out.write(buffer, 0, read);
                     }
-                } catch (IOException e) {
                 }
-            }
-
-            public void finish() {
-                finish = true;
-                // Make ourselves max priority to flush data out as quickly as possible
-                setPriority(Thread.MAX_PRIORITY);
-                Thread.yield();
-            }
-        }
-
-        @TruffleBoundary
-        @Specialization
-        int system(String cmd) {
-            PythonContext context = getContext();
-            if (!context.isExecutableAccessAllowed()) {
-                return -1;
-            }
-            LOGGER.fine(() -> "os.system: " + cmd);
-            String[] command = new String[]{shell[0], shell[1], cmd};
-            Env env = context.getEnv();
-            try {
-                ProcessBuilder pb = new ProcessBuilder(command);
-                pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
-                PipePump stdout = null, stderr = null;
-                boolean stdsArePipes = !terminalIsInteractive(context);
-                if (stdsArePipes) {
-                    pb.redirectInput(Redirect.PIPE);
-                    pb.redirectOutput(Redirect.PIPE);
-                    pb.redirectError(Redirect.PIPE);
-                } else {
-                    pb.inheritIO();
-                }
-                Process proc = pb.start();
-                if (stdsArePipes) {
-                    proc.getOutputStream().close(); // stdin will be closed
-                    stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
-                    stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
-                    stdout.start();
-                    stderr.start();
-                }
-                int exitStatus = proc.waitFor();
-                if (stdsArePipes) {
-                    stdout.finish();
-                    stderr.finish();
-                }
-                return exitStatus;
-            } catch (IOException | InterruptedException e) {
-                return -1;
+            } finally {
+                gil.acquire();
             }
         }
     }
 
-    @Builtin(name = "pipe", minNumOfPositionalArgs = 0)
+    @Builtin(name = "WCOREDUMP", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WcoredumpNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WcoredumpNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean wcoredump(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wcoredump(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WIFCONTINUED", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WifcontinuedNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WifcontinuedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean wifcontinued(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wifcontinued(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WIFSTOPPED", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WifstoppedNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WifstoppedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean wifstopped(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wifstopped(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WIFSIGNALED", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WifsignaledNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WifsignaledNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean wifsignaled(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wifsignaled(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WIFEXITED", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WifexitedNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WifexitedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean wifexited(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wifexited(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WEXITSTATUS", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WexitstatusNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WexitstatusNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int wexitstatus(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wexitstatus(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WTERMSIG", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WtermsigNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WtermsigNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int wtermsig(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wtermsig(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "WSTOPSIG", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class WstopsigNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WstopsigNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int wstopsig(int status,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.wstopsig(getPosixSupport(), status);
+        }
+    }
+
+    @Builtin(name = "system", minNumOfPositionalArgs = 1, parameterNames = {"command"})
+    @ArgumentClinic(name = "command", conversionClass = FsConverterNode.class)
+    @GenerateNodeFactory
+    abstract static class SystemNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SystemNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int system(PBytes command,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
+            // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
+            // conversions for emulated backend because the bytes version after fsencode conversion
+            // is subject to sys.audit.
+            auditNode.audit("os.system", command);
+            byte[] bytes = toBytesNode.execute(command);
+            gil.release(true);
+            try {
+                Object cmdOpaque = posixLib.createPathFromBytes(getPosixSupport(), bytes);
+                return posixLib.system(getPosixSupport(), cmdOpaque);
+            } finally {
+                gil.acquire();
+            }
+        }
+    }
+
+    @Builtin(name = "urandom", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"size"})
+    @ArgumentClinic(name = "size", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class PipeNode extends PythonFileNode {
-
+    abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PTuple pipe(VirtualFrame frame) {
-            int[] pipe;
-            try {
-                pipe = getResources().pipe();
-            } catch (Exception e) {
-                throw raiseOSError(frame, e);
-            }
-            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
-        }
-    }
-
-    @Builtin(name = "rename", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    public abstract static class RenameNode extends PythonFileNode {
-        @Specialization(limit = "1")
-        Object rename(VirtualFrame frame, Object src, Object dst, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs,
-                        @CachedLibrary("src") PythonObjectLibrary libSrc,
-                        @CachedLibrary("dst") PythonObjectLibrary libDst) {
-            return rename(frame, libSrc.asPath(src), libDst.asPath(dst));
-        }
-
-        @Specialization
-        Object rename(VirtualFrame frame, Object src, Object dst, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libSrc,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libDst) {
-
-            Object effectiveSrc = src;
-            Object effectiveDst = dst;
-            PosixResources resources = getResources();
-            for (int i = 0; i < kwargs.length; i++) {
-                Object value = kwargs[i].getValue();
-                if ("src_dir_fd".equals(kwargs[i].getName())) {
-                    if (!(value instanceof Integer)) {
-                        throw raiseOSError(frame, OSErrorEnum.EBADF);
-                    }
-                    effectiveSrc = resources.getFilePath((int) value);
-                } else if ("dst_dir_fd".equals(kwargs[i].getName())) {
-                    if (!(value instanceof Integer)) {
-                        throw raiseOSError(frame, OSErrorEnum.EBADF);
-                    }
-                    effectiveDst = resources.getFilePath((int) value);
-                }
-            }
-            return rename(frame, libSrc.asPath(effectiveSrc), libDst.asPath(effectiveDst));
-        }
-
-        private Object rename(VirtualFrame frame, String src, String dst) {
-            try {
-                TruffleFile dstFile = getContext().getEnv().getPublicTruffleFile(dst);
-                if (dstFile.isDirectory()) {
-                    throw raiseOSError(frame, OSErrorEnum.EISDIR);
-                }
-                TruffleFile file = getContext().getEnv().getPublicTruffleFile(src);
-                file.move(dstFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                return PNone.NONE;
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, src, dst);
-            }
-        }
-    }
-
-    @Builtin(name = "replace", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
-    public abstract static class ReplaceNode extends RenameNode {
-    }
-
-    @Builtin(name = "urandom", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class URandomNode extends PythonBuiltinNode {
-        private static SecureRandom secureRandom;
-
-        private static SecureRandom createRandomInstance() {
-            try {
-                return SecureRandom.getInstance("NativePRNGNonBlocking");
-            } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        @Specialization
-        @TruffleBoundary(allowInlining = true)
         PBytes urandom(int size) {
-            if (secureRandom == null) {
-                secureRandom = createRandomInstance();
-            }
             byte[] bytes = new byte[size];
-            secureRandom.nextBytes(bytes);
+            nextBytes(getContext().getSecureRandom(), bytes);
             return factory().createBytes(bytes);
         }
 
-        @Fallback
-        Object urandomError(Object size) {
-            throw raise(TypeError, ErrorMessages.ARG_EXPECTED_GOT, "integer", size);
-        }
-    }
-
-    @Builtin(name = "uname", minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class UnameNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary(allowInlining = true)
-        PTuple uname() {
-            String sysname = SysModuleBuiltins.getPythonOSName();
-            String nodename = "";
-            try {
-                InetAddress addr;
-                addr = InetAddress.getLocalHost();
-                nodename = addr.getHostName();
-            } catch (UnknownHostException | SecurityException ex) {
-            }
-            String release = System.getProperty("os.version", "");
-            String version = "";
-            String machine = SysModuleBuiltins.getPythonArch();
-            return factory().createTuple(new Object[]{sysname, nodename, release, version, machine});
-        }
-    }
-
-    @Builtin(name = "access", minNumOfPositionalArgs = 2, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
-    @GenerateNodeFactory
-    public abstract static class AccessNode extends PythonBuiltinNode {
-
-        private final BranchProfile notImplementedBranch = BranchProfile.create();
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean doGeneric(VirtualFrame frame, Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids,
-                        @SuppressWarnings("unused") PNone follow_symlinks,
-                        @CachedLibrary("mode") PythonObjectLibrary libMode,
-                        @CachedLibrary("path") PythonObjectLibrary libPath) {
-            return access(libPath.asPath(path), libMode.asSizeWithState(mode, PArguments.getThreadState(frame)), PNone.NONE, false, true);
+        @TruffleBoundary
+        private static void nextBytes(SecureRandom secureRandom, byte[] bytes) {
+            secureRandom.nextBytes(bytes);
         }
 
-        @Specialization
-        boolean access(String path, int mode, Object dirFd, boolean effectiveIds, boolean followSymlinks) {
-            if (dirFd != PNone.NONE || effectiveIds) {
-                // TODO implement
-                notImplementedBranch.enter();
-                throw raise(NotImplementedError);
-            }
-            TruffleFile f = getContext().getEnv().getPublicTruffleFile(path);
-            LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-            if (!f.exists(linkOptions)) {
-                return false;
-            }
-
-            boolean result = true;
-            if ((mode & X_OK) != 0) {
-                result = result && f.isExecutable();
-            }
-            if ((mode & R_OK) != 0) {
-                result = result && f.isReadable();
-            }
-            if ((mode & W_OK) != 0) {
-                result = result && f.isWritable();
-            }
-            return result;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.URandomNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -1745,166 +2044,47 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "umask", minNumOfPositionalArgs = 1)
+    @Builtin(name = "sysconf", minNumOfPositionalArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class UmaskNode extends PythonBuiltinNode {
+    abstract static class SysconfNode extends PythonUnaryClinicBuiltinNode {
+
+        public static final TruffleString T_SC_CLK_TCK = tsLiteral("SC_CLK_TCK");
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SysconfNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        int getAndSetUmask(int umask) {
-            if (umask == 0022) {
-                return 0022;
+        int sysconf(TruffleString mask,
+                        @Cached TruffleString.EqualNode equalNode) {
+            if (equalNode.execute(mask, T_SC_CLK_TCK, TS_ENCODING)) {
+                return 100; // it's 100 on most default kernel configs. TODO: use real value through
+                            // NFI
             }
-            if (umask == 0) {
-                // TODO: change me, this does not really set the umask, workaround needed for pip
-                // it returns the previous mask (which in our case is always 0022)
-                return 0022;
-            } else {
-                throw raise(NotImplementedError, "setting the umask to anything other than the default");
-            }
+            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_CONF_NAME, mask);
         }
     }
 
-    @Builtin(name = "get_terminal_size", maxNumOfPositionalArgs = 1)
+    @Builtin(name = "umask", minNumOfPositionalArgs = 1, parameterNames = {"mask"})
+    @ArgumentClinic(name = "mask", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
+    abstract static class UmaskNode extends PythonUnaryClinicBuiltinNode {
 
-        @Child private PythonObjectLibrary asPIntLib;
-        @Child private GetTerminalSizeNode recursiveNode;
-
-        @CompilationFinal private ConditionProfile errorProfile;
-        @CompilationFinal private ConditionProfile overflowProfile;
-
-        private PythonObjectLibrary getAsPIntLibrary() {
-            if (asPIntLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPIntLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
-            }
-            return asPIntLib;
-        }
-
-        private ConditionProfile getErrorProfile() {
-            if (errorProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                errorProfile = ConditionProfile.createBinaryProfile();
-            }
-            return errorProfile;
-        }
-
-        private ConditionProfile getOverflowProfile() {
-            if (overflowProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                overflowProfile = ConditionProfile.createBinaryProfile();
-            }
-            return overflowProfile;
-        }
-
-        @Specialization(guards = "isNone(fd)")
-        PTuple getTerminalSize(VirtualFrame frame, @SuppressWarnings("unused") PNone fd) {
-            if (getErrorProfile().profile(getContext().getResources().getFileChannel(0) == null)) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.UmaskNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        PTuple getTerminalSize(VirtualFrame frame, int fd) {
-            if (getErrorProfile().profile(getContext().getResources().getFileChannel(fd) == null)) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
-        }
-
-        @Specialization
-        PTuple getTerminalSize(VirtualFrame frame, long fd) {
-            if (getOverflowProfile().profile(Integer.MIN_VALUE > fd || fd > Integer.MAX_VALUE)) {
-                raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
-            }
-            if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
-        }
-
-        @Specialization
-        PTuple getTerminalSize(VirtualFrame frame, PInt fd) {
-            int value;
+        int umask(VirtualFrame frame, int mask,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                value = fd.intValueExact();
-                if (getContext().getResources().getFileChannel(value) == null) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF);
-                }
-            } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                return posixLib.umask(getPosixSupport(), mask);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
-        }
-
-        private int getTerminalWidth() {
-            return getContext().getOption(PythonOptions.TerminalWidth);
-        }
-
-        private int getTerminalHeight() {
-            return getContext().getOption(PythonOptions.TerminalHeight);
-        }
-
-        @Fallback
-        Object getTerminalSize(VirtualFrame frame, Object fd) {
-            PythonObjectLibrary lib = getAsPIntLibrary();
-            if (!lib.canBePInt(fd)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, fd);
-            }
-            Object value = lib.asPInt(fd);
-            if (recursiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = create();
-            }
-            return recursiveNode.call(frame, value);
-        }
-
-        protected static GetTerminalSizeNode create() {
-            return PosixModuleBuiltinsFactory.GetTerminalSizeNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
-                    "\nReturn a string representing the path to which the symbolic link points.\n")
-    @GenerateNodeFactory
-    abstract static class ReadlinkNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
-        String readlink(VirtualFrame frame, Object str, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("str") PythonObjectLibrary lib) {
-            String path = lib.asPath(str);
-            try {
-                TruffleFile original = getContext().getEnv().getPublicTruffleFile(path);
-                TruffleFile canonicalFile = original.getCanonicalFile();
-                if (original.equals(canonicalFile)) {
-                    throw raiseOSError(frame, OSErrorEnum.EINVAL, path);
-                }
-                return canonicalFile.getPath();
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
-            }
-        }
-    }
-
-    @Builtin(name = "strerror", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class StrErrorNode extends PythonBuiltinNode {
-
-        private static final HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
-
-        @Specialization
-        @TruffleBoundary
-        static String getStrError(int errno) {
-            if (STR_ERROR_MAP.isEmpty()) {
-                for (OSErrorEnum error : OSErrorEnum.values()) {
-                    STR_ERROR_MAP.put(error.getNumber(), error.getMessage());
-                }
-            }
-            String result = STR_ERROR_MAP.get(errno);
-            if (result == null) {
-                result = "Unknown error " + errno;
-            }
-            return result;
         }
     }
 
@@ -1912,206 +2092,700 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CtermId extends PythonBuiltinNode {
         @Specialization
-        static String ctermid() {
-            return "/dev/tty";
-        }
-    }
-
-    @Builtin(name = "symlink", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst", "target_is_directory", "dir_fd"})
-    @GenerateNodeFactory
-    public abstract static class SymlinkNode extends PythonBuiltinNode {
-
-        @Specialization(guards = {"isNoValue(dirFd)"}, limit = "1")
-        PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") Object targetIsDir, @SuppressWarnings("unused") PNone dirFd,
-                        @CachedLibrary("srcObj") PythonObjectLibrary libSrc,
-                        @CachedLibrary("dstObj") PythonObjectLibrary libDst) {
-            String src = libSrc.asPath(srcObj);
-            String dst = libDst.asPath(dstObj);
-
-            Env env = getContext().getEnv();
-            TruffleFile dstFile = env.getPublicTruffleFile(dst);
+        TruffleString ctermid(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                dstFile.createSymbolicLink(env.getPublicTruffleFile(src));
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, src, dst);
+                return posixLib.ctermid(getPosixSupport());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "kill", minNumOfPositionalArgs = 2)
+    @Builtin(name = "kill", minNumOfPositionalArgs = 2, parameterNames = {"pid", "signal"})
+    @ArgumentClinic(name = "pid", conversionClass = PidtConversionNode.class)
+    @ArgumentClinic(name = "signal", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class KillNode extends PythonBinaryBuiltinNode {
-        private static final String[] KILL_SIGNALS = new String[]{"SIGKILL", "SIGQUIT", "SIGTRAP", "SIGABRT"};
-        private static final String[] TERMINATION_SIGNALS = new String[]{"SIGTERM", "SIGINT"};
+    abstract static class KillNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.KillNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        PNone kill(VirtualFrame frame, int pid, int signal,
-                        @Cached ReadAttributeFromObjectNode readSignalNode,
-                        @Cached IsNode isNode) {
-            PythonContext context = getContext();
-            PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
-            for (String name : TERMINATION_SIGNALS) {
-                Object value = readSignalNode.execute(signalModule, name);
-                if (isNode.execute(signal, value)) {
-                    try {
-                        context.getResources().sigterm(pid);
-                    } catch (IndexOutOfBoundsException e) {
-                        throw raiseOSError(frame, OSErrorEnum.ESRCH);
-                    }
-                    return PNone.NONE;
-                }
-            }
-            for (String name : KILL_SIGNALS) {
-                Object value = readSignalNode.execute(signalModule, name);
-                if (isNode.execute(signal, value)) {
-                    try {
-                        context.getResources().sigkill(pid);
-                    } catch (IndexOutOfBoundsException e) {
-                        throw raiseOSError(frame, OSErrorEnum.ESRCH);
-                    }
-                    return PNone.NONE;
-                }
-            }
-            Object dfl = readSignalNode.execute(signalModule, "SIG_DFL");
-            if (isNode.execute(signal, dfl)) {
-                try {
-                    context.getResources().sigdfl(pid);
-                } catch (IndexOutOfBoundsException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ESRCH);
-                }
+        PNone kill(VirtualFrame frame, long pid, int signal,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("kill", pid, signal);
+            try {
+                posixLib.kill(getPosixSupport(), pid, signal);
                 return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            throw raise(PythonBuiltinClassType.NotImplementedError, "Sending arbitrary signals to child processes. Can only send some kill and term signals.");
-        }
 
-        @Specialization(replaces = "kill")
-        PNone killFallback(VirtualFrame frame, Object pid, Object signal,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached ReadAttributeFromObjectNode readSignalNode,
-                        @Cached IsNode isNode) {
-            ThreadState state = PArguments.getThreadState(frame);
-            return kill(frame, lib.asSizeWithState(pid, state), lib.asSizeWithState(signal, state), readSignalNode, isNode);
         }
     }
 
-    @Builtin(name = "fsync", minNumOfPositionalArgs = 1)
+    @Builtin(name = "fspath", minNumOfPositionalArgs = 1, parameterNames = {"path"})
     @GenerateNodeFactory
-    abstract static class FSyncNode extends PythonUnaryBuiltinNode {
+    // Can be used as an equivalent of PyOS_FSPath()
+    public abstract static class FspathNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone fsync(VirtualFrame frame, int fd) {
-            if (!getContext().getResources().fsync(fd)) {
-                throw raiseOSError(frame, OSErrorEnum.ENOENT);
-            }
+        static Object doTrivial(VirtualFrame frame, Object value,
+                        @Cached PyOSFSPathNode fsPathNode) {
+            return fsPathNode.execute(frame, value);
+        }
+    }
+
+    @Builtin(name = "register_at_fork", keywordOnlyNames = {"before", "after_in_child", "after_in_parent"})
+    @GenerateNodeFactory
+    abstract static class RegisterAtForkNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object register(Object before, Object afterInChild, Object afterInParent) {
+            // TODO should we at least call multiprocessing.util.register_after_fork?
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "ftruncate", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class FTruncateNode extends PythonBinaryBuiltinNode {
+    // ------------------
+    // Helpers
+
+    /**
+     * Helper node that accepts either str or bytes and converts it to {@code PBytes}.
+     */
+    public abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
+        public abstract PBytes execute(Object obj);
+
         @Specialization
-        PNone ftruncate(VirtualFrame frame, int fd, long length) {
-            try {
-                getContext().getResources().ftruncate(fd, length);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e);
-            }
-            return PNone.NONE;
+        PBytes doString(TruffleString str,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared("copyToByteArray") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8);
+            byte[] bytes = new byte[utf8.byteLength(Encoding.UTF_8)];
+            copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, Encoding.UTF_8);
+            return factory().createBytes(bytes);
+        }
+
+        @Specialization
+        PBytes doPString(PString pstr,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared("copyToByteArray") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            return doString(castToStringNode.execute(pstr), switchEncodingNode, copyToByteArrayNode);
+        }
+
+        @Specialization
+        static PBytes doBytes(PBytes bytes) {
+            return bytes;
         }
     }
 
-    @Builtin(name = "set_blocking", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
+    /**
+     * Helper node that accepts either str or bytes and converts it to a representation specific to
+     * the {@link PosixSupportLibrary} in use. Basically equivalent of
+     * {@code PyUnicode_EncodeFSDefault}.
+     */
+    abstract static class StringOrBytesToOpaquePathNode extends PNodeWithRaise {
+        abstract Object execute(Object obj);
+
         @Specialization
-        PNone doPrimitive(VirtualFrame frame, int fd, boolean blocking,
-                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
-            try {
-                PSocket socket = getContext().getResources().getSocket(fd);
-                if (socket != null) {
-                    SocketBuiltins.SetBlockingNode.setBlocking(socket, blocking);
-                    return PNone.NONE;
-                }
-                Channel fileChannel = getContext().getResources().getFileChannel(fd, classProfile);
-                if (fileChannel instanceof SelectableChannel) {
-                    setBlocking((SelectableChannel) fileChannel, blocking);
-                    return PNone.NONE;
-                }
-
-                // if we reach this point, it's an invalid FD (either it does not exist or is not
-                // selectable)
-                throw raiseOSError(frame, OSErrorEnum.EBADFD);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e);
-            }
+        Object doString(TruffleString str,
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+            return checkPath(posixLib.createPathFromString(getContext().getPosixSupport(), str));
         }
 
-        @Specialization(limit = "1")
-        PNone doGeneric(VirtualFrame frame, Object fdObj, Object blockingObj,
-                        @CachedLibrary("fdObj") PythonObjectLibrary fdLib,
-                        @CachedLibrary("blockingObj") PythonObjectLibrary blockingLib,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
-
-            int fd;
-            try {
-                fd = castToJavaIntNode.execute(fdLib.asPIntWithState(fdObj, PArguments.getThreadState(frame)));
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-
-            boolean blocking = blockingLib.isTrueWithState(blockingObj, PArguments.getThreadState(frame));
-
-            return doPrimitive(frame, fd, blocking, classProfile);
+        @Specialization
+        Object doPString(PString pstr,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+            return doString(castToStringNode.execute(pstr), posixLib);
         }
 
-        @TruffleBoundary
-        private static void setBlocking(SelectableChannel channel, boolean block) throws IOException {
-            channel.configureBlocking(block);
+        @Specialization
+        Object doBytes(PBytes bytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+            return checkPath(posixLib.createPathFromBytes(getContext().getPosixSupport(), toBytesNode.execute(bytes)));
+        }
+
+        private Object checkPath(Object path) {
+            if (path == null) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
+            return path;
         }
     }
 
-    @Builtin(name = "get_blocking", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
+    /**
+     * Similar to {@code PyUnicode_FSConverter}, but the actual conversion is delegated to the
+     * {@link PosixSupportLibrary} implementation.
+     */
+    abstract static class ObjectToOpaquePathNode extends PNodeWithRaise {
+        abstract Object execute(VirtualFrame frame, Object obj, boolean checkEmpty);
+
+        @Specialization(guards = "!checkEmpty")
+        static Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
+                        @Cached PyOSFSPathNode fspathNode,
+                        @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+            return stringOrBytesToOpaquePathNode.execute(fspathNode.execute(frame, obj));
+        }
+
+        @Specialization(guards = "checkEmpty")
+        Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
+                        @Cached PyOSFSPathNode fspathNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+            Object stringOrBytes = fspathNode.execute(frame, obj);
+            if (sizeNode.execute(frame, obj) == 0) {
+                throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
+            }
+            return stringOrBytesToOpaquePathNode.execute(stringOrBytes);
+        }
+    }
+
+    abstract static class ConvertToTimespecBaseNode extends PythonBuiltinBaseNode {
+        abstract void execute(VirtualFrame frame, Object obj, long[] timespec, int offset);
+    }
+
+    /**
+     * Equivalent of {@code _PyTime_ObjectToTimespec} as used in {@code os_utime_impl}.
+     */
+    abstract static class ObjectToTimespecNode extends ConvertToTimespecBaseNode {
+
+        @Specialization(guards = "!isNan(value)")
+        void doDoubleNotNan(double value, long[] timespec, int offset) {
+            double denominator = 1000000000.0;
+            double floatPart = value % 1;
+            double intPart = value - floatPart;
+
+            floatPart = Math.floor(floatPart * denominator);
+            if (floatPart >= denominator) {
+                floatPart -= denominator;
+                intPart += 1.0;
+            } else if (floatPart < 0) {
+                floatPart += denominator;
+                intPart -= 1.0;
+            }
+            assert 0.0 <= floatPart && floatPart < denominator;
+            if (!MathGuards.fitLong(intPart)) {
+                throw raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
+            }
+            timespec[offset] = (long) intPart;
+            timespec[offset + 1] = (long) floatPart;
+            assert 0 <= timespec[offset + 1] && timespec[offset + 1] < (long) denominator;
+        }
+
+        @Specialization(guards = "isNan(value)")
+        @SuppressWarnings("unused")
+        void doDoubleNan(double value, long[] timespec, int offset) {
+            throw raise(ValueError, ErrorMessages.INVALID_VALUE_NAN);
+        }
+
         @Specialization
-        boolean doPrimitive(VirtualFrame frame, int fd,
-                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
-            PSocket socket = getContext().getResources().getSocket(fd);
-            if (socket != null) {
-                return SocketBuiltins.GetBlockingNode.get(socket);
+        void doPFloat(PFloat obj, long[] timespec, int offset) {
+            double value = obj.getValue();
+            if (Double.isNaN(value)) {
+                throw raise(ValueError, ErrorMessages.INVALID_VALUE_NAN);
             }
-            Channel fileChannel = getContext().getResources().getFileChannel(fd, classProfile);
-            if (fileChannel instanceof SelectableChannel) {
-                return getBlocking((SelectableChannel) fileChannel);
-            }
-
-            // if we reach this point, it's an invalid FD (either it does not exist or is not
-            // selectable)
-            throw raiseOSError(frame, OSErrorEnum.EBADFD);
+            doDoubleNotNan(value, timespec, offset);
         }
 
-        @Specialization(limit = "1")
-        boolean doGeneric(VirtualFrame frame, Object fdObj,
-                        @CachedLibrary("fdObj") PythonObjectLibrary fdLib,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+        @Specialization
+        static void doInt(int value, long[] timespec, int offset) {
+            timespec[offset] = value;
+            timespec[offset + 1] = 0;
+        }
 
-            int fd;
+        @Specialization
+        static void doLong(long value, long[] timespec, int offset) {
+            timespec[offset] = value;
+            timespec[offset + 1] = 0;
+        }
+
+        @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"})
+        void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
+                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
             try {
-                fd = castToJavaIntNode.execute(fdLib.asPIntWithState(fdObj, PArguments.getThreadState(frame)));
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                timespec[offset] = asLongNode.execute(frame, value);
+            } catch (OverflowException e) {
+                throw raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
             }
-
-            return doPrimitive(frame, fd, classProfile);
+            timespec[offset + 1] = 0;
         }
 
-        @TruffleBoundary
-        private static boolean getBlocking(SelectableChannel channel) {
-            return channel.isBlocking();
+        protected static boolean isNan(double value) {
+            return Double.isNaN(value);
+        }
+    }
+
+    /**
+     * Equivalent of {@code split_py_long_to_s_and_ns} as used in {@code os_utime_impl}.
+     */
+    @ImportStatic(BinaryArithmetic.class)
+    abstract static class SplitLongToSAndNsNode extends ConvertToTimespecBaseNode {
+
+        private static final long BILLION = 1000000000;
+
+        @Specialization
+        static void doInt(int value, long[] timespec, int offset) {
+            doLong(value, timespec, offset);
+        }
+
+        @Specialization
+        static void doLong(long value, long[] timespec, int offset) {
+            timespec[offset] = Math.floorDiv(value, BILLION);
+            timespec[offset + 1] = Math.floorMod(value, BILLION);
+        }
+
+        @Specialization(guards = {"!isInteger(value)"})
+        void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
+                        @Cached("DivMod.create()") BinaryOpNode callDivmod,
+                        @Cached LenNode lenNode,
+                        @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Cached PyLongAsLongNode asLongNode) {
+            Object divmod = callDivmod.executeObject(frame, value, BILLION);
+            if (!PGuards.isPTuple(divmod) || lenNode.execute((PSequence) divmod) != 2) {
+                throw raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
+            }
+            SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
+            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 0));
+            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 1));
+        }
+    }
+
+    static int dirFdForAudit(int dirFd) {
+        return dirFd == AT_FDCWD.value ? -1 : dirFd;
+    }
+
+    public static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+        Object[] res = new Object[16];
+        for (int i = 0; i < 7; i++) {
+            res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+        }
+        res[6] = out[6];
+        for (int i = 7; i < 10; i++) {
+            long seconds = out[i];
+            long nsFraction = out[i + 3];
+            res[i] = seconds;
+            res[i + 3] = seconds + nsFraction * 1.0e-9;
+            res[i + 6] = factory.createInt(convertToNanoseconds(seconds, nsFraction));
+        }
+        return factory.createStructSeq(STAT_RESULT_DESC, res);
+    }
+
+    @TruffleBoundary
+    private static BigInteger convertToNanoseconds(long sec, long ns) {
+        // TODO it may be possible to do this in long without overflow
+        BigInteger r = BigInteger.valueOf(sec);
+        r = r.multiply(BigInteger.valueOf(1000000000));
+        return r.add(BigInteger.valueOf(ns));
+    }
+
+    public static PBytes opaquePathToBytes(Object opaquePath, PosixSupportLibrary posixLib, Object posixSupport, PythonObjectFactory factory) {
+        Buffer buf = posixLib.getPathAsBytes(posixSupport, opaquePath);
+        if (buf.length > Integer.MAX_VALUE) {
+            // sanity check that it is safe to cast result.length to int, to be removed once
+            // we support large arrays
+            throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
+        }
+        return factory.createBytes(buf.data, 0, (int) buf.length);
+    }
+
+    // ------------------
+    // Converters
+
+    public abstract static class FsConverterNode extends ArgumentCastNodeWithRaise {
+        @Specialization
+        static PBytes convert(VirtualFrame frame, Object value,
+                        @Cached PyOSFSPathNode fspathNode,
+                        @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
+            return stringOrBytesToBytesNode.execute(fspathNode.execute(frame, value));
+        }
+
+        @ClinicConverterFactory
+        public static FsConverterNode create() {
+            return PosixModuleBuiltinsFactory.FsConverterNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code dir_fd_converter()}. Always returns an {@code int}. If the
+     * parameter is omitted, returns {@link PosixConstants#AT_FDCWD}.
+     */
+    public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
+
+        @Specialization
+        static int doNone(@SuppressWarnings("unused") PNone value) {
+            return AT_FDCWD.value;
+        }
+
+        @Specialization
+        static int doFdBool(boolean value) {
+            return PInt.intValue(value);
+        }
+
+        @Specialization
+        static int doFdInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        int doFdLong(long value) {
+            return longToFd(value, getRaiseNode());
+        }
+
+        @Specialization
+        int doFdPInt(PInt value,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            return doFdLong(castToLongNode.execute(value));
+        }
+
+        @Specialization(guards = {"!isPNone(value)", "!canBeInteger(value)"})
+        int doIndex(VirtualFrame frame, Object value,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            if (indexCheckNode.execute(value)) {
+                Object o = indexNode.execute(frame, value);
+                return doFdLong(castToLongNode.execute(o));
+            } else {
+                throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+            }
+        }
+
+        private static int longToFd(long value, PRaiseNode raiseNode) {
+            if (value > Integer.MAX_VALUE) {
+                throw raiseNode.raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
+            }
+            if (value < Integer.MIN_VALUE) {
+                throw raiseNode.raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
+            }
+            return (int) value;
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+        public static DirFdConversionNode create() {
+            return PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
+     * {@link PosixFileHandle}.
+     */
+    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
+
+        private final String functionNameWithColon;
+        private final String argumentName;
+        protected final boolean nullable;
+        protected final boolean allowFd;
+
+        public PathConversionNode(String functionName, String argumentName, boolean nullable, boolean allowFd) {
+            this.functionNameWithColon = functionName != null ? functionName + ": " : "";
+            this.argumentName = argumentName != null ? argumentName : "path";
+            this.nullable = nullable;
+            this.allowFd = allowFd;
+        }
+
+        @Specialization(guards = "nullable")
+        PosixFileHandle doNone(@SuppressWarnings("unused") PNone value,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return new PosixPath(null, checkPath(posixLib.createPathFromString(getPosixSupport(), T_DOT)), false);
+        }
+
+        @Specialization(guards = "allowFd")
+        static PosixFileHandle doFdBool(boolean value) {
+            return new PosixFd(value, PInt.intValue(value));
+        }
+
+        @Specialization(guards = "allowFd")
+        static PosixFileHandle doFdInt(int value) {
+            return new PosixFd(value, value);
+        }
+
+        @Specialization(guards = "allowFd")
+        PosixFileHandle doFdLong(long value) {
+            return new PosixFd(value, DirFdConversionNode.longToFd(value, getRaiseNode()));
+        }
+
+        @Specialization(guards = "allowFd")
+        PosixFileHandle doFdPInt(PInt value,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(value), getRaiseNode()));
+        }
+
+        @Specialization
+        PosixFileHandle doUnicode(TruffleString value,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), value)), false);
+        }
+
+        @Specialization
+        PosixFileHandle doUnicode(PString value,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            TruffleString str = castToStringNode.execute(value);
+            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)), false);
+        }
+
+        @Specialization
+        PosixFileHandle doBytes(PBytes value,
+                        @Cached BytesNodes.ToBytesNode toByteArrayNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))), true);
+        }
+
+        @Specialization(guards = {"!isHandled(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
+        PosixFileHandle doBuffer(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached WarningsModuleBuiltins.WarnNode warningNode) {
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
+            try {
+                warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
+                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
+            } finally {
+                bufferLib.release(buffer, frame, getContext(), getLanguage(), this);
+            }
+        }
+
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "1")
+        PosixFileHandle doIndex(VirtualFrame frame, Object value,
+                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            Object o = indexNode.execute(frame, value);
+            return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
+        }
+
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "1")
+        PosixFileHandle doGeneric(VirtualFrame frame, Object value,
+                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached("create(T___FSPATH__)") LookupAndCallUnaryNode callFSPath,
+                        @Cached BytesNodes.ToBytesNode toByteArrayNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Object pathObject = callFSPath.executeObject(frame, value);
+            if (pathObject == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
+                                getAllowedTypes(), value);
+            }
+            // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
+            // by design
+            if (pathObject instanceof PBytes) {
+                return doBytes((PBytes) pathObject, toByteArrayNode, posixLib);
+            }
+            if (pathObject instanceof PString) {
+                return doUnicode((PString) pathObject, castToStringNode, posixLib);
+            }
+            if (pathObject instanceof TruffleString) {
+                return doUnicode((TruffleString) pathObject, posixLib);
+            }
+            throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
+        }
+
+        protected boolean isHandled(Object value) {
+            return PGuards.isPNone(value) && nullable || PGuards.canBeInteger(value) && allowFd || PGuards.isString(value) || PGuards.isPBytes(value);
+        }
+
+        private String getAllowedTypes() {
+            return allowFd && nullable ? "string, bytes, os.PathLike, integer or None"
+                            : allowFd ? "string, bytes, os.PathLike or integer" : nullable ? "string, bytes, os.PathLike or None" : "string, bytes or os.PathLike";
+        }
+
+        private Object checkPath(Object path) {
+            if (path == null) {
+                throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
+            }
+            return path;
+        }
+
+        protected final Object getPosixSupport() {
+            return PythonContext.get(this).getPosixSupport();
+        }
+
+        @ClinicConverterFactory
+        public static PathConversionNode create(@BuiltinName String functionName, @ArgumentName String argumentName, boolean nullable, boolean allowFd) {
+            return PosixModuleBuiltinsFactory.PathConversionNodeGen.create(functionName, argumentName, nullable, allowFd);
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code Py_off_t_converter()}. Always returns a {@code long}.
+     */
+    public abstract static class OffsetConversionNode extends ArgumentCastNodeWithRaise {
+
+        @Specialization
+        static long doInt(int i) {
+            return i;
+        }
+
+        @Specialization
+        static long doLong(long l) {
+            return l;
+        }
+
+        @Specialization
+        static long doOthers(VirtualFrame frame, Object value,
+                        @Cached PyLongAsLongNode asLongNode) {
+            return asLongNode.execute(frame, value);
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Long)
+        public static OffsetConversionNode create() {
+            return PosixModuleBuiltinsFactory.OffsetConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code fildes_converter()}, which in turn delegates to
+     * {@code PyObject_AsFileDescriptor}. Always returns an {@code int}.
+     */
+    public abstract static class FileDescriptorConversionNode extends ArgumentCastNode {
+        @Specialization
+        static int doIndex(VirtualFrame frame, Object value,
+                        @Cached PyObjectAsFileDescriptor asFileDescriptor) {
+            return asFileDescriptor.execute(frame, value);
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+        public static FileDescriptorConversionNode create() {
+            return PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Emulates CPython's {@code pid_t_converter()}. Always returns an {@code long}.
+     */
+    public abstract static class PidtConversionNode extends ArgumentCastNodeWithRaise {
+
+        @Specialization
+        static long doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        static long doLong(long value) {
+            return value;
+        }
+
+        @Specialization(guards = "!isInteger(value)")
+        static long doGeneric(VirtualFrame frame, Object value,
+                        @Cached PyLongAsLongNode asLongNode) {
+            return asLongNode.execute(frame, value);
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        public static PidtConversionNode create() {
+            // TODO on platforms with sizeof(pid_t) == 4 (includes linux), the converter should
+            // check for overflow
+            return PosixModuleBuiltinsFactory.PidtConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Emulates CPython's {@code _Py_Uid_Converter()}. Always returns an {@code long}.
+     */
+    public abstract static class UidConversionNode extends ArgumentCastNodeWithRaise {
+        public abstract long executeLong(VirtualFrame frame, Object value);
+
+        @Specialization
+        long doInt(int value) {
+            return checkValue(value);
+        }
+
+        @Specialization
+        long doLong(long value) {
+            return checkValue(value);
+        }
+
+        @Specialization(guards = "!isInteger(value)")
+        long doGeneric(VirtualFrame frame, Object value,
+                        @Cached PyNumberIndexNode pyNumberIndexNode,
+                        @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
+                        @Cached CastToJavaUnsignedLongNode asUnsignedLong) {
+            Object index;
+            try {
+                index = pyNumberIndexNode.execute(frame, value);
+            } catch (PException ex) {
+                throw raise(TypeError, ErrorMessages.UID_SHOULD_BE_INTEGER_NOT_P, value);
+            }
+            try {
+                return checkValue(asLongAndOverflowNode.execute(frame, index));
+            } catch (OverflowException e) {
+                // fall through
+            }
+            return asUnsignedLong.execute(index);
+            // We have no means to distinguish overflow/underflow so we just let any OverflowError
+            // from asUnsignedLong fall through. It will not have the same message as CPython, but
+            // still correct type.
+        }
+
+        private long checkValue(long value) {
+            if (value < -1) {
+                throw raise(OverflowError, ErrorMessages.UID_IS_LESS_THAN_MINIMUM);
+            }
+            return value;
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        public static UidConversionNode create() {
+            return PosixModuleBuiltinsFactory.UidConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
+     * structure, but only contains the results of the conversion, not the conversion parameters.
+     */
+    public abstract static class PosixFileHandle {
+
+        /**
+         * Contains the original object (or the object returned by {@code __fspath__}) for auditing
+         * purposes. This field is {code null} iff the path parameter was optional and the caller
+         * did not provide it.
+         */
+        public final Object originalObject;
+
+        protected PosixFileHandle(Object originalObject) {
+            this.originalObject = originalObject;
+        }
+    }
+
+    /**
+     * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
+     * implementation
+     *
+     * @see PosixSupportLibrary#createPathFromString(Object, TruffleString)
+     * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
+     */
+    public static class PosixPath extends PosixFileHandle {
+        public final Object value;
+        public final boolean wasBufferLike;
+
+        public PosixPath(Object originalObject, Object value, boolean wasBufferLike) {
+            super(originalObject);
+            this.value = value;
+            this.wasBufferLike = wasBufferLike;
+        }
+    }
+
+    /**
+     * Contains the file descriptor if it was allowed in the argument conversion node and the caller
+     * provided an integer instead of a path.
+     */
+    public static class PosixFd extends PosixFileHandle {
+        public final int fd;
+
+        public PosixFd(Object originalObject, int fd) {
+            super(originalObject);
+            this.fd = fd;
         }
     }
 }

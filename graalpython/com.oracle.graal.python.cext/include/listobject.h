@@ -1,3 +1,8 @@
+/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* List object interface
 
    Another generally useful object type is a list of object pointers.

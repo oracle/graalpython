@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,26 +26,23 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.io.ByteArrayOutputStream;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public final class BytesUtils {
 
-    static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
+    @CompilationFinal(dimensions = 1) public static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
 
     // tables are copied from CPython/Python/pyctype.c
     static final byte PY_CTF_LOWER = 0x01;
@@ -305,16 +302,6 @@ public final class BytesUtils {
         return (byte) TO_UPPER[mask(c)];
     }
 
-    public static byte[] fromSize(PythonCore core, int size) {
-        if (size < 0) {
-            throw core.raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
-        } else if (size >= Integer.MAX_VALUE) {
-            // TODO: fix me, in python the array can take long sizes, we are bound to ints for now
-            throw core.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
-        }
-        return new byte[size];
-    }
-
     public static byte[] fromString(ParserErrorCallback errors, String source) {
         return decodeEscapeToBytes(errors, source);
     }
@@ -331,42 +318,6 @@ public final class BytesUtils {
         return out;
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
-    public static byte[] fromStringAndEncoding(PythonCore core, String source, String encoding) {
-        try {
-            String e = encoding.equals("latin-1") ? "ISO-8859-1" : encoding;
-            return source.getBytes(e);
-        } catch (UnsupportedEncodingException e) {
-            throw core.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
-        }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static Object doAsciiString(String str) {
-        byte[] bytes = unicodeEscape(str);
-        boolean hasSingleQuote = false;
-        boolean hasDoubleQuote = false;
-        for (int i = 0; i < bytes.length; i++) {
-            char c = (char) bytes[i];
-            hasSingleQuote |= c == '\'';
-            hasDoubleQuote |= c == '"';
-        }
-        boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
-        char quote = useDoubleQuotes ? '"' : '\'';
-        StringBuilder sb = PythonUtils.newStringBuilder(bytes.length + 2);
-        PythonUtils.append(sb, quote);
-        for (int i = 0; i < bytes.length; i++) {
-            char c = (char) bytes[i];
-            if (c == '\'' && !useDoubleQuotes) {
-                PythonUtils.append(sb, "\\'");
-            } else {
-                PythonUtils.append(sb, c);
-            }
-        }
-        PythonUtils.append(sb, quote);
-        return PythonUtils.sbToString(sb);
-    }
-
     @TruffleBoundary(allowInlining = true)
     public static char figureOutQuote(byte[] bytes, int len) {
         char quote = '\'';
@@ -381,40 +332,49 @@ public final class BytesUtils {
         return quote;
     }
 
-    public static void reprLoop(StringBuilder sb, byte[] bytes, int len) {
+    public static void reprLoop(TruffleStringBuilder sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         char quote = figureOutQuote(bytes, len);
-        PythonUtils.append(sb, 'b');
-        PythonUtils.append(sb, quote);
+        appendCodePointNode.execute(sb, 'b', 1, true);
+        appendCodePointNode.execute(sb, quote, 1, true);
         for (int i = 0; i < len; i++) {
-            byteRepr(sb, bytes[i], quote == '\'');
+            byteRepr(sb, bytes[i], quote == '\'', appendCodePointNode);
         }
-        PythonUtils.append(sb, quote);
+        appendCodePointNode.execute(sb, quote, 1, true);
     }
 
     @TruffleBoundary
-    private static void byteRepr(StringBuilder sb, byte b, boolean isSingleQuote) {
+    private static void byteRepr(TruffleStringBuilder sb, byte b, boolean isSingleQuote, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         if (b == '\t') {
-            PythonUtils.append(sb, "\\t");
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 't', 1, true);
         } else if (b == '\n') {
-            PythonUtils.append(sb, "\\n");
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 'n', 1, true);
         } else if (b == '\r') {
-            PythonUtils.append(sb, "\\r");
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 'r', 1, true);
         } else if (b == '\'') {
-            PythonUtils.append(sb, isSingleQuote ? "\\'" : "\'");
+            if (isSingleQuote) {
+                appendCodePointNode.execute(sb, '\\', 1, true);
+            }
+            appendCodePointNode.execute(sb, '\'', 1, true);
         } else if (b > 31 && b <= 126) {
             char chr = (char) b;
             if (chr == '\\') {
-                PythonUtils.append(sb, '\\');
+                appendCodePointNode.execute(sb, '\\', 1, true);
             }
-            PythonUtils.append(sb, chr);
+            appendCodePointNode.execute(sb, chr, 1, true);
         } else {
-            PythonUtils.append(sb, String.format("\\x%02x", b));
+            appendCodePointNode.execute(sb, '\\', 1, true);
+            appendCodePointNode.execute(sb, 'x', 1, true);
+            appendCodePointNode.execute(sb, HEXDIGITS[(b >>> 4) & 0x000F], 1, true);
+            appendCodePointNode.execute(sb, HEXDIGITS[b & 0x000F], 1, true);
         }
     }
 
-    public static void repr(StringBuilder sb, byte[] bytes, int len) {
+    public static void repr(TruffleStringBuilder sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         for (int i = 0; i < len; i++) {
-            byteRepr(sb, bytes[i], true);
+            byteRepr(sb, bytes[i], true, appendCodePointNode);
         }
     }
 
@@ -425,11 +385,12 @@ public final class BytesUtils {
             len = bytes.length;
         }
 
-        StringBuilder sb = PythonUtils.newStringBuilder();
-        PythonUtils.append(sb, "b'");
-        repr(sb, bytes, len);
-        PythonUtils.append(sb, "'");
-        return PythonUtils.sbToString(sb);
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        sb.appendCodePointUncached('b');
+        sb.appendCodePointUncached('\'');
+        repr(sb, bytes, len, TruffleStringBuilder.AppendCodePointNode.getUncached());
+        sb.appendCodePointUncached('\'');
+        return sb.toStringUncached().toJavaStringUncached();
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
@@ -449,7 +410,7 @@ public final class BytesUtils {
 
             i++;
             if (i >= length) {
-                throw errors.raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
+                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
             }
 
             chr = string.charAt(i);
@@ -534,7 +495,7 @@ public final class BytesUtils {
                             // fall through
                         }
                     }
-                    throw errors.raise(ValueError, ErrorMessages.INVALID_ESCAPE_AT, "\\x", i);
+                    throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.INVALID_ESCAPE_AT, "\\x", i);
                 default:
                     if (regexMode) {
                         if (chr == 'g' || (chr >= '0' && chr <= '9')) {
@@ -543,7 +504,7 @@ public final class BytesUtils {
                             charList.append('\\');
                             charList.append(chr);
                         } else {
-                            throw errors.raise(ValueError, ErrorMessages.INVALID_ESCAPE_SEQ_AT, chr, i);
+                            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.INVALID_ESCAPE_SEQ_AT, chr, i);
                         }
                     } else {
                         charList.append('\\');
@@ -566,34 +527,6 @@ public final class BytesUtils {
         for (int i = 0; i < sb.length(); i++) {
             bytes[i] = (byte) sb.charAt(i);
         }
-        return bytes;
-    }
-
-    @TruffleBoundary
-    public static byte[] unicodeEscape(String str) {
-        // Initial allocation of bytes for UCS4 strings needs 10 bytes per source character
-        // ('\U00xxxxxx')
-        byte[] bytes = new byte[str.length() * 10];
-        int j = 0;
-        for (int i = 0; i < str.length();) {
-            int ch = str.codePointAt(i);
-            j = unicodeEscape(ch, j, bytes);
-            i += Character.charCount(ch);
-        }
-        bytes = Arrays.copyOf(bytes, j);
-        return bytes;
-    }
-
-    @TruffleBoundary
-    public static byte[] unicodeNonAsciiEscape(String str) {
-        byte[] bytes = new byte[str.length() * 10];
-        int j = 0;
-        for (int i = 0; i < str.length();) {
-            int ch = str.codePointAt(i);
-            j = unicodeNonAsciiEscape(ch, j, bytes);
-            i += Character.charCount(ch);
-        }
-        bytes = Arrays.copyOf(bytes, j);
         return bytes;
     }
 
@@ -626,8 +559,7 @@ public final class BytesUtils {
                 buffer[i++] = 'r';
             } else {
                 /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
-                byteEscape(codePoint, i, buffer);
-                i += 4;
+                i = byteEscape(codePoint, i, buffer);
             }
         } else {
             i = unicodeNonAsciiEscape(codePoint, i, buffer);
@@ -635,18 +567,21 @@ public final class BytesUtils {
         return i;
     }
 
-    public static void byteEscape(int codePoint, int startIndex, byte[] buffer) {
+    public static int byteEscape(int codePoint, int startIndex, byte[] buffer) {
         int i = startIndex;
         buffer[i++] = '\\';
         buffer[i++] = 'x';
         buffer[i++] = HEXDIGITS[(codePoint >> 4) & 0x000F];
-        buffer[i] = HEXDIGITS[codePoint & 0x000F];
+        buffer[i++] = HEXDIGITS[codePoint & 0x000F];
+        return i;
     }
 
     public static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer) {
         int i = startIndex;
-        if (codePoint < 0x100) {
+        if (codePoint < 128) {
             buffer[i++] = (byte) codePoint;
+        } else if (codePoint < 0x100) {
+            i = byteEscape(codePoint, startIndex, buffer);
         } else if (codePoint < 0x10000) {
             /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
             buffer[i++] = '\\';
@@ -672,36 +607,6 @@ public final class BytesUtils {
         return i;
     }
 
-    @TruffleBoundary
-    public static byte[] fromHex(String str, PRaiseNode raiseNode) {
-        // This overestimates if there are spaces
-        byte[] bytes = new byte[str.length() / 2];
-        byte[] strchar = str.getBytes();
-        int n = 0;
-        for (int i = 0; i < str.length(); i++) {
-            byte c = strchar[i];
-            if (isSpace(c)) {
-                continue;
-            }
-            int top = BytesUtils.digitValue(c);
-            if (top >= 16 || top < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "non-hexadecimal number found in fromhex() arg at position %d", i);
-            }
-
-            c = i + 1 < str.length() ? strchar[++i] : 0;
-            int bottom = BytesUtils.digitValue(c);
-            if (bottom >= 16 || bottom < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "non-hexadecimal number found in fromhex() arg at position %d", i);
-            }
-
-            bytes[n++] = (byte) ((top << 4) | bottom);
-        }
-        if (n != bytes.length) {
-            bytes = Arrays.copyOf(bytes, n);
-        }
-        return bytes;
-    }
-
     /**
      * Convert a hex digit character to it's byte value. E.g. this method returns {@code (byte)10}
      * for character {@code 'A'}. For any other character, value {@code 37} is returned. This is
@@ -718,8 +623,43 @@ public final class BytesUtils {
         return 37;
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public static int memchr(byte[] bytes, int start, byte v, int len) {
+        for (int i = start; i < start + len; i++) {
+            if (bytes[i] == v) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     @TruffleBoundary
-    public static String createASCIIString(byte[] retbuf) {
-        return new String(retbuf, StandardCharsets.US_ASCII);
+    public static TruffleString createASCIIString(byte[] retbuf, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        return switchEncodingNode.execute(fromByteArrayNode.execute(retbuf, TruffleString.Encoding.US_ASCII), TS_ENCODING);
+    }
+
+    @TruffleBoundary
+    public static ByteArrayOutputStream createOutputStream() {
+        return new ByteArrayOutputStream();
+    }
+
+    @TruffleBoundary
+    public static ByteArrayOutputStream createOutputStream(int n) {
+        return new ByteArrayOutputStream(n);
+    }
+
+    @TruffleBoundary
+    public static void append(ByteArrayOutputStream bas, byte[] bytes, int off, int len) {
+        bas.write(bytes, off, len);
+    }
+
+    @TruffleBoundary
+    public static void append(ByteArrayOutputStream bas, byte[] bytes, int len) {
+        append(bas, bytes, 0, len);
+    }
+
+    @TruffleBoundary
+    public static byte[] toByteArray(ByteArrayOutputStream bas) {
+        return bas.toByteArray();
     }
 }

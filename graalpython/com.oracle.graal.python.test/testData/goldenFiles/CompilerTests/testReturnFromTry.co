@@ -1,0 +1,35 @@
+Disassembly of <module>:
+  1:0   -   5:34        0 MAKE_FUNCTION                     0    (foo)
+  1:0   -   5:34        3 STORE_NAME                        0    (foo)
+  1:0   -   5:34        5 LOAD_NONE
+  1:0   -   5:34        6 RETURN_VALUE
+
+Disassembly of foo:
+  2:11  -   2:16        0 LOAD_GLOBAL                       0    (range)
+  2:17  -   2:19        2 LOAD_BYTE_O                       10
+  2:11  -   2:20        4 CALL_FUNCTION                     1
+  2:2   -   5:34        6 GET_ITER
+  2:2   -   5:34  >>    7 FOR_ITER                          36   (to 43)                           can quicken
+  2:6   -   2:7         9 STORE_FAST                        0    (i)                               generalizes: 7
+  4:13  -   4:14       11 LOAD_GLOBAL                       1    (a)
+  5:18  -   5:23       13 LOAD_GLOBAL                       2    (print)
+  5:24  -   5:33       15 LOAD_STRING                       1    ('finally')
+  5:18  -   5:34       17 CALL_FUNCTION                     1
+  5:18  -   5:34       19 POP_TOP
+  5:18  -   5:34       20 ROT_TWO
+  5:18  -   5:34       21 POP_TOP
+  5:18  -   5:34       22 RETURN_VALUE
+  5:18  -   5:34       23 JUMP_FORWARD                      11   (to 34)
+  5:18  -   5:34       25 PUSH_EXC_INFO                                                           (exc handler 11 - 13; stack: 1)
+  5:18  -   5:23       26 LOAD_GLOBAL                       2    (print)
+  5:24  -   5:33       28 LOAD_STRING                       1    ('finally')
+  5:18  -   5:34       30 CALL_FUNCTION                     1
+  5:18  -   5:34       32 POP_TOP
+  5:18  -   5:34       33 END_EXC_HANDLER                                                         (exc handler 26 - 33; stack: 2)
+  5:18  -   5:23  >>   34 LOAD_GLOBAL                       2    (print)
+  5:24  -   5:33       36 LOAD_STRING                       1    ('finally')
+  5:18  -   5:34       38 CALL_FUNCTION                     1
+  5:18  -   5:34       40 POP_TOP
+  5:18  -   5:34       41 JUMP_BACKWARD                     34   (to 7)
+  5:18  -   5:34  >>   43 LOAD_NONE
+  5:18  -   5:34       44 RETURN_VALUE

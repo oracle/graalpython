@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +26,22 @@ from .support import HPyTest
 
 class TestNumber(HPyTest):
 
+    def test_bool_from_long(self):
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                long x = HPyLong_AsLong(ctx, arg);
+                if (HPyErr_Occurred(ctx))
+                    return HPy_NULL;
+                return HPyBool_FromLong(ctx, x);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        assert mod.f(0) is False
+        assert mod.f(42) is True
+
     def test_unary(self):
         import pytest
         import operator
@@ -40,7 +56,7 @@ class TestNumber(HPyTest):
                 ]:
             mod = self.make_module("""
                 HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-                static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+                static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
                 {
                     return HPy_%s(ctx, arg);
                 }
@@ -75,11 +91,11 @@ class TestNumber(HPyTest):
                 ]:
             mod = self.make_module("""
                 HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-                static HPy f_impl(HPyContext ctx, HPy self,
+                static HPy f_impl(HPyContext *ctx, HPy self,
                                   HPy *args, HPy_ssize_t nargs)
                 {
                     HPy a, b;
-                    if (!HPyArg_Parse(ctx, args, nargs, "OO", &a, &b))
+                    if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
                         return HPy_NULL;
                     return HPy_%s(ctx, a, b);
                 }
@@ -92,11 +108,11 @@ class TestNumber(HPyTest):
     def test_power(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-            static HPy f_impl(HPyContext ctx, HPy self,
+            static HPy f_impl(HPyContext *ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
                 HPy a, b, c;
-                if (!HPyArg_Parse(ctx, args, nargs, "OOO", &a, &b, &c))
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "OOO", &a, &b, &c))
                     return HPy_NULL;
                 return HPy_Power(ctx, a, b, c);
             }
@@ -114,11 +130,11 @@ class TestNumber(HPyTest):
         m2 = Mat()
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-            static HPy f_impl(HPyContext ctx, HPy self,
+            static HPy f_impl(HPyContext *ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
                 HPy a, b;
-                if (!HPyArg_Parse(ctx, args, nargs, "OO", &a, &b))
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
                     return HPy_NULL;
                 return HPy_MatrixMultiply(ctx, a, b);
             }
@@ -144,11 +160,11 @@ class TestNumber(HPyTest):
                 ]:
             mod = self.make_module("""
                 HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-                static HPy f_impl(HPyContext ctx, HPy self,
+                static HPy f_impl(HPyContext *ctx, HPy self,
                                   HPy *args, HPy_ssize_t nargs)
                 {
                     HPy a, b;
-                    if (!HPyArg_Parse(ctx, args, nargs, "OO", &a, &b))
+                    if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
                         return HPy_NULL;
                     return HPy_InPlace%s(ctx, a, b);
                 }
@@ -164,11 +180,11 @@ class TestNumber(HPyTest):
     def test_inplace_power(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-            static HPy f_impl(HPyContext ctx, HPy self,
+            static HPy f_impl(HPyContext *ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
                 HPy a, b, c;
-                if (!HPyArg_Parse(ctx, args, nargs, "OOO", &a, &b, &c))
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "OOO", &a, &b, &c))
                     return HPy_NULL;
                 return HPy_InPlacePower(ctx, a, b, c);
             }
@@ -193,11 +209,11 @@ class TestNumber(HPyTest):
         m2 = Mat()
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-            static HPy f_impl(HPyContext ctx, HPy self,
+            static HPy f_impl(HPyContext *ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
                 HPy a, b;
-                if (!HPyArg_Parse(ctx, args, nargs, "OO", &a, &b))
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
                     return HPy_NULL;
                 return HPy_InPlaceMatrixMultiply(ctx, a, b);
             }
@@ -209,7 +225,7 @@ class TestNumber(HPyTest):
     def test_number_check(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 int cond = HPyNumber_Check(ctx, arg);
                 return HPyLong_FromLong(ctx, cond);

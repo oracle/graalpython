@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,59 +41,91 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_JAVA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.interop.InteropByteArray;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "java")
+@CoreFunctions(defineModule = J_JAVA)
 public class JavaModuleBuiltins extends PythonBuiltins {
+    private static final TruffleString T_JAR = tsLiteral(".jar");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JavaModuleBuiltinsFactory.getFactories();
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("__path__", "java!");
+        addBuiltinConstant("__path__", "java!");
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        PythonModule javaModule = core.lookupBuiltinModule(T_JAVA);
+        javaModule.setAttribute(T___GETATTR__, javaModule.getAttribute(GetAttrNode.T_JAVA_GETATTR));
     }
 
     @Builtin(name = "type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
-        private Object get(String name) {
+        private Object get(TruffleString name, TruffleString.ToJavaStringNode toJavaStringNode) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_LOOKUP_NOT_ALLOWED);
             }
             Object hostValue;
             try {
-                hostValue = env.lookupHostSymbol(name);
+                hostValue = env.lookupHostSymbol(toJavaStringNode.execute(name));
             } catch (RuntimeException e) {
                 hostValue = null;
             }
@@ -105,13 +137,16 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object type(String name) {
-            return get(name);
+        Object type(TruffleString name,
+                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return get(name, toJavaStringNode);
         }
 
         @Specialization
-        Object type(PString name) {
-            return get(name.getValue());
+        Object type(PString name,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+            return get(castToStringNode.execute(name), toJavaStringNode);
         }
 
         @Fallback
@@ -125,19 +160,19 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
         PNone add(Object[] args,
-                        @Cached CastToJavaStringNode castToString) {
+                        @Cached CastToTruffleStringNode castToString) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, ErrorMessages.HOST_ACCESS_NOT_ALLOWED);
             }
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
-                String entry = null;
+                TruffleString entry = null;
                 try {
                     entry = castToString.execute(arg);
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly
-                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, ".jar"));
+                    env.addToHostClassPath(getContext().getPublicTruffleFileRelaxed(entry, T_JAR));
                 } catch (CannotCastException e) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASSPATH_ARG_MUST_BE_STRING, i + 1, arg);
                 } catch (SecurityException e) {
@@ -178,13 +213,23 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "is_type", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsTypeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isType(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostObject(object) && env.asHostObject(object) instanceof Class<?>;
+        }
+    }
+
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!iLibObject.isForeignObject(object)", "iLibKlass.isForeignObject(klass)"}, limit = "3")
-        boolean check(Object object, TruffleObject klass,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary iLibObject,
-                        @SuppressWarnings("unused") @CachedLibrary("klass") PythonObjectLibrary iLibKlass) {
+        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
+        boolean check(Object object, Object klass,
+                        @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
@@ -197,10 +242,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"iLibObject.isForeignObject(object)", "iLibKlass.isForeignObject(klass)"}, limit = "3")
-        boolean checkForeign(Object object, TruffleObject klass,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary iLibObject,
-                        @SuppressWarnings("unused") @CachedLibrary("klass") PythonObjectLibrary iLibKlass) {
+        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
+        boolean checkForeign(Object object, Object klass,
+                        @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
             try {
                 Object hostObject = env.asHostObject(object);
@@ -217,6 +262,124 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @Fallback
         boolean fallback(Object object, Object klass) {
             throw raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
+        }
+    }
+
+    @Builtin(name = GetAttrNode.J_JAVA_GETATTR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetAttrNode extends PythonBuiltinNode {
+
+        protected static final String J_JAVA_GETATTR = "java_getattr";
+        protected static final TruffleString T_JAVA_GETATTR = tsLiteral(J_JAVA_GETATTR);
+        private static final TruffleString T_JAVA_PKG_LOADER = tsLiteral("JavaPackageLoader");
+        private static final TruffleString T_MAKE_GETATTR = tsLiteral("_make_getattr");
+
+        @CompilationFinal protected Object getAttr;
+
+        private Object getAttr(VirtualFrame frame, PythonModule mod) {
+            if (getAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, mod, T_JAVA_PKG_LOADER);
+                getAttr = PyObjectCallMethodObjArgs.getUncached().execute(frame, javaLoader, T_MAKE_GETATTR, T_JAVA);
+            }
+            return getAttr;
+        }
+
+        @Specialization
+        Object none(VirtualFrame frame, PythonModule mod, Object name,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, getAttr(frame, mod), name);
+        }
+    }
+
+    @Builtin(name = "as_java_byte_array", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AsJavaByteArrayNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object doBytesByteStorage(PBytesLike object) {
+            return new PUnsignedBytesWrapper(object);
+        }
+
+        @Specialization(guards = "!isBytes(object)", limit = "3")
+        Object doBuffer(VirtualFrame frame, Object object,
+                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer = acquireLib.acquireReadonly(object, frame, this);
+            try {
+                return new InteropByteArray(bufferLib.getCopiedByteArray(object));
+            } finally {
+                bufferLib.release(buffer, frame, this);
+            }
+        }
+    }
+
+    /**
+     * A simple wrapper object that bit-casts an integer in range {@code 0-255} to a Java
+     * {@code byte}. This can be used to expose a bytes-like object to Java as {@code byte[]}.
+     */
+    @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")
+    @SuppressWarnings("static-method")
+    static final class PUnsignedBytesWrapper implements TruffleObject {
+        final PBytesLike delegate;
+
+        PUnsignedBytesWrapper(PBytesLike delegate) {
+            this.delegate = delegate;
+        }
+
+        @ExportMessage
+        boolean hasArrayElements(
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib) {
+            return delegateLib.hasArrayElements(delegate);
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long index,
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib) {
+            return delegateLib.isArrayElementReadable(delegate, index);
+        }
+
+        @ExportMessage
+        long getArraySize(
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib) throws UnsupportedMessageException {
+            return delegateLib.getArraySize(delegate);
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index,
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib,
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib,
+                        @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object element = delegateLib.readArrayElement(delegate, index);
+                if (elementLib.fitsInLong(element)) {
+                    long i = elementLib.asLong(element);
+                    if (compareUnsigned(i, Byte.MAX_VALUE) <= 0) {
+                        return (byte) i;
+                    } else if (compareUnsigned(i, 0xFF) <= 0) {
+                        return (byte) -(-i & 0xFF);
+                    }
+                }
+                throw CompilerDirectives.shouldNotReachHere("bytes object contains non-byte values");
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+        /**
+         * This is taken from {@link Long#compare(long, long)}} (just to avoid a
+         * {@code TruffleBoundary}).
+         */
+        private static int compare(long x, long y) {
+            return (x < y) ? -1 : ((x == y) ? 0 : 1);
+        }
+
+        /**
+         * This is taken from {@link Long#compareUnsigned(long, long)}} (just to avoid a
+         * {@code TruffleBoundary}).
+         */
+        private static int compareUnsigned(long x, long y) {
+            return compare(x + Long.MIN_VALUE, y + Long.MIN_VALUE);
         }
     }
 }

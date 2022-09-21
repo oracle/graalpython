@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 
-abstract class CallReversibleMethodNode extends CallSpecialMethodNode {
+abstract class CallReversibleMethodNode extends AbstractCallMethodNode {
     protected boolean isForReverseBinaryOperation(RootCallTarget ct) {
         CompilerAsserts.neverPartOfCompilation();
         return PBuiltinFunction.isReverseOperationSlot(ct);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,50 +40,90 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.CallBinaryArithmeticRootNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic.CallTernaryArithmeticRootNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum InplaceArithmetic {
-    IAdd(SpecialMethodNames.__IADD__, "+="),
-    ISub(SpecialMethodNames.__ISUB__, "-="),
-    IMul(SpecialMethodNames.__IMUL__, "*="),
-    ITrueDiv(SpecialMethodNames.__ITRUEDIV__, "/="),
-    IFloorDiv(SpecialMethodNames.__IFLOORDIV__, "//="),
-    IMod(SpecialMethodNames.__IMOD__, "%="),
-    IPow(SpecialMethodNames.__IPOW__, "**=", true),
-    ILShift(SpecialMethodNames.__ILSHIFT__, "<<="),
-    IRShift(SpecialMethodNames.__IRSHIFT__, ">>="),
-    IAnd(SpecialMethodNames.__IAND__, "&="),
-    IOr(SpecialMethodNames.__IOR__, "|="),
-    IXor(SpecialMethodNames.__IXOR__, "^="),
-    IMatMul(SpecialMethodNames.__IMATMUL__, "@");
+    IAdd(SpecialMethodSlot.IAdd, T___ADD__, "+=", BinaryArithmetic.Add),
+    ISub(T___ISUB__, T___SUB__, "-=", BinaryArithmetic.Sub),
+    IMul(SpecialMethodSlot.IMul, T___MUL__, "*=", BinaryArithmetic.Mul),
+    ITrueDiv(T___ITRUEDIV__, T___TRUEDIV__, "/=", BinaryArithmetic.TrueDiv),
+    IFloorDiv(T___IFLOORDIV__, T___FLOORDIV__, "//=", BinaryArithmetic.FloorDiv),
+    IMod(T___IMOD__, T___MOD__, "%=", BinaryArithmetic.Mod),
+    IPow(T___IPOW__, T___POW__, "**=", BinaryArithmetic.Pow, true),
+    ILShift(T___ILSHIFT__, T___LSHIFT__, "<<=", BinaryArithmetic.LShift),
+    IRShift(T___IRSHIFT__, T___RSHIFT__, ">>=", BinaryArithmetic.RShift),
+    IAnd(T___IAND__, T___AND__, "&=", BinaryArithmetic.And),
+    IOr(T___IOR__, T___OR__, "|=", BinaryArithmetic.Or),
+    IXor(T___IXOR__, T___XOR__, "^=", BinaryArithmetic.Xor),
+    IMatMul(T___IMATMUL__, T___MATMUL__, "@", BinaryArithmetic.MatMul);
 
-    private final String methodName;
-    private final String operator;
-    private final boolean isTernary;
-    private final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
+    final TruffleString methodName;
+    final SpecialMethodSlot slot;
+    final boolean isTernary;
+    final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
+    final BinaryArithmetic binary;
+    final TruffleString binaryOpName;
 
-    InplaceArithmetic(String methodName, String operator) {
-        this(methodName, operator, false);
+    InplaceArithmetic(TruffleString methodName, TruffleString binaryOpName, String operator, BinaryArithmetic binary) {
+        this(methodName, binaryOpName, operator, binary, false);
     }
 
-    InplaceArithmetic(String methodName, String operator, boolean isTernary) {
+    InplaceArithmetic(SpecialMethodSlot slot, TruffleString binaryOpName, String operator, BinaryArithmetic binary) {
+        this(slot.getName(), binaryOpName, operator, binary, false, slot);
+    }
+
+    InplaceArithmetic(TruffleString methodName, TruffleString binaryOpName, String operator, BinaryArithmetic binary, boolean isTernary) {
+        this(methodName, binaryOpName, operator, binary, isTernary, null);
+    }
+
+    InplaceArithmetic(TruffleString methodName, TruffleString binaryOpName, @SuppressWarnings("unused") String operator, BinaryArithmetic binary, boolean isTernary, SpecialMethodSlot slot) {
+        assert methodName.toJavaStringUncached().startsWith("__i") && methodName.toJavaStringUncached().substring(3).equals(binaryOpName.toJavaStringUncached().substring(2));
         this.methodName = methodName;
-        this.operator = operator;
+        this.binary = binary;
         this.isTernary = isTernary;
+        this.binaryOpName = binaryOpName;
+        this.slot = slot;
+
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
@@ -94,12 +134,41 @@ public enum InplaceArithmetic {
         };
     }
 
-    public String getMethodName() {
-        return methodName;
+    public static ExpressionNode createInplaceOperation(String string, ExpressionNode left, ExpressionNode right) {
+        switch (string) {
+            case "+=":
+                return IAdd.create(left, right);
+            case "-=":
+                return ISub.create(left, right);
+            case "*=":
+                return IMul.create(left, right);
+            case "/=":
+                return ITrueDiv.create(left, right);
+            case "//=":
+                return IFloorDiv.create(left, right);
+            case "%=":
+                return IMod.create(left, right);
+            case "**=":
+                return IPow.create(left, right);
+            case "<<=":
+                return ILShift.create(left, right);
+            case ">>=":
+                return IRShift.create(left, right);
+            case "&=":
+                return IAnd.create(left, right);
+            case "|=":
+                return IOr.create(left, right);
+            case "^=":
+                return IXor.create(left, right);
+            case "@=":
+                return IMatMul.create(left, right);
+            default:
+                throw new RuntimeException("unexpected operation: " + string);
+        }
     }
 
-    public String getOperator() {
-        return operator;
+    public TruffleString getMethodName() {
+        return methodName;
     }
 
     public boolean isTernary() {
@@ -146,24 +215,18 @@ public enum InplaceArithmetic {
     }
 
     public LookupAndCallInplaceNode create(ExpressionNode left, ExpressionNode right) {
-        return LookupAndCallInplaceNode.createWithBinary(methodName, left, right, notImplementedHandler);
+        return LookupAndCallInplaceNode.create(this, left, right, new ObjectLiteralNode(PNone.NO_VALUE));
     }
 
     public LookupAndCallInplaceNode create() {
-        if (isTernary) {
-            return LookupAndCallInplaceNode.createWithTernary(methodName, null, null, null, notImplementedHandler);
-        }
-        return LookupAndCallInplaceNode.createWithBinary(methodName, null, null, notImplementedHandler);
+        return LookupAndCallInplaceNode.create(this, null, null, null);
     }
 
     /**
-     * Creates a call target with a specific root node for this in-place operator such that the
-     * operator can be executed via a full call. This is in particular useful, if you want to
-     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
-     * method directly. In order to enable AST sharing, you should use
-     * {@link PythonLanguage#getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic)}.
+     * Creates a root node for this in-place operator such that the operator can be executed via a
+     * full call.
      */
-    public RootCallTarget createCallTarget(PythonLanguage language) {
-        return PythonUtils.getOrCreateCallTarget(new CallInplaceArithmeticRootNode(language, this));
+    public RootNode createRootNode(PythonLanguage language) {
+        return new CallInplaceArithmeticRootNode(language, this);
     }
 }

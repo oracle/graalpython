@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,8 +48,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "errno")
 public class ErrnoModuleBuiltins extends PythonBuiltins {
@@ -59,21 +62,21 @@ public class ErrnoModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         PDict errorCode = core.factory().createDict();
 
         for (OSErrorEnum value : OSErrorEnum.values()) {
             // if more OSError have the same number -> the last one wins
-            addConstant(value.getNumber(), value.name(), errorCode);
+            addConstant(value.getNumber(), toTruffleStringUncached(value.name()), errorCode);
         }
 
         // publish the dictionary with mapping code -> string name
-        builtinConstants.put("errorcode", errorCode);
+        addBuiltinConstant("errorcode", errorCode);
     }
 
-    private void addConstant(int number, String name, PDict dict) {
-        builtinConstants.put(name, number);
+    private void addConstant(int number, TruffleString name, PDict dict) {
+        addBuiltinConstant(name, number);
         dict.setItem(number, name);
     }
 }

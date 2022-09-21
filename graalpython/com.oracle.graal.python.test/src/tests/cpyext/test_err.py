@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,16 @@ __dir__ = __file__.rpartition("/")[0]
 def _reference_setstring(args):
     raise args[0](args[1])
 
+def _new_ex_result_check(x, y):
+    name = y[0]
+    base = y[1]
+    return name in str(x) and issubclass(x, base)
+   
+def _new_ex_with_doc_result_check(x, y):
+    name = y[0]
+    doc = y[1]
+    base = y[2]
+    return name in str(x) and issubclass(x, base) and x.__doc__ == doc
 
 def _reference_setnone(args):
     raise args[0]()
@@ -154,7 +164,29 @@ class TestPyErr(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+    
+    test_PyErr_NewException = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ("main.TestException", TypeError, {}),
+        ),
+        resultspec="O",
+        argspec='sOO',
+        arguments=["char* name", "PyObject* base", "PyObject* dict"],
+        cmpfunc=_new_ex_result_check
+    )
+    
+    test_PyErr_NewExceptionWithDoc = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ("main.TestException", "new exception doc", TypeError, {}),
+        ),
+        resultspec="O",
+        argspec='ssOO',
+        arguments=["char* name", "char* doc", "PyObject* base", "PyObject* dict"],
+        cmpfunc=_new_ex_with_doc_result_check
+    )
+    
     test_PyErr_SetObject = CPyExtFunctionVoid(
         _reference_setstring,
         lambda: (
@@ -195,6 +227,20 @@ class TestPyErr(CPyExtTestCase):
         argspec='OsOO',
         arguments=["PyObject* v", "char* msg", "PyObject* arg0", "PyObject* arg1"],
         resultval="NULL",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyErr_Format_dS = CPyExtFunctionVoid(
+        _reference_format,
+        lambda: (
+            (ValueError, "hello %d times %S", 10, "world"),
+            (ValueError, "hello %c times %R", 95, "world"),
+        ),
+        resultspec="O",
+        argspec='OsiO',
+        arguments=["PyObject* v", "char* msg", "int arg0", "PyObject* arg1"],
+        resultval="NULL",
+        callfunction="PyErr_Format",
         cmpfunc=unhandled_error_compare
     )
 
@@ -321,6 +367,7 @@ class TestPyErr(CPyExtTestCase):
         resultspec="O",
         argspec='Osn',
         arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
+        stderr_validator=lambda args, stderr: "UserWarning: custom warning" in stderr,
         cmpfunc=unhandled_error_compare
     )
 
@@ -343,17 +390,36 @@ class TestPyErr(CPyExtTestCase):
             (None,),
             ("hello",),
         ),
-        resultspec="O",
         argspec='O',
         arguments=["PyObject* obj"],
         code="""void wrap_PyErr_WriteUnraisable(PyObject* object) {
-            PyErr_SetString(PyExc_RuntimeError, "unraisable exception");
+            PyErr_SetString(PyExc_RuntimeError, "unraisable_exception");
             if (object == Py_None)
                 object = NULL;
             PyErr_WriteUnraisable(object);
         }""",
         callfunction="wrap_PyErr_WriteUnraisable",
-        stderr_validator=lambda args, stderr: 'unraisable exception' in stderr,
+        stderr_validator=lambda args, stderr: "RuntimeError: unraisable_exception" in stderr,
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyErr_WriteUnraisableMsg = CPyExtFunctionVoid(
+        lambda args: None,
+        lambda: (
+            (None,),
+            ("hello",),
+        ),
+        code="""void wrap_PyErr_WriteUnraisableMsg(PyObject* object) {
+                PyErr_SetString(PyExc_RuntimeError, "unraisable_exception");
+                if (object == Py_None)
+                    object = NULL;
+                _PyErr_WriteUnraisableMsg("in my function", object);
+             }
+             """,
+        argspec='O',
+        arguments=["PyObject* obj"],
+        callfunction="wrap_PyErr_WriteUnraisableMsg",
+        stderr_validator=lambda args, stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
         cmpfunc=unhandled_error_compare
     )
 

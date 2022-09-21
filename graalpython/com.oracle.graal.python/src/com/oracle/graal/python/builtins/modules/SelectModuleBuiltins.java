@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.io.IOException;
-import java.nio.channels.Channel;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import static com.oracle.graal.python.runtime.PosixConstants.FD_SETSIZE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -53,21 +51,29 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.graal.python.util.IntArrayBuilder;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -75,13 +81,18 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "select")
 public class SelectModuleBuiltins extends PythonBuiltins {
 
+    /*
+     * ATTENTION: if we ever add "poll" support, update the code in
+     * MultiprocessingModuleBuilins#SelectNode to use it if available
+     */
+
     public SelectModuleBuiltins() {
-        builtinConstants.put("error", PythonErrorType.OSError);
+        addBuiltinConstant("error", PythonErrorType.OSError);
     }
 
     @Override
@@ -93,186 +104,107 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SelectNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         PTuple doWithoutTimeout(VirtualFrame frame, Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") PNone timeout,
-                        @CachedLibrary("rlist") PythonObjectLibrary rlistLibrary,
-                        @CachedLibrary("wlist") PythonObjectLibrary wlistLibrary,
-                        @CachedLibrary("xlist") PythonObjectLibrary xlistLibrary,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary coerceTimeoutLib,
-                        @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
-            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, rlistLibrary, wlistLibrary, xlistLibrary, coerceTimeoutLib, callGetItemNode, constructListNode, itemLib);
+                        @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
+                        @Cached PyObjectAsFileDescriptor asFileDescriptor,
+                        @Cached BranchProfile notSelectableBranch,
+                        @Cached GilNode gil) {
+            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, sizeNode,
+                            callGetItemNode, constructListNode, pyTimeFromObjectNode, asFileDescriptor, notSelectableBranch, gil);
         }
 
-        @Specialization(replaces = "doWithoutTimeout", limit = "3")
+        @Specialization(replaces = "doWithoutTimeout")
         PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
-                        @CachedLibrary("rlist") PythonObjectLibrary rlistLibrary,
-                        @CachedLibrary("wlist") PythonObjectLibrary wlistLibrary,
-                        @CachedLibrary("xlist") PythonObjectLibrary xlistLibrary,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary coerceTimeOutLib,
-                        @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
+                        @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
+                        @Cached PyObjectAsFileDescriptor asFileDescriptor,
+                        @Cached BranchProfile notSelectableBranch,
+                        @Cached GilNode gil) {
+            ObjAndFDList readFDs = seq2set(frame, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
+            ObjAndFDList writeFDs = seq2set(frame, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
+            ObjAndFDList xFDs = seq2set(frame, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
 
-            ChannelFD[] readFDs;
-            ChannelFD[] writeFDs;
-            ChannelFD[] xFDs;
+            Timeval timeoutval = null;
+            if (!PGuards.isPNone(timeout)) {
+                timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, timeout, SEC_TO_NS));
+                if (timeoutval.getSeconds() < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
+                }
+            }
+
+            SelectResult result;
             try {
-                readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode);
-                writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode);
-                xFDs = seq2set(frame, xlist, xlistLibrary, itemLib, callGetItemNode, constructListNode);
-            } catch (NonSelectableChannel e) {
-                // If one of the channels is not selectable, we do what we did before: just return
-                // everything.
+                gil.release(true);
+                try {
+                    result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            } catch (ChannelNotSelectableException e) {
+                // GraalPython hack: if one of the channels is not selectable (can happen only in
+                // the emulated mode), we just return everything.
+                notSelectableBranch.enter();
                 return factory().createTuple(new Object[]{rlist, wlist, xlist});
             }
-
-            // IMPORTANT: The meaning of the timeout value is slightly different:
-            // 'timeout == 0.0' means we should not block and return immediately. However, the Java
-            // API does not allow a non-blocking select. So we set the timeout to 1 ms.
-            //
-            // 'timeout == None' means we should wait indefinitely, i.e., we need to pass 0 to the
-            // Java API.
-            long timeoutMillis;
-            if (!PGuards.isPNone(timeout)) {
-                double timeoutSecs = coerceTimeOutLib.asJavaDouble(timeout);
-                timeoutMillis = timeoutSecs != 0.0 ? (long) (timeoutSecs * 1000.0) : 1L;
-            } else {
-                timeoutMillis = 0;
-            }
-
-            if (timeoutMillis < 0) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
-            }
-
-            try {
-                doSelect(readFDs, writeFDs, xFDs, timeoutMillis);
-            } catch (ClosedChannelException e) {
-                // If the channel was closed (this can only happen concurrently between resolving
-                // the FD to the channel and registration), we provided an incorrect file
-                // descriptor. The errno code for that is EBADF.
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            } catch (IOException e) {
-                throw raiseOSError(frame, e);
-            } catch (RuntimeException e) {
-                throw raise(PythonBuiltinClassType.SystemError, e);
-            }
-
-            return factory().createTuple(new PList[]{toList(readFDs), toList(writeFDs), toList(xFDs)});
+            return factory().createTuple(new PList[]{
+                            toList(result.getReadFds(), readFDs),
+                            toList(result.getWriteFds(), writeFDs),
+                            toList(result.getErrorFds(), xFDs)});
         }
 
-        @TruffleBoundary
-        private static void doSelect(ChannelFD[] readFDs, ChannelFD[] writeFDs, ChannelFD[] xFDs, long timeoutMillis) throws IOException {
-            try (Selector selector = Selector.open()) {
-
-                for (ChannelFD readFD : readFDs) {
-                    readFD.channel.configureBlocking(false);
-                    readFD.channel.register(selector, SelectionKey.OP_READ);
+        /**
+         * Also maps the returned FDs back to their original Python level objects.
+         */
+        private PList toList(boolean[] result, ObjAndFDList fds) {
+            Object[] resultObjs = new Object[result.length];
+            int resultObjsIdx = 0;
+            for (int i = 0; i < fds.fds.length; i++) {
+                if (result[i]) {
+                    resultObjs[resultObjsIdx++] = fds.objects[i];
                 }
-
-                for (ChannelFD writeFD : writeFDs) {
-                    writeFD.channel.configureBlocking(false);
-                    writeFD.channel.register(selector, SelectionKey.OP_WRITE);
-                }
-
-                for (ChannelFD xFD : xFDs) {
-                    // TODO(fa): not sure if these ops are representing
-                    // "exceptional condition pending"
-                    xFD.channel.configureBlocking(false);
-                    xFD.channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_CONNECT);
-                }
-
-                int selected = selector.select(timeoutMillis);
-
-                // remove non-selected channels from given lists
-                int deleted = 0;
-                for (int i = 0; i < readFDs.length; i++) {
-                    ChannelFD readFD = readFDs[i];
-                    SelectionKey selectionKey = readFD.channel.keyFor(selector);
-                    if (!selectionKey.isReadable()) {
-                        readFDs[i] = null;
-                        deleted++;
-                    }
-                }
-
-                for (int i = 0; i < writeFDs.length; i++) {
-                    ChannelFD writeFD = writeFDs[i];
-                    SelectionKey selectionKey = writeFD.channel.keyFor(selector);
-                    if (!selectionKey.isWritable()) {
-                        writeFDs[i] = null;
-                        deleted++;
-                    }
-                }
-
-                for (int i = 0; i < xFDs.length; i++) {
-                    ChannelFD xFD = xFDs[i];
-                    SelectionKey selectionKey = xFD.channel.keyFor(selector);
-                    if (!(selectionKey.isAcceptable() || selectionKey.isConnectable())) {
-                        xFDs[i] = null;
-                        deleted++;
-                    }
-                }
-                assert selected == (readFDs.length + writeFDs.length + xFDs.length) - deleted;
             }
+            return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private ChannelFD[] seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
+        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor, PyObjectGetItem callGetItemNode,
                         FastConstructListNode constructListNode) {
-            PArguments.ThreadState threadState = PArguments.getThreadState(frame);
-            int len = sequenceLib.lengthWithState(sequence, threadState);
-            ChannelFD[] result = new ChannelFD[len];
-
-            PSequence pSequence = constructListNode.execute(sequence);
-
-            for (int i = 0; i < len; i++) {
-                Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
-                int fd = itemLib.asFileDescriptorWithState(pythonObject, threadState);
-                Channel fileChannel = getContext().getResources().getFileChannel(fd);
-                if (!(fileChannel instanceof SelectableChannel)) {
-                    throw NonSelectableChannel.INSTANCE;
+            // We cannot assume any size of those two arrays, because the sequence may change as a
+            // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
+            // repeatedly in the loop condition
+            ArrayBuilder<Object> objects = new ArrayBuilder<>();
+            IntArrayBuilder fds = new IntArrayBuilder();
+            PSequence pSequence = constructListNode.execute(frame, sequence);
+            for (int i = 0; i < sizeNode.execute(frame, sequence); i++) {
+                Object pythonObject = callGetItemNode.execute(frame, pSequence, i);
+                objects.add(pythonObject);
+                int fd = asFileDescriptor.execute(frame, pythonObject);
+                if (fd >= FD_SETSIZE.value) {
+                    throw raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
                 }
-                result[i] = new ChannelFD(pythonObject, (SelectableChannel) fileChannel);
+                fds.add(fd);
             }
-            return result;
-        }
-
-        private PList toList(ChannelFD[] arr) {
-            int cnt = 0;
-            for (ChannelFD channelFD : arr) {
-                if (channelFD != null) {
-                    cnt++;
-                }
-            }
-            Object[] fds = new Object[cnt];
-            for (ChannelFD channelFD : arr) {
-                if (channelFD != null) {
-                    fds[fds.length - (cnt--)] = channelFD.pythonObject;
-                }
-            }
-            return factory().createList(fds);
-        }
-
-        static LookupAndCallBinaryNode createGetItem() {
-            return LookupAndCallBinaryNode.create(SpecialMethodNames.__GETITEM__);
+            return new ObjAndFDList(objects.toArray(new Object[0]), fds.toArray());
         }
 
         @ValueType
-        private static final class ChannelFD {
-            private final Object pythonObject;
-            private final SelectableChannel channel;
+        private static final class ObjAndFDList {
+            private final Object[] objects;
+            private final int[] fds;
 
-            private ChannelFD(Object pythonObject, SelectableChannel channel) {
-                this.pythonObject = pythonObject;
-                this.channel = channel;
+            private ObjAndFDList(Object[] objects, int[] fds) {
+                this.objects = objects;
+                this.fds = fds;
             }
         }
-
-        private static final class NonSelectableChannel extends ControlFlowException {
-            private static final long serialVersionUID = 1L;
-
-            static final NonSelectableChannel INSTANCE = new NonSelectableChannel();
-        }
-
     }
 }

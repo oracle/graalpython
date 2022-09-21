@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,13 +50,22 @@ PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type,
 
 typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
 
+UPCALL_ID(PyBytes_Size);
+Py_ssize_t PyBytes_Size(PyObject *bytes) {
+    return UPCALL_CEXT_L(_jls_PyBytes_Size, native_to_java(bytes));
+}
+
 UPCALL_ID(PyBytes_FromStringAndSize);
 UPCALL_ID(PyTruffle_Bytes_EmptyWithCapacity);
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
-	if (str != NULL) {
-		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
-	}
-	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
+    if (sz < 0) {
+        PyErr_SetString(PyExc_SystemError, "Negative size passed to PyBytes_FromStringAndSize");
+        return NULL;
+    }
+    if (str != NULL) {
+        return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
+    }
+    return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
@@ -71,22 +80,16 @@ char* PyBytes_AsString(PyObject *obj) {
     return (char*)(UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, native_to_java(obj), ERROR_MARKER));
 }
 
-UPCALL_ID(PyBytes_AsStringCheckEmbeddedNull);
+UPCALL_ID(PyTruffle_Bytes_CheckEmbeddedNull);
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
-    setlocale(LC_ALL, NULL);
-    const char* encoding = nl_langinfo(CODESET);
-    PyObject *result = UPCALL_CEXT_O(_jls_PyBytes_AsStringCheckEmbeddedNull, native_to_java(obj), polyglot_from_string(encoding, SRC_CS));
-    if(result == NULL) {
-        return -1;
-    }
-
-    *s = (char *)as_char_pointer(result);
-
+    PyObject* resolved = native_to_java(obj);
+    *s = (char*)(UPCALL_CEXT_NOCAST(_jls_PyTruffle_Bytes_AsString, resolved, ERROR_MARKER));
     if (len != NULL) {
-        *len = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_LEN", native_to_java(obj)));
+        *len = UPCALL_CEXT_L(_jls_PyBytes_Size, resolved);
+        return 0;
+    } else {
+    	return UPCALL_CEXT_I(_jls_PyTruffle_Bytes_CheckEmbeddedNull, resolved);
     }
-
-    return 0;
 }
 
 PyObject * PyBytes_FromFormat(const char *format, ...) {
@@ -259,11 +262,6 @@ void PyBytes_Concat(PyObject **bytes, PyObject *newpart) {
 void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
     PyBytes_Concat(bytes, newpart);
     Py_DECREF(newpart);
-}
-
-UPCALL_ID(PyBytes_Size);
-Py_ssize_t PyBytes_Size(PyObject *bytes) {
-    return UPCALL_CEXT_L(_jls_PyBytes_Size, native_to_java(bytes));
 }
 
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {

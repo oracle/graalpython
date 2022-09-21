@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.truffle.api.interop.ArityException;
@@ -69,7 +70,8 @@ public final class PyCFunctionDecorator implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
-                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib)
+                    throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         Object res = nativeFunctionLib.execute(nativeFunction, arguments);
         return resultConverterLib.execute(resultConverter, res);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,33 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
+    public static final EmptyStorage INSTANCE = new EmptyStorage();
+
+    // Singleton
+    private EmptyStorage() {
+    }
 
     @Override
     @ExportMessage
@@ -65,26 +74,25 @@ public class EmptyStorage extends HashingStorage {
         return 0;
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     public Object getItemWithState(Object key, ThreadState state,
-                    @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        // must call __hash__ for potential side-effect
-        getHashWithState(key, lib, state, gotState);
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+        key = assertNoJavaString(key);
+        if (notString.profile(!(key instanceof TruffleString))) {
+            // must call __hash__ for potential side-effect
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            hashNode.execute(frame, key);
+        }
         return null;
     }
 
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @CachedLanguage PythonLanguage lang,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage newStore;
-        if (key instanceof String) {
-            newStore = new DynamicObjectStorage(lang);
-        } else {
-            newStore = EconomicMapStorage.create();
-        }
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
+        HashingStorage newStore = PDict.createNewStorage(1);
         if (gotState.profile(state != null)) {
             lib.setItemWithState(newStore, key, value, state);
         } else {
@@ -93,12 +101,17 @@ public class EmptyStorage extends HashingStorage {
         return newStore;
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        // must call __hash__ for potential side-effect
-        getHashWithState(key, lib, state, gotState);
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+        key = assertNoJavaString(key);
+        if (notString.profile(!(key instanceof TruffleString))) {
+            // must call __hash__ for potential side-effect
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            hashNode.execute(frame, key);
+        }
         return this;
     }
 

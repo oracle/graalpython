@@ -1,0 +1,13 @@
+Module[0, 24]
+    FunctionDef[0, 24]
+        Name:f
+        ArgumentsTy[0, 0]
+        ---- Function body of f ----
+        Assign[9, 24]
+            LHS: 
+                Name[9, 10] Value: "x" Store
+                Name[13, 14] Value: "y" Store
+            RHS: 
+                Yield[17, 24]
+                    LONG[23, 24] Value: 1
+        ---- End of f function ----

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,18 +41,15 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_MIX_MESSAGE;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.source.Source;
 
@@ -66,7 +63,7 @@ public abstract class StringLiteralSSTNode extends SSTNode {
 
         protected String value;
 
-        protected RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
+        public RawStringLiteralSSTNode(String value, int startIndex, int endIndex) {
             super(startIndex, endIndex);
             this.value = value;
         }
@@ -75,6 +72,11 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
+
+        public String getValue() {
+            return value;
+        }
+
     }
 
     public static final class BytesLiteralSSTNode extends StringLiteralSSTNode {
@@ -92,32 +94,69 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         }
     }
 
-    public static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
+    public enum FormatStringConversionType {
+        STR_CONVERTION,
+        REPR_CONVERSION,
+        ASCII_CONVERSION,
+        NO_CONVERSION
+    }
 
-        protected FormatStringLiteralNode.StringPart[] value;
-        /** Either a String literal or null for slots where we should use expression value */
-        protected final String[] literals;
-        /** Expressions, the size of this array is the number of null slots in the literals array */
-        protected final SSTNode[] expressions;
-        /** Generated sources of the expressions */
-        protected final String[] expresionsSources;
+    public static final class FormatExpressionSSTNode extends StringLiteralSSTNode {
 
-        protected FormatStringLiteralSSTNode(FormatStringLiteralNode.StringPart[] value, String[] literals, SSTNode[] expressions, String[] expresionsSources, int startIndex, int endIndex) {
+        protected final String expressionCode;
+        protected final SSTNode expression;
+        protected final SSTNode specifier;
+        protected final FormatStringConversionType conversionType;
+
+        protected FormatExpressionSSTNode(String expressionCode, SSTNode expression, SSTNode specifier, FormatStringConversionType conversionType, int startIndex, int endIndex) {
             super(startIndex, endIndex);
-            assert expressions.length == expresionsSources.length;
-            this.value = value;
-            this.literals = literals;
-            this.expressions = expressions;
-            this.expresionsSources = expresionsSources;
+            this.expressionCode = expressionCode;
+            this.expression = expression;
+            this.specifier = specifier;
+            this.conversionType = conversionType;
         }
 
         @Override
         public <T> T accept(SSTreeVisitor<T> visitor) {
             return visitor.visit(this);
         }
+
+        public String getExpressionCode() {
+            return expressionCode;
+        }
+
+        public SSTNode getExpression() {
+            return expression;
+        }
+
+        public SSTNode getSpecifier() {
+            return specifier;
+        }
+
+        public FormatStringConversionType getConversionType() {
+            return conversionType;
+        }
+
     }
 
-    private static final String CANNOT_MIX_MESSAGE = "cannot mix bytes and nonbytes literals";
+    public static final class FormatStringLiteralSSTNode extends StringLiteralSSTNode {
+        protected final SSTNode[] parts;
+
+        protected FormatStringLiteralSSTNode(SSTNode[] parts, int startIndex, int endIndex) {
+            super(startIndex, endIndex);
+            this.parts = parts;
+        }
+
+        @Override
+        public <T> T accept(SSTreeVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        public SSTNode[] getParts() {
+            return parts;
+        }
+
+    }
 
     private static class BytesBuilder {
         List<byte[]> bytes = new ArrayList<>();
@@ -144,18 +183,23 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         StringBuilder sb = null;
         BytesBuilder bb = null;
         boolean isFormatString = false;
-        List<FormatStringLiteralNode.StringPart> formatStrings = null;
-        ArrayList<String> formatStringLiterals = null;
-        ArrayList<SSTNode> formatStringExpressions = null;
-        ArrayList<String> formatStringExprsSources = null;
+        ArrayList<SSTNode> formatStringParts = null;
+        int startPartOffsetInValues = 0;
+        int endPartOffsetInValues = 0;
+        int sbStartOffset = 0;
+        int sbEndOffset = 0;
+        CharSequence code = source.getCharacters().subSequence(startOffset, endOffset);
         for (String text : values) {
             boolean isRaw = false;
             boolean isBytes = false;
             boolean isFormat = false;
 
+            while (Character.isWhitespace(code.charAt(startPartOffsetInValues))) {
+                startPartOffsetInValues++;
+            }
             int strStartIndex = 1;
             int strEndIndex = text.length() - 1;
-
+            endPartOffsetInValues = startPartOffsetInValues + text.length();
             for (int i = 0; i < 3; i++) {
                 char chr = Character.toLowerCase(text.charAt(i));
 
@@ -196,38 +240,34 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                     throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), CANNOT_MIX_MESSAGE);
                 }
                 if (!isRaw && !isFormat) {
-                    text = unescapeString(startOffset, endOffset, source, errors, text);
+                    text = StringUtils.unescapeString(startOffset + startPartOffsetInValues, startOffset + endPartOffsetInValues, source, errors, text);
                 }
                 if (isFormat) {
                     isFormatString = true;
-                    if (formatStrings == null) {
-                        formatStrings = new ArrayList<>();
-                        formatStringLiterals = new ArrayList<>();
-                        formatStringExpressions = new ArrayList<>();
-                        formatStringExprsSources = new ArrayList<>();
+                    if (formatStringParts == null) {
+                        formatStringParts = new ArrayList<>();
                     }
                     if (sb != null && sb.length() > 0) {
                         String part = sb.toString();
-                        formatStrings.add(new FormatStringLiteralNode.StringPart(part, false));
-                        formatStringLiterals.add(part);
+                        if (!isRaw) {
+                            part = StringUtils.unescapeString(startOffset + sbStartOffset, startOffset + sbEndOffset, source, errors, part);
+                        }
+                        formatStringParts.add(new RawStringLiteralSSTNode(part, startOffset + sbStartOffset, startOffset + sbEndOffset));
                         sb = null;
                     }
-                    formatStrings.add(new StringPart(text, true));
-                    String[] literals = FormatStringParser.parse(formatStringExpressions, formatStringExprsSources, errors, text, isRaw, nodeFactory, exprParser);
-                    formatStringLiterals.ensureCapacity(formatStringLiterals.size() + literals.length);
-                    for (int i = 0; i < literals.length; i++) {
-                        if (literals[i] != null && !isRaw) {
-                            literals[i] = unescapeString(startOffset, endOffset, source, errors, literals[i]);
-                        }
-                        formatStringLiterals.add(literals[i]);
-                    }
+
+                    FormatStringParser.parse(formatStringParts, text, isRaw, startOffset + startPartOffsetInValues, startOffset + startPartOffsetInValues + strStartIndex, source, exprParser, errors,
+                                    nodeFactory);
                 } else {
                     if (sb == null) {
                         sb = new StringBuilder();
+                        sbStartOffset = startPartOffsetInValues;
                     }
                     sb.append(text);
+                    sbEndOffset = endPartOffsetInValues;
                 }
             }
+            startPartOffsetInValues = endPartOffsetInValues;
         }
 
         if (bb != null) {
@@ -235,26 +275,12 @@ public abstract class StringLiteralSSTNode extends SSTNode {
         } else if (isFormatString) {
             if (sb != null && sb.length() > 0) {
                 String part = sb.toString();
-                formatStrings.add(new FormatStringLiteralNode.StringPart(part, false));
-                formatStringLiterals.add(part);
+                formatStringParts.add(new RawStringLiteralSSTNode(part, startOffset + sbStartOffset, startOffset + endPartOffsetInValues));
             }
-            StringPart[] formatStringsArr = formatStrings.toArray(new StringPart[formatStrings.size()]);
-            String[] literals = formatStringLiterals.toArray(new String[formatStringLiterals.size()]);
-            SSTNode[] expressions = formatStringExpressions.toArray(new SSTNode[formatStringExpressions.size()]);
-            String[] expressionsSources = formatStringExprsSources.toArray(new String[formatStringExprsSources.size()]);
-            return new FormatStringLiteralSSTNode(formatStringsArr, literals, expressions, expressionsSources, startOffset, endOffset);
+            SSTNode[] formatParts = formatStringParts.toArray(new SSTNode[formatStringParts.size()]);
+            return new FormatStringLiteralSSTNode(formatParts, startOffset, endOffset);
         }
         return new RawStringLiteralSSTNode(sb == null ? "" : sb.toString(), startOffset, endOffset);
     }
 
-    private static String unescapeString(int startOffset, int endOffset, Source source, ParserErrorCallback errors, String text) {
-        try {
-            return StringUtils.unescapeJavaString(errors, text);
-        } catch (PException e) {
-            e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-            String message = e.getMessage();
-            message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
-            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
-        }
-    }
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -164,6 +164,12 @@ class CompressTests(BaseCompressTestCase, unittest.TestCase):
         compressed = zlib.compress(data, 1)
         self.assertEqual(zlib.decompress(compressed, 15, CustomInt()), data)
 
+    def test_decoding_flush_ignore_error(self):
+        d = zlib.decompressobj()
+        self.assertRaises(zlib.error, d.decompress, b"asdf")
+        d.flush()
+
+
 HAMLET_SCENE = b"""
 LAERTES
 
@@ -237,4 +243,11 @@ def test_gzip_decompress():
     import gzip
     with contextlib.closing(gzip.open(GZ_PATH, 'rb')) as g:
         data = g.read()
+    assert data == GZ_DATA
+
+
+def test_zlib_decompress_gzip():
+    d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    with open(GZ_PATH, 'rb') as f:
+        data = d.decompress(f.read()) + d.flush()
     assert data == GZ_DATA

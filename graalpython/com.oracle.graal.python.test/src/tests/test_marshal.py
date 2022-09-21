@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -84,6 +84,9 @@ class StringTest(unittest.TestCase, BaseMarshalUnmarshal):
     def test_bytes(self):
         for s in [b"", b"Andr\xe8 Previn", b"abc", b" "*10000]:
             self.helper(s)
+
+    def test_surrogates(self):
+        self.helper(chr(55296))
 
 class ExceptionTest(unittest.TestCase):
 

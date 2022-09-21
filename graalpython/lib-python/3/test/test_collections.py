@@ -733,6 +733,7 @@ def _test_gen():
 
 class TestOneTrickPonyABCs(ABCTestCase):
 
+    @support.impl_detail("async support", graalvm=False)
     def test_Awaitable(self):
         def gen():
             yield
@@ -783,6 +784,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
         CoroLike = None
         support.gc_collect() # Kill CoroLike to clean-up ABCMeta cache
 
+    @support.impl_detail("async support", graalvm=False)
     def test_Coroutine(self):
         def gen():
             yield
@@ -1183,6 +1185,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
         self.assertRaises(RuntimeError, IgnoreGeneratorExit().close)
 
+    @support.impl_detail("async support", graalvm=False)
     def test_AsyncGenerator(self):
         class NonAGen1:
             def __aiter__(self): return self
@@ -1457,6 +1460,7 @@ class TestCollectionABCs(ABCTestCase):
         s &= WithSet('cdef')            # This used to fail
         self.assertEqual(set(s), set('cd'))
 
+    @support.impl_detail("relies on element order in a set", graalvm=False)
     def test_issue_4920(self):
         # MutableSet.pop() method did not work
         class MySet(MutableSet):

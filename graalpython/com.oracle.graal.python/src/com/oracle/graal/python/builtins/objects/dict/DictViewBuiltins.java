@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ISDISJOINT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ISDISJOINT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 
 import java.util.List;
 
@@ -70,15 +74,15 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
@@ -86,12 +90,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -109,150 +113,145 @@ public final class DictViewBuiltins extends PythonBuiltins {
         return DictViewBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object len(PDictView self,
+        static Object len(PDictView self,
                         @Cached HashingCollectionNodes.LenNode len) {
             return len.execute(self.getWrappedDict());
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        // 'limit = 2' because this is only expected to receive PDictKeysView and PDictItemsView
-        @Specialization(limit = "2")
-        static Object getKeysViewIter(PDictView self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.getIterator(self);
+        @Specialization(limit = "3")
+        Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
+                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
+        }
+
+        @Specialization(limit = "3")
+        Object getItemsViewIter(@SuppressWarnings("unused") PDictItemsView self,
+                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib) {
+            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
         }
     }
 
-    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getReversedKeysViewIter(PDictKeysView self,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
-                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = getStore.execute(dict);
+            HashingStorage storage = dict.getDictStorage();
             return factory().createDictReverseKeyIterator(lib.reverseKeys(storage).iterator(), storage, lib.length(storage));
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getReversedItemsViewIter(PDictItemsView self,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
-                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = getStore.execute(dict);
+            HashingStorage storage = dict.getDictStorage();
             return factory().createDictReverseItemIterator(lib.reverseEntries(storage).iterator(), storage, lib.length(storage));
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "len.execute(self.getWrappedDict()) == 0")
-        boolean containsEmpty(PDictView self, Object key,
+        static boolean containsEmpty(PDictView self, Object key,
                         @Cached HashingCollectionNodes.LenNode len) {
             return false;
         }
 
         @Specialization(limit = "1")
-        boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return lib.hasKeyWithFrame(getSelfStorage.execute(self.getWrappedDict()), key, hasFrame, frame);
+        static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return lib.hasKeyWithFrame(self.getWrappedDict().getDictStorage(), key, hasFrame, frame);
         }
 
         @Specialization(limit = "1")
-        boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+        static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached ConditionProfile tupleLenProfile,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
             SequenceStorage tupleStorage = key.getSequenceStorage();
             if (tupleLenProfile.profile(lenNode.execute(tupleStorage) != 2)) {
                 return false;
             }
-            HashingStorage dictStorage = getSelfStorage.execute(self.getWrappedDict());
+            HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = hlib.getItemWithFrame(dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0), hasFrame, frame);
             if (value != null) {
-                return lib.equalsWithFrame(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, frame);
+                return eqNode.execute(frame, value, getTupleItemNode.execute(frame, tupleStorage, 1));
             } else {
                 return false;
             }
         }
 
         protected static boolean isFallback(Object self, Object key) {
-            return !(self instanceof PDictView || self instanceof PDictKeysView || self instanceof PDictItemsView) || (self instanceof PDictItemsView && !(key instanceof PTuple));
+            return !(self instanceof PDictView) || self instanceof PDictItemsView && !(key instanceof PTuple);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isFallback(self, key)")
-        boolean contains(Object self, Object key) {
+        static boolean contains(Object self, Object key) {
             return false;
         }
 
     }
 
-    @Builtin(name = ISDISJOINT, minNumOfPositionalArgs = 2)
+    @Builtin(name = J_ISDISJOINT, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsDisjointNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"self == other"})
-        boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
+        static boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
                         @Cached HashingCollectionNodes.LenNode len) {
             return len.execute(self.getWrappedDict()) == 0;
         }
 
-        @Specialization(guards = {"self != other"}, limit = "1")
-        boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
+        @Specialization(guards = {"self != other"})
+        static boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
                         @Cached HashingCollectionNodes.LenNode len,
                         @Cached ConditionProfile sizeProfile,
-                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached("create(false)") ContainedInNode contained) {
-            return disjointImpl(frame, self, other, len, sizeProfile, lib, contained);
+            return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
         }
 
-        @Specialization(limit = "1")
-        boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
+        @Specialization
+        static boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
                         @Cached HashingCollectionNodes.LenNode len,
                         @Cached ConditionProfile sizeProfile,
-                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached("create(false)") ContainedInNode contained) {
-            return disjointImpl(frame, self, other, len, sizeProfile, lib, contained);
+            return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
         }
 
-        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingCollectionNodes.LenNode len, ConditionProfile sizeProfile, PythonObjectLibrary lib,
+        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingCollectionNodes.LenNode len, ConditionProfile sizeProfile, PyObjectSizeNode sizeNode,
                         ContainedInNode contained) {
-            if (sizeProfile.profile(len.execute(self.getWrappedDict()) <= lib.length(other))) {
+            if (sizeProfile.profile(len.execute(self.getWrappedDict()) <= sizeNode.execute(frame, other))) {
                 return !contained.execute(frame, self, other);
             } else {
                 return !contained.execute(frame, other, self);
             }
         }
 
-        @Specialization(guards = {"lib.isIterable(other)", "!isAnySet(other)", "!isDictView(other)"}, limit = "1")
-        boolean disjoint(VirtualFrame frame, PDictView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib,
+        @Specialization(guards = {"!isAnySet(other)", "!isDictView(other)"})
+        static boolean disjoint(VirtualFrame frame, PDictView self, Object other,
                         @Cached("create(false)") ContainedInNode contained) {
             return !contained.execute(frame, other, self);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!lib.isIterable(other)", limit = "1")
-        boolean disjoint(PDictView self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }
 
@@ -261,7 +260,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
      * view comparisons dictates that we need to use iteration to compare them in the general case.
      */
     protected static class ContainedInNode extends PNodeWithContext {
-        @Child private PythonObjectLibrary lib;
+        @Child private PyObjectGetIter getIterNode;
         @Child private GetNextNode next;
         @Child private LookupAndCallBinaryNode contains;
         @Child private CoerceToBooleanNode cast;
@@ -283,7 +282,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         private LookupAndCallBinaryNode getContains() {
             if (contains == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                contains = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__CONTAINS__));
+                contains = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.Contains));
             }
             return contains;
         }
@@ -304,17 +303,16 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return stopProfile;
         }
 
-        private PythonObjectLibrary ensureLib() {
-            if (lib == null) {
+        private PyObjectGetIter getGetIterNode() {
+            if (getIterNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                int limit = PythonOptions.getCallSiteInlineCacheMaxDepth();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(limit));
+                getIterNode = insert(PyObjectGetIter.create());
             }
-            return lib;
+            return getIterNode;
         }
 
         public boolean execute(VirtualFrame frame, Object self, Object other) {
-            Object iterator = ensureLib().getIteratorWithState(self, PArguments.getThreadState(frame));
+            Object iterator = getGetIterNode().execute(frame, self);
             boolean ok = checkAll;
             try {
                 while (checkAll && ok || !checkAll && !ok) {
@@ -349,34 +347,31 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         boolean doView(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary selflib,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary selflib,
                         @CachedLibrary("other.getDictStorage()") HashingStorageLibrary otherlib,
                         @Cached ContainedInNode allContained) {
-            int lenSelf = selflib.length(getSelfStorage.execute(self.getWrappedDict()));
+            int lenSelf = selflib.length(self.getWrappedDict().getDictStorage());
             int lenOther = otherlib.length(other.getDictStorage());
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Specialization(limit = "1")
         boolean doView(VirtualFrame frame, PDictView self, PDictView other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getOtherStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary selflib,
-                        @CachedLibrary("getOtherStorage.execute(other.getWrappedDict())") HashingStorageLibrary otherlib,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary selflib,
+                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary otherlib,
                         @Cached ContainedInNode allContained) {
-            int lenSelf = selflib.length(getSelfStorage.execute(self.getWrappedDict()));
-            int lenOther = otherlib.length(getOtherStorage.execute(other.getWrappedDict()));
+            int lenSelf = selflib.length(self.getWrappedDict().getDictStorage());
+            int lenOther = otherlib.length(other.getWrappedDict().getDictStorage());
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Fallback
-        PNotImplemented wrongTypes(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
+        static PNotImplemented wrongTypes(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends DictViewRichcompareNode {
         @Override
@@ -390,7 +385,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Child EqNode eqNode;
@@ -405,7 +400,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object notEqual(VirtualFrame frame, Object self, Object other) {
-            Object result = getEqNode().call(frame, self, other);
+            Object result = getEqNode().execute(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             } else {
@@ -415,37 +410,33 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("getStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            HashingStorage storage = lib.diffWithFrame(getStorage.execute(self.getWrappedDict()), other.getDictStorage(), hasFrame, frame);
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = lib.diffWithFrame(self.getWrappedDict().getDictStorage(), other.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getOtherStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            HashingStorage storage = lib.diffWithFrame(getSelfStorage.execute(self.getWrappedDict()), getOtherStorage.execute(other.getWrappedDict()), hasFrame, frame);
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = lib.diffWithFrame(self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            HashingStorage left = getSelfStorage.execute(self.getWrappedDict());
+                        @Cached ConditionProfile hasFrame,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage storage = lib.diffWithFrame(left, right, hasFrame, frame);
             return factory().createSet(storage);
@@ -453,9 +444,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             HashingStorage storage = lib.diffWithFrame(selfSet.getDictStorage(), other.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
@@ -463,45 +454,37 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doNotIterable(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
             HashingStorage storage = lib.diffWithFrame(selfSet.getDictStorage(), otherSet.getDictStorage(), hasFrame, frame);
             return factory().createSet(storage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage left = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage storage = lib.diffWithFrame(left, right, hasFrame, frame);
             return factory().createSet(storage);
         }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)", "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(VirtualFrame frame, PDictView self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
-        }
     }
 
-    @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            HashingStorage left = getSelfStorage.execute(self.getWrappedDict());
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = other.getDictStorage();
             HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
@@ -509,24 +492,20 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getOtherStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            HashingStorage left = getSelfStorage.execute(self.getWrappedDict());
-            HashingStorage right = getOtherStorage.execute(other.getWrappedDict());
+                        @Cached ConditionProfile hasFrame,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage left = self.getWrappedDict().getDictStorage();
+            HashingStorage right = other.getWrappedDict().getDictStorage();
             HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            HashingStorage left = getSelfStorage.execute(self.getWrappedDict());
+                        @Cached ConditionProfile hasFrame,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage left = self.getWrappedDict().getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
@@ -534,9 +513,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             HashingStorage left = selfSet.getDictStorage();
             HashingStorage right = other.getDictStorage();
@@ -546,9 +525,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
             HashingStorage left = selfSet.getDictStorage();
@@ -557,28 +536,20 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage left = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
         }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)",
-                        "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(VirtualFrame frame, PDictView self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
-        }
     }
 
-    @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
 
@@ -588,32 +559,27 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, getSelfStorage.execute(self.getWrappedDict()), other.getDictStorage()));
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getOtherStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, getSelfStorage.execute(self.getWrappedDict()), getOtherStorage.execute(other.getWrappedDict())));
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, getSelfStorage.execute(self.getWrappedDict()), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             return factory().createSet(union(lib, selfSet.getDictStorage(), other.getDictStorage()));
         }
@@ -621,28 +587,22 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
             return factory().createSet(union(lib, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             return factory().createSet(union(lib, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
-
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)", "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PDictView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
-        }
     }
 
-    @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___RXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
 
@@ -652,32 +612,27 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, getSelfStorage.execute(self.getWrappedDict()), other.getDictStorage()));
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getOtherStorage,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, getSelfStorage.execute(self.getWrappedDict()), getOtherStorage.execute(other.getWrappedDict())));
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getSelfStorage,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @CachedLibrary("getSelfStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, getSelfStorage.execute(self.getWrappedDict()), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, PBaseSet other,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             return factory().createSet(xor(lib, selfSet.getDictStorage(), other.getDictStorage()));
         }
@@ -685,28 +640,21 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization
         PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, PDictItemsView other,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
             return factory().createSet(xor(lib, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             return factory().createSet(xor(lib, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
-
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)", "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PDictView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
-        }
     }
 
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends DictViewRichcompareNode {
         @Override
@@ -720,7 +668,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends DictViewRichcompareNode {
         @Override
@@ -734,7 +682,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessThanNode extends DictViewRichcompareNode {
         @Override
@@ -748,7 +696,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterThanNode extends DictViewRichcompareNode {
         @Override

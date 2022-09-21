@@ -75,6 +75,8 @@ class EnvBuilder:
             self._setup_pip(context)
         # Truffle change: patch shebang
         self._patch_shebang(context)
+        self._install_compilers(context)
+        # End of Truffle change
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
@@ -137,25 +139,26 @@ class EnvBuilder:
         # running through java), we always provide a script for launching in
         # venv
         context.libpath = libpath
-        exename = context.python_exe = "graalpython"
+        exename = context.python_exe = "graalpy"
 
         import atexit, tempfile
         tempdir = tempfile.mkdtemp()
-        script = os.path.join(tempdir, "graalpython")
+        script = os.path.join(tempdir, "graalpy")
         if sys.platform == 'win32':
             script += ".bat"
 
         with open(script, "w") as f:
             if sys.platform != "win32":
                 f.write("#!/bin/sh\n")
-            f.write(sys.executable)
-            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'" % (
+            f.write(" ".join(__graalpython__.executable_list))
+            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'  --python.JNIHome='%s'" % (
                 __graalpython__.core_home,
                 __graalpython__.stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
                 __graalpython__.capi_home,
+                __graalpython__.jni_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -190,10 +193,20 @@ class EnvBuilder:
         create_if_needed(binpath)
         return context
 
+
+    def _install_compilers(self, context):
+        """Puts the Graal LLVM compiler tools on the path"""
+        bin_dir = os.path.join(context.env_dir, context.bin_name)
+        for (tool_path, names) in __graalpython__.get_toolchain_tools_for_venv().items():
+            for name in names:
+                dest = os.path.join(bin_dir, name)
+                if not os.path.exists(dest):
+                    os.symlink(tool_path, dest)
+
     def _patch_shebang(self, context):
-        # Truffle change: we need to patch the pip/pip3 (and maybe other) 
-        # launchers on Darwin because the shebang tries to invoke our 
-        # graalpython shell script but Darwin strictly requires a binary 
+        # Truffle change: we need to patch the pip/pip3 (and maybe other)
+        # launchers on Darwin because the shebang tries to invoke our
+        # graalpython shell script but Darwin strictly requires a binary
         # in the shebang.
         if sys.platform == "darwin":
             bin_dir = os.path.join(context.env_dir, context.bin_name)
@@ -202,14 +215,17 @@ class EnvBuilder:
                 abs_entry = os.path.join(bin_dir, entry)
                 if os.path.isfile(abs_entry):
                     with open(abs_entry, "r+") as f:
-                        content = f.read()
-                        expected_shebang = "#!" + python_exe
-                        if content.startswith(expected_shebang):
-                            f.seek(0)
-                            f.truncate()
-                            logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
-                            content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
-                            f.write(content)
+                        try:
+                            content = f.read()
+                            expected_shebang = "#!" + python_exe
+                            if content.startswith(expected_shebang):
+                                f.seek(0)
+                                f.truncate()
+                                logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
+                                content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
+                                f.write(content)
+                        except UnicodeDecodeError:
+                            pass # may happen for binary files
 
 
     def create_configuration(self, context):
@@ -313,7 +329,9 @@ class EnvBuilder:
                 os.chmod(path, 0o755)
             for suffix in ('python', 'python3', f'python3.{sys.version_info[1]}'):
                 path = os.path.join(binpath, suffix)
-                if not os.path.exists(path):
+                # Truffle change: always re-create Python executables if not symlinks
+                if not self.symlinks:
+                    # End of Truffle change
                     # Issue 18807: make copies if
                     # symlinks are not wanted
                     copier(context.env_exe, path, relative_symlinks_ok=True)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,18 +59,19 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
-    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
+    @CompilationFinal(dimensions = 1) private volatile RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final GeneratorInfo generatorInfo;
     private final ExecutionCellSlots cellSlots;
-    private final String originalName;
+    private final TruffleString originalName;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String originalName, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, TruffleString originalName, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots,
                     Signature signature, GeneratorInfo generatorInfo) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.callTarget = callTarget;
@@ -84,6 +85,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     public Object execute(VirtualFrame frame) {
         // TODO 'materialize' generator frame and create locals dict eagerly
         if (callTargets == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             callTargets = createYieldTargets(callTarget);
         }
         CompilerAsserts.partialEvaluationConstant(cellSlots);
@@ -98,7 +100,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     }
 
     public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
+        CompilerAsserts.neverPartOfCompilation();
         int numYields = NodeUtil.countNodes(callTarget.getRootNode(), (node) -> node instanceof AbstractYieldNode);
         RootCallTarget[] callTargets = new RootCallTarget[numYields + 1];
         callTargets[0] = callTarget;
@@ -114,7 +116,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public String getName() {
-        return originalName;
+        return originalName.toJavaStringUncached();
     }
 
     @Override

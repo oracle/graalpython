@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,8 @@
 
 package com.oracle.graal.python.test.parser;
 
-import java.util.Set;
+import java.util.Collection;
+import java.util.TreeSet;
 
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ModuleRootNode;
@@ -57,7 +58,9 @@ import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.AccessNameNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
@@ -79,20 +82,22 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class ParserTreePrinter implements NodeVisitor {
     private final int MAX_TEXT_LENGTH = 20;
     private final StringBuilder sb;
+    private final boolean printTmpSlots;
     private int level;
     protected boolean printFormatStringLiteralDetail = false;
 
-    public ParserTreePrinter() {
+    public ParserTreePrinter(boolean printTmpSlots) {
         this.sb = new StringBuilder();
+        this.printTmpSlots = printTmpSlots;
         this.level = 0;
     }
 
@@ -104,7 +109,7 @@ public class ParserTreePrinter implements NodeVisitor {
         nodeHeader(module, module.getName());
         level++;
         addSignature(module.getSignature());
-        addInfoPCloserRootNode(module);
+        addInfoPClosureRootNode(module);
         indent(level);
         sb.append("Documentation: ");
         add(module.getDoc());
@@ -119,10 +124,10 @@ public class ParserTreePrinter implements NodeVisitor {
         sb.append("CelVars: ");
         add(node.getCellVars());
         newLine();
-        addInfoPCloserRootNode(node);
+        addInfoPClosureRootNode(node);
     }
 
-    private void addInfoPCloserRootNode(PClosureRootNode node) {
+    private void addInfoPClosureRootNode(PClosureRootNode node) {
         indent(level);
         sb.append("FreeVars: ");
         add(node.getFreeVars());
@@ -139,7 +144,7 @@ public class ParserTreePrinter implements NodeVisitor {
     }
 
     private void addInfoRootNode(RootNode node) {
-        addFrameDescriptor(node.getFrameDescriptor());
+        addIdentifiers(PythonFrame.getIdentifiersAsString(node.getFrameDescriptor()));
     }
 
     private void addFunctionDefinitionNode(FunctionDefinitionNode node) {
@@ -186,16 +191,16 @@ public class ParserTreePrinter implements NodeVisitor {
         }
         indent(level);
         sb.append("FreeVarSlots: ");
-        add(node.getFreeVarDefinitionSlots());
+        add(node.getFreeVarDefinitions());
         newLine();
-        add(node.getExecutionCellSlots());
+        add(node.getExecutionCellSlots(), node.getCallTarget().getRootNode().getFrameDescriptor());
         visit(node.getFunctionRoot());
     }
 
     public boolean visit(GeneratorFunctionDefinitionNode node) {
         nodeHeader(node, node.getFunctionName());
         level++;
-        addFrameDescriptor(node.getFrameDescriptor());
+        addIdentifiers(PythonFrame.getIdentifiersAsString(node.getFrameDescriptor()));
         indent(level);
         GeneratorInfo generatorInfo = node.getGeneratorInfo();
         sb.append("Active Flags: ").append(generatorInfo.getNumOfActiveFlags());
@@ -226,7 +231,7 @@ public class ParserTreePrinter implements NodeVisitor {
         sb.append("Name: ").append(node.getName());
         newLine();
         addInfoPClosureFunctionRootNode(node);
-        add(node.getExecutionCellSlots());
+        add(node.getExecutionCellSlots(), node.getFrameDescriptor());
         level--;
         return true;
     }
@@ -345,12 +350,12 @@ public class ParserTreePrinter implements NodeVisitor {
         indent(level);
         sb.append("Name: ").append(node.getName());
         newLine();
-        addFrameDescriptor(node.getFrameDescriptor());
+        addIdentifiers(PythonFrame.getIdentifiersAsString(node.getFrameDescriptor()));
         indent(level);
         sb.append("Enclosing");
         newLine();
         level++;
-        addFrameDescriptor(node.getEnclosingFrameDescriptor());
+        addIdentifiers(node.getEnclosingFrameDescriptor());
         level--;
         indent(level);
         GeneratorInfo generatorInfo = node.getGeneratorInfo();
@@ -400,6 +405,16 @@ public class ParserTreePrinter implements NodeVisitor {
         return true;
     }
 
+    public boolean visit(FormatStringLiteralNode node) {
+        nodeHeader(node);
+        level++;
+        indent(level);
+        sb.append("Parts: ").append(node.getParts().length);
+        newLine();
+        level--;
+        return printFormatStringLiteralDetail;
+    }
+
     private boolean visitChildren(Node node) {
         for (Node child : node.getChildren()) {
             visit(child);
@@ -410,6 +425,13 @@ public class ParserTreePrinter implements NodeVisitor {
     private void nodeHeader(Node node) {
         addNodeClassName(node);
         sb.append(" ");
+        addSourceSection(node.getSourceSection());
+        newLine();
+    }
+
+    private void nodeHeader(Node node, TruffleString name) {
+        addNodeClassName(node);
+        sb.append(" Name: ").append(name).append(" ");
         addSourceSection(node.getSourceSection());
         newLine();
     }
@@ -470,20 +492,21 @@ public class ParserTreePrinter implements NodeVisitor {
         level--;
     }
 
-    private void addFrameDescriptor(FrameDescriptor fd) {
+    private void addIdentifiers(Collection<? extends Object> identifiers) {
         indent(level);
         sb.append("FrameDescriptor: ");
-        if (fd.getSlots().size() == 0) {
+        if (identifiers.isEmpty()) {
             sb.append(" Empty");
             newLine();
             return;
         }
-        sb.append(fd.getSlots().size()).append(" slots [");
-        Set<Object> identifiers = fd.getIdentifiers();
-        String[] names = new String[identifiers.size()];
-        int i = 0;
+        sb.append(identifiers.size()).append(" slots [");
+        TreeSet<String> names = new TreeSet<>();
         for (Object identifier : identifiers) {
-            names[i++] = (String) identifier;
+            String name = identifier.toString();
+            if (printTmpSlots || (!printTmpSlots && !name.startsWith("<>temp"))) {
+                names.add(name);
+            }
         }
         add(names);
         sb.append("]");
@@ -502,8 +525,28 @@ public class ParserTreePrinter implements NodeVisitor {
         }
     }
 
-    private void add(String[] array) {
+    private void add(TruffleString text) {
+        add(text == null ? null : text.toJavaStringUncached());
+    }
+
+    private void add(TruffleString[] array) {
         if (array == null || array.length == 0) {
+            sb.append("None");
+        } else {
+            boolean first = true;
+            for (TruffleString text : array) {
+                if (!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append(text);
+            }
+        }
+    }
+
+    private void add(Collection<String> array) {
+        if (array == null || array.isEmpty()) {
             sb.append("None");
         } else {
             boolean first = true;
@@ -518,34 +561,39 @@ public class ParserTreePrinter implements NodeVisitor {
         }
     }
 
-    private void add(FrameSlot[] slots) {
-        if (slots == null || slots.length == 0) {
-            sb.append("None");
+    private void add(FrameSlotNode slot) {
+        FrameDescriptor descriptor = ((Node) slot).getRootNode().getFrameDescriptor();
+        String full = "[" + slot.getSlotIndex() + "," + slot.getSlotIdentifier(descriptor) + "," + slot.getSlotKind(descriptor) + "]";
+        if (printTmpSlots) {
+            sb.append(full);
         } else {
-            boolean first = true;
-            for (FrameSlot slot : slots) {
-                if (!first) {
-                    sb.append(", ");
-                } else {
-                    first = false;
-                }
-                sb.append((String) slot.getIdentifier()).append(", ");
+            Object identifier = slot.getSlotIdentifier(descriptor);
+            if (identifier instanceof String) {
+                sb.append(full);
+            } else if (identifier == FrameSlotIDs.RETURN_SLOT_ID) {
+                sb.append("<return_val>");
+            } else if (identifier == FrameSlotIDs.FREEVAR__CLASS__) {
+                sb.append("<>freevar__class__");
+            } else if (identifier.toString().startsWith("<>temp")) {
+                sb.append("<>temp");
+            } else {
+                sb.append(full);
             }
         }
     }
 
-    private void add(ExecutionCellSlots executionCellSlots) {
+    private void add(ExecutionCellSlots executionCellSlots, FrameDescriptor descriptor) {
         indent(level);
         sb.append("ExecutionSlots:");
         newLine();
         level++;
         indent(level);
         sb.append("FreeVarsSlots: ");
-        add(executionCellSlots.getFreeVarSlots());
+        add(PythonFrame.extractSlotNames(descriptor, executionCellSlots.getFreeVarSlots()));
         newLine();
         indent(level);
         sb.append("CellVarsSlots: ");
-        add(executionCellSlots.getCellVarSlots());
+        add(PythonFrame.extractSlotNames(descriptor, executionCellSlots.getCellVarSlots()));
         newLine();
         level--;
     }
@@ -611,6 +659,8 @@ public class ParserTreePrinter implements NodeVisitor {
             visitChildren = visit((GeneratorReturnTargetNode) node);
         } else if (node instanceof GetFixedAttributeNode) {
             visitChildren = visit((GetFixedAttributeNode) node);
+        } else if (node instanceof FormatStringLiteralNode) {
+            visitChildren = visit((FormatStringLiteralNode) node);
         } else {
             nodeHeader(node);
             level++;
@@ -633,7 +683,17 @@ public class ParserTreePrinter implements NodeVisitor {
             } else {
                 if (node instanceof WriteIdentifierNode) {
                     indent(level);
-                    sb.append("Identifier: ").append(((WriteIdentifierNode) node).getIdentifier());
+                    sb.append("Identifier: ");
+                    if (printTmpSlots) {
+                        sb.append(((WriteIdentifierNode) node).getIdentifier());
+                    } else {
+                        String identifier = ((WriteIdentifierNode) node).getIdentifier().toString();
+                        if (identifier.startsWith("<>temp")) {
+                            sb.append("<>temp");
+                        } else {
+                            sb.append(identifier);
+                        }
+                    }
                     newLine();
                 }
                 if (node instanceof AccessNameNode) {
@@ -643,7 +703,8 @@ public class ParserTreePrinter implements NodeVisitor {
                 }
                 if (node instanceof FrameSlotNode) {
                     indent(level);
-                    sb.append("Frame: ").append(((FrameSlotNode) node).getSlot().toString());
+                    sb.append("Frame: ");
+                    add((FrameSlotNode) node);
                     newLine();
                 }
                 if (node instanceof WriteGlobalNode) {
@@ -654,18 +715,6 @@ public class ParserTreePrinter implements NodeVisitor {
                 if (node instanceof ReadIndexedArgumentNode) {
                     indent(level);
                     sb.append("Index: ").append(((ReadIndexedArgumentNode) node).getIndex());
-                    newLine();
-                }
-                if (printFormatStringLiteralDetail && node instanceof FormatStringLiteralNode) {
-                    indent(level);
-                    sb.append("Values: ");
-
-                    String[] values = new String[((FormatStringLiteralNode) node).getParts().length];
-                    int index = 0;
-                    for (FormatStringLiteralNode.StringPart part : ((FormatStringLiteralNode) node).getParts()) {
-                        values[index++] = part.isFormatString() ? "<f>" + part.getText() : "<n>" + part.getText();
-                    }
-                    add(values);
                     newLine();
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.test.advance;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -120,13 +122,31 @@ public class LeakTest extends AbstractLanguageLauncher {
             }
 
             MBeanServer server = doFullGC();
+            String threadDump = getThreadDump();
             Path dumpFile = dumpHeap(server);
             boolean fail = checkForLeaks(dumpFile);
             if (fail) {
+                System.err.print(threadDump);
                 System.exit(255);
             } else {
                 System.exit(0);
             }
+        }
+
+        private String getThreadDump() {
+            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+            ThreadInfo[] threads = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+            final String line = "=====================================\n";
+            StringBuilder sb = new StringBuilder(line);
+            for (ThreadInfo thread : threads) {
+                sb.append("-------\n");
+                sb.append(thread.getThreadName()).append('\n');
+                sb.append("Thread state:").append(thread.getThreadState()).append('\n');
+                for (StackTraceElement element : thread.getStackTrace()) {
+                    sb.append("    ").append(element).append('\n');
+                }
+            }
+            return sb.append(line).toString();
         }
 
         private boolean checkForLeaks(Path dumpFile) {
@@ -184,12 +204,7 @@ public class LeakTest extends AbstractLanguageLauncher {
         private MBeanServer doFullGC() {
             // do this a few times to dump a small heap if we can
             MBeanServer server = null;
-            for (int i = 0; i < 10; i++) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e1) {
-                    // do nothing
-                }
+            for (int i = 0; i < 20; i++) {
                 System.gc();
                 Runtime.getRuntime().freeMemory();
                 server = ManagementFactory.getPlatformMBeanServer();
@@ -198,6 +213,11 @@ public class LeakTest extends AbstractLanguageLauncher {
                     server.invoke(objectName, "gcRun", new Object[]{null}, new String[]{String[].class.getName()});
                 } catch (MalformedObjectNameException | InstanceNotFoundException | ReflectionException | MBeanException e) {
                     throw new RuntimeException(e);
+                }
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e1) {
+                    // do nothing
                 }
             }
             return server;

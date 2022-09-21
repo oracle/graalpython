@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'yeild17'> SourceSection: [0,37]`generator = type((
             ReadNameNodeGen SourceSection: [12,16]`type`
               Identifier: type
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [17,36]`(lambda: (yield))()`
               CallNodeGen SourceSection: None
               GeneratorFunctionDefinitionNode Name: <lambda> SourceSection: None
@@ -44,19 +44,14 @@ ModuleRootNode Name: <module 'yeild17'> SourceSection: [0,37]`generator = type((
                   InnerRootNode SourceSection: [18,33]`lambda: (yield)`
                     GeneratorReturnTargetNode SourceSection: [18,33]`lambda: (yield)`
                       flagSlot: 1
-                      FrameReturnNode SourceSection: None
-                        FunctionBodyNode SourceSection: [27,32]`yield`
-                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [0,<return_val>,Illegal]
-                            YieldNode SourceSection: [27,32]`yield`
-                              flagSlot: 0
-                              EmptyNode SourceSection: None
-                              GeneratorAccessNode SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: None
-                        Frame: [0,<return_val>,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
+                      GeneratorFrameReturnNode SourceSection: None
+                        LambdaBodyNode SourceSection: [27,32]`yield`
+                          YieldNode SourceSection: [27,32]`yield`
+                            flagSlot: 0
+                            EmptyNode SourceSection: None
+                            GeneratorAccessNode SourceSection: None
+                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                        Frame: [0,<return_val>,Object]
                       BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                       PRaiseNodeGen SourceSection: None

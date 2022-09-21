@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -17,50 +17,53 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Processes a printf-style formatting string or byte array and creates the resulting string or byte
  * array. The task of formatting individual elements is delegated to subclasses of
  * {@link InternalFormat.Formatter}. The result is buffered in an appropriate subclass of
  * {@link FormattingBuffer}.
- * 
+ *
  * This class contains logic common to {@link BytesFormatProcessor} and
  * {@link StringFormatProcessor}.
- * 
+ *
  * @param <T> The type of the result: {@code String} or {@code byte[]}.
  */
 abstract class FormatProcessor<T> {
     /** see {@link #getArg()} for the meaning of this value. */
     private int argIndex = -1;
     private Object args;
-    private final LookupAndCallBinaryNode getItemNode;
+    private final PyObjectGetItem getItemNode;
     private final TupleBuiltins.GetItemNode getTupleItemNode;
 
     protected int index;
-    protected final PythonCore core;
+    protected final Python3Core core;
     protected final PRaiseNode raiseNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
         this.core = core;
         this.raiseNode = raiseNode;
         this.getItemNode = getItemNode;
@@ -87,9 +90,10 @@ abstract class FormatProcessor<T> {
 
     abstract Object parseMappingKey(int start, int end);
 
-    static Object lookupAttribute(Object owner, String name) {
-        PythonObjectLibrary plib = PythonObjectLibrary.getUncached();
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(plib.getLazyPythonClass(owner), name);
+    protected abstract boolean isMapping(Object obj);
+
+    static Object lookupAttribute(Object owner, TruffleString name) {
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(owner), name);
     }
 
     static Object call(Object callable, Object... args) {
@@ -97,7 +101,7 @@ abstract class FormatProcessor<T> {
     }
 
     Object getItem(Object arg, Object arg2) {
-        return getItemNode.executeObject(null, arg, arg2);
+        return getItemNode.execute(null, arg, arg2);
     }
 
     Object getArg() {
@@ -116,7 +120,7 @@ abstract class FormatProcessor<T> {
                 // directly, so the only error can be IndexError, which we ignore and transform into
                 // the TypeError below.
                 try {
-                    ret = getTupleItemNode.call(null, args, argIndex++);
+                    ret = getTupleItemNode.execute(null, args, argIndex++);
                 } catch (PException e) {
                     // fall through
                 }
@@ -188,7 +192,7 @@ abstract class FormatProcessor<T> {
         } else if (arg instanceof PythonAbstractObject) {
             // Try again with arg.__int__() or __index__() depending on the spec type
             try {
-                String magicName = useIndexMagicMethod(specType) ? __INDEX__ : __INT__;
+                TruffleString magicName = useIndexMagicMethod(specType) ? T___INDEX__ : T___INT__;
                 Object attribute = lookupAttribute(arg, magicName);
                 return call(attribute, arg);
             } catch (PException e) {
@@ -199,7 +203,7 @@ abstract class FormatProcessor<T> {
     }
 
     protected double asFloat(Object arg) {
-        return PythonObjectLibrary.getUncached().asJavaDouble(arg);
+        return PyFloatAsDoubleNode.getUncached().execute(null, arg);
     }
 
     protected abstract InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec);
@@ -224,18 +228,8 @@ abstract class FormatProcessor<T> {
         return fi;
     }
 
-    /**
-     * Should this argument be treated as a mapping or as a single argument. This logic differs
-     * between string and bytes formatting.
-     */
-    protected abstract boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass);
-
-    protected boolean isString(Object args1, Object lazyClass) {
+    protected static boolean isString(Object args1, Object lazyClass) {
         return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
-    }
-
-    protected static boolean isMapping(Object args1) {
-        return PythonObjectLibrary.getUncached().isMapping(args1);
     }
 
     protected static boolean isSubtype(Object lazyClass, PythonBuiltinClassType clazz) {
@@ -261,8 +255,7 @@ abstract class FormatProcessor<T> {
 
         // We need to do a full subtype-check because native objects may inherit from tuple but have
         // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        PythonObjectLibrary args1Lib = PythonObjectLibrary.getFactory().getUncached(args1);
-        final Object args1LazyClass = args1Lib.getLazyPythonClass(args1);
+        final Object args1LazyClass = GetClassNode.getUncached().execute(args1);
         boolean tupleArgs = PGuards.isPTuple(args1) || isSubtype(args1LazyClass, PythonBuiltinClassType.PTuple);
         if (tupleArgs) {
             // We will simply work through the tuple elements
@@ -270,7 +263,7 @@ abstract class FormatProcessor<T> {
         } else {
             // Not a tuple, but possibly still some kind of container: use
             // special argIndex values.
-            if (useAsMapping(args1, args1Lib, args1LazyClass)) {
+            if (isMapping(args1)) {
                 mapping = args1;
                 argIndex = -3;
             }
@@ -494,7 +487,7 @@ abstract class FormatProcessor<T> {
          * of range; if a special value, it would be wrong if it were -1, indicating a single item
          * that has not yet been used.
          */
-        if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) >= argIndex + 1)) {
+        if (argIndex == -1 || (argIndex >= 0 && PyObjectSizeNode.getUncached().execute(null, args1) >= argIndex + 1)) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -50,7 +50,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class SetItemIfNotPresentNode extends Node {
     @Child private SetItemNode setItemNode = SetItemNode.create();
 
@@ -63,7 +63,7 @@ public abstract class SetItemIfNotPresentNode extends Node {
     @Specialization
     Object doDictLike(VirtualFrame frame, Object namespace, Object attribute, Object value,
                     @Cached("createIfFalseNode()") CoerceToBooleanNode notNode,
-                    @Cached("create(__CONTAINS__)") LookupAndCallBinaryNode containsNode) {
+                    @Cached("create(Contains)") LookupAndCallBinaryNode containsNode) {
         if (value != null && notNode.executeBoolean(frame, containsNode.executeObject(frame, namespace, value))) {
             setItemNode.executeWith(frame, namespace, attribute, value);
         }

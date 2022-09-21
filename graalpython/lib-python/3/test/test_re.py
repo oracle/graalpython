@@ -1,5 +1,5 @@
 from test.support import (gc_collect, bigmemtest, _2G,
-                          cpython_only, captured_stdout)
+                          cpython_only, captured_stdout, impl_detail)
 import locale
 import re
 import sre_compile
@@ -53,6 +53,7 @@ class ReTests(unittest.TestCase):
             if pos is not None:
                 self.assertEqual(err.pos, pos)
 
+    @impl_detail("buffer locking", graalvm=False)
     def test_keep_buffer(self):
         # See bug 14212
         b = bytearray(b'x')
@@ -946,47 +947,48 @@ class ReTests(unittest.TestCase):
 
     def test_possible_set_operations(self):
         s = bytes(range(128)).decode()
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9--1]')
+        # XXX GraalVM change: don't test for warnings, we don't have a good way to propagate them out of TRegex
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9--1]')
         self.assertEqual(p.findall(s), list('-./0123456789'))
         self.assertEqual(re.findall(r'[--1]', s), list('-./01'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[%--1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[%--1]')
         self.assertEqual(p.findall(s), list("%&'()*+,-1"))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[%--]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[%--]')
         self.assertEqual(p.findall(s), list("%&'()*+,-"))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9&&1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9&&1]')
         self.assertEqual(p.findall(s), list('&0123456789'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[\d&&1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[\d&&1]')
         self.assertEqual(p.findall(s), list('&0123456789'))
         self.assertEqual(re.findall(r'[&&1]', s), list('&1'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9||a]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9||a]')
         self.assertEqual(p.findall(s), list('0123456789a|'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[\d||a]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[\d||a]')
         self.assertEqual(p.findall(s), list('0123456789a|'))
         self.assertEqual(re.findall(r'[||1]', s), list('1|'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[0-9~~1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[0-9~~1]')
         self.assertEqual(p.findall(s), list('0123456789~'))
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[\d~~1]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[\d~~1]')
         self.assertEqual(p.findall(s), list('0123456789~'))
         self.assertEqual(re.findall(r'[~~1]', s), list('1~'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[[0-9]|]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[[0-9]|]')
         self.assertEqual(p.findall(s), list('0123456789[]'))
 
-        with self.assertWarns(FutureWarning):
-            p = re.compile(r'[[:digit:]|]')
+        # with self.assertWarns(FutureWarning):
+        p = re.compile(r'[[:digit:]|]')
         self.assertEqual(p.findall(s), list(':[]dgit'))
 
     def test_search_coverage(self):
@@ -1438,63 +1440,64 @@ class ReTests(unittest.TestCase):
         self.assertTrue(re.match('(?x) (?i) ' + upper_char, lower_char))
         self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char, re.X))
 
-        p = upper_char + '(?i)'
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.match(p, lower_char))
-        self.assertEqual(
-            str(warns.warnings[0].message),
-            'Flags not at the start of the expression %r' % p
-        )
-        self.assertEqual(warns.warnings[0].filename, __file__)
-
-        p = upper_char + '(?i)%s' % ('.?' * 100)
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.match(p, lower_char))
-        self.assertEqual(
-            str(warns.warnings[0].message),
-            'Flags not at the start of the expression %r (truncated)' % p[:20]
-        )
-        self.assertEqual(warns.warnings[0].filename, __file__)
-
-        # bpo-30605: Compiling a bytes instance regex was throwing a BytesWarning
-        with warnings.catch_warnings():
-            warnings.simplefilter('error', BytesWarning)
-            p = b'A(?i)'
-            with self.assertWarns(DeprecationWarning) as warns:
-                self.assertTrue(re.match(p, b'a'))
-            self.assertEqual(
-                str(warns.warnings[0].message),
-                'Flags not at the start of the expression %r' % p
-            )
-            self.assertEqual(warns.warnings[0].filename, __file__)
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('(?s).(?i)' + upper_char, '\n' + lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('(?i) ' + upper_char + ' (?x)', lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('^(?i)' + upper_char, lower_char))
-        with self.assertWarns(DeprecationWarning):
-            self.assertTrue(re.match('$|(?i)' + upper_char, lower_char))
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.match('(?:(?i)' + upper_char + ')', lower_char))
-        self.assertRegex(str(warns.warnings[0].message),
-                         'Flags not at the start')
-        self.assertEqual(warns.warnings[0].filename, __file__)
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.fullmatch('(^)?(?(1)(?i)' + upper_char + ')',
-                                         lower_char))
-        self.assertRegex(str(warns.warnings[0].message),
-                         'Flags not at the start')
-        self.assertEqual(warns.warnings[0].filename, __file__)
-        with self.assertWarns(DeprecationWarning) as warns:
-            self.assertTrue(re.fullmatch('($)?(?(1)|(?i)' + upper_char + ')',
-                                         lower_char))
-        self.assertRegex(str(warns.warnings[0].message),
-                         'Flags not at the start')
-        self.assertEqual(warns.warnings[0].filename, __file__)
+        # XXX GraalVM change: don't test for warnings, we don't have a good way to propagate them out of TRegex
+        # p = upper_char + '(?i)'
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.match(p, lower_char))
+        # self.assertEqual(
+        #     str(warns.warnings[0].message),
+        #     'Flags not at the start of the expression %r' % p
+        # )
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        #
+        # p = upper_char + '(?i)%s' % ('.?' * 100)
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.match(p, lower_char))
+        # self.assertEqual(
+        #     str(warns.warnings[0].message),
+        #     'Flags not at the start of the expression %r (truncated)' % p[:20]
+        # )
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        #
+        # # bpo-30605: Compiling a bytes instance regex was throwing a BytesWarning
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter('error', BytesWarning)
+        #     p = b'A(?i)'
+        #     with self.assertWarns(DeprecationWarning) as warns:
+        #         self.assertTrue(re.match(p, b'a'))
+        #     self.assertEqual(
+        #         str(warns.warnings[0].message),
+        #         'Flags not at the start of the expression %r' % p
+        #     )
+        #     self.assertEqual(warns.warnings[0].filename, __file__)
+        #
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('(?s).(?i)' + upper_char, '\n' + lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('(?i) ' + upper_char + ' (?x)', lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match(' (?x) (?i) ' + upper_char, lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('^(?i)' + upper_char, lower_char))
+        # with self.assertWarns(DeprecationWarning):
+        #     self.assertTrue(re.match('$|(?i)' + upper_char, lower_char))
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.match('(?:(?i)' + upper_char + ')', lower_char))
+        # self.assertRegex(str(warns.warnings[0].message),
+        #                  'Flags not at the start')
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.fullmatch('(^)?(?(1)(?i)' + upper_char + ')',
+        #                                  lower_char))
+        # self.assertRegex(str(warns.warnings[0].message),
+        #                  'Flags not at the start')
+        # self.assertEqual(warns.warnings[0].filename, __file__)
+        # with self.assertWarns(DeprecationWarning) as warns:
+        #     self.assertTrue(re.fullmatch('($)?(?(1)|(?i)' + upper_char + ')',
+        #                                  lower_char))
+        # self.assertRegex(str(warns.warnings[0].message),
+        #                  'Flags not at the start')
+        # self.assertEqual(warns.warnings[0].filename, __file__)
 
 
     def test_dollar_matches_twice(self):
@@ -1718,10 +1721,11 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.match(r".{,65536}", string).span(), (0, 65536))
         self.assertEqual(re.match(r".{65536,}?", string).span(), (0, 65536))
         # 2**128 should be big enough to overflow both SRE_CODE and Py_ssize_t.
-        self.assertRaises(OverflowError, re.compile, r".{%d}" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{,%d}" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{%d,}?" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{%d,%d}" % (2**129, 2**128))
+        # XXX GraalPython change: TRegex can process such large groups fine, no need to artificially limit it
+        #self.assertRaises(OverflowError, re.compile, r".{%d}" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{,%d}" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{%d,}?" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{%d,%d}" % (2**129, 2**128))
 
     @cpython_only
     def test_repeat_minmax_overflow_maxrepeat(self):

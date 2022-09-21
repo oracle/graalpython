@@ -1,0 +1,35 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      find_on_path: [DefLocal, Local]
+    Scope find_on_path Function
+        Flags: [HasChildWithFreeVars, IsGenerator]
+        Varnames: importer, path_item, only
+        Symbols:
+            Distribution: [Use, GlobalImplicit]
+            PathMetadata: [Use, GlobalImplicit]
+            _by_version_descending: [Use, GlobalImplicit]
+            _is_unpacked_egg: [Use, GlobalImplicit]
+            dist: [DefLocal, Use, Local]
+            dist_factory: [Use, GlobalImplicit]
+            entries: [DefLocal, Use, Local]
+            entry: [DefLocal, Use, Local]
+            factory: [DefLocal, Use, Local]
+            filtered: [DefLocal, Use, Local]
+            fullpath: [DefLocal, Use, Local]
+            importer: [DefParam, Local]
+            only: [DefParam, Use, Cell]
+            os: [Use, GlobalImplicit]
+            path_item: [DefParam, Use, Cell]
+            path_item_entries: [DefLocal, Use, Local]
+            safe_listdir: [Use, GlobalImplicit]
+      Scope genexp Function
+            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Varnames: .0
+            Symbols:
+                  .0: [DefParam, Local]
+                  dist_factory: [Use, GlobalImplicit]
+                  entry: [DefLocal, Use, DefCompIter, Local]
+                  only: [Use, Free]
+                  path_item: [Use, Free]

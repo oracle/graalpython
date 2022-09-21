@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,9 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -63,8 +62,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 public abstract class GetCurrentFrameRef extends Node {
 
-    private static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
-
     public abstract Reference execute(Frame frame);
 
     @Specialization(guards = "frame != null")
@@ -74,10 +71,9 @@ public abstract class GetCurrentFrameRef extends Node {
 
     @Specialization(guards = "frame == null")
     Reference doWithoutFrame(@SuppressWarnings("unused") Frame frame,
-                    @Cached(value = "getFlag()", uncached = "getFlagUncached()", dimensions = 1) ConditionProfile[] flag,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @Cached(value = "getFlag()", uncached = "getFlagUncached()", dimensions = 1) ConditionProfile[] flag) {
 
-        PFrame.Reference ref = context.peekTopFrameInfo();
+        PFrame.Reference ref = PythonContext.get(this).peekTopFrameInfo(PythonLanguage.get(this));
         if (flag[0] == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             // executed the first time, don't pollute the profile, we'll mark the caller to
@@ -95,11 +91,10 @@ public abstract class GetCurrentFrameRef extends Node {
     }
 
     @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
-    Reference doGeneric(Frame frame,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+    Reference doGeneric(Frame frame) {
         PFrame.Reference ref;
         if (frame == null) {
-            ref = contextRef.get().peekTopFrameInfo();
+            ref = PythonContext.get(this).peekTopFrameInfo(PythonLanguage.get(this));
             if (ref == null) {
                 return PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }
@@ -113,7 +108,7 @@ public abstract class GetCurrentFrameRef extends Node {
     }
 
     static ConditionProfile[] getFlagUncached() {
-        return DISABLED;
+        return PythonUtils.DISABLED;
     }
 
     public static GetCurrentFrameRef create() {

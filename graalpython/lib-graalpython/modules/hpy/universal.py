@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,12 +37,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
+from _hpy_universal import *
+import _hpy_debug as _debug
 
 def load_from_spec(spec):
-    try:
-        return _imp.create_dynamic(spec)
-    except ImportError as e:
-        if e.__cause__:
-            raise e.__cause__
-        raise
+    return load(spec.name, spec.origin)
+
+
+__version = None
+
+
+def get_version():
+    global __version
+    if not __version:
+        import os.path
+        import _io
+        path = os.path.join(os.path.dirname(__file__), "devel", "version.py")
+        ns = {}
+        with _io.FileIO(path, "r") as f:
+            exec(compile(f.readall(), path, "exec"), ns)
+        __version = (ns["__version__"], ns["__git_revision__"])
+    return __version
+
+
+def set_debug(*args):
+    return None

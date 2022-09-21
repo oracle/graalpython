@@ -1,0 +1,35 @@
+Module[0, 155]
+    FunctionDef[0, 155]
+        Name:non_empty_lines
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[20, 24] path
+        ---- Function body of non_empty_lines ----
+        With[31, 155]
+            Items:
+                WithItemTy[36, 51]
+                    ContextExpr: 
+                        Call[36, 46]
+                            Target: Name[36, 40] Value: "open"
+                            Args:
+                                Name[41, 45] Value: "path"
+                    OptionalVars: Name[50, 51] Value: "f" Store
+            Body:
+                For[61, 155]
+                    Target: Name[65, 69] Value: "line" Store
+                    Iter: Name[73, 74] Value: "f"
+                    Body:
+                        Assign[88, 107]
+                            LHS: Name[88, 92] Value: "line" Store
+                            RHS: 
+                                Call[95, 107]
+                                    Target: 
+                                        Attribute[95, 99] 
+                                            Receiver: Name[95, 99] Value: "line"
+                                            Attr: strip
+                        If[120, 155]
+                            Test: Name[123, 127] Value: "line"
+                            Then:
+                                Yield[145, 155]
+                                    Name[151, 155] Value: "line"
+        ---- End of non_empty_lines function ----

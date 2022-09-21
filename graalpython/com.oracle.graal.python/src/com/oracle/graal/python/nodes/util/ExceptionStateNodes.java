@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,22 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.RestoreExceptionStateNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.SaveExceptionStateNodeGen;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -95,11 +94,10 @@ public abstract class ExceptionStateNodes {
      * returned object may escape to the value space.
      */
     public static final class GetCaughtExceptionNode extends ExceptionStateBaseNode {
+        @Child private GetThreadStateNode getThreadStateNode;
 
         private final ConditionProfile nullFrameProfile = ConditionProfile.createBinaryProfile();
         private final ConditionProfile hasExceptionProfile = ConditionProfile.createBinaryProfile();
-
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         public PException execute(VirtualFrame frame) {
             if (nullFrameProfile.profile(frame == null)) {
@@ -119,17 +117,17 @@ public abstract class ExceptionStateNodes {
 
         private PException getFromContext() {
             // contextRef acts as a branch profile
-            if (contextRef == null) {
+            if (getThreadStateNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
+                getThreadStateNode = insert(GetThreadStateNodeGen.create());
             }
-            PythonContext ctx = contextRef.get();
-            PException fromContext = ctx.getCaughtException();
+            PythonThreadState threadState = getThreadStateNode.execute();
+            PException fromContext = threadState.getCaughtException();
             if (fromContext == null) {
                 fromContext = fromStackWalk();
 
                 // important: set into context to avoid stack walk next time
-                ctx.setCaughtException(fromContext != null ? fromContext : PException.NO_EXCEPTION);
+                threadState.setCaughtException(fromContext != null ? fromContext : PException.NO_EXCEPTION);
             }
             return ensure(fromContext);
         }
@@ -219,17 +217,17 @@ public abstract class ExceptionStateNodes {
 
         @Specialization(guards = "frame == null")
         static ExceptionState doContext(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return new ExceptionState(context.getCaughtException(), ExceptionState.SOURCE_CONTEXT);
+                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
+            return new ExceptionState(getThreadStateNode.getCaughtException(), ExceptionState.SOURCE_CONTEXT);
         }
 
         @Specialization(replaces = {"doArgs", "doContext"})
         static ExceptionState doGeneric(VirtualFrame frame,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
             if (frame != null) {
                 return doArgs(frame);
             }
-            return doContext(frame, context);
+            return doContext(frame, getThreadStateNode);
         }
 
         public static SaveExceptionStateNode create() {
@@ -247,30 +245,30 @@ public abstract class ExceptionStateNodes {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "state == null")
-        void doNothing(VirtualFrame frame, ExceptionState state) {
+        static void doNothing(VirtualFrame frame, ExceptionState state) {
         }
 
         @Specialization(guards = "fromArgs(e)")
-        void doArgs(VirtualFrame frame, ExceptionState e) {
+        static void doArgs(VirtualFrame frame, ExceptionState e) {
             PArguments.setException(frame, e.exc);
         }
 
         @Specialization(guards = "fromContext(e)")
-        void doContext(@SuppressWarnings("unused") VirtualFrame frame, ExceptionState e,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            context.setCaughtException(e.exc);
+        static void doContext(@SuppressWarnings("unused") VirtualFrame frame, ExceptionState e,
+                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
+            getThreadStateNode.setCaughtException(e.exc);
         }
 
         @Specialization(replaces = {"doNothing", "doArgs", "doContext"})
-        void doGeneric(VirtualFrame frame, ExceptionState e,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        static void doGeneric(VirtualFrame frame, ExceptionState e,
+                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
             if (e == null) {
                 return;
             }
             if (fromArgs(e)) {
                 doArgs(frame, e);
             } else if (fromContext(e)) {
-                doContext(frame, e, context);
+                doContext(frame, e, getThreadStateNode);
             }
         }
 

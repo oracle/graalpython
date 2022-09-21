@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,19 +41,26 @@
 
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.test.PythonTests;
+import java.math.BigInteger;
+
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigInteger;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.test.PythonTests;
 
 public class NarrowBigIntegerNodeTests {
 
     @Before
     public void setUp() {
         PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
     private static NarrowBigIntegerNode narrow = NarrowBigIntegerNodeGen.getUncached();

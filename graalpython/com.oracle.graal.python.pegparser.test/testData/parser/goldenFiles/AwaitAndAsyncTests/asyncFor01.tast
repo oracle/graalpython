@@ -1,0 +1,13 @@
+Module[0, 39]
+    AsyncFunctionDef[0, 39]
+        Name:f
+        ArgumentsTy[0, 0]
+        ---- Function body of f ----
+        AsyncFor[16, 39]
+            Target: Name[26, 27] Value: "i" Store
+            Iter: 
+                Tuple[31, 33]
+                    Values:
+            Body:
+                Pass[35, 39]
+        ---- End of f function ----

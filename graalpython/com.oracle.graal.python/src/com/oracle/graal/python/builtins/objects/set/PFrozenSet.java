@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
 public class PFrozenSet extends PBaseSet {
@@ -44,15 +43,6 @@ public class PFrozenSet extends PBaseSet {
     @Override
     public String toString() {
         return "frozenset(" + super.toString() + ")";
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        // ignore if storage stays unchanged
-        if (newStorage != getDictStorage()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException("frozenSet is unmodifiable");
-        }
     }
 
     public long getHash() {

@@ -267,6 +267,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_delitem
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_discard
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_dump_message
+*graalpython.lib-python.3.test.test_mailbox.TestMbox.test_file_perms
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_flush
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_get
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_get_bytes
@@ -352,3 +353,4 @@
 *graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_read
 *graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_readline
 *graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_readlines
+*graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_seek_and_tell

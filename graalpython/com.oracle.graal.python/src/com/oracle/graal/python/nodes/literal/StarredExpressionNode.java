@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,12 +47,13 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNodeFactory.AppendToSetNodeGen;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNodeFactory.AppendToStorageNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -63,7 +64,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class StarredExpressionNode extends LiteralNode {
@@ -120,11 +120,11 @@ public final class StarredExpressionNode extends LiteralNode {
     public abstract static class AppendToSetNode extends Node {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, Object values, ThreadState state);
 
-        @Specialization(guards = "cannotBeOverridden(plib.getLazyPythonClass(values))")
+        @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
         static HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             HashingStorage storage = storageIn;
             SequenceStorage valuesStorage = values.getSequenceStorage();
             int n = lenNode.execute(valuesStorage);
@@ -135,12 +135,13 @@ public final class StarredExpressionNode extends LiteralNode {
             return storage;
         }
 
-        @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(plib.getLazyPythonClass(values))")
+        @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(values, getClassNode)", limit = "1")
         static HashingStorage doSetIterable(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, Object values, ThreadState state,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
-            Object iterator = plib.getIteratorWithFrame(values, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, values);
             HashingStorage storage = storageIn;
             while (true) {
                 try {
@@ -159,20 +160,21 @@ public final class StarredExpressionNode extends LiteralNode {
     public abstract static class AppendToStorageNode extends Node {
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage storage, Object values);
 
-        @Specialization(guards = "cannotBeOverridden(plib.getLazyPythonClass(values))")
+        @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
         SequenceStorage doPSequence(SequenceStorage storage, PSequence values,
-                        @Cached("createConcatStorageNode()") SequenceStorageNodes.ConcatNode concatNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached("createConcatStorageNode()") SequenceStorageNodes.ConcatNode concatNode) {
             return concatNode.execute(storage, values.getSequenceStorage());
         }
 
-        @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(plib.getLazyPythonClass(values))")
+        @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(values, getClassNode)", limit = "1")
         SequenceStorage doIterable(VirtualFrame frame, SequenceStorage storageIn, Object values,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
-            Object iterator = plib.getIteratorWithFrame(values, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, values);
             SequenceStorage storage = storageIn;
             while (true) {
                 try {

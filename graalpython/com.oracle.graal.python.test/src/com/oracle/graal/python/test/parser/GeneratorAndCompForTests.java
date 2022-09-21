@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -348,5 +348,30 @@ public class GeneratorAndCompForTests extends ParserTestBase {
     @Test
     public void genExpr() throws Exception {
         checkScopeAndTree("(i for i in range(3))");
+    }
+
+    @Test
+    public void genExpr01() throws Exception {
+        checkScopeAndTree("[ (c,s) for c in ('a','b') for s in (1,2,3,4,5)]");
+    }
+
+    @Test
+    public void genExpr02() throws Exception {
+        checkScopeAndTree("[ (s,c) for c in ('a','b') for s in (1,2,3,4,5)]");
+    }
+
+    @Test
+    public void genExpr03() throws Exception {
+        checkScopeAndTree("(e+1 for e in (i*2 for i in (1,2,3)))");
+    }
+
+    @Test
+    public void issueGitHub_42_v1() throws Exception {
+        checkScopeAndTree("[e for e in (s for s in (1, 2, 3))]");
+    }
+
+    @Test
+    public void issueGitHub_42_v2() throws Exception {
+        checkScopeAndTree("[e for e in [s for s in (1, 2, 3)]]");
     }
 }

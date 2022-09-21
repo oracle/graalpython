@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,14 +43,14 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -68,7 +68,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public abstract class ManagedMethodWrappers {
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
 
         private final Object typeid;
@@ -111,7 +111,6 @@ public abstract class ManagedMethodWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
     static class MethKeywords extends MethodWrapper {
 
         public MethKeywords(Object method, Object typeid) {
@@ -127,31 +126,36 @@ public abstract class ManagedMethodWrappers {
         public Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
-                        @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
-                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
-            if (arguments.length != 3) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, arguments.length);
+                        @Exclusive @Cached ExecutePositionalStarargsNode posStarargsNode,
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 3) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(3, 3, arguments.length);
+                }
+
+                // convert args
+                Object receiver = toJavaNode.execute(arguments[0]);
+                Object starArgs = toJavaNode.execute(arguments[1]);
+                Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+
+                // execute
+                return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));
+            } finally {
+                gil.release(mustRelease);
             }
-
-            // convert args
-            Object receiver = toJavaNode.execute(arguments[0]);
-            Object starArgs = toJavaNode.execute(arguments[1]);
-            Object kwArgs = toJavaNode.execute(arguments[2]);
-
-            Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
-            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
-            PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
-
-            // execute
-            return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));
         }
     }
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
     static class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {
@@ -167,16 +171,22 @@ public abstract class ManagedMethodWrappers {
         public Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
-                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
-            if (arguments.length != 1) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(1, arguments.length);
-            }
+                        @Exclusive @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedMessageException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 1) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(1, 1, arguments.length);
+                }
 
-            // convert args
-            Object varArgs = toJavaNode.execute(arguments[0]);
-            return toSulongNode.execute(executeNode.execute(lib.getDelegate(this), new Object[]{varArgs}));
+                // convert args
+                Object varArgs = toJavaNode.execute(arguments[0]);
+                return toSulongNode.execute(executeNode.execute(lib.getDelegate(this), new Object[]{varArgs}));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 

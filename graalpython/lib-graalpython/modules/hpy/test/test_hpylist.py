@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +28,7 @@ class TestList(HPyTest):
     def test_Check(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 if (HPyList_Check(ctx, arg))
                     return HPy_Dup(ctx, ctx->h_True);
@@ -47,7 +47,7 @@ class TestList(HPyTest):
     def test_New(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPyList_New(ctx, 0);
             }
@@ -59,7 +59,7 @@ class TestList(HPyTest):
     def test_Append(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy list = HPyList_New(ctx, 0);
                 if (HPy_IsNull(list))
@@ -78,7 +78,7 @@ class TestList(HPyTest):
     def test_ListBuilder(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy h_self, HPy h_arg)
+            static HPy f_impl(HPyContext *ctx, HPy h_self, HPy h_arg)
             {
                 HPyListBuilder builder = HPyListBuilder_New(ctx, 3);
                 HPyListBuilder_Set(ctx, builder, 0, h_arg);

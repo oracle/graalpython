@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,79 +40,104 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.io.IOException;
+
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@ImportStatic(BuiltinNames.class)
+@GenerateUncached
 public abstract class WriteUnraisableNode extends Node {
-    static final String UNRAISABLE_HOOK_ARGUMENTS_CLASS = "__UnraisableHookArgs";
 
-    public abstract void execute(VirtualFrame frame, PBaseException exception, String message, Object object);
+    private static final TruffleString T_IGNORED = tsLiteral("Exception ignored ");
 
-    @Specialization(limit = "1")
-    static void writeUnraisable(VirtualFrame frame, PBaseException exception, String message, Object object,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @CachedLibrary("exception") PythonObjectLibrary lib,
+    public final void execute(VirtualFrame frame, PBaseException exception, TruffleString message, Object object) {
+        executeInternal(frame, exception, message, object);
+    }
+
+    public final void execute(PBaseException exception, TruffleString message, Object object) {
+        executeInternal(null, exception, message, object);
+    }
+
+    protected abstract void executeInternal(Frame frame, PBaseException exception, TruffleString message, Object object);
+
+    @Specialization
+    static void writeUnraisable(VirtualFrame frame, PBaseException exception, TruffleString message, Object object,
+                    @Cached PyObjectLookupAttr lookup,
+                    @Cached CallNode callNode,
+                    @Cached GetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode,
-                    @Cached("create(UNRAISABLEHOOK)") GetAttributeNode getUnraisableHook,
-                    @Cached CallNode callUnraisableHook,
-                    @Cached("create(UNRAISABLE_HOOK_ARGUMENTS_CLASS)") GetAttributeNode getArgumentsFactory,
-                    @Cached CallNode callArgumentsFactory) {
+                    @Cached TruffleString.ConcatNode concatNode,
+                    @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        PythonContext context = PythonContext.get(getClassNode);
         try {
-            PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
-            Object unraisablehook = getUnraisableHook.executeObject(frame, sysModule);
-            Object argumentsFactory = getArgumentsFactory.executeObject(frame, sysModule);
-            Object exceptionType = lib.getLazyPythonClass(exception);
-            Object traceback = getExceptionTracebackNode.execute(frame, exception);
-            if (traceback == null) {
-                traceback = PNone.NONE;
-            }
+            PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
+            Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
+            Object exceptionType = getClassNode.execute(exception);
+            Object traceback = getExceptionTracebackNode.execute(exception);
             Object messageObj = PNone.NONE;
             if (message != null) {
-                messageObj = formatMessage(message);
+                messageObj = formatMessage(message, concatNode);
             }
-            Object hookArguments = callArgumentsFactory.execute(frame, argumentsFactory,
-                            factory.createTuple(new Object[]{exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE}));
-            callUnraisableHook.execute(frame, unraisablehook, hookArguments);
+            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
+            callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
-            ignoreException(message);
+            ignoreException(context, message, concatNode, copyToByteArrayNode);
         }
     }
 
     @TruffleBoundary
-    private static void ignoreException(String message) {
-        if (message != null) {
-            System.err.println(formatMessage(message));
-        } else {
-            System.err.println("Exception ignored in sys.unraisablehook");
+    private static void ignoreException(PythonContext context, TruffleString message, TruffleString.ConcatNode concatNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        try {
+            if (message != null) {
+                TruffleString formatedMsg = formatMessage(message, concatNode);
+                byte[] data = new byte[formatedMsg.byteLength(TS_ENCODING)];
+                copyToByteArrayNode.execute(formatedMsg, 0, data, 0, data.length, TS_ENCODING);
+                context.getEnv().err().write(data);
+            } else {
+                context.getEnv().err().write(ignoredMsg());
+            }
+        } catch (IOException ioException) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
+    private static TruffleString formatMessage(TruffleString message, TruffleString.ConcatNode concatNode) {
+        return concatNode.execute(T_IGNORED, message, TS_ENCODING, true);
+    }
+
     @TruffleBoundary
-    private static Object formatMessage(String message) {
-        return "Exception ignored " + message;
+    private static byte[] ignoredMsg() {
+        return "Exception ignored in sys.unraisablehook".getBytes();
     }
 
     public static WriteUnraisableNode create() {
         return WriteUnraisableNodeGen.create();
+    }
+
+    public static WriteUnraisableNode getUncached() {
+        return WriteUnraisableNodeGen.getUncached();
     }
 }

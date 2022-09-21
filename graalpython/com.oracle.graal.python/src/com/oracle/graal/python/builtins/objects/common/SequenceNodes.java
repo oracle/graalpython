@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -50,7 +55,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SequenceNodes {
@@ -61,13 +65,13 @@ public abstract class SequenceNodes {
 
         public abstract int execute(PSequence seq);
 
-        @Specialization(limit = "1")
+        @Specialization
         int doPString(PString str,
-                        @CachedLibrary("str") PythonObjectLibrary lib) {
-            return lib.length(str);
+                        @Cached StringNodes.StringLenNode lenNode) {
+            return lenNode.execute(str);
         }
 
-        @Specialization(guards = {"!isPString(seq)", "!isPRange(seq)"})
+        @Specialization(guards = "!isPString(seq)")
         int doWithStorage(PSequence seq,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
@@ -112,6 +116,10 @@ public abstract class SequenceNodes {
         public static GetSequenceStorageNode create() {
             return SequenceNodesFactory.GetSequenceStorageNodeGen.create();
         }
+
+        public static GetSequenceStorageNode getUncached() {
+            return SequenceNodesFactory.GetSequenceStorageNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
@@ -142,6 +150,19 @@ public abstract class SequenceNodes {
         @CompilerDirectives.TruffleBoundary
         static void doGeneric(PSequence s, SequenceStorage storage) {
             s.setSequenceStorage(storage);
+        }
+    }
+
+    public abstract static class CheckIsSequenceNode extends PNodeWithRaise {
+
+        public abstract void execute(Object seq);
+
+        @Specialization
+        void check(Object obj,
+                        @Cached PySequenceCheckNode sequenceCheckNode) {
+            if (!sequenceCheckNode.execute(obj)) {
+                throw raise(TypeError, IS_NOT_A_SEQUENCE, obj);
+            }
         }
     }
 }

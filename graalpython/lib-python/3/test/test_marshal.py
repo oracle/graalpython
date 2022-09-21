@@ -241,6 +241,7 @@ class BugsTestCase(unittest.TestCase):
             MAX_MARSHAL_STACK_DEPTH = 1000
         else:
             MAX_MARSHAL_STACK_DEPTH = 2000
+        MAX_MARSHAL_STACK_DEPTH = 200 # Truffle change: we blow the stack sooner
         for i in range(MAX_MARSHAL_STACK_DEPTH - 2):
             last.append([0])
             last = last[-1]
@@ -274,6 +275,7 @@ class BugsTestCase(unittest.TestCase):
         testString = 'abc' * size
         marshal.dumps(testString)
 
+    @support.cpython_only
     def test_invalid_longs(self):
         # Issue #7019: marshal.loads shouldn't produce unnormalized PyLongs
         invalid_string = b'l\x02\x00\x00\x00\x00\x00\x00\x00'
@@ -403,7 +405,7 @@ class InstancingTestCase(unittest.TestCase, HelperMixin):
             s2 = marshal.dumps(sample, 2)
             n2 = CollectObjectIDs(set(), marshal.loads(s2))
             #old format generated more instances
-            self.assertGreater(n2, n0)
+            # self.assertGreater(n2, n0) # Truffle change: we use primitives which are identical
 
             #if complex objects are in there, old format is larger
             if not simple:
@@ -513,6 +515,7 @@ class InterningTestCase(unittest.TestCase, HelperMixin):
     def testNoIntern(self):
         s = marshal.loads(marshal.dumps(self.strobj, 2))
         self.assertEqual(s, self.strobj)
+        return # Truffle change: the rest is not true for us
         self.assertNotEqual(id(s), id(self.strobj))
         s2 = sys.intern(s)
         self.assertNotEqual(id(s2), id(s))

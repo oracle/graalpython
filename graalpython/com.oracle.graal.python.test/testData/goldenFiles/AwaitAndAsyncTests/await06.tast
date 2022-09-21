@@ -39,14 +39,8 @@ ModuleRootNode Name: <module 'await06'> SourceSection: [0,38]`async def f():↵ 
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [22,25]`foo`
                             Identifier: foo
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [29,38]`return 42`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [36,38]`42`
-                            Value: 42
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [36,38]`42`
+                          Value: 42
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]

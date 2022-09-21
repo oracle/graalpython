@@ -972,6 +972,8 @@ class BaseTest:
         expected = m.tobytes()
         self.assertEqual(a.tobytes(), expected)
         self.assertEqual(a.tobytes()[0], expected[0])
+        # XXX Truffle change: we don't forbid resizing arrays when exported to memoryview
+        return
         # Resizing is forbidden when there are buffer exports.
         # For issue 4509, we also check after each error that
         # the array was not modified.
@@ -1047,10 +1049,10 @@ class BaseTest:
         if self.typecode != 'u':
             with self.assertRaises(TypeError) as cm:
                 a = array.array(self.typecode, 'foo')
-            # XXX Truffle change: don't dwell on exact error messages, this feature is deprecated anyway
-            # self.assertIn("cannot use a str", str(cm.exception))
+            self.assertIn("cannot use a str", str(cm.exception))
             with self.assertRaises(TypeError) as cm:
                 a = array.array(self.typecode, array.array('u', 'foo'))
+            # XXX Truffle change: don't dwell on exact error messages, this feature is deprecated anyway
             # self.assertIn("cannot use a unicode array", str(cm.exception))
         else:
             a = array.array(self.typecode, "foo")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -131,7 +131,7 @@ public class BinaryArithTests {
     public void NonePlusInt() {
         String source = "a = None\n" + //
                         "a += 1\n";
-        assertLastLineError("TypeError: unsupported operand type(s) for +=: 'NoneType' and 'int'\n", source);
+        assertLastLineErrorContains("TypeError: unsupported operand type(s)", source);
     }
 
 }

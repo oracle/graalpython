@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,9 +25,10 @@ from .support import HPyTest
 import pytest
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestCPythonCompatibility(HPyTest):
 
-    # One note about the should_check_refcount() in the tests below: on
+    # One note about the supports_refcounts() in the tests below: on
     # CPython, handles are actually implemented as INCREF/DECREF, so we can
     # check e.g. after an HPy_Dup the refcnt is += 1. However, on PyPy they
     # are implemented in a completely different way which is unrelated to the
@@ -40,7 +41,7 @@ class TestCPythonCompatibility(HPyTest):
         mod = self.make_module("""
             #include <Python.h>
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
                 Py_ssize_t initial_refcount = o->ob_refcnt;
@@ -59,14 +60,33 @@ class TestCPythonCompatibility(HPyTest):
         x = mod.f()
         assert x[0] == 1234
         assert len(x) == 2
-        if self.should_check_refcount():
+        if self.supports_refcounts():
             assert x == [1234, +1]
+
+    def test_frompyobject_null(self):
+        mod = self.make_module("""
+            #include <Python.h>
+            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            static HPy f_impl(HPyContext *ctx, HPy self)
+            {
+                HPy h = HPy_FromPyObject(ctx, NULL);
+                if (HPy_IsNull(h)) {
+                    return HPy_Dup(ctx, ctx->h_True);
+                }
+                else {
+                    return HPy_Dup(ctx, ctx->h_False);
+                }
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        assert mod.f()
 
     def test_aspyobject(self):
         mod = self.make_module("""
             #include <Python.h>
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 PyObject *o = HPy_AsPyObject(ctx, arg);
                 long val = PyLong_AsLong(o);
@@ -78,11 +98,30 @@ class TestCPythonCompatibility(HPyTest):
         """)
         assert mod.f(21) == 42
 
+    def test_aspyobject_null(self):
+        mod = self.make_module("""
+            #include <Python.h>
+            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            static HPy f_impl(HPyContext *ctx, HPy self)
+            {
+                PyObject *o = HPy_AsPyObject(ctx, HPy_NULL);
+                if (o == NULL) {
+                    return HPy_Dup(ctx, ctx->h_True);
+                }
+                else {
+                    return HPy_Dup(ctx, ctx->h_False);
+                }
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        assert mod.f()
+
     def test_aspyobject_custom_class(self):
         mod = self.make_module("""
             #include <Python.h>
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 PyObject *o = HPy_AsPyObject(ctx, arg);
                 PyObject *o_res = PyObject_CallMethod(o, "foo", "");
@@ -104,7 +143,7 @@ class TestCPythonCompatibility(HPyTest):
         mod = self.make_module("""
             #include <Python.h>
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
 
@@ -121,14 +160,14 @@ class TestCPythonCompatibility(HPyTest):
             @INIT
         """)
         x = mod.f()
-        if self.should_check_refcount():
+        if self.supports_refcounts():
             assert x == -1
 
     def test_hpy_dup(self):
         mod = self.make_module("""
             #include <Python.h>
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
 
@@ -147,7 +186,7 @@ class TestCPythonCompatibility(HPyTest):
             @INIT
         """)
         x = mod.f()
-        if self.should_check_refcount():
+        if self.supports_refcounts():
             assert x == +1
 
     def test_many_handles(self):
@@ -156,9 +195,10 @@ class TestCPythonCompatibility(HPyTest):
             #define NUM_HANDLES  10000
 
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 PyObject *o = PyList_New(0);
+                Py_ssize_t final_refcount;
 
                 Py_ssize_t result = -42;
                 HPy handles[NUM_HANDLES];
@@ -171,7 +211,7 @@ class TestCPythonCompatibility(HPyTest):
                         goto error;
                 for (i = 0; i < NUM_HANDLES; i++)
                     HPy_Close(ctx, handles[i]);
-                Py_ssize_t final_refcount = o->ob_refcnt;
+                final_refcount = o->ob_refcnt;
                 result = final_refcount - initial_refcount;
 
              error:
@@ -181,249 +221,3 @@ class TestCPythonCompatibility(HPyTest):
             @INIT
         """)
         assert mod.f() == 0
-
-    def test_legacy_methods(self):
-        mod = self.make_module("""
-            #include <Python.h>
-
-            static PyObject *f(PyObject *self, PyObject *args)
-            {
-                return PyLong_FromLong(1234);
-            }
-            static PyObject *g(PyObject *self, PyObject *arg)
-            {
-                long x = PyLong_AsLong(arg);
-                return PyLong_FromLong(x * 2);
-            }
-            static PyObject *h(PyObject *self, PyObject *args)
-            {
-                long a, b, c;
-                if (!PyArg_ParseTuple(args, "lll", &a, &b, &c))
-                    return NULL;
-                return PyLong_FromLong(100*a + 10*b + c);
-            }
-            static PyObject *k(PyObject *self, PyObject *args, PyObject *kwargs)
-            {
-                static char *kwlist[] = { "a", "b", "c", NULL };
-                long a, b, c;
-                if (!PyArg_ParseTupleAndKeywords(args, kwargs, "lll", kwlist, &a, &b, &c))
-                    return NULL;
-                return PyLong_FromLong(100*a + 10*b + c);
-            }
-
-            static PyMethodDef my_legacy_methods[] = {
-                {"f", (PyCFunction)f, METH_NOARGS},
-                {"g", (PyCFunction)g, METH_O},
-                {"h", (PyCFunction)h, METH_VARARGS},
-                {"k", (PyCFunction)k, METH_VARARGS | METH_KEYWORDS},
-                {NULL}
-            };
-
-            @EXPORT_LEGACY(my_legacy_methods)
-            @INIT
-        """)
-        assert mod.f() == 1234
-        assert mod.g(45) == 90
-        assert mod.h(4, 5, 6) == 456
-        assert mod.k(c=6, b=5, a=4) == 456
-
-    # TODO: enable test once supported
-    @pytest.mark.xfail
-    def test_legacy_slots_repr(self):
-        mod = self.make_module("""
-            #include <Python.h>
-
-            static PyObject *Dummy_repr(PyObject *self)
-            {
-                return PyUnicode_FromString("myrepr");
-            }
-
-            HPyDef_SLOT(Dummy_abs, Dummy_abs_impl, HPy_nb_absolute);
-            static HPy Dummy_abs_impl(HPyContext ctx, HPy self)
-            {
-                return HPyLong_FromLong(ctx, 1234);
-            }
-
-            static HPyDef *Dummy_defines[] = {
-                &Dummy_abs,
-                NULL
-            };
-            static PyType_Slot Dummy_type_slots[] = {
-                {Py_tp_repr, Dummy_repr},
-                {0, 0},
-            };
-            static HPyType_Spec Dummy_spec = {
-                .name = "mytest.Dummy",
-                .legacy_slots = Dummy_type_slots,
-                .defines = Dummy_defines
-            };
-
-            @EXPORT_TYPE("Dummy", Dummy_spec)
-            @INIT
-        """)
-        d = mod.Dummy()
-        assert repr(d) == 'myrepr'
-        assert abs(d) == 1234
-
-    def test_legacy_slots_methods(self):
-        mod = self.make_module("""
-            #include <Python.h>
-
-            static PyObject *Dummy_foo(PyObject *self, PyObject *arg)
-            {
-                Py_INCREF(arg);
-                return arg;
-            }
-
-            HPyDef_METH(Dummy_bar, "bar", Dummy_bar_impl, HPyFunc_NOARGS)
-            static HPy Dummy_bar_impl(HPyContext ctx, HPy self)
-            {
-                return HPyLong_FromLong(ctx, 1234);
-            }
-
-            static PyMethodDef dummy_methods[] = {
-               {"foo", Dummy_foo, METH_O},
-               {NULL, NULL}         /* Sentinel */
-            };
-
-            static PyType_Slot dummy_type_slots[] = {
-                {Py_tp_methods, dummy_methods},
-                {0, 0},
-            };
-
-            static HPyDef *dummy_type_defines[] = {
-                    &Dummy_bar,
-                    NULL
-            };
-
-            static HPyType_Spec dummy_type_spec = {
-                .name = "mytest.Dummy",
-                .legacy_slots = dummy_type_slots,
-                .defines = dummy_type_defines
-            };
-
-            @EXPORT_TYPE("Dummy", dummy_type_spec)
-            @INIT
-        """)
-        d = mod.Dummy()
-        assert d.foo(21) == 21
-        assert d.bar() == 1234
-
-    def test_legacy_slots_members(self):
-        mod = self.make_module("""
-            #include <Python.h>
-            #include "structmember.h"
-
-            typedef struct {
-                HPyObject_HEAD
-                long x;
-                long y;
-            } PointObject;
-
-            HPyDef_SLOT(Point_new, Point_new_impl, HPy_tp_new)
-            static HPy Point_new_impl(HPyContext ctx, HPy cls, HPy *args,
-                                      HPy_ssize_t nargs, HPy kw)
-            {
-                PointObject *point;
-                HPy h_point = HPy_New(ctx, cls, &point);
-                if (HPy_IsNull(h_point))
-                    return HPy_NULL;
-                point->x = 7;
-                point->y = 3;
-                return h_point;
-            }
-
-            HPyDef_MEMBER(Point_x, "x", HPyMember_LONG, offsetof(PointObject, x))
-
-            // legacy members
-            static PyMemberDef legacy_members[] = {
-                {"y", T_LONG, offsetof(PointObject, y), 0},
-                {NULL}
-            };
-
-            static PyType_Slot legacy_slots[] = {
-                {Py_tp_members, legacy_members},
-                {0, NULL}
-            };
-
-            static HPyDef *Point_defines[] = {
-                &Point_new,
-                &Point_x,
-                NULL
-            };
-            static HPyType_Spec Point_spec = {
-                .name = "mytest.Point",
-                .basicsize = sizeof(PointObject),
-                .defines = Point_defines,
-                .legacy_slots = legacy_slots
-            };
-
-            @EXPORT_TYPE("Point", Point_spec)
-            @INIT
-        """)
-        p = mod.Point()
-        assert p.x == 7
-        assert p.y == 3
-        p.x = 123
-        p.y = 456
-        assert p.x == 123
-        assert p.y == 456
-
-    # TODO: enable test once supported
-    @pytest.mark.xfail
-    def test_legacy_slots_getsets(self):
-        mod = self.make_module("""
-            #include <Python.h>
-
-            typedef struct {
-                HPyObject_HEAD
-                long x;
-                long y;
-            } PointObject;
-
-            HPyDef_SLOT(Point_new, Point_new_impl, HPy_tp_new)
-            static HPy Point_new_impl(HPyContext ctx, HPy cls, HPy *args,
-                                      HPy_ssize_t nargs, HPy kw)
-            {
-                PointObject *point;
-                HPy h_point = HPy_New(ctx, cls, &point);
-                if (HPy_IsNull(h_point))
-                    return HPy_NULL;
-                point->x = 7;
-                point->y = 3;
-                return h_point;
-            }
-
-            static PyObject *z_get(PointObject *point, void *closure)
-            {
-                long z = point->x*10 + point->y + (long)closure;
-                return PyLong_FromLong(z);
-            }
-
-            // legacy getsets
-            static PyGetSetDef legacy_getsets[] = {
-                {"z", (getter)z_get, NULL, NULL, (void *)2000},
-                {NULL}
-            };
-
-            static PyType_Slot legacy_slots[] = {
-                {Py_tp_getset, legacy_getsets},
-                {0, NULL}
-            };
-
-            static HPyDef *Point_defines[] = {
-                &Point_new,
-                NULL
-            };
-            static HPyType_Spec Point_spec = {
-                .name = "mytest.Point",
-                .basicsize = sizeof(PointObject),
-                .defines = Point_defines,
-                .legacy_slots = legacy_slots
-            };
-
-            @EXPORT_TYPE("Point", Point_spec)
-            @INIT
-        """)
-        p = mod.Point()
-        assert p.z == 2073

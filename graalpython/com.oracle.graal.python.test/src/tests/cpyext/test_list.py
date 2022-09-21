@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,12 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_e
 __dir__ = __file__.rpartition("/")[0]
 
 
+def raise_Py6_SystemError():
+    if sys.version_info.minor >= 6:
+        raise SystemError
+    else:
+        return -1
+    
 def _reference_new_list(args):
     n = args[0]
     if n < 0:
@@ -66,6 +72,19 @@ def _reference_setitem(args):
     listObj = [None] * capacity
     listObj[pos] = newitem
     return listObj
+
+def _reference_setslice(args):
+    if not isinstance(args[0], list):
+        raise_Py6_SystemError()
+    try:        
+        args[0][args[1]:args[2]] = args[3]
+        return 0;
+    except:
+        return raise_Py6_SystemError()
+
+def _reference_reverse(args):
+    args[0].reverse()
+    return args[0]
 
 
 def _reference_SET_ITEM(args):
@@ -252,6 +271,20 @@ class TestPyList(CPyExtTestCase):
         arguments=["PyObject* op", "Py_ssize_t ilow", "Py_ssize_t ihigh"],
         cmpfunc=unhandled_error_compare
     )
+    
+    test_PyList_SetSlice = CPyExtFunction(
+        _reference_setslice,
+        lambda: (
+            ([1,2,3,4],0,4,[5,6,7,8]),    
+            ([],1,2, [5,6]),
+            ([1,2,3,4],10,20,[5,6,7,8]),
+            (DummyClass(),10,20, [1]),
+        ),
+        resultspec="i",
+        argspec='OnnO',
+        arguments=["PyObject* op", "Py_ssize_t ilow", "Py_ssize_t ihigh", "PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PyList_Size = CPyExtFunction(
         lambda args: len(args[0]),
@@ -321,5 +354,27 @@ class TestPyList(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_Reverse = CPyExtFunction(
+        _reference_reverse,
+        lambda: (
+            ([],),
+            ([1, 2, 3],),
+            ([1, "a", 0.1],),
+        ),
+        code='''PyObject* wrap_PyList_Reverse(PyObject* list) {
+            if (PyList_Reverse(list)) {
+                return NULL;
+            }
+            Py_INCREF(list);
+            return list;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* list"],
+        callfunction="wrap_PyList_Reverse",
         cmpfunc=unhandled_error_compare
     )

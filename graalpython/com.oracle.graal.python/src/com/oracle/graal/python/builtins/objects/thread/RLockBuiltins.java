@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -74,13 +78,32 @@ public class RLockBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_acquire_restore", minNumOfPositionalArgs = 1)
+    @Builtin(name = "_acquire_restore", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class AcquireRestoreRLockNode extends PythonUnaryBuiltinNode {
+    abstract static class AcquireRestoreRLockNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object acquireRestore(PRLock self) {
+        Object acquireRestore(PRLock self, PTuple state,
+                        @Cached GilNode gil,
+                        @Cached CastToJavaUnsignedLongNode castLong,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
             if (!self.acquireNonBlocking()) {
-                self.acquireBlocking();
+                gil.release(true);
+                try {
+                    self.acquireBlocking(this);
+                } finally {
+                    gil.acquire();
+                }
+            }
+            // ignore owner, we use the Java lock and cannot set it
+            long count = castLong.execute(getItemNode.execute(state.getSequenceStorage(), 0));
+            long actualCount = self.getCount();
+            while (count > actualCount) {
+                self.acquireBlocking(this); // we already own it at this point
+                actualCount++;
+            }
+            while (count < actualCount) {
+                self.release();
+                actualCount--;
             }
             return PNone.NONE;
         }
@@ -91,7 +114,7 @@ public class RLockBuiltins extends PythonBuiltins {
     abstract static class ReleaseSaveRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object releaseSave(PRLock self,
-                        @Cached("createBinaryProfile()") ConditionProfile countProfile) {
+                        @Cached ConditionProfile countProfile) {
             int count = self.getCount();
             if (countProfile.profile(count == 0)) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);

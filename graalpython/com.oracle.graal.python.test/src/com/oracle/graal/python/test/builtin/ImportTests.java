@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,20 +25,15 @@
  */
 package com.oracle.graal.python.test.builtin;
 
-import java.nio.file.*;
+import static com.oracle.graal.python.test.PythonTests.assertPrintContains;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import com.oracle.graal.python.test.PythonTests;
-
-import static com.oracle.graal.python.test.PythonTests.*;
+import org.junit.Test;
 
 public class ImportTests {
-    @Before
-    public void setup() {
-        PythonTests.enterContext();
-    }
-
     @Test
     public void relativeImportTest() {
         Path script = Paths.get("relative_import.py");
@@ -72,5 +67,12 @@ public class ImportTests {
         String source = "import __future__\n" + //
                         "print(__future__.__file__)\n";
         assertPrintContains("__future__.py\n", source);
+    }
+
+    @Test
+    public void testFromImport() {
+        String souce = "from math import sqrt, sin as sine\n" +
+                        "print(sqrt.__name__, sine.__name__)\n";
+        assertPrints("sqrt sin\n", souce);
     }
 }

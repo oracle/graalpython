@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ public class ForComprehensionSSTNode extends SSTNode {
     protected final SSTNode[] variables;
     protected final SSTNode iterator;
     protected final SSTNode[] conditions;
+    protected final ForComprehensionSSTNode innerFor;
     protected final PythonBuiltinClassType resultType;
     protected final ScopeInfo scope;
     protected final int line;
@@ -59,7 +60,8 @@ public class ForComprehensionSSTNode extends SSTNode {
      */
     protected final int level;
 
-    public ForComprehensionSSTNode(ScopeInfo scope, boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType,
+    public ForComprehensionSSTNode(ScopeInfo scope, boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, ForComprehensionSSTNode innerFor,
+                    PythonBuiltinClassType resultType,
                     int line, int level, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.async = async;
@@ -68,6 +70,7 @@ public class ForComprehensionSSTNode extends SSTNode {
         this.variables = variables;
         this.iterator = iterator;
         this.conditions = conditions;
+        this.innerFor = innerFor;
         this.resultType = resultType;
         this.scope = scope;
         this.line = line;

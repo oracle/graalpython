@@ -1,0 +1,5 @@
+Module[0, 16]
+    ClassDef[0, 16] foo
+        ---- Class body of foo ----
+        Pass[12, 16]
+        ---- End of foo class ----

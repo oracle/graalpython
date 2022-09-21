@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,29 +40,71 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.ReferenceQueue;
+import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-class BufferReference extends PhantomReference<PMemoryView> {
-    private final ManagedBuffer managedBuffer;
-    private boolean released;
+abstract class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-    public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, ReferenceQueue<PMemoryView> q) {
-        super(referent, q);
-        assert managedBuffer != null;
-        managedBuffer.incrementExports();
-        this.managedBuffer = managedBuffer;
+    public BufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, bufferLifecycleManager, sharedFinalizer);
+        assert bufferLifecycleManager != null;
+        bufferLifecycleManager.incrementExports();
     }
 
-    public ManagedBuffer getManagedBuffer() {
-        return managedBuffer;
+    public BufferLifecycleManager getLifecycleManager() {
+        return (BufferLifecycleManager) getReference();
     }
 
-    public boolean isReleased() {
-        return released;
+    protected abstract AsyncHandler.AsyncAction callback();
+
+    @Override
+    public AsyncHandler.AsyncAction release() {
+        BufferLifecycleManager buffer = getLifecycleManager();
+        if (buffer.decrementExports() == 0) {
+            return callback();
+        }
+        return null;
     }
 
-    public void markReleased() {
-        this.released = true;
+    @TruffleBoundary
+    public static BufferReference createNativeBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, PythonContext context) {
+        return new NativeBufferReference(referent, bufferLifecycleManager, context.getSharedFinalizer());
+    }
+
+    @TruffleBoundary
+    public static BufferReference createSimpleBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, PythonContext context) {
+        return new SimpleBufferReference(referent, bufferLifecycleManager, context.getSharedFinalizer());
+    }
+
+    public static BufferReference createBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, PythonContext context) {
+        if (bufferLifecycleManager instanceof NativeBufferLifecycleManager) {
+            return createNativeBufferReference(referent, bufferLifecycleManager, context);
+        }
+        return createSimpleBufferReference(referent, bufferLifecycleManager, context);
+    }
+}
+
+final class NativeBufferReference extends BufferReference {
+
+    public NativeBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, bufferLifecycleManager, sharedFinalizer);
+    }
+
+    @Override
+    protected AsyncHandler.AsyncAction callback() {
+        return new MemoryViewBuiltins.NativeBufferReleaseCallback(this);
+    }
+}
+
+final class SimpleBufferReference extends BufferReference {
+
+    public SimpleBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, bufferLifecycleManager, sharedFinalizer);
+    }
+
+    @Override
+    protected AsyncHandler.AsyncAction callback() {
+        return null;
     }
 }

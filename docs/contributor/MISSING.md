@@ -1,7 +1,6 @@
 # (Largely) Missing Core Modules
 
-This is just a snapshot as of:
-Thu 2020-03-19 -  5:19 PM
+This is just a snapshot as of 2021-07-29.
 
 ### Builtin modules from sys.builtin_module_names that we don't have built-in or care shared object modules
 
@@ -15,10 +14,8 @@ Thu 2020-03-19 -  5:19 PM
  * **_sqlite3**:  Either use from C, or use a Java API.
  * **_tkinter**: Should be used from C
  * **audioop**:  Should be useable from C
- * **grp**:  UNIX group file access. We need to use this from the C module.
  * **nis**:  We should just use the C module
- * **spwd**:  UNIX shadow password file access. We need to use this from the C module.
- * **syslog**:  Access to syslog. We should probable just use this from the C module.
+ * **syslog**:  Access to syslog. We should probably just use this from the C module.
  * **termios**:  Posix terminal module IO. Use from C
 
 #### These are not strictly needed for now
@@ -30,12 +27,7 @@ Thu 2020-03-19 -  5:19 PM
  * **_elementtree**: Just a performance optimization, not necessary.
  * **_hashlib**:  Just for performance
  * **_heapq**: Just a performance optimization, not necessary.
- * **_json**:  Just for performance
- * **_pickle**:  Just a performance optimization, not necessary.
- * **_queue**:  Just for performance, not needed
- * **_queue**: Just an optimization, we stubbed it out
  * **_stat**:  Just a performance optimization, not necessary.
- * **_warnings**:  Warnings filtering, not strictly needed.
 
 #### These we probably won't support
  * **_opcode**:  We won't have it
@@ -44,62 +36,30 @@ Thu 2020-03-19 -  5:19 PM
 
 #### These we should re-implement
  * **_codecs_cn, _codecs_hk, _codecs_iso2022, _codecs_jp, _codecs_kr, _codecs_tw, _multibytecodec**:  We can just use our own codecs
- * **_crypt**:  We can just implement this in Java, it's a single function
- * **_ctypes, _ctypes_test**:  We might be able to use these directly, but reimplement would be faster
- * **_lsprof**:  We'll probably just want to replace this with the Truffle profiler
- * **_ssl**:  To use this from C, we have to use the socketmodule from C also
  * **_string**: Empty right now, but its only two methods that we can re-implement
  * **_tracemalloc**:  Memory allocation tracing, we should substitute with the Truffle instrument.
  * **_uuid**: Can be implemented ourselves, is just 1 function
- * **cmath**:  Complex math module. We should implement this in Java, I think.
  * **faulthandler**: Needs to deal with Java stacks
- * **fcntl**: Should use the TruffleFile APIs
+ * **fcntl**: Should be added to our POSIX APIs
+ * **grp**:  UNIX group file access. Should be added to our POSIX APIs
+ * **spwd**:  UNIX shadow password file access. Should be added to our POSIX APIs
  * **parser**:  We need to implement this for our parser
- * **select**: Needs to work with TruffleFile and future Truffle socket abstractions
 
 ### Incompleteness on our part:
- * **_ast**: Used in various places, including the help system. Would be nice to support, ours is an empty shell
- * **_contextvars**: Very incomplete
- * **_multiprocessing**:  We need to implement this with the Context API
- * **_signal**: Needs a Truffle API for Signal handling, until then this is the bare minimum
- * **_socket**: We map to Java sockets, but not much else.
- * **array**: This just exposes the array type. Missing some methods and major optimizations.
+ * **_contextvars**: Work in progress
+ * **_signal**: Work in progress
  * **mmap**:  We use this as a mixture from the C module, Python, and Java code. Needs major optimizations.
- * **posix**: Missing quite a bit of functionality that isn't easy to expose with Truffle API
  * **resource**:  This is about resources, there should be Truffle APIs for this (there are issues open)
- * **thread**: The module is incomplete, and we don't have proper multi-threading in our impl, yet
  * **unicodedata**: A bit incomplete, but not difficult. Maybe should use a Java ICU library
 
 ### Basically complete or easy to make so
- * **_bz2**:  We're already using this from C
- * **_collections**
- * **_imp**
- * **_io**: We have built the bare minimum and are using _pyio mostly, which has everything we need
- * **_md5**:  We use the Python impl from PyPy
- * **_posixsubprocess**
+ * **_md5**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **_random**
- * **_sha1**:  We use the Python impl from PyPy
- * **_sha256**:  We use the Python impl from PyPy
- * **_sha512**:  We use the Python impl from PyPy
- * **_sre**: We use TRegex with fallback to the CPython module for special features
- * **_struct**:  We already use this from the C module.
- * **_weakref**
- * **atexit**
- * **binascii**: Just missing a methods
- * **builtins**: Missing very few functions
- * **codecs**
- * **errno**
- * **functools**: Missing a few functions, we mostly implemented it in Python
- * **gc**
- * **itertools**: We mostly just implement all this in Python (a lot is taken from PyPy)
+ * **_sha1**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
+ * **_sha256**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
+ * **_sha512**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
+ * **binascii**: Just missing a few methods
+ * **functools**: Missing a few functions, we mostly implemented it in Python, but should intrinsify the module in Java for better performance
+ * **itertools**: We mostly just implement all this in Python (a lot is taken from PyPy), but should intrinsify the module in Java for better performance
  * **locale**: Partially Truffle APIs, should probably use more to play nice for embedders
- * **marshal**
- * **math**
- * **operator**
- * **pwd**
- * **pyexpat**: We've re-implemented this in Java. If too incompatible, we should just switch to the C code.
  * **readline**: We re-implemented this in terms of JLine used in our launcher
- * **sys**
- * **time**: Missing a few methods, but nothing hard
- * **zipimport**: We have reimplemented this, but Python 3.8 is moving to a pure-Python impl that we can use
- * **zlib**

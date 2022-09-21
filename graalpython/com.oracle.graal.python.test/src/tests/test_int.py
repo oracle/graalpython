@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -639,7 +639,7 @@ class ToBytesTests(unittest.TestCase):
                     .format(test, byteorder, signed)) from err
 
 
-    def test_SignedBitEndian(self):
+    def test_SignedBigEndian(self):
         # Convert integers to signed big-endian byte arrays.
         tests1 = {
             0: b'\x00',
@@ -699,7 +699,7 @@ class ToBytesTests(unittest.TestCase):
             32767: b'\x7f\xff',
             32768: b'\x80\x00',
             65535: b'\xff\xff',
-            65536: b'\x01\x00\x00'
+            65536: b'\x01\x00\x00',
         }
         self.check(tests3, 'big', signed=False)
         self.checkPIntSpec(tests3, 'big', signed=False)
@@ -736,6 +736,8 @@ class ToBytesTests(unittest.TestCase):
         self.assertRaises(OverflowError, (-1).to_bytes, 2, 'big', signed=False)
         self.assertRaises(OverflowError, (-1).to_bytes, 2, 'little', signed=False)
         self.assertRaises(OverflowError, (1).to_bytes, 0, 'big')
+        self.assertRaises(OverflowError, (4294967296).to_bytes, 4, 'big')
+        self.assertRaises(OverflowError, (4294967296).to_bytes, 4, 'little')
 
     def test_WrongTypes(self):
         class MyTest():

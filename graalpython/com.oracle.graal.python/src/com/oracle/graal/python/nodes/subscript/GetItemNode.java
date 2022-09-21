@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,16 +25,17 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CLASS_GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -52,13 +53,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
-@NodeInfo(shortName = __GETITEM__)
+@NodeInfo(shortName = J___GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
-    private static final String P_OBJECT_IS_NOT_SUBSCRIPTABLE = "'%p' object is not subscriptable";
-
     public ExpressionNode getPrimary() {
         return getLeftNode();
     }
@@ -85,39 +83,44 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return GetItemNodeGen.create(primary, slice);
     }
 
+    protected LookupAndCallBinaryNode createLookupAndCallGetItemNode() {
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.GetItem);
+    }
+
     @Override
     public StatementNode makeWriteNode(ExpressionNode rhs) {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
-    @Specialization(guards = {"lib.canBeIndex(index) || isPSlice(index)", "isBuiltinList.profileIsAnyBuiltinObject(primary)"})
+    @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinList.profileIsAnyBuiltinObject(primary)"}, limit = "1")
     Object doBuiltinList(VirtualFrame frame, PList primary, Object index,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached("createGetItemNodeForList()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
         return getItemNode.execute(frame, primary.getSequenceStorage(), index);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!lib.canBeIndex(index)", "!isPSlice(index)"})
+    @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
     public Object doListError(VirtualFrame frame, PList primary, Object index,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Cached("createLookupAndCallGetItemNode()") LookupAndCallBinaryNode lookupAndCallGetItem,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
+        return lookupAndCallGetItem.executeObject(frame, primary, index);
     }
 
-    @Specialization(guards = {"lib.canBeIndex(index) || isPSlice(index)", "isBuiltinTuple.profileIsAnyBuiltinObject(primary)"})
+    @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinTuple.profileIsAnyBuiltinObject(primary)"}, limit = "1")
     Object doBuiltinTuple(VirtualFrame frame, PTuple primary, Object index,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached("createGetItemNodeForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinTuple) {
         return getItemNode.execute(frame, primary.getSequenceStorage(), index);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!lib.canBeIndex(index)", "!isPSlice(index)"})
+    @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
     public Object doTupleError(VirtualFrame frame, PTuple primary, Object index,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", index);
     }
@@ -129,7 +132,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     }
 
     public static LookupAndCallBinaryNode createGetItemLookupAndCall() {
-        return LookupAndCallBinaryNode.create(__GETITEM__, null, GetItemNodeNotImplementedHandler::new);
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.GetItem, GetItemNodeNotImplementedHandler::new);
     }
 
     private static final class GetItemNodeNotImplementedHandler extends NotImplementedHandler {
@@ -143,7 +146,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
             if (PGuards.isPythonClass(arg)) {
                 if (getClassGetItemNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
+                    getClassGetItemNode = insert(GetAttributeNode.create(T___CLASS_GETITEM__));
                     isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
                 }
                 Object classGetItem = null;
@@ -165,7 +168,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
-            throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, arg);
         }
     }
 }

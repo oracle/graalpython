@@ -9,8 +9,15 @@
     Description: none
 -->
 <module name="Checker">
+  <module name="LineLength">
+    <property name="max" value="300"/>
+  </module>
   <property name="severity" value="error"/>
   <module name="TreeWalker">
+    <module name="IllegalType">
+      <property name="illegalClassNames" value="TruffleObject"/>
+      <property name="tokens" value="VARIABLE_DEF,METHOD_DEF,PARAMETER_DEF"/>
+    </module>
     <module name="AvoidStarImport">
       <property name="allowClassImports" value="true"/>
       <property name="allowStaticMemberImports" value="true"/>
@@ -35,9 +42,6 @@
     </module>
     <module name="RedundantImport"/>
     <module name="UnusedImports"/>
-    <module name="LineLength">
-      <property name="max" value="300"/>
-    </module>
     <module name="MethodParamPad"/>
     <module name="NoWhitespaceAfter">
       <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS"/>

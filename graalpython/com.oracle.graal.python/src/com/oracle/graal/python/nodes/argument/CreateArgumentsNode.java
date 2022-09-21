@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,18 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.joinUncached;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SELF;
+import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -54,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -67,10 +73,12 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefault
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeMRONode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -84,12 +92,13 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
@@ -102,7 +111,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return CreateArgumentsNodeGen.getUncached();
     }
 
-    @Specialization(guards = {"isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
     Object[] doMethodCached(@SuppressWarnings("unused") PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached GetSignatureNode getSignatureNode,
@@ -119,8 +128,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(cachedMethod, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
 
-    @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction",
-                    "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "isMethod(method)", "getFunction(method) == cachedFunction",
+                    "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached")
     Object[] doMethodFunctionAndSelfCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction,
@@ -137,13 +146,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
     }
 
-    @Specialization(guards = {"isMethod(method)",
-                    "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "isMethod(method)",
+                    "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
     Object[] doMethodFunctionCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("create()") GetSignatureNode getSignatureNode,
-                    @Cached("create()") GetDefaultsNode getDefaultsNode,
-                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached GetSignatureNode getSignatureNode,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
@@ -155,12 +164,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
 
-    @Specialization(guards = {"isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
     Object[] doFunctionCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("create()") GetSignatureNode getSignatureNode,
-                    @Cached("create()") GetDefaultsNode getDefaultsNode,
-                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached GetSignatureNode getSignatureNode,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PythonObject cachedCallable) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
@@ -171,9 +180,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
-    @Specialization(guards = {"getCallTarget(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
+    @Specialization(guards = {"getCt.execute(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
                     "doFunctionCached"})
     Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
                     @Cached("getSignatureNode.execute(callable)") Signature signature, // signatures
@@ -184,7 +194,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached ConditionProfile gotMethod,
                     @Cached GetDefaultsNode getDefaultsNode,
                     @Cached GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("getCallTarget(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
+                    @Cached("getCt.execute(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
         Object[] defaults = getDefaultsNode.execute(callable);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
         Object self = null;
@@ -196,7 +206,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached", "doCallTargetCached"})
     Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode) {
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode) {
 
         // mostly we will be calling proper functions directly here,
         // but sometimes also methods that have functions directly.
@@ -212,7 +222,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    protected abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
+    public abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
         public static CreateAndCheckArgumentsNode create() {
             return CreateAndCheckArgumentsNodeGen.create();
         }
@@ -375,11 +385,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
                         int adjustCount);
 
-        @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount"})
+        @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount", "cachedKwOnlyArgCount <= 32"})
         @ExplodeLoop
-        PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
+        static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
             int kwonly_given = 0;
             for (int i = 0; i < cachedKwOnlyArgCount; i++) {
@@ -387,29 +398,32 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     kwonly_given += 1;
                 }
             }
-            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            throw raiseTooManyArguments(callable, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
+            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !equalNode.execute(signature.getParameterIds()[0], T_SELF, TS_ENCODING));
+            TruffleString name = signature.getRaiseErrorName().isEmpty() ? getName(callable) : signature.getRaiseErrorName();
+            throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
         @Specialization(replaces = "doCached")
-        PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
-                        @Cached PRaiseNode raise) {
+        static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
+                        @Cached PRaiseNode raise,
+                        @Cached TruffleString.EqualNode equalNode) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {
                 if (PArguments.getArgument(scope_w, co_argcount + i) != null) {
                     kwonly_given += 1;
                 }
             }
-            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            throw raiseTooManyArguments(callable, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
+            boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !equalNode.execute(signature.getParameterIds()[0], T_SELF, TS_ENCODING));
+            TruffleString name = signature.getRaiseErrorName().isEmpty() ? getName(callable) : signature.getRaiseErrorName();
+            throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
-        private static PException raiseTooManyArguments(Object callable, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
+        private static PException raiseTooManyArguments(TruffleString name, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
             String forgotSelfMsg = forgotSelf ? ". Did you forget 'self' in the function definition?" : "";
             if (ndefaults > 0) {
                 if (kwonly_given == 0) {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount - ndefaults,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
@@ -418,7 +432,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     forgotSelfMsg);
                 } else {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount - ndefaults,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
@@ -431,7 +445,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             } else {
                 if (kwonly_given == 0) {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_GIVEN_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount - ndefaults,
                                     co_argcount == 1 ? "" : "s",
                                     avail,
@@ -439,7 +453,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     forgotSelfMsg);
                 } else {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
                                     avail,
@@ -466,15 +480,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         public abstract void execute(Signature signature, Object callable, Object[] scope_w);
 
-        @Specialization(guards = "checkEnclosingType(signature, callable)", limit = "getVariableArgumentInlineCacheLimit()")
+        @Specialization(guards = "checkEnclosingType(signature, callable)")
         static void doEnclosingTypeCheck(@SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] scope_w,
                         @Bind("getSelf(scope_w)") Object self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached IsSubtypeMRONode isSubtypeMRONode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeMRONode,
                         @Cached PRaiseNode raiseNode) {
-            if (!isSubtypeMRONode.execute(lib.getLazyPythonClass(self), callable.getEnclosingType())) {
+            if (!isSubtypeMRONode.execute(getClassNode.execute(self), callable.getEnclosingType())) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "descriptor '%s' for '%p' objects doesn't apply to a '%p' object",
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCR_S_FOR_P_OBJ_DOESNT_APPLY_TO_P,
                                 callable.getName(), callable.getEnclosingType(), self);
             }
         }
@@ -541,29 +555,29 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return PArguments.getUserArgumentLength(arguments);
         }
 
-        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature"})
+        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"})
         @ExplodeLoop
         Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Cached PRaiseNode raise,
                         @Cached("keywords.length") int kwLen,
                         @SuppressWarnings("unused") @Cached("calleeSignature") Signature cachedSignature,
                         @Cached("cachedSignature.takesVarKeywordArgs()") boolean takesVarKwds,
-                        @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) String[] parameters,
+                        @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) TruffleString[] parameters,
                         @Cached("parameters.length") int positionalParamNum,
-                        @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) String[] kwNames,
+                        @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) TruffleString[] kwNames,
                         @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
-            PKeyword[] unusedKeywords = takesVarKwds ? new PKeyword[kwLen] : null;
+            PKeyword[] unusedKeywords = takesVarKwds ? PKeyword.create(kwLen) : null;
             // same as below
             int k = 0;
             int additionalKwds = 0;
-            String lastWrongKeyword = null;
+            TruffleString lastWrongKeyword = null;
             int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
-            List<String> posArgOnlyPassedAsKeywordNames = null;
+            List<TruffleString> posArgOnlyPassedAsKeywordNames = null;
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
-                String name = kwArg.getName();
+                TruffleString name = kwArg.getName();
                 int kwIdx = searchParamNode.execute(parameters, name);
                 if (kwIdx == -1) {
                     int kwOnlyIdx = searchKwNode.execute(kwNames, name);
@@ -603,20 +617,20 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
-            String[] parameters = calleeSignature.getParameterIds();
+            TruffleString[] parameters = calleeSignature.getParameterIds();
             int positionalParamNum = parameters.length;
-            String[] kwNames = calleeSignature.getKeywordNames();
+            TruffleString[] kwNames = calleeSignature.getKeywordNames();
             int kwLen = keywords.length;
-            PKeyword[] unusedKeywords = calleeSignature.takesVarKeywordArgs() ? new PKeyword[kwLen] : null;
+            PKeyword[] unusedKeywords = calleeSignature.takesVarKeywordArgs() ? PKeyword.create(kwLen) : null;
             // same as above
             int k = 0;
             int additionalKwds = 0;
-            String lastWrongKeyword = null;
+            TruffleString lastWrongKeyword = null;
             int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
-            List<String> posArgOnlyPassedAsKeywordNames = null;
+            List<TruffleString> posArgOnlyPassedAsKeywordNames = null;
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
-                String name = kwArg.getName();
+                TruffleString name = kwArg.getName();
                 int kwIdx = searchParamNode.execute(parameters, name);
                 if (kwIdx == -1) {
                     int kwOnlyIdx = searchKwNode.execute(kwNames, name);
@@ -651,9 +665,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @TruffleBoundary
-        private static List<String> addPosArgOnlyPassedAsKeyword(List<String> names, String name) {
+        private static List<TruffleString> addPosArgOnlyPassedAsKeyword(List<TruffleString> names, TruffleString name) {
             if (names == null) {
-                List<String> newList = new ArrayList<>();
+                List<TruffleString> newList = new ArrayList<>();
                 newList.add(name);
                 return newList;
             }
@@ -661,37 +675,33 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return names;
         }
 
-        private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword,
-                        List<String> posArgOnlyPassedAsKeywordNames, BranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise) {
+        private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, TruffleString lastWrongKeyword,
+                        List<TruffleString> posArgOnlyPassedAsKeywordNames, BranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), tooManyKeywords);
             } else if (posArgOnlyPassedAsKeywordNames != null) {
                 posArgOnlyPassedAsKeywordProfile.enter();
-                String names = joinNames(posArgOnlyPassedAsKeywordNames);
+                TruffleString names = joinUncached(T_COMMA_SPACE, posArgOnlyPassedAsKeywordNames);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), names);
             } else if (unusedKeywords != null) {
                 PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
             }
         }
 
-        @TruffleBoundary
-        private static String joinNames(List<String> names) {
-            return String.join(", ", names);
-        }
-
         @GenerateUncached
         protected abstract static class SearchNamedParameterNode extends Node {
-            public abstract int execute(String[] parameters, String name);
+            public abstract int execute(TruffleString[] parameters, TruffleString name);
 
-            @Specialization(guards = "cachedLen == parameters.length")
+            @Specialization(guards = {"cachedLen == parameters.length", "cachedLen <= 32"})
             @ExplodeLoop
-            int cached(String[] parameters, String name,
-                            @Cached("parameters.length") int cachedLen) {
+            int cached(TruffleString[] parameters, TruffleString name,
+                            @Cached("parameters.length") int cachedLen,
+                            @Cached TruffleString.EqualNode equalNode) {
                 int idx = -1;
                 for (int i = 0; i < cachedLen; i++) {
-                    if (parameters[i].equals(name)) {
+                    if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
                         idx = i;
                     }
                 }
@@ -699,9 +709,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
 
             @Specialization(replaces = "cached")
-            int uncached(String[] parameters, String name) {
+            int uncached(TruffleString[] parameters, TruffleString name,
+                            @Cached TruffleString.EqualNode equalNode) {
                 for (int i = 0; i < parameters.length; i++) {
-                    if (parameters[i].equals(name)) {
+                    if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
                         return i;
                     }
                 }
@@ -720,7 +731,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     protected abstract static class FillBaseNode extends PNodeWithContext {
 
-        protected PException raiseMissing(Object callable, String[] missingNames, int missingCnt, String type, PRaiseNode raise) {
+        protected PException raiseMissing(Object callable, TruffleString[] missingNames, int missingCnt, TruffleString type, PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_S,
                             getName(callable),
                             missingCnt,
@@ -731,8 +742,21 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @TruffleBoundary
-        private static String joinArgNames(String[] missingNames, int missingCnt) {
-            return String.join("', '", Arrays.copyOf(missingNames, missingCnt - 1)) + (missingCnt == 2 ? "' and '" : "', and '") + missingNames[missingCnt - 1];
+        private static TruffleString joinArgNames(TruffleString[] missingNames, int missingCnt) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            sb.appendStringUncached(missingNames[0]);
+            if (missingCnt == 2) {
+                sb.appendStringUncached(toTruffleStringUncached("' and '"));
+            } else {
+                TruffleString delim = toTruffleStringUncached("', '");
+                for (int i = 1; i < missingCnt - 1; ++i) {
+                    sb.appendStringUncached(delim);
+                    sb.appendStringUncached(missingNames[i]);
+                }
+                sb.appendStringUncached(toTruffleStringUncached("', and '"));
+            }
+            sb.appendStringUncached(missingNames[missingCnt - 1]);
+            return sb.toStringUncached();
         }
 
         protected static boolean checkIterations(int input_argcount, int co_argcount) {
@@ -751,8 +775,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached PRaiseNode raise,
                         @Cached("input_argcount") int cachedInputArgcount,
                         @Cached("co_argcount") int cachedArgcount,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
-            String[] missingNames = new String[cachedArgcount - cachedInputArgcount];
+                        @Cached ConditionProfile missingProfile) {
+            TruffleString[] missingNames = new TruffleString[cachedArgcount - cachedInputArgcount];
             int firstDefaultArgIdx = cachedArgcount - defaults.length;
             int missingCnt = 0;
             for (int i = cachedInputArgcount; i < cachedArgcount; i++) {
@@ -767,15 +791,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, "positional", raise);
+                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
 
         @Specialization(replaces = "doCached")
         void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
                         @Cached PRaiseNode raise,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
-            String[] missingNames = new String[co_argcount - input_argcount];
+                        @Cached ConditionProfile missingProfile) {
+            TruffleString[] missingNames = new TruffleString[co_argcount - input_argcount];
             int firstDefaultArgIdx = co_argcount - defaults.length;
             int missingCnt = 0;
             for (int i = input_argcount; i < co_argcount; i++) {
@@ -790,7 +814,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, "positional", raise);
+                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
 
@@ -814,15 +838,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
-            String[] missingNames = new String[cachedKwOnlyArgcount];
+                        @Cached ConditionProfile missingProfile) {
+            TruffleString[] missingNames = new TruffleString[cachedKwOnlyArgcount];
             int missingCnt = 0;
             for (int i = cachedArgcount; i < cachedArgcount + cachedKwOnlyArgcount; i++) {
                 if (PArguments.getArgument(scope_w, i) != null) {
                     continue;
                 }
 
-                String kwname = signature.getKeywordNames()[i - cachedArgcount];
+                TruffleString kwname = signature.getKeywordNames()[i - cachedArgcount];
                 PKeyword kwdefault = findKwDefaultNode.execute(kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
@@ -831,7 +855,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, "keyword-only", raise);
+                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
 
@@ -839,15 +863,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
                         @Cached PRaiseNode raise,
                         @Cached FindKwDefaultNode findKwDefaultNode,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
-            String[] missingNames = new String[co_kwonlyargcount];
+                        @Cached ConditionProfile missingProfile) {
+            TruffleString[] missingNames = new TruffleString[co_kwonlyargcount];
             int missingCnt = 0;
             for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
                 if (PArguments.getArgument(scope_w, i) != null) {
                     continue;
                 }
 
-                String kwname = signature.getKeywordNames()[i - co_argcount];
+                TruffleString kwname = signature.getKeywordNames()[i - co_argcount];
                 PKeyword kwdefault = findKwDefaultNode.execute(kwdefaults, kwname);
                 if (kwdefault != null) {
                     PArguments.setArgument(scope_w, i, kwdefault.getValue());
@@ -856,7 +880,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, "keyword-only", raise);
+                throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
 
@@ -873,14 +897,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateUncached
     protected abstract static class FindKwDefaultNode extends Node {
 
-        public abstract PKeyword execute(PKeyword[] kwdefaults, String kwname);
+        public abstract PKeyword execute(PKeyword[] kwdefaults, TruffleString kwname);
 
-        @Specialization(guards = {"kwdefaults.length == cachedLength", "kwdefaults.length < 32"})
+        @Specialization(guards = {"kwdefaults.length == cachedLength", "cachedLength < 32"})
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        PKeyword doCached(PKeyword[] kwdefaults, String kwname,
-                        @Cached("kwdefaults.length") int cachedLength) {
+        PKeyword doCached(PKeyword[] kwdefaults, TruffleString kwname,
+                        @Cached("kwdefaults.length") int cachedLength,
+                        @Cached TruffleString.EqualNode equalNode) {
             for (int j = 0; j < cachedLength; j++) {
-                if (kwdefaults[j].getName().equals(kwname)) {
+                if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];
                 }
             }
@@ -888,9 +913,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        PKeyword doUncached(PKeyword[] kwdefaults, String kwname) {
+        PKeyword doUncached(PKeyword[] kwdefaults, TruffleString kwname,
+                        @Cached TruffleString.EqualNode equalNode) {
             for (int j = 0; j < kwdefaults.length; j++) {
-                if (kwdefaults[j].getName().equals(kwname)) {
+                if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];
                 }
             }
@@ -918,7 +944,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return getProperty(callable, UncachedKwDefaultsGetter.INSTANCE);
     }
 
-    protected static String getName(Object callable) {
+    protected static TruffleString getName(Object callable) {
+        if (callable instanceof PCode) {
+            return ((PCode) callable).getName();
+        }
         return getProperty(callable, NameGetter.INSTANCE);
     }
 
@@ -940,24 +969,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return null;
     }
 
-    protected static RootCallTarget getCallTarget(Object callable) {
-        if (callable instanceof PBuiltinMethod) {
-            return ((PBuiltinMethod) callable).getFunction().getCallTarget();
-        } else if (callable instanceof PMethod) {
-            Object function = ((PMethod) callable).getFunction();
-            if (function instanceof PBuiltinFunction) {
-                return ((PBuiltinFunction) function).getCallTarget();
-            } else if (function instanceof PFunction) {
-                return ((PFunction) function).getCallTarget();
-            }
-        } else if (callable instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) callable).getCallTarget();
-        } else if (callable instanceof PFunction) {
-            return ((PFunction) callable).getCallTarget();
-        }
-        return null;
-    }
-
     protected static boolean isMethodCall(Object self) {
         return !(self instanceof PythonModule);
     }
@@ -968,12 +979,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         } else if (callable instanceof PBuiltinFunction) {
             return getter.fromPBuiltinFunction((PBuiltinFunction) callable);
         } else if (callable instanceof PBuiltinMethod) {
-            Object function = ((PBuiltinMethod) callable).getFunction();
-            if (function instanceof PBuiltinFunction) {
-                return getter.fromPBuiltinFunction((PBuiltinFunction) function);
-            } else if (function instanceof PFunction) {
-                return getter.fromPFunction((PFunction) function);
-            }
+            PBuiltinFunction function = ((PBuiltinMethod) callable).getFunction();
+            return getter.fromPBuiltinFunction(function);
         } else if (callable instanceof PMethod) {
             Object function = ((PMethod) callable).getFunction();
             if (function instanceof PBuiltinFunction) {
@@ -997,7 +1004,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Override
         public Signature fromPFunction(PFunction fun) {
-            return fun.getCode().getSignature();
+            return GetSignatureNode.getUncached().execute(fun);
         }
 
         @Override
@@ -1034,16 +1041,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
-    private static final class NameGetter extends Getter<String> {
+    private static final class NameGetter extends Getter<TruffleString> {
         private static final NameGetter INSTANCE = new NameGetter();
 
         @Override
-        public String fromPFunction(PFunction fun) {
+        public TruffleString fromPFunction(PFunction fun) {
             return fun.getName();
         }
 
         @Override
-        public String fromPBuiltinFunction(PBuiltinFunction fun) {
+        public TruffleString fromPBuiltinFunction(PBuiltinFunction fun) {
             return fun.getName();
         }
     }

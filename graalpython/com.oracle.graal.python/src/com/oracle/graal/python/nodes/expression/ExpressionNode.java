@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Base class for all expressions. Expressions always return a value.
@@ -233,5 +234,33 @@ public abstract class ExpressionNode extends PNode {
 
     public final ExpressionNode withSideEffect(StatementNode[] sideEffects) {
         return new ExpressionWithSideEffects(this, sideEffects);
+    }
+
+    public static ExpressionNode createComparisonOperation(TruffleString operator, ExpressionNode left, ExpressionNode right) {
+        switch (operator.toJavaStringUncached()) {
+            case "<":
+                return BinaryComparisonNodeFactory.LtNodeGen.create(left, right);
+            case ">":
+                return BinaryComparisonNodeFactory.GtNodeGen.create(left, right);
+            case "==":
+                return BinaryComparisonNodeFactory.EqNodeGen.create(left, right);
+            case ">=":
+                return BinaryComparisonNodeFactory.GeNodeGen.create(left, right);
+            case "<=":
+                return BinaryComparisonNodeFactory.LeNodeGen.create(left, right);
+            case "<>":
+            case "!=":
+                return BinaryComparisonNodeFactory.NeNodeGen.create(left, right);
+            case "in":
+                return ContainsNode.create(left, right);
+            case "notin":
+                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(left, right));
+            case "is":
+                return IsExpressionNode.create(left, right);
+            case "isnot":
+                return CoerceToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
+            default:
+                throw new RuntimeException("unexpected operation: " + operator);
+        }
     }
 }

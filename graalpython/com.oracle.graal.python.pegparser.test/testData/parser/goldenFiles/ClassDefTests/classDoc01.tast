@@ -1,0 +1,11 @@
+Module[0, 76]
+    ClassDef[0, 76] Test
+        ---- Class body of Test ----
+        RAW[18, 33] Value: "Class doc"
+        FunctionDef[38, 76]
+            Name:method
+            ArgumentsTy[0, 0]
+            ---- Function body of method ----
+            RAW[60, 76] Value: "Method doc"
+            ---- End of method function ----
+        ---- End of Test class ----

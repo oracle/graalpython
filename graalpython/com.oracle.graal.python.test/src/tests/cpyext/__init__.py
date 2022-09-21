@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ from importlib import invalidate_caches
 from string import Formatter
 __dir__ = __file__.rpartition("/")[0]
 
-GRAALPYTHON = sys.implementation.name == "graalpython"
+GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
 def unhandled_error_compare(x, y):
@@ -91,7 +91,7 @@ def ccompile(self, name):
         for block in iter(lambda: f.read(4096),b""):
             m.update(block)
     cur_checksum = m.hexdigest()
-    
+
     # see if there is already a checksum file
     checksum_file = '%s/%s%s.sha256' % (__dir__, name, EXT_SUFFIX)
     available_checksum = ""
@@ -99,12 +99,12 @@ def ccompile(self, name):
         # read checksum file
         with open(checksum_file, "r") as f:
             available_checksum = f.readline()
-            
+
     # note, the suffix is already a string like '.so'
     binary_file_llvm = '%s/%s%s' % (__dir__, name, EXT_SUFFIX)
-    
+
     # Compare checksums and only re-compile if different.
-    # Note: It could be that the C source file's checksum didn't change but someone 
+    # Note: It could be that the C source file's checksum didn't change but someone
     # manually deleted the shared library file.
     if available_checksum != cur_checksum or not os.path.exists(binary_file_llvm):
         module = Extension(name, sources=[source_file])
@@ -118,7 +118,7 @@ def ccompile(self, name):
             description='',
             ext_modules=[module]
         )
-        
+
         # write new checksum
         with open(checksum_file, "w") as f:
             f.write(cur_checksum)
@@ -149,6 +149,12 @@ c_template = """
 #include <Python.h>
 {defines}
 
+#if !GRAALVM_PYTHON && (PY_VERSION_HEX < 0x03090000)
+#define Py_SET_REFCNT(ob, v) ((_PyObject_CAST(ob)->ob_refcnt = (v)))
+#define Py_SET_TYPE(ob, v)   ((_PyObject_CAST(ob)->ob_type) = (v))
+#define Py_SET_SIZE(ob, v)   ((_PyVarObject_CAST(ob)->ob_size = (Py_ssize_t) (v)))
+#endif
+
 {customcode}
 
 static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
@@ -160,7 +166,7 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
 
 #ifdef SINGLEARG
     {singleargumentname} = ___arg;
-#else 
+#else
 #ifndef NOARGS
     if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
         return NULL;
@@ -366,8 +372,9 @@ class CPyExtFunction():
         cargs = self.parameters()
         pargs = self.parameters()
         for i in range(len(cargs)):
-            real_stderr = sys.stderr
-            sys.stderr = StringIO()
+            if self.stderr_validator:
+                real_stderr = sys.stderr
+                sys.stderr = StringIO()
             try:
                 cresult = ctest(cargs[i])
             except BaseException as e:
@@ -377,7 +384,8 @@ class CPyExtFunction():
                     s = sys.stderr.getvalue()
                     assert self.stderr_validator(cargs[i], s), f"captured stderr didn't match expectations. Stderr: {s}"
             finally:
-                sys.stderr = real_stderr
+                if self.stderr_validator:
+                    sys.stderr = real_stderr
             try:
                 presult = self.pfunc(pargs[i])
             except BaseException as e:
@@ -464,6 +472,12 @@ def CPyExtType(name, code, **kwargs):
     template = """
     #include "Python.h"
 
+    #if !GRAALVM_PYTHON && (PY_VERSION_HEX < 0x03090000)
+    #define Py_SET_REFCNT(ob, v) ((_PyObject_CAST(ob)->ob_refcnt = (v)))
+    #define Py_SET_TYPE(ob, v)   ((_PyObject_CAST(ob)->ob_type) = (v))
+    #define Py_SET_SIZE(ob, v)   ((_PyVarObject_CAST(ob)->ob_size = (Py_ssize_t) (v)))
+    #endif
+
     {includes}
 
     typedef struct {{
@@ -514,6 +528,18 @@ def CPyExtType(name, code, **kwargs):
     """ if sys.version_info.minor >= 6 else "") + """
     }};
 
+    static PySequenceMethods {name}_sequence_methods = {{
+        {sq_length},        /* sq_length */
+        0,                  /* sq_concat */
+        0,                  /* sq_repeat */
+        {sq_item},          /* sq_item */
+    }};
+
+    static PyMappingMethods {name}_mapping_methods = {{
+        {mp_length},        /* mp_length */
+        {mp_subscript},     /* mp_subscript */
+    }};
+
     static struct PyMethodDef {name}_methods[] = {{
         {tp_methods},
         {{NULL, NULL, 0, NULL}}
@@ -531,8 +557,8 @@ def CPyExtType(name, code, **kwargs):
         0,                          /* tp_reserved */
         {tp_repr},
         &{name}_number_methods,
-        {tp_as_sequence},
-        {tp_as_mapping},
+        &{name}_sequence_methods,
+        &{name}_mapping_methods,
         {tp_hash},
         {tp_call},
         {tp_str},
@@ -572,16 +598,15 @@ def CPyExtType(name, code, **kwargs):
     PyMODINIT_FUNC
     PyInit_{name}(void)
     {{
-        PyObject* m;
+        PyObject* m = PyModule_Create(&{name}module);
+        if (m == NULL)
+            return NULL;
 
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
         {post_ready_code}
 
-        m = PyModule_Create(&{name}module);
-        if (m == NULL)
-            return NULL;
 
         Py_INCREF(&{name}Type);
         PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);

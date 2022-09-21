@@ -1,93 +1,335 @@
-/*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/* Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2021 Python Software Foundation
  *
- * The Universal Permissive License (UPL), Version 1.0
- *
- * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or
- * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
- *
- * (a) the Software, and
- *
- * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
- * is contributed by such licensors),
- *
- * without restriction, including without limitation the rights to copy, create
- * derivative works of, display, perform, and distribute the Software and make,
- * use, sell, offer for sale, import, export, have made, and have sold the
- * Software and the Larger Work(s), and to sublicense the foregoing rights on
- * either these or other terms.
- *
- * This license is subject to the following condition:
- *
- * The above copyright notice and either this complete permission notice or at a
- * minimum a reference to the UPL must be included in all copies or substantial
- * portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-#include "capi.h"
+/* Wrap void * pointers to be passed between C modules */
 
-PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
+#include "Python.h"
 
-typedef PyObject* (*capsule_new_fun_t)(void* name, void* pointer, PyCapsule_Destructor destructor);
+/* Internal structure of PyCapsule */
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
 
-UPCALL_ID(PyCapsule);
-PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return to_sulong(((capsule_new_fun_t)_jls_PyCapsule)(name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None), pointer, destructor));
+
+
+static int
+_is_legal_capsule(PyCapsule *capsule, const char *invalid_capsule)
+{
+    if (!capsule || !PyCapsule_CheckExact(capsule) || capsule->pointer == NULL) {
+        PyErr_SetString(PyExc_ValueError, invalid_capsule);
+        return 0;
+    }
+    return 1;
 }
 
-UPCALL_ID(PyCapsule_GetContext);
-void* PyCapsule_GetContext(PyObject *o) {
-    void* result = UPCALL_CEXT_PTR(_jls_PyCapsule_GetContext, native_to_java(o));
-    if (result == NULL) {
+#define is_legal_capsule(capsule, name) \
+    (_is_legal_capsule(capsule, \
+     name " called with invalid PyCapsule object"))
+
+
+static int
+name_matches(const char *name1, const char *name2) {
+    /* if either is NULL, */
+    if (!name1 || !name2) {
+        /* they're only the same if they're both NULL. */
+        return name1 == name2;
+    }
+    return !strcmp(name1, name2);
+}
+
+
+
+PyObject *
+PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor)
+{
+    PyCapsule *capsule;
+
+    if (!pointer) {
+        PyErr_SetString(PyExc_ValueError, "PyCapsule_New called with null pointer");
         return NULL;
     }
-    // the capsule really stored the Sulong pointer object; so no conversion necessary
-    return result;
-}
 
-UPCALL_ID(PyCapsule_SetContext);
-int PyCapsule_SetContext(PyObject *o, void *context) {
-    return UPCALL_CEXT_I(_jls_PyCapsule_SetContext, native_to_java(o), (uint64_t)context);
-}
-
-UPCALL_ID(PyCapsule_GetPointer);
-void* PyCapsule_GetPointer(PyObject *o, const char *name) {
-    void* result = UPCALL_CEXT_PTR(_jls_PyCapsule_GetPointer, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
-    if (result == NULL) {
-        return (void *)as_long(result);
+    capsule = PyObject_NEW(PyCapsule, &PyCapsule_Type);
+    if (capsule == NULL) {
+        return NULL;
     }
-    // the capsule really stored the Sulong pointer object; so no conversion necessary
-    return result;
+
+    capsule->pointer = pointer;
+    capsule->name = name;
+    capsule->context = NULL;
+    capsule->destructor = destructor;
+
+    return (PyObject *)capsule;
 }
 
-UPCALL_ID(PyCapsule_Import);
-void* PyCapsule_Import(const char *name, int no_block) {
-    // TODO (tfel): no_block is currently ignored
-    return (void*) UPCALL_CEXT_PTR(_jls_PyCapsule_Import, polyglot_from_string(name, SRC_CS), no_block);
+
+int
+PyCapsule_IsValid(PyObject *o, const char *name)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    return (capsule != NULL &&
+            PyCapsule_CheckExact(capsule) &&
+            capsule->pointer != NULL &&
+            name_matches(capsule->name, name));
 }
 
-UPCALL_ID(PyCapsule_IsValid);
-int PyCapsule_IsValid(PyObject *o, const char *name) {
-    return o != NULL && UPCALL_CEXT_I(_jls_PyCapsule_IsValid, native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
+
+void *
+PyCapsule_GetPointer(PyObject *o, const char *name)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_GetPointer")) {
+        return NULL;
+    }
+
+    if (!name_matches(name, capsule->name)) {
+        PyErr_SetString(PyExc_ValueError, "PyCapsule_GetPointer called with incorrect name");
+        return NULL;
+    }
+
+    return capsule->pointer;
 }
 
-UPCALL_ID(PyCapsule_GetName);
-const char * PyCapsule_GetName(PyObject *o) {
-	return as_char_pointer(UPCALL_CEXT_O(_jls_PyCapsule_GetName, native_to_java(o)));
+
+const char *
+PyCapsule_GetName(PyObject *o)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_GetName")) {
+        return NULL;
+    }
+    return capsule->name;
 }
 
+
+PyCapsule_Destructor
+PyCapsule_GetDestructor(PyObject *o)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_GetDestructor")) {
+        return NULL;
+    }
+    return capsule->destructor;
+}
+
+
+void *
+PyCapsule_GetContext(PyObject *o)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_GetContext")) {
+        return NULL;
+    }
+    return capsule->context;
+}
+
+
+int
+PyCapsule_SetPointer(PyObject *o, void *pointer)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!pointer) {
+        PyErr_SetString(PyExc_ValueError, "PyCapsule_SetPointer called with null pointer");
+        return -1;
+    }
+
+    if (!is_legal_capsule(capsule, "PyCapsule_SetPointer")) {
+        return -1;
+    }
+
+    capsule->pointer = pointer;
+    return 0;
+}
+
+
+int
+PyCapsule_SetName(PyObject *o, const char *name)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_SetName")) {
+        return -1;
+    }
+
+    capsule->name = name;
+    return 0;
+}
+
+
+int
+PyCapsule_SetDestructor(PyObject *o, PyCapsule_Destructor destructor)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_SetDestructor")) {
+        return -1;
+    }
+
+    capsule->destructor = destructor;
+    return 0;
+}
+
+
+int
+PyCapsule_SetContext(PyObject *o, void *context)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+
+    if (!is_legal_capsule(capsule, "PyCapsule_SetContext")) {
+        return -1;
+    }
+
+    capsule->context = context;
+    return 0;
+}
+
+
+void *
+PyCapsule_Import(const char *name, int no_block)
+{
+    PyObject *object = NULL;
+    void *return_value = NULL;
+    char *trace;
+    size_t name_length = (strlen(name) + 1) * sizeof(char);
+    char *name_dup = (char *)PyMem_MALLOC(name_length);
+
+    if (!name_dup) {
+        return PyErr_NoMemory();
+    }
+
+    memcpy(name_dup, name, name_length);
+
+    trace = name_dup;
+    while (trace) {
+        char *dot = strchr(trace, '.');
+        if (dot) {
+            *dot++ = '\0';
+        }
+
+        if (object == NULL) {
+            if (no_block) {
+                object = PyImport_ImportModuleNoBlock(trace);
+            } else {
+                object = PyImport_ImportModule(trace);
+                if (!object) {
+                    PyErr_Format(PyExc_ImportError, "PyCapsule_Import could not import module \"%s\"", trace);
+                }
+            }
+        } else {
+            PyObject *object2 = PyObject_GetAttrString(object, trace);
+            Py_DECREF(object);
+            object = object2;
+        }
+        if (!object) {
+            goto EXIT;
+        }
+
+        trace = dot;
+    }
+
+    /* compare attribute name to module.name by hand */
+    if (PyCapsule_IsValid(object, name)) {
+        PyCapsule *capsule = (PyCapsule *)object;
+        return_value = capsule->pointer;
+    } else {
+        PyErr_Format(PyExc_AttributeError,
+            "PyCapsule_Import \"%s\" is not valid",
+            name);
+    }
+
+EXIT:
+    Py_XDECREF(object);
+    if (name_dup) {
+        PyMem_FREE(name_dup);
+    }
+    return return_value;
+}
+
+
+static void
+capsule_dealloc(PyObject *o)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+    if (capsule->destructor) {
+        capsule->destructor(o);
+    }
+    PyObject_DEL(o);
+}
+
+
+static PyObject *
+capsule_repr(PyObject *o)
+{
+    PyCapsule *capsule = (PyCapsule *)o;
+    const char *name;
+    const char *quote;
+
+    if (capsule->name) {
+        quote = "\"";
+        name = capsule->name;
+    } else {
+        quote = "";
+        name = "NULL";
+    }
+
+    return PyUnicode_FromFormat("<capsule object %s%s%s at %p>",
+        quote, name, quote, capsule);
+}
+
+
+
+PyDoc_STRVAR(PyCapsule_Type__doc__,
+"Capsule objects let you wrap a C \"void *\" pointer in a Python\n\
+object.  They're a way of passing data through the Python interpreter\n\
+without creating your own custom type.\n\
+\n\
+Capsules are used for communication between extension modules.\n\
+They provide a way for an extension module to export a C interface\n\
+to other extension modules, so that extension modules can use the\n\
+Python import mechanism to link to one another.\n\
+");
+
+
+PyTypeObject PyCapsule_Type_Impl = {
+    PyVarObject_HEAD_INIT(&PyType_Type, 0)
+    "PyCapsule",                /*tp_name*/
+    sizeof(PyCapsule),          /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    /* methods */
+    capsule_dealloc, /*tp_dealloc*/
+    0,                          /*tp_vectorcall_offset*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_as_async*/
+    capsule_repr, /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    0,                          /*tp_flags*/
+    PyCapsule_Type__doc__       /*tp_doc*/
+};
+
+PyTypeObject* PyCapsule_TypeReference = &PyCapsule_Type_Impl;
+
+PyTypeObject* getPyCapsuleTypeReference() {
+	return &PyCapsule_Type;
+}
 

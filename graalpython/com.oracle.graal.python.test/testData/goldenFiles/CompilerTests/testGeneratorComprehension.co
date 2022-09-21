@@ -1,0 +1,32 @@
+Disassembly of <module>:
+  1:0   -   1:60        0 MAKE_FUNCTION                     0    (<genexpr>)
+  1:18  -   1:27        3 LOAD_CONST_COLLECTION             2    ([1, 2, 3] type int into list)
+  1:29  -   1:38        6 LOAD_CONST_COLLECTION             3    ([4, 5, 6] type int into list)
+  1:17  -   1:39        9 COLLECTION_FROM_STACK             2    (list)
+  1:0   -   1:60       11 GET_ITER
+  1:0   -   1:60       12 CALL_FUNCTION                     1
+  1:0   -   1:60       14 RETURN_VALUE
+
+Disassembly of <genexpr>:
+Flags: CO_GENERATOR
+  1:0   -   1:60        0 LOAD_FAST                         0    (.0)
+  1:0   -   1:60  >>    2 FOR_ITER                          34   (to 36)                           can quicken
+  1:12  -   1:13        4 STORE_FAST                        1    (y)                               generalizes: 2
+  1:49  -   1:50        6 LOAD_FAST                         1    (y)
+  1:0   -   1:60        8 GET_ITER
+  1:0   -   1:60  >>    9 FOR_ITER                          25   (to 34)                           can quicken
+  1:44  -   1:45       11 STORE_FAST                        2    (x)                               generalizes: 9
+  1:54  -   1:55       13 LOAD_FAST                         2    (x)                               can quicken
+  1:58  -   1:59       15 LOAD_BYTE_I                       5                                      can quicken
+  1:54  -   1:59       17 BINARY_OP                         14   (LT)                              can quicken, generalizes: 15, 13
+  1:0   -   1:60       19 POP_AND_JUMP_IF_FALSE             13   (to 32)                           generalizes: 17
+  1:1   -   1:4        23 LOAD_GLOBAL                       0    (str)
+  1:5   -   1:6        25 LOAD_FAST                         2    (x)
+  1:1   -   1:7        27 CALL_FUNCTION                     1
+  1:0   -   1:60       29 YIELD_VALUE
+  1:0   -   1:60       30 RESUME_YIELD
+  1:0   -   1:60       31 POP_TOP
+  1:0   -   1:60  >>   32 JUMP_BACKWARD                     23   (to 9)
+  1:0   -   1:60  >>   34 JUMP_BACKWARD                     32   (to 2)
+  1:0   -   1:60  >>   36 LOAD_NONE
+  1:0   -   1:60       37 RETURN_VALUE

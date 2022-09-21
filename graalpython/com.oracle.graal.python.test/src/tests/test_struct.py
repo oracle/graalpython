@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,8 +36,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
 import struct
+import sys
+
+
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
 
 ISBIGENDIAN = sys.byteorder == "big"
 
@@ -107,7 +117,7 @@ def test_pack_unpack():
         for align in alignment:
             _fmt = align + fmt
             result = struct.pack(_fmt, *vals)
-            assert vals == struct.unpack(_fmt, result)
+            assert vals == struct.unpack(_fmt, result), "{} != struct.unpack({}, {})".format(vals, _fmt, result)
             assert struct.calcsize(_fmt) == len(result), "calcsize('{}')={} != len({})={}".format(
                 _fmt, struct.calcsize(_fmt), result, len(result))
 
@@ -145,3 +155,117 @@ def test_pack_unpack():
 def test_pack_nan():
     import math
     assert struct.pack('<d', math.nan) == b'\x00\x00\x00\x00\x00\x00\xf8\x7f'
+
+
+def test_pack_large_long():
+    for fmt in ('l', 'q'):
+        assert struct.pack(fmt, 0) == b'\x00' * struct.calcsize(fmt)
+        assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
+        assert struct.pack(fmt, -1) == b'\xff' * struct.calcsize(fmt)
+        assert struct.unpack(fmt, b'\xff' * struct.calcsize(fmt)) == (-1,)
+
+    for fmt in ('L', 'Q'):
+        assert struct.pack(fmt, 0) == b'\x00' * struct.calcsize(fmt)
+        assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
+        assert struct.pack(fmt, 18446744073709551615) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
+        assert struct.unpack(fmt, b'\xff\xff\xff\xff\xff\xff\xff\xff') == (18446744073709551615,)
+
+
+def test_pack_into():
+    test_string = b'Reykjavik rocks, eow!'
+    writable_buf = bytearray(b' '*100)
+    fmt = '21s'
+    s = struct.Struct(fmt)
+
+    # Test without offset
+    s.pack_into(writable_buf, 0, test_string)
+    from_buf = writable_buf[:len(test_string)]
+    assert bytes(from_buf) == test_string
+
+    # Test with offset.
+    s.pack_into(writable_buf, 10, test_string)
+    from_buf = writable_buf[:len(test_string)+10]
+    assert bytes(from_buf) == test_string[:10] + test_string
+
+    # Go beyond boundaries.
+    small_buf = bytearray(b' '*10)
+
+    assert_raises((ValueError, struct.error), s.pack_into, small_buf, 0, test_string)
+    assert_raises((ValueError, struct.error), s.pack_into, small_buf, 2, test_string)
+
+    # Test bogus offset (issue 3694)
+    sb = small_buf
+    assert_raises((TypeError, struct.error), struct.pack_into, b'', sb, None)
+
+
+def test_unpack_from():
+    test_string = b'abcd01234'
+    fmt = '4s'
+    s = struct.Struct(fmt)
+    for cls in (bytes, bytearray):
+        data = cls(test_string)
+        assert s.unpack_from(data) == (b'abcd',)
+        assert s.unpack_from(data, 2) == (b'cd01',)
+        assert s.unpack_from(data, 4) == (b'0123',)
+        for i in range(6):
+            assert s.unpack_from(data, i) == (data[i:i+4],)
+        for i in range(6, len(test_string) + 1):
+            assert_raises(struct.error, s.unpack_from, data, i)
+    for cls in (bytes, bytearray):
+        data = cls(test_string)
+        assert struct.unpack_from(fmt, data) == (b'abcd',)
+        assert struct.unpack_from(fmt, data, 2) == (b'cd01',)
+        assert struct.unpack_from(fmt, data, 4) == (b'0123',)
+        for i in range(6):
+            assert struct.unpack_from(fmt, data, i) == (data[i:i+4],)
+        for i in range(6, len(test_string) + 1):
+            assert_raises(struct.error, struct.unpack_from, fmt, data, i)
+
+    # keyword arguments
+    assert s.unpack_from(buffer=test_string, offset=2) == (b'cd01',)
+
+def test_iter_unpack():
+    from collections import abc
+    import operator
+
+    s = struct.Struct('>ibcp')
+    it = s.iter_unpack(b"")
+    assert isinstance(it, abc.Iterator)
+    assert isinstance(it, abc.Iterable)
+    assert_raises(struct.error, s.iter_unpack, b"123456")
+
+    s = struct.Struct('>')
+    assert_raises(struct.error, s.iter_unpack, b"")
+
+    s = struct.Struct('>IB')
+    b = bytes(range(1, 16))
+    it = s.iter_unpack(b)
+    assert next(it) == (0x01020304, 5)
+    assert next(it) == (0x06070809, 10)
+    assert next(it) == (0x0b0c0d0e, 15)
+    assert_raises(StopIteration, next, it)
+    assert_raises(StopIteration, next, it)
+
+    lh = operator.length_hint
+    s = struct.Struct('>IB')
+    b = bytes(range(1, 16))
+    it = s.iter_unpack(b)
+    assert lh(it) == 3
+    next(it)
+    assert lh(it) == 2
+    next(it)
+    assert lh(it) == 1
+    next(it)
+    assert lh(it) == 0
+    assert_raises(StopIteration, next, it)
+    assert lh(it) == 0
+
+
+def test_pack_varargs():
+    assert struct.Struct(">B").pack(3) == b'\x03'
+    raised = False
+    try:
+        struct.Struct(">B").pack(3, kw=1)
+    except TypeError:
+        raised = True
+    assert raised

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -121,7 +121,7 @@ _PyObject_VectorcallTstate(PyThreadState *tstate, PyObject *callable,
         return _PyObject_MakeTpCall(tstate, callable, args, nargs, kwnames);
     }
     res = func(callable, args, nargsf, kwnames);
-    return _Py_CheckFunctionResult(tstate, callable, res, NULL);
+    return res; // _Py_CheckFunctionResult(tstate, callable, res, NULL);
 }
 
 static inline PyObject *
@@ -173,8 +173,7 @@ _PyObject_FastCall(PyObject *func, PyObject *const *args, Py_ssize_t nargs)
    PyObject_CallNoArgs(). */
 static inline PyObject *
 _PyObject_CallNoArg(PyObject *func) {
-    PyThreadState *tstate = PyThreadState_GET();
-    return _PyObject_VectorcallTstate(tstate, func, NULL, 0, NULL);
+    return PyObject_CallObject(func, NULL); /* Truffle change: redirect to PyObject_CallObject until _PyObject_Vectorcall is implemented */
 }
 
 static inline PyObject *

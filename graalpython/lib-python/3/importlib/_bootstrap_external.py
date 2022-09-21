@@ -122,7 +122,7 @@ def _write_atomic(path, data, mode=0o666):
     Be prepared to handle a FileExistsError if concurrent writing of the
     temporary file is attempted."""
     # id() is used to generate a pseudo-random filename.
-    path_tmp = '{}.{}'.format(path, id(path))
+    path_tmp = '{}.{}.{}'.format(path, id(path), _os.getpid())
     fd = _os.open(path_tmp,
                   _os.O_EXCL | _os.O_CREAT | _os.O_WRONLY, mode & 0o666)
     try:
@@ -319,6 +319,8 @@ def cache_from_source(path, debug_override=None, *, optimization=None):
     If sys.implementation.cache_tag is None then NotImplementedError is raised.
 
     """
+    if __graalpython__.in_image_buildtime:
+        return
     if debug_override is not None:
         _warnings.warn('the debug_override parameter is deprecated; use '
                        "'optimization' instead", DeprecationWarning)
@@ -891,8 +893,7 @@ class SourceLoader(_LoaderBasics):
                     }
                     try:
                         flags = _classify_pyc(data, fullname, exc_details)
-                        # See issue GR-23189. Originally there is memoryview(data)[16:]
-                        bytes_data = data[16:]
+                        bytes_data = memoryview(data)[16:]
                         hash_based = flags & 0b1 != 0
                         if hash_based:
                             check_source = flags & 0b10 != 0

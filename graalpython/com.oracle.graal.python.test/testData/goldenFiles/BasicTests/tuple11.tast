@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'tuple11'> SourceSection: [0,10]`a += 1,2,3`
             ReadNameNodeGen SourceSection: [0,1]`a`
               Identifier: a
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             TupleLiteralNode SourceSection: [5,10]`1,2,3`
               IntegerLiteralNode SourceSection: [5,6]`1`
                 Value: 1

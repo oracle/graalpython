@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.random;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.List;
 
@@ -55,10 +57,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -75,10 +76,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
@@ -91,20 +88,10 @@ public class RandomBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SeedNode extends PythonBuiltinNode {
-
-        private static SecureRandom secureRandom;
-
         @Specialization
         @TruffleBoundary
         PNone seedNone(PRandom random, @SuppressWarnings("unused") PNone none) {
-            if (secureRandom == null) {
-                try {
-                    secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
-                } catch (NoSuchAlgorithmException e) {
-                    seedLong(random, System.currentTimeMillis());
-                    return PNone.NONE;
-                }
-            }
+            SecureRandom secureRandom = getContext().getSecureRandom();
             int[] seed = new int[PRandom.N];
             for (int i = 0; i < seed.length; ++i) {
                 seed[i] = secureRandom.nextInt();
@@ -151,10 +138,10 @@ public class RandomBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"}, limit = "2")
+        @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"})
         PNone seedGeneric(VirtualFrame frame, PRandom random, Object inputSeed,
-                        @CachedLibrary("inputSeed") PythonObjectLibrary objectLib) {
-            return seedLong(random, objectLib.hashWithState(inputSeed, PArguments.getThreadState(frame)));
+                        @Cached PyObjectHashNode hash) {
+            return seedLong(random, hash.execute(frame, inputSeed));
         }
     }
 
@@ -227,7 +214,7 @@ public class RandomBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "getrandbits", minNumOfPositionalArgs = 2, parameterNames = {"$self", "k"})
-    @ArgumentClinic(name = "k", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "k", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class GetRandBitsNode extends PythonBinaryClinicBuiltinNode {
 
@@ -239,7 +226,7 @@ public class RandomBuiltins extends PythonBuiltins {
         @Specialization(guards = "k <= 0")
         @SuppressWarnings("unused")
         int nonPositive(PRandom random, int k) {
-            throw raise(ValueError, "number of bits must be greater than zero");
+            throw raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_GREATER_THAN_ZERO);
         }
 
         @Specialization(guards = {"k >= 1", "k <= 31"})

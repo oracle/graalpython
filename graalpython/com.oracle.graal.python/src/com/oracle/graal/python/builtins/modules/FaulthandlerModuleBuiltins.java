@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,181 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
+import java.io.PrintWriter;
 import java.util.List;
+import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "faulthandler")
 public class FaulthandlerModuleBuiltins extends PythonBuiltins {
+
+    private boolean enabled = true;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return FaulthandlerModuleBuiltinsFactory.getFactories();
+    }
+
+    private static void dumpTraceback(Object callable, Object file) {
+        if (!(callable instanceof PNone)) {
+            Object f = file;
+            if (file == PNone.NO_VALUE) {
+                f = PNone.NONE;
+            }
+            try {
+                CallNode.getUncached().execute(null, callable, PNone.NONE, PNone.NONE, f);
+            } catch (RuntimeException e) {
+                ExceptionUtils.printPythonLikeStackTrace(e);
+            }
+        }
+    }
+
+    @Builtin(name = "dump_traceback", minNumOfPositionalArgs = 0, parameterNames = {"file", "all_threads"})
+    @ArgumentClinic(name = "file", defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "all_threads", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class DumpTracebackNode extends PythonClinicBuiltinNode {
+
+        public static final TruffleString T_PRINT_STACK = tsLiteral("print_stack");
+
+        @Specialization
+        PNone doit(VirtualFrame frame, Object file, boolean allThreads) {
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = getContext();
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                // it's not important for this to be fast at all
+                dump(language, context, file, allThreads);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static void dump(PythonLanguage language, PythonContext context, Object file, boolean allThreads) {
+            Object printStackFunc;
+            try {
+                Object tracebackModule = AbstractImportNode.importModule(toTruffleStringUncached("traceback"));
+                printStackFunc = PyObjectLookupAttr.getUncached().execute(null, tracebackModule, T_PRINT_STACK);
+            } catch (PException e) {
+                return;
+            }
+
+            if (allThreads) {
+                if (PythonOptions.isWithJavaStacktrace(language)) {
+                    PrintWriter err = new PrintWriter(context.getStandardErr());
+                    Thread[] ths = context.getThreads();
+                    for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
+                        boolean found = false;
+                        for (Thread pyTh : ths) {
+                            if (pyTh == e.getKey()) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            continue;
+                        }
+                        err.println();
+                        err.println(e.getKey());
+                        for (StackTraceElement el : e.getValue()) {
+                            err.println(el.toString());
+                        }
+                    }
+                }
+
+                context.getEnv().submitThreadLocal(null, new ThreadLocalAction(true, false) {
+                    @Override
+                    protected void perform(ThreadLocalAction.Access access) {
+                        dumpTraceback(printStackFunc, file);
+                    }
+                });
+            } else {
+                if (PythonOptions.isWithJavaStacktrace(language)) {
+                    PrintWriter err = new PrintWriter(context.getStandardErr());
+                    err.println();
+                    err.println(Thread.currentThread());
+                    for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
+                        err.println(el.toString());
+                    }
+                }
+                dumpTraceback(printStackFunc, file);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FaulthandlerModuleBuiltinsClinicProviders.DumpTracebackNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "enable", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, parameterNames = {"$self", "file", "all_threads"})
+    @GenerateNodeFactory
+    abstract static class EnableNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        static PNone doit(PythonModule self, Object file, Object allThreads) {
+            ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled = true;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "disable", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class DisableNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static PNone doit(PythonModule self) {
+            ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled = false;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "is_enabled", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class IsEnabledNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doit(PythonModule self) {
+            return ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled;
+        }
+    }
+
+    @Builtin(name = "cancel_dump_traceback_later")
+    @GenerateNodeFactory
+    abstract static class CancelDumpTracebackLaterNode extends PythonBuiltinNode {
+        @Specialization
+        PNone doit() {
+            return PNone.NONE;
+        }
     }
 }

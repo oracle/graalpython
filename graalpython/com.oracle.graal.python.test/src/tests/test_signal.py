@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import unittest
-import sys
+
 
 class SignalTests(unittest.TestCase):
     def test_args_validation(self):
@@ -63,8 +63,6 @@ def test_alarm2():
 
     def handler(signal, frame):
         nonlocal triggered
-        caller_code = sys._getframe(1).f_code
-        assert caller_code == test_alarm2.__code__, "expected: '%s' but was '%s'" % (test_alarm2.__code__, caller_code)
         triggered = (signal, frame)
 
     oldhandler = _signal.signal(_signal.SIGALRM, handler)
@@ -77,4 +75,4 @@ def test_alarm2():
         time.sleep(0.5)
 
     assert triggered[0] == _signal.SIGALRM
-    assert triggered[1].f_code.co_name == "test_alarm2", triggered[1].f_code
+    assert triggered[1].f_code.co_name # just check that we have access to the frame

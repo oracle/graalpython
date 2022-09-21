@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,66 +40,82 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.PythonLanguage.getCore;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.isSpace;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.NON_HEX_NUMBER_IN_FROMHEX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.IterableToByteNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyOSFSPathNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class BytesNodes {
 
@@ -109,35 +125,34 @@ public abstract class BytesNodes {
         public abstract PBytesLike execute(PythonObjectFactory factory, PBytesLike basedOn, Object bytes);
 
         @Specialization
-        PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, byte[] bytes) {
+        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, byte[] bytes) {
             return factory.createBytes(bytes);
         }
 
         @Specialization
-        PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, byte[] bytes) {
+        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, byte[] bytes) {
             return factory.createByteArray(bytes);
         }
 
         @Specialization
-        PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes) {
+        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, SequenceStorage bytes) {
             return factory.createBytes(bytes);
         }
 
         @Specialization
-        PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, SequenceStorage bytes) {
+        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, SequenceStorage bytes) {
             return factory.createByteArray(bytes);
         }
 
         @Specialization
-        PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, PBytesLike bytes) {
+        static PBytesLike bytes(PythonObjectFactory factory, @SuppressWarnings("unused") PBytes basedOn, PBytesLike bytes) {
             return factory.createBytes(bytes.getSequenceStorage());
         }
 
         @Specialization
-        PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, PBytesLike bytes) {
+        static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, PBytesLike bytes) {
             return factory.createByteArray(bytes.getSequenceStorage());
         }
-
     }
 
     @ImportStatic(PythonOptions.class)
@@ -145,18 +160,18 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, byte[] sep, Object iterable);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
-            Object iterator = lib.getIteratorWithFrame(iterable, frame);
+            Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
-                    partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(frame, iterator)));
+                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
@@ -195,61 +210,55 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ToBytesNode extends PNodeWithContext {
-        private static final String DEFAULT_FORMAT = "expected a bytes-like object, %p found";
-
-        @Child private PRaiseNode raise = PRaiseNode.create();
+    public abstract static class ToBytesNode extends PNodeWithRaiseAndIndirectCall {
 
         private final PythonBuiltinClassType errorType;
-        private final String errorMessageFormat;
+        private final TruffleString errorMessageFormat;
 
-        ToBytesNode(PythonBuiltinClassType errorType, String errorMessageFormat) {
+        ToBytesNode(PythonBuiltinClassType errorType, TruffleString errorMessageFormat) {
             this.errorType = errorType;
             this.errorMessageFormat = errorMessageFormat;
         }
 
-        public abstract byte[] execute(Object obj);
+        public final byte[] execute(PBytesLike obj) {
+            return execute(null, obj);
+        }
 
-        @Specialization
-        byte[] doBytes(PBytesLike bytes,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+        public abstract byte[] execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "3")
+        byte[] doBuffer(VirtualFrame frame, Object object,
+                        @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer;
             try {
-                return toByteArrayNode.execute(bytes.getSequenceStorage());
+                buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             } catch (PException e) {
-                e.expect(TypeError, exceptionProfile);
-                return doError(bytes);
+                throw raise(errorType, errorMessageFormat, object);
             }
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        static byte[] doBuffer(Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
             try {
-                return bufferLib.getBufferBytes(buffer);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                return bufferLib.getCopiedByteArray(buffer);
+            } finally {
+                bufferLib.release(buffer, frame, this);
             }
-        }
-
-        @Fallback
-        byte[] doError(Object obj) {
-            throw raise.raise(errorType, errorMessageFormat, obj);
         }
 
         public static ToBytesNode create() {
-            return ToBytesNodeGen.create(TypeError, DEFAULT_FORMAT);
+            return ToBytesNodeGen.create(TypeError, EXPECTED_BYTESLIKE_GOT_P);
         }
 
-        public static ToBytesNode create(PythonBuiltinClassType errorType, String errorMessageFormat) {
+        public static ToBytesNode create(PythonBuiltinClassType errorType, TruffleString errorMessageFormat) {
             return ToBytesNodeGen.create(errorType, errorMessageFormat);
         }
     }
 
-    public abstract static class FindNode extends PNodeWithContext {
-        @Child private PRaiseNode raise = PRaiseNode.create();
+    public abstract static class FindNode extends PNodeWithRaise {
 
-        public abstract int execute(Object self, int len1, Object sub, int start, int end);
+        public abstract int execute(byte[] self, int len1, byte[] sub, int start, int end);
+
+        public abstract int execute(byte[] self, int len1, byte sub, int start, int end);
+
+        public abstract int execute(SequenceStorage self, int len1, Object sub, int start, int end);
 
         @Specialization
         int find(byte[] haystack, int len1, byte needle, int start, int end,
@@ -315,18 +324,23 @@ public abstract class BytesNodes {
             return findElement(haystack, cast.execute(sub), start, end > len1 ? len1 : end);
         }
 
-        @Specialization(guards = "lib.canBeIndex(sub)")
+        @Specialization(guards = "!isBytes(sub)")
         int useIndex(SequenceStorage self, int len1, Object sub, int start, int end,
                         @Cached ConditionProfile earlyExit,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaByteNode cast,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
             if (earlyExit.profile(start >= len1)) {
                 return -1;
             }
-            byte[] haystack = getBytes.execute(self);
-            byte subByte = cast.execute(lib.asIndex(sub));
-            return findElement(haystack, subByte, start, end > len1 ? len1 : end);
+            if (indexCheckNode.execute(sub)) {
+                byte[] haystack = getBytes.execute(self);
+                byte subByte = cast.execute(indexNode.execute(null, sub));
+                return findElement(haystack, subByte, start, end > len1 ? len1 : end);
+            } else {
+                throw raise(TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "a bytes-like object", sub);
+            }
         }
 
         // Overridden in RFind
@@ -366,12 +380,6 @@ public abstract class BytesNodes {
             return -1;
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        int doError(Object bytes, int len1, Object sub, int start, int end) {
-            throw raise.raise(TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "a bytes-like object", sub);
-        }
-
         public static FindNode create() {
             return FindNodeGen.create();
         }
@@ -384,6 +392,7 @@ public abstract class BytesNodes {
             return (end - start) + start;
         }
 
+        @TruffleBoundary(allowInlining = true)
         @Override
         protected int findSubSequence(byte[] haystack, byte[] needle, int len2, int start, int end) {
             // TODO implement a more efficient algorithm
@@ -395,6 +404,7 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        @TruffleBoundary(allowInlining = true)
         @Override
         protected int findElement(byte[] haystack, byte sub, int start, int end) {
             for (int i = end - 1; i >= start; i--) {
@@ -412,9 +422,9 @@ public abstract class BytesNodes {
 
     public static class FromSequenceStorageNode extends Node {
 
-        @Node.Child private SequenceStorageNodes.GetItemNode getItemNode;
-        @Node.Child private CastToByteNode castToByteNode;
-        @Node.Child private SequenceStorageNodes.LenNode lenNode;
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private CastToByteNode castToByteNode;
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public byte[] execute(VirtualFrame frame, SequenceStorage storage) {
             int len = getLenNode().execute(storage);
@@ -491,8 +501,8 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doIt(VirtualFrame frame, Object iterObject,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {
@@ -538,15 +548,11 @@ public abstract class BytesNodes {
 
     public abstract static class ExpectStringNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
         private final int argNum;
-        final String className;
+        private final String className;
 
         protected ExpectStringNode(int argNum, String className) {
             this.argNum = argNum;
             this.className = className;
-        }
-
-        protected String className() {
-            return className;
         }
 
         @Override
@@ -558,7 +564,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        static Object str(String str) {
+        static Object str(TruffleString str) {
             return str;
         }
 
@@ -570,7 +576,7 @@ public abstract class BytesNodes {
 
         @Fallback
         Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className(), argNum, PythonBuiltinClassType.PString, value);
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className, argNum, PythonBuiltinClassType.PString, value);
         }
 
         @ClinicConverterFactory
@@ -579,72 +585,128 @@ public abstract class BytesNodes {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    /**
+     * Like {@code PyBytes_FromObject}, but returns a Java byte array. The array is guaranteed to be
+     * a new copy. Note that {@code PyBytes_FromObject} returns the argument unchanged when it's
+     * already bytes. We obviously cannot do that here, it must be done by the caller if the need
+     * this behavior.
+     */
+    public abstract static class BytesFromObject extends PNodeWithRaiseAndIndirectCall {
+        public abstract byte[] execute(VirtualFrame frame, Object object);
+
+        // TODO make fast paths for builtin list/tuple - note that FromSequenceNode doesn't work
+        // properly when the list is mutated by its __index__
+
+        @Specialization
+        byte[] doGeneric(VirtualFrame frame, Object object,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.IterableToByteNode iterableToByteNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            if (bufferAcquireLib.hasBuffer(object)) {
+                // TODO PyBUF_FULL_RO
+                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, this);
+                try {
+                    return bufferLib.getCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer, frame, this);
+                }
+            }
+            if (!PGuards.isString(object)) {
+                try {
+                    return iterableToByteNode.execute(frame, object);
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                }
+            }
+            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
+        }
+    }
+
     @ImportStatic(PGuards.class)
-    public abstract static class BytesInitNode extends Node {
+    public abstract static class BytesInitNode extends PNodeWithRaise {
 
         public abstract byte[] execute(VirtualFrame frame, Object source, Object encoding, Object errors);
 
+        public final byte[] execute(VirtualFrame frame, Object source) {
+            return execute(frame, source, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
         @Specialization
-        byte[] none(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        static byte[] none(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return PythonUtils.EMPTY_BYTE_ARRAY;
         }
 
         @Specialization(guards = "isByteStorage(source)")
-        byte[] byteslike(PBytesLike source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        static byte[] byteslike(PBytesLike source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return (byte[]) ((ByteSequenceStorage) source.getSequenceStorage()).getCopyOfInternalArrayObject();
         }
 
-        @Specialization(guards = "lib.canBeIndex(source)", limit = "3")
-        byte[] size(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary("source") PythonObjectLibrary lib) {
-            int cap = lib.asSizeWithState(source, PArguments.getThreadState(frame));
-            return BytesUtils.fromSize(getCore(), cap);
+        @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
+        byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached BytesFromObject bytesFromObject) {
+            if (indexCheckNode.execute(source)) {
+                try {
+                    int size = asSizeNode.executeExact(frame, source);
+                    if (size < 0) {
+                        throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
+                    }
+                    try {
+                        return new byte[size];
+                    } catch (OutOfMemoryError error) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raise(MemoryError);
+                    }
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                    // fallthrough
+                }
+            }
+            return bytesFromObject.execute(frame, source);
         }
 
-        @Specialization(guards = {"!isString(source)", "!isNoValue(source)", "!lib.canBeIndex(source)"}, limit = "3")
-        public byte[] iterable(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached IteratorNodes.GetLength lenNode,
-                        @Cached("createCast()") IterableToByteNode toByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
-            return toByteNode.execute(frame, source, lenNode.execute(frame, source));
+        @Specialization(guards = {"isString(source)", "isString(encoding)"})
+        byte[] fromString(Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
+            return encodeNode.execute(source, castStr.execute(encoding), T_STRICT);
         }
 
-        @Specialization
-        byte[] fromString(String source, String encoding, @SuppressWarnings("unused") Object errors,
-                        @Cached PRaiseNode raise) {
-            String e = errors instanceof String ? (String) errors : "strict";
-            return BytesBuiltins.stringToByte(source, encoding, e, raise);
+        @Specialization(guards = {"isString(source)", "isString(encoding)", "isString(errors)"})
+        byte[] fromString(Object source, Object encoding, Object errors,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
+            return encodeNode.execute(source, castStr.execute(encoding), castStr.execute(errors));
         }
 
-        @Specialization
+        @Specialization(guards = "isString(source)")
         @SuppressWarnings("unused")
-        byte[] fromString(String source, PNone encoding, Object errors,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
+        byte[] fromString(Object source, PNone encoding, Object errors) {
+            throw raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         public byte[] error(Object source, Object encoding, Object errors) {
             if (PGuards.isNone(encoding)) {
-                throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
+                throw raise(TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
             }
-            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
-        }
-
-        protected static BytesNodes.IterableToByteNode createCast() {
-            return BytesNodes.IterableToByteNode.create(val -> PythonLanguage.getCore().raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG));
+            throw raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
         }
     }
 
     @GenerateNodeFactory
-    public abstract static class ByteToHexNode extends PNodeWithContext {
+    public abstract static class ByteToHexNode extends PNodeWithRaise {
 
-        public abstract String execute(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
+        public abstract TruffleString execute(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup);
 
         @Specialization(guards = "bytesPerSepGroup == 0")
-        public String zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup) {
+        public static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int resultlen = arglen * 2;
             byte[] retbuf = new byte[resultlen];
@@ -655,28 +717,29 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c >>> 4];
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
-            return BytesUtils.createASCIIString(retbuf);
+            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
         }
 
         @Specialization(guards = "bytesPerSepGroup < 0")
-        public String negative(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
+        public TruffleString negative(byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
                         @Cached ConditionProfile earlyExit,
                         @Cached ConditionProfile memoryError,
-                        @Cached.Shared("error") @Cached PRaiseNode raiseNode) {
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (earlyExit.profile(arglen == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
             int absBytesPerSepGroup = -bytesPerSepGroup;
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
             if (memoryError.profile(arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
-                raiseNode.raise(MemoryError);
+                throw raise(MemoryError);
             }
 
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0);
+                return zero(argbuf, arglen, sep, 0, fromByteArrayNode, switchEncodingNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -696,28 +759,29 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
 
-            return BytesUtils.createASCIIString(retbuf);
+            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
         }
 
         @Specialization(guards = "absBytesPerSepGroup > 0")
-        public String positive(byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
+        public TruffleString positive(byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
                         @Cached ConditionProfile earlyExit,
                         @Cached ConditionProfile memoryError,
-                        @Cached.Shared("error") @Cached PRaiseNode raiseNode) {
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             if (earlyExit.profile(arglen == 0)) {
-                return "";
+                return T_EMPTY_STRING;
             }
             /* How many sep characters we'll be inserting. */
             int resultlen = (arglen - 1) / absBytesPerSepGroup;
 
             if (memoryError.profile(arglen >= SysModuleBuiltins.MAXSIZE / 2 - resultlen)) {
-                raiseNode.raise(MemoryError);
+                throw raise(MemoryError);
             }
 
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0);
+                return zero(argbuf, arglen, sep, 0, fromByteArrayNode, switchEncodingNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -737,28 +801,22 @@ public abstract class BytesNodes {
                 retbuf[j--] = BytesUtils.HEXDIGITS[c & 0x0f];
                 retbuf[j--] = BytesUtils.HEXDIGITS[c >>> 4];
             }
-            return BytesUtils.createASCIIString(retbuf);
+            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
         }
     }
 
-    public abstract static class IterableToByteNode extends PNodeWithContext {
+    public abstract static class IterableToByteNode extends PNodeWithRaise {
+        public abstract byte[] execute(VirtualFrame frame, Object iterable);
 
-        private final Function<Object, Object> typeErrorHandler;
-        @Child private PRaiseNode raise = PRaiseNode.create();
-
-        abstract byte[] execute(VirtualFrame frame, Object iterable, int len);
-
-        protected IterableToByteNode(Function<Object, Object> typeErrorHandler) {
-            this.typeErrorHandler = typeErrorHandler;
-        }
-
-        @Specialization(guards = "!lib.canBeIndex(iterable)")
-        public byte[] bytearray(VirtualFrame frame, Object iterable, int len,
+        @Specialization
+        public static byte[] bytearray(VirtualFrame frame, Object iterable,
+                        @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            Object it = lib.getIteratorWithFrame(iterable, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object it = getIter.execute(frame, iterable);
+            int len = lenghtHintNode.execute(frame, iterable);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
@@ -775,27 +833,137 @@ public abstract class BytesNodes {
             }
         }
 
-        @Fallback
-        public byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object obj, @SuppressWarnings("unused") int len) {
-            assert typeErrorHandler != null;
-            return (byte[]) typeErrorHandler.apply(obj);
-        }
-
-        public static IterableToByteNode create(Function<Object, Object> typeErrorHandler) {
-            return IterableToByteNodeGen.create(typeErrorHandler);
-        }
-
-        protected CastToByteNode createCast() {
-            return CastToByteNode.create(val -> {
-                throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
-            }, val -> {
-                throw raise.raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
-            });
-        }
-
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static byte[] resize(byte[] arr, int len) {
             return Arrays.copyOf(arr, len);
+        }
+    }
+
+    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaiseAndIndirectCall {
+
+        public abstract TruffleString execute(VirtualFrame frame, Object value);
+
+        @Specialization
+        TruffleString doit(VirtualFrame frame, Object value,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached CastToTruffleStringNode toString,
+                        @Cached PyOSFSPathNode fsPath,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            Object path = fsPath.execute(frame, value);
+            if (bufferAcquireLib.hasBuffer(path)) {
+                Object buffer = bufferAcquireLib.acquireReadonly(path, frame, this);
+                try {
+                    /*-
+                     * This should be equivalent to PyUnicode_EncodeFSDefault
+                     * TODO: encoding preference is set per context but will force
+                     * it to UTF-8 for the time being.
+                     */
+                    TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(path), Encoding.UTF_8, false);
+                    return switchEncodingNode.execute(utf8, TS_ENCODING);
+                } finally {
+                    bufferLib.release(buffer, frame, this);
+                }
+            }
+            return toString.execute(path);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HashBufferNode extends PNodeWithContext {
+        public abstract long execute(Object buffer);
+
+        @Specialization(guards = "bufferLib.hasInternalByteArray(buffer)", limit = "2")
+        static long hashDirect(Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            PythonBufferAccessLibrary.assertIsBuffer(buffer);
+            int len = bufferLib.getBufferLength(buffer);
+            byte[] array = bufferLib.getInternalByteArray(buffer);
+            return computeHash(len, array);
+        }
+
+        @TruffleBoundary
+        private static int computeHash(int len, byte[] array) {
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + array[i];
+            }
+            return result;
+        }
+
+        @Specialization(guards = "!bufferLib.hasInternalByteArray(buffer)", limit = "2")
+        static long hashIndirect(Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            PythonBufferAccessLibrary.assertIsBuffer(buffer);
+            int len = bufferLib.getBufferLength(buffer);
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + bufferLib.readByte(buffer, i);
+            }
+            return result;
+        }
+
+        public static HashBufferNode create() {
+            return BytesNodesFactory.HashBufferNodeGen.create();
+        }
+
+        public static HashBufferNode getUncached() {
+            return BytesNodesFactory.HashBufferNodeGen.getUncached();
+        }
+    }
+
+    public abstract static class HexStringToBytesNode extends PNodeWithRaise {
+        public abstract byte[] execute(TruffleString str);
+
+        @Specialization(guards = "isAscii(str, getCodeRangeNode)", limit = "1")
+        byte[] ascii(TruffleString str,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
+            TruffleString ascii = switchEncodingNode.execute(str, Encoding.US_ASCII);
+            InternalByteArray iba = getInternalByteArrayNode.execute(ascii, Encoding.US_ASCII);
+            byte[] bytes = new byte[iba.getLength() / 2];
+            byte[] strchar = iba.getArray();
+            int n = 0;
+            for (int i = iba.getOffset(); i < iba.getEnd(); ++i) {
+                byte c = strchar[i];
+                if (isSpace(c)) {
+                    continue;
+                }
+                int top = BytesUtils.digitValue(c);
+                if (top >= 16 || top < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                }
+
+                c = i + 1 < iba.getEnd() ? strchar[++i] : 0;
+                int bottom = BytesUtils.digitValue(c);
+                if (bottom >= 16 || bottom < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                }
+
+                bytes[n++] = (byte) ((top << 4) | bottom);
+            }
+            if (n != bytes.length) {
+                bytes = arrayCopyOf(bytes, n);
+            }
+            return bytes;
+        }
+
+        @Specialization(guards = "!isAscii(str, getCodeRangeNode)", limit = "1")
+        byte[] nonAscii(TruffleString str,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode) {
+            TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
+            int i = 0;
+            while (it.hasNext()) {
+                if (nextNode.execute(it) > 127) {
+                    throw raise(PythonBuiltinClassType.ValueError, NON_HEX_NUMBER_IN_FROMHEX, i);
+                }
+                ++i;
+            }
+            throw shouldNotReachHere();
         }
     }
 }

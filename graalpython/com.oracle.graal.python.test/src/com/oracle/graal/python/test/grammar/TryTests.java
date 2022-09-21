@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.test.grammar;
 
-import org.junit.Test;
-
 import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
+
+import org.junit.Test;
 
 public class TryTests {
 
@@ -204,5 +204,90 @@ public class TryTests {
                         "   assert False, \"\"\n" +
                         "except AssertionError as e:\n" +
                         "   print(len(e.args))\n");
+    }
+
+    @Test
+    public void testExceptionState1() {
+        String source = "import sys\n" +
+                        "try:\n" +
+                        "    raise NameError\n" +
+                        "except BaseException:\n" +
+                        "    print(repr(sys.exc_info()[1]))\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+        assertPrints("NameError()\nNone\n", source);
+    }
+
+    @Test
+    public void testExceptionState2() {
+        String source = "import sys\n" +
+                        "try:\n" +
+                        "    try:\n" +
+                        "        raise NameError\n" +
+                        "    finally:\n" +
+                        "        print(repr(sys.exc_info()[1]))\n" +
+                        "except:\n" +
+                        "    pass\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+        assertPrints("NameError()\nNone\n", source);
+    }
+
+    @Test
+    public void testExceptionState3() {
+        String source = "import sys\n" +
+                        "try:\n" +
+                        "    raise NameError\n" +
+                        "except BaseException:\n" +
+                        "    print(repr(sys.exc_info()[1]))\n" +
+                        "finally:\n" +
+                        "    print(repr(sys.exc_info()[1]))\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+        assertPrints("NameError()\nNone\nNone\n", source);
+    }
+
+    @Test
+    public void testExceptionState4() {
+        String source = "import sys\n" +
+                        "try:\n" +
+                        "    try:\n" +
+                        "        raise NameError\n" +
+                        "    except BaseException:\n" +
+                        "        raise TypeError\n" +
+                        "    finally:\n" +
+                        "        print(repr(sys.exc_info()[1]))\n" +
+                        "except:\n" +
+                        "    pass\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+        assertPrints("TypeError()\nNone\n", source);
+    }
+
+    @Test
+    public void testExceptionState5() {
+        String source = "import sys\n" +
+                        "try:\n" +
+                        "    try:\n" +
+                        "        pass\n" +
+                        "    except BaseException:\n" +
+                        "        pass\n" +
+                        "    else:\n" +
+                        "        raise TypeError\n" +
+                        "    finally:\n" +
+                        "        print(repr(sys.exc_info()[1]))\n" +
+                        "except:\n" +
+                        "    pass\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+        assertPrints("TypeError()\nNone\n", source);
+    }
+
+    @Test
+    public void testExceptionState6() {
+        String source = "import sys\n" +
+                        "try:\n" +
+                        "    raise NameError\n" +
+                        "except BaseException:\n" +
+                        "    pass\n" +
+                        "finally:\n" +
+                        "    print(repr(sys.exc_info()[1]))\n" +
+                        "print(repr(sys.exc_info()[1]))\n";
+        assertPrints("None\nNone\n", source);
     }
 }

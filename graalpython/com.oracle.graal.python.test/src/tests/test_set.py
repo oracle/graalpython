@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
 # ankitv 10/10/13
 # Iterating by Sequence Index
 
+from collections.abc import MutableSet
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -315,6 +316,12 @@ def test_same_id():
     empty_ids = set([id(frozenset()) for i in range(100)])
     assert len(empty_ids) == 1
 
+def test_init():
+    s = {1, 2, 3}
+    s.__init__({4})
+    assert s == {4}
+    s.__init__()
+    assert s == set()
 
 def test_rich_compare():
     class TestRichSetCompare:
@@ -478,3 +485,60 @@ def test_iter_changed_size():
 
     s = {1, 2}
     assert_raises(RuntimeError, iterate_and_update, s)
+
+# copied and modified test_collections.py#test_issue_4920
+# the original will always fail on graalpython due to different set order
+def test_MutableSet_pop():
+    class MySet(MutableSet):
+        __slots__=['__s']
+        def __init__(self,items=None):
+            if items is None:
+                items=[]
+            self.__s=set(items)
+        def __contains__(self,v):
+            return v in self.__s
+        def __iter__(self):
+            return iter(self.__s)
+        def __len__(self):
+            return len(self.__s)
+        def add(self,v):
+            result=v not in self.__s
+            self.__s.add(v)
+            return result
+        def discard(self,v):
+            result=v in self.__s
+            self.__s.discard(v)
+            return result
+        def __repr__(self):
+            return "MySet(%s)" % repr(list(self))
+    l = [5,43]
+    s = MySet(l)
+    v1 = s.pop()
+    assert v1 in l
+    v2 = s.pop()
+    assert v2 in l
+    assert v1 != v2
+    assert len(s) == 0
+
+def test_inplace_ops_mutate():
+    for op in ('-', '&', '|', '^'):
+        s1 = {1, 2}
+        s2 = {1, 3}
+        v = {'a': s1, 'b': s2}
+        exec(f"a {op}= b", v)
+        assert v['a'] is s1
+        assert s1 == eval(f"a {op} b", {'a': {1, 2}, 'b': {1, 3}})
+
+
+def test_graal_4816():
+    from copy import copy
+
+    def do_something(numbers):
+        assert len(numbers)
+
+    foo = set([1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    for _ in copy(foo):
+        foo.pop()
+        if foo:
+            do_something(foo)

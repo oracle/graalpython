@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Assumption;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.IntValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class NativeReferenceCache implements TruffleObject {
@@ -87,21 +89,27 @@ public final class NativeReferenceCache implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                    @Cached("createIdentityProfile()") IntValueProfile arityProfile) throws ArityException {
-        int profiledArity = arityProfile.profile(arguments.length);
-        if (profiledArity == 1) {
-            return resolveNativeReferenceNode.execute(arguments[0], steal);
-        } else if (profiledArity == 2) {
-            return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+                    @Cached("createIdentityProfile()") IntValueProfile arityProfile,
+                    @Exclusive @Cached GilNode gil) throws ArityException {
+        boolean mustRelease = gil.acquire();
+        try {
+            int profiledArity = arityProfile.profile(arguments.length);
+            if (profiledArity == 1) {
+                return resolveNativeReferenceNode.execute(arguments[0], steal);
+            } else if (profiledArity == 2) {
+                return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw ArityException.create(1, 1, arguments.length);
+        } finally {
+            gil.release(mustRelease);
         }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw ArityException.create(1, arguments.length);
     }
 
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
-    public abstract static class ResolveNativeReferenceNode extends Node {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ResolveNativeReferenceNode.class);
+    public abstract static class ResolveNativeReferenceNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(ResolveNativeReferenceNode.class);
 
         private static final Object NO_REF_CNT = new Object();
 
@@ -116,15 +124,17 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
-        @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
+        protected static PythonContext getContext(Node node) {
+            return PythonContext.get(node);
+        }
+
+        @Specialization(guards = {"isSingleContext()", "!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
                         rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
-                        assumptions = "singleContextAssumption()", //
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                        @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
-                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
+                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary,
+                        @Cached("lookupNativeReference(getContext(interoplibrary), pointerObject, refCnt)") NativeObjectReference ref) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 // If this is stealing the reference, we need to fixup the managed reference count.
@@ -139,11 +149,10 @@ public final class NativeReferenceCache implements TruffleObject {
         @Specialization(guards = {"!isResolved(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
         static Object doGenericIntWithRefCnt(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
-                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws CannotCastException {
-            CApiContext cApiContext = context.getCApiContext();
+                        @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile) throws CannotCastException {
+            CApiContext cApiContext = getContext(castToJavaLongNode).getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(refCnt));
@@ -155,14 +164,13 @@ public final class NativeReferenceCache implements TruffleObject {
         @Specialization(guards = {"!isResolved(pointerObject)", "isNoRefCnt(refCnt)"}, replaces = "doCachedPointer")
         static Object doGenericInt(Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
-                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
-                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            CApiContext cApiContext = context.getCApiContext();
+                        @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile) {
+            CApiContext cApiContext = getContext(getRefCntNode).getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
-                int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(pointerObject));
+                int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(cApiContext, pointerObject));
                 return lookupNativeObjectReference(pointerObject, idx, steal, wrapperExistsProfile, stealProfile, cApiContext);
             }
             return pointerObject;
@@ -172,15 +180,14 @@ public final class NativeReferenceCache implements TruffleObject {
         static Object doGeneric(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
-                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile) {
             if (isNoRefCnt(refCnt)) {
-                return doGenericInt(pointerObject, refCnt, steal, getRefCntNode, contextAvailableProfile, wrapperExistsProfile, stealProfile, context);
+                return doGenericInt(pointerObject, refCnt, steal, getRefCntNode, contextAvailableProfile, wrapperExistsProfile, stealProfile);
             }
             try {
-                return doGenericIntWithRefCnt(pointerObject, refCnt, steal, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, stealProfile, context);
+                return doGenericIntWithRefCnt(pointerObject, refCnt, steal, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, stealProfile);
             } catch (CannotCastException e) {
                 return pointerObject;
             }
@@ -200,7 +207,7 @@ public final class NativeReferenceCache implements TruffleObject {
                     return object;
                 }
             } else if (idx < 0) {
-                LOGGER.warning(() -> String.format("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
+                LOGGER.warning(() -> PythonUtils.formatJString("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
             }
             return pointerObject;
         }
@@ -225,11 +232,8 @@ public final class NativeReferenceCache implements TruffleObject {
         }
 
         static boolean isResolved(Object object) {
-            return CApiGuards.isNativeWrapper(object) || object instanceof String;
-        }
-
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+            // TODO review with GR-37896
+            return CApiGuards.isNativeWrapper(object) || object instanceof String || object instanceof TruffleString;
         }
 
         static boolean isNoRefCnt(Object refCnt) {

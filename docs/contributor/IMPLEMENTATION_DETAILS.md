@@ -1,70 +1,5 @@
 # Implementation Details
 
-## Abstract Operations on Python Objects
-
-Many generic operations on Python objects in CPython are defined in the header
-files `object.h` and `abstract.h`. These operations are widely used and their
-interplay and intricacies are the cause for the conversion, error message, and
-control flow bugs when not mimicked correctly. Our current approach is to
-provide many of these abstract operations as part of the `PythonObjectLibrary`.
-
-### Common operations in the PythonObjectLibrary
-
-The code has evolved over time, so not all built-in nodes are prime examples of
-messages that should be used from the PythonObjectLibrary. We are refactoring
-this as we go, but here are a few examples for things you can (or should soon be
-able to) use the PythonObjectLibrary for:
-
- - casting and coercion to `java.lang.String`, array-sized Java `int`, Python
-   index, fileno, `double`, filesystem path, iterator, and more
- - reading the class of an object
- - accessing the `__dict__` attribute of an object
- - hashing objects and testing for equality
- - testing for truthy-ness
- - getting the length
- - testing for abstract types such as `mapping`, `sequence`, `callable`
- - invoking methods or executing callables
- - access objects through the buffer protocol
-
-### PythonObjectLibrary functions with and without state
-
-Usually, there are at least two messages for each operation - one that takes a
-`ThreadState` argument, and one that doesn't. The intent is to allow passing of
-exception state and caller information similar to how we do it with the `PFrame`
-argument even across library messages, which cannot take a VirtualFrame.
-
-All nodes that are used in message implementations must allow uncached
-usage. Often (e.g. in the case of the generic `CallNode`) they offer execute
-methods with and without frames. If a `ThreadState` was passed to the message, a
-frame to pass to the node can be reconstructed using
-`PArguments.frameForCall(threadState)`. Here's an example:
-
-```java
-@ExportMessage
-long messageWithState(ThreadState state,
-        @Cached CallNode callNode) {
-    Object callable = ...
-
-    if (state != null) {
-        return callNode.execute(PArguments.frameForCall(state), callable, arguments);
-    } else {
-        return callNode.execute(callable, arguments);
-    }
-}
-```
-
-*Note*: It is **always** preferable to call an `execute` method with a
-`VirtualFrame` when both one with and without exist! The reason is that this
-avoids materialization of the frame state in more cases, as described on the
-section on Python's global thread state above.
-
-### Other libraries in the codebase
-
-Accessing hashing storages (the storage for `dict`, `set`, and `frozenset`)
-should be done via the `HashingStorageLibrary`. We are in the process of
-creating a `SequenceStorageLibrary` for sequence types (`tuple`, `list`) to
-replace the `SequenceStorageNodes` collection of classes.
-
 ## Python Global Thread State
 
 In CPython, each stack frame is allocated on the heap, and there's a global
@@ -147,10 +82,10 @@ and holding on to the last (if any) in a local variable.
 
 ## Patching of Packages
 
-Some PyPI packages contain code that is not compatible with GraalPython.
-To overcome this limitation and support such packages, GraalPython contains
+Some PyPI packages contain code that is not compatible with GraalPy.
+To overcome this limitation and support such packages, GraalPy contains
 patches for some popular packages. The patches are applied to packages
-installed via GraalPython specific utility `ginstall` and also to packages
+installed via GraalPy specific utility `ginstall` and also to packages
 installed via `pip`. This is achieved by patching `pip` code during the loading
 of the `pip` module in `pip_hook.py`.
 
@@ -199,3 +134,77 @@ this order:
 
 The same applies to `*.dir` files, and the search is independent of the search
 for the `*.patch` file, i.e., multiple versions of `*.patch` may share one `*.dir`.
+
+## The GIL
+
+We always run with a GIL, because C extensions in CPython expect to do so and
+are usually not written to be reentrant. The reason to always have the GIL
+enabled is that when using Python, at least Sulong/LLVM is always available in
+the same context and we cannot know if someone may be using that (or another
+polyglot language or the Java host interop) to start additional threads that
+could call back into Python. This could legitimately happen in C extensions when
+the C extension authors use knowledge of how CPython works to do something
+GIL-less in a C thread that is fine to do on CPython's data structures, but not
+for ours.
+
+Suppose we were running GIL-less until a second thread appears. There is now two
+options: the second thread immediately takes the GIL, but both threads might be
+executing in parallel for a little while before the first thread gets to the
+next safepoint where they try to release and re-acquire the GIL. Option two is
+that we block the second thread on some other semaphore until the first thread
+has acquired the GIL. This scenario may deadlock if the first thread is
+suspended in a blocking syscall. This could be a legitimate use case when
+e.g. one thread is supposed to block on a `select` call that the other thread
+would unblock by operating on the selected resource. Now the second thread
+cannot start to run because it is waiting for the first thread to acquire the
+GIL. To get around this potential deadlock, we would have to "remember" around
+blocking calls that the first thread would have released the GIL before and
+re-acquired it after that point. Since this is equivalent to just releasing and
+re-acquiring the GIL, we might as well always do that.
+
+The implication of this is that we may have to acquire and release the GIL
+around all library messages that may be invoked without already holding the
+GIL. The pattern here is, around every one of those messages:
+
+```
+@ExportMessage xxx(..., @Cached GilNode gil) {
+    boolean mustRelease = gil.acquire();
+    try {
+        ...
+    } finally {
+        gil.release(mustRelease);
+    }
+}
+```
+
+The `GilNode` when used in this pattern ensures that we only release the GIL if
+we acquired it before. The `GilNode` internally uses profiles to ensure that if
+we are always running single threaded or always own the GIL already when we get
+to a specific message we never emit a boundary call to lock and unlock the
+GIL. This implies that we may deopt in some places if, after compiling some
+code, we later start a second thread.
+
+## Threading
+
+As explained above, we use a GIL to prevent parallel execution of Python code. A
+timer is running the interrupts threads periodically to relinquish the GIL and
+give other threads a chance to run. This preemption is prohibited in most C
+extension code, however, since the assumption in C extensions written for
+CPython is that the GIL will not be relinquished while executing the C code and
+many C extensions are not written to reentrant.
+
+So, commonly at any given time there is only one Graal Python thread executing
+and all the other threads are waiting to acquire the GIL. If the Python
+interpreter shuts down, there are two sets of threads we need to deal with:
+"well-behaved" threads created using the `threading` module are interrupted and
+joined using the `threading` module's `shutdown` function. Daemon threads or
+threads created using the internal Python `_thread` module cannot be joined in
+this way. For those threads, we invalidate their `PythonThreadState` (a
+thread-local data structure) and use the Java `Thread#interrupt` method to
+interrupt their waiting on the GIL. This exception is handled by checking if the
+thread state has been invalidated and if so, just exit the thread gracefully.
+
+For embedders, it may be important to be able to interrupt Python threads by
+other means. We use the TruffleSafepoint mechanism to mark our threads waiting
+to acquire the GIL as blocked for the purpose of safepoints. The Truffle
+safepoint action mechanism can thus be used to kill threads waiting on the GIL.

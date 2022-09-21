@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -217,6 +217,28 @@ public class ListTests {
                         "lst = [next(i), 'f']\n" + //
                         "print(lst)\n";
         assertPrints("[1, 'f']\n", source);
+    }
+
+    @Test
+    public void listLiteral1() {
+        String source = "print([1, 2, 3])\n";
+        assertPrints("[1, 2, 3]\n", source);
+    }
+
+    @Test
+    public void listLiteral2() {
+        String source = "s1 = [1, 2, 3]\n" +
+                        "s2 = [*s1, 4]\n" +
+                        "print(s2)\n";
+        assertPrints("[1, 2, 3, 4]\n", source);
+    }
+
+    @Test
+    public void listLiteral3() {
+        String source = "s1 = [1, 2, 3]\n" +
+                        "s2 = [0, *s1, 4]\n" +
+                        "print(s2)\n";
+        assertPrints("[0, 1, 2, 3, 4]\n", source);
     }
 
     // Disabled for now.

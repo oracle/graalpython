@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,8 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -45,6 +47,14 @@ def _reference_from_string_n(args):
     arg_str = args[0]
     arg_n = args[1]
     return bytes(arg_str[0:arg_n], "utf-8")
+
+def _reference_from_object(args):
+    obj = args[0]
+    if type(obj) == bytes:
+        return obj
+    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
+        return bytes(obj)
+    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
 
 
 def _as_string_and_size(args):
@@ -58,6 +68,9 @@ def _reference_format(args):
     fmt_args = tuple(args[1:])
     return (fmt % fmt_args).encode()
 
+class CIter:
+    def __iter__(self):
+        return iter([1, 2, 3])
 
 class TestPyBytes(CPyExtTestCase):
 
@@ -78,9 +91,9 @@ class TestPyBytes(CPyExtTestCase):
 
     # PyBytes_FromStringAndSize
     test_PyBytes_FromStringAndSizeNULL = CPyExtFunction(
-        lambda args: len(b"\x00"*args[0]),
-        lambda: ( (128, ), ),
-        code = """Py_ssize_t PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
+        lambda args: len(b"\x00" * args[0]),
+        lambda: ((128,),),
+        code="""Py_ssize_t PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
             // we are return the length because the content is random (uninitialized)
             return PyBytes_Size(PyBytes_FromStringAndSize(NULL, n));
         }
@@ -146,10 +159,25 @@ class TestPyBytes(CPyExtTestCase):
         argspec="sssi",
         arguments=["char* fmt", "char* arg0", "char* arg1", "int arg2"],
     )
+    
+    # PyBytes_FromObject
+    test_PyBytes_FromObject = CPyExtFunction(
+        _reference_from_object,
+        lambda: (("hello", ),
+                 (bytes(1), ),
+                 (1, ),
+                 ([1, 2, 4], ),
+                 ((1, 2, 3), ),
+                 (memoryview(b'abc'), ),
+                 (CIter(),)),
+        resultspec="O",
+        argspec="O",
+        cmpfunc=unhandled_error_compare
+    )
 
     # PyBytes_Concat
     test_PyBytes_Concat = CPyExtFunctionOutVars(
-        lambda args: (0, args[0] + args[1]),
+        lambda args: (0, args[0] + args[1]),        
         lambda: tuple([tuple(["hello".encode(), " world".encode()])]),
         code='''int wrap_PyBytes_Concat(PyObject** arg0, PyObject* arg1) {
             if(*arg0) {
@@ -278,6 +306,17 @@ class TestPyBytes(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test__PyBytes_Join = CPyExtFunction(
+        lambda args: args[0].join(args[1]),
+        lambda: ( 
+            (b"hello", b"world"),
+        ),        
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* original", "PyObject* newPart"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyBytes_Resize_NativeStorage = CPyExtFunction(
         lambda args: args[1],
         lambda: (
@@ -337,3 +376,111 @@ class TestPyBytes(CPyExtTestCase):
         callfunction="resize_bytes",
         cmpfunc=unhandled_error_compare
     )
+
+    test_bytearray_buffer = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (bytearray(b"hello_world"), b"Hello_worlds"),
+        ),
+        code="""
+        PyObject* test_buffer(PyObject* bytes, PyObject* expected) {
+            Py_buffer buffer;
+            PyObject* ret;
+            if (PyObject_GetBuffer(bytes, &buffer, PyBUF_SIMPLE | PyBUF_WRITABLE) != 0)
+                return NULL;
+            *(char*)buffer.buf = 'H';
+            Py_ssize_t len = PyObject_Size(bytes);
+            if (len == -1)
+                goto error_release;
+            ret = PyObject_CallMethod(bytes, "insert", "ni", len, 'x');
+            if (ret != NULL) {
+                Py_DECREF(ret);
+                PyErr_SetString(PyExc_AssertionError, "insert didn't raise BufferError");
+                goto error_release;
+            }
+            if (!PyErr_ExceptionMatches(PyExc_BufferError))
+                goto error_release;
+            PyErr_Clear();
+            PyBuffer_Release(&buffer);
+            ret = PyObject_CallMethod(bytes, "insert", "ni", len, 's');
+            if (ret == NULL)
+                return NULL;
+            Py_DECREF(ret);
+            Py_INCREF(bytes);
+            return bytes;
+        error_release: 
+            PyBuffer_Release(&buffer);
+            return NULL;            
+        }
+        """,
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* bytes", "PyObject* expected"],
+        callfunction="test_buffer",
+        cmpfunc=unhandled_error_compare
+    )
+
+
+class ObjectTests(unittest.TestCase):
+    def test_create_from_buffer(self):
+        TestType = CPyExtType(
+            "TestBytesBuffer1",
+            """
+            int bufcount = 0;
+            char buf[] = {98, 111, 111};
+            int getbuffer(TestBytesBuffer1Object *self, Py_buffer *view, int flags) {
+                bufcount++;
+                return PyBuffer_FillInfo(view, (PyObject*)self, buf, sizeof(buf), 1, flags);
+            }
+            void releasebuffer(TestBytesBuffer1Object *self, Py_buffer *view) {
+                bufcount--;
+            }
+            static PyBufferProcs as_buffer = {
+                (getbufferproc)getbuffer,
+                (releasebufferproc)releasebuffer,
+            };
+            PyObject* get_bufcount(PyObject* self, PyObject* args) {
+                return PyLong_FromLong(bufcount);
+            }
+            """,
+            tp_as_buffer='&as_buffer',
+            tp_methods='{"get_bufcount", get_bufcount, METH_NOARGS, ""}',
+        )
+        obj = TestType()
+        self.assertEqual(b'boo', bytes(obj))
+        self.assertEqual(b'boo', bytearray(obj))
+        self.assertEqual(0, obj.get_bufcount())
+
+    def test_create_from_buffer_not_buffer(self):
+        # test that we fall through to iteration when the object doesn't report a buffer
+        TestType = CPyExtType(
+            "TestBytesIterable1",
+            """
+            PyObject* iter(PyObject* self) {
+                PyErr_SetString(PyExc_ValueError, "Expected");
+                return NULL;
+            }
+            """,
+            tp_iter='&iter'
+        )
+
+        self.assertRaises(ValueError, bytes, TestType())
+        self.assertRaises(ValueError, bytearray, TestType())
+
+    def test_create_from_buffer_exception(self):
+        TestType = CPyExtType(
+            "TestBytesBuffer2",
+            """
+            int getbuffer(TestBytesBuffer2Object *self, Py_buffer *view, int flags) {
+                PyErr_SetString(PyExc_ValueError, "I'm broken");
+                return -1;
+            }
+            static PyBufferProcs as_buffer = {
+                (getbufferproc)getbuffer,
+                (releasebufferproc)NULL,
+            };
+            """,
+            tp_as_buffer='&as_buffer',
+        )
+        self.assertRaises(ValueError, bytes, TestType())
+        self.assertRaises(ValueError, bytearray, TestType())

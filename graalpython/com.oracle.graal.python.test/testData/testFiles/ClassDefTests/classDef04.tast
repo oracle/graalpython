@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
           Identifier: Complex
           PythonCallBinary SourceSection: [0,110]`class Complex:↵    d...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: Complex SourceSection: None
               Arguments: None
               KwArguments: None
@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,110]`class Complex:↵    d...`
                 Name: Complex
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,17 +40,13 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                         QualName: Complex
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [19,110]`def __init__(self, r...`
-                        SetItemNodeGen SourceSection: [19,110]`def __init__(self, r...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [19,110]`def __init__(self, r...`
+                          Identifier: __init__
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -67,7 +62,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, realpart, imagpart, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, imagpart, realpart, self]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -77,44 +72,36 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: self
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,self,Illegal]
+                                        Frame: [0,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: realpart
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,realpart,Illegal]
+                                        Frame: [1,realpart,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: imagpart
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,imagpart,Illegal]
+                                        Frame: [2,imagpart,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 2
                                     FunctionBodyNode SourceSection: [67,110]`self.r = realpart↵  ...`
                                       SetAttributeNodeGen SourceSection: [67,84]`self.r = realpart`
                                         Attribute: r
-                                        ReadLocalVariableNode SourceSection: [67,71]`self`
+                                        ReadLocalVariableNodeGen SourceSection: [67,71]`self`
                                           Frame: [0,self,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [76,84]`realpart`
+                                        ReadLocalVariableNodeGen SourceSection: [76,84]`realpart`
                                           Frame: [1,realpart,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [93,110]`self.i = imagpart`
                                         Attribute: i
-                                        ReadLocalVariableNode SourceSection: [93,97]`self`
+                                        ReadLocalVariableNodeGen SourceSection: [93,97]`self`
                                           Frame: [0,self,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [102,110]`imagpart`
+                                        ReadLocalVariableNodeGen SourceSection: [102,110]`imagpart`
                                           Frame: [2,imagpart,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [3,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,7 +98,7 @@ PyTypeObject PyType_Type = {
     0,                                          /* tp_is_gc */
 };
 
-PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), 0, object_dealloc, PyObject_Del);
+PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del);
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
 typedef int (*type_issubtype_fun_t)(PyTypeObject*, PyTypeObject*);
@@ -135,7 +135,7 @@ PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
 PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
     PyObject* newInstance = cls->tp_alloc(cls, 0);
     // TODO(fa): CPython does not do it here; verify if that's correct
-    Py_TYPE(newInstance) = cls;
+    Py_SET_TYPE(newInstance, cls);
     return newInstance;
 }
 
@@ -153,10 +153,6 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
     }
     // TODO value should be a weak reference !
     return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
-}
-
-static PyObject* native_int_to_bool(int res) {
-    return res ? Py_True : Py_False;
 }
 
 /*
@@ -320,6 +316,14 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
 #define COPYMAP(SLOT) COPYSLOT(tp_as_mapping->SLOT)
 #define COPYBUF(SLOT) COPYSLOT(tp_as_buffer->SLOT)
 
+    if (type->tp_as_buffer != NULL && base->tp_as_buffer != NULL) {
+        basebase = base->tp_base;
+        if (basebase->tp_as_buffer == NULL)
+            basebase = NULL;
+        COPYBUF(bf_getbuffer);
+        COPYBUF(bf_releasebuffer);
+    }
+
     basebase = base->tp_base;
 
     COPYSLOT(tp_dealloc);
@@ -347,6 +351,10 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         }
         /* COPYSLOT(tp_call); */
     }
+    {
+        COPYSLOT(tp_iter);
+        COPYSLOT(tp_iternext);
+    }
 
     if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
         (base->tp_flags & Py_TPFLAGS_HAVE_FINALIZE)) {
@@ -372,72 +380,75 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
      */
 }
 
-// TODO support member flags other than READONLY
-UPCALL_ID(AddMember);
-static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
-	UPCALL_CEXT_VOID(_jls_AddMember,
-			cls,
-		    native_to_java(type_dict),
-		    native_to_java(mname),
-		    mtype,
-		    moffset,
-		    native_to_java(((mflags & READONLY) == 0) ? Py_True : Py_False),
-		    mdoc ? polyglot_from_string(mdoc, SRC_CS) : native_to_java(Py_None)
-	);
+typedef int (*add_member_fun_t)(void *, void *, void *, int32_t, Py_ssize_t, int32_t, char *);
+UPCALL_TYPED_ID(AddMember, add_member_fun_t);
+static int add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
+    // TODO support member flags other than READONLY
+    return _jls_AddMember( cls, native_to_java(type_dict), native_to_java(mname), mtype, moffset, (mflags & READONLY) == 0, mdoc);
 }
 
-void add_getset(PyTypeObject* cls, char* name, getter getter_fun, setter setter_fun, char* doc, void* closure) {
-	polyglot_invoke(PY_TRUFFLE_CEXT,
-                    "AddGetSet",
-                    cls,
-                    polyglot_from_string(name, SRC_CS),
-                    getter_fun != NULL ? (getter) native_pointer_to_java(getter_fun) : to_java(Py_None),
-                    setter_fun != NULL ? (setter) native_pointer_to_java(setter_fun) : to_java(Py_None),
-                    doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
-                    /* do not convert the closure, it is handed to the getter and setter as-is */
-                    closure);
+typedef int (*add_getset_fun_t)(PyTypeObject *, PyObject *, void *, void *, void *, char *, void *);
+UPCALL_TYPED_ID(AddGetSet, add_getset_fun_t);
+int add_getset(PyTypeObject* cls, PyObject* type_dict, char* name, getter getter_fun, setter setter_fun, char* doc, void* closure) {
+    /* do not convert the closure, it is handed to the getter and setter as-is */
+    return _jls_AddGetSet(cls,
+                        native_to_java(type_dict),
+                        polyglot_from_string(name, SRC_CS),
+                        getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
+                        setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                        doc,
+                        closure);
 }
 
-static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, void* signature, char* doc) {
-        polyglot_invoke(PY_TRUFFLE_CEXT,
-                       "AddFunction",
+//                                     method_def     cls             dict        name          cfunc   flags sig  doc
+typedef int (*AddFunctionToType_fun_t)(PyMethodDef *, PyTypeObject *, PyObject *, const char *, void *, int , int, char *);
+UPCALL_TYPED_ID(AddFunctionToType, AddFunctionToType_fun_t);
+static void add_method(PyTypeObject* cls, PyObject* type_dict, PyMethodDef* def) {
+        _jls_AddFunctionToType(def,
                        cls,
                        native_to_java(type_dict),
-                       polyglot_from_string(name, SRC_CS),
-                       native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(native_pointer_to_java(meth), result_conversion) : native_pointer_to_java(meth)),
-                       (signature != NULL ? signature : get_method_flags_wrapper(flags)),
-                       doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
-                       (flags) > 0 && ((flags) & METH_CLASS) != 0,
-                       (flags) > 0 && ((flags) & METH_STATIC) != 0);
+                       polyglot_from_string(def->ml_name, SRC_CS),
+                       function_pointer_to_java(def->ml_meth),
+                       def->ml_flags,
+                       get_method_flags_wrapper(def->ml_flags),
+                       def->ml_doc);
+}
+
+typedef int (*add_slot_fun_t)(PyTypeObject *, PyObject *, void *, void *, int , int, char *);
+UPCALL_TYPED_ID(add_slot, add_slot_fun_t);
+static void add_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* meth, int flags, int signature, char* doc) {
+    if (meth) {
+        _jls_add_slot(cls,
+                native_to_java(type_dict),
+                polyglot_from_string(name, SRC_CS),
+                function_pointer_to_java(meth),
+                flags,
+                (signature != 0 ? signature : get_method_flags_wrapper(flags)),
+                doc);
+    }
 }
 
 #define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \
-	add_member((__javacls__), (__tpdict__), (__mname__), (__mtype__), (__moffset__), (__mflags__), (__mdoc__))
+    add_member((__javacls__), (__tpdict__), (__mname__), (__mtype__), (__moffset__), (__mflags__), (__mdoc__))
 
 
-#define ADD_GETSET(__javacls__, __name__, __getter__, __setter__, __doc__, __closure__)     \
-	add_getset((__javacls__), (__name__), (__getter__), (__setter__), (__doc__), (__closure__))
+#define ADD_GETSET(__javacls__, __tpdict__, __name__, __getter__, __setter__, __doc__, __closure__)     \
+    add_getset((__javacls__), (__tpdict__), (__name__), (__getter__), (__setter__), (__doc__), (__closure__))
 
 
 UPCALL_ID(PyTruffle_Get_Inherited_Native_Slots);
 UPCALL_ID(PyTruffle_Compute_Mro);
+UPCALL_ID(PyTruffle_NewTypeDict);
 int PyType_Ready(PyTypeObject* cls) {
 #define RETURN_ERROR(__type__) \
-	do { \
+    do { \
       	(__type__)->tp_flags &= ~Py_TPFLAGS_READYING; \
       	Py_DECREF((__type__)); \
         return -1; \
 	} while(0)
 
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
-#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, NULL, m.ml_meth, m.ml_flags, NULL, m.ml_doc)
-#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, NULL, meth, flags, NULL, name)
-#define ADD_SLOT_PRIMITIVE(name, meth, flags) ADD_METHOD_OR_SLOT(name, NULL, meth, flags, NULL, name)
-#define ADD_SLOT_CONV(name, result_conversion, meth, flags, signature) ADD_METHOD_OR_SLOT(name, result_conversion, meth, flags, signature, name)
-#define ADD_METHOD_OR_SLOT(__name__, __res_conv__, __meth__, __flags__, __signature__, __doc__) \
-	if (__meth__) { \
-            add_method_or_slot(cls, dict, (__name__), (__res_conv__), (__meth__), (__flags__), (__signature__), (__doc__)); \
-	}
+#define ADD_SLOT_CONV(__name__, __meth__, __flags__, __signature__) add_slot(cls, dict, (__name__), (__meth__), (__flags__), (__signature__), NULL)
 
     Py_ssize_t n;
     Py_ssize_t i;
@@ -487,7 +498,7 @@ int PyType_Ready(PyTypeObject* cls) {
        not NULL (it's initialized to &PyType_Type).      But coverity doesn't
        know that. */
     if (Py_TYPE(cls) == NULL && base != NULL) {
-        Py_TYPE(cls) = Py_TYPE(base);
+        Py_SET_TYPE(cls, Py_TYPE(base));
     }
 
 
@@ -499,26 +510,22 @@ int PyType_Ready(PyTypeObject* cls) {
         } else {
             bases = PyTuple_Pack(1, base);
         }
+        cls->tp_bases = bases;
     }
-    cls->tp_bases = bases;
 
     /* Initialize tp_dict */
     PyObject* dict = cls->tp_dict;
     if (dict == NULL) {
-        dict = PyDict_New();
+        dict = UPCALL_CEXT_O(_jls_PyTruffle_NewTypeDict, native_type_to_java(cls));
         if (dict == NULL) {
         	RETURN_ERROR(cls);
         }
         cls->tp_dict = dict;
     }
 
-    PyMethodDef* methods = cls->tp_methods;
-    if (methods) {
-        int idx = 0;
-        PyMethodDef def = methods[idx];
-        while (def.ml_name != NULL) {
-            ADD_METHOD(def);
-            def = methods[++idx];
+    if (cls->tp_methods) {
+        for (PyMethodDef* def = cls->tp_methods; def->ml_name != NULL; def++) {
+            add_method(cls, dict, def);
         }
     }
 
@@ -537,7 +544,7 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyGetSetDef getset = getsets[i];
         while (getset.name != NULL) {
-        	ADD_GETSET(cls, getset.name, getset.get, getset.set, getset.doc, getset.closure);
+        	ADD_GETSET(cls, dict, getset.name, getset.get, getset.set, getset.doc, getset.closure);
             getset = getsets[++i];
         }
     }
@@ -550,7 +557,7 @@ int PyType_Ready(PyTypeObject* cls) {
         inherit_special(cls, cls->tp_base);
 
     /* Initialize tp_dict properly */
-    bases = cls->tp_mro;
+    bases = native_pointer_to_java(cls->tp_mro);
     assert(bases != NULL);
     assert(PyTuple_Check(bases));
     n = PyTuple_GET_SIZE(bases);
@@ -564,127 +571,130 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
 
     // add special methods defined directly on the type structs
-    ADD_SLOT_PRIMITIVE("__dealloc__", cls->tp_dealloc, -1);
+    ADD_SLOT_CONV("__dealloc__", cls->tp_dealloc, -1, JWRAPPER_DIRECT);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
     // tp_getattr and tp_setattr are deprecated, and should be the same as
     // tp_getattro and tp_setattro
 
     // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
     // and convert arguments that should be C primitives.
-    ADD_SLOT_CONV("__getattr__", NULL, cls->tp_getattr, -2, JWRAPPER_GETATTR);
-    ADD_SLOT_CONV("__setattr__", NULL, cls->tp_setattr, -3, JWRAPPER_SETATTR);
-    ADD_SLOT("__repr__", cls->tp_repr, -1);
-    ADD_SLOT_PRIMITIVE("__hash__", cls->tp_hash, -1);
-    ADD_SLOT("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT("__str__", cls->tp_str, -1);
-    ADD_SLOT("__getattr__", cls->tp_getattro, -2);
-    ADD_SLOT_PRIMITIVE("__setattr__", cls->tp_setattro, -3);
-    ADD_SLOT_CONV("__clear__", native_int_to_bool, cls->tp_clear, -1, NULL);
+    ADD_SLOT_CONV("__getattr__", cls->tp_getattr, -2, JWRAPPER_GETATTR);
+    ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR);
+    ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_REPR);
+    ADD_SLOT_CONV("__hash__", cls->tp_hash, -1, JWRAPPER_HASHFUNC);
+    ADD_SLOT_CONV("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS, JWRAPPER_CALL);
+    ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_STR);
+    ADD_SLOT_CONV("__getattr__", cls->tp_getattro, -2, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__setattr__", cls->tp_setattro, -3, JWRAPPER_SETATTRO);
+    ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);
 
     /* IMPORTANT NOTE: If the class already provides 'tp_richcompare' but this is the default
        'object.__truffle_richcompare__' function, then we need to break a recursive cycle since
        the default function dispatches to the individual comparison functions which would in
        this case again invoke 'object.__truffle_richcompare__'. */
     if (cls->tp_richcompare && cls->tp_richcompare != PyBaseObject_Type.tp_richcompare) {
-        ADD_SLOT_CONV("__compare__", NULL, cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
-        ADD_SLOT_CONV("__lt__", NULL, cls->tp_richcompare, -2, JWRAPPER_LT);
-        ADD_SLOT_CONV("__le__", NULL, cls->tp_richcompare, -2, JWRAPPER_LE);
-        ADD_SLOT_CONV("__eq__", NULL, cls->tp_richcompare, -2, JWRAPPER_EQ);
-        ADD_SLOT_CONV("__ne__", NULL, cls->tp_richcompare, -2, JWRAPPER_NE);
-        ADD_SLOT_CONV("__gt__", NULL, cls->tp_richcompare, -2, JWRAPPER_GT);
-        ADD_SLOT_CONV("__ge__", NULL, cls->tp_richcompare, -2, JWRAPPER_GE);
+        ADD_SLOT_CONV("__compare__", cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
+        ADD_SLOT_CONV("__lt__", cls->tp_richcompare, -2, JWRAPPER_LT);
+        ADD_SLOT_CONV("__le__", cls->tp_richcompare, -2, JWRAPPER_LE);
+        ADD_SLOT_CONV("__eq__", cls->tp_richcompare, -2, JWRAPPER_EQ);
+        ADD_SLOT_CONV("__ne__", cls->tp_richcompare, -2, JWRAPPER_NE);
+        ADD_SLOT_CONV("__gt__", cls->tp_richcompare, -2, JWRAPPER_GT);
+        ADD_SLOT_CONV("__ge__", cls->tp_richcompare, -2, JWRAPPER_GE);
     }
-    ADD_SLOT("__iter__", cls->tp_iter, -1);
-    ADD_SLOT_CONV("__next__", NULL, cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
-    ADD_SLOT("__get__", cls->tp_descr_get, -3);
-    ADD_SLOT_PRIMITIVE("__set__", cls->tp_descr_set, -3);
-    ADD_SLOT_PRIMITIVE("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT_CONV("__alloc__", NULL, cls->tp_alloc, -2, JWRAPPER_ALLOC);
-    ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT_PRIMITIVE("__free__", cls->tp_free, -1);
-    ADD_SLOT_PRIMITIVE("__del__", cls->tp_del, -1);
-    ADD_SLOT_PRIMITIVE("__finalize__", cls->tp_finalize, -1);
+    ADD_SLOT_CONV("__iter__", cls->tp_iter, -1, JWRAPPER_UNARYFUNC);
+    ADD_SLOT_CONV("__next__", cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
+    ADD_SLOT_CONV("__get__", cls->tp_descr_get, -3, JWRAPPER_DESCR_GET);
+    ADD_SLOT_CONV("__set__", cls->tp_descr_set, -3, JWRAPPER_DESCR_SET);
+    ADD_SLOT_CONV("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
+    ADD_SLOT_CONV("__alloc__", cls->tp_alloc, -2, JWRAPPER_ALLOC);
+    ADD_SLOT_CONV("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS, JWRAPPER_NEW);
+    ADD_SLOT_CONV("__free__", cls->tp_free, -1, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
 
-    PyNumberMethods* numbers = cls->tp_as_number;
-    if (numbers) {
-        ADD_SLOT("__add__", numbers->nb_add, -2);
-        ADD_SLOT_CONV("__radd__", NULL, numbers->nb_add, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__sub__", numbers->nb_subtract, -2);
-        ADD_SLOT_CONV("__rsub__", NULL, numbers->nb_subtract, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__mul__", numbers->nb_multiply, -2);
-        ADD_SLOT_CONV("__rmul__", NULL, numbers->nb_multiply, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__mod__", numbers->nb_remainder, -2);
-        ADD_SLOT_CONV("__rmod__", NULL, numbers->nb_remainder, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
-        ADD_SLOT_CONV("__rdivmod__", NULL, numbers->nb_divmod, -2, JWRAPPER_REVERSE);
-        ADD_SLOT_CONV("__pow__", NULL, numbers->nb_power, -3, JWRAPPER_POW);
-        ADD_SLOT_CONV("__rpow__", NULL, numbers->nb_power, -3, JWRAPPER_REVERSE_POW);
-        ADD_SLOT("__neg__", numbers->nb_negative, -1);
-        ADD_SLOT("__pos__", numbers->nb_positive, -1);
-        ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT_CONV("__bool__", native_int_to_bool, numbers->nb_bool, -1, NULL);
-        ADD_SLOT("__invert__", numbers->nb_invert, -1);
-        ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
-        ADD_SLOT_CONV("__rlshift__", NULL, numbers->nb_lshift, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
-        ADD_SLOT_CONV("__rrshift__", NULL, numbers->nb_rshift, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__and__", numbers->nb_and, -2);
-        ADD_SLOT_CONV("__rand__", NULL, numbers->nb_and, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__xor__", numbers->nb_xor, -2);
-        ADD_SLOT_CONV("__rxor__", NULL, numbers->nb_xor, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__or__", numbers->nb_or, -2);
-        ADD_SLOT_CONV("__ror__", NULL, numbers->nb_or, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__int__", numbers->nb_int, -1);
-        ADD_SLOT("__float__", numbers->nb_float, -1);
-        ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
-        ADD_SLOT("__isub__", numbers->nb_inplace_subtract, -2);
-        ADD_SLOT("__imul__", numbers->nb_inplace_multiply, -2);
-        ADD_SLOT("__irem__", numbers->nb_inplace_remainder, -2);
-        ADD_SLOT("__ipow__", numbers->nb_inplace_power, -2);
-        ADD_SLOT("__ilshift__", numbers->nb_inplace_lshift, -2);
-        ADD_SLOT("__irshift__", numbers->nb_inplace_rshift, -2);
-        ADD_SLOT("__iand__", numbers->nb_inplace_and, -2);
-        ADD_SLOT("__ixor__", numbers->nb_inplace_xor, -2);
-        ADD_SLOT("__ior__", numbers->nb_inplace_or, -2);
-        ADD_SLOT("__floordiv__", numbers->nb_floor_divide, -2);
-        ADD_SLOT_CONV("__rfloordiv__", NULL, numbers->nb_floor_divide, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__truediv__", numbers->nb_true_divide, -2);
-        ADD_SLOT_CONV("__rtruediv__", NULL, numbers->nb_true_divide, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__ifloordiv__", numbers->nb_inplace_floor_divide, -2);
-        ADD_SLOT("__itruediv__", numbers->nb_inplace_true_divide, -2);
-        ADD_SLOT("__index__", numbers->nb_index, -1);
-        ADD_SLOT("__matmul__", numbers->nb_matrix_multiply, -2);
-        ADD_SLOT_CONV("__rmatmul__", NULL, numbers->nb_matrix_multiply, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__imatmul__", numbers->nb_inplace_matrix_multiply, -2);
-    }
-
-    PySequenceMethods* sequences = cls->tp_as_sequence;
+    PySequenceMethods* sequences = native_pointer_to_java(cls->tp_as_sequence);
     if (sequences) {
-        ADD_SLOT_PRIMITIVE("__len__", sequences->sq_length, -1);
-        ADD_SLOT("__add__", sequences->sq_concat, -2);
-        ADD_SLOT_CONV("__mul__", NULL, sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__getitem__", NULL, sequences->sq_item, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__setitem__", NULL, sequences->sq_ass_item, -3, JWRAPPER_SSIZE_OBJ_ARG);
-        ADD_SLOT_PRIMITIVE("__contains__", sequences->sq_contains, -2);
-        ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
-        ADD_SLOT_CONV("__imul__", NULL, sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
+    	// sequence functions first, so that the number functions take precendence
+        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
+        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
+        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
+        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
+        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
+        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
-    PyMappingMethods* mappings = cls->tp_as_mapping;
+    PyNumberMethods* numbers = native_pointer_to_java(cls->tp_as_number);
+    if (numbers) {
+        ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__radd__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__sub__", numbers->nb_subtract, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rsub__", numbers->nb_subtract, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__mul__", numbers->nb_multiply, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rmul__", numbers->nb_multiply, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__mod__", numbers->nb_remainder, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rmod__", numbers->nb_remainder, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__divmod__", numbers->nb_divmod, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rdivmod__", numbers->nb_divmod, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__pow__", numbers->nb_power, -3, JWRAPPER_TERNARYFUNC);
+        ADD_SLOT_CONV("__rpow__", numbers->nb_power, -3, JWRAPPER_TERNARYFUNC_R);
+        ADD_SLOT_CONV("__neg__", numbers->nb_negative, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__pos__", numbers->nb_positive, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__abs__", numbers->nb_absolute, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__bool__", numbers->nb_bool, -1, JWRAPPER_INQUIRY);
+        ADD_SLOT_CONV("__invert__", numbers->nb_invert, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__lshift__", numbers->nb_lshift, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rlshift__", numbers->nb_lshift, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__rshift__", numbers->nb_rshift, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rrshift__", numbers->nb_rshift, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__and__", numbers->nb_and, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rand__", numbers->nb_and, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__xor__", numbers->nb_xor, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rxor__", numbers->nb_xor, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__or__", numbers->nb_or, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__ror__", numbers->nb_or, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__int__", numbers->nb_int, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__float__", numbers->nb_float, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__iadd__", numbers->nb_inplace_add, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__isub__", numbers->nb_inplace_subtract, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imul__", numbers->nb_inplace_multiply, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imod__", numbers->nb_inplace_remainder, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__ipow__", numbers->nb_inplace_power, -3, JWRAPPER_TERNARYFUNC);
+        ADD_SLOT_CONV("__ilshift__", numbers->nb_inplace_lshift, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__irshift__", numbers->nb_inplace_rshift, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__iand__", numbers->nb_inplace_and, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__ixor__", numbers->nb_inplace_xor, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__ior__", numbers->nb_inplace_or, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__floordiv__", numbers->nb_floor_divide, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rfloordiv__", numbers->nb_floor_divide, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__truediv__", numbers->nb_true_divide, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rtruediv__", numbers->nb_true_divide, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__ifloordiv__", numbers->nb_inplace_floor_divide, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__itruediv__", numbers->nb_inplace_true_divide, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__index__", numbers->nb_index, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__matmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rmatmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__imatmul__", numbers->nb_inplace_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
+    }
+
+    PyMappingMethods* mappings = native_pointer_to_java(cls->tp_as_mapping);
     if (mappings) {
-        ADD_SLOT_PRIMITIVE("__len__", mappings->mp_length, -1);
-        ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT_PRIMITIVE("__setitem__", mappings->mp_ass_subscript, -3);
+        ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
+        ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__setitem__", mappings->mp_ass_subscript, -3, JWRAPPER_OBJOBJARGPROC);
+        ADD_SLOT_CONV("__delitem__", mappings->mp_ass_subscript, -3, JWRAPPER_MP_DELITEM);
     }
 
-    PyAsyncMethods* async = cls->tp_as_async;
+    PyAsyncMethods* async = native_pointer_to_java(cls->tp_as_async);
     if (async) {
-        ADD_SLOT("__await__", async->am_await, -1);
-        ADD_SLOT("__aiter__", async->am_aiter, -1);
-        ADD_SLOT("__anext__", async->am_anext, -1);
+        ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_DIRECT);
+        ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_DIRECT);
+        ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_DIRECT);
     }
 
-    PyBufferProcs* buffers = cls->tp_as_buffer;
+    PyBufferProcs* buffers = native_pointer_to_java(cls->tp_as_buffer);
     if (buffers) {
         // TODO ...
     }
@@ -726,8 +736,23 @@ int PyType_Ready(PyTypeObject* cls) {
         }
     }
 
+    /* Some more special stuff */
+    base = cls->tp_base;
+    if (base != NULL) {
+        // if (cls->tp_as_async == NULL)
+        //     cls->tp_as_async = base->tp_as_async;
+        // if (cls->tp_as_number == NULL)
+        //     cls->tp_as_number = base->tp_as_number;
+        // if (cls->tp_as_sequence == NULL)
+        //     cls->tp_as_sequence = base->tp_as_sequence;
+        // if (cls->tp_as_mapping == NULL)
+        //     cls->tp_as_mapping = base->tp_as_mapping;
+        if (cls->tp_as_buffer == NULL)
+            cls->tp_as_buffer = base->tp_as_buffer;
+    }
+
     /* Link into each base class's list of subclasses */
-    bases = cls->tp_bases;
+    bases = native_pointer_to_java(cls->tp_bases);
     n = PyTuple_GET_SIZE(bases);
     for (i = 0; i < n; i++) {
         PyObject* base_class_object = PyTuple_GetItem(bases, i);
@@ -750,9 +775,7 @@ int PyType_Ready(PyTypeObject* cls) {
     return 0;
 
 #undef ADD_IF_MISSING
-#undef ADD_METHOD
 #undef ADD_SLOT
-#undef ADD_METHOD_OR_SLOT
 }
 
 MUST_INLINE static int valid_identifier(PyObject *s) {
@@ -766,30 +789,30 @@ MUST_INLINE static int valid_identifier(PyObject *s) {
 }
 
 /* Add get-set descriptors for slots provided in 'getsets' and 'members'. */
-static void PyTruffle_Type_AddSlots(PyTypeObject* cls, PyGetSetDef** getsets, uint64_t n_getsets, PyMemberDef** members, uint64_t n_members) {
-	for (uint64_t j = 0; j < n_getsets; j++) {
-		PyGetSetDef* getsets_sub = getsets[j];
-		if (getsets_sub) {
-			int i = 0;
-			PyGetSetDef getset = getsets_sub[i];
-			while (getset.name != NULL) {
-				ADD_GETSET(cls, getset.name, getset.get, getset.set, getset.doc, getset.closure);
-				getset = getsets_sub[++i];
-			}
-		}
-	}
-	for (uint64_t j = 0; j < n_getsets; j++) {
-		PyMemberDef* members_sub = members[j];
-		if (members_sub) {
-			int i = 0;
-			PyMemberDef member = members_sub[i];
-			PyObject* dict = cls->tp_dict;
-			while (member.name != NULL) {
-				ADD_MEMBER(cls, dict, polyglot_from_string(member.name, SRC_CS), member.type, member.offset, member.flags, member.doc);
-				member = members_sub[++i];
-			}
-		}
-	}
+static void PyTruffle_Type_AddSlots(PyTypeObject *cls, PyGetSetDef **getsets, uint64_t n_getsets, PyMemberDef **members, uint64_t n_members) {
+    const PyObject *dict = cls->tp_dict;
+    for (uint64_t j = 0; j < n_getsets; j++) {
+        PyGetSetDef *getsets_sub = getsets[j];
+        if (getsets_sub) {
+            int i = 0;
+            PyGetSetDef getset = getsets_sub[i];
+            while (getset.name != NULL) {
+                ADD_GETSET(cls, dict, getset.name, getset.get, getset.set, getset.doc, getset.closure);
+                getset = getsets_sub[++i];
+            }
+        }
+    }
+    for (uint64_t j = 0; j < n_getsets; j++) {
+        PyMemberDef *members_sub = members[j];
+        if (members_sub) {
+            int i = 0;
+            PyMemberDef member = members_sub[i];
+            while (member.name != NULL) {
+                ADD_MEMBER(cls, dict, polyglot_from_string(member.name, SRC_CS), member.type, member.offset, member.flags, member.doc);
+                member = members_sub[++i];
+            }
+        }
+    }
 }
 
 unsigned long PyType_GetFlags(struct _typeobject *type) {
@@ -1095,4 +1118,10 @@ PyType_GetSlot(PyTypeObject *type, int slot)
         return NULL;
     }
     return  *(void**)(((char*)type) + slotoffsets[slot]);
+}
+
+typedef PyObject* (*type_lookup_fun_t)(PyTypeObject *type, PyObject *name);
+UPCALL_TYPED_ID(PyType_Lookup, type_lookup_fun_t);
+PyObject * _PyType_Lookup(PyTypeObject *type, PyObject *name) {
+    return _jls_PyType_Lookup(native_type_to_java(type), native_to_java(name));
 }

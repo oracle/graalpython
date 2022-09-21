@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,14 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
-
-public class NonMappingException extends PythonControlFlowException {
+public final class NonMappingException extends RuntimeException {
 
     private static final long serialVersionUID = -5215981713505181732L;
 
     private final Object object;
 
     public NonMappingException(Object object) {
-        super();
+        super(null, null);
         this.object = object;
     }
 
@@ -57,4 +55,9 @@ public class NonMappingException extends PythonControlFlowException {
         return object;
     }
 
+    @SuppressWarnings("sync-override")
+    @Override
+    public Throwable fillInStackTrace() {
+        return this;
+    }
 }

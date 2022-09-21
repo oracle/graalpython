@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -69,15 +68,18 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  * kind of channel.
  *
  * It also manages the list of virtual child PIDs.
+ *
+ * This class is an implementation detail of {@link EmulatedPosixSupport}.
  */
-public class PosixResources {
-    private final int FD_STDIN = 0;
-    private final int FD_STDOUT = 1;
-    private final int FD_STDERR = 2;
+abstract class PosixResources extends PosixSupport {
+    private static final int FD_STDIN = 0;
+    private static final int FD_STDOUT = 1;
+    private static final int FD_STDERR = 2;
 
     /** Context-local file-descriptor mappings and PID mappings */
+    protected final PythonContext context;
     private final SortedMap<Integer, ChannelWrapper> files;
-    private final Map<Integer, String> filePaths;
+    protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
@@ -153,18 +155,24 @@ public class PosixResources {
         Channel channel;
         int cnt;
         FileLock lock;
-
-        ChannelWrapper() {
-            this(null, 0);
-        }
+        boolean isStandardStream;
 
         ChannelWrapper(Channel channel) {
             this(channel, 1);
         }
 
         ChannelWrapper(Channel channel, int cnt) {
+            this(channel, cnt, false);
+        }
+
+        ChannelWrapper(Channel channel, int cnt, boolean isStandardStream) {
             this.channel = channel;
             this.cnt = cnt;
+            this.isStandardStream = isStandardStream;
+        }
+
+        static ChannelWrapper createForStandardStream() {
+            return new ChannelWrapper(null, 0, true);
         }
 
         void setNewChannel(InputStream inputStream) {
@@ -178,15 +186,16 @@ public class PosixResources {
         }
     }
 
-    public PosixResources() {
+    protected PosixResources(PythonContext context) {
+        this.context = context;
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
 
-        files.put(FD_STDIN, new ChannelWrapper());
-        files.put(FD_STDOUT, new ChannelWrapper());
-        files.put(FD_STDERR, new ChannelWrapper());
+        files.put(FD_STDIN, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDOUT, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDERR, ChannelWrapper.createForStandardStream());
         if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).contains("win")) {
             filePaths.put(FD_STDIN, "STDIN");
             filePaths.put(FD_STDOUT, "STDOUT");
@@ -202,7 +211,8 @@ public class PosixResources {
         inodes = new HashMap<>();
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
+    @Override
     public void setEnv(Env env) {
         synchronized (files) {
             files.get(FD_STDIN).setNewChannel(env.in());
@@ -224,7 +234,7 @@ public class PosixResources {
     }
 
     @TruffleBoundary
-    private void removeFD(int fd) throws IOException {
+    protected boolean removeFD(int fd) throws IOException {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
 
         if (channelWrapper != null) {
@@ -238,21 +248,33 @@ public class PosixResources {
                 files.remove(fd);
                 filePaths.remove(fd);
             }
+            return true;
         }
+        return false;
     }
 
+    /**
+     * ATTENTION: This method must be used in a synchronized block (sync on {@link #files}) until.
+     */
     @TruffleBoundary
     private void dupFD(int fd1, int fd2) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd1, null);
+        String path = filePaths.get(fd1);
         if (channelWrapper != null) {
-            synchronized (files) {
-                channelWrapper.cnt += 1;
-                files.put(fd2, channelWrapper);
+            channelWrapper.cnt += 1;
+            files.put(fd2, channelWrapper);
+            if (path != null) {
+                filePaths.put(fd2, path);
             }
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    protected boolean isStandardStream(int fd) {
+        ChannelWrapper channelWrapper = files.get(fd);
+        return channelWrapper != null && channelWrapper.isStandardStream;
+    }
+
+    @TruffleBoundary
     public Channel getFileChannel(int fd, ValueProfile classProfile) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -261,7 +283,7 @@ public class PosixResources {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public FileLock getFileLock(int fd) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -270,7 +292,7 @@ public class PosixResources {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public void setFileLock(int fd, FileLock lock) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -278,7 +300,7 @@ public class PosixResources {
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public Channel getFileChannel(int fd) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -293,15 +315,6 @@ public class PosixResources {
     }
 
     @TruffleBoundary
-    public PSocket getSocket(int fd) {
-        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
-        if (channelWrapper != null && channelWrapper.channel instanceof PSocket) {
-            return (PSocket) channelWrapper.channel;
-        }
-        return null;
-    }
-
-    @TruffleBoundary(allowInlining = true)
     public void close(int fd) {
         try {
             removeFD(fd);
@@ -310,18 +323,6 @@ public class PosixResources {
     }
 
     @TruffleBoundary
-    public int openSocket(PSocket socket) {
-        int fd = nextFreeFd();
-        addFD(fd, socket);
-        return fd;
-    }
-
-    @TruffleBoundary
-    public void reopenSocket(PSocket socket, int fd) {
-        addFD(fd, socket);
-    }
-
-    @TruffleBoundary(allowInlining = true)
     public void fdopen(int fd, Channel fc) {
         files.get(fd).channel = fc;
     }
@@ -333,87 +334,93 @@ public class PosixResources {
      * @param fc the newly created Channel
      * @return the file descriptor associated with the new Channel
      */
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int open(TruffleFile path, Channel fc) {
-        int fd = nextFreeFd();
-        addFD(fd, fc, path.getAbsoluteFile().getPath());
-        return fd;
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, fc, path.getAbsoluteFile().getPath());
+            return fd;
+        }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int dup(int fd) {
-        int dupFd = nextFreeFd();
-        dupFD(fd, dupFd);
-        return dupFd;
+        synchronized (files) {
+            int dupFd = nextFreeFd();
+            dupFD(fd, dupFd);
+            return dupFd;
+        }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int dup2(int fd, int fd2) throws IOException {
-        removeFD(fd2);
-        dupFD(fd, fd2);
-        return fd2;
+        synchronized (files) {
+            removeFD(fd2);
+            dupFD(fd, fd2);
+            return fd2;
+        }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public boolean fsync(int fd) {
         return files.getOrDefault(fd, null) != null;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public void ftruncate(int fd, long size) throws IOException {
+    @TruffleBoundary
+    public Object ftruncate(int fd, long size) throws IOException {
         Channel channel = getFileChannel(fd);
         if (channel instanceof SeekableByteChannel) {
-            ((SeekableByteChannel) channel).truncate(size);
+            return ((SeekableByteChannel) channel).truncate(size);
         }
+        return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int[] pipe() throws IOException {
-        Pipe pipe = Pipe.open();
-        int readFD = nextFreeFd();
-        addFD(readFD, pipe.source());
-
-        int writeFD = nextFreeFd();
-        addFD(writeFD, pipe.sink());
-
-        return new int[]{readFD, writeFD};
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private int nextFreeFd() {
         synchronized (files) {
-            int fd1 = files.firstKey();
-            for (int fd2 : files.keySet()) {
-                if (fd2 == fd1) {
-                    continue;
-                }
-                if (fd2 - fd1 > 1) {
-                    return fd1 + 1;
-                } else {
-                    fd1 = fd2;
-                }
-            }
-            return files.lastKey() + 1;
+            Pipe pipe = Pipe.open();
+            int readFD = nextFreeFd();
+            addFD(readFD, pipe.source());
+
+            int writeFD = nextFreeFd();
+            addFD(writeFD, pipe.sink());
+
+            return new int[]{readFD, writeFD};
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public int registerChild(Process child) {
-        int pid = nextFreePid();
-        children.set(pid, child);
-        return pid;
+    /**
+     * ATTENTION: This method must be used in a synchronized block (sync on {@link #files}) until
+     * the gained file descriptors are written to the map. Otherwise, concurrent threads may get the
+     * same FDs.
+     */
+    @TruffleBoundary
+    private int nextFreeFd() {
+        int fd1 = files.firstKey();
+        for (int fd2 : files.keySet()) {
+            if (fd2 == fd1) {
+                continue;
+            }
+            if (fd2 - fd1 > 1) {
+                return fd1 + 1;
+            } else {
+                fd1 = fd2;
+            }
+        }
+        return files.lastKey() + 1;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    private int nextFreePid() {
+    @TruffleBoundary
+    protected int registerChild(Process child) {
         synchronized (children) {
             for (int i = 0; i < children.size(); i++) {
                 Process openPath = children.get(i);
                 if (openPath == null) {
+                    children.set(i, child);
                     return i;
                 }
             }
-            children.add(null);
+            children.add(child);
             return children.size() - 1;
         }
     }
@@ -489,5 +496,23 @@ public class PosixResources {
             }
             return inodeId;
         }
+    }
+
+    @TruffleBoundary
+    int assignFileDescriptor(Channel channel) {
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, channel);
+            return fd;
+        }
+    }
+
+    @TruffleBoundary
+    Channel getChannel(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper == null) {
+            return null;
+        }
+        return channelWrapper.channel;
     }
 }

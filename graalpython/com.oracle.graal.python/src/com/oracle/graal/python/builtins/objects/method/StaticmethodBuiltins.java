@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 
 import java.util.List;
 
@@ -66,15 +66,15 @@ public class StaticmethodBuiltins extends PythonBuiltins {
         return StaticmethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ReportPolymorphism
     abstract static class GetNode extends PythonTernaryBuiltinNode {
         /**
          * @see ClassmethodBuiltins.GetNode#getCached
          */
-        @Specialization(guards = {"cachedSelf == self"}, assumptions = "singleContextAssumption()")
-        protected Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
+        @Specialization(guards = {"isSingleContext()", "cachedSelf == self"})
+        protected static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {
             return cachedCallable;
@@ -82,7 +82,7 @@ public class StaticmethodBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "getCached")
         protected Object get(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") BranchProfile uninitialized) {
+                        @Cached BranchProfile uninitialized) {
             Object callable = self.getCallable();
             if (callable == null) {
                 uninitialized.enter();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,19 +23,13 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonObjectLibrary.class)
+import static com.oracle.graal.python.nodes.BuiltinNames.J_NOT_IMPLEMENTED;
+
 public final class PNotImplemented extends PythonAbstractObject {
 
     public static final PNotImplemented NOT_IMPLEMENTED = new PNotImplemented();
@@ -46,23 +40,10 @@ public final class PNotImplemented extends PythonAbstractObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "NotImplemented";
+        return J_NOT_IMPLEMENTED;
     }
 
     public int compareTo(Object o) {
         return this.hashCode() - o.hashCode();
-    }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PNotImplemented;
-    }
-
-    @ExportMessage
-    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 }

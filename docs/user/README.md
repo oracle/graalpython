@@ -1,3 +1,11 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Python Reference
+permalink: /reference-manual/python/
+redirect_from: /docs/reference-manual/python/
+---
+
 # GraalVM Python Runtime
 
 GraalVM provides a Python 3.8 compliant runtime.
@@ -7,20 +15,19 @@ See [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
 ## Installing Python
 
-The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://www.graalvm.org/reference-manual/graalvm-updater), `gu`, tool:
+The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://github.com/oracle/graal/blob/master/docs/reference-manual/graalvm-updater.md), `gu`, tool:
 ```shell
 gu install python
 ```
 
-The above command will install Python from the GitHub catalog for GraalVM Community Edition users.
-For GraalVM Enterprise users, the [manual installation](https://www.graalvm.org/reference-manual/graalvm-updater/#manual-installation) is required.
+The above command will install Python from the catalog.
 
 ## Running Python
 
 GraalVM's Python support targets Python 3.8 compatibility.
-While the support is still limited, you can run simple Python commands or programs with the `graalpython` launcher:
+While the support is still limited, you can run simple Python commands or programs with the `graalpy` launcher:
 ```shell
-graalpython [options] [-c cmd | filename]
+graalpy [options] [-c cmd | filename]
 ```
 
 If no program file or command is given, you are dropped into a simple REPL.
@@ -28,7 +35,7 @@ If no program file or command is given, you are dropped into a simple REPL.
 GraalVM supports some of the same options as Python 3.8 as well as some additional options to control the underlying Python runtime, GraalVM's tools, and the execution engine.
 These can be viewed using the following command:
 ```shell
-graalpython --help --help:tools --help:languages
+graalpy --help --help:tools --help:languages
 ```
 
 ## Installing Supported Packages
@@ -38,19 +45,19 @@ It is recommended to always create a virtual environment first, using the standa
 Creating such an environment avoids any incompatible interaction with the local user's packages that may have been
 installed using a system installation of CPython:
 ```shell
-graalpython -m venv my_new_venv
+graalpy -m venv my_new_venv
 source my_new_venv/bin/activate
 ```
 
 To see the list of installable packages, run:
 ```shell
-graalpython -m ginstall install --help
+graalpy -m ginstall install --help
 ```
 
 This will print a short help document including a comma-separated list of packages you
 can install. The installation works as described in that help document:
 ```shell
-graalpython -m ginstall install pandas
+graalpy -m ginstall install pandas
 ```
 
 Note that when calling Python from Java, the polyglot shell, or another language on GraalVM, you should always evaluate the piece of Python code first to make installed packages available:
@@ -62,7 +69,7 @@ For more information, continue reading to the [Installing Supported Packages](Pa
 
 ## Native Image and JVM Runtime
 
-By default, GraalVM runs Python from a binary, compiled ahead-of-time with [Native Image](https://www.graalvm.org/reference-manual/native-image/), yielding faster startup time and lower footprint.
+By default, GraalVM runs Python from a binary, compiled ahead-of-time with [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md), yielding faster startup time and lower footprint.
 Although the ahead-of-time compiled binary includes the Python and LLVM interpreters, in order to interoperate with
 other languages you have to supply the `--jvm` argument.
 This instructs the launcher to run on the JVM instead of in Native Image mode.

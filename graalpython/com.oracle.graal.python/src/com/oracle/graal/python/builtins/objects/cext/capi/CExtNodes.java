@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,76 +40,128 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_COMPARE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_WHCAR_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PYMODULEDEF_M_METHODS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PYMODULEDEF_M_SLOTS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_FLOAT_AS_DOUBLE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_FLOAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TUPLE;
+import static com.oracle.graal.python.nodes.PGuards.isTruffleString;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CharPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeNullNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.SSizeArgProcToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.SSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.WrapVoidPtrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
+import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -119,61 +171,67 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 public abstract class CExtNodes {
+
+    private static final TruffleString T_UNICODE = tsLiteral("unicode");
+    private static final TruffleString T_SUBTYPE_NEW = tsLiteral("_subtype_new");
 
     @GenerateUncached
     abstract static class ImportCAPISymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(String name);
+        public abstract Object execute(NativeCAPISymbol symbol);
 
         @Specialization
-        static Object doGeneric(String name,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        Object doGeneric(NativeCAPISymbol name,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode) {
-            return importCExtSymbolNode.execute(context.getCApiContext(), name);
+            return importCExtSymbolNode.execute(PythonContext.get(this).getCApiContext(), name);
         }
     }
 
@@ -190,24 +248,28 @@ public abstract class CExtNodes {
         /**
          * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
          */
-        protected String getTypenamePrefix() {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
+        protected TruffleString getTypenamePrefix() {
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         protected abstract Object execute(Object object, Object arg);
 
-        protected String getFunctionName() {
-            return getTypenamePrefix() + "_subtype_new";
+        protected NativeCAPISymbol getFunctionName() {
+            CompilerAsserts.neverPartOfCompilation();
+            TruffleString subtypeNewFunctionName = cat(getTypenamePrefix(), T_SUBTYPE_NEW);
+            if (!NativeCAPISymbol.isValid(subtypeNewFunctionName, TruffleString.EqualNode.getUncached())) {
+                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + subtypeNewFunctionName);
+            }
+            return NativeCAPISymbol.getByName(subtypeNewFunctionName, TruffleString.EqualNode.getUncached());
         }
 
         @Specialization(guards = "isNativeClass(object)")
         protected Object callNativeConstructor(Object object, Object arg,
-                        @Exclusive @Cached("getFunctionName()") String functionName,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
-                        @Exclusive @Cached ToJavaNode toJavaNode,
+                        @Cached("getFunctionName()") NativeCAPISymbol functionName,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached ToJavaNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             try {
                 Object result = interopLibrary.execute(importCAPISymbolNode.execute(functionName), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
@@ -220,8 +282,8 @@ public abstract class CExtNodes {
 
     public abstract static class FloatSubtypeNew extends SubtypeNew {
         @Override
-        protected final String getTypenamePrefix() {
-            return "float";
+        protected final TruffleString getTypenamePrefix() {
+            return T_FLOAT;
         }
 
         public final Object call(Object object, double arg) {
@@ -238,8 +300,8 @@ public abstract class CExtNodes {
         @Child private ToSulongNode toSulongNode;
 
         @Override
-        protected final String getTypenamePrefix() {
-            return "tuple";
+        protected final TruffleString getTypenamePrefix() {
+            return T_TUPLE;
         }
 
         public final Object call(Object object, Object arg) {
@@ -259,8 +321,8 @@ public abstract class CExtNodes {
         @Child private ToSulongNode toSulongNode;
 
         @Override
-        protected final String getTypenamePrefix() {
-            return "unicode";
+        protected final TruffleString getTypenamePrefix() {
+            return T_UNICODE;
         }
 
         public final Object call(Object object, Object arg) {
@@ -288,9 +350,8 @@ public abstract class CExtNodes {
                         @Exclusive @Cached IsSubtypeNode isSubtype,
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            if (isFloatSubtype(frame, object, getClass, isSubtype, context)) {
+            if (isFloatSubtype(frame, object, getClass, isSubtype)) {
                 try {
                     return (Double) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
@@ -301,8 +362,8 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public boolean isFloatSubtype(VirtualFrame frame, PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype, PythonContext context) {
-            return isSubtype.execute(frame, getClass.execute(object), context.getCore().lookupType(PythonBuiltinClassType.PFloat));
+        public boolean isFloatSubtype(VirtualFrame frame, PythonNativeObject object, GetClassNode getClass, IsSubtypeNode isSubtype) {
+            return isSubtype.execute(frame, getClass.execute(object), PythonContext.get(this).lookupType(PythonBuiltinClassType.PFloat));
         }
 
         public static FromNativeSubclassNode create() {
@@ -312,22 +373,20 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    @ReportPolymorphism
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
         @Specialization
-        static Object doString(@SuppressWarnings("unused") CExtContext cextContext, String str,
+        static Object doString(@SuppressWarnings("unused") CExtContext cextContext, TruffleString str,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
         }
 
         @Specialization
-        static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            PythonCore core = contextRef.get().getCore();
+        Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
+                        @Cached ConditionProfile profile) {
+            Python3Core core = PythonContext.get(this);
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
@@ -338,9 +397,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
+        PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i) {
+            PythonContext context = getContext();
             if (context.getCApiContext() != null) {
                 return context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
             }
@@ -352,14 +410,16 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
+        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l, PythonContext context) {
             if (context.getCApiContext() != null) {
                 return context.getCApiContext().getCachedPrimitiveNativeWrapper(l);
             }
             return PrimitiveNativeWrapper.createLong(l);
+        }
+
+        @Specialization(guards = "isSmallLong(l)")
+        PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
+            return doLongSmall(cextContext, l, getContext());
         }
 
         @Specialization(guards = "!isSmallLong(l)")
@@ -373,10 +433,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isNaN(d)")
-        static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+        Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
                         @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            PFloat boxed = contextRef.get().getCore().getNaN();
+            PFloat boxed = getContext().getNaN();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             // Use a counting profile since we should enter the branch just once per context.
             if (noWrapperProfile.profile(nativeWrapper == null)) {
@@ -400,24 +459,12 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+        Object doDeleteMarker(@SuppressWarnings("unused") CExtContext cextContext, DescriptorDeleteMarker marker) {
             assert marker == DescriptorDeleteMarker.INSTANCE;
-            PythonNativeNull nativeNull = (PythonNativeNull) getNativeNullNode.execute();
-            return nativeNull.getPtr();
+            return getNativeNullPtr(this);
         }
 
-        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
-        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Cached("object") PythonAbstractObject cachedObject,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return doSingleton(cextContext, cachedObject, contextRef);
-        }
-
-        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
-        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
+        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
             PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
             if (nativeWrapper == null) {
                 // this will happen just once per context and special singleton
@@ -430,7 +477,18 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject) {
+            return doSingleton(cextContext, cachedObject, getContext());
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
+            return doSingleton(cextContext, object, getContext());
+        }
+
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -443,24 +501,22 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached("wrapNativeClass(ctx, object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClassFast(object, getContext())") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonType")
         static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), getNameNode.execute(object));
+            return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
@@ -469,43 +525,46 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"lib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
 
-        @Specialization(guards = "isFallback(object, lib)")
+        @Specialization(guards = "isFallback(object, isForeignObjectNode)")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             assert object != null : "Java 'null' cannot be a Sulong value";
-            Object o = lib.getDelegatedValue(object);
-            assert CApiGuards.isNativeWrapper(o) : "unknown object cannot be a Sulong value";
-            return o;
+            assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
+            return object;
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClass(PythonContext ctx, PythonBuiltinClassType object) {
-            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object, PythonContext context) {
+            return PythonClassNativeWrapper.wrap(context.lookupType(object), GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object, PythonObjectLibrary lib) {
-            return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
+        static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
+            return !(object instanceof TruffleString || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
                             object instanceof PythonBuiltinClassType || object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE ||
-                            object instanceof PythonAbstractObject) && !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
+                            object instanceof PythonAbstractObject) && !(isForeignObjectNode.execute(object) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {
             return Double.isNaN(d);
+        }
+
+        static Object getNativeNullPtr(Node node) {
+            return PythonContext.get(node).getNativeNull().getPtr();
         }
 
         public static ToSulongNode create() {
@@ -546,7 +605,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
-    @ReportPolymorphism
     public abstract static class ToNewRefNode extends CExtToNativeNode {
 
         public final Object executeInt(int i) {
@@ -562,18 +620,15 @@ public abstract class CExtNodes {
         public abstract Object executeLong(CExtContext cExtContext, long l);
 
         @Specialization
-        static Object doString(CExtContext cextContext, String str,
+        static Object doString(CExtContext cextContext, TruffleString str,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
         }
 
-        @Specialization
         static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            PythonCore core = contextRef.get().getCore();
-            PInt boxed = b ? core.getTrue() : core.getFalse();
+                        @Cached ConditionProfile profile, PythonContext context) {
+            PInt boxed = b ? context.getTrue() : context.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
                 nativeWrapper = PrimitiveNativeWrapper.createBool(b);
@@ -584,10 +639,12 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
+        @Specialization
+        Object doBoolean(CExtContext cextContext, boolean b, @Cached ConditionProfile profile) {
+            return doBoolean(cextContext, b, profile, getContext());
+        }
+
+        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i, PythonContext context) {
             if (context.getCApiContext() != null) {
                 PrimitiveNativeWrapper cachedPrimitiveNativeWrapper = context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
                 cachedPrimitiveNativeWrapper.increaseRefCount();
@@ -596,15 +653,17 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
+        @Specialization(guards = "isSmallInteger(i)")
+        PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i) {
+            return doIntegerSmall(cextContext, i, getContext());
+        }
+
         @Specialization(guards = "!isSmallInteger(i)")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
+        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l, PythonContext context) {
             if (context.getCApiContext() != null) {
                 PrimitiveNativeWrapper cachedPrimitiveNativeWrapper = context.getCApiContext().getCachedPrimitiveNativeWrapper(l);
                 cachedPrimitiveNativeWrapper.increaseRefCount();
@@ -613,21 +672,19 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
+        @Specialization(guards = "isSmallLong(l)")
+        PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
+            return doLongSmall(cextContext, l, getContext());
+        }
+
         @Specialization(guards = "!isSmallLong(l)")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(guards = "!isNaN(d)")
-        static Object doDouble(CExtContext cextContext, double d) {
-            return ToSulongNode.doDouble(cextContext, d);
-        }
-
-        @Specialization(guards = "isNaN(d)")
         static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            PFloat boxed = contextRef.get().getCore().getNaN();
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile, PythonContext context) {
+            PFloat boxed = context.getNaN();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             // Use a counting profile since we should enter the branch just once per context.
             if (noWrapperProfile.profile(nativeWrapper == null)) {
@@ -640,6 +697,17 @@ public abstract class CExtNodes {
                 nativeWrapper.increaseRefCount();
             }
             return nativeWrapper;
+        }
+
+        @Specialization(guards = "!isNaN(d)")
+        static Object doDouble(CExtContext cextContext, double d) {
+            return ToSulongNode.doDouble(cextContext, d);
+        }
+
+        @Specialization(guards = "isNaN(d)")
+        Object doDouble(CExtContext cextContext, double d,
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
+            return doDouble(cextContext, d, noWrapperProfile, getContext());
         }
 
         @Specialization
@@ -655,23 +723,13 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker) {
+            return ToSulongNode.getNativeNullPtr(this);
         }
 
-        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
-        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Cached("object") PythonAbstractObject cachedObject,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return doSingleton(cextContext, cachedObject, contextRef);
-        }
-
-        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
-        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
+        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
             PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
             if (nativeWrapper == null) {
                 // this will happen just once per context and special singleton
@@ -686,7 +744,18 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject) {
+            return doSingleton(cextContext, cachedObject);
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
+            return doSingleton(cextContext, object, getContext());
+        }
+
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -700,25 +769,23 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached("wrapNativeClass(ctx, object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
             wrapper.increaseRefCount();
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonType")
         static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrapNewRef(ctx.getCore().lookupType(object), getNameNode.execute(object));
+            return PythonClassNativeWrapper.wrapNewRef(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
@@ -727,35 +794,35 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"lib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(CExtContext cextContext, TruffleObject object,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        static Object doForeignObject(CExtContext cextContext, Object object,
+                        @Cached IsForeignObjectNode isForeignObjectNode) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
-            return ToSulongNode.doForeignObject(cextContext, object, lib);
+            return ToSulongNode.doForeignObject(cextContext, object, isForeignObjectNode);
         }
 
-        @Specialization(guards = "isFallback(object, lib)")
+        @Specialization(guards = "isFallback(object, isForeignObjectNode)")
         static Object run(CExtContext cextContext, Object object,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return ToSulongNode.run(cextContext, object, lib);
+                        @Cached IsForeignObjectNode isForeignObjectNode) {
+            return ToSulongNode.run(cextContext, object, isForeignObjectNode);
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClass(PythonContext ctx, PythonBuiltinClassType object) {
-            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonContext context, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(context.lookupType(object), GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object, PythonObjectLibrary lib) {
-            return ToSulongNode.isFallback(object, lib);
+        static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
+            return ToSulongNode.isFallback(object, isForeignObjectNode);
         }
 
         protected static boolean isNaN(double d) {
@@ -793,23 +860,21 @@ public abstract class CExtNodes {
         public abstract Object executeLong(CExtContext cExtContext, long l);
 
         @Specialization
-        static Object doString(CExtContext cextContext, String str,
+        static Object doString(CExtContext cextContext, TruffleString str,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
         }
 
         @Specialization
-        static Object doBoolean(CExtContext cextContext, boolean b,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            return ToNewRefNode.doBoolean(cextContext, b, contextRef, profile);
+        Object doBoolean(CExtContext cextContext, boolean b,
+                        @Cached ConditionProfile profile) {
+            return ToNewRefNode.doBoolean(cextContext, b, profile, getContext());
         }
 
         @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doIntegerSmall(cextContext, i, contextRef);
+        PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i) {
+            return ToNewRefNode.doIntegerSmall(cextContext, i, getContext());
         }
 
         @Specialization(guards = "!isSmallInteger(i)")
@@ -818,9 +883,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doLongSmall(cextContext, l, contextRef);
+        PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
+            return ToNewRefNode.doLongSmall(cextContext, l, getContext());
         }
 
         @Specialization(guards = "!isSmallLong(l)")
@@ -834,10 +898,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isNaN(d)")
-        static Object doDouble(CExtContext cextContext, double d,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+        Object doDouble(CExtContext cextContext, double d,
                         @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            return ToNewRefNode.doDouble(cextContext, d, contextRef, noWrapperProfile);
+            return ToNewRefNode.doDouble(cextContext, d, noWrapperProfile, getContext());
         }
 
         @Specialization
@@ -850,26 +913,24 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        static Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
+        Object doDeleteMarker(CExtContext cextContext, DescriptorDeleteMarker marker) {
+            return ToSulongNode.getNativeNullPtr(this);
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
-        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Cached("object") PythonAbstractObject cachedObject,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return doSingleton(cextContext, cachedObject, contextRef);
+        Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject) {
+            return doSingleton(cextContext, cachedObject);
         }
 
         @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
-        static Object doSingleton(CExtContext cextContext, PythonAbstractObject object,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doSingleton(cextContext, object, contextRef);
+        Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
+            return ToNewRefNode.doSingleton(cextContext, object, getContext());
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
@@ -883,25 +944,23 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "3")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached("wrapNativeClass(ctx, object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
             wrapper.increaseRefCount();
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonType")
         static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrapNewRef(ctx.getCore().lookupType(object), getNameNode.execute(object));
+            return PythonClassNativeWrapper.wrapNewRef(PythonContext.get(getNameNode).lookupType(object), getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
@@ -910,35 +969,35 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"lib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(CExtContext cextContext, TruffleObject object,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        static Object doForeignObject(CExtContext cextContext, Object object,
+                        @Cached IsForeignObjectNode isForeignObjectNode) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
-            return ToSulongNode.doForeignObject(cextContext, object, lib);
+            return ToSulongNode.doForeignObject(cextContext, object, isForeignObjectNode);
         }
 
-        @Specialization(guards = "isFallback(object, lib)")
+        @Specialization(guards = "isFallback(object, isForeignObjectNode)")
         static Object run(CExtContext cextContext, Object object,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return ToSulongNode.run(cextContext, object, lib);
+                        @Cached IsForeignObjectNode isForeignObjectNode) {
+            return ToSulongNode.run(cextContext, object, isForeignObjectNode);
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClass(PythonContext ctx, PythonBuiltinClassType object) {
-            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonContext context, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(context.lookupType(object), GetNameNode.doSlowPath(object));
         }
 
-        static boolean isFallback(Object object, PythonObjectLibrary lib) {
-            return ToSulongNode.isFallback(object, lib);
+        static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
+            return ToSulongNode.isFallback(object, isForeignObjectNode);
         }
 
         protected static boolean isNaN(double d) {
@@ -1010,7 +1069,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static String doString(@SuppressWarnings("unused") CExtContext cextContext, String object) {
+        static TruffleString doString(@SuppressWarnings("unused") CExtContext cextContext, TruffleString object) {
             return object;
         }
 
@@ -1039,15 +1098,14 @@ public abstract class CExtNodes {
             return d;
         }
 
-        @Specialization(guards = "isFallback(obj, lib, isForeignClassProfile)", limit = "3")
+        @Specialization(guards = "isFallback(obj, isForeignObjectNode)", limit = "1")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj,
-                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.INVALID_OBJ_FROM_NATIVE, obj);
         }
 
-        protected static boolean isFallback(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
+        protected static boolean isFallback(Object obj, IsForeignObjectNode isForeignObjectNode) {
             if (CApiGuards.isNativeWrapper(obj)) {
                 return false;
             }
@@ -1060,7 +1118,7 @@ public abstract class CExtNodes {
             if (PGuards.isAnyPythonObject(obj)) {
                 return false;
             }
-            if (isForeignObject(obj, lib, isForeignClassProfile)) {
+            if (isForeignObjectNode.execute(obj)) {
                 return false;
             }
             if (PGuards.isString(obj)) {
@@ -1084,9 +1142,6 @@ public abstract class CExtNodes {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
 
-        protected static boolean isForeignObject(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(lib.getLazyPythonClass(obj), PythonBuiltinClassType.ForeignObject);
-        }
     }
 
     /**
@@ -1097,23 +1152,22 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
-        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
+        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached ConditionProfile newRefProfile,
+                        @Cached ConditionProfile validRefProfile,
+                        @Cached ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
-                        @Cached AddRefCntNode addRefCntNode) {
+                        @Cached AddRefCntNode addRefCntNode,
+                        @Cached AttachLLVMTypeNode attachLLVMTypeNode) {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
-            CApiContext cApiContext = context.getCApiContext();
+            CApiContext cApiContext = PythonContext.get(isForeignObjectNode).getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, attachLLVMTypeNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -1124,23 +1178,22 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached ConditionProfile newRefProfile,
+                        @Cached ConditionProfile validRefProfile,
+                        @Cached ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetRefCntNode getRefCntNode,
-                        @Cached AddRefCntNode addRefCntNode) {
+                        @Cached AddRefCntNode addRefCntNode,
+                        @Cached AttachLLVMTypeNode attachLLVMTypeNode) {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
-            CApiContext cApiContext = context.getCApiContext();
+            CApiContext cApiContext = PythonContext.get(isForeignObjectNode).getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true, attachLLVMTypeNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -1150,15 +1203,27 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
             // be used in the user value space but might be passed-through
 
             // do not modify reference count at all; this is for non-'PyObject*' pointers
             return new PythonAbstractNativeObject(object);
+        }
+
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class WrapCharPtrNode extends AsPythonObjectBaseNode {
+
+        @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached FromCharPointerNode fromCharPointerNode) {
+            return fromCharPointerNode.execute(object);
         }
 
     }
@@ -1175,10 +1240,9 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isBool()"}, limit = "1")
         static PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
             // Special case for True and False: use singletons
-            PythonCore core = context.getCore();
+            Python3Core core = PythonContext.get(lib);
             PInt materializedInt = object.getBool() ? core.getTrue() : core.getFalse();
             object.setMaterializedObject(materializedInt);
 
@@ -1234,10 +1298,9 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isDouble()", "isNaN(object)"}, limit = "1")
         static PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
             // Special case for double NaN: use singleton
-            PFloat materializedFloat = context.getCore().getNaN();
+            PFloat materializedFloat = PythonContext.get(lib).getNaN();
             object.setMaterializedObject(materializedFloat);
 
             // If the NaN singleton already has a native wrapper, we may need to update the
@@ -1303,7 +1366,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static String doString(@SuppressWarnings("unused") CExtContext nativeContext, String object) {
+        static TruffleString doString(@SuppressWarnings("unused") CExtContext nativeContext, TruffleString object) {
             return object;
         }
 
@@ -1334,8 +1397,8 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isForeignObject(Object obj) {
-            return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
-                            obj instanceof Long || obj instanceof Byte || obj instanceof Double);
+            return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof TruffleString || obj instanceof Boolean || obj instanceof Integer ||
+                            obj instanceof Long || obj instanceof Byte || obj instanceof Double || isTruffleString(obj));
         }
     }
 
@@ -1352,12 +1415,16 @@ public abstract class CExtNodes {
                         @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
                         @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             // this is just a shortcut
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
             }
             return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
+        }
+
+        public static ToJavaNode create() {
+            return ToJavaNodeGen.create();
         }
     }
 
@@ -1374,7 +1441,7 @@ public abstract class CExtNodes {
                         @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
                         @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
             }
@@ -1392,15 +1459,35 @@ public abstract class CExtNodes {
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
                         @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Shared("toJavaNode") @Cached WrapVoidPtrNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
-                return new PythonAbstractNativeObject((TruffleObject) value);
+                return new PythonAbstractNativeObject(value);
             }
-            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
+            return asPythonObjectNode.execute(resolveHandleNode.execute(value));
+        }
+    }
+
+    /**
+     * Does the same conversion as the native function {@code native_pointer_to_java}. The node
+     * tries to avoid calling the native function for resolving native handles.
+     */
+    @GenerateUncached
+    public abstract static class CharPtrToJavaNode extends ToJavaBaseNode {
+
+        @Specialization(guards = "isForeignObject(value)", limit = "1")
+        static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("toJavaNode") @Cached WrapCharPtrNode asPythonObjectNode,
+                        @CachedLibrary("value") InteropLibrary interopLibrary,
+                        @Cached ConditionProfile isNullProfile) {
+            // this branch is not a shortcut; it actually returns a different object
+            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+                return asPythonObjectNode.execute(value);
+            }
+            return asPythonObjectNode.execute(resolveHandleNode.execute(value));
         }
     }
 
@@ -1411,22 +1498,38 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doPString(PString str,
+                        @Cached CastToTruffleStringNode castToStringNode,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
-            String value = str.getValue();
-            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, value, value.length());
+            TruffleString value = castToStringNode.execute(str);
+            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, value, codePointLengthNode.execute(value, TS_ENCODING));
         }
 
         @Specialization
-        Object doString(String str,
+        Object doString(TruffleString str,
+                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Shared("callStringToCstrNode") @Cached PCallCapiFunction callStringToCstrNode) {
-            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, str, str.length());
+            return callStringToCstrNode.call(FUN_PY_TRUFFLE_STRING_TO_CSTR, str, codePointLengthNode.execute(str, TS_ENCODING));
+        }
+
+        @Specialization
+        Object doBytes(PBytes bytes,
+                        @Shared("toBytes") @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
+                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
+            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), callByteArrayToNativeNode);
+        }
+
+        @Specialization
+        Object doBytes(PByteArray bytes,
+                        @Shared("toBytes") @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
+                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
+            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), callByteArrayToNativeNode);
         }
 
         @Specialization
         Object doByteArray(byte[] arr,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Exclusive @Cached PCallCapiFunction callByteArrayToNativeNode) {
-            return callByteArrayToNativeNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, context.getEnv().asGuestValue(arr), arr.length);
+                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
+            return callByteArrayToNativeNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, PythonContext.get(this).getEnv().asGuestValue(arr), arr.length);
         }
 
         // TODO(fa): Workaround for DSL bug: did not import factory at users
@@ -1446,57 +1549,143 @@ public abstract class CExtNodes {
         public abstract Object execute(Object charPtr);
 
         @Specialization(limit = "1")
-        static String doCStringWrapper(CStringWrapper cStringWrapper,
+        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper,
                         @CachedLibrary("cStringWrapper") PythonNativeWrapperLibrary lib) {
             return cStringWrapper.getString(lib);
         }
 
         @Specialization(limit = "1")
-        static String doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
-                        @CachedLibrary("cByteArrayWrapper") PythonNativeWrapperLibrary lib) {
+        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
+                        @CachedLibrary("cByteArrayWrapper") PythonNativeWrapperLibrary lib,
+                        @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             byte[] byteArray = cByteArrayWrapper.getByteArray(lib);
             // TODO(fa): what is the encoding ? ASCII only ?
-            return PythonUtils.newString(byteArray);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(byteArray, 0, byteArray.length, Encoding.US_ASCII, true), TS_ENCODING);
+        }
+
+        @Specialization(limit = "1")
+        static TruffleString doSequenceArrayWrapper(PySequenceArrayWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Shared("fromByteArray") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            Object delegate = lib.getDelegate(obj);
+            if (delegate instanceof PBytesLike) {
+                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+                // TODO(fa): what is the encoding ? ASCII only ?
+                return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, bytes.length, Encoding.US_ASCII, true), TS_ENCODING);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)")
-        PString doPointer(Object charPtr,
+        static PString doPointer(Object charPtr,
                         @Cached PythonObjectFactory factory) {
             return factory.createString(new NativeCharSequence(charPtr, 1, false));
         }
 
         static boolean isCArrayWrapper(Object object) {
-            return object instanceof CArrayWrapper;
+            return object instanceof CArrayWrapper || object instanceof PySequenceArrayWrapper;
         }
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
+    /**
+     * Very similar to {@link FromCharPointerNode}. Converts a C character pointer into a Python
+     * string where decoding is done lazily. Additionally, if the provided pointer denotes a
+     * {@code NULL} pointer, this will be converted to {@code None}.
+     */
+    public abstract static class CharPtrToJavaObjectNode extends PNodeWithContext {
+
+        public abstract Object execute(Object object);
+
+        @Specialization(limit = "2")
+        public static Object run(Object object,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @CachedLibrary("object") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isNull(object)) {
+                return fromCharPointerNode.execute(object);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @GenerateUncached
-    public abstract static class SizeofWCharNode extends Node {
+    public abstract static class GetNativeClassNode extends PNodeWithContext {
+        public abstract Object execute(PythonAbstractNativeObject object);
 
-        public abstract long execute();
-
-        @Specialization
-        long doCached(
-                        @Exclusive @Cached(value = "getWcharSize()", allowUncached = true) long wcharSize) {
-            return wcharSize;
+        @Specialization(guards = {"isSingleContext()", "object == cachedObject"}, limit = "1")
+        @SuppressWarnings("unused")
+        static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
+                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
+                        @Cached("getNativeClassUncached(object)") Object cachedClass) {
+            // TODO: (tfel) is this really something we can do? It's so rare for this class to
+            // change that it shouldn't be worth the effort, but in native code, anything can
+            // happen. OTOH, CPython also has caches that can become invalid when someone just
+            // goes and changes the ob_type of an object.
+            return cachedClass;
         }
 
-        protected static long getWcharSize() {
-            long wcharSize = (long) PCallCapiFunction.getUncached().call(FUN_WHCAR_SIZE);
-            assert wcharSize >= 0L;
-            return wcharSize;
+        @Specialization(guards = {"isSingleContext()", "isSame(lib, cachedObject, object)"})
+        @SuppressWarnings("unused")
+        static Object getNativeClassCached(PythonAbstractNativeObject object,
+                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
+                        @Cached("getNativeClassUncached(object)") Object cachedClass,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
+            // TODO same as for 'getNativeClassCachedIdentity'
+            return cachedClass;
         }
 
-        public static SizeofWCharNode create() {
-            return CExtNodesFactory.SizeofWCharNodeGen.create();
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, //
+                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, //
+                        limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getNativeClassByMember(PythonAbstractNativeObject object,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberNameJavaString())));
         }
+
+        @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, //
+                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"}, //
+                        limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getNativeClassByMemberAttachType(PythonAbstractNativeObject object,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached PCallCapiFunction callGetObTypeNode,
+                        @Cached CExtNodes.GetLLVMType getLLVMType,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+            Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
+            return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberNameJavaString())));
+        }
+
+        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember", "getNativeClassByMemberAttachType"})
+        static Object getNativeClass(PythonAbstractNativeObject object,
+                        @Cached PCallCapiFunction callGetObTypeNode,
+                        @Cached AsPythonObjectNode toJavaNode,
+                        @Cached ProfileClassNode classProfile) {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
+        }
+
+        static boolean isSame(InteropLibrary lib, PythonAbstractNativeObject cachedObject, PythonAbstractNativeObject object) {
+            return lib.isIdentical(cachedObject.object, object.object, lib);
+        }
+
+        public static Object getNativeClassUncached(PythonAbstractNativeObject object) {
+            // do not wrap 'object.object' since that is really the native pointer object
+            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNode.getUncached());
+        }
+
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class PointerCompareNode extends Node {
-        public abstract boolean execute(String opName, Object a, Object b);
+        public abstract boolean execute(TruffleString opName, Object a, Object b);
 
         private static boolean executeCFunction(int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
             try {
@@ -1507,62 +1696,67 @@ public abstract class CExtNodes {
             }
         }
 
-        @Specialization(guards = "isEq(opName)", limit = "2")
-        static boolean doEq(@SuppressWarnings("unused") String opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+        @Specialization(guards = "isEq(opName, equalNode)", limit = "2")
+        static boolean doEq(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a.getPtr()") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+                        @CachedLibrary(limit = "3") InteropLibrary bLib,
+                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
             return aLib.isIdentical(a.getPtr(), b.getPtr(), bLib);
         }
 
-        @Specialization(guards = "isNe(opName)", limit = "2")
-        static boolean doNe(@SuppressWarnings("unused") String opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+        @Specialization(guards = "isNe(opName, equalNode)", limit = "2")
+        static boolean doNe(@SuppressWarnings("unused") TruffleString opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
                         @CachedLibrary("a.getPtr()") InteropLibrary aLib,
-                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+                        @CachedLibrary(limit = "3") InteropLibrary bLib,
+                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode) {
             return !aLib.isIdentical(a.getPtr(), b.getPtr(), bLib);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, PythonNativeObject b,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, PythonNativeObject b,
+                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPtr(), b.getPtr(), interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, long b,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeObject a, long b,
+                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPtr(), b, interopLibrary, importCAPISymbolNode);
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeVoidPtr a, long b,
-                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+        static boolean execute(@SuppressWarnings("unused") TruffleString opName, PythonNativeVoidPtr a, long b,
+                        @Shared("tsEqual") @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") TruffleString cachedOpName,
+                        @Cached(value = "findOp(opName, equalNode)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        static int findOp(String specialMethodName) {
+        static int findOp(TruffleString specialMethodName, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
-                if (SpecialMethodNames.getCompareName(i).equals(specialMethodName)) {
+                if (equalNode.execute(SpecialMethodNames.getCompareName(i), specialMethodName, TS_ENCODING)) {
                     return i;
                 }
             }
             throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
         }
 
-        static boolean isEq(String opName) {
-            return SpecialMethodNames.__EQ__.equals(opName);
+        static boolean isEq(TruffleString opName, TruffleString.EqualNode equalNode) {
+            return equalNode.execute(SpecialMethodNames.T___EQ__, opName, TS_ENCODING);
         }
 
-        static boolean isNe(String opName) {
-            return SpecialMethodNames.__NE__.equals(opName);
+        static boolean isNe(TruffleString opName, TruffleString.EqualNode equalNode) {
+            return equalNode.execute(SpecialMethodNames.T___NE__, opName, TS_ENCODING);
         }
     }
 
@@ -1579,7 +1773,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class AllToJavaNode extends PNodeWithContext {
+    public abstract static class AllToPythonNode extends PNodeWithContext {
 
         final Object[] execute(Object[] args) {
             return execute(args, 0);
@@ -1628,8 +1822,63 @@ public abstract class CExtNodes {
             return nodes;
         }
 
+        public static AllToPythonNode create() {
+            return CExtNodesFactory.AllToPythonNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class AllToJavaNode extends PNodeWithContext {
+
+        final Object[] execute(Object[] args) {
+            return execute(args, 0);
+        }
+
+        abstract Object[] execute(Object[] args, int offset);
+
+        @Specialization(guards = { //
+                        "args.length == cachedLength", //
+                        "offset == cachedOffset", //
+                        "effectiveLen(cachedLength, cachedOffset) < 5"}, //
+                        limit = "5")
+        @ExplodeLoop
+        static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
+                        @Cached("args.length") int cachedLength,
+                        @Cached("offset") int cachedOffset,
+                        @Cached("createNodes(args.length)") ToJavaNode[] toJavaNodes) {
+            int n = cachedLength - cachedOffset;
+            Object[] output = new Object[n];
+            for (int i = 0; i < n; i++) {
+                output[i] = toJavaNodes[i].execute(args[i + cachedOffset]);
+            }
+            return output;
+        }
+
+        @Specialization(replaces = "cached")
+        static Object[] uncached(Object[] args, int offset,
+                        @Exclusive @Cached ToJavaNode toJavaNode) {
+            int len = args.length - offset;
+            Object[] output = new Object[len];
+            for (int i = 0; i < len; i++) {
+                output[i] = toJavaNode.execute(args[i + offset]);
+            }
+            return output;
+        }
+
+        static int effectiveLen(int len, int offset) {
+            return len - offset;
+        }
+
+        static ToJavaNode[] createNodes(int n) {
+            ToJavaNode[] nodes = new ToJavaNode[n];
+            for (int i = 0; i < n; i++) {
+                nodes[i] = ToJavaNode.create();
+            }
+            return nodes;
+        }
+
         public static AllToJavaNode create() {
-            return AllToJavaNodeGen.create();
+            return CExtNodesFactory.AllToJavaNodeGen.create();
         }
     }
 
@@ -1651,6 +1900,7 @@ public abstract class CExtNodes {
     /**
      * Converts all arguments to native values.
      */
+    @GenerateUncached
     public abstract static class AllToSulongNode extends ConvertArgsToSulongNode {
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == argsOffset"})
@@ -1712,7 +1962,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "args.length == 1")
         Object upcall0(VirtualFrame frame, Object[] args,
-                        @Cached("create()") CallNode callNode) {
+                        @Cached CallNode callNode) {
             return callNode.execute(frame, args[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -1726,25 +1976,25 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.executeObject(frame, args[0], converted[0], converted[1]);
         }
 
         @Specialization(guards = "args.length == 4")
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
             return callNode.execute(frame, args[0], converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
-            return callNode.execute(frame, args[0], converted, new PKeyword[0]);
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode) {
+            Object[] converted = allToPythonNode.execute(args, 1);
+            return callNode.execute(frame, args[0], converted, PKeyword.EMPTY_KEYWORDS);
         }
 
         public static DirectUpcallNode create() {
@@ -1764,7 +2014,7 @@ public abstract class CExtNodes {
         static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached ToBorrowedRefNode toSulongNode1) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
@@ -1790,7 +2040,7 @@ public abstract class CExtNodes {
                         @Cached ToBorrowedRefNode toSulongNode1,
                         @Cached ToBorrowedRefNode toSulongNode4) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
             dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
         }
@@ -1807,8 +2057,8 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc}, and
-     * {@code ssizeargfunc}.
+     * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc},
+     * {@code ssizeargfunc}, and {@code getter}.
      */
     public abstract static class BinaryFirstToSulongNode extends ConvertArgsToSulongNode {
 
@@ -1857,7 +2107,50 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Converts the 1st (self/class) and the 2rd argument as required for {@code richcmpfunc}.
+     * Converts arguments for C function signature
+     * {@code int (*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *)}.
+     */
+    public abstract static class SSizeObjArgProcToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode,
+                        @Cached ToBorrowedRefNode toSulongNode3) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = toSulongNode1.execute(args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
+        }
+
+        public static SSizeObjArgProcToSulongNode create() {
+            return SSizeObjArgProcToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts arguments for C function signature
+     * {@code int (*ssizeargproc)(PyObject *, Py_ssize_t)}.
+     */
+    public abstract static class SSizeArgProcToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = toSulongNode1.execute(args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+        }
+
+        public static SSizeArgProcToSulongNode create() {
+            return SSizeArgProcToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (self/class) and the 2rd argument as required for {@code richcmpfunc} and
+     * {@code setter}.
      */
     public abstract static class TernaryFirstSecondToSulongNode extends ConvertArgsToSulongNode {
 
@@ -1893,7 +2186,7 @@ public abstract class CExtNodes {
         Object upcall0(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallNode callNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
@@ -1903,7 +2196,7 @@ public abstract class CExtNodes {
                         @Cached CallUnaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode toJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            assert args[0] instanceof String;
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.executeObject(frame, callable, toJavaNode.execute(args[1]));
         }
@@ -1911,10 +2204,10 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 3")
         Object upcall2(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
-            assert args[0] instanceof String;
+            Object[] converted = allToPythonNode.execute(args, 1);
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
@@ -1922,10 +2215,10 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 4")
         Object upcall3(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
-            assert args[0] instanceof String;
+            Object[] converted = allToPythonNode.execute(args, 1);
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
@@ -1933,10 +2226,10 @@ public abstract class CExtNodes {
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
         Object upcall(VirtualFrame frame, Object cextModule, Object[] args,
                         @Cached CallNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 1);
-            assert args[0] instanceof String;
+            Object[] converted = allToPythonNode.execute(args, 1);
+            assert args[0] instanceof TruffleString;
             Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
@@ -1967,7 +2260,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -1979,7 +2272,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, argToJavaNode.execute(args[2]));
         }
 
@@ -1987,12 +2280,12 @@ public abstract class CExtNodes {
         Object upcall2(VirtualFrame frame, Object[] args,
                         @Cached CallBinaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
@@ -2000,12 +2293,12 @@ public abstract class CExtNodes {
         Object upcall3(VirtualFrame frame, Object[] args,
                         @Cached CallTernaryMethodNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
@@ -2013,14 +2306,14 @@ public abstract class CExtNodes {
         Object upcall(VirtualFrame frame, Object[] args,
                         @Cached CallNode callNode,
                         @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("allToJavaNode") @Cached AllToPythonNode allToPythonNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             // we needs at least a receiver and a member name
             assert args.length >= 2;
-            Object[] converted = allToJavaNode.execute(args, 2);
+            Object[] converted = allToPythonNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
     }
@@ -2089,19 +2382,22 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
         PComplex runGeneric(Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached LookupAndCallUnaryDynamicNode callComplex,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
-            Object result = callFloatFunc.executeObject(value, __COMPLEX__);
+            Object result = callComplex.executeObject(value, T___COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
-            if (result == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
-            } else if (result instanceof PComplex) {
-                return (PComplex) result;
+            if (result != PNone.NO_VALUE) {
+                if (result instanceof PComplex) {
+                    return (PComplex) result;
+                } else {
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
+                }
+            } else {
+                return factory.createComplex(asDoubleNode.execute(null, value), 0.0);
             }
-            return factory.createComplex(lib.asJavaDouble(value), 0.0);
         }
     }
 
@@ -2127,42 +2423,42 @@ public abstract class CExtNodes {
         public abstract double execute(Object arg);
 
         @Specialization
-        double run(boolean value) {
+        static double run(boolean value) {
             return value ? 1.0 : 0.0;
         }
 
         @Specialization
-        double run(int value) {
+        static double run(int value) {
             return value;
         }
 
         @Specialization
-        double run(long value) {
+        static double run(long value) {
             return value;
         }
 
         @Specialization
-        double run(double value) {
+        static double run(double value) {
             return value;
         }
 
         @Specialization
-        double run(PInt value) {
+        static double run(PInt value) {
             return value.doubleValue();
         }
 
         @Specialization
-        double run(PFloat value) {
+        static double run(PFloat value) {
             return value.getValue();
         }
 
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
     }
@@ -2176,6 +2472,7 @@ public abstract class CExtNodes {
      * As an optimization, this node can also unwrap {@code PrimitiveNativeWrapper} instances to
      * avoid eager and explicit conversion.
      */
+    @ImportStatic(PythonUtils.class)
     @GenerateUncached
     public abstract static class CastToNativeLongNode extends PNodeWithContext {
         public abstract long execute(boolean arg);
@@ -2190,9 +2487,11 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object arg);
 
-        @Specialization(guards = "value.length() == 1")
-        static long doString(String value) {
-            return value.charAt(0);
+        @Specialization(guards = "lengthNode.execute(value, TS_ENCODING) == 1")
+        static long doString(TruffleString value,
+                        @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode) {
+            return codepointAtIndexNode.execute(value, 0, TS_ENCODING);
         }
 
         @Specialization
@@ -2254,209 +2553,45 @@ public abstract class CExtNodes {
         }
     }
 
-    /**
-     * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
-     * {@code long}).<br/>
-     * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
-     * coercion and may raise a Python exception if coercion fails.
-     */
-    @GenerateUncached
-    @ImportStatic(PGuards.class)
-    public abstract static class AsNativePrimitiveNode extends Node {
-
-        public final int toInt32(Object value, boolean exact) {
-            return (int) execute(value, 1, 4, exact);
-        }
-
-        public final int toUInt32(Object value, boolean exact) {
-            return (int) execute(value, 0, 4, exact);
-        }
-
-        public final long toInt64(Object value, boolean exact) {
-            return (long) execute(value, 1, 8, exact);
-        }
-
-        public final long toUInt64(Object value, boolean exact) {
-            return (long) execute(value, 0, 8, exact);
-        }
-
-        public abstract Object execute(byte value, int signed, int targetTypeSize, boolean exact);
-
-        public abstract Object execute(int value, int signed, int targetTypeSize, boolean exact);
-
-        public abstract Object execute(long value, int signed, int targetTypeSize, boolean exact);
-
-        public abstract Object execute(Object value, int signed, int targetTypeSize, boolean exact);
-
-        @Specialization(guards = "targetTypeSize == 4")
-        @SuppressWarnings("unused")
-        static int doIntToInt32(int obj, int signed, int targetTypeSize, boolean exact) {
-            // n.b. even if an unsigned is requested, it does not matter because the unsigned
-            // interpretation is done in C code.
-            return obj;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        @SuppressWarnings("unused")
-        static long doIntToInt64(int obj, int signed, int targetTypeSize, boolean exact) {
-            return obj;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        @SuppressWarnings("unused")
-        static int doIntToOther(int obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        @SuppressWarnings("unused")
-        static int doLongToInt32(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        @SuppressWarnings("unused")
-        static long doLongToInt64(long obj, int signed, int targetTypeSize, boolean exact) {
-            return obj;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        @SuppressWarnings("unused")
-        static Object doVoidPtrToI64(PythonNativeVoidPtr obj, int signed, int targetTypeSize, boolean exact) {
-            return obj;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        @SuppressWarnings("unused")
-        static int doPInt(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
-        static int doPIntToInt32Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return obj.intValueExact();
-            } catch (OverflowException e) {
-                // fall through
-            }
-            errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"})
-        static int doPIntToInt32NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (!exact || obj.bitCount() <= 32) {
-                return obj.intValue();
-            }
-            errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed != 0"})
-        static long doPIntToInt64Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return obj.longValueExact();
-            } catch (OverflowException e) {
-                // fall through
-            }
-            errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed == 0"})
-        static long doPIntToInt64NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (!exact || obj.bitCount() <= 64) {
-                return obj.longValue();
-            }
-            errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
-        @SuppressWarnings("unused")
-        static int doPIntToInt32Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
-            return obj.intValue();
-        }
-
-        @Specialization(guards = {"!exact", "targetTypeSize == 8"})
-        @SuppressWarnings("unused")
-        static long doPIntToInt64Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
-            return obj.longValue();
-        }
-
-        @Specialization(guards = {"isIntegerType(obj)", "targetTypeSize != 4", "targetTypeSize != 8"})
-        @SuppressWarnings("unused")
-        static int doError(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32Signed", "doPIntToInt32NotSigned",
-                        "doPIntToInt64Signed", "doPIntToInt64NotSigned"})
-        static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize, boolean exact,
-                        @Cached LookupAndCallUnaryDynamicNode callIndexNode,
-                        @Cached LookupAndCallUnaryDynamicNode callIntNode,
-                        @Cached AsNativePrimitiveNode recursive,
-                        @Exclusive @Cached BranchProfile noIntProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-
-            Object result = callIndexNode.executeObject(obj, SpecialMethodNames.__INDEX__);
-            if (result == PNone.NO_VALUE) {
-                result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
-                if (result == PNone.NO_VALUE) {
-                    noIntProfile.enter();
-                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, result);
-                }
-            }
-            // n.b. this check is important to avoid endless recursions; it will ensure that
-            // 'doGeneric' is not triggered in the recursive node
-            if (!(isIntegerType(result))) {
-                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
-            }
-            return recursive.execute(result, signed, targetTypeSize, exact);
-        }
-
-        static boolean isIntegerType(Object obj) {
-            return PGuards.isInteger(obj) || PGuards.isPInt(obj) || obj instanceof PythonNativeVoidPtr;
-        }
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class PCallCapiFunction extends Node {
 
-        public final Object call(String name, Object... args) {
-            return execute(name, args);
+        public final Object call(CApiContext context, NativeCAPISymbol symbol, Object... args) {
+            return execute(context, symbol, args);
         }
 
-        public abstract Object execute(String name, Object[] args);
+        public final Object call(NativeCAPISymbol symbol, Object... args) {
+            return execute(null, symbol, args);
+        }
 
-        @Specialization
-        static Object doIt(String name, Object[] args,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        protected abstract Object execute(CApiContext context, NativeCAPISymbol symbol, Object[] args);
+
+        @Specialization(guards = "capiContext != null")
+        static Object doWithContext(CApiContext capiContext, NativeCAPISymbol name, Object[] args,
+                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached BranchProfile profile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
-                return interopLibrary.execute(importCExtSymbolNode.execute(context.getCApiContext(), name), args);
-            } catch (UnsupportedTypeException | ArityException e) {
-                profile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
-            } catch (UnsupportedMessageException e) {
-                profile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
+                // TODO review EnsureTruffleStringNode with GR-37896
+                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args));
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                // consider these exceptions to be fatal internal errors
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = "capiContext == null")
+        static Object doWithoutContext(@SuppressWarnings("unused") CApiContext capiContext, NativeCAPISymbol name, Object[] args,
+                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
+            try {
+                // TODO review EnsureTruffleStringNode with GR-37896
+                return ensureTruffleStringNode.execute(interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), args));
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                // consider these exceptions to be fatal internal errors
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -2488,8 +2623,6 @@ public abstract class CExtNodes {
     public static final class MayRaiseNode extends ExpressionNode {
         @Child private ExpressionNode wrappedBody;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-
-        @Child private GetNativeNullNode getNativeNullNode;
 
         private final MayRaiseErrorResult errorResult;
 
@@ -2530,11 +2663,7 @@ public abstract class CExtNodes {
                 case NONE:
                     return PNone.NONE;
                 case NATIVE_NULL:
-                    if (getNativeNullNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getNativeNullNode = insert(GetNativeNullNodeGen.create());
-                    }
-                    return getNativeNullNode.execute();
+                    return getContext().getNativeNull();
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -2546,7 +2675,7 @@ public abstract class CExtNodes {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
-        @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
+        @Specialization(guards = "isSingleContext()", assumptions = "nativeObjectsAllManagedAssumption()")
         static boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
             return false;
         }
@@ -2564,8 +2693,8 @@ public abstract class CExtNodes {
             return lib.isNative(obj);
         }
 
-        protected static Assumption nativeObjectsAllManagedAssumption() {
-            return PythonLanguage.getContext().getNativeObjectsAllManagedAssumption();
+        protected Assumption nativeObjectsAllManagedAssumption() {
+            return getContext().getNativeObjectsAllManagedAssumption();
         }
 
         public static IsPointerNode create() {
@@ -2589,9 +2718,9 @@ public abstract class CExtNodes {
          * native context, so we can be sure that the "nativeClassStableAssumption" (which is
          * per-context) is from the context in which this native object was created.
          */
-        @Specialization(guards = {"lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
+        @Specialization(guards = {"isSingleContext()", "lib.isIdentical(cachedObj, obj, lib)", "memberName == cachedMemberName"}, //
                         limit = "1", //
-                        assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
+                        assumptions = {"getNativeClassStableAssumption(cachedObj)"})
         public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMember memberName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
@@ -2600,63 +2729,105 @@ public abstract class CExtNodes {
             return result;
         }
 
-        @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = "doCachedObj")
-        public Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
+                        replaces = "doCachedObj", limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getByMember(PythonAbstractNativeObject object, NativeMember member,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        throws UnknownIdentifierException, UnsupportedMessageException {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberNameJavaString()));
+        }
+
+        @Specialization(guards = {"!lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
+                        replaces = {"doCachedObj", "getByMember"}, limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getByMemberAttachType(PythonAbstractNativeObject object, NativeMember member,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
+                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                        @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        throws UnknownIdentifierException, UnsupportedMessageException {
+            Object typedPtr = callGetObTypeNode.call(FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyTypeObject));
+            return toJavaNode.execute(lib.readMember(typedPtr, member.getMemberNameJavaString()));
+        }
+
+        @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = {"doCachedObj", "getByMember", "getByMemberAttachType"})
+        static Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
-                        @Cached("getterFuncName(memberName)") String getterName,
+                        @SuppressWarnings("unused") @Cached TruffleString.ConcatNode concatNode,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached("getterFuncName(memberName, concatNode, eqNode)") NativeCAPISymbol getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") AsPythonObjectBaseNode asPythonObject,
-                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            assert isNativeTypeObject(self);
-            return asPythonObject.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
+                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
+            return toJavaNode.execute(callMemberGetterNode.call(getterName, toSulong.execute(self)));
         }
 
-        @Specialization(replaces = "doCachedMember")
-        public Object doUncached(Object self, NativeMember memberName,
+        @Specialization(replaces = {"doCachedObj", "getByMember", "getByMemberAttachType", "doCachedMember"})
+        static Object doGeneric(Object self, NativeMember memberName,
+                        @Cached TruffleString.ConcatNode concatNode,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached AsPythonObjectNode asPythonObject,
-                        @Cached WrapVoidPtrNode wrapVoidPtrNode,
-                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            assert isNativeTypeObject(self);
-            Object value = callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self));
-            if (memberName.getType() == NativeMemberType.OBJECT) {
-                return asPythonObject.execute(value);
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached CharPtrToJavaNode charPtrToJavaNode,
+                        @Cached VoidPtrToJavaNode voidPtrToJavaNode,
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode,
+                        @Cached TruffleString.EqualNode eqNode) {
+            Object value = callMemberGetterNode.call(getterFuncName(memberName, concatNode, eqNode), toSulong.execute(self));
+            switch (memberName.getType()) {
+                case OBJECT:
+                    return toJavaNode.execute(value);
+                case CSTRING:
+                    return charPtrToJavaNode.execute(value);
+                case PRIMITIVE:
+                case POINTER:
+                    return voidPtrToJavaNode.execute(value);
             }
-            return wrapVoidPtrNode.execute(value);
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
-        protected Object doSlowPath(Object obj, NativeMember memberName) {
-            String getterFuncName = getterFuncName(memberName);
-            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
+        static Object doSlowPath(Object obj, NativeMember memberName) {
+            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(
+                            getterFuncName(memberName, TruffleString.ConcatNode.getUncached(), TruffleString.EqualNode.getUncached()), ToSulongNode.getUncached().execute(obj)));
         }
 
-        @TruffleBoundary
-        protected String getterFuncName(NativeMember memberName) {
-            String name = "get_" + memberName.getMemberName();
-            assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;
-            return name;
+        static NativeCAPISymbol getterFuncName(NativeMember memberName, TruffleString.ConcatNode concatNode, TruffleString.EqualNode eqNode) {
+            TruffleString name = concatNode.execute(T_GET_, memberName.getMemberNameTruffleString(), TS_ENCODING, false);
+            assert NativeCAPISymbol.isValid(name, eqNode) : "invalid native member getter function " + name;
+            return NativeCAPISymbol.getByName(name, eqNode);
         }
 
-        static AsPythonObjectBaseNode createForMember(NativeMember member) {
-            if (member.getType() == NativeMemberType.OBJECT) {
-                return AsPythonObjectNodeGen.create();
+        static ToJavaBaseNode createForMember(NativeMember member) {
+            switch (member.getType()) {
+                case OBJECT:
+                    return ToJavaNodeGen.create();
+                case CSTRING:
+                    return CharPtrToJavaNodeGen.create();
+                case PRIMITIVE:
+                case POINTER:
+                    return VoidPtrToJavaNodeGen.create();
             }
-            return WrapVoidPtrNodeGen.create();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
-        static AsPythonObjectBaseNode getUncachedForMember(NativeMember member) {
-            if (member.getType() == NativeMemberType.OBJECT) {
-                return AsPythonObjectNodeGen.getUncached();
+        static ToJavaBaseNode getUncachedForMember(NativeMember member) {
+            switch (member.getType()) {
+                case OBJECT:
+                    return ToJavaNodeGen.getUncached();
+                case CSTRING:
+                    return CharPtrToJavaNodeGen.getUncached();
+                case PRIMITIVE:
+                case POINTER:
+                    return VoidPtrToJavaNodeGen.getUncached();
             }
-            return WrapVoidPtrNodeGen.getUncached();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
-            return PythonLanguage.getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
-        }
-
-        private static boolean isNativeTypeObject(Object self) {
-            return IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(self), PythonBuiltinClassType.PythonClass);
+            return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
         public static GetTypeMemberNode create() {
@@ -2666,35 +2837,6 @@ public abstract class CExtNodes {
         public static GetTypeMemberNode getUncached() {
             return GetTypeMemberNodeGen.getUncached();
         }
-    }
-
-    @GenerateUncached
-    public abstract static class GetNativeNullNode extends Node {
-
-        public abstract Object execute(Object module);
-
-        public final Object execute() {
-            return execute(null);
-        }
-
-        @Specialization(guards = "module != null")
-        static Object getNativeNullWithModule(Object module,
-                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            Object wrapper = readAttrNode.execute(module, PythonCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
-        @Specialization(guards = "module == null")
-        static Object getNativeNullWithoutModule(@SuppressWarnings("unused") Object module,
-                        @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-            Object wrapper = readAttrNode.execute(pythonCextModule, PythonCextBuiltins.NATIVE_NULL);
-            assert wrapper instanceof PythonNativeNull;
-            return wrapper;
-        }
-
     }
 
     /**
@@ -2761,34 +2903,34 @@ public abstract class CExtNodes {
         @Specialization
         static void setCurrentException(Frame frame, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame).markAsEscaped();
-            context.setCurrentException(e);
+            getThreadStateNode.setCurrentException(e);
         }
     }
 
     @GenerateUncached
     public abstract static class PRaiseNativeNode extends Node {
 
-        public final int raiseInt(Frame frame, int errorValue, Object errType, String format, Object... arguments) {
+        public final int raiseInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return executeInt(frame, errorValue, errType, format, arguments);
         }
 
-        public final Object raise(Frame frame, Object errorValue, Object errType, String format, Object... arguments) {
+        public final Object raise(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return execute(frame, errorValue, errType, format, arguments);
         }
 
-        public final int raiseIntWithoutFrame(int errorValue, Object errType, String format, Object... arguments) {
+        public final int raiseIntWithoutFrame(int errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
             return executeInt(null, errorValue, errType, format, arguments);
         }
 
-        public abstract Object execute(Frame frame, Object errorValue, Object errType, String format, Object[] arguments);
+        public abstract Object execute(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments);
 
-        public abstract int executeInt(Frame frame, int errorValue, Object errType, String format, Object[] arguments);
+        public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments);
 
         @Specialization
-        static int doInt(Frame frame, int errorValue, Object errType, String format, Object[] arguments,
+        static int doInt(Frame frame, int errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
@@ -2796,17 +2938,17 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doObject(Frame frame, Object errorValue, Object errType, String format, Object[] arguments,
+        static Object doObject(Frame frame, Object errorValue, PythonBuiltinClassType errType, TruffleString format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
-        public static void raiseNative(Frame frame, Object errType, String format, Object[] arguments, PRaiseNode raiseNode,
+        public static void raiseNative(Frame frame, PythonBuiltinClassType errType, TruffleString format, Object[] arguments, PRaiseNode raiseNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+                throw raiseNode.raise(errType, format, arguments);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, p);
             }
@@ -2834,29 +2976,28 @@ public abstract class CExtNodes {
                         rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class, UnsupportedTypeException.class, CannotCastException.class}, //
                         limit = "1")
         static Object doNativeObjectByMember(Object object, long value,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("object") InteropLibrary lib) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, CannotCastException {
-            CApiContext cApiContext = context.getCApiContext();
+            CApiContext cApiContext = PythonContext.get(castToJavaLongNode).getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 cApiContext.checkAccess(object, lib);
-                long refCnt = castToJavaLongNode.execute(lib.readMember(object, OB_REFCNT.getMemberName()));
-                lib.writeMember(object, OB_REFCNT.getMemberName(), refCnt + value);
+                String member = OB_REFCNT.getMemberNameJavaString();
+                long refCnt = castToJavaLongNode.execute(lib.readMember(object, member));
+                lib.writeMember(object, member, refCnt + value);
             }
             return object;
         }
 
         @Specialization(guards = "!isNativeWrapper(object)", limit = "2", replaces = "doNativeObjectByMember")
         static Object doNativeObject(Object object, long value,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            CApiContext cApiContext = context.getCApiContext();
+            CApiContext cApiContext = PythonContext.get(callAddRefCntNode).getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 cApiContext.checkAccess(object, lib);
-                callAddRefCntNode.call(NativeCAPISymbols.FUN_ADDREF, object, value);
+                callAddRefCntNode.call(NativeCAPISymbol.FUN_ADDREF, object, value);
             }
             return object;
         }
@@ -2865,7 +3006,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class SubRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(SubRefCntNode.class);
 
         public final long dec(Object object) {
             return execute(object, 1);
@@ -2891,13 +3032,13 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
         static long doNativeObject(Object object, long value,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
+            PythonContext context = PythonContext.get(callAddRefCntNode);
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 cApiContext.checkAccess(object, lib);
-                long newRefcnt = (long) callAddRefCntNode.call(NativeCAPISymbols.FUN_SUBREF, object, value);
+                long newRefcnt = (long) callAddRefCntNode.call(NativeCAPISymbol.FUN_SUBREF, object, value);
                 if (context.getOption(PythonOptions.TraceNativeMemory) && newRefcnt < 0) {
                     LOGGER.severe(() -> "object has negative ref count: " + CApiContext.asHex(object));
                 }
@@ -2925,10 +3066,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "delegate == null")
-        static void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+        void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile) {
+            assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(this)) : "clearing primitive native wrapper singleton of small integer";
             Assumption handleValidAssumption = nativeWrapper.getHandleValidAssumption();
             if (hasHandleValidAssumptionProfile.profile(handleValidAssumption != null)) {
                 PythonNativeWrapper.invalidateAssumption(handleValidAssumption);
@@ -2936,12 +3076,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "delegate != null")
-        static void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+        void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached ConditionProfile profile,
+                        @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile) {
             if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
-                assert !isSmallIntegerWrapperSingleton(contextRef, nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+                assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(this)) : "clearing primitive native wrapper singleton of small integer";
                 delegate.clearNativeWrapper(hasHandleValidAssumptionProfile);
             }
         }
@@ -2956,8 +3095,8 @@ public abstract class CExtNodes {
             return nativeWrapper instanceof PrimitiveNativeWrapper;
         }
 
-        private static boolean isSmallIntegerWrapperSingleton(ContextReference<PythonContext> contextRef, PrimitiveNativeWrapper nativeWrapper) {
-            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(null, nativeWrapper.getLong(), contextRef) == nativeWrapper;
+        private static boolean isSmallIntegerWrapperSingleton(PrimitiveNativeWrapper nativeWrapper, PythonContext context) {
+            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(null, nativeWrapper.getLong(), context) == nativeWrapper;
         }
 
     }
@@ -2965,61 +3104,81 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class GetRefCntNode extends PNodeWithContext {
 
-        public abstract long execute(Object ptrObject);
+        public final long execute(Object ptrObject) {
+            return execute(CApiContext.LAZY_CONTEXT, ptrObject);
+        }
 
-        @Specialization(limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
-        static long doNativeObjectTyped(Object ptrObject,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        public abstract long execute(CApiContext cApiContext, Object ptrObject);
+
+        @Specialization(guards = "!isLazyContext(cApiContext)", limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static long doNativeObjectTypedWithContext(CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
-                CApiContext cApiContext = context.getCApiContext();
-                if (cApiContext != null) {
+                boolean haveCApiContext = cApiContext != null;
+                if (haveCApiContext) {
                     cApiContext.checkAccess(ptrObject, lib);
                 }
 
                 // directly reading the member is only possible if the pointer object is typed but
                 // if so, it is the faster way
                 if (lib.hasMembers(ptrObject)) {
-                    return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
+                    return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberNameJavaString()));
                 }
-                if (context.getCApiContext() != null) {
-                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+                if (haveCApiContext) {
+                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ptrObject));
                 }
             }
             return 0;
         }
 
-        @Specialization(limit = "2", replaces = "doNativeObjectTyped")
-        static long doNativeObject(Object ptrObject,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        @Specialization(guards = "!isLazyContext(cApiContext)", limit = "2", replaces = "doNativeObjectTypedWithContext")
+        static long doNativeObjectWithContext(CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) {
-            if (!lib.isNull(ptrObject)) {
-                CApiContext cApiContext = context.getCApiContext();
-                if (cApiContext != null) {
-                    cApiContext.checkAccess(ptrObject, lib);
-                }
-                if (context.getCApiContext() != null) {
-                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
-                }
+            if (!lib.isNull(ptrObject) && cApiContext != null) {
+                cApiContext.checkAccess(ptrObject, lib);
+                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ptrObject));
             }
             return 0;
+        }
+
+        @Specialization(limit = "2", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class}, //
+                        replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext"})
+        static long doNativeObjectTyped(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
+            return doNativeObjectTypedWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, toJavaStringNode, castToJavaLongNode);
+        }
+
+        @Specialization(limit = "2", replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext", "doNativeObjectTyped"})
+        static long doNativeObject(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
+            return doNativeObjectWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+        }
+
+        static boolean isLazyContext(CApiContext cApiContext) {
+            return CApiContext.LAZY_CONTEXT == cApiContext;
         }
     }
 
     @GenerateUncached
-    public abstract static class ResolveHandleNode extends Node {
+    public abstract static class ResolveHandleNode extends PNodeWithContext {
 
         public abstract Object execute(Object pointerObject);
 
         public abstract Object executeLong(long pointer);
 
         @Specialization(limit = "3", //
-                        guards = {"cachedPointer == pointer", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "cachedPointer == pointer", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveLongCached(@SuppressWarnings("unused") long pointer,
                         @Cached("pointer") @SuppressWarnings("unused") long cachedPointer,
@@ -3030,8 +3189,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(limit = "3", //
-                        guards = {"isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
-                        assumptions = "singleContextAssumption()", //
+                        guards = {"isSingleContext()", "isSame(lib, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper resolveObjectCached(@SuppressWarnings("unused") Object pointerObject,
                         @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
@@ -3046,8 +3204,8 @@ public abstract class CExtNodes {
         static Object resolveGeneric(Object pointerObject,
                         @Cached PCallCapiFunction callTruffleCannotBeHandleNode,
                         @Cached PCallCapiFunction callTruffleManagedFromHandleNode) {
-            if (((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
-                return callTruffleManagedFromHandleNode.call(NativeCAPISymbols.FUN_RESOLVE_HANDLE, pointerObject);
+            if (((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
+                return callTruffleManagedFromHandleNode.call(NativeCAPISymbol.FUN_RESOLVE_HANDLE, pointerObject);
             }
             // In this case, it cannot be a handle so we can just return the pointer object. It
             // could, of course, still be a native pointer.
@@ -3056,8 +3214,8 @@ public abstract class CExtNodes {
 
         static PythonNativeWrapper resolveHandleUncached(Object pointerObject) {
             CompilerAsserts.neverPartOfCompilation();
-            if (((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
-                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_RESOLVE_HANDLE, pointerObject);
+            if (((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
+                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_RESOLVE_HANDLE, pointerObject);
                 if (resolved instanceof PythonNativeWrapper) {
                     return (PythonNativeWrapper) resolved;
                 }
@@ -3071,10 +3229,6 @@ public abstract class CExtNodes {
             return lib.isIdentical(left, right, lib);
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
-        }
-
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
             return nativeWrapper.ensureHandleValidAssumption();
         }
@@ -3085,68 +3239,69 @@ public abstract class CExtNodes {
      * any PyVarObject usually returns the number of contained elements.
      */
     @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    abstract static class ObSizeNode extends Node {
+    abstract static class ObSizeNode extends PNodeWithContext {
 
         public abstract long execute(Object object);
 
         @Specialization
-        static long doInteger(@SuppressWarnings("unused") int object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return doLong(object, context);
+        static long doBoolean(boolean object) {
+            return object ? 1 : 0;
         }
 
         @Specialization
-        static long doLong(@SuppressWarnings("unused") long object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        long doInteger(int object) {
+            return doLong(object);
+        }
+
+        @Specialization
+        long doLong(long object) {
             long t = PInt.abs(object);
             int sign = object < 0 ? -1 : 1;
             int size = 0;
             while (t != 0) {
                 ++size;
-                t >>= context.getCApiContext().getPyLongBitsInDigit();
+                t >>>= getContext().getCApiContext().getPyLongBitsInDigit();
             }
             return size * sign;
         }
 
         @Specialization
-        static long doPInt(PInt object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return ((PInt.bitLength(object.abs()) - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+        long doPInt(PInt object) {
+            return ((PInt.bitLength(object.abs()) - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
+        @Specialization
+        long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+            return ((Long.SIZE - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1);
+        }
+
+        @Fallback
         static long doOther(Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
+                        @Cached PyObjectSizeNode sizeNode) {
             try {
-                return lib.length(object);
+                return sizeNode.execute(null, object);
             } catch (PException e) {
                 return -1;
             }
-        }
-
-        static boolean isFallback(Object object) {
-            return !(object instanceof PInt || object instanceof Integer || object instanceof Long);
         }
     }
 
     @GenerateUncached
     public abstract static class GetLLVMType extends Node {
-        public abstract TruffleObject execute(LLVMType llvmType);
+        public abstract Object execute(LLVMType llvmType);
 
         @Specialization(guards = "llvmType == cachedType", limit = "typeCount()")
-        static TruffleObject doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
-                        @Cached("llvmType") LLVMType cachedType,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
+                        @Cached("llvmType") LLVMType cachedType) {
 
-            CApiContext cApiContext = context.getCApiContext();
-            TruffleObject llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
+            CApiContext cApiContext = PythonContext.get(this).getCApiContext();
+            Object llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
 
             // TODO(fa): get rid of lazy initialization for better sharing
             if (llvmTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                String getterFunctionName = LLVMType.getGetterFunctionName(llvmType);
-                llvmTypeID = (TruffleObject) PCallCapiFunction.getUncached().call(getterFunctionName);
+                NativeCAPISymbol getterFunctionSymbol = LLVMType.getGetterFunctionName(llvmType);
+                llvmTypeID = PCallCapiFunction.getUncached().call(getterFunctionSymbol);
                 cApiContext.setLLVMTypeID(cachedType, llvmTypeID);
             }
             return llvmTypeID;
@@ -3158,4 +3313,826 @@ public abstract class CExtNodes {
         }
     }
 
+    @GenerateUncached
+    public abstract static class UnicodeFromFormatNode extends Node {
+        private static Pattern pattern;
+
+        private static Matcher match(String formatStr) {
+            if (pattern == null) {
+                pattern = Pattern.compile("%(?<flags>[-+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixspAUVSR])");
+            }
+            return pattern.matcher(formatStr);
+        }
+
+        public abstract Object execute(TruffleString format, Object vaList);
+
+        @Specialization
+        @TruffleBoundary
+        Object doGeneric(TruffleString f, Object vaList) {
+            // TODO use TruffleString [GR-38103]
+            String format = f.toJavaStringUncached();
+
+            // helper nodes
+            GetVaArgsNode getVaArgsNode = GetVaArgsNodeGen.getUncached();
+            ToJavaNode toJavaNode = ToJavaNodeGen.getUncached();
+            CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
+            FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
+            InteropLibrary interopLibrary = InteropLibrary.getUncached();
+            PRaiseNode raiseNode = PRaiseNode.getUncached();
+
+            // set the encapsulating node reference to get a precise error position
+            EncapsulatingNodeReference current = EncapsulatingNodeReference.getCurrent();
+            current.set(this);
+            StringBuilder result = new StringBuilder();
+            int vaArgIdx = 0;
+            Object unicodeObj;
+            try {
+                Matcher matcher = match(format);
+                int cur = 0;
+                while (matcher.find(cur)) {
+                    // not all combinations are valid
+                    boolean valid = false;
+
+                    // add anything before the match
+                    result.append(format, cur, matcher.start());
+
+                    cur = matcher.end();
+
+                    String spec = matcher.group("spec");
+                    String len = matcher.group("len");
+                    int prec = getPrec(matcher.group("prec"));
+                    assert spec.length() == 1;
+                    char la = spec.charAt(0);
+                    PythonContext context = PythonContext.get(raiseNode);
+                    switch (la) {
+                        case '%':
+                            // %%
+                            result.append('%');
+                            valid = true;
+                            break;
+                        case 'c':
+                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
+                            if (ordinal < 0 || ordinal > 0x110000) {
+                                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
+                            }
+                            result.append((char) ordinal);
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'd':
+                        case 'i':
+                            // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
+                            if (len != null) {
+                                LLVMType llvmType = null;
+                                switch (len) {
+                                    case "ll":
+                                        llvmType = LLVMType.longlong_t;
+                                        break;
+                                    case "l":
+                                        llvmType = LLVMType.long_t;
+                                        break;
+                                    case "z":
+                                        llvmType = LLVMType.Py_ssize_t;
+                                        break;
+                                }
+                                if (llvmType != null) {
+                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    vaArgIdx++;
+                                    result.append(castToLong(interopLibrary, raiseNode, value));
+                                    valid = true;
+                                }
+                            } else {
+                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t));
+                                vaArgIdx++;
+                                valid = true;
+                            }
+                            break;
+                        case 'u':
+                            // %u, %lu, %llu, %zu
+                            if (len != null) {
+                                LLVMType llvmType = null;
+                                switch (len) {
+                                    case "ll":
+                                        llvmType = LLVMType.ulonglong_t;
+                                        break;
+                                    case "l":
+                                        llvmType = LLVMType.ulong_t;
+                                        break;
+                                    case "z":
+                                        llvmType = LLVMType.size_t;
+                                        break;
+                                }
+                                if (llvmType != null) {
+                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    vaArgIdx++;
+                                    result.append(castToLong(interopLibrary, raiseNode, value));
+                                    valid = true;
+                                }
+                            } else {
+                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.uint_t)));
+                                vaArgIdx++;
+                                valid = true;
+                            }
+                            break;
+                        case 'x':
+                            // %x
+                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 's':
+                            // %s
+                            Object charPtr = getVaArgsNode.getCharPtr(vaList, vaArgIdx);
+                            String sValue;
+                            if (interopLibrary.isNull(charPtr)) {
+                                // CPython would segfault. Let's make debugging easier for ourselves
+                                sValue = "(NULL)";
+                            } else {
+                                unicodeObj = fromCharPointerNode.execute(charPtr);
+                                sValue = castToJavaStringNode.execute(unicodeObj);
+                            }
+                            try {
+                                if (prec == -1) {
+                                    result.append(sValue);
+                                } else {
+                                    result.append(sValue, 0, Math.min(sValue.length(), prec));
+                                }
+                            } catch (CannotCastException e) {
+                                // That should really not happen because we created the unicode
+                                // object with FromCharPointerNode which guarantees to return a
+                                // String/PString.
+                                throw CompilerDirectives.shouldNotReachHere();
+                            }
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'p':
+                            // %p
+                            Object ptr = getVaArgsNode.getVoidPtr(vaList, vaArgIdx);
+                            long value;
+                            if (interopLibrary.isPointer(ptr)) {
+                                value = interopLibrary.asPointer(ptr);
+                            } else if (interopLibrary.hasIdentity(ptr)) {
+                                value = interopLibrary.identityHashCode(ptr);
+                            } else {
+                                value = System.identityHashCode(ptr);
+                            }
+                            result.append(PythonUtils.formatJString("0x%x", value));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'A':
+                            // %A
+                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'U':
+                            // %U
+                            result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'V':
+                            // %V
+                            Object pyObjectPtr = getVaArgsNode.getPyObjectPtr(vaList, vaArgIdx);
+                            if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
+                                unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx + 1));
+                            } else {
+                                unicodeObj = toJavaNode.execute(pyObjectPtr);
+                            }
+                            result.append(castToJavaStringNode.execute(unicodeObj));
+                            vaArgIdx += 2;
+                            valid = true;
+                            break;
+                        case 'S':
+                            // %S
+                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'R':
+                            // %R
+                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                    }
+                    // this means, we did not detect a valid format specifier, so add the whole
+                    // group
+                    if (!valid) {
+                        result.append(matcher.group());
+                    }
+                }
+                // add anything after the last matched group (or the whole format string if nothing
+                // matched)
+                result.append(format, cur, format.length());
+            } catch (InteropException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ERROR_WHEN_ACCESSING_VAR_ARG_AT_POS, vaArgIdx);
+            } finally {
+                current.get();
+            }
+            return toTruffleStringUncached(result.toString());
+        }
+
+        private static int getPrec(String prec) {
+            if (prec == null) {
+                return -1;
+            }
+            return Integer.parseInt(prec);
+        }
+
+        /**
+         * Read an element from the {@code va_list} with the specified type and cast it to a Java
+         * {@code int}. Throws a {@code SystemError} if this is not possible.
+         */
+        private static int getAndCastToInt(GetVaArgsNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList, int idx, LLVMType llvmType) throws InteropException {
+            Object value = getVaArgsNode.execute(vaList, idx, llvmType);
+            if (lib.fitsInInt(value)) {
+                try {
+                    return lib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
+        }
+
+        /**
+         * Cast a value to a Java {@code long}. Throws a {@code SystemError} if this is not
+         * possible.
+         */
+        private static long castToLong(InteropLibrary lib, PRaiseNode raiseNode, Object value) {
+            if (lib.fitsInLong(value)) {
+                try {
+                    return lib.asLong(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
+        }
+
+        private static Object getPyObject(GetVaArgsNode getVaArgsNode, Object vaList, int idx) throws InteropException {
+            return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList, idx));
+        }
+
+        @TruffleBoundary
+        private static Object callBuiltin(PythonContext context, TruffleString builtinName, Object object) {
+            Object attribute = PyObjectLookupAttr.getUncached().execute(null, context.getBuiltins(), builtinName);
+            return CastToJavaStringNodeGen.getUncached().execute(CallNode.getUncached().execute(null, attribute, object));
+        }
+    }
+
+    /**
+     * Attaches the appropriate LLVM type to the provided pointer object making the pointer to be
+     * typed (i.e. {@code interopLib.hasMetaObject(ptr) == true}) and thus allows to do direct
+     * member access via interop.<br/>
+     */
+    @GenerateUncached
+    public abstract static class AttachLLVMTypeNode extends Node {
+
+        public abstract Object execute(Object ptr);
+
+        @Specialization(guards = "lib.hasMetaObject(ptr)", limit = "1")
+        static Object doTyped(Object ptr,
+                        @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib) {
+            return ptr;
+        }
+
+        @Specialization(guards = "!lib.hasMetaObject(ptr)", limit = "1", replaces = "doTyped")
+        static Object doUntyped(Object ptr,
+                        @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
+                        @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
+                        @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
+                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            Object type = asPythonObjectNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, ptr));
+            Object llvmType = getSulongTypeNode.execute(type);
+            if (llvmType == null) {
+                llvmType = getLLVMType.execute(LLVMType.PyObject);
+            }
+            return callPolyglotFromTypedNode.call(FUN_POLYGLOT_FROM_TYPED, ptr, llvmType);
+        }
+
+        @Specialization(limit = "1", replaces = {"doTyped", "doUntyped"})
+        static Object doGeneric(Object ptr,
+                        @CachedLibrary("ptr") InteropLibrary lib,
+                        @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
+                        @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
+                        @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
+                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            if (!lib.hasMetaObject(ptr)) {
+                return doUntyped(ptr, lib, getSulongTypeNode, getLLVMType, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
+            }
+            return ptr;
+        }
+    }
+
+    abstract static class MultiPhaseExtensionModuleInitNode extends Node {
+
+        static final String J_M_NAME = "m_name";
+        static final String J_M_DOC = "m_doc";
+        static final String J_M_METHODS = "m_methods";
+        static final TruffleString T_M_METHODS = tsLiteral(J_M_METHODS);
+        static final String J_M_SLOTS = "m_slots";
+        static final TruffleString T_M_SLOTS = tsLiteral(J_M_SLOTS);
+        static final String J_M_SIZE = "m_size";
+
+        // according to definitions in 'moduleobject.h'
+        static final int SLOT_PY_MOD_CREATE = 1;
+        static final int SLOT_PY_MOD_EXEC = 2;
+
+        // member names of 'PyModuleDef_Slot'
+        static final String J_MODULEDEF_SLOT = "slot";
+        static final String J_MODULEDEF_VALUE = "value";
+
+    }
+
+    /**
+     * Equivalent of {@code PyModule_FromDefAndSpec}. Creates a Python module from a module
+     * definition structure:
+     *
+     * <pre>
+     * typedef struct PyModuleDef {
+     *     PyModuleDef_Base m_base;
+     *     const char* m_name;
+     *     const char* m_doc;
+     *     Py_ssize_t m_size;
+     *     PyMethodDef *m_methods;
+     *     struct PyModuleDef_Slot* m_slots;
+     *     traverseproc m_traverse;
+     *     inquiry m_clear;
+     *     freefunc m_free;
+     * } PyModuleDef
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class CreateModuleNode extends MultiPhaseExtensionModuleInitNode {
+
+        @TruffleBoundary
+        static boolean checkLayout(Object moduleDef, InteropLibrary moduleDefLib) {
+            String[] members = new String[]{"m_base", J_M_NAME, J_M_DOC, J_M_SIZE, J_M_METHODS, J_M_SLOTS, "m_traverse", "m_clear", "m_free"};
+            for (String member : members) {
+                if (!moduleDefLib.isMemberReadable(moduleDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public abstract Object execute(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDef);
+
+        @Specialization
+        static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, PythonAbstractNativeObject moduleDefWrapper,
+                        @Cached PythonObjectFactory factory,
+                        @Cached ConditionProfile errOccurredProfile,
+                        @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Cached PCallCapiFunction callAttachTypeNode,
+                        @Cached PCallCapiFunction callGetterNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interopLib,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
+                        @Cached CreateMethodNode addLegacyMethodNode,
+                        @Cached ToBorrowedRefNode moduleSpecToNativeNode,
+                        @Cached ToJavaStealingNode toJavaNode,
+                        @Cached PRaiseNode raiseNode) {
+            // call to type the pointer
+            Object typeId = getSulongTypeNode.execute(PythonBuiltinClassType.PythonModuleDef);
+            Object moduleDef = callAttachTypeNode.call(capiContext, FUN_POLYGLOT_FROM_TYPED, moduleDefWrapper.getPtr(), typeId);
+
+            assert checkLayout(moduleDef, interopLib);
+
+            /*
+             * The name of the module is taken from the module spec and *NOT* from the module
+             * definition.
+             */
+            TruffleString mName = moduleSpec.name;
+            Object mDoc;
+            int mSize;
+            try {
+                // do not eagerly read the doc string; this turned out to be unnecessarily expensive
+                Object docPtr = interopLib.readMember(moduleDef, J_M_DOC);
+                if (interopLib.isNull(docPtr)) {
+                    mDoc = PNone.NO_VALUE;
+                } else {
+                    mDoc = fromCharPointerNode.execute(docPtr);
+                }
+
+                Object mSizeObj = interopLib.readMember(moduleDef, J_M_SIZE);
+                mSize = interopLib.asInt(mSizeObj);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_CREATE_MODULE_FROM_DEFINITION, e);
+            }
+
+            if (mSize < 0) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
+            }
+
+            // parse slot definitions
+            Object createFunction = null;
+            boolean hasExecutionSlots = false;
+            try {
+                Object slotDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_SLOTS, moduleDef);
+                if (!interopLib.isNull(slotDefinitions)) {
+                    if (!interopLib.hasArrayElements(slotDefinitions)) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, T_M_SLOTS);
+                    }
+                    long nSlots = interopLib.getArraySize(slotDefinitions);
+                    for (long i = 0; i < nSlots; i++) {
+                        Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
+
+                        Object slotIdObj = interopLib.readMember(slotDefinition, J_MODULEDEF_SLOT);
+                        int slotId = interopLib.asInt(slotIdObj);
+                        switch (slotId) {
+                            case SLOT_PY_MOD_CREATE:
+                                if (createFunction != null) {
+                                    throw raiseNode.raise(SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
+                                }
+                                createFunction = interopLib.readMember(slotDefinition, J_MODULEDEF_VALUE);
+                                break;
+                            case SLOT_PY_MOD_EXEC:
+                                hasExecutionSlots = true;
+                                break;
+                            default:
+                                throw raiseNode.raise(SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
+                        }
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            Object module;
+            if (createFunction != null && !interopLib.isNull(createFunction)) {
+                Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec.originalModuleSpec), moduleDef};
+                try {
+                    Object result = interopLib.execute(createFunction, cArguments);
+                    DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                                    errOccurredProfile, ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
+                    module = toJavaNode.execute(capiContext, result);
+                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+
+                /*
+                 * We are more strict than CPython and require this to be a PythonModule object.
+                 * This means, if the custom 'create' function uses a native subtype of the module
+                 * type, then we require it to call our new function.
+                 */
+                if (!(module instanceof PythonModule)) {
+                    if (mSize > 0) {
+                        throw raiseNode.raise(SystemError, ErrorMessages.NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
+                    }
+                    if (hasExecutionSlots) {
+                        throw raiseNode.raise(SystemError, ErrorMessages.MODULE_SPECIFIES_EXEC_SLOTS_BUT_DIDNT_CREATE_INSTANCE, mName);
+                    }
+                    // otherwise CPython is just fine
+                } else {
+                    ((PythonModule) module).setNativeModuleDef(moduleDef);
+                }
+            } else {
+                PythonModule pythonModule = factory.createPythonModule(mName);
+                pythonModule.setNativeModuleDef(moduleDef);
+                module = pythonModule;
+            }
+
+            // parse method definitions
+            try {
+                Object methodDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_METHODS, moduleDef);
+                if (!interopLib.isNull(methodDefinitions)) {
+                    if (!interopLib.hasArrayElements(methodDefinitions)) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, T_M_METHODS);
+                    }
+                    long nMethods = interopLib.getArraySize(methodDefinitions);
+                    for (long i = 0; i < nMethods; i++) {
+                        Object methodDefinition = interopLib.readArrayElement(methodDefinitions, i);
+                        PBuiltinFunction fun = addLegacyMethodNode.execute(capiContext, methodDefinition);
+                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                        writeAttrToMethodNode.execute(method, SpecialAttributeNames.T___MODULE__, mName);
+                        writeAttrNode.execute(module, fun.getName(), method);
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                /*
+                 * In general, we should never get these exceptions because the static typing of the
+                 * C code guarantees our assumptions.
+                 */
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
+            return module;
+        }
+    }
+
+    /**
+     * Equivalent of {@code PyModule_ExecDef}.
+     */
+    @GenerateUncached
+    public abstract static class ExecModuleNode extends MultiPhaseExtensionModuleInitNode {
+
+        public abstract int execute(CApiContext capiContext, PythonModule module, Object moduleDef);
+
+        @Specialization
+        static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
+                        @Cached ConditionProfile errOccurredProfile,
+                        @Cached ModuleGetNameNode getNameNode,
+                        @Cached PCallCapiFunction callGetterNode,
+                        @Cached WriteNativeMemberNode writeNativeMemberNode,
+                        @Cached PCallCapiFunction callMallocNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interopLib,
+                        @Cached ToBorrowedRefNode moduleToNativeNode,
+                        @Cached PRaiseNode raiseNode) {
+            // call to type the pointer
+            assert CreateModuleNode.checkLayout(moduleDef, interopLib);
+
+            TruffleString mName = getNameNode.execute(module);
+            int mSize;
+            try {
+                Object mSizeObj = interopLib.readMember(moduleDef, J_M_SIZE);
+                mSize = interopLib.asInt(mSizeObj);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_CREATE_MODULE_FROM_DEFINITION, e);
+            }
+
+            try {
+                // allocate md_state if necessary
+                if (mSize >= 0) {
+                    // The cast is not nice but it will at least fail if we change the wrapper type.
+                    PythonNativeWrapper moduleWrapper = (PythonNativeWrapper) moduleToNativeNode.execute(capiContext, module);
+                    /*
+                     * TODO(fa): We currently leak 'md_state' and need to use a shared finalizer or
+                     * similar. We ignore that for now since the size will usually be very small
+                     * and/or we could also use a Truffle buffer object.
+                     */
+                    Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWMALLOC, mSize);
+                    writeNativeMemberNode.execute(module, moduleWrapper, MD_STATE.getMemberNameJavaString(), moduleStatePtr);
+                }
+
+                // parse slot definitions
+                Object slotDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_SLOTS, moduleDef);
+                if (interopLib.isNull(slotDefinitions)) {
+                    return 0;
+                }
+                if (!interopLib.hasArrayElements(slotDefinitions)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.FIELD_S_DID_NOT_RETURN_AN_ARRAY, T_M_SLOTS);
+                }
+                long nSlots = interopLib.getArraySize(slotDefinitions);
+                for (long i = 0; i < nSlots; i++) {
+                    Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
+
+                    Object slotIdObj = interopLib.readMember(slotDefinition, J_MODULEDEF_SLOT);
+                    int slotId = interopLib.asInt(slotIdObj);
+                    switch (slotId) {
+                        case SLOT_PY_MOD_CREATE:
+                            // handled in CreateModuleNode
+                            break;
+                        case SLOT_PY_MOD_EXEC:
+                            Object execFunction = interopLib.readMember(slotDefinition, J_MODULEDEF_VALUE);
+                            Object result = interopLib.execute(execFunction, moduleToNativeNode.execute(capiContext, module));
+                            int iResult = interopLib.asInt(result);
+                            /*
+                             * It's a bit counterintuitive that we use 'isPrimitiveValue = false'
+                             * but the function's return value is actually not a result but a status
+                             * code. So, if the status code is '!=0' we know that an error occurred
+                             * and won't ignore this if no error is set. This is then the same
+                             * behaviour if we would have a pointer return type and got 'NULL'.
+                             */
+                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                                            errOccurredProfile,
+                                            ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
+                            break;
+                        default:
+                            throw raiseNode.raise(SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException | UnsupportedTypeException | ArityException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            return 0;
+        }
+    }
+
+    /**
+     * <pre>
+     *     struct PyMethodDef {
+     *         const char * ml_name;
+     *         PyCFunction  ml_meth;
+     *         int          ml_flags;
+     *         const char * ml_doc;
+     *     };
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class CreateMethodNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CreateMethodNode.class);
+
+        public static final String J_ML_NAME = "ml_name";
+        public static final String J_ML_DOC = "ml_doc";
+        public static final String J_ML_FLAGS = "ml_flags";
+        public static final String J_ML_METH = "ml_meth";
+
+        public abstract PBuiltinFunction execute(CApiContext context, Object legacyMethodDef);
+
+        @Specialization(limit = "1")
+        static PBuiltinFunction doIt(CApiContext context, Object methodDef,
+                        @CachedLibrary("methodDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Cached PCallCapiFunction callGetNameNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert checkLayout(methodDef) : "provided pointer has unexpected structure";
+
+            TruffleString methodName;
+            try {
+                Object methodNamePtr = interopLibrary.readMember(methodDef, J_ML_NAME);
+                methodName = (TruffleString) callGetNameNode.call(context, NativeCAPISymbol.FUN_POLYGLOT_FROM_STRING, methodNamePtr, StandardCharsets.UTF_8.name());
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            // note: 'ml_doc' may be NULL; in this case, we would store 'None'
+            Object methodDoc = PNone.NONE;
+            try {
+                Object methodDocPtr = interopLibrary.readMember(methodDef, J_ML_DOC);
+                if (!resultLib.isNull(methodDocPtr)) {
+                    methodDoc = fromCharPointerNode.execute(methodDocPtr);
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                // fall through
+            }
+
+            Object methodFlagsObj;
+            int flags;
+            Object mlMethObj;
+            try {
+                methodFlagsObj = interopLibrary.readMember(methodDef, J_ML_FLAGS);
+                if (!resultLib.fitsInInt(methodFlagsObj)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.ML_FLAGS_IS_NOT_INTEGER, methodName);
+                }
+                flags = resultLib.asInt(methodFlagsObj);
+
+                mlMethObj = interopLibrary.readMember(methodDef, J_ML_METH);
+                if (!resultLib.isExecutable(mlMethObj)) {
+                    LOGGER.warning(() -> String.format("ml_meth of %s is not callable", methodName));
+                }
+            } catch (UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_STRUCT_MEMBER, e.getUnknownIdentifier());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_ACCESS_STRUCT_MEMBER_FLAGS_OR_METH);
+            }
+
+            // CPy-style methods
+            // TODO(fa) support static and class methods
+            PRootNode rootNode = createWrapperRootNode(PythonLanguage.get(callGetNameNode), flags, methodName);
+            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
+            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, PythonUtils.getOrCreateCallTarget(rootNode));
+
+            // write doc string; we need to directly write to the storage otherwise it is disallowed
+            // writing to builtin types.
+            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.T___DOC__, methodDoc);
+
+            return function;
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object methodDef) {
+            String[] members = new String[]{J_ML_NAME, J_ML_METH, J_ML_FLAGS, J_ML_DOC};
+            InteropLibrary lib = InteropLibrary.getUncached(methodDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(methodDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @TruffleBoundary
+        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, TruffleString name) {
+            boolean isStatic = CExtContext.isMethStatic(flags);
+            if (CExtContext.isMethNoArgs(flags)) {
+                return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);
+            } else if (CExtContext.isMethO(flags)) {
+                return new MethORoot(language, name, isStatic, PExternalFunctionWrapper.O);
+            } else if (CExtContext.isMethKeywords(flags)) {
+                return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
+            } else if (CExtContext.isMethVarargs(flags)) {
+                return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
+            }
+            throw new IllegalStateException("illegal method flags");
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HasNativeBufferNode extends PNodeWithContext {
+        public abstract boolean execute(PythonNativeObject object);
+
+        @Specialization
+        static boolean readTpAsBuffer(PythonNativeObject object,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached ToSulongNode toSulongNode) {
+            Object type = getClassNode.execute(object);
+            Object result = callCapiFunction.call(NativeCAPISymbol.FUN_GET_TP_AS_BUFFER, toSulongNode.execute(type));
+            return !lib.isNull(result);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
+        public abstract PMemoryView execute(PythonNativeObject object, int flags);
+
+        @Specialization
+        static PMemoryView fromNative(PythonNativeObject buf, int flags,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
+            return (PMemoryView) asPythonObjectNode.execute(result);
+        }
+    }
+
+    /**
+     * Decrements the ref count by one of any {@link PythonNativeWrapper} object.
+     * <p>
+     * This node avoids memory leaks for arguments given to native.<br>
+     * Problem description:<br>
+     * {@link PythonNativeWrapper} objects given to C code may go to native, i.e., a handle will be
+     * allocated. In this case, no ref count manipulation is done since the C code considers the
+     * reference to be borrowed and the Python code just doesn't do it because we have a GC. This
+     * means that the handle will stay allocated and we are leaking the wrapper object.
+     * </p>
+     */
+    @ImportStatic(CApiGuards.class)
+    abstract static class ReleaseNativeWrapperNode extends Node {
+
+        public abstract void execute(Object pythonObject);
+
+        @Specialization
+        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
+                        @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
+                        @Cached SubRefCntNode subRefCntNode) {
+            // in the cached case, refCntNode acts as a branch profile
+            if (subRefCntNode.dec(nativeWrapper) == 0) {
+                traverseNativeWrapperNode.execute(nativeWrapper.getDelegateSlowPath());
+            }
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)")
+        @SuppressWarnings("unused")
+        static void doOther(Object object) {
+            // just do nothing; this is an implicit profile
+        }
+    }
+
+    /**
+     * Traverses the items of a tuple and applies {@link ReleaseNativeWrapperNode} on the items if
+     * the tuple is up to be released.
+     */
+    abstract static class TraverseNativeWrapperNode extends Node {
+
+        public abstract void execute(Object containerObject);
+
+        @Specialization
+        static void doTuple(PTuple tuple,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached SubRefCntNode subRefCntNode) {
+
+            Object[] values = toArrayNode.execute(tuple.getSequenceStorage());
+            for (int i = 0; i < values.length; i++) {
+                Object value = values[i];
+                if (value instanceof PythonObject) {
+                    DynamicObjectNativeWrapper nativeWrapper = ((PythonObject) value).getNativeWrapper();
+                    // only traverse if refCnt != 0; this will break the cycle
+                    if (nativeWrapper != null) {
+                        subRefCntNode.dec(nativeWrapper);
+                    }
+                }
+            }
+        }
+
+        @Fallback
+        static void doOther(@SuppressWarnings("unused") Object other) {
+            // do nothing
+        }
+    }
 }

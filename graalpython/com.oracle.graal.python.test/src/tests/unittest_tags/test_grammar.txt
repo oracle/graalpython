@@ -15,11 +15,13 @@
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_dictcomps
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_eval_input
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_expr_stmt
+*graalpython.lib-python.3.test.test_grammar.GrammarTests.test_genexps
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_global
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_if
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_if_else_expr
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_import
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_lambdef
+*graalpython.lib-python.3.test.test_grammar.GrammarTests.test_listcomps
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_matrix_mul
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_multiplicative_ops
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_nonlocal

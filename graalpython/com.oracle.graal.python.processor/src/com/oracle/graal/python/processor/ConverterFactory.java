@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.processor;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -51,9 +51,10 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 
 public class ConverterFactory {
     public static final String CLINIC_PACKAGE = "com.oracle.graal.python.nodes.function.builtins.clinic";
@@ -85,17 +86,24 @@ public class ConverterFactory {
         Extra,
     }
 
-    private static final Map<TypeElement, ConverterFactory> cache = new HashMap<>();
+    private static ConverterFactory[] BuiltinBoolean;
+    private static ConverterFactory[] BuiltinIntToBoolean;
+    private static ConverterFactory[] BuiltinTString;
+    private static ConverterFactory[] BuiltinTStringWithDefaultValue;
+    private static ConverterFactory[] BuiltinInt;
+    private static ConverterFactory[] BuiltinLong;
+    private static ConverterFactory[] BuiltinCodePoint;
+    private static ConverterFactory[] BuiltinTuple;
+    private static ConverterFactory[] BuiltinReadableBuffer;
+    private static ConverterFactory[] BuiltinWritableBuffer;
+    private static ConverterFactory[] BuiltinIndex;
+    private static ConverterFactory[] BuiltinLongIndex;
+    private static ConverterFactory[] BuiltinSliceIndex;
+    private static ConverterFactory[] BuiltinNone;
+    private static ConverterFactory[] BuiltinDouble;
 
-    private static ConverterFactory BuiltinBoolean;
-    private static ConverterFactory BuiltinString;
-    private static ConverterFactory BuiltinStringWithDefaultValue;
-    private static ConverterFactory BuiltinInt;
-    private static ConverterFactory BuiltinCodePoint;
-    private static ConverterFactory BuiltinBuffer;
-    private static ConverterFactory BuiltinIndex;
-    private static ConverterFactory BuiltinSliceIndex;
-    private static ConverterFactory BuiltinNone;
+    // Artificial unique id used for ordering
+    public final String id;
 
     public final String fullClassName;
     public final String className;
@@ -111,22 +119,39 @@ public class ConverterFactory {
         this.extraParamCount = extraParamCount;
         this.params = params;
         this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
+        id = String.format("%s:%s:%s", methodName, Arrays.toString(params), Arrays.toString(acceptedPrimitiveTypes));
     }
 
-    public static ConverterFactory getBuiltin(ArgumentClinic annotation) {
+    public boolean hasParameter(Param needle) {
+        return Arrays.stream(params).anyMatch(x -> x == needle);
+    }
+
+    public static ConverterFactory[] getBuiltin(ArgumentClinic annotation) {
         switch (annotation.conversion()) {
             case Boolean:
                 return BuiltinBoolean;
-            case String:
-                return annotation.defaultValue().isEmpty() ? BuiltinString : BuiltinStringWithDefaultValue;
+            case IntToBoolean:
+                return BuiltinIntToBoolean;
+            case TString:
+                return annotation.defaultValue().isEmpty() ? BuiltinTString : BuiltinTStringWithDefaultValue;
             case Int:
                 return BuiltinInt;
+            case Long:
+                return BuiltinLong;
+            case Double:
+                return BuiltinDouble;
             case CodePoint:
                 return BuiltinCodePoint;
-            case Buffer:
-                return BuiltinBuffer;
+            case Tuple:
+                return BuiltinTuple;
+            case ReadableBuffer:
+                return BuiltinReadableBuffer;
+            case WritableBuffer:
+                return BuiltinWritableBuffer;
             case Index:
                 return BuiltinIndex;
+            case LongIndex:
+                return BuiltinLongIndex;
             case SliceIndex:
                 return BuiltinSliceIndex;
             case None:
@@ -137,19 +162,13 @@ public class ConverterFactory {
         }
     }
 
-    public static ConverterFactory getForClass(TypeElement conversionClass) throws ProcessingError {
-        ConverterFactory factory = cache.get(conversionClass);
-        if (factory != null) {
-            return factory;
-        }
+    public static ConverterFactory[] getForClass(TypeElement conversionClass) throws ProcessingError {
+        ArrayList<ConverterFactory> factories = new ArrayList<>();
         for (Element e : conversionClass.getEnclosedElements()) {
             ClinicConverterFactory annot = e.getAnnotation(ClinicConverterFactory.class);
             if (annot != null) {
                 if (!e.getModifiers().contains(Modifier.STATIC) || e.getKind() != ElementKind.METHOD) {
                     throw new ProcessingError(conversionClass, "ClinicConverterFactory annotation is applicable only to static methods.");
-                }
-                if (factory != null) {
-                    throw new ProcessingError(conversionClass, "Multiple ClinicConverterFactory annotations in a single class.");
                 }
                 String fullClassName = conversionClass.toString();
                 String className = conversionClass.getSimpleName().toString();
@@ -174,17 +193,21 @@ public class ConverterFactory {
                         extraParamCount++;
                     }
                 }
-                factory = new ConverterFactory(fullClassName, className, methodName, extraParamCount, args, annot.shortCircuitPrimitive());
+                final int finalExtraCount = extraParamCount;
+                if (factories.stream().anyMatch(x -> x.params.length == args.length && x.extraParamCount == finalExtraCount)) {
+                    throw new ProcessingError(conversionClass, "Multiple ClinicConverterFactory annotations within one class must take different number of parameters.");
+                }
+                factories.add(new ConverterFactory(fullClassName, className, methodName, extraParamCount, args, annot.shortCircuitPrimitive()));
             }
         }
-        if (factory == null) {
+        if (factories.size() == 0) {
             throw new ProcessingError(conversionClass, "No ClinicConverterFactory annotation found.");
         }
-        cache.put(conversionClass, factory);
-        return factory;
+        ConverterFactory[] result = factories.toArray(new ConverterFactory[0]);
+        return result;
     }
 
-    private static ConverterFactory forBuiltin(Elements elementUtils, String className) throws ProcessingError {
+    private static ConverterFactory[] forBuiltin(Elements elementUtils, String className) throws ProcessingError {
         TypeElement type = elementUtils.getTypeElement(CLINIC_PACKAGE + "." + className);
         if (type == null) {
             throw new ProcessingError(null, "Unable to find built-in argument clinic conversion node " + CLINIC_PACKAGE + "." + className);
@@ -194,13 +217,28 @@ public class ConverterFactory {
 
     public static void initBuiltins(Elements elementUtils) throws ProcessingError {
         BuiltinBoolean = forBuiltin(elementUtils, "JavaBooleanConverterNode");
-        BuiltinString = forBuiltin(elementUtils, "JavaStringConverterNode");
-        BuiltinStringWithDefaultValue = forBuiltin(elementUtils, "JavaStringConverterWithDefaultValueNode");
+        BuiltinIntToBoolean = forBuiltin(elementUtils, "JavaIntToBooleanConverterNode");
+        BuiltinTString = forBuiltin(elementUtils, "TruffleStringConverterNode");
+        BuiltinTStringWithDefaultValue = forBuiltin(elementUtils, "TruffleStringConverterWithDefaultValueNode");
         BuiltinInt = forBuiltin(elementUtils, "JavaIntConversionNode");
+        BuiltinLong = forBuiltin(elementUtils, "JavaLongConversionNode");
+        BuiltinDouble = forBuiltin(elementUtils, "JavaDoubleConversionNode");
         BuiltinCodePoint = forBuiltin(elementUtils, "CodePointConversionNode");
-        BuiltinBuffer = forBuiltin(elementUtils, "BufferConversionNode");
+        BuiltinTuple = forBuiltin(elementUtils, "TupleConversionNode");
+        BuiltinReadableBuffer = forBuiltin(elementUtils, "ReadableBufferConversionNode");
+        BuiltinWritableBuffer = forBuiltin(elementUtils, "WritableBufferConversionNode");
         BuiltinIndex = forBuiltin(elementUtils, "IndexConversionNode");
+        BuiltinLongIndex = forBuiltin(elementUtils, "LongIndexConverterNode");
         BuiltinSliceIndex = forBuiltin(elementUtils, "SliceIndexConversionNode");
         BuiltinNone = forBuiltin(elementUtils, "DefaultValueNode");
+    }
+
+    @Override
+    public String toString() {
+        return "ConverterFactory{" +
+                        "methodName='" + methodName + '\'' +
+                        ", extraParamCount=" + extraParamCount +
+                        ", params.length=" + params.length +
+                        '}';
     }
 }

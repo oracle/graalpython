@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,13 @@
 
 package com.oracle.graal.python.parser.sst;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.LAMBDA_NAME;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_LAMBDA_NAME;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASSCELL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -57,60 +57,93 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NoValueNode;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
+import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
+import com.oracle.graal.python.nodes.classes.LoadBuildClassNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
+import com.oracle.graal.python.nodes.control.BreakNode;
+import com.oracle.graal.python.nodes.control.BreakTargetNode;
+import com.oracle.graal.python.nodes.control.ContinueNode;
+import com.oracle.graal.python.nodes.control.ContinueTargetNode;
+import com.oracle.graal.python.nodes.control.ElseNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
+import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
+import com.oracle.graal.python.nodes.control.ReturnNode.FrameReturnNode;
+import com.oracle.graal.python.nodes.control.ReturnNode.GeneratorFrameReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
+import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.OrNode;
+import com.oracle.graal.python.nodes.expression.TernaryIfNode;
+import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
+import com.oracle.graal.python.nodes.frame.DeleteNameNode;
+import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionBodyNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.LambdaBodyNode;
+import com.oracle.graal.python.nodes.generator.DictConcatNodeGen;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
-import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
+import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
+import com.oracle.graal.python.nodes.literal.DictLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
+import com.oracle.graal.python.nodes.literal.FormatStringExpressionNode;
+import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
+import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
+import com.oracle.graal.python.nodes.literal.SetLiteralNodeGen;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
+import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
+import com.oracle.graal.python.nodes.statement.ImportFromNode;
+import com.oracle.graal.python.nodes.statement.ImportNode;
+import com.oracle.graal.python.nodes.statement.ImportStarNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.statement.TryExceptNode;
+import com.oracle.graal.python.nodes.statement.TryFinallyNode;
+import com.oracle.graal.python.nodes.statement.WithNode;
+import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
+import com.oracle.graal.python.parser.DefinitionCellSlots;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
@@ -121,25 +154,31 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     protected final ScopeEnvironment scopeEnvironment;
     protected Source source;
-    protected final NodeFactory nodeFactory;
+    protected final RootNodeFactory nodeFactory;
     protected final PythonParser.ParserErrorCallback errors;
 
     protected int comprLevel;
+    protected boolean interactive;
 
-    public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
+    private static final TruffleString RETURN = tsLiteral("return");
+
+    public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source, boolean interactive) {
         this.scopeEnvironment = scopeEnvironment;
         this.source = source;
         this.nodeFactory = nodeFactory;
         this.errors = errors;
         this.comprLevel = 0;
+        this.interactive = interactive;
     }
 
     /**
@@ -225,7 +264,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return result;
     }
 
-    public ExpressionNode asExpression(PNode node) {
+    public static ExpressionNode asExpression(PNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
             return ((ExpressionNode.ExpressionStatementNode) node).getExpression();
         }
@@ -247,9 +286,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return BlockNode.create(statements);
     }
 
-    protected StatementNode createWriteLocal(ExpressionNode right, FrameSlot slot) {
-        assert slot != null;
-        return WriteLocalVariableNode.create(slot, right);
+    protected StatementNode createFrameReturn(ExpressionNode right, int slot) {
+        return new FrameReturnNode(right, slot);
     }
 
     @Override
@@ -267,27 +305,33 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
         PNode assignmentNode = createAssignment(node);
-        if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
-            // annotations in a function we ignore at all. Even there are not evalueated, whether
-            // the type is wrong
+        if (!scopeEnvironment.isInFunctionScope() && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
+            return BlockNode.create(new StatementNode[]{(StatementNode) assignmentNode, (StatementNode) node.annotation.accept(this)});
+        }
+        return assignmentNode;
+    }
+
+    @Override
+    public PNode visit(AnnotationSSTNode node) {
+        // annotations in a function we ignore at all. Even there are not evalueated, whether
+        // the type is wrong
+        if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs instanceof VarLookupSSTNode) {
             // create simple SST tree for : __annotations__['var_name'] = type
-            VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs[0];
-            SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(__ANNOTATIONS__, -1, -1), new StringLiteralSSTNode.RawStringLiteralSSTNode(varLookupNode.name, -1, -1), -1,
+            VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs;
+            SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(J___ANNOTATIONS__, -1, -1), new StringLiteralSSTNode.RawStringLiteralSSTNode(varLookupNode.name, -1, -1), -1,
                             -1);
             AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, node.type, -1, -1);
             PNode assignAnnotationNode = visit(assignAnnotationSST);
-            // return block with statements[the assignment, add variable name, type to
-            // __annotations__]
-            return BlockNode.create(new StatementNode[]{(StatementNode) assignmentNode, (StatementNode) assignAnnotationNode});
+            return assignAnnotationNode;
         }
-        return assignmentNode;
+        return EmptyNode.create().asStatement();
     }
 
     @Override
     public PNode visit(AssertSSTNode node) {
         ExpressionNode test = (ExpressionNode) node.test.accept(this);
         ExpressionNode message = node.message == null ? null : (ExpressionNode) node.message.accept(this);
-        PNode result = new AssertNode(nodeFactory.toBooleanCastNode(test), message);
+        PNode result = new AssertNode(toBooleanCastNode(test), message);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -328,8 +372,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AugAssignmentSSTNode node) {
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
-        ExpressionNode binOp = nodeFactory.createInplaceOperation(node.operation, lhs, rhs);
-        PNode duplicate = nodeFactory.duplicate(lhs, PNode.class);
+        ExpressionNode binOp = InplaceArithmetic.createInplaceOperation(node.operation, lhs, rhs);
+        PNode duplicate = duplicate(lhs, PNode.class);
         PNode result = ((ReadNode) duplicate).makeWriteNode(binOp);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -408,19 +452,19 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         classBody.assignSourceSection(createSourceSection(classBodyStart, node.body.endOffset));
 
         delta = delta + (classScope.hasAnnotations() ? 1 : 0);
-        boolean hasImplicitClass = classScope.isCellVar(__CLASS__);
+        boolean hasImplicitClass = classScope.isCellVar(J___CLASS__);
         StatementNode[] classStatements = new StatementNode[2 + delta + (hasImplicitClass ? 1 : 0)];
         // ClassStatemtns look like:
         // [0] ClassDefinitionPrologueNode
-        classStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
+        classStatements[0] = new ClassDefinitionPrologueNode(ts(qualifiedName));
         // [?] if there is documentation -> doc statement
         if (doc != null) {
-            scopeEnvironment.createLocal(__DOC__);
-            classStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
+            scopeEnvironment.createLocal(J___DOC__);
+            classStatements[1] = scopeEnvironment.findVariable(J___DOC__).makeWriteNode(doc);
         }
         // [?] if thre are annotations -> annotations
         if (classScope.hasAnnotations()) {
-            classStatements[delta] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
+            classStatements[delta] = scopeEnvironment.findVariable(J___ANNOTATIONS__).makeWriteNode(DictLiteralNode.createEmptyDictLiteral());
         }
         // [last - 1] class body statements
         classStatements[1 + delta] = classBody;
@@ -428,18 +472,20 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             // [last] assign __class__ cell to __classcell__
             // Only if __class__ is generated in the class scope. The __class__ is in class scope,
             // when an inner method uses __class__ or super is used.
-            classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
-                            nodeFactory.createReadLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
+            classStatements[2 + delta] = scopeEnvironment.findVariable(J___CLASSCELL__).makeWriteNode(
+                            ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().findFrameSlot(J___CLASS__)));
         }
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
-        StatementNode body = nodeFactory.createBlock(classStatements);
-        ExpressionNode bodyAsExpr = new ReturnTargetNode(body, nodeFactory.createNullLiteral());
+        StatementNode body = BlockNode.create(classStatements);
+        ExpressionNode bodyAsExpr = new ReturnTargetNode(body, new ObjectLiteralNode(null));
         bodyAsExpr.assignSourceSection(nodeSourceSection);
-        ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = scopeEnvironment.getCurrentScope().createFrameDescriptor();
+        ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, fd, bodyAsExpr, executionCellSlots);
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, qualifiedName, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(),
-                        scopeEnvironment.getExecutionCellSlots(), null);
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(ts(node.name), ts(qualifiedName), null, null, null, null, ct, definitionCellSlots, null);
         scopeEnvironment.setCurrentScope(node.scope.getParent());
 
         ExpressionNode[] args;
@@ -461,13 +507,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             kwArg = node.baseClasses.getKwArgs(this);
         } else {
             args = new ExpressionNode[2];
-            nameArgs = new ExpressionNode[0];
+            nameArgs = ExpressionNode.EMPTY_ARRAY;
         }
         args[0] = funcDef;
-        args[1] = nodeFactory.createStringLiteral(node.name);
+        args[1] = new StringLiteralNode(ts(node.name));
 
-        ExpressionNode owner = nodeFactory.createGetAttribute(nodeFactory.createBuiltinsLiteral(), __BUILD_CLASS__);
-        ExpressionNode classDef = PythonCallNode.create(owner, args, nameArgs, starArg, kwArg);
+        ExpressionNode buildClass = new LoadBuildClassNode();
+        ExpressionNode classDef = PythonCallNode.create(buildClass, args, nameArgs, starArg, kwArg);
         classDef.assignSourceSection(nodeSourceSection);
 
         ReadNode read = scopeEnvironment.findVariable(node.name);
@@ -486,21 +532,21 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             case PTuple:
                 numYields = getCurrentNumberOfYields();
                 items = getCollectionItems(node.values);
-                result = createResumableExpression(items, hadYieldSince(numYields), nodeFactory::createTupleLiteral);
+                result = createResumableExpression(items, hadYieldSince(numYields), values1 -> new TupleLiteralNode(values1));
                 break;
             case PList:
                 numYields = getCurrentNumberOfYields();
                 items = getCollectionItems(node.values);
-                result = createResumableExpression(items, hadYieldSince(numYields), nodeFactory::createListLiteral);
+                result = createResumableExpression(items, hadYieldSince(numYields), values1 -> ListLiteralNode.create(values1));
                 break;
             case PSet:
                 numYields = getCurrentNumberOfYields();
                 items = getCollectionItems(node.values);
-                result = createResumableExpression(items, hadYieldSince(numYields), nodeFactory::createSetLiteral);
+                result = createResumableExpression(items, hadYieldSince(numYields), values1 -> SetLiteralNodeGen.create(values1));
                 break;
             case PDict:
                 if (node.values.length == 0) {
-                    result = nodeFactory.createDictLiteral();
+                    result = DictLiteralNode.createEmptyDictLiteral();
                 } else {
                     int initLen = node.values.length / 2;
                     List<ExpressionNode> keys = new ArrayList<>(initLen);
@@ -513,27 +559,28 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                             values.add((ExpressionNode) node.values[++i].accept(this));
                         } else {
                             if (!keys.isEmpty()) {
-                                dicts.add(createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields),
-                                                nodeFactory::createDictLiteral));
+                                dicts.add(createResumableExpression(keys.toArray(ExpressionNode.EMPTY_ARRAY), values.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields),
+                                                DictLiteralNode::create));
                                 keys.clear();
                                 values.clear();
                             } else {
                                 if (i == 0) {
                                     // TODO : Do we need to create empty dict?
                                     // see the test DictAndSetTests.dict07 and other test below
-                                    dicts.add(nodeFactory.createDictLiteral());
+                                    dicts.add(DictLiteralNode.createEmptyDictLiteral());
                                 }
                             }
                             dicts.add((ExpressionNode) node.values[++i].accept(this));
                         }
                     }
                     if (dicts.isEmpty()) {
-                        result = createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields), nodeFactory::createDictLiteral);
+                        result = createResumableExpression(keys.toArray(ExpressionNode.EMPTY_ARRAY), values.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields), DictLiteralNode::create);
                     } else {
                         if (!keys.isEmpty()) {
-                            dicts.add(createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields), nodeFactory::createDictLiteral));
+                            dicts.add(createResumableExpression(keys.toArray(ExpressionNode.EMPTY_ARRAY), values.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields),
+                                            DictLiteralNode::create));
                         }
-                        result = createResumableExpression(dicts.toArray(new ExpressionNode[0]), hadYieldSince(numYields), nodeFactory::createDictionaryConcat);
+                        result = createResumableExpression(dicts.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields), dictNodes -> DictConcatNodeGen.create(dictNodes));
                     }
 
                 }
@@ -566,12 +613,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             boolean rightCanYield = hadYieldSince(numYields);
             ExpressionNode nextComp;
             if (right instanceof LiteralNode || right instanceof ReadNode || i == opLen - 1) {
-                nextComp = createResumableExpression(left, right, rightCanYield, (l, r) -> nodeFactory.createComparisonOperation(operator, l, r));
+                nextComp = createResumableExpression(left, right, rightCanYield, (l, r) -> ExpressionNode.createComparisonOperation(ts(operator), l, r));
                 left = right;
             } else {
                 ReadNode tmpVar = makeTempLocalVariable();
                 StatementNode tmpAssignment = tmpVar.makeWriteNode(right);
-                nextComp = createResumableExpression(left, (ExpressionNode) tmpVar, rightCanYield, (l, r) -> nodeFactory.createComparisonOperation(operator, l, r)).withSideEffect(tmpAssignment);
+                nextComp = createResumableExpression(left, (ExpressionNode) tmpVar, rightCanYield, (l, r) -> ExpressionNode.createComparisonOperation(ts(operator), l, r)).withSideEffect(
+                                tmpAssignment);
                 left = (ExpressionNode) tmpVar;
             }
             result = result == null ? nextComp : createResumableExpression(result, nextComp, rightCanYield, AndNode::new);
@@ -621,7 +669,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             String[] nameParts = dottedName.split("\\.");
             decoratorFn = (ExpressionNode) scopeEnvironment.findVariable(nameParts[0]);
             for (int i = 1; i < nameParts.length; i++) {
-                decoratorFn = nodeFactory.createGetAttribute(decoratorFn, nameParts[i]);
+                decoratorFn = GetAttributeNode.create(ts(nameParts[i]), decoratorFn);
             }
         } else {
             decoratorFn = (ExpressionNode) scopeEnvironment.findVariable(dottedName);
@@ -640,7 +688,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         for (int i = 0; i < node.expressions.length; i++) {
             delTarget(blockList, node.expressions[i].accept(this));
         }
-        PNode result = nodeFactory.createBlock(blockList);
+        PNode result = BlockNode.create(blockList);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -648,20 +696,20 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     private void delTarget(List<StatementNode> blockList, PNode target) {
         if (target instanceof GetItemNode) {
             GetItemNode getItem = (GetItemNode) target;
-            blockList.add(nodeFactory.createDeleteItem(getItem.getPrimary(), getItem.getSlice()));
+            blockList.add(DeleteItemNode.create(getItem.getPrimary(), getItem.getSlice()));
         } else if (target instanceof GetAttributeNode) {
             GetAttributeNode getAttribute = (GetAttributeNode) target;
-            blockList.add(nodeFactory.createDeleteAttribute(getAttribute.getObject(), getAttribute.getKey()));
+            blockList.add(DeleteAttributeNode.create(getAttribute.getObject(), new StringLiteralNode(getAttribute.getKey())));
         } else if (target instanceof ReadLocalNode) {
             // this will raise an error, if the variable is not bound
             blockList.add(((ExpressionNode) target).asStatement());
             blockList.add(((ReadLocalNode) target).makeDeleteNode());
         } else if (target instanceof ReadGlobalOrBuiltinNode) {
             ReadGlobalOrBuiltinNode readGlobalOrBuiltin = (ReadGlobalOrBuiltinNode) target;
-            blockList.add(nodeFactory.createDeleteGlobal(readGlobalOrBuiltin.getAttributeId()));
+            blockList.add(DeleteGlobalNode.create(readGlobalOrBuiltin.getAttributeId()));
         } else if (target instanceof ReadNameNode) {
             ReadNameNode readName = (ReadNameNode) target;
-            blockList.add(nodeFactory.createDeleteName(readName.getAttributeId()));
+            blockList.add(DeleteNameNode.create(readName.getAttributeId()));
         } else if (target instanceof TupleLiteralNode) {
             for (PNode targetValue : ((TupleLiteralNode) target).getValues()) {
                 delTarget(blockList, targetValue);
@@ -669,6 +717,17 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         } else {
             throw errors.raiseInvalidSyntax(target.getSourceSection().getSource(), target.getSourceSection(), ErrorMessages.CANT_DELETE, target.getSourceSection().getCharacters());
         }
+    }
+
+    protected StatementNode unbindVariable(ReadNode target) {
+        if (target instanceof ReadLocalNode) {
+            return ((ReadLocalNode) target).makeDeleteNode();
+        } else if (target instanceof ReadGlobalOrBuiltinNode) {
+            return DeleteGlobalNode.create(((ReadGlobalOrBuiltinNode) target).getAttributeId());
+        } else if (target instanceof ReadNameNode) {
+            return DeleteNameNode.create(((ReadNameNode) target).getAttributeId());
+        }
+        throw new IllegalStateException("invalid target for unbind");
     }
 
     @Override
@@ -680,6 +739,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(ExpressionStatementSSTNode node) {
         ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
+        if (interactive && scopeEnvironment.atModuleLevel()) {
+            expression = PrintExpressionNode.create(expression);
+        }
         return expression.asStatement();
     }
 
@@ -706,6 +768,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(ForSSTNode node) {
+        int iteratorSlot = scopeEnvironment.getCurrentScope().acquireScopedTemp();
         ExpressionNode[] targets = new ExpressionNode[node.targets.length];
         for (int i = 0; i < targets.length; i++) {
             targets[i] = (ExpressionNode) node.targets[i].accept(this);
@@ -727,30 +790,31 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 }
             }
         } else {
-            target = nodeFactory.createTupleLiteral(targets);
+            target = new TupleLiteralNode(targets);
         }
         StatementNode body = (StatementNode) node.body.accept(this);
         if (node.containsContinue) {
-            body = nodeFactory.createContinueTarget(body);
+            body = new ContinueTargetNode(body);
         }
         ExpressionNode iterator = (ExpressionNode) node.iterator.accept(this);
         iterator.assignSourceSection(createSourceSection(node.iterator.startOffset, node.iterator.endOffset));
-        GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
+        GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
-        StatementNode forNode = new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator);
+        StatementNode forNode = new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator, iteratorSlot);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
-        StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseBranch = node.elseStatement == null ? BlockNode.create(StatementNode.EMPTY_STATEMENT_ARRAY) : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;
         if (!node.containsBreak) {
-            result = nodeFactory.createElse(forNode, elseBranch);
+            result = new ElseNode(forNode, elseBranch);
         } else {
             // TODO: this is also strange, that we create don't create ElseNode for break target.
             // At least it seems to be inconsistent.
             result = node.elseStatement == null ?
             // TODO: Do we need to create the empty block here?
-                            nodeFactory.createBreakTarget(forNode, nodeFactory.createBlock(new StatementNode[0])) : nodeFactory.createBreakTarget(forNode, elseBranch);
+                            new BreakTargetNode(forNode, BlockNode.create(StatementNode.EMPTY_STATEMENT_ARRAY)) : new BreakTargetNode(forNode, elseBranch);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        scopeEnvironment.getCurrentScope().releaseScopedTemp();
         return result;
     }
 
@@ -759,7 +823,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         Signature signature = node.argBuilder.getSignature();
-        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes(scopeEnvironment));
+        StatementNode argumentNodes = BlockNode.create(node.argBuilder.getArgumentNodes(scopeEnvironment));
 
         StatementNode body;
         GeneratorFactorySSTVisitor generatorFactory = null;
@@ -810,10 +874,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode returnTarget;
 
         if (scopeEnvironment.isInGeneratorScope()) {
-            returnTarget = new GeneratorReturnTargetNode(argumentNodes, body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), generatorFactory.getMutableGeneratorInfo());
+            returnTarget = new GeneratorReturnTargetNode(argumentNodes, body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()),
+                            generatorFactory.getMutableGeneratorInfo());
         } else {
-            body = nodeFactory.createBlock(argumentNodes, body);
-            returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+            body = BlockNode.create(argumentNodes, body);
+            returnTarget = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
         }
 
         SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
@@ -823,32 +888,38 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode[] defaults = node.argBuilder.getDefaultParameterValues(this);
         FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.argBuilder.getKwDefaultParameterValues(this);
         Map<String, SSTNode> sstAnnotations = node.argBuilder.getAnnotatedArgs();
-        Map<String, ExpressionNode> annotations = null;
+        Map<TruffleString, ExpressionNode> annotations = null;
         if (sstAnnotations != null && !sstAnnotations.isEmpty()) {
             annotations = new HashMap<>(sstAnnotations.size());
             for (String argName : sstAnnotations.keySet()) {
                 SSTNode sstType = sstAnnotations.get(argName);
-                annotations.put(argName, (ExpressionNode) sstType.accept(this));
+                annotations.put(ts(argName), (ExpressionNode) sstType.accept(this));
             }
+        }
+        if (node.resultAnnotation != null) {
+            if (annotations == null) {
+                annotations = new HashMap<>(1);
+            }
+            annotations.put(RETURN, (ExpressionNode) node.resultAnnotation.accept(this));
         }
         scopeEnvironment.setCurrentScope(node.scope);
 
         /*
          * Function root
          */
-        FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = scopeEnvironment.getCurrentScope().createFrameDescriptor();
         String name = node.name;
         String qualname = node.scope.getQualname();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
-                        signature);
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, executionCellSlots, signature, doc);
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            funcDef = GeneratorFunctionDefinitionNode.create(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
-                            scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getGeneratorInfo(), annotations);
+            funcDef = GeneratorFunctionDefinitionNode.create(ts(name), ts(qualname), ts(node.enclosingClassName), doc, defaults, kwDefaults, ct, fd, definitionCellSlots,
+                            generatorFactory.getGeneratorInfo(),
+                            annotations);
         } else {
-            funcDef = new FunctionDefinitionNode(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
-                            scopeEnvironment.getExecutionCellSlots(), annotations);
+            funcDef = new FunctionDefinitionNode(ts(name), ts(qualname), ts(node.enclosingClassName), doc, defaults, kwDefaults, ct, definitionCellSlots, annotations);
         }
         scopeEnvironment.setCurrentScope(node.scope.getParent());
         ReadNode funcVar = scopeEnvironment.findVariable(name);
@@ -862,7 +933,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(GetAttributeSSTNode node) {
         ExpressionNode receiver = (ExpressionNode) node.receiver.accept(this);
-        PNode result = nodeFactory.createGetAttribute(receiver, node.name);
+        PNode result = GetAttributeNode.create(ts(node.name), receiver);
         // TODO: the old parser doesn't assing source section to the reciever and the node as well.
         // Is this ok?
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
@@ -875,8 +946,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         StatementNode thenStatement = (StatementNode) node.thenStatement.accept(this);
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if
         // the else branch is empty anyway.
-        StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode) node.elseStatement.accept(this);
-        StatementNode result = nodeFactory.createIf(nodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
+        StatementNode elseStatement = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
+        StatementNode result = new IfNode(toBooleanCastNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -897,16 +968,16 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result;
         if (node.asNames == null) {
             // star import
-            result = nodeFactory.createImportStar(from, level);
+            result = new ImportStarNode(ts(from), level);
         } else {
-            String[] fromList = new String[node.asNames.length];
+            TruffleString[] fromList = new TruffleString[node.asNames.length];
             WriteNode[] readNodes = new WriteNode[fromList.length];
             for (int i = 0; i < fromList.length; i++) {
                 String[] asName = node.asNames[i];
-                fromList[i] = asName[0];
+                fromList[i] = ts(asName[0]);
                 readNodes[i] = (WriteNode) scopeEnvironment.findVariable(asName[1] == null ? asName[0] : asName[1]).makeWriteNode(EmptyNode.create());
             }
-            result = nodeFactory.createImportFrom(from, fromList, readNodes, level);
+            result = ImportFromNode.create(ts(from), fromList, readNodes, level);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -915,7 +986,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(ImportSSTNode node) {
         scopeEnvironment.setCurrentScope(node.scope);
-        ExpressionNode importNode = nodeFactory.createImport(node.name).asExpression();
+        ExpressionNode importNode = new ImportNode(ts(node.name)).asExpression();
         PNode result;
         int dotIndex = node.name.indexOf('.');
         if (node.asName == null) {
@@ -935,8 +1006,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 }
 
                 WriteNode readNode = (WriteNode) scopeEnvironment.findVariable(node.asName).makeWriteNode(EmptyNode.create());
-                StatementNode importFrom = nodeFactory.createImportFrom(from, new String[]{parts[parts.length - 1]}, new WriteNode[]{readNode}, level);
-                result = nodeFactory.createBlock(importNode.asStatement(), importFrom);
+                StatementNode importFrom = ImportFromNode.create(ts(from), new TruffleString[]{ts(parts[parts.length - 1])}, new WriteNode[]{readNode}, level);
+                result = BlockNode.create(importNode.asStatement(), importFrom);
             } else {
                 result = scopeEnvironment.findVariable(node.asName).makeWriteNode(importNode);
             }
@@ -947,45 +1018,46 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(LambdaSSTNode node) {
-        String funcname = LAMBDA_NAME;
+        String funcname = J_LAMBDA_NAME;
         String qualname = node.scope.getQualname();
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         /**
          * Parameters
          */
-        StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes(scopeEnvironment));
+        StatementNode argumentNodes = BlockNode.create(node.args == null ? StatementNode.EMPTY_STATEMENT_ARRAY : node.args.getArgumentNodes(scopeEnvironment));
         Signature signature = node.args == null ? Signature.EMPTY : node.args.getSignature();
 
         /**
          * Lambda body
          */
-        ExpressionNode lambdaBody;
-        FunctionBodyNode functionBody;
+        ExpressionNode lambdaExpr;
+        LambdaBodyNode lambdaBody;
         GeneratorFactorySSTVisitor generatorFactory = null;
         boolean isGenerator = scopeEnvironment.isInGeneratorScope();
         StatementNode frameReturn;
         if (isGenerator) {
             generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
-            lambdaBody = (ExpressionNode) node.body.accept(generatorFactory);
-            functionBody = FunctionBodyNode.create(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), lambdaBody));
-            frameReturn = nodeFactory.createFrameReturn(functionBody);
+            lambdaExpr = (ExpressionNode) node.body.accept(generatorFactory);
+            lambdaBody = new LambdaBodyNode(lambdaExpr);
+            frameReturn = new GeneratorFrameReturnNode(lambdaBody, scopeEnvironment.getCurrentScope().getReturnSlot());
         } else {
-            lambdaBody = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
+            lambdaExpr = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
                             ? ((GeneratorFactorySSTVisitor) this).parentVisitor
                             : this);
-            functionBody = FunctionBodyNode.create(nodeFactory.createWriteLocal(lambdaBody, scopeEnvironment.getReturnSlot()));
-            frameReturn = nodeFactory.createFrameReturn(functionBody);
+
+            lambdaBody = new LambdaBodyNode(lambdaExpr);
+            frameReturn = new FrameReturnNode(lambdaBody, scopeEnvironment.getCurrentScope().getReturnSlot());
         }
-        functionBody.assignSourceSection(createSourceSection(node.body.getStartOffset(), node.body.getEndOffset()));
+        lambdaBody.assignSourceSection(createSourceSection(node.body.getStartOffset(), node.body.getEndOffset()));
 
         ExpressionNode returnTargetNode;
         if (scopeEnvironment.isInGeneratorScope()) {
-            returnTargetNode = new GeneratorReturnTargetNode(argumentNodes, frameReturn, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()),
+            returnTargetNode = new GeneratorReturnTargetNode(argumentNodes, frameReturn, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()),
                             generatorFactory.getMutableGeneratorInfo());
         } else {
-            StatementNode body = nodeFactory.createBlock(argumentNodes, frameReturn);
-            returnTargetNode = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+            StatementNode body = BlockNode.create(argumentNodes, frameReturn);
+            returnTargetNode = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
         }
         returnTargetNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
 
@@ -993,16 +1065,18 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Defaults
          */
         scopeEnvironment.setCurrentScope(node.scope.getParent());
-        ExpressionNode[] defaults = node.args == null ? new ExpressionNode[0] : node.args.getDefaultParameterValues(this);
+        ExpressionNode[] defaults = node.args == null ? ExpressionNode.EMPTY_ARRAY : node.args.getDefaultParameterValues(this);
         FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.args == null ? new FunctionDefinitionNode.KwDefaultExpressionNode[0] : node.args.getKwDefaultParameterValues(this);
         scopeEnvironment.setCurrentScope(node.scope);
 
         /**
          * Lambda function root
          */
-        FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTargetNode.getSourceSection(), funcname, scopeEnvironment.isInGeneratorScope(), fd, returnTargetNode,
-                        scopeEnvironment.getExecutionCellSlots(), signature);
+        ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+        DefinitionCellSlots definitionCellSlots = scopeEnvironment.getDefinitionCellSlots();
+        FrameDescriptor fd = scopeEnvironment.getCurrentScope().createFrameDescriptor();
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTargetNode.getSourceSection(), funcname, scopeEnvironment.isInGeneratorScope(), fd, returnTargetNode, executionCellSlots,
+                        signature, null);
 
         /**
          * Definition
@@ -1010,12 +1084,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode funcDef;
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, qualname, null, null, defaults, kwDefaults, ct, fd,
-                            scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getGeneratorInfo(), null);
+            funcDef = GeneratorFunctionDefinitionNode.create(ts(funcname), ts(qualname), null, null, defaults, kwDefaults, ct, fd, definitionCellSlots, generatorFactory.getGeneratorInfo(), null);
         } else {
-            funcDef = new FunctionDefinitionNode(funcname, qualname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
-                            scopeEnvironment.getExecutionCellSlots(), null);
+            funcDef = new FunctionDefinitionNode(ts(funcname), ts(qualname), null, null, defaults, kwDefaults, ct, definitionCellSlots, null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }
         scopeEnvironment.setCurrentScope(oldScope);
@@ -1077,9 +1148,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(ReturnSSTNode node) {
         StatementNode result;
         if (node.value != null) {
-            result = new ReturnNode.FrameReturnNode(createWriteLocal((ExpressionNode) node.value.accept(this), scopeEnvironment.getReturnSlot()));
+            result = createFrameReturn((ExpressionNode) node.value.accept(this), scopeEnvironment.getCurrentScope().getReturnSlot());
         } else {
-            result = nodeFactory.createReturn();
+            result = new ReturnNode();
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -1090,32 +1161,28 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result = null;
         switch (node.type) {
             case BREAK:
-                result = nodeFactory.createBreak();
+                result = new BreakNode();
                 result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
                 break;
             case CONTINUE:
-                result = nodeFactory.createContinue();
+                result = new ContinueNode();
                 result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
                 break;
             case PASS:
+            case EMPTY:
                 EmptyNode emptyNode = EmptyNode.create();
                 emptyNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
                 result = emptyNode.asStatement();
                 break;
             case NONE:
-                result = nodeFactory.createObjectLiteral(PNone.NONE);
+                result = new ObjectLiteralNode(PNone.NONE);
                 if (node.startOffset < node.endOffset) {
                     result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
                 }
                 break;
             case ELLIPSIS:
-                result = nodeFactory.createObjectLiteral(PEllipsis.INSTANCE);
+                result = new ObjectLiteralNode(PEllipsis.INSTANCE);
                 result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-                break;
-            case EMPTY:
-                EmptyNode empty = EmptyNode.create();
-                empty.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-                result = empty.asStatement();
                 break;
         }
         return result;
@@ -1140,28 +1207,37 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
-        PNode result = nodeFactory.createStringLiteral(node.value);
+        PNode result = new StringLiteralNode(ts(node.value));
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
 
     @Override
     public PNode visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
-        PNode result = nodeFactory.createBytesLiteral(node.value);
+        PNode result = new BytesLiteralNode(node.value);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
+
+    @Override
+    public PNode visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+        Source prev = this.source;
+        this.source = Source.newBuilder(PythonLanguage.ID, node.expressionCode, "<fstring-expr>").build();
+        ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
+        this.source = prev;
+        ExpressionNode specifier = node.specifier == null ? null : (ExpressionNode) node.specifier.accept(this);
+        PNode result = new FormatStringExpressionNode(expression, specifier, node.conversionType);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
 
     @Override
     public PNode visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
-        ExpressionNode[] exprs = new ExpressionNode[node.expressions.length];
-        Source prev = this.source;
-        for (int i = 0; i < node.expressions.length; i++) {
-            this.source = Source.newBuilder(PythonLanguage.ID, node.expresionsSources[i], "<fstring-expr>").build();
-            exprs[i] = (ExpressionNode) node.expressions[i].accept(this);
+        ExpressionNode[] exprs = new ExpressionNode[node.parts.length];
+        for (int i = 0; i < node.parts.length; i++) {
+            exprs[i] = (ExpressionNode) node.parts[i].accept(this);
         }
-        this.source = prev;
-        PNode result = nodeFactory.createFormatStringLiteral(node.value, exprs, node.literals);
+        PNode result = new FormatStringLiteralNode(exprs);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1173,7 +1249,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             receiver.assignSourceSection(null);
         }
         ExpressionNode subscript = (ExpressionNode) node.subscript.accept(this);
-        PNode result = nodeFactory.createSubscriptLoad(receiver, subscript);
+        PNode result = GetItemNode.create(receiver, subscript);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1183,7 +1259,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode test = (ExpressionNode) node.test.accept(this);
         ExpressionNode thenExpr = (ExpressionNode) node.thenStatement.accept(this);
         ExpressionNode elseExpr = (ExpressionNode) node.elseStatement.accept(this);
-        PNode result = nodeFactory.createTernaryIf(nodeFactory.toBooleanCastNode(test), thenExpr, elseExpr);
+        PNode result = new TernaryIfNode(toBooleanCastNode(test), thenExpr, elseExpr);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1191,7 +1267,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(TrySSTNode node) {
         StatementNode body = (StatementNode) node.body.accept(this);
-        StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock() : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseStatement = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode finalyStatement = node.finallyStatement == null ? null : (StatementNode) node.finallyStatement.accept(this);
         ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
         for (int i = 0; i < exceptNodes.length; i++) {
@@ -1201,10 +1277,16 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             }
             ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode) exceptNode.test.accept(this) : null;
             StatementNode exceptBody = (StatementNode) exceptNode.body.accept(this);
-            WriteNode exceptName = exceptNode.asName != null ? (WriteNode) scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
-            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName);
+            WriteNode exceptName = null;
+            StatementNode exceptNameDelete = null;
+            if (exceptNode.asName != null) {
+                ReadNode readAsNode = scopeEnvironment.findVariable(exceptNode.asName);
+                exceptName = (WriteNode) readAsNode.makeWriteNode(null);
+                exceptNameDelete = unbindVariable(readAsNode);
+            }
+            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName, exceptNameDelete);
         }
-        PNode result = nodeFactory.createTryExceptElseFinallyNode(body, exceptNodes, elseStatement, finalyStatement);
+        PNode result = new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseStatement), finalyStatement);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1234,20 +1316,20 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode test = (ExpressionNode) node.test.accept(this);
         StatementNode body = (StatementNode) node.body.accept(this);
         if (node.containsContinue) {
-            body = nodeFactory.createContinueTarget(body);
+            body = new ContinueTargetNode(body);
         }
-        StatementNode whileNode = nodeFactory.createWhile(nodeFactory.toBooleanCastNode(test), body);
+        StatementNode whileNode = new WhileNode(toBooleanCastNode(test), body);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
-        StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseBranch = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;
         if (!node.containsBreak) {
-            result = nodeFactory.createElse(whileNode, elseBranch);
+            result = new ElseNode(whileNode, elseBranch);
         } else {
             // TODO: this is also strange, that we create don't create ElseNode for break target.
             // At least it seems to be inconsistent.
             result = node.elseStatement == null ?
             // TODO: Do we need to create the empty block here?
-                            nodeFactory.createBreakTarget(whileNode, nodeFactory.createBlock(new StatementNode[0])) : nodeFactory.createBreakTarget(whileNode, elseBranch);
+                            new BreakTargetNode(whileNode, BlockNode.createEmptyBlock()) : new BreakTargetNode(whileNode, elseBranch);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -1258,7 +1340,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         StatementNode body = (StatementNode) node.body.accept(this);
         WriteNode asName = node.target == null ? null : (WriteNode) makeWriteNode((ExpressionNode) node.target.accept(this));
         ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
-        PNode result = nodeFactory.createWithNode(expression, asName, body);
+        PNode result = WithNode.create(expression, asName, body);
         if (node.startOffset > -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -1279,8 +1361,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     public ReadNode makeTempLocalVariable() {
-        String tempName = TEMP_LOCAL_PREFIX + scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize();
-        FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
+        int tempSlot = scopeEnvironment.getCurrentScope().createTemp();
         return !scopeEnvironment.isInGeneratorScope()
                         ? ReadLocalVariableNode.create(tempSlot)
                         : ReadGeneratorFrameVariableNode.create(tempSlot);
@@ -1328,7 +1409,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 statements[i] = createAssignment(leftHandSides[i], (ExpressionNode) tempRead);
             }
         }
-        return nodeFactory.createDestructuringAssignment(rhs, temps, starredIndex, statements);
+        return DestructuringAssignmentNode.create(rhs, temps, starredIndex, statements);
     }
 
     @SuppressWarnings("unused")
@@ -1356,5 +1437,22 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             functionBody = FunctionBodyNode.create(body);
         }
         return functionBody;
+    }
+
+    @SuppressWarnings({"unchecked", "unused"})
+    private static <T> T duplicate(Node orig, Class<T> clazz) {
+        return (T) NodeUtil.cloneNode(orig);
+    }
+
+    protected static CoerceToBooleanNode toBooleanCastNode(PNode node) {
+        if (node instanceof CoerceToBooleanNode) {
+            return (CoerceToBooleanNode) node;
+        } else {
+            return CoerceToBooleanNode.createIfTrueNode((ExpressionNode) node);
+        }
+    }
+
+    static TruffleString ts(String s) {
+        return s == null ? null : toTruffleStringUncached(s);
     }
 }

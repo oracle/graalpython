@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,11 @@ typedef struct {
 
 PyTypeObject PyGetSetDescr_Type = PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyWrapperDescrObject));
+PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
 PyTypeObject PyMemberDescr_Type = PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
 PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodDescrObject), offsetof(PyMethodDescrObject, vectorcall));
 PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+PyTypeObject PyProperty_Type = PY_TRUFFLE_TYPE("property", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(propertyobject));
 
 POLYGLOT_DECLARE_TYPE(mappingproxyobject);
 
@@ -61,14 +62,40 @@ PyObject* PyDictProxy_New(PyObject *mapping) {
     return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
 }
 
-UPCALL_ID(PyMethodDescr_Check);
-int PyMethodDescr_Check(PyObject* method) {
-    return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
+typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(PyMethodDef* methodDef,
+                                                    void* name,
+                                                    const char* doc,
+                                                    int flags,
+                                                    int wrapper,
+                                                    void* methObj,
+                                                    void* primary);
+UPCALL_TYPED_ID(PyDescr_NewClassMethod, PyDescr_NewClassMethod_fun_t);
+PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
+	method = native_pointer_to_java(method);
+    int flags = method->ml_flags;
+    return _jls_PyDescr_NewClassMethod(method,
+                    polyglot_from_string(method->ml_name, SRC_CS),
+                    method->ml_doc,
+                    flags,
+                    get_method_flags_wrapper(flags),
+                    native_pointer_to_java(method->ml_meth),
+                    type);
 }
 
-typedef PyObject* (*new_classmethod_fun_t)(PyTypeObject*, void*, void*);
-
-UPCALL_TYPED_ID(PyDescr_NewClassMethod, new_classmethod_fun_t);
-PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
-    return _jls_PyDescr_NewClassMethod(native_type_to_java(type), native_pointer_to_java(method->ml_name), native_pointer_to_java(method->ml_meth));
+typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name,
+                                                    PyTypeObject *type,
+                                                    void *get,
+                                                    void *set,
+                                                    const char* doc,
+                                                    void *closure);
+UPCALL_TYPED_ID(PyDescr_NewGetSet, PyDescr_NewGetSet_fun_t);
+PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
+    getter getter_fun = getset->get;
+    setter setter_fun = getset->set;
+    return _jls_PyDescr_NewGetSet(polyglot_from_string(getset->name, SRC_CS),
+                    type,
+                    getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
+                    setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                    getset->doc,
+                    getset->closure);
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,8 @@
 # SOFTWARE.
 
 import sys
+import pathlib
+import os
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 import builtins
 __dir__ = __file__.rpartition("/")[0]
@@ -171,8 +173,13 @@ class TestMisc(CPyExtTestCase):
             (0xffffcafebabe, 0xefffdeadbeef),
         ),
         code="""
+#ifndef __aarch64__
         #include <emmintrin.h>
+#endif
         PyObject* PyTruffle_Intrinsic_Pmovmskb(PyObject* arg0, PyObject* arg1) {
+#ifdef __aarch64__
+            return Py_True;
+#else
             int r;
             int64_t a = (int64_t) PyLong_AsSsize_t(arg0);
             int64_t b = (int64_t) PyLong_AsSsize_t(arg1);
@@ -181,6 +188,7 @@ class TestMisc(CPyExtTestCase):
             v = _mm_cmpeq_epi8(v, zero);
             r = _mm_movemask_epi8(v);
             return (r == 0 || r == 49344) ? Py_True : Py_False;
+#endif
         }
         """,
         resultspec="O",
@@ -228,6 +236,53 @@ class TestMisc(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    # Tests if wrapped Java primitive values do not share the same
+    # native pointer.
+    test_primitive_sharing = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (123.0, ),
+        ),
+        code="""
+        #ifdef GRAALVM_PYTHON
+        // internal function defined in 'capi.c'
+        int PyTruffle_ToNative(void *);
+        #else
+        // nothing to do on CPython
+        static inline int PyTruffle_ToNative(void *arg) {
+            return 0;
+        }
+        #endif
+
+        PyObject* primitive_sharing(PyObject* val) {
+            Py_ssize_t val_refcnt = Py_REFCNT(val);
+            // assume val's refcnt is X > 0
+            Py_INCREF(val);
+            // val's refcnt should now be X+1
+
+            double dval = PyFloat_AsDouble(val);
+
+            PyTruffle_ToNative(val);
+
+            // a fresh object with the same value
+            PyObject *val1 = PyFloat_FromDouble(dval);
+            PyTruffle_ToNative(val1);
+
+            // now, kill it
+            Py_DECREF(val1);
+
+            // reset val's refcnt to X
+            Py_DECREF(val);
+
+            return val_refcnt == Py_REFCNT(val) ? Py_True : Py_False;
+        }
+        """,
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* val"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyOS_double_to_string = CPyExtFunction(
         _reference_format_float,
         lambda: (
@@ -256,7 +311,7 @@ class TestMisc(CPyExtTestCase):
             tuple(),
         ),
         code="""
-        PyObject* wrap_PyEval_GetBuiltins() {
+        PyObject* wrap_PyEval_GetBuiltins(void) {
             return (PyObject *) Py_TYPE(PyEval_GetBuiltins());
         }
         """,
@@ -264,5 +319,26 @@ class TestMisc(CPyExtTestCase):
         argspec="",
         arguments=[],
         callfunction="wrap_PyEval_GetBuiltins",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyOS_FSPath = CPyExtFunction(
+        lambda args: os.fspath(*args),
+        lambda: (
+            (b"bytespath",),
+            ("stringpath",),
+            (pathlib.Path("pathpath"),),
+            (123,),
+            (object(),),
+        ),
+        callfunction="call_PyOS_FSPath",
+        code="""
+        static PyObject* call_PyOS_FSPath(PyObject* value) {
+            return PyOS_FSPath(value);
+        }
+        """,
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* value"],
         cmpfunc=unhandled_error_compare
     )

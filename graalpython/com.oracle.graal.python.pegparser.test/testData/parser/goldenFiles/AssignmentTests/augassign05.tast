@@ -1,0 +1,5 @@
+Module[0, 7]
+    AugAssign[0, 7]
+        Op: FloorDiv
+        LHS: Name[0, 1] Value: "a" Store
+        RHS: Name[6, 7] Value: "b"

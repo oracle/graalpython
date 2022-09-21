@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
             ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
               Identifier: staticmethod
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             FunctionDefinitionNode Name: f SourceSection: None
               Arguments: None
               KwArguments: None
@@ -42,6 +42,5 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                       FunctionBodyNode SourceSection: [23,27]`pass`
                         ExpressionStatementNode SourceSection: [23,27]`pass`
                           EmptyNode SourceSection: [23,27]`pass`
-                    Return Expresssion: ReadLocalVariableNode SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
+                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                      Frame: [0,<return_val>,Object]

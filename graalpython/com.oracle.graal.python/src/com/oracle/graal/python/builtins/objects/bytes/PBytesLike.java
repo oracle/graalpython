@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public abstract class PBytesLike extends PSequence {
 
     protected SequenceStorage store;
@@ -82,19 +84,73 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
-    protected boolean isBuffer() {
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    Object acquire(@SuppressWarnings("unused") int flags) {
+        return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
         return true;
     }
 
     @ExportMessage
     int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(store);
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.getBufferLength(store);
     }
 
     @ExportMessage
-    byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-        return toByteArrayNode.execute(store);
+    boolean hasInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.hasInternalByteArray(store);
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.getInternalByteArray(store);
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readByte(store, byteOffset);
+    }
+
+    @ExportMessage
+    short readShort(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readShort(store, byteOffset);
+    }
+
+    @ExportMessage
+    int readInt(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readInt(store, byteOffset);
+    }
+
+    @ExportMessage
+    long readLong(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readLong(store, byteOffset);
+    }
+
+    @ExportMessage
+    float readFloat(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readFloat(store, byteOffset);
+    }
+
+    @ExportMessage
+    double readDouble(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.readDouble(store, byteOffset);
     }
 }

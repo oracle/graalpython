@@ -3101,9 +3101,10 @@ CONVERT_TEST_NAME_F = 5
 
 class TestIntEnumConvert(unittest.TestCase):
     def test_convert_value_lookup_priority(self):
+        # Graalpython change: the test hardcoded test module FQDN which is different under our runner, use __name__
         test_type = enum.IntEnum._convert_(
                 'UnittestConvert',
-                ('test.test_enum', '__main__')[__name__=='__main__'],
+                __name__,
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
         # We don't want the reverse lookup value to vary when there are
         # multiple possible names for a given value.  It should always
@@ -3111,9 +3112,10 @@ class TestIntEnumConvert(unittest.TestCase):
         self.assertEqual(test_type(5).name, 'CONVERT_TEST_NAME_A')
 
     def test_convert(self):
+        # Graalpython change: the test hardcoded test module FQDN which is different under our runner, use __name__
         test_type = enum.IntEnum._convert_(
                 'UnittestConvert',
-                ('test.test_enum', '__main__')[__name__=='__main__'],
+                __name__,
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
         # Ensure that test_type has all of the desired names and values.
         self.assertEqual(test_type.CONVERT_TEST_NAME_F,
@@ -3131,9 +3133,10 @@ class TestIntEnumConvert(unittest.TestCase):
                          '_convert was deprecated in 3.8')
     def test_convert_warn(self):
         with self.assertWarns(DeprecationWarning):
+            # Graalpython change: the test hardcoded test module FQDN which is different under our runner, use __name__
             enum.IntEnum._convert(
                 'UnittestConvert',
-                ('test.test_enum', '__main__')[__name__=='__main__'],
+                __name__,
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
 
     @unittest.skipUnless(sys.version_info >= (3, 9),

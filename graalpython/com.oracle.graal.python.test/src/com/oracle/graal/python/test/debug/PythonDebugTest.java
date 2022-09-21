@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -183,6 +183,29 @@ public class PythonDebugTest {
     }
 
     @Test
+    public void testException() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "try:\n" +
+                        "  1 / 0\n" +
+                        "except BaseException as e:\n" +
+                        "  str(e)\n" +
+                        "1", "test_exception.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newExceptionBuilder(true, true).build());
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(2, frame.getSourceSection().getStartLine());
+                assertNotNull(event.getException());
+                event.prepareContinue();
+            });
+            assertEquals("1", tester.expectDone());
+        }
+    }
+
+    @Test
     public void testInlineEvaluation() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "y = 4\n" +
@@ -212,6 +235,28 @@ public class PythonDebugTest {
                 event.prepareContinue();
             });
             assertEquals("10", tester.expectDone());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("try")
+    public void testBreakpointBuiltin() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "def foo():\n" +
+                        "  a = 1\n" +
+                        "  breakpoint()\n" +
+                        "  return 1\n" +
+                        "foo()\n", "test_breakpoint_builtin.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            tester.startEval(source);
+
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(3, frame.getSourceSection().getStartLine());
+                event.prepareContinue();
+            });
+            assertEquals("1", tester.expectDone());
         }
     }
 
@@ -337,6 +382,7 @@ public class PythonDebugTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testGettersSetters() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "class GetterOnly:\n" +
@@ -385,21 +431,21 @@ public class PythonDebugTest {
                 assertTrue(x.hasWriteSideEffects());
                 assertTrue(x.isReadable());
                 assertTrue(x.isWritable());
-                assertEquals(0, p.getProperty("__nx").asInt());
+                assertEquals(0, p.getProperty("_P__nx").asInt());
                 assertEquals("None", x.toDisplayString());
-                assertEquals(1, p.getProperty("__nx").asInt());
-                x.set(42);
-                assertEquals(2, p.getProperty("__nx").asInt());
+                assertEquals(1, p.getProperty("_P__nx").asInt());
+                x.set(x.getSession().createPrimitiveValue(42, null));
+                assertEquals(2, p.getProperty("_P__nx").asInt());
                 assertEquals("42", x.toDisplayString());
-                assertEquals(3, p.getProperty("__nx").asInt());
+                assertEquals(3, p.getProperty("_P__nx").asInt());
                 DebugValue y = p.getProperty("y");
                 assertTrue(y.hasReadSideEffects());
                 assertFalse(y.hasWriteSideEffects());
                 assertTrue(y.isReadable());
                 assertTrue(y.isWritable());
-                DebugValue ny = p.getProperty("__ny");
+                DebugValue ny = p.getProperty("_P__ny");
                 assertEquals(0, ny.asInt());
-                y.set(24);
+                y.set(y.getSession().createPrimitiveValue(24, null));
                 assertEquals("24", y.toDisplayString());
             });
         }
@@ -453,7 +499,7 @@ public class PythonDebugTest {
     @Test
     public void testSourceFileURI() throws Throwable {
         if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-            // on the mac slaves we run with symlinked directories and such and it's annoying to
+            // on the mac machines we run with symlinked directories and such and it's annoying to
             // cater for that
             return;
         }

@@ -1,0 +1,8 @@
+Module[0, 33]
+    Raise[0, 33]
+        Exc: 
+            Call[6, 24]
+                Target: Name[6, 15] Value: "NameError"
+                Args:
+                    RAW[16, 23] Value: "Pavel"
+        Cause: Name[30, 33] Value: "exc"

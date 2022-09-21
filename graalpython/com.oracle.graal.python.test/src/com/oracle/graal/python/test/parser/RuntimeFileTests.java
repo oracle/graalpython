@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -143,11 +143,6 @@ public class RuntimeFileTests extends ParserTestBase {
 
     @Test
     public void sre_parse() throws Exception {
-        checkScopeAndTree();
-    }
-
-    @Test
-    public void sys() throws Exception {
         checkScopeAndTree();
     }
 

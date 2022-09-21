@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public class PBuffer extends PythonBuiltinObject {
 
     private final Object delegate;
@@ -66,12 +60,5 @@ public class PBuffer extends PythonBuiltinObject {
 
     public boolean isReadOnly() {
         return readOnly;
-    }
-
-    /* this is correct because it cannot be subclassed in Python */
-    @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
-    Object getIteratorWithState(ThreadState state,
-                    @CachedLibrary("this.getDelegate()") PythonObjectLibrary lib) {
-        return lib.getIteratorWithState(delegate, state);
     }
 }

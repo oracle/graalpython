@@ -3,7 +3,85 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 22.3.0
+* Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy` for better integration with other tools.
+* Switched to a new interpreter backend based on interpreting bytecode. This change brings better startup performance and memory footprint while retaining good JIT-compiled performance.
+* Switched to a new parser generated from CPython's new PEG grammar definition. It brings better compatibility and enables us to implement the `ast` module.
+* Added support for tracing API (`sys.settrace`), which makes `pdb` and related tools work on GraalPy.
+* Added support for profiling API (`sys.setprofile`), which makes the `profile` package work.
+* Updated our pip support to automatically choose the best version for known packages. You can use `pip install pandas`, and pip will select the versions of pandas and numpy that we test in the GraalPy CI.
+* Added support for Flask - https://pypi.org/project/Flask/
+* Implement PEP 405 for full support of virtual environments. This fixes issues with the virtualenv package and tox that are used to in PyCharm or in many projects' CI jobs.
+
+## Version 22.2.0
+* Updated to HPy version 0.0.4, which adds support for the finished HPy port of Kiwi, and the in-progress ports of Matplotlib and NumPy.
+* Added support for aarch64 on both macOS and Linux.
+* Added an experimental bytecode interpreter for faster startup and better interpreter performance. Using either the previous AST interpreter or the new bytecode interpreter can be switched using `--python.EnableBytecodeInterpreter`.
+
+## Version 22.1.0
+* String conversion (`__str__`) now calls `toString` for Java objects and `toDisplayString` interop message for foreign objects.
+* Improved compatibility with PyPI packages `lxml`, `pytz`, `Pillow`, `urllib3`, `setuptools`, `pytest`, `twine`, `jinja2`, and `six`
+* Introduced dependency on bouncycastle
+* Added support for more private key formats (PKCS#1, password protected) in ssl module
+* Added support for module freezing, which makes start to the Python REPL 30% faster and with 40% less memory usage.
+
+## Version 22.0.0
+* Added support for `pyexpat` module.
+* Added partial support for `PYTHONHASHSEED` environment variable (also available via `HashSeed` context option), currently only affecting hashing in `pyexpat` module.
+* Implement `_csv` module.
+* Improved compatibility with PyPI packages `wheel` and `click`
+
+## Version 21.3.0
+
+* Remove `PYPY_VERSION` from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
+* Intrinsify and optimize more of the core language for better startup and reduced footprint.
+* Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPy
+* Support the `multiprocessing` module via in-process nested contexts, allowing execution on multiple cores within the same process using the Python multiprocessing API
+* Add support for the `ctypes` module, enabling more native extensions to run that use the ctypes API
+* Fix multiple REPL issues reported on Github, you can now paste blocks of code and use the numpad in the REPL.
+* Make our marshal format compatible with CPython, so binary data can now be exchanged between CPython and GraalPy processes.
+* Make most `socket` module tests pass in native mode by using a native extension, allowing usage of all POSIX socket APIs where before only those supported on Java could be used.
+* Various compatibility fixes to make the `psutil` package work.
+
+## Version 21.2.0
+
+* Support the `dict` type properly in interop using the new hash interop messages.
+* Implement `_pickle` as a faster version than the pure Python version for GraalVM Enterprise Edition.
+* Support the newer multi-phase C extension module initialization.
+* Make many more tests pass: `io`, `crypt`, more functions in `socket`, `OrderedDict`, `time`,
+* Improve performance especially during warmup and in shared engine configurations by adding fast paths, intrinsifying functions, and adding optimized representations for common data structures
+* Update the supported HPy version to 0.0.2
+* Use the new Truffle safepoint mechanism for more efficient GIL releases, signal handlers, and weakref callbacks
+* Initial support for the `psutil` and `PyGame` packages
+* GraalPy not longer unconditionally creates `__pycache__` if the file name "sitecustomize.py" exists in the current working directory
+
+## Version 21.1.0
+
+* Support multi-threading with a global interpreter lock by default.
+* Added SSL/TLS support (the `ssl` module)
+* Added subclassing of Java classes in JVM mode
+* Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
+* Support catching exceptions from other languages or Java with catch-all except blocks
+* Support isinstance and issubclass with instances and classes of other languages
+* Use native posix functions in the GraalPy Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
+
 ## Version 21.0.0
+
+* Implement name mangling for private attributes
+* Correctly raise an AttributeError when a class defines slots, but not dict
+* Fix infinite continuation prompt in REPL when pasting snippets
+* Add jarray module for compatibility with Jython
+* Fix multiple memory leaks and crashes when running NumPy in a shared engine
+* Improved support for Pandas
+* Initial support for Matplotlib
+* Many fixes to pass the unittests of standard library types and modules:
+  abc, array, builtin, bzip2, decimal, descriptors, difflib, enum, fractions,
+  gzip, memoryview, metaclass, pickle, platform, print, reprlib, statistics,
+  strftime, strtod, sysconfig, userdict, userlist, userstring, zipfile,
+  zipfile64, zlib
+* Improve performance in multiple areas:
+  array, memoryview, unzipping packages, dictionaries with dynamic string keys,
+  string slicing
 
 ## Version 20.3.0
 
@@ -59,7 +137,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Jython mode: treat Java `null` as identical to Python `None` when comparing with the `is` operator
 * Jython mode: `isinstance` now works with Java classes and objects
 * Improve errno handling in `posix` module
-* Move all GraalPython specific functions on `sys` or `builtins` to the `__graalpython__` module
+* Move all GraalPy specific functions on `sys` or `builtins` to the `__graalpython__` module
 
 ## Version 20.0.0
 
@@ -75,7 +153,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Implement `charmap_build` function
 * Implement `hexversion` in sys module
 * Implement `_lzma` module
-* Implement enough of `socket.socket` to run `graalpython -m http.server` and download non-encrypted http resources
+* Implement enough of `socket.socket` to run `graalpy -m http.server` and download non-encrypted http resources
 * Fix printing of Pandas data frames
 * Fix a bug in `bytes.startswith` for tuple arguments
 * Fix destructuring assignments of arbitrary iterators

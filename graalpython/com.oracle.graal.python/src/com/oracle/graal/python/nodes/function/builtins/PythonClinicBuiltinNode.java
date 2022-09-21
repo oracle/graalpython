@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,19 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
+import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
 import com.oracle.graal.python.nodes.argument.ReadAndCastArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.dsl.CreateCast;
 
+@ClinicBuiltinBaseClass
 public abstract class PythonClinicBuiltinNode extends PythonBuiltinNode {
     protected abstract ArgumentClinicProvider getArgumentClinic();
 
     @CreateCast("arguments")
-    protected ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
+    protected final ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
         ReadArgumentNode[] result = new ReadArgumentNode[reads.length];
         ArgumentClinicProvider clinic = getArgumentClinic();
         for (int i = 0; i < reads.length; i++) {

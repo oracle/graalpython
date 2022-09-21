@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,11 @@ PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObje
 UPCALL_ID(PyImport_GetModuleDict);
 PyObject* PyImport_GetModuleDict() {
     return UPCALL_CEXT_O(_jls_PyImport_GetModuleDict);
+}
+
+int _PyImport_SetModule(PyObject *name, PyObject *m) {
+    PyObject *modules = PyImport_GetModuleDict();
+    return PyObject_SetItem(modules, name, m);
 }
 
 PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {

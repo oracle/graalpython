@@ -1,0 +1,45 @@
+Disassembly of <module>:
+  1:0   -   5:43        0 MAKE_FUNCTION                     0    (foo)
+  1:0   -   5:43        3 STORE_NAME                        0    (foo)
+  1:0   -   5:43        5 LOAD_NONE
+  1:0   -   5:43        6 RETURN_VALUE
+
+Disassembly of foo:
+  2:11  -   2:16        0 LOAD_GLOBAL                       0    (range)
+  2:17  -   2:19        2 LOAD_BYTE_O                       10
+  2:11  -   2:20        4 CALL_FUNCTION                     1
+  2:2   -   5:43        6 GET_ITER
+  2:2   -   5:43  >>    7 FOR_ITER                          52   (to 59)                           can quicken
+  2:6   -   2:7         9 STORE_FAST                        0    (i)                               generalizes: 7
+  4:6   -   4:7        11 LOAD_BYTE_I                       1                                      can quicken
+  4:10  -   4:11       13 LOAD_BYTE_I                       0                                      can quicken
+  4:6   -   4:11       15 BINARY_OP                         8    (TRUEDIV)                         generalizes: 13, 11
+  4:6   -   4:11       17 POP_TOP
+  4:6   -   4:11       18 JUMP_FORWARD                      39   (to 57)
+  4:6   -   4:11       20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
+  5:11  -   5:23       21 LOAD_GLOBAL                       1    (RuntimeError)
+  5:4   -   5:10       23 MATCH_EXC_OR_JUMP                 33   (to 56)
+  5:4   -   5:10       27 UNWRAP_EXC
+  5:4   -   5:10       28 STORE_FAST                        1    (e)
+  5:42  -   5:43       30 LOAD_GLOBAL                       2    (a)
+  5:35  -   5:43       32 LOAD_NONE
+  5:35  -   5:43       33 STORE_FAST                        1    (e)
+  5:35  -   5:43       35 DELETE_FAST                       1    (e)
+  5:35  -   5:43       37 ROT_TWO
+  5:35  -   5:43       38 POP_EXCEPT
+  5:35  -   5:43       39 ROT_TWO
+  5:35  -   5:43       40 POP_TOP
+  5:35  -   5:43       41 RETURN_VALUE
+  5:35  -   5:43       42 LOAD_NONE
+  5:35  -   5:43       43 STORE_FAST                        1    (e)
+  5:35  -   5:43       45 DELETE_FAST                       1    (e)
+  5:35  -   5:43       47 POP_EXCEPT
+  5:35  -   5:43       48 JUMP_FORWARD                      9    (to 57)
+  5:35  -   5:43       50 LOAD_NONE                                                               (exc handler 30 - 42; stack: 2)
+  5:35  -   5:43       51 STORE_FAST                        1    (e)
+  5:35  -   5:43       53 DELETE_FAST                       1    (e)
+  5:35  -   5:43       55 END_EXC_HANDLER
+  5:35  -   5:43  >>   56 END_EXC_HANDLER                                                         (exc handler 21 - 30; stack: 2 | exc handler 42 - 56; stack: 2)
+  5:35  -   5:43  >>   57 JUMP_BACKWARD                     50   (to 7)
+  5:35  -   5:43  >>   59 LOAD_NONE
+  5:35  -   5:43       60 RETURN_VALUE

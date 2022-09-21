@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,32 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
+import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -67,14 +75,54 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.tools.profiler.CPUSampler;
 import com.oracle.truffle.tools.profiler.CPUSampler.Payload;
+import com.oracle.truffle.tools.profiler.CPUSamplerData;
 import com.oracle.truffle.tools.profiler.ProfilerNode;
 import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
 
 @CoreFunctions(defineModule = "_lsprof")
 public class LsprofModuleBuiltins extends PythonBuiltins {
+
+    static final StructSequence.BuiltinTypeDescriptor PROFILER_ENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PProfilerEntry,
+                    null,
+                    6,
+                    new String[]{
+                                    "code", "callcount", "reccallcount", "totaltime", "inlinetime", "calls"
+                    },
+                    new String[]{
+                                    "code object or built-in function name",
+                                    "how many times this was called",
+                                    "how many times called recursively",
+                                    "total time in this entry",
+                                    "inline time in this entry (not in subcalls)",
+                                    "details of the calls"
+                    });
+
+    static final StructSequence.BuiltinTypeDescriptor PROFILER_SUBENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PProfilerSubentry,
+                    null,
+                    5,
+                    new String[]{
+                                    "code", "callcount", "reccallcount", "totaltime", "inlinetime"
+                    },
+                    new String[]{
+                                    "called code object or built-in function name",
+                                    "how many times this is called",
+                                    "how many times this is called recursively",
+                                    "total time spent in this call",
+                                    "inline time (not in further subcalls)"
+                    });
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LsprofModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        StructSequence.initType(core, PROFILER_ENTRY_DESC);
+        StructSequence.initType(core, PROFILER_SUBENTRY_DESC);
     }
 
     public static PythonBuiltins newProfilerBuiltins() {
@@ -96,7 +144,7 @@ public class LsprofModuleBuiltins extends PythonBuiltins {
                     return factory().trace(new Profiler(cls, factory().getShape(cls), sampler));
                 }
             }
-            throw raise(PythonBuiltinClassType.NotImplementedError, "coverage tracker not available");
+            throw raise(PythonBuiltinClassType.NotImplementedError, ErrorMessages.COVERAGE_TRACKER_NOT_AVAILABLE);
         }
     }
 }
@@ -113,7 +161,6 @@ class Profiler extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.sampler = sampler;
         this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
-        this.sampler.setMode(CPUSampler.Mode.ROOTS);
         this.sampler.setPeriod(1);
     }
 }
@@ -125,7 +172,7 @@ class ProfilerBuiltins extends PythonBuiltins {
         return ProfilerBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "timer", "timeunit", "subcalls", "builtins"})
     @GenerateNodeFactory
     abstract static class Init extends PythonBuiltinNode {
         @Specialization
@@ -229,26 +276,34 @@ class ProfilerBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PList doit(Profiler self) {
             double avgSampleSeconds = self.sampler.getPeriod() / 1000D;
-            List<PList> entries = new ArrayList<>();
-            for (ProfilerNode<Payload> node : self.sampler.getRootNodes()) {
-                countNode(entries, node, avgSampleSeconds);
+            List<PTuple> entries = new ArrayList<>();
+            Map<TruffleContext, CPUSamplerData> data = self.sampler.getData();
+            for (TruffleContext context : data.keySet()) {
+                Map<Thread, Collection<ProfilerNode<Payload>>> threads = data.get(context).getThreadData();
+                for (Thread thread : threads.keySet()) {
+                    for (ProfilerNode<Payload> node : threads.get(thread)) {
+                        countNode(entries, node, avgSampleSeconds);
+                    }
+                }
             }
+
             self.sampler.close();
             return factory().createList(entries.toArray());
         }
 
-        private void countNode(List<PList> entries, ProfilerNode<Payload> node, double avgSampleTime) {
+        private void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
             Collection<ProfilerNode<Payload>> children = node.getChildren();
             Object[] profilerEntry = getProfilerEntry(node, avgSampleTime);
             Object[] calls = new Object[children.size()];
             int callIdx = 0;
             for (ProfilerNode<Payload> childNode : children) {
                 countNode(entries, childNode, avgSampleTime);
-                calls[callIdx++] = factory().createList(getProfilerEntry(childNode, avgSampleTime));
+                calls[callIdx++] = factory().createStructSeq(LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
             }
             assert callIdx == calls.length;
+            profilerEntry = Arrays.copyOf(profilerEntry, 6);
             profilerEntry[profilerEntry.length - 1] = factory().createList(calls);
-            entries.add(factory().createList(profilerEntry));
+            entries.add(factory().createStructSeq(LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
         }
 
         private static Object[] getProfilerEntry(ProfilerNode<Payload> node, double avgSampleTime) {
@@ -266,12 +321,11 @@ class ProfilerBuiltins extends PythonBuiltins {
             int selfHitCount = node.getPayload().getSelfHitCount();
             long hitCount = (long) otherHitCount + selfHitCount;
             Object[] profilerEntry = new Object[]{
-                            rootName,
+                            toTruffleStringUncached(rootName),
                             hitCount,
                             0,
                             otherHitCount * avgSampleTime,
-                            selfHitCount * avgSampleTime,
-                            PNone.NONE
+                            selfHitCount * avgSampleTime
             };
             return profilerEntry;
         }

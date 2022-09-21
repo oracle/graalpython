@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'positionalOnlyArg03'> SourceSection: [0,37]`def na
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [p1, p2, *, kw, <return_val>]
+              FrameDescriptor: 5 slots [*, <return_val>, kw, p1, p2]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -38,28 +38,24 @@ ModuleRootNode Name: <module 'positionalOnlyArg03'> SourceSection: [0,37]`def na
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: p1
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,p1,Illegal]
+                        Frame: [0,p1,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: p2
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,p2,Illegal]
+                        Frame: [1,p2,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kw
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,kw,Illegal]
+                        Frame: [3,kw,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
                     FunctionBodyNode SourceSection: [33,37]`pass`
                       ExpressionStatementNode SourceSection: [33,37]`pass`
                         EmptyNode SourceSection: [33,37]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [4,<return_val>,Object]

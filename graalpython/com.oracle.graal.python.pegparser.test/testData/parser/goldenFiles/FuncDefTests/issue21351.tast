@@ -1,0 +1,46 @@
+Module[0, 207]
+    FunctionDef[0, 110]
+        Name:outer
+        ArgumentsTy[0, 0]
+        ---- Function body of outer ----
+        Assign[17, 27]
+            LHS: Name[17, 20] Value: "var" Store
+            RHS: NONE[23, 27] Value: null
+        FunctionDef[32, 88]
+            Name:toInternal
+            ArgumentsTy[0, 0]
+                Args:
+                    ArgTy[47, 50] obj
+            ---- Function body of toInternal ----
+            Nonlocal[61, 73]: var 
+            Assign[82, 88]
+                LHS: Name[82, 83] Value: "x" Store
+                RHS: LONG[86, 88] Value: 10
+            ---- End of toInternal function ----
+        Return[93, 110] Name[100, 110] Value: "toInternal"
+        ---- End of outer function ----
+    Assign[112, 125]
+        LHS: Name[112, 115] Value: "fnc" Store
+        RHS: 
+            Call[118, 125]
+                Target: Name[118, 123] Value: "outer"
+    Assign[126, 142]
+        LHS: Name[126, 127] Value: "c" Store
+        RHS: 
+            Attribute[130, 133] 
+                Receiver: Name[130, 133] Value: "fnc"
+                Attr: __code__
+    Call[144, 175]
+        Target: Name[144, 149] Value: "print"
+        Args:
+            RAW[150, 159] Value: "free > "
+            Attribute[161, 162] 
+                Receiver: Name[161, 162] Value: "c"
+                Attr: co_freevars
+    Call[176, 207]
+        Target: Name[176, 181] Value: "print"
+        Args:
+            RAW[182, 191] Value: "cell > "
+            Attribute[193, 194] 
+                Receiver: Name[193, 194] Value: "c"
+                Attr: co_cellvars

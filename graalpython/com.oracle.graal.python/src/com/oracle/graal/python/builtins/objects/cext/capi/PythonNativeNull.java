@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.truffle.api.CompilerDirectives;
@@ -54,7 +55,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * A simple wrapper around native {@code NULL}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PythonNativeNull implements TruffleObject {
     private Object ptr;
 

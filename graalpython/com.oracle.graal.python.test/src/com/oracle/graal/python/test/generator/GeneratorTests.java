@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -69,5 +69,18 @@ public class GeneratorTests {
                         "    pass\n";
 
         assertPrints("0\n1\n2\n3\n4\n", source);
+    }
+
+    @Test
+    public void testYieldFrom() {
+        String source = "def gen1():\n" +
+                        "    yield 1\n" +
+                        "    yield 2\n" +
+                        "\n" +
+                        "def gen2():\n" +
+                        "    yield from gen1()\n" +
+                        "\n" +
+                        "print(list(gen2()))\n";
+        assertPrints("[1, 2]\n", source);
     }
 }

@@ -39,12 +39,9 @@ ModuleRootNode Name: <module 'await05'> SourceSection: [0,35]`async def f():↵ 
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [16,19]`foo`
                             Identifier: foo
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [21,33]`await smth()`
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [27,31]`smth`
                               Identifier: smth
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]

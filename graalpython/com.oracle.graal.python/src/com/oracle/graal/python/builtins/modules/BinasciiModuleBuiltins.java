@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,151 +40,239 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BinasciiError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+import static com.oracle.graal.python.nodes.PGuards.isAscii;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.zip.CRC32;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.statement.RaiseNode;
-import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
 @CoreFunctions(defineModule = "binascii")
 public class BinasciiModuleBuiltins extends PythonBuiltins {
-    private static final String INCOMPLETE = "Incomplete";
-    private static final String ERROR = "Error";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BinasciiModuleBuiltinsFactory.getFactories();
     }
 
-    @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        String pre = "binascii.";
-        PythonAbstractClass[] errorBases = new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.ValueError)};
-        builtinConstants.put(ERROR, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + ERROR, errorBases));
-        PythonAbstractClass[] incompleteBases = new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.Exception)};
-        builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, incompleteBases));
-    }
-
-    @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class A2bBase64Node extends PythonUnaryBuiltinNode {
-        @Specialization
-        PBytes doString(String data) {
-            return factory().createBytes(b64decode(data));
+    abstract static class AsciiBufferConverter extends ArgumentCastNodeWithRaiseAndIndirectCall {
+        @Specialization(guards = "acquireLib.hasBuffer(value)", limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doObject(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
+            return acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
         }
 
-        @Specialization(guards = "bufferLib.isBuffer(data)", limit = "3")
-        PBytes doBuffer(Object data,
-                        @CachedLibrary("data") PythonObjectLibrary bufferLib) {
+        @ExportLibrary(PythonBufferAccessLibrary.class)
+        static final class AsciiStringBuffer {
+            private final TruffleString str;
+
+            AsciiStringBuffer(TruffleString str) {
+                assert str.getCodeRangeUncached(TS_ENCODING) == CodeRange.ASCII;
+                this.str = str;
+            }
+
+            @ExportMessage
+            @SuppressWarnings("static-method")
+            boolean isBuffer() {
+                return true;
+            }
+
+            @ExportMessage
+            int getBufferLength(
+                            @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
+                return codePointLengthNode.execute(str, TS_ENCODING);
+            }
+
+            @ExportMessage
+            byte readByte(int byteOffset,
+                            @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                int ch = codePointAtIndexNode.execute(str, byteOffset, TS_ENCODING);
+                assert 0 <= ch && ch < 128;    // guaranteed because str is ASCII
+                return (byte) ch;
+            }
+        }
+
+        @Specialization(guards = "isAscii(value, getCodeRangeNode)", limit = "1")
+        Object asciiString(TruffleString value,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
+            return new AsciiStringBuffer(value);
+        }
+
+        @Specialization(guards = "!isAscii(value, getCodeRangeNode)", limit = "1")
+        Object nonAsciiString(TruffleString value,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
+            throw raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
+        }
+
+        @Specialization
+        Object string(PString value,
+                        @Cached CastToTruffleStringNode cast,
+                        @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached ConditionProfile asciiProfile) {
+            TruffleString ts = cast.execute(value);
+            if (asciiProfile.profile(isAscii(ts, getCodeRangeNode))) {
+                return asciiString(ts, getCodeRangeNode);
+            } else {
+                return nonAsciiString(ts, getCodeRangeNode);
+            }
+        }
+
+        @Fallback
+        Object error(@SuppressWarnings("unused") Object value) {
+            throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_BYTES_BUFFER_OR_ASCII_NOT_P, value);
+        }
+
+        @ClinicConverterFactory
+        public static AsciiBufferConverter create() {
+            return BinasciiModuleBuiltinsFactory.AsciiBufferConverterNodeGen.create();
+        }
+    }
+
+    @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"})
+    @ArgumentClinic(name = "data", conversionClass = AsciiBufferConverter.class)
+    @GenerateNodeFactory
+    abstract static class A2bBase64Node extends PythonUnaryClinicBuiltinNode {
+        @Specialization(limit = "3")
+        PBytes doConvert(VirtualFrame frame, Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                return factory().createBytes(b64decode(bufferLib.getBufferBytes(data)));
-            } catch (UnsupportedMessageException e) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+                ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                return factory().createBytes(storage);
+            } finally {
+                bufferLib.release(buffer, frame, this);
             }
         }
 
         @TruffleBoundary
-        private static byte[] b64decode(String data) {
-            return Base64.decode(data);
-        }
-
-        @TruffleBoundary
-        private byte[] b64decode(byte[] data) {
-            byte[] asciis = Base64.decode(BytesUtils.createASCIIString(data));
-            if (asciis != null) {
-                return asciis;
-            }
-            throw raise(ValueError);
-        }
-    }
-
-    @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private RaiseNode raiseNode;
-        @Child private CallNode callExceptionConstructor;
-
-        @Specialization
-        @TruffleBoundary
-        PBytes a2b(PythonModule self, String data) {
-            int length = data.length();
-            if (length % 2 != 0) {
-                throw oddLengthError(self);
-            }
-            byte[] output = new byte[length / 2];
-            for (int i = 0; i < length / 2; i++) {
-                try {
-                    output[i] = (byte) (digitValue(self, data.charAt(i * 2)) * 16 + digitValue(self, data.charAt(i * 2 + 1)));
-                } catch (NumberFormatException e) {
-                    throw nonHexError(self);
+        private ByteSequenceStorage b64decode(byte[] data, int dataLen) {
+            try {
+                /*
+                 * The JDK decoder behaves differently in some corner cases. It is more restrictive
+                 * regarding superfluous padding. On the other hand, it's more permissive when it
+                 * comes to lack of padding. We compute the expected padding ourselves to cover
+                 * these two cases manually.
+                 */
+                // Compute the expected and real padding
+                int base64chars = 0;
+                int lastBase64Char = -1;
+                int padding = 0;
+                for (int i = 0; i < dataLen; i++) {
+                    byte c = data[i];
+                    if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '+' || c == '/') {
+                        lastBase64Char = i;
+                        base64chars++;
+                        padding = 0;
+                    }
+                    if (c == '=') {
+                        padding++;
+                    }
                 }
+                int expectedPadding = 0;
+                if (base64chars % 4 == 1) {
+                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INVALID_BASE64_ENCODED_STRING);
+                } else if (base64chars % 4 == 2) {
+                    expectedPadding = 2;
+                } else if (base64chars % 4 == 3) {
+                    expectedPadding = 1;
+                }
+                if (padding < expectedPadding) {
+                    throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.INCORRECT_PADDING);
+                }
+                // Find the end of the expected padding, if any
+                int decodeLen = lastBase64Char + 1;
+                int correctedPadding = 0;
+                for (int i = decodeLen; correctedPadding < expectedPadding && i < dataLen; i++) {
+                    if (data[i] == '=') {
+                        correctedPadding++;
+                        decodeLen = i + 1;
+                    }
+                }
+                // Using MIME decoder because that one skips over anything that is not the alphabet,
+                // just like CPython does
+                ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, decodeLen));
+                return new ByteSequenceStorage(result.array(), result.limit());
+            } catch (IllegalArgumentException e) {
+                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
             }
-            return factory().createBytes(output);
         }
 
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
-        PBytes a2b(PythonModule self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.A2bBase64NodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"})
+    @ArgumentClinic(name = "data", conversionClass = AsciiBufferConverter.class)
+    @GenerateNodeFactory
+    abstract static class A2bHexNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization(limit = "3")
+        PBytes a2b(VirtualFrame frame, Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                return a2b(self, bufferLib.getBufferBytes(buffer));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                byte[] bytes = a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                return factory().createBytes(bytes);
+            } finally {
+                bufferLib.release(buffer, frame, this);
             }
         }
 
         @TruffleBoundary
-        private PBytes a2b(PythonModule self, byte[] bytes) {
-            int length = bytes.length;
+        private byte[] a2b(byte[] bytes, int length) {
             if (length % 2 != 0) {
-                throw oddLengthError(self);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
             }
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
-                output[i] = (byte) (digitValue(self, (char) bytes[i * 2]) * 16 + digitValue(self, (char) bytes[i * 2 + 1]));
+                output[i] = (byte) (digitValue((char) bytes[i * 2]) * 16 + digitValue((char) bytes[i * 2 + 1]));
             }
-            return factory().createBytes(output);
+            return output;
         }
 
-        private int digitValue(PythonModule self, char b) {
+        private int digitValue(char b) {
             if (b >= '0' && b <= '9') {
                 return b - '0';
             } else if (b >= 'a' && b <= 'f') {
@@ -192,69 +280,45 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             } else if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             } else {
-                throw nonHexError(self);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
             }
         }
 
-        private PException oddLengthError(PythonModule self) {
-            raiseObject(getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("should not be reached");
-        }
-
-        private PException nonHexError(PythonModule self) {
-            raiseObject(getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("should not be reached");
-        }
-
-        private ReadAttributeFromObjectNode getAttrNode() {
-            if (readAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttrNode = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttrNode;
-        }
-
-        private void raiseObject(Object exceptionObject, String message) {
-            if (callExceptionConstructor == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callExceptionConstructor = insert(CallNode.create());
-            }
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(RaiseNodeGen.create(null, null));
-            }
-            raiseNode.execute(callExceptionConstructor.execute(exceptionObject, message), PNone.NO_VALUE);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.A2bHexNodeClinicProviderGen.INSTANCE;
         }
     }
 
     @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"}, keywordOnlyNames = {"newline"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class B2aBase64Node extends PythonClinicBuiltinNode {
         @TruffleBoundary
-        private static byte[] b2a(byte[] data, int newline) {
-            String encode = Base64.encode(data);
-            if (newline != 0) {
-                return (encode + "\n").getBytes();
-            }
-            return encode.getBytes();
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(data)", limit = "3")
-        PBytes b2aBuffer(Object data, int newline,
-                        @CachedLibrary("data") PythonObjectLibrary bufferLib) {
+        private PBytes b2a(byte[] data, int lenght, int newline) {
+            ByteBuffer encoded;
             try {
-                return factory().createBytes(b2a(bufferLib.getBufferBytes(data), newline));
-            } catch (UnsupportedMessageException e) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+                encoded = Base64.getEncoder().encode(ByteBuffer.wrap(data, 0, lenght));
+            } catch (IllegalArgumentException e) {
+                throw raise(BinasciiError, e);
             }
+            if (newline != 0) {
+                byte[] encodedWithNL = Arrays.copyOf(encoded.array(), encoded.limit() + 1);
+                encodedWithNL[encodedWithNL.length - 1] = '\n';
+                return factory().createBytes(encodedWithNL);
+            }
+            return factory().createBytes(encoded.array(), encoded.limit());
         }
 
-        @Fallback
-        PBytes b2sGeneral(Object data, @SuppressWarnings("unused") Object newline) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
+        @Specialization(limit = "3")
+        PBytes b2aBuffer(VirtualFrame frame, Object buffer, int newline,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
+                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline);
+            } finally {
+                bufferLib.release(buffer, frame, this);
+            }
         }
 
         @Override
@@ -263,63 +327,92 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "b2a_hex", minNumOfPositionalArgs = 1)
+    @Builtin(name = "b2a_hex", minNumOfPositionalArgs = 1, parameterNames = {"data", "sep", "bytes_per_sep"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "bytes_per_sep", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "1")
     @GenerateNodeFactory
-    abstract static class B2aHexNode extends PythonUnaryBuiltinNode {
+    abstract static class B2aHexNode extends PythonTernaryClinicBuiltinNode {
 
         @CompilationFinal(dimensions = 1) private static final byte[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
-        PBytes b2a(Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+        @Specialization(limit = "3")
+        PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
+                // TODO implement sep and bytes_per_sep
+                throw raise(NotImplementedError);
+            }
             try {
-                return b2a(bufferLib.getBufferBytes(buffer));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+            } finally {
+                bufferLib.release(buffer, frame, this);
             }
         }
 
-        @Fallback
-        PBytes b2a(Object data) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
-        }
-
         @TruffleBoundary
-        private PBytes b2a(byte[] bytes) {
-            byte[] output = new byte[bytes.length * 2];
-            for (int i = 0; i < bytes.length; i++) {
+        private PBytes b2a(byte[] bytes, int length) {
+            byte[] output = new byte[length * 2];
+            for (int i = 0; i < length; i++) {
                 int v = bytes[i] & 0xff;
                 output[i * 2] = HEX_DIGITS[v >> 4];
                 output[i * 2 + 1] = HEX_DIGITS[v & 0xf];
             }
             return factory().createBytes(output);
         }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.B2aHexNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "crc32", minNumOfPositionalArgs = 1, parameterNames = {"data", "crc"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    // TODO crc argument
     @GenerateNodeFactory
-    abstract static class Crc32Node extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(crc)")
-        static long b2a(PBytes data, @SuppressWarnings("unused") PNone crc,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return getCrcValue(toByteArray.execute(data.getSequenceStorage()));
+    abstract static class Crc32Node extends PythonBinaryClinicBuiltinNode {
+        // TODO crc != NO_VALUE
+        @Specialization(guards = "isNoValue(crc)", limit = "3")
+        long b2a(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") PNone crc,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
+                return getCrcValue(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+            } finally {
+                bufferLib.release(buffer, frame, this);
+            }
         }
 
         @TruffleBoundary
-        private static long getCrcValue(byte[] bytes) {
+        private static long getCrcValue(byte[] bytes, int length) {
             CRC32 crc32 = new CRC32();
-            crc32.update(bytes);
+            crc32.update(bytes, 0, length);
             return crc32.getValue();
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.Crc32NodeClinicProviderGen.INSTANCE;
         }
     }
 
-    @Builtin(name = "hexlify", minNumOfPositionalArgs = 1)
+    @Builtin(name = "hexlify", minNumOfPositionalArgs = 1, parameterNames = {"data", "sep", "bytes_per_sep"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "bytes_per_sep", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "1")
     @GenerateNodeFactory
     abstract static class HexlifyNode extends B2aHexNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.HexlifyNodeClinicProviderGen.INSTANCE;
+        }
     }
 
-    @Builtin(name = "unhexlify", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "unhexlify", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"})
+    @ArgumentClinic(name = "data", conversionClass = AsciiBufferConverter.class)
     @GenerateNodeFactory
     abstract static class UnhexlifyNode extends A2bHexNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.UnhexlifyNodeClinicProviderGen.INSTANCE;
+        }
     }
 }

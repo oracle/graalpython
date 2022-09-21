@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -31,8 +31,9 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -49,39 +50,27 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.ForceInlineGeneratorCalls);
+        return PythonLanguage.get(null).getEngineOption(PythonOptions.ForceInlineGeneratorCalls);
     }
 
     protected static boolean forceSplitBuiltins() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.EnableForcedSplits);
+        return PythonLanguage.get(null).getEngineOption(PythonOptions.EnableForcedSplits);
     }
 
     @TruffleBoundary
     protected static RootCallTarget getCallTarget(Object callee) {
-        RootCallTarget callTarget;
         Object actualCallee = callee;
-        if (actualCallee instanceof PFunction) {
-            callTarget = ((PFunction) actualCallee).getCallTarget();
-        } else if (actualCallee instanceof PBuiltinFunction) {
-            callTarget = ((PBuiltinFunction) callee).getCallTarget();
-        } else {
-            throw new UnsupportedOperationException("Unsupported callee type " + actualCallee);
+        RootCallTarget callTarget = GetCallTargetNode.getUncached().execute(actualCallee);
+        if (callTarget == null) {
+            throw CompilerDirectives.shouldNotReachHere("Unsupported callee type " + actualCallee);
         }
         return callTarget;
     }
 
-    protected static void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget, ConditionProfile isClassBodyProfile) {
-        RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (isClassBodyProfile.profile(rootNode instanceof ClassBodyRootNode)) {
-            assert PArguments.getSpecialArgument(arguments) == null : "there cannot be a special argument in a class body";
-            PArguments.setSpecialArgument(arguments, rootNode);
-        }
-    }
-
     protected static void optionallySetGeneratorFunction(Object[] arguments, CallTarget callTarget, ConditionProfile isGeneratorFunctionProfile, PFunction callee) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-        if (isGeneratorFunctionProfile.profile(rootNode instanceof GeneratorFunctionRootNode)) {
+        if (isGeneratorFunctionProfile.profile(rootNode instanceof GeneratorFunctionRootNode || rootNode instanceof PBytecodeGeneratorFunctionRootNode)) {
             assert callee != null : "generator function callee not passed to invoke node";
             PArguments.setGeneratorFunction(arguments, callee);
         }

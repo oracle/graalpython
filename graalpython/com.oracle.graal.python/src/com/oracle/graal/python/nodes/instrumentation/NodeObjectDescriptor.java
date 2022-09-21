@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,17 @@
  */
 package com.oracle.graal.python.nodes.instrumentation;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A container class used to store per-node attributes used by the instrumentation framework.
@@ -70,9 +74,15 @@ public final class NodeObjectDescriptor implements TruffleObject {
 
     @ExportMessage
     @CompilerDirectives.TruffleBoundary
-    Object readMember(String key) {
-        assert data.containsKey(key);
-        return data.get(key);
+    Object readMember(String key,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            assert data.containsKey(key);
+            return data.get(key);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -83,8 +93,14 @@ public final class NodeObjectDescriptor implements TruffleObject {
 
     @ExportMessage
     @CompilerDirectives.TruffleBoundary
-    boolean isMemberReadable(String key) {
-        return data.containsKey(key);
+    boolean isMemberReadable(String key,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return data.containsKey(key);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     // Utils

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,27 +29,29 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.literal.ListLiteralNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PList extends PSequence {
-    private final ListLiteralNode origin;
+    private final ListOrigin origin;
     private SequenceStorage store;
 
     public PList(Object cls, Shape instanceShape, SequenceStorage store) {
@@ -58,7 +60,7 @@ public final class PList extends PSequence {
         this.store = store;
     }
 
-    public PList(Object cls, Shape instanceShape, SequenceStorage store, ListLiteralNode origin) {
+    public PList(Object cls, Shape instanceShape, SequenceStorage store, ListOrigin origin) {
         super(cls, instanceShape);
         this.origin = origin;
         this.store = store;
@@ -115,36 +117,26 @@ public final class PList extends PSequence {
         return super.hashCode();
     }
 
-    public ListLiteralNode getOrigin() {
+    public ListOrigin getOrigin() {
         return origin;
     }
 
-    public static PList require(Object value) {
-        if (value instanceof PList) {
-            return (PList) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PList required.");
-    }
-
-    public static PList expect(Object value) throws UnexpectedResultException {
-        if (value instanceof PList) {
-            return (PList) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
     @ExportMessage
-    public SourceSection getSourceLocation() throws UnsupportedMessageException {
-        ListLiteralNode node = getOrigin();
-        SourceSection result = null;
-        if (node != null) {
-            result = node.getSourceSection();
+    public SourceSection getSourceLocation(@Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            ListOrigin node = getOrigin();
+            SourceSection result = null;
+            if (node != null) {
+                result = node.getSourceSection();
+            }
+            if (result == null) {
+                throw UnsupportedMessageException.create();
+            }
+            return result;
+        } finally {
+            gil.release(mustRelease);
         }
-        if (result == null) {
-            throw UnsupportedMessageException.create();
-        }
-        return result;
     }
 
     @ExportMessage
@@ -155,55 +147,120 @@ public final class PList extends PSequence {
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
+            final int len = lenNode.execute(store);
+            try {
+                normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
+            } catch (PException e) {
+                return false;
+            }
+            return true;
+        } finally {
+            gil.release(mustRelease);
         }
-        return true;
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
-        final int len = lenNode.execute(store);
-        return index == len;
+                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            final int len = lenNode.execute(store);
+            return index == len;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
+            final int len = lenNode.execute(store);
+            try {
+                normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
+            } catch (PException e) {
+                return false;
+            }
+            return true;
+        } finally {
+            gil.release(mustRelease);
         }
-        return true;
     }
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
+                    @Cached PForeignToPTypeNode convert,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
         try {
-            setItem.execute(store, PInt.intValueExact(index), value);
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            try {
+                setItem.execute(store, PInt.intValueExact(index), convert.executeConvert(value));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
         try {
-            delItem.execute(store, PInt.intValueExact(index));
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            try {
+                delItem.execute(store, PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
+    }
+
+    public interface ListOrigin {
+
+        /**
+         * This class serves the purpose of updating the size estimate for the lists constructed
+         * here over time. The estimate is updated slowly, it takes {@link #NUM_DIGITS_POW2} lists
+         * to reach a size one larger than the current estimate to increase the estimate for new
+         * lists.
+         */
+        @CompilerDirectives.ValueType
+        public static final class SizeEstimate {
+            private static final int NUM_DIGITS = 3;
+            private static final int NUM_DIGITS_POW2 = 1 << NUM_DIGITS;
+
+            @CompilerDirectives.CompilationFinal private int shiftedStorageSizeEstimate;
+
+            public SizeEstimate(int storageSizeEstimate) {
+                shiftedStorageSizeEstimate = storageSizeEstimate * NUM_DIGITS_POW2;
+            }
+
+            public int estimate() {
+                return shiftedStorageSizeEstimate >> NUM_DIGITS;
+            }
+
+            public int updateFrom(int newSizeEstimate) {
+                shiftedStorageSizeEstimate = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
+                return shiftedStorageSizeEstimate;
+            }
+        }
+
+        void reportUpdatedCapacity(BasicSequenceStorage newStore);
+
+        SourceSection getSourceSection();
     }
 }

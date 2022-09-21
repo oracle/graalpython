@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,12 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertContainsNoJavaString;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
@@ -38,12 +40,14 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
+        assertContainsNoJavaString(elements);
     }
 
     public ObjectSequenceStorage(Object[] elements, int length) {
         this.values = elements;
         this.capacity = elements.length;
         this.length = length;
+        assertContainsNoJavaString(elements);
     }
 
     public ObjectSequenceStorage(int capacity) {
@@ -59,7 +63,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) {
-        values[idx] = value;
+        values[idx] = assertNoJavaString(value);
     }
 
     @Override
@@ -71,7 +75,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
             values[i] = values[i - 1];
         }
 
-        values[idx] = value;
+        values[idx] = assertNoJavaString(value);
         incLength();
     }
 
@@ -96,26 +100,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         return new ObjectSequenceStorage(newArray);
     }
 
-    public void setObjectSliceInBound(int start, int stop, int step, ObjectSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            setNewLength(otherLength);
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        setNewLength(length > stop ? length : stop);
-    }
-
     @Override
     public SequenceStorage copy() {
         return new ObjectSequenceStorage(getCopyOfInternalArray());
@@ -133,12 +117,12 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        return Arrays.copyOf(values, length);
+        return PythonUtils.arrayCopyOf(values, length);
     }
 
     @Override
     public void increaseCapacityExactWithCopy(int newCapacity) {
-        values = Arrays.copyOf(values, newCapacity);
+        values = PythonUtils.arrayCopyOf(values, newCapacity);
         capacity = values.length;
     }
 
@@ -146,12 +130,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     public void increaseCapacityExact(int newCapacity) {
         values = new Object[newCapacity];
         capacity = values.length;
-    }
-
-    public Object popObject() {
-        Object pop = values[length - 1];
-        decLength();
-        return pop;
     }
 
     @Override
@@ -198,6 +176,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (Object[]) arrayObject;
+        assertContainsNoJavaString(values);
     }
 
     @Override

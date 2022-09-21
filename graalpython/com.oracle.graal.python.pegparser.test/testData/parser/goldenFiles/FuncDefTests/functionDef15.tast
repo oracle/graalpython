@@ -1,0 +1,25 @@
+Module[0, 114]
+    Assign[0, 16]
+        LHS: Name[0, 9] Value: "SOMETHING" Store
+        RHS: Name[12, 16] Value: "NONE"
+    FunctionDef[17, 77]
+        Name:setup
+        ArgumentsTy[0, 0]
+        ---- Function body of setup ----
+        Global[32, 48]: SOMETHING 
+        If[51, 77]
+            Test: BOOLEAN[54, 58] Value: true
+            Then:
+                Assign[61, 77]
+                    LHS: Name[61, 70] Value: "SOMETHING" Store
+                    RHS: BOOLEAN[73, 77] Value: true
+        ---- End of setup function ----
+    FunctionDef[78, 114]
+        Name:install
+        ArgumentsTy[0, 0]
+        ---- Function body of install ----
+        If[95, 114]
+            Test: Name[98, 107] Value: "SOMETHING"
+            Then:
+                Pass[110, 114]
+        ---- End of install function ----

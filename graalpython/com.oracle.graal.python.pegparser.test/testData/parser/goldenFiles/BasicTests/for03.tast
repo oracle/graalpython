@@ -1,0 +1,17 @@
+Module[0, 42]
+    For[0, 42]
+        Target: Name[4, 5] Value: "x" Store
+        Iter: 
+            Call[9, 18]
+                Target: Name[9, 15] Value: "xrange"
+                Args:
+                    LONG[16, 17] Value: 3
+        Body:
+            If[22, 42]
+                Test: 
+                    Compare[25, 31]
+                        LHS: Name[25, 26] Value: "x"
+                        Op: Eq
+                        RHS: LONG[30, 31] Value: 1
+                Then:
+                    Break[37, 42]

@@ -1,4 +1,10 @@
-## Frequently Asked Questions
+---
+layout: docs-experimental
+toc_group: python
+link_title: FAQ
+permalink: /reference-manual/python/FAQ/
+---
+# Frequently Asked Questions
 
 ### Does module/package XYZ work on GraalVM's Python runtime?
 
@@ -40,7 +46,7 @@ For native extensions running as LLVM bitcode, CPython is currently slower -- yo
 ### I heard languages with JIT compilers have slow startup. Is that true for GraalVM's Python runtime?
 
 It depends.
-When you use [Native Image](https://www.graalvm.org/reference-manual/native-image/) with Python, or the `graalpython` launcher of GraalVM, startup is competitive with CPython.
+When you use [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md) with Python, or the `graalpy` launcher of GraalVM, startup is competitive with CPython.
 In any case, both with Native Image or when running on the JVM, you first need to warm up to reach peak performance. This is a complicated story in itself, but, in general, it can take a while (a minute or two) after you have reached and are running your core workload.
 
 ### Can I share warmed-up code between multiple Python contexts?

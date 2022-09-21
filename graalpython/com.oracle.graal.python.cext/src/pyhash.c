@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,13 +47,28 @@ Py_hash_t _Py_HashDouble(double value) {
 long _PyHASH_INF;
 long _PyHASH_NAN;
 long _PyHASH_IMAG;
+_Py_HashSecret_t _Py_HashSecret = {{0}};
 
 void initialize_hashes() {
     _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
     _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
     _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
+    ((void (*)(int8_t *))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffleHash_InitSecret", SRC_CS)))(polyglot_from_i8_array((int8_t *)&_Py_HashSecret, sizeof(_Py_HashSecret)));
 }
 
 Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
     return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), polyglot_from_string(src, "ascii"));
+}
+
+/* taken from CPython */
+Py_hash_t _Py_HashPointer(void *p) {
+    Py_hash_t x;
+    size_t y = (size_t)p;
+    /* bottom 3 or 4 bits are likely to be 0; rotate y by 4 to avoid
+       excessive hash collisions for dicts and sets */
+    y = (y >> 4) | (y << (8 * SIZEOF_VOID_P - 4));
+    x = (Py_hash_t)y;
+    if (x == -1)
+        x = -2;
+    return x;
 }

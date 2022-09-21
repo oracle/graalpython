@@ -40,8 +40,6 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                     GeneratorIfNode SourceSection: [13,41]`if (yield):↵        ...`
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         YieldNode SourceSection: [17,22]`yield`
                           flagSlot: 0
                           EmptyNode SourceSection: None
@@ -51,12 +49,10 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                           flagSlot: 1
                           ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`x`
                             Identifier: x
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

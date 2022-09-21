@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -63,6 +64,7 @@ public abstract class PSlice extends PythonBuiltinObject {
 
     @Override
     public boolean equals(Object obj) {
+        CompilerAsserts.neverPartOfCompilation();
         if (!(obj instanceof PSlice)) {
             return false;
         }
@@ -70,11 +72,12 @@ public abstract class PSlice extends PythonBuiltinObject {
             return true;
         }
         PSlice other = (PSlice) obj;
-        return (this.getStart() == other.getStart() && this.getStop() == other.getStop() && this.getStep() == other.getStep());
+        return (this.getStart().equals(other.getStart()) && this.getStop().equals(other.getStop()) && this.getStep().equals(other.getStep()));
     }
 
     @Override
     public int hashCode() {
+        CompilerAsserts.neverPartOfCompilation();
         return Objects.hash(this.getStart(), this.getStop(), this.getStep());
     }
 
@@ -103,7 +106,7 @@ public abstract class PSlice extends PythonBuiltinObject {
     protected static void checkNegative(int length) {
         if (length < 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
     }
 
@@ -135,7 +138,7 @@ public abstract class PSlice extends PythonBuiltinObject {
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

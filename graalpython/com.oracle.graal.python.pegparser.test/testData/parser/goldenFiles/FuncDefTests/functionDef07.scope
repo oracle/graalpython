@@ -1,0 +1,9 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      foo: [DefLocal, Local]
+    Scope foo Function
+        Varnames: par1, par2
+        Symbols:
+            par1: [DefParam, Use, Local]
+            par2: [DefParam, Use, Local]

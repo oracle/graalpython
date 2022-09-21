@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,7 +63,7 @@ public abstract class DeleteAttributeNode extends StatementNode {
 
     @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object key,
-                    @Cached("create(__DELATTR__)") LookupAndCallBinaryNode call) {
+                    @Cached("create(DelAttr)") LookupAndCallBinaryNode call) {
         call.executeObject(frame, object, key);
     }
 }

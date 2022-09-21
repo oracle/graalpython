@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,26 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
 public abstract class ArgumentCastNode extends Node {
@@ -72,20 +79,16 @@ public abstract class ArgumentCastNode extends Node {
     public abstract static class ArgumentCastNodeWithRaise extends ArgumentCastNode {
         @Child private PRaiseNode raiseNode;
 
-        public PException raise(PythonBuiltinClassType type, String string) {
+        public PException raise(PythonBuiltinClassType type, TruffleString string) {
             return getRaiseNode().raise(type, string);
         }
 
-        public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
+        public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
             return getRaiseNode().raise(type, cause, format, arguments);
         }
 
-        public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+        public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
             return getRaiseNode().raise(type, format, arguments);
-        }
-
-        public final PException raise(PythonBuiltinClassType type, Object... arguments) {
-            return getRaiseNode().raise(type, arguments);
         }
 
         public final PRaiseNode getRaiseNode() {
@@ -96,4 +99,36 @@ public abstract class ArgumentCastNode extends Node {
             return raiseNode;
         }
     }
+
+    public abstract static class ArgumentCastNodeWithRaiseAndIndirectCall extends ArgumentCastNodeWithRaise implements IndirectCallNode {
+        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
+        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+
+        @Override
+        public final Assumption needNotPassFrameAssumption() {
+            if (nativeCodeDoesntNeedMyFrame == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+            }
+            return nativeCodeDoesntNeedMyFrame;
+        }
+
+        @Override
+        public final Assumption needNotPassExceptionAssumption() {
+            if (nativeCodeDoesntNeedExceptionState == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+            }
+            return nativeCodeDoesntNeedExceptionState;
+        }
+    }
+
+    public final PythonLanguage getLanguage() {
+        return PythonLanguage.get(this);
+    }
+
+    public final PythonContext getContext() {
+        return PythonContext.get(this);
+    }
+
 }

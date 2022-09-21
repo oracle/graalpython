@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -31,6 +31,7 @@ class Foo(object):
         self.a = a
 
 
+# igv: function_root_do_stuff_at
 def do_stuff(foo):
     for i in range(iteration):
         local_a = foo.a + 1

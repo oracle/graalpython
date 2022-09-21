@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,69 +38,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.posix;
 
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.util.Iterator;
-
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PScandirIterator extends PythonBuiltinObject {
-    private boolean closed = false;
-    private final DirectoryStream<TruffleFile> stream;
-    private final Iterator<TruffleFile> iterator;
-    private final String path;
-    private final boolean produceBytes;
 
-    @TruffleBoundary
-    public PScandirIterator(Object cls, Shape instanceShape, String path, DirectoryStream<TruffleFile> stream, boolean produceBytes) {
+    final PosixFileHandle path;
+    final DirStreamRef ref;
+
+    public PScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {
         super(cls, instanceShape);
+        this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer(), needsRewind);
         this.path = path;
-        this.stream = stream;
-        this.iterator = stream.iterator();
-        this.produceBytes = produceBytes;
     }
 
-    @TruffleBoundary
-    public TruffleFile next() {
-        return iterator.next();
-    }
+    static class DirStreamRef extends SharedFinalizer.FinalizableReference {
 
-    @TruffleBoundary
-    public boolean hasNext() {
-        return !closed && iterator.hasNext();
-    }
+        final boolean needsRewind;
 
-    @TruffleBoundary
-    public void close() {
-        closed = true;
-        try {
-            stream.close();
-        } catch (IOException e) {
-            // doesn't matter at this point
+        DirStreamRef(PScandirIterator referent, Object dirStream, SharedFinalizer finalizer, boolean needsRewind) {
+            super(referent, dirStream, finalizer);
+            this.needsRewind = needsRewind;
         }
-    }
 
-    public String getPath() {
-        return path;
-    }
+        @Override
+        public AsyncAction release() {
+            return new ScandirIteratorBuiltins.ReleaseCallback(this);
+        }
 
-    public boolean isProduceBytes() {
-        return produceBytes;
-    }
-
-    /* this is correct because it cannot be subclassed in Python */
-    @ExportMessage
-    PScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
+        void rewindAndClose(PosixSupportLibrary posixLib, Object posixSupport) {
+            if (isReleased()) {
+                return;
+            }
+            markReleased();
+            Object dirStream = getReference();
+            if (needsRewind) {
+                posixLib.rewinddir(posixSupport, dirStream);
+            }
+            try {
+                posixLib.closedir(posixSupport, dirStream);
+            } catch (PosixException e) {
+                // ignored (CPython does not chek the return value of closedir)
+            }
+        }
     }
 }

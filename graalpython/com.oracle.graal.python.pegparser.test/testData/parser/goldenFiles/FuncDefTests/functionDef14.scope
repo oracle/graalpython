@@ -1,0 +1,12 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      bla: [DefLocal, Local]
+      install: [DefLocal, Local]
+    Scope bla Function
+        Symbols:
+            install: [Use, GlobalImplicit]
+    Scope install Function
+        Varnames: extra_opts
+        Symbols:
+            extra_opts: [DefParam, Local]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,20 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Custom formatter adding Python-specific conversions often required in error messages.
@@ -71,12 +77,14 @@ public class ErrorMessageFormatter {
 
     private static Pattern fsPattern = Pattern.compile(formatSpecifier);
 
-    public String format(String format, Object... args) {
-        return format(PythonObjectLibrary.getUncached(), format, args);
+    @TruffleBoundary
+    public String format(TruffleString format, Object... args) {
+        return format(format.toJavaStringUncached(), args);
     }
 
     @TruffleBoundary
-    public String format(PythonObjectLibrary lib, String format, Object... args) {
+    public String format(String format, Object... args) {
+        CompilerAsserts.neverPartOfCompilation();
         Matcher m = fsPattern.matcher(format);
         StringBuilder sb = new StringBuilder(format);
         int removedCnt = 0;
@@ -86,13 +94,13 @@ public class ErrorMessageFormatter {
         while (m.find(idx)) {
             String group = m.group();
             if ("%p".equals(group)) {
-                String name = getClassName(lib, args[matchIdx]);
+                String name = getClassName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                String name = "<class \'" + getClassName(lib, args[matchIdx]) + "\'>";
+                String name = "<class \'" + getClassName(args[matchIdx]) + "\'>";
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -119,20 +127,28 @@ public class ErrorMessageFormatter {
                 matchIdx++;
             }
         }
-        return PythonUtils.format(sb.toString(), compact(args, removedCnt));
+        return PythonUtils.formatJString(sb.toString(), compact(args, removedCnt));
     }
 
     @TruffleBoundary
     private static String getMessage(Throwable exception) {
-        return exception.getClass().getSimpleName() + ": " + exception.getMessage();
+        String message = exception.getClass().getSimpleName() + ": " + exception.getMessage();
+        if (PythonOptions.isWithJavaStacktrace(PythonLanguage.get(null))) {
+            StringWriter writer = new StringWriter();
+            try (PrintWriter pw = new PrintWriter(writer)) {
+                exception.printStackTrace(pw);
+            }
+            message += "\n\nJava stack trace:\n" + writer;
+        }
+        return message;
     }
 
-    private static String getClassName(PythonObjectLibrary lib, Object obj) {
-        return getClassNameOfClass(lib.getLazyPythonClass(obj));
+    private static String getClassName(Object obj) {
+        return getClassNameOfClass(GetClassNode.getUncached().execute(obj));
     }
 
     private static String getClassNameOfClass(Object obj) {
-        return GetNameNode.doSlowPath(obj);
+        return GetNameNode.doSlowPath(obj).toJavaStringUncached();
     }
 
     /**

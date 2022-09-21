@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,18 +46,18 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
@@ -74,36 +74,37 @@ public abstract class CastToJavaBigIntegerNode extends Node {
 
     @Specialization
     @TruffleBoundary
-    protected BigInteger fromBoolean(boolean x) {
+    protected static BigInteger fromBoolean(boolean x) {
         return x ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Specialization
     @TruffleBoundary
-    protected BigInteger fromInt(int x) {
+    protected static BigInteger fromInt(int x) {
         return BigInteger.valueOf(x);
     }
 
     @Specialization
     @TruffleBoundary
-    protected BigInteger fromLong(long x) {
+    protected static BigInteger fromLong(long x) {
         return BigInteger.valueOf(x);
     }
 
     @Specialization
-    protected BigInteger fromPInt(PInt x) {
+    protected static BigInteger fromPInt(PInt x) {
         return x.getValue();
     }
 
     @Specialization
-    protected BigInteger generic(Object x,
+    protected static BigInteger generic(Object x,
                     @Cached PRaiseNode raise,
                     @Cached CastToJavaBigIntegerNode rec,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary pol) {
-        if (pol.canBeIndex(x)) {
-            return rec.execute(pol.asPInt(x));
+                    @Cached GetClassNode getClassNode,
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberIndexNode indexNode) {
+        if (indexCheckNode.execute(x)) {
+            return rec.execute(indexNode.execute(null, x));
         }
-        CompilerDirectives.transferToInterpreter();
-        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, pol.getLazyPythonClass(x));
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, getClassNode.execute(x));
     }
 }

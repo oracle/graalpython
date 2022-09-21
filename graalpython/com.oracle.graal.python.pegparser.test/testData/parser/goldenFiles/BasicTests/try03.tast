@@ -1,0 +1,15 @@
+Module[0, 61]
+    FunctionDef[0, 61]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        Try[12, 15]
+            Body:
+                Pass[21, 25]
+            Except:
+                ExceptHandler[28, 34]
+                    Type: Name[35, 45] Value: "ValueError"
+                    Var: va
+                    Body:
+                        Pass[57, 61]
+        ---- End of fn function ----

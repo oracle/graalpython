@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -36,16 +38,16 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToObjectSlice;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
@@ -58,7 +60,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
 public class SliceBuiltins extends PythonBuiltins {
@@ -68,21 +71,21 @@ public class SliceBuiltins extends PythonBuiltins {
         return SliceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public String repr(PSlice self) {
-            return self.toString();
+        public static TruffleString repr(PSlice self) {
+            return toTruffleStringUncached(self.toString());
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
-        boolean sliceCmp(PIntSlice left, PIntSlice right) {
+        static boolean sliceCmp(PIntSlice left, PIntSlice right) {
             return left.equals(right);
         }
 
@@ -97,17 +100,16 @@ public class SliceBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPSlice(right)")
-        boolean notEqual(PSlice left, Object right) {
+        static boolean notEqual(PSlice left, Object right) {
             return false;
         }
 
         @Specialization
-        boolean sliceCmpWithLib(PSlice left, PSlice right,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary libLeft,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary libRight) {
-            return libLeft.equals(left.getStart(), right.getStart(), libRight) &&
-                            libLeft.equals(left.getStop(), right.getStop(), libRight) &&
-                            libLeft.equals(left.getStep(), right.getStep(), libRight);
+        static boolean sliceCmpWithLib(VirtualFrame frame, PSlice left, PSlice right,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            return eqNode.execute(frame, left.getStart(), right.getStart()) &&
+                            eqNode.execute(frame, left.getStop(), right.getStop()) &&
+                            eqNode.execute(frame, left.getStep(), right.getStep());
         }
 
     }
@@ -117,12 +119,12 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class StartNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected Object get(PIntSlice self) {
+        protected static Object get(PIntSlice self) {
             return self.getStart();
         }
 
         @Specialization
-        protected Object get(PObjectSlice self) {
+        protected static Object get(PObjectSlice self) {
             return self.getStart();
         }
     }
@@ -132,12 +134,12 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class StopNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected Object get(PIntSlice self) {
+        protected static Object get(PIntSlice self) {
             return self.getStop();
         }
 
         @Specialization
-        protected Object get(PObjectSlice self) {
+        protected static Object get(PObjectSlice self) {
             return self.getStop();
         }
     }
@@ -147,12 +149,12 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class StepNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected Object get(PIntSlice self) {
+        protected static Object get(PIntSlice self) {
             return self.getStep();
         }
 
         @Specialization
-        protected Object get(PObjectSlice self) {
+        protected static Object get(PObjectSlice self) {
             return self.getStep();
         }
     }
@@ -161,8 +163,8 @@ public class SliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndicesNode extends PythonBinaryBuiltinNode {
 
-        private PTuple doPSlice(PSlice self, int length, ComputeIndices compute) {
-            SliceInfo sliceInfo = compute.execute(self, length);
+        private PTuple doPSlice(VirtualFrame frame, PSlice self, int length, ComputeIndices compute) {
+            SliceInfo sliceInfo = compute.execute(frame, self, length);
             return factory().createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
 
@@ -171,27 +173,27 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple safeInt(PIntSlice self, int length,
+        protected PTuple safeInt(VirtualFrame frame, PIntSlice self, int length,
                         @Cached ComputeIndices compute) {
-            return doPSlice(self, length, compute);
+            return doPSlice(frame, self, length, compute);
         }
 
         @Specialization(guards = "!isPNone(length)", rewriteOn = PException.class)
-        protected PTuple doSliceObject(PSlice self, Object length,
+        protected PTuple doSliceObject(VirtualFrame frame, PSlice self, Object length,
                         @Cached SliceExactCastToInt toInt,
                         @Cached ComputeIndices compute) {
-            return doPSlice(self, (int) toInt.execute(length), compute);
+            return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
         }
 
         @Specialization(guards = "!isPNone(length)", replaces = {"doSliceObject"})
-        protected PTuple doSliceObjectWithSlowPath(PSlice self, Object length,
+        protected PTuple doSliceObjectWithSlowPath(VirtualFrame frame, PSlice self, Object length,
                         @Cached SliceExactCastToInt toInt,
                         @Cached ComputeIndices compute,
                         @Cached IsBuiltinClassProfile profileError,
                         @Cached SliceCastToToBigInt castLengthNode,
                         @Cached CoerceToObjectSlice castNode) {
             try {
-                return doPSlice(self, (int) toInt.execute(length), compute);
+                return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
             } catch (PException pe) {
                 if (!profileError.profileException(pe, PythonBuiltinClassType.OverflowError)) {
                     throw pe;
@@ -205,32 +207,32 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isPNone(length)"})
-        protected PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
+        protected static PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
                         @Cached PRaiseNode raise) {
             throw raise.raise(ValueError);
         }
     }
 
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public long hash(PSlice self,
+        public static long hash(PSlice self,
                         @Cached PRaiseNode raise) {
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, PythonBuiltinClassType.PSlice);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, PythonBuiltinClassType.PSlice);
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         Object reduce(PSlice self,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @Cached GetClassNode getClassNode) {
             PTuple args = factory().createTuple(new Object[]{self.getStart(), self.getStop(), self.getStep()});
-            return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), args});
+            return factory().createTuple(new Object[]{getClassNode.execute(self), args});
         }
     }
 }

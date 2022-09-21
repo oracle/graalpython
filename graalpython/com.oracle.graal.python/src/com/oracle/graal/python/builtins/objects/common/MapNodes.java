@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,9 +67,13 @@ public abstract class MapNodes {
         }
 
         @Specialization
-        int iterState(EconomicMapStorage.KeysIterator iterator,
-                        @Cached GetIteratorState rec) {
-            return rec.execute(iterator.getKeysIterator());
+        int iterState(ObjectHashMap.KeysIteratorWrapper iterator) {
+            return iterator.getState();
+        }
+
+        @Specialization
+        int iterState(ObjectHashMap.ReverseKeysIteratorWrapper iterator) {
+            return iterator.getState();
         }
 
         @Specialization
@@ -86,11 +90,6 @@ public abstract class MapNodes {
 
         @Specialization
         int iterState(LocalsStorage.AbstractLocalsIterator iterator) {
-            return iterator.getState();
-        }
-
-        @Specialization
-        int iterState(PEMap.AbstractSparseMapIterator<?> iterator) {
             return iterator.getState();
         }
 
@@ -119,9 +118,13 @@ public abstract class MapNodes {
         }
 
         @Specialization
-        void iterState(EconomicMapStorage.KeysIterator iterator, int state,
-                        @Cached SetIteratorState rec) {
-            rec.execute(iterator.getKeysIterator(), state);
+        void iterState(ObjectHashMap.KeysIteratorWrapper iterator, int state) {
+            iterator.setState(state);
+        }
+
+        @Specialization
+        void iterState(ObjectHashMap.ReverseKeysIteratorWrapper iterator, int state) {
+            iterator.setState(state);
         }
 
         @Specialization
@@ -138,11 +141,6 @@ public abstract class MapNodes {
 
         @Specialization
         void iterState(LocalsStorage.AbstractLocalsIterator iterator, int state) {
-            iterator.setState(state);
-        }
-
-        @Specialization
-        void iterState(PEMap.AbstractSparseMapIterator<?> iterator, int state) {
             iterator.setState(state);
         }
 

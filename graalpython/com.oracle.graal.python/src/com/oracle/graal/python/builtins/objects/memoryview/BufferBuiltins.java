@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -64,7 +66,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -72,14 +73,15 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuffer)
 public class BufferBuiltins extends PythonBuiltins {
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put(__HASH__, PNone.NONE);
+        addBuiltinConstant(T___HASH__, PNone.NONE);
     }
 
     @Override
@@ -87,48 +89,50 @@ public class BufferBuiltins extends PythonBuiltins {
         return BufferBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object repr(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
-            return createReprString(repr.executeObject(frame, self.getDelegate()));
+        static TruffleString repr(VirtualFrame frame, PBuffer self,
+                        @Cached("create(Repr)") LookupAndCallUnaryNode repr,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("buffer(%s)", createReprString(repr.executeObject(frame, self.getDelegate())));
         }
 
         @TruffleBoundary
         private static String createReprString(Object reprObj) {
-            return "buffer(" + reprObj + ")";
+            // TODO GR-37980
+            return reprObj.toString();
         }
     }
 
-    @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, boolean key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, boolean key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, int key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, int key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, long key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, long key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, PInt key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+        public static Object iter(VirtualFrame frame, PBuffer self, PInt key,
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
@@ -141,24 +145,24 @@ public class BufferBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object len(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
+        public static Object len(VirtualFrame frame, PBuffer self,
+                        @Cached("create(Len)") LookupAndCallUnaryNode callLenNode) {
             return callLenNode.executeObject(frame, self.getDelegate());
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
 
         @Specialization
         static Object doPBuffer(VirtualFrame frame, PBuffer self,
-                        @Cached("create(__ITER__)") LookupAndCallUnaryNode callIterNode) {
+                        @Cached("create(Iter)") LookupAndCallUnaryNode callIterNode) {
             return callIterNode.executeObject(frame, self.getDelegate());
         }
 

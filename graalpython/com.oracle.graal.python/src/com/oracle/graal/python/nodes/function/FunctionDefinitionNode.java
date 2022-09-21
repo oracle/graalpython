@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 
 import java.util.Map;
 
@@ -41,8 +41,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -50,17 +48,16 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-    protected final String functionName;
-    protected final String qualname;
-    protected final String enclosingClassName;
-    protected final RootCallTarget callTarget;
+
+    protected final TruffleString functionName;
+    protected final TruffleString qualname;
+    protected final TruffleString enclosingClassName;
     @CompilationFinal private PCode cachedCode;
 
     @Children protected ExpressionNode[] defaults;
@@ -70,41 +67,31 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private HashingCollectionNodes.SetItemNode setItemNode;
 
-    @CompilationFinal(dimensions = 1) private final String[] annotationNames;
+    @CompilationFinal(dimensions = 1) private final TruffleString[] annotationNames;
     @Children private ExpressionNode[] annotationTypes;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
-    public FunctionDefinitionNode(String functionName, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget,
-                    DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
-                    Map<String, ExpressionNode> annotations) {
-        super(definitionCellSlots, executionCellSlots);
+    public FunctionDefinitionNode(TruffleString functionName, TruffleString qualname, TruffleString enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults,
+                    KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, DefinitionCellSlots definitionCellSlots, Map<TruffleString, ExpressionNode> annotations) {
+        super(definitionCellSlots, callTarget);
         this.functionName = functionName;
         this.qualname = qualname;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
-        this.callTarget = callTarget;
         assert defaults == null || noNullElements(defaults);
         this.defaults = defaults;
         assert kwDefaults == null || noNullElements(kwDefaults);
         this.kwDefaults = kwDefaults;
         if (annotations != null) {
-            this.annotationNames = annotations.keySet().toArray(new String[annotations.size()]);
+            this.annotationNames = annotations.keySet().toArray(new TruffleString[annotations.size()]);
             this.annotationTypes = annotations.values().toArray(new ExpressionNode[annotations.size()]);
         } else {
             this.annotationNames = null;
             this.annotationTypes = null;
         }
-    }
-
-    protected PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
     }
 
     protected PythonObjectFactory factory() {
@@ -136,10 +123,10 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             defaultsStableAssumption = Truffle.getRuntime().createAssumption();
         }
 
-        PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
+        PythonLanguage lang = PythonLanguage.get(this);
         CompilerAsserts.partialEvaluationConstant(lang);
         PCode code;
-        if (lang.singleContextAssumption.isValid()) {
+        if (lang.isSingleContext()) {
             if (cachedCode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 cachedCode = factory().createCode(callTarget);
@@ -149,7 +136,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             code = factory().createCode(callTarget);
         }
 
-        PFunction func = withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, code, PArguments.getGlobals(frame),
+        PFunction func = withDocString(frame, factory().createFunction(functionName, qualname, code, PArguments.getGlobals(frame),
                         defaultValues, kwDefaultValues, closure, codeStableAssumption, defaultsStableAssumption));
 
         // Processing annotated arguments.
@@ -172,7 +159,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     private PKeyword[] computeKwDefaultValues(VirtualFrame frame) {
         PKeyword[] kwDefaultValues = null;
         if (kwDefaults != null) {
-            kwDefaultValues = new PKeyword[kwDefaults.length];
+            kwDefaultValues = PKeyword.create(kwDefaults.length);
             for (int i = 0; i < kwDefaults.length; i++) {
                 kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
             }
@@ -195,7 +182,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @ExplodeLoop
     private void writeAnnotations(VirtualFrame frame, PFunction func) {
         PDict annotations = factory().createDict();
-        writeAttrNode.execute(func, __ANNOTATIONS__, annotations);
+        writeAttrNode.execute(func, T___ANNOTATIONS__, annotations);
         if (setItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             setItemNode = insert(HashingCollectionNodes.SetItemNode.create());
@@ -208,19 +195,15 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
     }
 
-    protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
+    protected final PFunction withDocString(VirtualFrame frame, PFunction func) {
         if (doc != null) {
-            writeAttrNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
+            writeAttrNode.execute(func, SpecialAttributeNames.T___DOC__, doc.execute(frame));
         }
         return func;
     }
 
-    public String getFunctionName() {
+    public TruffleString getFunctionName() {
         return functionName;
-    }
-
-    public RootCallTarget getCallTarget() {
-        return callTarget;
     }
 
     public RootNode getFunctionRoot() {
@@ -238,9 +221,9 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     public static final class KwDefaultExpressionNode extends ExpressionNode {
         @Child public ExpressionNode exprNode;
 
-        public final String name;
+        public final TruffleString name;
 
-        public KwDefaultExpressionNode(String name, ExpressionNode exprNode) {
+        public KwDefaultExpressionNode(TruffleString name, ExpressionNode exprNode) {
             this.name = name;
             this.exprNode = exprNode;
         }
@@ -250,13 +233,17 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             return exprNode.execute(frame);
         }
 
-        public static KwDefaultExpressionNode create(String name, ExpressionNode exprNode) {
+        public static KwDefaultExpressionNode create(TruffleString name, ExpressionNode exprNode) {
             return new KwDefaultExpressionNode(name, exprNode);
         }
     }
 
     public ExpressionNode getDoc() {
         return doc;
+    }
+
+    public TruffleString getQualname() {
+        return qualname;
     }
 
 }

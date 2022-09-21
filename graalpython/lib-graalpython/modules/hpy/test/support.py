@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,6 +27,15 @@ import re
 import textwrap
 
 PY2 = sys.version_info[0] == 2
+GRAALPYTHON = sys.implementation.name == 'graalpy'
+DARWIN_NATIVE = sys.platform == 'darwin' and (not GRAALPYTHON or __graalpython__.platform_id == 'native')
+
+# True if `sys.executable` is set to a value that allows a Python equivalent to
+# the current Python to be launched via, e.g., `python_subprocess.run(...)`.
+# By default is `True` if sys.executable is set to a true value.
+SUPPORTS_SYS_EXECUTABLE = bool(getattr(sys, "executable", None))
+# True if we are running on the CPython debug build
+IS_PYTHON_DEBUG_BUILD = hasattr(sys, 'gettotalrefcount')
 
 def reindent(s, indent):
     s = textwrap.dedent(s)
@@ -40,24 +49,31 @@ class DefaultExtensionTemplate(object):
         %(defines)s
         NULL
     };
+    %(globals_defs)s
     static HPyModuleDef moduledef = {
-        HPyModuleDef_HEAD_INIT,
-        .m_name = "%(name)s",
-        .m_doc = "some test for hpy",
-        .m_size = -1,
+        .name = "%(name)s",
+        .doc = "some test for hpy",
+        .size = -1,
         .legacy_methods = %(legacy_methods)s,
-        .defines = moduledefs
+        .defines = moduledefs,
+        %(globals_field)s
     };
 
     HPy_MODINIT(%(name)s)
-    static HPy init_%(name)s_impl(HPyContext ctx)
+    static HPy init_%(name)s_impl(HPyContext *ctx)
     {
-        HPy m;
+        HPy m = HPy_NULL;
         m = HPyModule_Create(ctx, &moduledef);
         if (HPy_IsNull(m))
-            return HPy_NULL;
+            goto MODINIT_ERROR;
         %(init_types)s
         return m;
+
+        MODINIT_ERROR:
+
+        if (!HPy_IsNull(m))
+            HPy_Close(ctx, m);
+        return HPy_NULL;
     }
     """)
 
@@ -69,9 +85,11 @@ class DefaultExtensionTemplate(object):
         self.defines_table = None
         self.legacy_methods = 'NULL'
         self.type_table = None
+        self.globals_table = None
 
     def expand(self):
         self.defines_table = []
+        self.globals_table = []
         self.type_table = []
         self.output = ['#include <hpy.h>']
         for line in self.src.split('\n'):
@@ -100,16 +118,29 @@ class DefaultExtensionTemplate(object):
         return name, args
 
     def INIT(self):
+        NL_INDENT = '\n    '
         if self.type_table:
             init_types = '\n'.join(self.type_table)
         else:
             init_types = ''
 
+        globals_defs = ''
+        globals_field = ''
+        if self.globals_table:
+            globals_defs = \
+                textwrap.dedent('''
+                static HPyGlobal *module_globals[] = {
+                    %s
+                };''') % NL_INDENT.join(self.globals_table)
+            globals_field = '.globals = module_globals'
+
         exp = self.INIT_TEMPLATE % {
             'legacy_methods': self.legacy_methods,
-            'defines': '\n        '.join(self.defines_table),
+            'defines': NL_INDENT.join(self.defines_table),
             'init_types': init_types,
-            'name': self.name}
+            'name': self.name,
+            'globals_defs': globals_defs,
+            'globals_field': globals_field}
         self.output.append(exp)
         # make sure that we don't fill the tables any more
         self.defines_table = None
@@ -118,30 +149,28 @@ class DefaultExtensionTemplate(object):
     def EXPORT(self, meth):
         self.defines_table.append('&%s,' % meth)
 
+    def EXPORT_GLOBAL(self, var):
+        self.globals_table.append('&%s,' % var)
+
     def EXPORT_LEGACY(self, pymethoddef):
         self.legacy_methods = pymethoddef
 
     def EXPORT_TYPE(self, name, spec):
-        i = len(self.type_table)
         src = """
-            HPy {h} = HPyType_FromSpec(ctx, &{spec}, NULL);
-            if (HPy_IsNull({h}))
-                return HPy_NULL;
-            if (HPy_SetAttr_s(ctx, m, {name}, {h}) != 0)
-                return HPy_NULL;
-            HPy_Close(ctx, {h});
+            if (!HPyHelpers_AddType(ctx, m, {name}, &{spec}, NULL)) {{
+                goto MODINIT_ERROR;
+            }}
             """
         src = reindent(src, 4)
         self.type_table.append(src.format(
-            h = 'h_type_%d' % i,
-            name = name,
-            spec = spec))
+            name=name,
+            spec=spec))
 
     def EXTRA_INIT_FUNC(self, func):
         src = """
             {func}(ctx, m);
             if (HPyErr_Occurred(ctx))
-                return HPy_NULL;
+                goto MODINIT_ERROR;
             """
         src = reindent(src, 4)
         self.type_table.append(src.format(func=func))
@@ -153,8 +182,15 @@ class Spec(object):
         self.origin = origin
 
 
+class HPyModule(object):
+    def __init__(self, name, so_file):
+        self.name = name
+        self.so_filename = so_file
+
+
 class ExtensionCompiler:
     def __init__(self, tmpdir, hpy_devel, hpy_abi, compiler_verbose=False,
+                 ExtensionTemplate=DefaultExtensionTemplate,
                  extra_include_dirs=None):
         """
         hpy_devel is an instance of HPyDevel which specifies where to find
@@ -171,7 +207,9 @@ class ExtensionCompiler:
         self.hpy_devel = hpy_devel
         self.hpy_abi = hpy_abi
         self.compiler_verbose = compiler_verbose
+        self.ExtensionTemplate=ExtensionTemplate
         self.extra_include_dirs = extra_include_dirs
+        self._sysconfig_universal = None
 
     def _expand(self, ExtensionTemplate, name, template):
         source = ExtensionTemplate(template, name).expand()
@@ -184,12 +222,16 @@ class ExtensionCompiler:
             filename.write(source, mode='wb')
         else:
             filename.write(source)
-        return str(filename)
+        return name + '.c'
 
-    def compile_module(self, ExtensionTemplate, main_src, name, extra_sources):
+    def _fixup_template(self, ExtensionTemplate):
+        return self.ExtensionTemplate if ExtensionTemplate is None else ExtensionTemplate
+
+    def compile_module(self, main_src, ExtensionTemplate=None, name='mytest', extra_sources=()):
         """
         Create and compile a HPy module from the template
         """
+        ExtensionTemplate = self._fixup_template(ExtensionTemplate)
         from distutils.core import Extension
         filename = self._expand(ExtensionTemplate, name, main_src)
         sources = [str(filename)]
@@ -197,14 +239,29 @@ class ExtensionCompiler:
             extra_filename = self._expand(ExtensionTemplate, 'extmod_%d' % i, src)
             sources.append(extra_filename)
         #
-        compile_args = [
-            '-g', '-O0',
-            '-Wfatal-errors',    # stop after one error (unrelated to warnings)
-            '-Werror',           # turn warnings into errors (all, for now)
-        ]
-        link_args = [
-            '-g',
-        ]
+        if sys.platform == 'win32':
+            # not strictly true, could be mingw
+            compile_args = [
+                '/Od',
+                '/WX',               # turn warnings into errors (all, for now)
+                # '/Wall',           # this is too aggresive, makes windows itself fail
+                '/Zi',
+                '-D_CRT_SECURE_NO_WARNINGS', # something about _snprintf and _snprintf_s
+                '/FS',               # Since the tests run in parallel
+            ]
+            link_args = [
+                '/DEBUG',
+                '/LTCG',
+            ]
+        else:
+            compile_args = [
+                '-g',                # TRUFFLE CHANGE: we removed '-O0' for mem2reg opt
+                '-Wfatal-errors',    # stop after one error (unrelated to warnings)
+                '-Werror',           # turn warnings into errors (all, for now)
+            ]
+            link_args = [
+                '-g',
+            ]
         #
         ext = Extension(
             name,
@@ -213,42 +270,164 @@ class ExtensionCompiler:
             extra_compile_args=compile_args,
             extra_link_args=link_args)
 
-        so_filename = c_compile(str(self.tmpdir), ext,
-                                hpy_devel=self.hpy_devel,
-                                hpy_abi=self.hpy_abi,
-                                compiler_verbose=self.compiler_verbose)
-        return so_filename
+        hpy_abi = self.hpy_abi
+        if hpy_abi == 'debug':
+            # there is no compile-time difference between universal and debug
+            # extensions. The only difference happens at load time
+            hpy_abi = 'universal'
 
-    def make_module(self, ExtensionTemplate, main_src, name, extra_sources):
+        from distutils.sysconfig import get_config_vars
+
+        def change_compiler(conf, cc, cxx, stdlib):
+            stdlib_arg = (' -stdlib=' + stdlib) if stdlib else ''
+            conf['CC'] = cc
+            conf['CXX'] = cxx
+            conf['OPT'] = "-DNDEBUG" + stdlib_arg
+            conf['CFLAGS'] = "-Wno-unused-command-line-argument -DNDEBUG" + stdlib_arg
+            conf['LDSHARED_LINUX'] = cc + ' -shared -fPIC'
+            # if on Darwin and in native mode
+            if DARWIN_NATIVE:
+                conf['LDSHARED'] = cc + ' -bundle -undefined dynamic_lookup'
+                conf['LDFLAGS'] = '-bundle -undefined dynamic_lookup'
+            else:
+                conf['LDSHARED'] = conf['LDSHARED_LINUX']
+
+        restore_conf = False
+        if hpy_abi == 'nfi':
+            assert GRAALPYTHON, 'NFI mode is only supported on GraalVM'
+            # Same as for debug mode: there is no compile-time difference in
+            # the sources. The difference is only in the compiler args.
+            hpy_abi = 'universal'
+            restore_conf = True
+            conf = get_config_vars()
+            if not self._sysconfig_universal:
+                self._sysconfig_universal = conf.copy()
+            from os.path import join
+            if DARWIN_NATIVE:
+                # We don't use the vanilla LLVM toolchain on Darwin even if available
+                # because it would need to use xcrun which is not easily possible via
+                # distutils
+                cc = join(os.path.sep, 'usr', 'bin', 'clang')
+                cxx = join(os.path.sep, 'usr', 'bin', 'clang++')
+                stdlib = 'libc++'
+            else:
+                llvm_toolchain_vanilla = os.environ.get("LLVM_TOOLCHAIN_VANILLA")
+                if llvm_toolchain_vanilla:
+                    cc = join(llvm_toolchain_vanilla, 'clang')
+                    cxx = join(llvm_toolchain_vanilla, 'clang++')
+                    stdlib = "libc++"
+                else:
+                    cc = 'gcc'
+                    cxx = 'g++'
+                    stdlib = None
+            change_compiler(conf, cc, cxx, stdlib)
+
+        try:
+            so_filename = c_compile(str(self.tmpdir), ext,
+                                    hpy_devel=self.hpy_devel,
+                                    hpy_abi=hpy_abi,
+                                    compiler_verbose=self.compiler_verbose)
+            return HPyModule(name, so_filename)
+        finally:
+            # restore previous configuration
+            if restore_conf:
+                change_compiler(get_config_vars(), self._sysconfig_universal['CC'], self._sysconfig_universal['CXX'], 'libc++')
+
+
+    def make_module(self, main_src, ExtensionTemplate=None, name='mytest',
+                    extra_sources=()):
         """
-        Compile&load a modulo into memory. This is NOT a proper import: e.g. the module
-        is not put into sys.modules
+        Compile & load a module. This is NOT a proper import: e.g.
+        the module is not put into sys.modules.
+
+        We don't want to unnecessarily modify the global state inside tests:
+        if you are writing a test which needs a proper import, you should not
+        use make_module but explicitly use compile_module and import it
+        manually as required by your test.
         """
-        so_filename = self.compile_module(ExtensionTemplate, main_src, name,
-                                          extra_sources)
-        if self.hpy_abi == 'universal':
-            return self.load_universal_module(name, so_filename)
+        ExtensionTemplate = self._fixup_template(ExtensionTemplate)
+        module = self.compile_module(
+            main_src, ExtensionTemplate, name, extra_sources)
+        so_filename = module.so_filename
+        if self.hpy_abi == 'universal' or self.hpy_abi == 'nfi':
+            return self.load_universal_module(name, so_filename, debug=False)
+        elif self.hpy_abi == 'debug':
+            return self.load_universal_module(name, so_filename, debug=True)
+        elif self.hpy_abi == 'cpython':
+            return self.load_cpython_module(name, so_filename)
         else:
-            return self.load_cython_module(name, so_filename)
+            assert False
 
-    def load_universal_module(self, name, so_filename):
-        assert self.hpy_abi == 'universal'
+    def load_universal_module(self, name, so_filename, debug):
+        assert self.hpy_abi in ('universal', 'debug', 'nfi')
+        import sys
         import hpy.universal
-        spec = Spec(name, so_filename)
-        return hpy.universal.load_from_spec(spec)
+        assert name not in sys.modules
+        mod = hpy.universal.load(name, so_filename, debug=debug)
+        mod.__file__ = so_filename
+        return mod
 
-    def load_cython_module(self, name, so_filename):
+    def load_cpython_module(self, name, so_filename):
         assert self.hpy_abi == 'cpython'
         # we've got a normal CPython module compiled with the CPython API/ABI,
         # let's load it normally. It is important to do the imports only here,
         # because this file will be imported also by PyPy tests which runs on
         # Python2
         import importlib.util
-        from importlib.machinery import ExtensionFileLoader
+        import sys
+        assert name not in sys.modules
         spec = importlib.util.spec_from_file_location(name, so_filename)
-        module = importlib.util.module_from_spec(spec)
+        try:
+            # module_from_spec adds the module to sys.modules
+            module = importlib.util.module_from_spec(spec)
+        finally:
+            if name in sys.modules:
+                del sys.modules[name]
         spec.loader.exec_module(module)
         return module
+
+
+class PythonSubprocessRunner:
+    def __init__(self, verbose, hpy_abi):
+        self.verbose = verbose
+        self.hpy_abi = hpy_abi
+
+    def run(self, mod, code):
+        """ Starts new subprocess that loads given module as 'mod' using the
+            correct ABI mode and then executes given code snippet. Use
+            "--subprocess-v" to enable logging from this.
+        """
+        import subprocess
+        env = os.environ.copy()
+        pythonpath = [os.path.dirname(mod.so_filename)]
+        if 'PYTHONPATH' in env:
+            pythonpath.append(env['PYTHONPATH'])
+        env["PYTHONPATH"] = os.pathsep.join(pythonpath)
+        if self.hpy_abi in ['universal', 'debug', 'nfi']:
+            # HPy module
+            load_module = "import sys;" + \
+                          "import hpy.universal;" + \
+                          "mod = hpy.universal.load('{name}', '{so_filename}', debug={debug});"
+            escaped_filename = mod.so_filename.replace("\\", "\\\\")  # Needed for Windows paths
+            load_module = load_module.format(name=mod.name, so_filename=escaped_filename,
+                                             debug=self.hpy_abi == 'debug')
+        else:
+            # CPython module
+            assert self.hpy_abi == 'cpython'
+            load_module = "import {} as mod;".format(mod.name)
+        if self.verbose:
+            print("\n---\nExecuting in subprocess: {}".format(load_module + code))
+        result = subprocess.run([sys.executable, "-c", load_module + code], env=env,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if self.verbose:
+            print("stdout/stderr:")
+            try:
+                out = result.stdout.decode('latin-1')
+                err = result.stderr.decode('latin-1')
+                print("----\n{out}--\n{err}-----".format(out=out, err=err))
+            except UnicodeDecodeError:
+                print("Warning: stdout or stderr could not be decoded with 'latin-1' encoding")
+        return result
 
 
 @pytest.mark.usefixtures('initargs')
@@ -257,16 +436,70 @@ class HPyTest:
 
     @pytest.fixture()
     def initargs(self, compiler):
-        # compiler is a fixture defined in conftest
         self.compiler = compiler
 
     def make_module(self, main_src, name='mytest', extra_sources=()):
         ExtensionTemplate = self.ExtensionTemplate
-        return self.compiler.make_module(ExtensionTemplate, main_src, name,
+        return self.compiler.make_module(main_src, ExtensionTemplate, name,
                                          extra_sources)
 
-    def should_check_refcount(self):
-        return False
+    def compile_module(self, main_src, name='mytest', extra_sources=()):
+        ExtensionTemplate = self.ExtensionTemplate
+        return self.compiler.compile_module(main_src, ExtensionTemplate, name,
+                                     extra_sources)
+
+    def supports_refcounts(self):
+        """ Returns True if the underlying Python implementation supports
+            reference counts.
+
+            By default returns True on CPython and False on other
+            implementations.
+        """
+        return sys.implementation.name == "cpython"
+
+    def supports_ordinary_make_module_imports(self):
+        """ Returns True if `.make_module(...)` loads modules using a
+            standard Python import mechanism (e.g. `importlib.import_module`).
+
+            By default returns True because the base implementation of
+            `.make_module(...)` uses an ordinary import. Sub-classes that
+            override `.make_module(...)` may also want to override this
+            method.
+        """
+        return True
+
+    @staticmethod
+    def supports_debug_mode():
+        """ Returns True if the underlying Python implementation supports
+            the debug mode.
+        """
+        from hpy.universal import _debug
+        try:
+            return _debug.get_open_handles() is not None
+        except:
+            return False
+
+
+class HPyDebugCapture:
+    """
+    Context manager that sets HPy debug invalid handle hook and remembers the
+    number of invalid handles reported. Once closed, sets the invalid handle
+    hook back to None.
+    """
+    def __init__(self):
+        self.invalid_handles_count = 0
+
+    def _capture_report(self):
+        self.invalid_handles_count += 1
+
+    def __enter__(self):
+        from hpy.universal import _debug
+        _debug.set_on_invalid_handle(self._capture_report)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        from hpy.universal import _debug
+        _debug.set_on_invalid_handle(None)
 
 
 # the few functions below are copied and adapted from cffi/ffiplatform.py
@@ -285,32 +518,50 @@ def c_compile(tmpdir, ext, hpy_devel, hpy_abi, compiler_verbose=0, debug=None):
                 os.environ[key] = value
     return outputfilename
 
+
 def _build(tmpdir, ext, hpy_devel, hpy_abi, compiler_verbose=0, debug=None):
     # XXX compact but horrible :-(
     from distutils.core import Distribution
-    import distutils.errors, distutils.log
+    import distutils.errors
+    import distutils.log
     #
     dist = Distribution()
     dist.parse_config_files()
-    options = dist.get_option_dict('build_ext')
     if debug is None:
         debug = sys.flags.debug
-    options['debug'] = ('ffiplatform', debug)
-    options['force'] = ('ffiplatform', True)
-    options['build_lib'] = ('ffiplatform', tmpdir)
-    options['build_temp'] = ('ffiplatform', tmpdir)
-    #
+    options_build_ext = dist.get_option_dict('build_ext')
+    options_build_ext['debug'] = ('ffiplatform', debug)
+    options_build_ext['force'] = ('ffiplatform', True)
+    options_build_ext['build_lib'] = ('ffiplatform', tmpdir)
+    options_build_ext['build_temp'] = ('ffiplatform', tmpdir)
+    options_build_py = dist.get_option_dict('build_py')
+    options_build_py['build_lib'] = ('ffiplatform', tmpdir)
+
     # this is the equivalent of passing --hpy-abi from setup.py's command line
     dist.hpy_abi = hpy_abi
-    hpy_devel.fix_distribution(dist, hpy_ext_modules=[ext])
-    #
+    dist.hpy_ext_modules = [ext]
+    hpy_devel.fix_distribution(dist)
+
     old_level = distutils.log.set_threshold(0) or 0
+    old_dir = os.getcwd()
     try:
+        os.chdir(tmpdir)
         distutils.log.set_verbosity(compiler_verbose)
         dist.run_command('build_ext')
         cmd_obj = dist.get_command_obj('build_ext')
-        [soname] = cmd_obj.get_outputs()
+        outputs = cmd_obj.get_outputs()
+        sonames = [x for x in outputs if
+                   not x.endswith(".py") and not x.endswith(".pyc")]
+        assert len(sonames) == 1, 'build_ext is not supposed to return multiple DLLs'
+        soname = sonames[0]
     finally:
+        os.chdir(old_dir)
         distutils.log.set_threshold(old_level)
-    #
+
     return soname
+
+
+# For situations when one wants to have "support.py" on the call stack.
+# For example, for asserting that it is in a stack trace.
+def trampoline(fun, *args, **kwargs):
+    fun(*args, **kwargs)

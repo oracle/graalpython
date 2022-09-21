@@ -1,0 +1,5 @@
+Module[0, 10]
+    AnnAssign[0, 10]simple
+        Annotation: Name[3, 6] Value: "int"
+        LHS: Name[0, 1] Value: "a" Store
+        RHS: LONG[9, 10] Value: 1

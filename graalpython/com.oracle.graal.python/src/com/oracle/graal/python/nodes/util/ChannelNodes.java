@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,8 +65,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -95,7 +97,7 @@ public abstract class ChannelNodes {
         }
     }
 
-    abstract static class ReadFromChannelBaseNode extends PNodeWithContext implements ChannelBaseNode {
+    abstract static class ReadFromChannelBaseNode extends Node implements ChannelBaseNode {
 
         @TruffleBoundary(allowInlining = true)
         protected static byte[] getByteBufferArray(ByteBuffer dst) {
@@ -140,6 +142,7 @@ public abstract class ChannelNodes {
     }
 
     @GenerateNodeFactory
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class ReadFromChannelNode extends ReadFromChannelBaseNode {
         public static final int MAX_READ = Integer.MAX_VALUE / 2;
@@ -217,7 +220,7 @@ public abstract class ChannelNodes {
         int readByte(Object channel,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode,
-                        @Cached("createBinaryProfile()") ConditionProfile readProfile) {
+                        @Cached ConditionProfile readProfile) {
             assert channel instanceof ReadableByteChannel;
             ByteBuffer buf = allocate(1);
             int read = readIntoBuffer(channel, buf, gotException, raiseNode);
@@ -264,7 +267,7 @@ public abstract class ChannelNodes {
         void readByte(Object channel, byte b,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode,
-                        @Cached("createBinaryProfile()") ConditionProfile readProfile) {
+                        @Cached ConditionProfile readProfile) {
             assert channel instanceof WritableByteChannel;
             ByteBuffer buf = allocate(1);
             put(b, buf);
@@ -305,7 +308,7 @@ public abstract class ChannelNodes {
         @TruffleBoundary
         int writeOp(Object channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
+                        @Cached ConditionProfile maxSizeProfile,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode) {
             if (channel instanceof SeekableByteChannel) {

@@ -18,8 +18,11 @@ from test.support import skip_if_buggy_ucrt_strfptime
 
 # Max year is only limited by the size of C int.
 SIZEOF_INT = sysconfig.get_config_var('SIZEOF_INT') or 4
-TIME_MAXYEAR = (1 << 8 * SIZEOF_INT - 1) - 1
-TIME_MINYEAR = -TIME_MAXYEAR - 1 + 1900
+# XXX GRAALVM change - jdk MAX/MIN_YEAR limitation
+#TIME_MAXYEAR = (1 << 8 * SIZEOF_INT - 1) - 1
+#TIME_MINYEAR = -TIME_MAXYEAR - 1 + 1900
+TIME_MAXYEAR = 999999999 #(1 << 8 * SIZEOF_INT - 1) - 1
+TIME_MINYEAR = -999999999 #-TIME_MAXYEAR - 1 + 1900
 
 SEC_TO_US = 10 ** 6
 US_TO_NS = 10 ** 3
@@ -660,7 +663,8 @@ class _Test4dYear:
         self.assertEqual(self.yearstr(-1234), '-1234')
         self.assertEqual(self.yearstr(-123456), '-123456')
         self.assertEqual(self.yearstr(-123456789), str(-123456789))
-        self.assertEqual(self.yearstr(-1234567890), str(-1234567890))
+        # XXX GRAALVM change - jdk MAX/MIN_YEAR limitation
+        # self.assertEqual(self.yearstr(-1234567890), str(-1234567890))
         self.assertEqual(self.yearstr(TIME_MINYEAR), str(TIME_MINYEAR))
         # Modules/timemodule.c checks for underflow
         self.assertRaises(OverflowError, self.yearstr, TIME_MINYEAR - 1)

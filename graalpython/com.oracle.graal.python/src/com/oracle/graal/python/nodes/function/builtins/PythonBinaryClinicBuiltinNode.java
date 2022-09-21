@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,15 +41,16 @@
 package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
+@ClinicBuiltinBaseClass
 public abstract class PythonBinaryClinicBuiltinNode extends PythonBinaryBuiltinNode {
-    private @Children ArgumentCastNode[] castNodes;
+    private @Child ArgumentCastNode castNode0;
+    private @Child ArgumentCastNode castNode1;
 
     /**
      * Returns the provider of argument clinic logic. It should be singleton instance of a class
@@ -57,149 +58,29 @@ public abstract class PythonBinaryClinicBuiltinNode extends PythonBinaryBuiltinN
      */
     protected abstract ArgumentClinicProvider getArgumentClinic();
 
-    private Object cast(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
-        if (!clinic.hasCastNode(argIndex)) {
-            return value;
-        } else {
-            return castWithNode(clinic, frame, argIndex, value);
-        }
-    }
-
-    protected Object castWithNode(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
-        if (castNodes == null) {
+    private Object cast0WithNode(ArgumentClinicProvider clinic, VirtualFrame frame, Object value) {
+        if (castNode0 == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNodes = new ArgumentCastNode[2];
+            castNode0 = insert(clinic.createCastNode(0, this));
         }
-        if (castNodes[argIndex] == null) {
+        return castNode0.execute(frame, value);
+    }
+
+    private Object cast1WithNode(ArgumentClinicProvider clinic, VirtualFrame frame, Object value) {
+        if (castNode1 == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNodes[argIndex] = insert(clinic.createCastNode(argIndex, this));
+            castNode1 = insert(clinic.createCastNode(1, this));
         }
-        return castNodes[argIndex].execute(frame, value);
+        return castNode1.execute(frame, value);
     }
 
-    @Override
-    public final Object call(VirtualFrame frame, Object arg, Object arg2) {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        return execute(frame, cast(clinic, frame, 0, arg), cast(clinic, frame, 1, arg2));
-    }
+    protected abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
 
     @Override
-    public final boolean callBool(VirtualFrame frame, boolean arg, boolean arg2) throws UnexpectedResultException {
+    public final Object execute(VirtualFrame frame, Object arg, Object arg2) {
         ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsBoolean(0) && clinic.acceptsBoolean(1)) {
-            return executeBool(frame, arg, arg2);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final int callInt(VirtualFrame frame, boolean arg, boolean arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsBoolean(0) && clinic.acceptsBoolean(1)) {
-            return executeInt(frame, arg, arg2);
-        } else {
-            return PGuards.expectInteger(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final int callInt(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsInt(0) && clinic.acceptsInt(1)) {
-            return executeInt(frame, arg, arg2);
-        } else {
-            return PGuards.expectInteger(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final long callLong(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsLong(0) && clinic.acceptsLong(1)) {
-            return executeLong(frame, arg, arg2);
-        } else {
-            return PGuards.expectLong(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final double callDouble(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsLong(0) && clinic.acceptsDouble(1)) {
-            return executeDouble(frame, arg, arg2);
-        } else {
-            return PGuards.expectDouble(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final double callDouble(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsDouble(0) && clinic.acceptsLong(1)) {
-            return executeDouble(frame, arg, arg2);
-        } else {
-            return PGuards.expectDouble(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final double callDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsDouble(0) && clinic.acceptsDouble(1)) {
-            return executeDouble(frame, arg, arg2);
-        } else {
-            return PGuards.expectDouble(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsInt(0) && clinic.acceptsInt(1)) {
-            return executeBool(frame, arg, arg2);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsLong(0) && clinic.acceptsLong(1)) {
-            return executeBool(frame, arg, arg2);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsLong(0) && clinic.acceptsDouble(1)) {
-            return executeBool(frame, arg, arg2);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsDouble(0) && clinic.acceptsLong(1)) {
-            return executeBool(frame, arg, arg2);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg, arg2));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsDouble(0) && clinic.acceptsDouble(1)) {
-            return executeBool(frame, arg, arg2);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg, arg2));
-        }
+        Object val = clinic.hasCastNode(0) ? cast0WithNode(clinic, frame, arg) : arg;
+        Object val2 = clinic.hasCastNode(1) ? cast1WithNode(clinic, frame, arg2) : arg2;
+        return executeWithoutClinic(frame, val, val2);
     }
 }

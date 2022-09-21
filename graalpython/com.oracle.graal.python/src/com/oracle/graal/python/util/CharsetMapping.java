@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.util;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,20 +56,31 @@ import java.util.concurrent.ConcurrentMap;
 import com.ibm.icu.charset.CharsetICU;
 import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
 import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
+import com.oracle.graal.python.util.CharsetMappingFactory.NormalizeEncodingNameNodeGen;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
  * Utility class for mapping Python encodings to Java charsets
  */
 public class CharsetMapping {
+    private static final Charset UTF_32 = Charset.forName("UTF_32");
     private static final ConcurrentMap<String, Charset> JAVA_CHARSETS = new ConcurrentHashMap<>();
     // Name maps are populated by static initializer and are immutable afterwards
-    private static final Map<String, String> CHARSET_NAME_MAP = new HashMap<>();
-    private static final Map<String, String> CHARSET_NAME_MAP_REVERSE = new HashMap<>();
+    private static final Map<TruffleString, String> CHARSET_NAME_MAP = new HashMap<>();
+    private static final Map<String, TruffleString> CHARSET_NAME_MAP_REVERSE = new HashMap<>();
+    private static final TruffleString T_UTF_16_UNDERSCORE = tsLiteral("utf_16");
+    private static final TruffleString T_UTF_32_UNDERSCORE = tsLiteral("utf_32");
 
     @TruffleBoundary
-    public static Charset getCharset(String encoding) {
-        String name = CHARSET_NAME_MAP.get(normalize(encoding));
+    public static Charset getCharsetNormalized(TruffleString normalizedEncoding) {
+        String name = CHARSET_NAME_MAP.get(normalizedEncoding);
         if (name != null) {
             return getJavaCharset(name);
         }
@@ -73,13 +88,84 @@ public class CharsetMapping {
     }
 
     @TruffleBoundary
-    public static String getPythonEncodingNameFromJavaName(String javaEncodingName) {
-        return CHARSET_NAME_MAP_REVERSE.get(javaEncodingName.toLowerCase());
+    public static Charset getCharsetForDecodingNormalized(TruffleString normalizedEncoding, byte[] bytes, int len) {
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            /*
+             * JDK's charsets for UTF-16 and UTF-32 default to big endian irrespective of the
+             * platform if there is no BOM. The UTF-16-LE and UTF-32-LE charsets reject big endian
+             * BOM. CPython defaults to platform endian and accepts both BOMs. So, in order to get
+             * the behavior we need, we have to take a peek at the possible BOM and if it has a BOM
+             * use the UTF-16/32 encoding and let it detect, otherwise default to UTF-16/32-LE.
+             */
+            if (T_UTF_16_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING) && hasUTF16BOM(bytes, len)) {
+                return StandardCharsets.UTF_16;
+            } else if (T_UTF_32_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING) && hasUTF32BOM(bytes, len)) {
+                return UTF_32;
+            }
+        }
+        String name = CHARSET_NAME_MAP.get(normalizedEncoding);
+        if (name != null) {
+            return getJavaCharset(name);
+        }
+        return null;
+    }
+
+    private static boolean hasUTF16BOM(byte[] bytes, int len) {
+        if (len < 2) {
+            return false;
+        }
+        short head = PythonUtils.arrayAccessor.getShort(bytes, 0);
+        return head == (short) 0xFFFE || head == (short) 0xFEFF;
+    }
+
+    private static boolean hasUTF32BOM(byte[] bytes, int len) {
+        if (len < 4) {
+            return false;
+        }
+        int head = PythonUtils.arrayAccessor.getInt(bytes, 0);
+        return head == 0xFFFE0000 || head == 0x0000FEFF;
     }
 
     @TruffleBoundary
-    public static String normalize(String encoding) {
-        return encoding.toLowerCase(Locale.ENGLISH).replaceAll("[^\\w.]+", "_");
+    public static TruffleString getPythonEncodingNameFromJavaName(String javaEncodingName) {
+        return CHARSET_NAME_MAP_REVERSE.get(javaEncodingName.toLowerCase());
+    }
+
+    @GenerateUncached
+    public abstract static class NormalizeEncodingNameNode extends Node {
+        public abstract TruffleString execute(TruffleString encoding);
+
+        @Specialization
+        static TruffleString normalize(TruffleString encoding,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder str = TruffleStringBuilder.create(TS_ENCODING, encoding.byteLength(TS_ENCODING));
+            boolean lastCharInvalid = false;
+            TruffleStringIterator it = createCodePointIteratorNode.execute(encoding, TS_ENCODING);
+            while (it.hasNext()) {
+                int c = nextNode.execute(it);
+                if ((c >= 'A' && c <= 'Z')) {
+                    appendCodePointNode.execute(str, c - 'A' + 'a', 1, true);
+                    lastCharInvalid = false;
+                } else if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_') {
+                    appendCodePointNode.execute(str, c, 1, true);
+                    lastCharInvalid = false;
+                } else {
+                    if (!lastCharInvalid) {
+                        appendCodePointNode.execute(str, '_', 1, true);
+                        lastCharInvalid = true;
+                    }
+                }
+            }
+            return toStringNode.execute(str);
+        }
+    }
+
+    @TruffleBoundary
+    public static TruffleString normalizeUncached(TruffleString encoding) {
+        return NormalizeEncodingNameNodeGen.getUncached().execute(encoding);
     }
 
     private static Charset getJavaCharset(String name) {
@@ -103,16 +189,17 @@ public class CharsetMapping {
     }
 
     private static void addMapping(String pythonName, String javaName) {
-        CHARSET_NAME_MAP.put(normalize(pythonName), javaName);
+        TruffleString normalized = normalizeUncached(toTruffleStringUncached(pythonName));
+        CHARSET_NAME_MAP.put(normalized, javaName);
         if (javaName != null) {
-            CHARSET_NAME_MAP_REVERSE.put(javaName.toLowerCase(), pythonName.replace('_', '-'));
+            CHARSET_NAME_MAP_REVERSE.put(javaName.toLowerCase(), toTruffleStringUncached(pythonName.replace('_', '-')));
         }
     }
 
     private static void addAlias(String alias, String pythonName) {
-        String normalized = normalize(pythonName);
+        TruffleString normalized = normalizeUncached(toTruffleStringUncached(pythonName));
         assert CHARSET_NAME_MAP.containsKey(normalized) : normalized;
-        CHARSET_NAME_MAP.put(normalize(alias), CHARSET_NAME_MAP.get(normalized));
+        CHARSET_NAME_MAP.put(normalizeUncached(toTruffleStringUncached(alias)), CHARSET_NAME_MAP.get(normalized));
     }
 
     static {
@@ -122,11 +209,13 @@ public class CharsetMapping {
         JAVA_CHARSETS.put("UTF-8", StandardCharsets.UTF_8);
         JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
         JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
-        JAVA_CHARSETS.put("UTF-16", StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("UTF-16", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UnicodeLittle") : StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("UTF-32", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UTF-32LE-BOM") : Charset.forName("UTF-32BE-BOM"));
 
         // Add our custom charsets
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
         addMapping("unicode-escape", "x-python-unicode-escape");
+        addMapping("unicodeescape", "x-python-unicode-escape");
         JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
         JAVA_CHARSETS.put("x-python-unicode-escape", new PythonUnicodeEscapeCharset());
 

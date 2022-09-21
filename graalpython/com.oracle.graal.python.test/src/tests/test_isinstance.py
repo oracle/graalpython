@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -229,3 +229,46 @@ def test_isinstance_abstract():
     assert isinstance(AbstractChild(), AbstractSuper)
     assert not isinstance(AbstractChild(), Super)
     assert not isinstance(AbstractChild(), Child)
+
+
+def test_isinstance_recursive():
+    called_instancecheck = 0
+    expected_other = Child()
+
+    class UnrelatedMeta(type):
+        def __instancecheck__(self, other):
+            nonlocal called_instancecheck
+            called_instancecheck += 1
+            assert other == expected_other
+            # Force it do read caller frame for some more fun
+            # Note that we should be now in indirect call
+            globals()
+            return super(UnrelatedMeta, self).__instancecheck__(other)
+
+    class Unrelated(metaclass=UnrelatedMeta):
+        pass
+
+    tpl = (Unrelated,)
+    for i in range(1, 20):
+        tpl = (tpl, tuple([Unrelated] * i))
+
+    def call_isinstance(expected, tpl):
+        nonlocal called_instancecheck
+        called_instancecheck = 0
+        assert isinstance(expected, tpl) is False
+        assert called_instancecheck == 191
+
+    # Call the test few times to also force the compilation with some luck...
+    for i in range(1, 1000):
+        call_isinstance(expected_other, tpl)
+
+    tpl = (Unrelated,)
+    for i in range(1, 19):
+        tpl = (tpl, tuple([Unrelated] * i))
+
+    # the very last item that isinstance should inspect should be Super
+    tpl = (tpl, tuple([Unrelated] * 18 + [Super]))
+
+    called_instancecheck = 0
+    assert isinstance(expected_other, tpl) is True
+    assert called_instancecheck == 190

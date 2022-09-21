@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,8 @@ import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
+import org.graalvm.shadowed.org.jline.keymap.KeyMap;
+import org.graalvm.shadowed.org.jline.reader.Binding;
 
 import org.graalvm.shadowed.org.jline.reader.Candidate;
 import org.graalvm.shadowed.org.jline.reader.Completer;
@@ -62,8 +64,10 @@ import org.graalvm.shadowed.org.jline.reader.EndOfFileException;
 import org.graalvm.shadowed.org.jline.reader.History;
 import org.graalvm.shadowed.org.jline.reader.LineReader;
 import org.graalvm.shadowed.org.jline.reader.LineReaderBuilder;
+import org.graalvm.shadowed.org.jline.reader.Macro;
 import org.graalvm.shadowed.org.jline.reader.ParsedLine;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
+import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
 
@@ -100,9 +104,9 @@ public class JLineConsoleHandler extends ConsoleHandler {
             builder.completer(new Completer() {
                 @Override
                 public void complete(LineReader r, ParsedLine pl, List<Candidate> candidates) {
-                    String line = pl.line();
-                    if (line != null) {
-                        List<String> l = completer.apply(line);
+                    String word = pl.word();
+                    if (word != null) {
+                        List<String> l = completer.apply(word);
                         for (String value : l) {
                             candidates.add(new Candidate(value, value, null, null, null, null, false));
                         }
@@ -110,9 +114,44 @@ public class JLineConsoleHandler extends ConsoleHandler {
                 }
             });
         }
+
+        builder.parser(new DefaultParser() {
+            @Override
+            public boolean isDelimiterChar(CharSequence buffer, int pos) {
+                // Never count a last character of a char sequence as delimiter. The REPL completer
+                // implemented by `rlcompleter.py` adds a trailing whitespace to keywords,
+                // e.g. 'raise '. The default DefaultParser implementation always escaped this
+                // whitespace leading to wrong completions like 'raise\ '.
+                if (pos == buffer.length() - 1) {
+                    return false;
+                }
+                return Character.isWhitespace(buffer.charAt(pos));
+            }
+        });
+
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
+        reader.option(LineReader.Option.INSERT_TAB, true);
         reader.setVariable(LineReader.COMMENT_BEGIN, "#");
+
+        // numpad bindings
+        KeyMap<Binding> binding = reader.getKeyMaps().get(LineReader.MAIN);
+        binding.bind(new Macro(KeyMap.translate("0")), KeyMap.translate("^[Op"));
+        binding.bind(new Macro(KeyMap.translate(".")), KeyMap.translate("^[On"));
+        binding.bind(new Macro(KeyMap.translate("^M")), KeyMap.translate("^[OM"));
+        binding.bind(new Macro(KeyMap.translate("1")), KeyMap.translate("^[Oq"));
+        binding.bind(new Macro(KeyMap.translate("2")), KeyMap.translate("^[Or"));
+        binding.bind(new Macro(KeyMap.translate("3")), KeyMap.translate("^[Os"));
+        binding.bind(new Macro(KeyMap.translate("4")), KeyMap.translate("^[Ot"));
+        binding.bind(new Macro(KeyMap.translate("5")), KeyMap.translate("^[Ou"));
+        binding.bind(new Macro(KeyMap.translate("6")), KeyMap.translate("^[Ov"));
+        binding.bind(new Macro(KeyMap.translate("7")), KeyMap.translate("^[Ow"));
+        binding.bind(new Macro(KeyMap.translate("8")), KeyMap.translate("^[Ox"));
+        binding.bind(new Macro(KeyMap.translate("9")), KeyMap.translate("^[Oy"));
+        binding.bind(new Macro(KeyMap.translate("+")), KeyMap.translate("^[Ol"));
+        binding.bind(new Macro(KeyMap.translate("-")), KeyMap.translate("^[OS"));
+        binding.bind(new Macro(KeyMap.translate("*")), KeyMap.translate("^[OR"));
+        binding.bind(new Macro(KeyMap.translate("/")), KeyMap.translate("^[OQ"));
     }
 
     @Override

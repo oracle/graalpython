@@ -4,7 +4,9 @@
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_contains
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_eviltuple
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_extended_getslice
+*graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_fields
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_hash
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_reduce
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_repeat
+*graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_repr
 *graalpython.lib-python.3.test.test_structseq.StructSeqTest.test_tuple

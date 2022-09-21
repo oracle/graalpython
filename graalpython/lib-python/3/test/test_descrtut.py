@@ -461,7 +461,7 @@ called A.foo()
 """
 
 __test__ = {"tut1": test_1,
-            # "tut2": test_2, # GR-24022
+            "tut2": test_2,
             # "tut3": test_3, # GR-26838
             "tut4": test_4,
             "tut5": test_5,

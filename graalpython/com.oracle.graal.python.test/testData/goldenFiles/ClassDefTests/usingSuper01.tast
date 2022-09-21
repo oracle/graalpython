@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
           Identifier: X
           PythonCallBinary SourceSection: [0,59]`class X:↵    def run...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: X SourceSection: None
               Arguments: None
               KwArguments: None
@@ -22,18 +22,17 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: __class__
               ClassBodyRootNode SourceSection: [0,59]`class X:↵    def run...`
                 Name: X
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: __class__
                 FreeVars: None
                 NeedsCellFrame: False
                 FrameDescriptor: 2 slots [__class__, run]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: __class__
                 InnerRootNode SourceSection: [0,59]`class X:↵    def run...`
                   ReturnTargetNode SourceSection: [0,59]`class X:↵    def run...`
                     Body: BlockNode SourceSection: None
@@ -41,24 +40,20 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                         QualName: X
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [13,59]`def run(self):↵     ...`
-                        SetItemNodeGen SourceSection: [13,59]`def run(self):↵     ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [13,59]`def run(self):↵     ...`
+                          Identifier: run
                           FunctionDefinitionNode Name: run SourceSection: None
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: __class__
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: __class__
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [13,59]`def run(self):↵     ...`
                               Name: run
@@ -67,32 +62,30 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, f, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [<return_val>, __class__, f, self]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: __class__
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [13,59]`def run(self):↵     ...`
                                 ReturnTargetNode SourceSection: [13,59]`def run(self):↵     ...`
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                      Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     FunctionBodyNode SourceSection: [34,59]`def f():↵        sup...`
                                       WriteLocalVariableNodeGen SourceSection: [34,59]`def f():↵        sup...`
                                         Identifier: f
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,f,Illegal]
+                                        Frame: [1,f,Illegal]
                                         FunctionDefinitionNode Name: f SourceSection: None
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: __class__, 
+                                          FreeVarSlots: __class__
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, 
+                                            FreeVarsSlots: __class__
                                             CellVarsSlots: None
                                           FunctionRootNode SourceSection: [34,59]`def f():↵        sup...`
                                             Name: f
@@ -100,9 +93,9 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                                             CelVars: None
                                             FreeVars: __class__
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 2 slots [__class__, <return_val>]
+                                            FrameDescriptor: 2 slots [<return_val>, __class__]
                                             ExecutionSlots:
-                                              FreeVarsSlots: __class__, 
+                                              FreeVarsSlots: __class__
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [34,59]`def f():↵        sup...`
                                               ReturnTargetNode SourceSection: [34,59]`def f():↵        sup...`
@@ -114,20 +107,13 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                                                         CallNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [51,56]`super`
                                                           Identifier: super
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                  Frame: [1,<return_val>,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [0,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                                  Frame: [1,<return_val>,Object]
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [3,<return_val>,Object]
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __classcell__
+                        ReadLocalVariableNodeGen SourceSection: None
+                          Frame: [1,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

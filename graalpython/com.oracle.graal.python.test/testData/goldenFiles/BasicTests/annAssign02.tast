@@ -1,0 +1,19 @@
+ModuleRootNode Name: <module 'annAssign02'> SourceSection: [0,4]`a: 1`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,4]`a: 1`
+    ExpressionWithSideEffect SourceSection: [0,4]`a: 1`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        SetItemNodeGen SourceSection: [0,0]Empty
+          ReadNameNodeGen SourceSection: None
+            Identifier: __annotations__
+            IsBuiltinClassProfile SourceSection: None
+              GetClassNodeGen SourceSection: None
+          StringLiteralNode SourceSection: [0,0]Empty
+          IntegerLiteralNode SourceSection: [3,4]`1`
+            Value: 1

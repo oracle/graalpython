@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -52,6 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class NativeCharSequence implements CharSequence {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeCharSequence.class);
@@ -73,7 +76,7 @@ public final class NativeCharSequence implements CharSequence {
      */
     private final boolean asciiOnly;
 
-    private String materialized;
+    private TruffleString materialized;
 
     public NativeCharSequence(Object ptr, int elementSize, boolean asciiOnly) {
         assert elementSize == 1 || elementSize == 2 || elementSize == 4;
@@ -84,7 +87,7 @@ public final class NativeCharSequence implements CharSequence {
 
     @Override
     public int length() {
-        return materialize().length();
+        return TruffleString.CodePointLengthNode.getUncached().execute(materialize(), TS_ENCODING);
     }
 
     int length(InteropLibrary lib, CastToJavaIntExactNode castToJavaIntNode) {
@@ -100,23 +103,23 @@ public final class NativeCharSequence implements CharSequence {
 
     @Override
     public char charAt(int index) {
-        return materialize().charAt(index);
+        return (char) TruffleString.CodePointAtIndexNode.getUncached().execute(materialize(), index, TS_ENCODING);
     }
 
     @Override
     public CharSequence subSequence(int start, int end) {
-        return materialize().subSequence(start, end);
+        return materialize().toJavaStringUncached().subSequence(start, end);
     }
 
     boolean isMaterialized() {
         return materialized != null;
     }
 
-    String getMaterialized() {
+    TruffleString getMaterialized() {
         return materialized;
     }
 
-    private String materialize() {
+    TruffleString materialize() {
         if (!isMaterialized()) {
             LOGGER.warning("uncached materialization of NativeCharSequence");
             materialized = StringMaterializeNode.materializeNativeCharSequence(this, PCallCapiFunction.getUncached(), UnicodeFromWcharNodeGen.getUncached());
@@ -140,7 +143,7 @@ public final class NativeCharSequence implements CharSequence {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (isMaterialized()) {
-            return materialized;
+            return materialized.toJavaStringUncached();
         }
         return Objects.toString(ptr);
     }

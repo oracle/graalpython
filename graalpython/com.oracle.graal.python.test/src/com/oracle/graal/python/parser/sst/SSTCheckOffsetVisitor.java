@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,12 +105,6 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
                     return false;
                 }
             }
-            args = builder.getStarArg();
-            if (args != null) {
-                if (!checkArrayWithOverlap(args, "star arguments")) {
-                    return false;
-                }
-            }
         }
         return true;
     }
@@ -184,7 +178,21 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
     public Boolean visit(AnnAssignmentSSTNode node) {
         if (checkParent(node)) {
             parentStack.push(node);
-            if (!checkArrayWithOverlap(node.lhs, "left hand side items") || !node.rhs.accept(this) || (node.type != null && !node.type.accept(this))) {
+            if (!node.annotation.accept(this) || !node.rhs.accept(this)) {
+                return false;
+            }
+            parentStack.pop();
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean visit(AnnotationSSTNode node) {
+        if (checkParent(node)) {
+            parentStack.push(node);
+            if (!node.lhs.accept(this) || !node.type.accept(this)) {
                 return false;
             }
             parentStack.pop();
@@ -614,6 +622,11 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
 
     @Override
     public Boolean visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        return checkParent(node);
+    }
+
+    @Override
+    public Boolean visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
         return checkParent(node);
     }
 

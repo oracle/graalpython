@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -101,8 +101,7 @@ def test_format_conversion():
     obj = FormattingTestClass()
     assert "{!r}".format(obj) == "FormattingTestClass.repr", "format conversion 'r' failed"
     assert "{!s}".format(obj) == "FormattingTestClass.str", "format conversion 's' failed"
-    # TODO function 'ascii' not available
-    #assert "{!a}".format(obj) == "FormattingTestClass.repr", "format conversion 'a' failed"
+    assert "{!a}".format(obj) == "FormattingTestClass.repr", "format conversion 'a' failed"
     try:
         "{!:s}".format("2")
         assert False, "expected error for missing conversion specifier"
@@ -277,50 +276,50 @@ def test_cpython_format():
     assertEqual('{0[1][0].x}'.format(['abc', [D('def')]]), 'def')
 
     # strings
-    # assertEqual('{0:.3s}'.format('abc'), 'abc')
-    # assertEqual('{0:.3s}'.format('ab'), 'ab')
-    # assertEqual('{0:.3s}'.format('abcdef'), 'abc')
-    # assertEqual('{0:.0s}'.format('abcdef'), '')
-    # assertEqual('{0:3.3s}'.format('abc'), 'abc')
-    # assertEqual('{0:2.3s}'.format('abc'), 'abc')
-    # assertEqual('{0:2.2s}'.format('abc'), 'ab')
-    # assertEqual('{0:3.2s}'.format('abc'), 'ab ')
-    # assertEqual('{0:x<0s}'.format('result'), 'result')
-    # assertEqual('{0:x<5s}'.format('result'), 'result')
-    # assertEqual('{0:x<6s}'.format('result'), 'result')
-    # assertEqual('{0:x<7s}'.format('result'), 'resultx')
-    # assertEqual('{0:x<8s}'.format('result'), 'resultxx')
-    # assertEqual('{0: <7s}'.format('result'), 'result ')
-    # assertEqual('{0:<7s}'.format('result'), 'result ')
-    # assertEqual('{0:>7s}'.format('result'), ' result')
-    # assertEqual('{0:>8s}'.format('result'), '  result')
-    # assertEqual('{0:^8s}'.format('result'), ' result ')
-    # assertEqual('{0:^9s}'.format('result'), ' result  ')
-    # assertEqual('{0:^10s}'.format('result'), '  result  ')
-    # assertEqual('{0:10000}'.format('a'), 'a' + ' ' * 9999)
-    # assertEqual('{0:10000}'.format(''), ' ' * 10000)
-    # assertEqual('{0:10000000}'.format(''), ' ' * 10000000)
+    assertEqual('{0:.3s}'.format('abc'), 'abc')
+    assertEqual('{0:.3s}'.format('ab'), 'ab')
+    assertEqual('{0:.3s}'.format('abcdef'), 'abc')
+    assertEqual('{0:.0s}'.format('abcdef'), '')
+    assertEqual('{0:3.3s}'.format('abc'), 'abc')
+    assertEqual('{0:2.3s}'.format('abc'), 'abc')
+    assertEqual('{0:2.2s}'.format('abc'), 'ab')
+    assertEqual('{0:3.2s}'.format('abc'), 'ab ')
+    assertEqual('{0:x<0s}'.format('result'), 'result')
+    assertEqual('{0:x<5s}'.format('result'), 'result')
+    assertEqual('{0:x<6s}'.format('result'), 'result')
+    assertEqual('{0:x<7s}'.format('result'), 'resultx')
+    assertEqual('{0:x<8s}'.format('result'), 'resultxx')
+    assertEqual('{0: <7s}'.format('result'), 'result ')
+    assertEqual('{0:<7s}'.format('result'), 'result ')
+    assertEqual('{0:>7s}'.format('result'), ' result')
+    assertEqual('{0:>8s}'.format('result'), '  result')
+    assertEqual('{0:^8s}'.format('result'), ' result ')
+    assertEqual('{0:^9s}'.format('result'), ' result  ')
+    assertEqual('{0:^10s}'.format('result'), '  result  ')
+    assertEqual('{0:10000}'.format('a'), 'a' + ' ' * 9999)
+    assertEqual('{0:10000}'.format(''), ' ' * 10000)
+    assertEqual('{0:10000000}'.format(''), ' ' * 10000000)
 
     # issue 12546: use \x00 as a fill character
-    # assertEqual('{0:\x00<6s}'.format('foo'), 'foo\x00\x00\x00')
-    # assertEqual('{0:\x01<6s}'.format('foo'), 'foo\x01\x01\x01')
-    # assertEqual('{0:\x00^6s}'.format('foo'), '\x00foo\x00\x00')
-    # assertEqual('{0:^6s}'.format('foo'), ' foo  ')
+    assertEqual('{0:\x00<6s}'.format('foo'), 'foo\x00\x00\x00')
+    assertEqual('{0:\x01<6s}'.format('foo'), 'foo\x01\x01\x01')
+    assertEqual('{0:\x00^6s}'.format('foo'), '\x00foo\x00\x00')
+    assertEqual('{0:^6s}'.format('foo'), ' foo  ')
 
-    # assertEqual('{0:\x00<6}'.format(3), '3\x00\x00\x00\x00\x00')
-    # assertEqual('{0:\x01<6}'.format(3), '3\x01\x01\x01\x01\x01')
-    # assertEqual('{0:\x00^6}'.format(3), '\x00\x003\x00\x00\x00')
-    # assertEqual('{0:<6}'.format(3), '3     ')
+    assertEqual('{0:\x00<6}'.format(3), '3\x00\x00\x00\x00\x00')
+    assertEqual('{0:\x01<6}'.format(3), '3\x01\x01\x01\x01\x01')
+    assertEqual('{0:\x00^6}'.format(3), '\x00\x003\x00\x00\x00')
+    assertEqual('{0:<6}'.format(3), '3     ')
 
-    # assertEqual('{0:\x00<6}'.format(3.14), '3.14\x00\x00')
-    # assertEqual('{0:\x01<6}'.format(3.14), '3.14\x01\x01')
-    # assertEqual('{0:\x00^6}'.format(3.14), '\x003.14\x00')
-    # assertEqual('{0:^6}'.format(3.14), ' 3.14 ')
+    assertEqual('{0:\x00<6}'.format(3.14), '3.14\x00\x00')
+    assertEqual('{0:\x01<6}'.format(3.14), '3.14\x01\x01')
+    assertEqual('{0:\x00^6}'.format(3.14), '\x003.14\x00')
+    assertEqual('{0:^6}'.format(3.14), ' 3.14 ')
 
-    # assertEqual('{0:\x00<12}'.format(3+2.0j), '(3+2j)\x00\x00\x00\x00\x00\x00')
-    # assertEqual('{0:\x01<12}'.format(3+2.0j), '(3+2j)\x01\x01\x01\x01\x01\x01')
-    # assertEqual('{0:\x00^12}'.format(3+2.0j), '\x00\x00\x00(3+2j)\x00\x00\x00')
-    # assertEqual('{0:^12}'.format(3+2.0j), '   (3+2j)   ')
+    assertEqual('{0:\x00<12}'.format(3+2.0j), '(3+2j)\x00\x00\x00\x00\x00\x00')
+    assertEqual('{0:\x01<12}'.format(3+2.0j), '(3+2j)\x01\x01\x01\x01\x01\x01')
+    assertEqual('{0:\x00^12}'.format(3+2.0j), '\x00\x00\x00(3+2j)\x00\x00\x00')
+    assertEqual('{0:^12}'.format(3+2.0j), '   (3+2j)   ')
 
     # format specifiers for user defined type
     assertEqual('{0:abc}'.format(C()), 'abc')
@@ -328,20 +327,20 @@ def test_cpython_format():
     # !r, !s and !a coercions
     assertEqual('{0!s}'.format('Hello'), 'Hello')
     assertEqual('{0!s:}'.format('Hello'), 'Hello')
-    # assertEqual('{0!s:15}'.format('Hello'), 'Hello          ')
-    # assertEqual('{0!s:15s}'.format('Hello'), 'Hello          ')
+    assertEqual('{0!s:15}'.format('Hello'), 'Hello          ')
+    assertEqual('{0!s:15s}'.format('Hello'), 'Hello          ')
     assertEqual('{0!r}'.format('Hello'), "'Hello'")
     assertEqual('{0!r:}'.format('Hello'), "'Hello'")
     assertEqual('{0!r}'.format(F('Hello')), 'F(Hello)')
-    # assertEqual('{0!r}'.format('\u0378'), "'\\u0378'") # nonprintable
-    # assertEqual('{0!r}'.format('\u0374'), "'\u0374'")  # printable
+    assertEqual('{0!r}'.format('\u0378'), "'\\u0378'") # nonprintable
+    assertEqual('{0!r}'.format('\u0374'), "'\u0374'")  # printable
     assertEqual('{0!r}'.format(F('\u0374')), 'F(\u0374)')
-    # assertEqual('{0!a}'.format('Hello'), "'Hello'")
-    # assertEqual('{0!a}'.format('\u0378'), "'\\u0378'") # nonprintable
-    # assertEqual('{0!a}'.format('\u0374'), "'\\u0374'") # printable
-    # assertEqual('{0!a:}'.format('Hello'), "'Hello'")
-    # assertEqual('{0!a}'.format(F('Hello')), 'F(Hello)')
-    # assertEqual('{0!a}'.format(F('\u0374')), 'F(\\u0374)')
+    assertEqual('{0!a}'.format('Hello'), "'Hello'")
+    assertEqual('{0!a}'.format('\u0378'), "'\\u0378'") # nonprintable
+    assertEqual('{0!a}'.format('\u0374'), "'\\u0374'") # printable
+    assertEqual('{0!a:}'.format('Hello'), "'Hello'")
+    assertEqual('{0!a}'.format(F('Hello')), 'F(Hello)')
+    assertEqual('{0!a}'.format(F('\u0374')), 'F(\\u0374)')
 
     # test fallback to object.__format__
     assertEqual('{0}'.format({}), '{}')
@@ -352,8 +351,8 @@ def test_cpython_format():
     assertEqual('{0!s}'.format(G('data')), 'string is data')
 
     # assertRaises(TypeError, '{0:^10}'.format, E('data'))
-    # assertRaises(TypeError, '{0:^10s}'.format, E('data'))
-    # assertRaises(TypeError, '{0:>15s}'.format, G('data'))
+    assertRaises(TypeError, '{0:^10s}'.format, E('data'))
+    assertRaises(TypeError, '{0:>15s}'.format, G('data'))
 
     # test deriving from a builtin type and overriding __format__
     assertEqual("{0}".format(J(10)), "20")
@@ -363,11 +362,11 @@ def test_cpython_format():
     assertEqual('{0:}'.format('a'), 'a')
 
     # computed format specifiers
-    # assertEqual("{0:.{1}}".format('hello world', 5), 'hello')
-    # assertEqual("{0:.{1}s}".format('hello world', 5), 'hello')
-    # assertEqual("{0:.{precision}s}".format('hello world', precision=5), 'hello')
-    # assertEqual("{0:{width}.{precision}s}".format('hello world', width=10, precision=5), 'hello     ')
-    # assertEqual("{0:{width}.{precision}s}".format('hello world', width='10', precision='5'), 'hello     ')
+    assertEqual("{0:.{1}}".format('hello world', 5), 'hello')
+    assertEqual("{0:.{1}s}".format('hello world', 5), 'hello')
+    assertEqual("{0:.{precision}s}".format('hello world', precision=5), 'hello')
+    assertEqual("{0:{width}.{precision}s}".format('hello world', width=10, precision=5), 'hello     ')
+    assertEqual("{0:{width}.{precision}s}".format('hello world', width='10', precision='5'), 'hello     ')
 
     # test various errors
     assertRaises(ValueError, '{'.format)
@@ -403,8 +402,8 @@ def test_cpython_format():
     assertRaises(IndexError, "{:s}".format)
     assertRaises(IndexError, "{}".format)
     big = "23098475029384702983476098230754973209482573"
-    # assertRaises(ValueError, ("{" + big + "}").format)
-    # assertRaises(ValueError, ("{[" + big + "]}").format, [0])
+    assertRaises(ValueError, ("{" + big + "}").format)
+    assertRaises(ValueError, ("{[" + big + "]}").format, [0])
 
     # issue 6089
     assertRaises(ValueError, "{0[0]x}".format, [None])
@@ -430,10 +429,10 @@ def test_cpython_format():
     # Non-ASCII
     assertEqual("{0:s}{1:s}".format("ABC", "\u0410\u0411\u0412"),
                      'ABC\u0410\u0411\u0412')
-    # assertEqual("{0:.3s}".format("ABC\u0410\u0411\u0412"),
-    #                  'ABC')
-    # assertEqual("{0:.0s}".format("ABC\u0410\u0411\u0412"),
-    #                  '')
+    assertEqual("{0:.3s}".format("ABC\u0410\u0411\u0412"),
+                     'ABC')
+    assertEqual("{0:.0s}".format("ABC\u0410\u0411\u0412"),
+                     '')
 
     assertEqual("{[{}]}".format({"{}": 5}), "5")
     assertEqual("{[{}]}".format({"{}" : "a"}), "a")
@@ -524,7 +523,7 @@ class UnicodeTest(unittest.TestCase):
                 obj = subtype(obj)
                 realresult = getattr(obj, methodname)(*args)
                 self.assertTrue(obj is not realresult)
-                #self.assertIsNot(obj, realresult)
+                self.assertIsNot(obj, realresult)
 
     # check that obj.method(*args) raises exc
     def checkraises(self, exc, obj, methodname, *args):
@@ -552,11 +551,11 @@ class UnicodeTest(unittest.TestCase):
         self.assertFalse('\U00010401'.islower())
         self.assertFalse('\U00010427'.islower())
         # # non-BMP, lowercase
-        # self.assertTrue('\U00010429'.islower())
-        # self.assertTrue('\U0001044E'.islower())
+        self.assertTrue('\U00010429'.islower())
+        self.assertTrue('\U0001044E'.islower())
         # # non-BMP, non-cased
-        # self.assertFalse('\U0001F40D'.islower())
-        # self.assertFalse('\U0001F46F'.islower())
+        self.assertFalse('\U0001F40D'.islower())
+        self.assertFalse('\U0001F46F'.islower())
 
     def test_isupper(self):
         self.checkequal(False, '', 'isupper')
@@ -574,14 +573,14 @@ class UnicodeTest(unittest.TestCase):
         self.assertTrue('\u2167'.isupper())
         self.assertFalse('\u2177'.isupper())
         # # non-BMP, uppercase
-        # self.assertTrue('\U00010401'.isupper())
-        # self.assertTrue('\U00010427'.isupper())
+        self.assertTrue('\U00010401'.isupper())
+        self.assertTrue('\U00010427'.isupper())
         # # non-BMP, lowercase
-        # self.assertFalse('\U00010429'.isupper())
-        # self.assertFalse('\U0001044E'.isupper())
+        self.assertFalse('\U00010429'.isupper())
+        self.assertFalse('\U0001044E'.isupper())
         # # non-BMP, non-cased
-        # self.assertFalse('\U0001F40D'.isupper())
-        # self.assertFalse('\U0001F46F'.isupper())
+        self.assertFalse('\U0001F40D'.isupper())
+        self.assertFalse('\U0001F46F'.isupper())
 
     def test_istitle(self):
         self.checkequal(False, '', 'istitle')
@@ -600,11 +599,11 @@ class UnicodeTest(unittest.TestCase):
         self.checkequalnofix(True, 'Greek \u1FFcitlecases ...', 'istitle')
 
         # non-BMP, uppercase + lowercase
-        # self.assertTrue('\U00010401\U00010429'.istitle())
-        # self.assertTrue('\U00010427\U0001044E'.istitle())
+        self.assertTrue('\U00010401\U00010429'.istitle())
+        self.assertTrue('\U00010427\U0001044E'.istitle())
         # apparently there are no titlecased (Lt) non-BMP chars in Unicode 6
-        # for ch in ['\U00010429', '\U0001044E', '\U0001F40D', '\U0001F46F']:
-        #     self.assertFalse(ch.istitle(), '{!a} is not title'.format(ch))
+        for ch in ['\U00010429', '\U0001044E', '\U0001F40D', '\U0001F46F']:
+            self.assertFalse(ch.istitle(), '{!a} is not title'.format(ch))
 
     def test_isspace(self):
         self.checkequal(False, '', 'isspace')
@@ -620,9 +619,9 @@ class UnicodeTest(unittest.TestCase):
         self.checkequalnofix(True, '\u200a', 'isspace')
         self.checkequalnofix(False, '\u2014', 'isspace')
         # apparently there are no non-BMP spaces chars in Unicode 6
-        # for ch in ['\U00010401', '\U00010427', '\U00010429', '\U0001044E',
-        #            '\U0001F40D', '\U0001F46F']:
-        #     self.assertFalse(ch.isspace(), '{!a} is not space.'.format(ch))
+        for ch in ['\U00010401', '\U00010427', '\U00010429', '\U0001044E',
+                   '\U0001F40D', '\U0001F46F']:
+            self.assertFalse(ch.isspace(), '{!a} is not space.'.format(ch))
 
     def test_isalnum(self):
         self.checkequal(False, '', 'isalnum')
@@ -634,9 +633,9 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal(False, 'aBc000 ', 'isalnum')
         self.checkequal(False, 'abc\n', 'isalnum')
         self.checkraises(TypeError, 'abc', 'isalnum', 42)
-        # for ch in ['\U00010401', '\U00010427', '\U00010429', '\U0001044E',
-        #            '\U0001D7F6', '\U00011066', '\U000104A0', '\U0001F107']:
-        #     self.assertTrue(ch.isalnum(), '{!a} is alnum.'.format(ch))
+        for ch in ['\U00010401', '\U00010427', '\U00010429', '\U0001044E',
+                   '\U0001D7F6', '\U00011066', '\U000104A0', '\U0001F107']:
+            self.assertTrue(ch.isalnum(), '{!a} is alnum.'.format(ch))
 
     def test_isalpha(self):
         self.checkequal(False, '', 'isalpha')
@@ -649,10 +648,10 @@ class UnicodeTest(unittest.TestCase):
         self.checkraises(TypeError, 'abc', 'isalpha', 42)
         self.checkequalnofix(True, '\u1FFc', 'isalpha')
         # # non-BMP, cased
-        # self.assertTrue('\U00010401'.isalpha())
-        # self.assertTrue('\U00010427'.isalpha())
-        # self.assertTrue('\U00010429'.isalpha())
-        # self.assertTrue('\U0001044E'.isalpha())
+        self.assertTrue('\U00010401'.isalpha())
+        self.assertTrue('\U00010427'.isalpha())
+        self.assertTrue('\U00010429'.isalpha())
+        self.assertTrue('\U0001044E'.isalpha())
         # non-BMP, non-cased
         self.assertFalse('\U0001F40D'.isalpha())
         self.assertFalse('\U0001F46F'.isalpha())
@@ -669,11 +668,11 @@ class UnicodeTest(unittest.TestCase):
 
         self.checkraises(TypeError, 'abc', 'isdecimal', 42)
 
-        # for ch in ['\U00010401', '\U00010427', '\U00010429', '\U0001044E',
-        #            '\U0001F40D', '\U0001F46F', '\U00011065', '\U0001F107']:
-        #     self.assertFalse(ch.isdecimal(), '{!a} is not decimal.'.format(ch))
-        # for ch in ['\U0001D7F6', '\U00011066', '\U000104A0']:
-        #     self.assertTrue(ch.isdecimal(), '{!a} is decimal.'.format(ch))
+        for ch in ['\U00010401', '\U00010427', '\U00010429', '\U0001044E',
+                   '\U0001F40D', '\U0001F46F', '\U00011065', '\U0001F107']:
+            self.assertFalse(ch.isdecimal(), '{!a} is not decimal.'.format(ch))
+        for ch in ['\U0001D7F6', '\U00011066', '\U000104A0']:
+            self.assertTrue(ch.isdecimal(), '{!a} is decimal.'.format(ch))
 
     def test_isdigit(self):
         self.checkequal(False, '', 'isdigit')
@@ -719,7 +718,8 @@ class UnicodeTest(unittest.TestCase):
         self.assertTrue("bc".isidentifier())
         self.assertTrue("b_".isidentifier())
         self.assertTrue("µ".isidentifier())
-        # self.assertTrue("𝔘𝔫𝔦𝔠𝔬𝔡𝔢".isidentifier())
+        self.assertTrue("𝔘𝔫𝔦𝔠𝔬𝔡𝔢".isidentifier())
+        self.assertTrue("\u1885".isidentifier())
 
         self.assertFalse(" ".isidentifier())
         self.assertFalse("[".isidentifier())

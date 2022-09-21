@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,17 +43,16 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -71,24 +70,24 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
         return x;
     }
 
-    @Specialization(limit = "2")
+    @Specialization
     static boolean doPInt(PInt x,
-                    @Cached("createBinaryProfile()") ConditionProfile isBoolean,
+                    @Cached ConditionProfile isBoolean,
                     @Cached IsSubtypeNode isSubtype,
-                    @CachedLibrary("x") PythonObjectLibrary lib) {
-        if (isBoolean.profile(isSubtype.execute(lib.getLazyPythonClass(x), PythonBuiltinClassType.Boolean))) {
+                    @Cached GetClassNode getClassNode) {
+        if (isBoolean.profile(isSubtype.execute(getClassNode.execute(x), PythonBuiltinClassType.Boolean))) {
             return !x.isZero();
         } else {
             throw CannotCastException.INSTANCE;
         }
     }
 
-    @Specialization(limit = "2")
+    @Specialization
     static boolean doNativeObject(PythonNativeObject x,
-                    @CachedLibrary("x") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.Boolean)) {
-            CompilerDirectives.transferToInterpreter();
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.Boolean)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException("casting a native long object to a Java boolean is not implemented yet");
         }
         // the object's type is not a subclass of 'int'

@@ -1,0 +1,14 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      A: [DefLocal, Local]
+    Scope A Class
+        Symbols:
+            classmethod: [Use, GlobalImplicit]
+            method: [DefLocal, Local]
+            str: [Use, GlobalImplicit]
+      Scope method Function
+            Varnames: self, string
+            Symbols:
+                  self: [DefParam, Local]
+                  string: [DefParam, Local]

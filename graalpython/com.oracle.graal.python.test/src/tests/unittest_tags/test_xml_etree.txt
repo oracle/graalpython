@@ -1,0 +1,3 @@
+*graalpython.lib-python.3.test.test_xml_etree.ElementTreeTest.test_xpath_tokenizer
+*graalpython.lib-python.3.test.test_xml_etree.ModuleTest.test_sanity
+*graalpython.lib-python.3.test.test_xml_etree.NoAcceleratorTest.test_correct_import_pyET

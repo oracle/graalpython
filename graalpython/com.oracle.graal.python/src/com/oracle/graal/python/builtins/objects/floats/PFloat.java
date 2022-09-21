@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -23,14 +23,13 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.floats;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -40,9 +39,11 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public class PFloat extends PythonBuiltinObject {
 
     protected final double value;
@@ -86,7 +87,7 @@ public class PFloat extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public static String doubleToString(double item) {
+    public static TruffleString doubleToString(double item) {
         String d = Double.toString(item);
         int exp = d.indexOf("E");
         if (exp != -1) {
@@ -108,7 +109,7 @@ public class PFloat extends PythonBuiltinObject {
             }
             d = d.toLowerCase();
         }
-        return d;
+        return toTruffleStringUncached(d);
     }
 
     @ExportMessage
@@ -175,21 +176,5 @@ public class PFloat extends PythonBuiltinObject {
     @ExportMessage
     long asLong(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asLong(value);
-    }
-
-    @ExportMessage
-    boolean isHashable() {
-        return true;
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBeJavaDouble() {
-        return true;
-    }
-
-    @ExportMessage
-    public double asJavaDoubleWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return value;
     }
 }

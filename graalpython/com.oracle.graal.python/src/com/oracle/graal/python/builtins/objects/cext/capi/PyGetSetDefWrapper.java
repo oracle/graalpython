@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -71,11 +71,11 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Wraps a PythonObject to provide a native view with a shape like {@code PyGetSetDef}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PyGetSetDefWrapper extends PythonNativeWrapper {
-    public static final String NAME = "name";
-    public static final String DOC = "doc";
+    public static final String J_NAME = "name";
+    public static final String J_DOC = "doc";
 
     public PyGetSetDefWrapper(PythonObject delegate) {
         super(delegate);
@@ -89,8 +89,8 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected boolean isMemberReadable(String member) {
         switch (member) {
-            case NAME:
-            case DOC:
+            case J_NAME:
+            case J_DOC:
                 return true;
             default:
                 return false;
@@ -105,8 +105,14 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(lib.getDelegate(this), member);
+                    @Exclusive @Cached ReadFieldNode readFieldNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readFieldNode.execute(lib.getDelegate(this), member);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ImportStatic({SpecialMethodNames.class, PyGetSetDefWrapper.class})
@@ -118,31 +124,29 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"eq(NAME, key)"})
+        @Specialization(guards = {"eq(J_NAME, key)"})
         Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
-            Object name = getAttrNode.execute(object, __NAME__);
+                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
+            Object name = getAttrNode.execute(object, T___NAME__);
             if (PGuards.isPNone(name)) {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(this).getNativeNull());
             } else {
                 return asCharPointerNode.execute(name);
             }
         }
 
-        @Specialization(guards = {"eq(DOC, key)"})
+        @Specialization(guards = {"eq(J_DOC, key)"})
         Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
-            Object doc = getAttrNode.execute(object, __DOC__);
+                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode) {
+            Object doc = getAttrNode.execute(object, T___DOC__);
             if (PGuards.isPNone(doc)) {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return toSulongNode.execute(PythonContext.get(this).getNativeNull());
             } else {
                 return asCharPointerNode.execute(doc);
             }
@@ -151,7 +155,7 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberModifiable(String member) {
-        return DOC.equals(member);
+        return J_DOC.equals(member);
     }
 
     @ExportMessage
@@ -163,18 +167,25 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
-                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException {
-        if (!DOC.equals(member)) {
-            throw UnsupportedMessageException.create();
-        }
-        Object delegate = lib.getDelegate(this);
-        if (delegate instanceof PythonObject) {
-            // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
-            // circumvents any checks if the attribute may be written according to the common Python
-            // rules. So, directly write to the Python object's storage.
-            writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!J_DOC.equals(member)) {
+                throw UnsupportedMessageException.create();
+            }
+            Object delegate = lib.getDelegate(this);
+            if (delegate instanceof PythonObject) {
+                // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
+                // circumvents any checks if the attribute may be written according to the common
+                // Python
+                // rules. So, directly write to the Python object's storage.
+                writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), T___DOC__, fromCharPointerNode.execute(value));
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

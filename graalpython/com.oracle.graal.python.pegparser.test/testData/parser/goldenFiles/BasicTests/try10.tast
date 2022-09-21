@@ -1,0 +1,37 @@
+Module[0, 214]
+    FunctionDef[0, 214]
+        Name:divide
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[11, 12] x
+                ArgTy[14, 15] y
+        ---- Function body of divide ----
+        Try[22, 25]
+            Body:
+                Assign[35, 49]
+                    LHS: Name[35, 41] Value: "result" Store
+                    RHS: 
+                        BinOp[44, 49]
+                            Op: Div
+                            LHS: Name[44, 45] Value: "x"
+                            RHS: Name[48, 49] Value: "y"
+            Except:
+                ExceptHandler[54, 60]
+                    Type: Name[61, 78] Value: "ZeroDivisionError"
+                    Body:
+                        Call[88, 114]
+                            Target: Name[88, 93] Value: "print"
+                            Args:
+                                RAW[94, 113] Value: "division by zero!"
+            Finally:
+                Call[181, 214]
+                    Target: Name[181, 186] Value: "print"
+                    Args:
+                        RAW[187, 213] Value: "executing finally clause"
+            Else:
+                Call[133, 159]
+                    Target: Name[133, 138] Value: "print"
+                    Args:
+                        RAW[139, 150] Value: "result is"
+                        Name[152, 158] Value: "result"
+        ---- End of divide function ----

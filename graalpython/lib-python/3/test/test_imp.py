@@ -202,6 +202,7 @@ class ImportTests(unittest.TestCase):
         self.assertRaises(SyntaxError,
                           imp.find_module, "badsyntax_pep3120", [path])
 
+    @support.impl_detail("frozen modules backported to 3.8.5 makes this test fail", graalvm=False)
     def test_load_from_source(self):
         # Verify that the imp module can correctly load and find .py files
         # XXX (ncoghlan): It would be nice to use support.CleanImport

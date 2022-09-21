@@ -7,6 +7,10 @@ import unittest
 
 class EOFTestCase(unittest.TestCase):
     def test_EOFC(self):
+        # TODO GR-39439: the error messages changed between 3.8 and 3.10
+        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
+            self.skipTest("due to changed error messages between 3.8 and 3.10")
+
         expect = "EOL while scanning string literal (<string>, line 1)"
         try:
             eval("""'this is a test\
@@ -17,6 +21,10 @@ class EOFTestCase(unittest.TestCase):
             raise support.TestFailed
 
     def test_EOFS(self):
+        # TODO GR-39439: the error messages changed between 3.8 and 3.10
+        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
+            self.skipTest("due to changed error messages between 3.8 and 3.10")
+
         expect = ("EOF while scanning triple-quoted string literal "
                   "(<string>, line 1)")
         try:

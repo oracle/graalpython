@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_DISPLAYHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -55,15 +55,12 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class PrintExpressionNode extends ExpressionNode {
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child IsBuiltinClassProfile exceptionTypeProfile;
     @Child PRaiseNode raiseNode;
-    @Child GetAttributeNode getAttribute = GetAttributeNode.create(DISPLAYHOOK);
+    @Child GetAttributeNode getAttribute = GetAttributeNode.create(T_DISPLAYHOOK);
     @Child CallNode callNode = CallNode.create();
     @Child ExpressionNode valueNode;
 
@@ -74,11 +71,8 @@ public class PrintExpressionNode extends ExpressionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         Object value = valueNode.execute(frame);
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
+        PythonContext context = PythonContext.get(this);
+        PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
         Object displayhook;
         try {
             displayhook = getAttribute.executeObject(frame, sysModule);

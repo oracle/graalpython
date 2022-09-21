@@ -1,0 +1,16 @@
+Module[0, 47]
+    FunctionDef[0, 47]
+        Name:foo
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[8, 12] par1
+                ArgTy[14, 18] par2
+            Defaults:
+                LONG[21, 23] Value: 22
+        ---- Function body of foo ----
+        Return[29, 47] 
+            BinOp[36, 47]
+                Op: Mult
+                LHS: Name[36, 40] Value: "par1"
+                RHS: Name[43, 47] Value: "par2"
+        ---- End of foo function ----

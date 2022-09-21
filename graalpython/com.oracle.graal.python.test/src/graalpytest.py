@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,27 @@ import _thread
 import collections
 import tempfile
 
+
+# A list of tests that cannot run in parallel with other tests
+SERIAL_TESTS = [
+    # test_compileall tries to recompile the whole PYTHONPATH, which makes it interfere with any test that
+    # creates temporary py files
+    'test_compileall',
+    # test_import tests various behaviors related to __pycache__ directory,
+    # it can interfere with other tests that generate code
+    'test_import',
+    'test_subprocess',
+    'test_posix',
+    'test_io',
+    'test_fileio',
+    'test_imaplib',
+    "test_ftplib",
+    'test_multiprocessing_spawn',
+    # trying to avoid transient issues there, not sure about the reason
+    'test_unittest',
+]
+
+
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
     raise ImportError("posix or nt module is required in builtin modules")
@@ -55,6 +76,9 @@ if os is None:
 FAIL = '\033[91m'
 ENDC = '\033[0m'
 BOLD = '\033[1m'
+
+class SkipTest(BaseException):
+    pass
 
 _fixture_scopes = {"session": {}, "module": {}, "function": {}}
 _fixture_marks = []
@@ -213,11 +237,15 @@ class Mark:
         return decorator
 
     @staticmethod
-    def xfail(obj):
-        def foo(self):
-            pass
-        foo.__name__ = obj.__name__
-        return foo
+    def xfail(cond, *args, **kwargs):
+        def xfail_decorator(obj):
+            if cond:
+                def foo(self):
+                    pass
+                foo.__name__ = obj.__name__
+                return foo
+            return obj
+        return xfail_decorator
 
 def _pytest_fixture_maker(*args, **kwargs):
     def _fixture_decorator(fun):
@@ -230,10 +258,14 @@ def _pytest_fixture_maker(*args, **kwargs):
         return _fixture_decorator(args[0])
     return _fixture_decorator
 
+def _pytest_skip():
+    raise SkipTest
+
 _pytest_module = type(os)("pytest")
 _pytest_module.mark = Mark()
 _pytest_module.fixture = _pytest_fixture_maker
 _pytest_module.raises = lambda x: TestCase.assertRaisesRegex(x, None)
+_pytest_module.skip = _pytest_skip
 sys.modules["pytest"] = _pytest_module
 
 verbose = False
@@ -303,10 +335,6 @@ def dump_truffle_ast(func):
         pass
 
 
-class SkipTest(BaseException):
-    pass
-
-
 class TestCase(object):
 
     def __init__(self):
@@ -329,7 +357,7 @@ class TestCase(object):
     def run_safely(self, func, print_immediately=False):
         if verbose:
             with print_lock:
-                print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
+                print(u"\n\t\u21B3 ", func.__qualname__, " ", end="", flush=True)
 
         if func.__code__ is Mark.xfail(func).__code__:
             return _skipped_marker
@@ -353,7 +381,7 @@ class TestCase(object):
                 func()                
         except BaseException as e:
             if isinstance(e, SkipTest):
-                print("Skipped: %s" % e)
+                return _skipped_marker
             else:
                 if print_immediately:
                     print("Exception during setup occurred: %s\n" % e)
@@ -395,7 +423,12 @@ class TestCase(object):
                         self.skipped()
                     else:
                         self.success(end) if r else self.failure(end)
+            force_serial_execution = any(name in func.__qualname__ for name in SERIAL_TESTS)
+            if force_serial_execution:
+                ThreadPool.shutdown()
             ThreadPool.start(do_run)
+            if force_serial_execution:
+                ThreadPool.shutdown()
 
     def success(self, time):
         self.passed += 1
@@ -486,6 +519,9 @@ class TestCase(object):
     def fail(self, msg):
         assert False, msg
 
+    def skip(self):
+        raise SkipTest
+
     def assertRaises(self, exc_type, function=None, *args, **kwargs):
         return self.assertRaisesRegex(exc_type, None, function, *args, **kwargs)
 
@@ -512,14 +548,24 @@ class TestCase(object):
             self.type = exc_type
             self.value = exc
             self.tb = traceback
-            import re
             if not exc_type:
                 assert False, "expected '%r' to be raised" % self.exc_type
-            elif self.exc_type in exc_type.mro():
-                self.exception = exc
+            else:
+                if isinstance(self.exc_type, tuple):
+                    for _exc_type in self.exc_type:
+                        if self._match_exc(_exc_type, exc_type, exc):
+                            return True
+                elif self._match_exc(self.exc_type, exc_type, exc):
+                    return True
+            
+        def _match_exc(self, expected_exc_type, actual_exc_type, actual_exc):
+            import re
+            if expected_exc_type in actual_exc_type.mro():
+                self.exception = actual_exc
                 if self.exc_regex:
-                    assert re.search(self.exc_regex, str(exc)), "%s does not match %s" % (self.exc_regex, exc)
+                    assert re.search(self.exc_regex, str(actual_exc)), "%s does not match %s" % (self.exc_regex, actual_exc)
                 return True
+
 
     def assertIn(self, expected, in_str, msg=""):
         if not msg:
@@ -540,10 +586,13 @@ class TestCase(object):
                 return instance
         for k, v in items:
             if k.startswith("test"):
+                testfn = getattr(instance, k, v)
                 if patterns:
-                    if not any(p in k for p in patterns):
+                    import fnmatch
+                    name = getattr(testfn, '__qualname__', k)
+                    if not any(fnmatch.fnmatch(name, p) for p in patterns):
                         continue
-                instance.run_test(getattr(instance, k, v))
+                instance.run_test(testfn)
         if hasattr(instance, "tearDownClass"):
             instance.run_safely(instance.tearDownClass)
         return instance
@@ -636,6 +685,7 @@ class TestRunner(object):
         # eval session scope
         eval_scope("session")
 
+        testcases = []
         for module in self.test_modules():
             if module is None:
                 continue
@@ -653,16 +703,19 @@ class TestRunner(object):
             module_dict = dict(module.__dict__)
             for k, v in module_dict.items():
                 if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
-                    testcase = TestCase.runClass(v)
+                    testcases.append(TestCase.runClass(v))
                 else:
-                    testcase = TestCase.run(items=[(k, v)])
-                self.exceptions += testcase.exceptions
-                self.passed += testcase.passed
-                self.failed += testcase.failed
-                self.skipped_n += testcase.skipped_n
+                    testcases.append(TestCase.run(items=[(k, v)]))
             if verbose:
-                print()
+                with print_lock:
+                    print()
         ThreadPool.shutdown()
+        for testcase in testcases:
+            self.exceptions += testcase.exceptions
+            self.passed += testcase.passed
+            self.failed += testcase.failed
+            self.skipped_n += testcase.skipped_n
+
         print("\n\nRan %d tests (%d passes, %d failures, %d skipped)" % (self.passed + self.failed, self.passed, self.failed, self.skipped_n))
         for e in self.exceptions:
             msg, exc = e
@@ -711,13 +764,16 @@ if __name__ == "__main__":
         if argv[idx] == "-k":
             argv.pop(idx)
             try:
-                patterns.append(argv.pop(idx))
+                pattern = argv.pop(idx)
+                if '*' not in pattern:
+                    pattern = '*' + pattern + '*'
+                patterns.append(pattern)
             except IndexError:
                 print("-k needs an argument")
         else:
             idx += 1
 
-    if argv[1] == "-v":
+    if len(argv) > 1 and argv[1] == "-v":
         verbose = True
         paths = argv[2:]
     else:

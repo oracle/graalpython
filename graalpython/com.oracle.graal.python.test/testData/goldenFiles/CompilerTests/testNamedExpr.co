@@ -1,0 +1,12 @@
+Disassembly of <module>:
+  1:8   -   1:9         0 LOAD_NAME                         0    (g)
+  1:8   -   1:11        2 CALL_FUNCTION                     0
+  1:3   -   1:11        4 DUP_TOP
+  1:3   -   1:4         5 STORE_NAME                        1    (x)
+  1:0   -   2:10        7 POP_AND_JUMP_IF_FALSE             11   (to 18)
+  2:2   -   2:7        11 LOAD_NAME                         2    (print)
+  2:8   -   2:9        13 LOAD_NAME                         1    (x)
+  2:2   -   2:10       15 CALL_FUNCTION                     1
+  2:2   -   2:10       17 POP_TOP
+  2:2   -   2:10  >>   18 LOAD_NONE
+  2:2   -   2:10       19 RETURN_VALUE

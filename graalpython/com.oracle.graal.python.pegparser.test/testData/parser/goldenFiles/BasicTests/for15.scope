@@ -1,0 +1,9 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      formatyear: [DefLocal, Local]
+    Scope formatyear Function
+        Symbols:
+            i: [DefLocal, Local]
+            row: [DefLocal, Local]
+            something: [Use, GlobalImplicit]

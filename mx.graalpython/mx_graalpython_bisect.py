@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,8 +43,13 @@ import re
 import shlex
 import sys
 import types
+import json
 
 import mx
+
+
+def print_line(l):
+    print('=' * l)
 
 
 def get_suite(name):
@@ -172,7 +177,7 @@ class BisectResult:
         return ''
 
 
-def _bisect_benchmark(argv, initial_branch, email_to):
+def _bisect_benchmark(argv, bisect_id, email_to):
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
         import configparser
         cp = configparser.ConfigParser()
@@ -185,6 +190,8 @@ def _bisect_benchmark(argv, initial_branch, email_to):
         args.benchmark_command = sec['benchmark_command']
         args.benchmark_criterion = sec.get('benchmark_criterion', 'BEST')
         args.enterprise = sec.getboolean('enterprise', False)
+        args.no_clean = sec.getboolean('no_clean', False)
+        args.rerun_with_commands = sec.get('rerun_with_commands')
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument('bad', help="Bad commit for bisection")
@@ -192,41 +199,74 @@ def _bisect_benchmark(argv, initial_branch, email_to):
         parser.add_argument('build_command', help="Command to run in order to build the configuration")
         parser.add_argument('benchmark_command',
                             help="Command to run in order to run the benchmark. Output needs to be in mx's format")
+        parser.add_argument('--rerun-with-commands',
+                            help="Re-run the bad and good commits with this benchmark command(s) "
+                                 "(multiple commands separated by ';')")
         parser.add_argument('--benchmark-criterion', default='BEST',
                             help="Which result parameter should be used for comparisons")
         parser.add_argument('--enterprise', action='store_true', help="Whether to checkout graal-enterprise")
+        parser.add_argument('--no-clean', action='store_true', help="Do not run 'mx clean' between runs")
         args = parser.parse_args(argv)
 
     primary_suite = mx.primary_suite()
 
-    fetched_enterprise = [False]
+    def checkout_enterprise():
+        suite = get_suite('graalpython')
+        ee_suite = get_suite('/vm-enterprise')
+        overlays = '../ci-overlays'
+        if not os.path.isdir(overlays):
+            sys.exit("Needs to have ci-overlays checkout")
+        with open(os.path.join(get_suite("graalpython").dir, "ci.jsonnet")) as f:
+            overlay_rev = json.load(f)['overlay']
+        suite.vc.update_to_branch(overlays, overlay_rev)
+        constants_file = os.path.join(overlays, 'python/imported-constants.json')
+        with open(constants_file) as f:
+            ee_rev = json.load(f)['GRAAL_ENTERPRISE_REVISION']
+        ee_suite.vc.update_to_branch(ee_suite.vc_dir, ee_rev)
 
-    def benchmark_callback(suite, commit):
+    def checkout_suite(suite, commit):
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
+        mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         if args.enterprise and suite.name != 'vm-enterprise':
-            checkout_args = ['--dynamicimports', '/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise']
-            if fetched_enterprise[0]:
-                checkout_args.append('--no-fetch')
-            mx.run_mx(checkout_args, out=mx.OutputCapture())
+            checkout_enterprise()
             # Make sure vm is imported before vm-enterprise
             get_suite('/vm')
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
-            fetched_enterprise[0] = True
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
-        print("debug: graalpython={} graal={} graal-enterprise={}"
-              .format(*(get_commit(get_suite(s)) for s in ('graalpython', '/vm', '/vm-enterprise'))))
-        env = os.environ.copy()
-        env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
-        retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
+        debug_str = "debug: graalpython={} graal={}".format(
+            get_commit(get_suite('graalpython')), get_commit(get_suite('/vm')))
+        if args.enterprise:
+            debug_str += " graal-enterprise={}".format(get_commit(get_suite('/vm-enterprise')))
+        print(debug_str)
+
+    def checkout_and_build_suite(suite, commit):
+        checkout_suite(suite, commit)
+        build_command = shlex.split(args.build_command)
+        if not args.no_clean:
+            try:
+                clean_command = build_command[:build_command.index('build')] + ['clean']
+                retcode = mx.run(clean_command, nonZeroIsFatal=False)
+                if retcode:
+                    print("Warning: clean command failed")
+            except ValueError:
+                pass
+        retcode = mx.run(build_command, nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute the build command for {}".format(commit))
+
+    def benchmark_callback(suite, commit, bench_command=args.benchmark_command):
+        checkout_and_build_suite(suite, commit)
         output = mx.OutputCapture()
-        retcode = mx.run(shlex.split(args.benchmark_command), env=env, out=mx.TeeOutputCapture(output),
-                         nonZeroIsFatal=False)
+        retcode = mx.run(shlex.split(bench_command), out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
         if retcode:
-            raise RuntimeError("Failed to execute benchmark for {}".format(commit))
+            if args.benchmark_criterion == 'WORKS':
+                return sys.maxsize
+            else:
+                raise RuntimeError("Failed to execute benchmark for {}".format(commit))
+        elif args.benchmark_criterion == 'WORKS':
+            return 0
         match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
         if not match:
             raise RuntimeError("Failed to get result from the benchmark")
@@ -243,12 +283,31 @@ def _bisect_benchmark(argv, initial_branch, email_to):
     print()
     print(summary)
 
-    if 'CI' not in os.environ:
-        print("You can rerun a benchmark for a particular commit using:\nMX_ALT_OUTPUT_ROOT=mxbuild-$commit {}".format(
-            args.benchmark_command))
+    if args.rerun_with_commands:
+        print('\n\nRerunning the good and bad commits with extra benchmark commands:')
+        current_result = result
+        current_suite = primary_suite
+        while current_result.subresults and current_result.bad_index in current_result.subresults:
+            downstream_suite = get_downstream_suite(current_suite)
+            next_result = current_result.subresults[current_result.bad_index]
+            if not next_result.good_commit or not next_result.bad_commit:
+                print("Next downstream suite {} does not have both good and bad commits".format(downstream_suite.name))
+                break
+            print("Recursing to downstream suite: {}, commit: {}".format(downstream_suite.name,
+                                                                         current_result.bad_commit))
+            checkout_suite(current_suite, current_result.bad_commit)
+            current_result = next_result
+            current_suite = downstream_suite
+        for commit in [current_result.good_commit, current_result.bad_commit]:
+            print_line(80)
+            print("Commit: {}".format(commit))
+            checkout_and_build_suite(current_suite, commit)
+            for cmd in args.rerun_with_commands.split(";"):
+                print_line(40)
+                mx.run(shlex.split(cmd.strip()), nonZeroIsFatal=False)
 
     send_email(
-        initial_branch,
+        bisect_id,
         email_to,
         "Bisection job has finished successfully.\n{}\n".format(summary)
         + "Note I'm just a script and I don't validate statistical significance of the above result.\n"
@@ -260,21 +319,23 @@ def _bisect_benchmark(argv, initial_branch, email_to):
 def bisect_benchmark(argv):
     suite = mx.primary_suite()
     initial_branch = suite.vc.git_command(suite.vc_dir, ['rev-parse', '--abbrev-ref', 'HEAD']).strip()
+    initial_commit = suite.vc.git_command(suite.vc_dir, ['log', '--format=%s', '-n', '1']).strip()
     email_to = suite.vc.git_command(suite.vc_dir, ['log', '--format=%cE', '-n', '1']).strip()
+    bisect_id = f'{initial_branch}: {initial_commit}'
     try:
-        _bisect_benchmark(argv, initial_branch, email_to)
+        _bisect_benchmark(argv, bisect_id, email_to)
     except Exception:
-        send_email(initial_branch, email_to, "Job failed.\n {}".format(os.environ.get('BUILD_URL', 'Unknown URL')))
+        send_email(bisect_id, email_to, "Job failed.\n {}".format(os.environ.get('BUILD_URL', 'Unknown URL')))
         raise
 
 
-def send_email(initial_branch, email_to, content):
+def send_email(bisect_id, email_to, content):
     if 'BISECT_EMAIL_SMTP_SERVER' in os.environ:
         import smtplib
         from email.message import EmailMessage
 
         msg = EmailMessage()
-        msg['Subject'] = "Bisection result for {}".format(initial_branch)
+        msg['Subject'] = "Bisection result for {}".format(bisect_id)
         msg['From'] = os.environ['BISECT_EMAIL_FROM']
         validate_to = os.environ['BISECT_EMAIL_TO_PATTERN']
         if not re.match(validate_to, email_to):

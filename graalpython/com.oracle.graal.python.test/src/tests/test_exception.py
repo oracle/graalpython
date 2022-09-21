@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -154,7 +154,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(e.filename, "file1")
         self.assertEqual(e.filename2, None)
 
-    def test_oserror_four_attribute(self):
+    def test_oserror_four_attribute_2(self):
         e = OSError(errno.EISDIR, "message", "file1", None, "file2")
         self.assertEqual(e.errno, 21)
         self.assertEqual(e.strerror, "message")
@@ -625,3 +625,20 @@ class ExceptionTests(unittest.TestCase):
         self.assertIsNone(e.__context__.__context__)
         self.assertIsNone(e.__cause__)
         self.assertTrue(e.__suppress_context__)
+
+    def test_encoding_err(self):
+        errMsg = ""
+        try:
+            class A: pass
+            A.__name__ = '\udcdc'
+        except UnicodeEncodeError as e:
+            errMsg = str(e)
+        assert len(errMsg) > 0
+
+    def test_exception_scope(self):
+        g = {}
+        exec("try:1\nexcept Exception as e: pass", g)
+        assert 'e' not in g
+        exec("try:1/0\nexcept Exception as e: pass", g)
+        assert 'e' not in g
+

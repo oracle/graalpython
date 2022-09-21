@@ -18,6 +18,10 @@ from subprocess import _args_from_interpreter_flags
 
 from . import process
 
+# Begin Truffle change
+from _multiprocessing import _close, _gettid
+# End Truffle change
+
 __all__ = [
     'sub_debug', 'debug', 'info', 'sub_warning', 'get_logger',
     'log_to_stderr', 'get_temp_dir', 'register_after_fork',
@@ -198,15 +202,21 @@ class Finalize(object):
         self._args = args
         self._kwargs = kwargs or {}
         self._key = (exitpriority, next(_finalizer_counter))
-        self._pid = os.getpid()
-
+        # Begin Truffle change
+#        self._pid = os.getpid()
+        self._pid = _gettid()
+        # End Truffle change
+        
         _finalizer_registry[self._key] = self
 
     def __call__(self, wr=None,
                  # Need to bind these locally because the globals can have
                  # been cleared at shutdown
                  _finalizer_registry=_finalizer_registry,
-                 sub_debug=sub_debug, getpid=os.getpid):
+                 # Begin Truffle change
+                 #sub_debug=sub_debug, getpid=os.getpid):
+                 sub_debug=sub_debug, getpid=_gettid):
+                 # Begin Truffle change
         '''
         Run the callback unless it has already been called or cancelled
         '''
@@ -461,7 +471,13 @@ def spawnv_passfds(path, args, passfds):
 def close_fds(*fds):
     """Close each file descriptor given as an argument"""
     for fd in fds:
-        os.close(fd)
+        # Begin Truffle change
+        #os.close(fd)
+        if fd < 0:
+            _close(fd)
+        else:
+            os.close(fd)
+        # End Truffle change
 
 
 def _cleanup_tests():

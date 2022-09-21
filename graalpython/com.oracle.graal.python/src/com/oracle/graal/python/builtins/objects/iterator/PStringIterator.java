@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,11 +26,12 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PStringIterator extends PBuiltinIterator {
-    final String value;
+    final TruffleString value;
 
-    public PStringIterator(Object clazz, Shape instanceShape, String value) {
+    public PStringIterator(Object clazz, Shape instanceShape, TruffleString value) {
         super(clazz, instanceShape);
         this.value = value;
     }

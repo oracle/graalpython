@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,46 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 
 @CoreFunctions(defineModule = "_queue")
 public class QueueModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return QueueModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        addBuiltinConstant(BuiltinNames.T_EMPTY_CLASS_NAME, core.lookupType(PythonBuiltinClassType.Empty));
+    }
+
+    // _queue.SimpleQueue
+    @Builtin(name = J_SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
+                    minNumOfPositionalArgs = 1, //
+                    doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
+    @GenerateNodeFactory
+    abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PSimpleQueue doGeneric(Object cls) {
+            return factory().createSimpleQueue(cls);
+        }
     }
 }

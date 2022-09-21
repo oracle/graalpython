@@ -17,7 +17,9 @@ import platform
 import array
 import contextlib
 from weakref import proxy
-import signal
+# XXX GR-28398 - interrupts by signals don't work, avoid deadlocks by skipping tests that use them
+# import signal
+signal = object()
 import math
 import pickle
 import struct
@@ -863,6 +865,7 @@ class GeneralModuleTests(unittest.TestCase):
                     % (s.family, s.type, s.proto))
         self.assertEqual(repr(s), expected)
 
+    @support.impl_detail("refcounting", graalvm=False)
     def test_weakref(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             p = proxy(s)
@@ -924,10 +927,12 @@ class GeneralModuleTests(unittest.TestCase):
         # wrong number of args
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo')
-        self.assertIn('(1 given)', str(cm.exception))
+        # XXX GraalVM change: relax message requirement
+        #self.assertIn('(1 given)', str(cm.exception))
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', 0, sockname, 4)
-        self.assertIn('(4 given)', str(cm.exception))
+        # XXX GraalVM change: relax message requirement
+        #self.assertIn('(4 given)', str(cm.exception))
 
     def testCrucialConstants(self):
         # Testing for mission critical constants
@@ -936,9 +941,10 @@ class GeneralModuleTests(unittest.TestCase):
             socket.AF_INET6
         socket.SOCK_STREAM
         socket.SOCK_DGRAM
-        socket.SOCK_RAW
-        socket.SOCK_RDM
-        socket.SOCK_SEQPACKET
+        # XXX GraalVM change: we don't support these socket types
+        # socket.SOCK_RAW
+        # socket.SOCK_RDM
+        # socket.SOCK_SEQPACKET
         socket.SOL_SOCKET
         socket.SO_REUSEADDR
 
@@ -1625,6 +1631,7 @@ class GeneralModuleTests(unittest.TestCase):
     def test_sendall_interrupted_with_timeout(self):
         self.check_sendall_interrupted(True)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_dealloc_warn(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         r = repr(sock)
@@ -1646,7 +1653,8 @@ class GeneralModuleTests(unittest.TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             fp = sock.makefile("rb")
             fp.close()
-            self.assertEqual(repr(fp), "<_io.BufferedReader name=-1>")
+            # XXX GraalVM change - repr name change
+            self.assertRegex(repr(fp), r"\<(_io.)?BufferedReader name=-1\>")
 
     def test_unusable_closed_socketio(self):
         with socket.socket() as sock:
@@ -1885,7 +1893,7 @@ class GeneralModuleTests(unittest.TestCase):
             s.bind((socket_helper.HOSTv6, 0, 0, 0))
             self._test_socket_fileno(s, socket.AF_INET6, socket.SOCK_STREAM)
 
-        if hasattr(socket, "AF_UNIX"):
+        if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
             tmpdir = tempfile.mkdtemp()
             self.addCleanup(shutil.rmtree, tmpdir)
             s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -2639,6 +2647,9 @@ class SendrecvmsgBase(ThreadSafeCleanupTestCase):
     def setUp(self):
         self.misc_event = threading.Event()
         super().setUp()
+        # XXX GraalVM change: our test loader picks up the abstract test classes
+        if not hasattr(self, 'serv_sock'):
+            raise unittest.SkipTest('abstract')
 
     def sendToServer(self, msg):
         # Send msg to the server.
@@ -4381,28 +4392,38 @@ class SendrecvmsgUnixStreamTestBase(SendrecvmsgConnectedBase,
                                     ConnectedStreamTestMixin, UnixStreamBase):
     pass
 
+
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg")
 @requireAttrs(socket, "AF_UNIX")
 class SendmsgUnixStreamTest(SendmsgStreamTests, SendrecvmsgUnixStreamTestBase):
     pass
 
+
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "recvmsg")
 @requireAttrs(socket, "AF_UNIX")
 class RecvmsgUnixStreamTest(RecvmsgTests, RecvmsgGenericStreamTests,
                             SendrecvmsgUnixStreamTestBase):
     pass
 
+
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "recvmsg_into")
 @requireAttrs(socket, "AF_UNIX")
 class RecvmsgIntoUnixStreamTest(RecvmsgIntoTests, RecvmsgGenericStreamTests,
                                 SendrecvmsgUnixStreamTestBase):
     pass
 
+
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg", "recvmsg")
 @requireAttrs(socket, "AF_UNIX", "SOL_SOCKET", "SCM_RIGHTS")
 class RecvmsgSCMRightsStreamTest(SCMRightsTest, SendrecvmsgUnixStreamTestBase):
     pass
 
+
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg", "recvmsg_into")
 @requireAttrs(socket, "AF_UNIX", "SOL_SOCKET", "SCM_RIGHTS")
 class RecvmsgIntoSCMRightsStreamTest(RecvmsgIntoMixin, SCMRightsTest,
@@ -4576,7 +4597,8 @@ class BasicSocketPairTest(SocketPairTest):
 
     def _check_defaults(self, sock):
         self.assertIsInstance(sock, socket.socket)
-        if hasattr(socket, 'AF_UNIX'):
+        # GR-28433
+        if hasattr(socket, 'AF_UNIX') and sys.implementation.name != 'graalpy':
             self.assertEqual(sock.family, socket.AF_UNIX)
         else:
             self.assertEqual(sock.family, socket.AF_INET)
@@ -4965,6 +4987,7 @@ class UnbufferedFileObjectClassTestCase(FileObjectClassTestCase):
         self.write_file.write(self.write_msg)
         self.write_file.flush()
 
+    @support.impl_detail("refcounting", graalvm=False)
     def testMakefileCloseSocketDestroy(self):
         refcount_before = sys.getrefcount(self.cli_conn)
         self.read_file.close()
@@ -5379,7 +5402,8 @@ class TestExceptions(unittest.TestCase):
             sock.setblocking(False)
 
 
-@unittest.skipUnless(sys.platform == 'linux', 'Linux specific test')
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
+@unittest.skipUnless(sys.platform == 'linux' and hasattr(socket, "AF_UNIX"), 'Linux specific test')
 class TestLinuxAbstractNamespace(unittest.TestCase):
 
     UNIX_PATH_MAX = 108
@@ -5421,6 +5445,8 @@ class TestLinuxAbstractNamespace(unittest.TestCase):
             s.bind(bytearray(b"\x00python\x00test\x00"))
             self.assertEqual(s.getsockname(), b"\x00python\x00test\x00")
 
+
+@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'test needs socket.AF_UNIX')
 class TestUnixDomain(unittest.TestCase):
 

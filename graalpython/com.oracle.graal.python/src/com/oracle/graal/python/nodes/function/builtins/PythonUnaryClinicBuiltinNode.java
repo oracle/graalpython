@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,15 +41,15 @@
 package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
+@ClinicBuiltinBaseClass
 public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNode {
-    @Child ArgumentCastNode castNode;
+    @Child private ArgumentCastNode castNode;
 
     /**
      * Returns the provider of argument clinic logic. It should be singleton instance of a class
@@ -57,82 +57,21 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
      */
     protected abstract ArgumentClinicProvider getArgumentClinic();
 
-    private Object cast(VirtualFrame frame, int argIndex, Object value) {
+    private Object cast(VirtualFrame frame, Object value) {
         // no point in using argument clinic if the only argument does not have a cast node
         ArgumentClinicProvider clinic = getArgumentClinic();
-        assert clinic.hasCastNode(argIndex);
+        assert clinic.hasCastNode(0);
         if (castNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNode = insert(clinic.createCastNode(argIndex, this));
+            castNode = insert(clinic.createCastNode(0, this));
         }
         return castNode.execute(frame, value);
     }
 
-    @Override
-    public Object call(VirtualFrame frame, Object arg) {
-        return execute(frame, cast(frame, 0, arg));
-    }
+    protected abstract Object executeWithoutClinic(VirtualFrame frame, Object arg);
 
     @Override
-    public boolean callBool(VirtualFrame frame, boolean arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsBoolean(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
-    }
-
-    @Override
-    public int callInt(VirtualFrame frame, int arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsInt(0)) {
-            return executeInt(frame, arg);
-        } else {
-            return PGuards.expectInteger(call(frame, arg));
-        }
-    }
-
-    @Override
-    public long callLong(VirtualFrame frame, long arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsLong(0)) {
-            return executeLong(frame, arg);
-        } else {
-            return PGuards.expectLong(call(frame, arg));
-        }
-    }
-
-    @Override
-    public double callDouble(VirtualFrame frame, double arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsDouble(0)) {
-            return executeDouble(frame, arg);
-        } else {
-            return PGuards.expectDouble(call(frame, arg));
-        }
-    }
-
-    @Override
-    public boolean callBool(VirtualFrame frame, int arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsInt(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
-    }
-
-    @Override
-    public boolean callBool(VirtualFrame frame, long arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsLong(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
-    }
-
-    @Override
-    public boolean callBool(VirtualFrame frame, double arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsDouble(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
+    public final Object execute(VirtualFrame frame, Object arg) {
+        return executeWithoutClinic(frame, cast(frame, arg));
     }
 }

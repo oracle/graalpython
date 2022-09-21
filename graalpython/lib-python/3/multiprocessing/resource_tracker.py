@@ -161,15 +161,37 @@ class ResourceTracker(object):
         assert nbytes == len(msg), "nbytes {0:n} but len(msg) {1:n}".format(
             nbytes, len(msg))
 
+# Begin Truffle change
+#_resource_tracker = ResourceTracker()
+#ensure_running = _resource_tracker.ensure_running
+#register = _resource_tracker.register
+#unregister = _resource_tracker.unregister
+#getfd = _resource_tracker.getfd
 
-_resource_tracker = ResourceTracker()
-ensure_running = _resource_tracker.ensure_running
-register = _resource_tracker.register
-unregister = _resource_tracker.unregister
-getfd = _resource_tracker.getfd
+def _pass():
+    pass
+
+def _pass2(a1, a2):
+    pass
+
+class _RT:
+    def _stop(self):
+        pass
+    
+_resource_tracker = _RT()
+ensure_running = _pass
+register = _pass2
+unregister = _pass2
+getfd = _pass
+# End Truffle change
 
 def main(fd):
     '''Run resource tracker.'''
+    
+    # Begin Truffle change
+    raise RuntimeError("Resource Tracker should not be started")
+    # End Truffle change
+    
     # protect the process from ^C and "killall python" etc
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)

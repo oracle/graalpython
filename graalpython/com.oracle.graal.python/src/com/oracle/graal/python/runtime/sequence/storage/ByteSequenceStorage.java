@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,11 +31,16 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     private byte[] values;
@@ -70,7 +75,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new ByteSequenceStorage(Arrays.copyOf(values, length));
+        return new ByteSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
@@ -93,6 +98,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @TruffleBoundary(allowInlining = true)
+    @Ignore
     public byte[] getInternalByteArray() {
         if (length != values.length) {
             assert length < values.length;
@@ -127,11 +133,11 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             setByteItemNormalized(idx, (byte) value);
         } else if (value instanceof Integer) {
             if ((int) value < 0 || (int) value >= 256) {
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
             }
             setByteItemNormalized(idx, ((Integer) value).byteValue());
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.INTEGER_IS_REQUIRED);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INTEGER_REQUIRED);
         }
     }
 
@@ -183,96 +189,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return new ByteSequenceStorage(newArray);
     }
 
-    @TruffleBoundary
-    public void setByteSliceInBound(int start, int stop, int step, IntSequenceStorage sequence) {
-        int otherLength = sequence.length();
-        int[] seqValues = sequence.getInternalIntArray();
-
-        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
-        int newLength = length - (stop - start - otherLength);
-
-        ensureCapacity(newLength);
-
-        // if enlarging, we need to move the suffix first
-        if (stop - start < otherLength) {
-            assert length < newLength;
-            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
-                values[k] = values[j];
-            }
-        }
-
-        int i = start;
-        for (int j = 0; j < otherLength; i += step, j++) {
-            if (seqValues[j] < Byte.MIN_VALUE || seqValues[j] > Byte.MAX_VALUE) {
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
-            }
-            values[i] = (byte) seqValues[j];
-        }
-
-        // if shrinking, move the suffix afterwards
-        if (stop - start > otherLength) {
-            assert stop >= 0;
-            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
-                values[j] = values[stop + k];
-            }
-        }
-
-        // for security
-        Arrays.fill(values, newLength, values.length, (byte) 0);
-
-        length = newLength;
-    }
-
-    @TruffleBoundary
-    public void setByteSliceInBound(int start, int stop, int step, ByteSequenceStorage sequence) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (start == 0 && stop == length) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
-        int newLength = length - (stop - start - otherLength);
-
-        ensureCapacity(newLength);
-
-        // if enlarging, we need to move the suffix first
-        if (stop - start < otherLength) {
-            assert length < newLength;
-            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
-                values[k] = values[j];
-            }
-        }
-
-        int i = start;
-        for (int j = 0; j < otherLength; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        // if shrinking, move the suffix afterwards
-        if (stop - start > otherLength) {
-            assert stop >= 0;
-            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
-                values[j] = values[stop + k];
-            }
-        }
-
-        // for security
-        Arrays.fill(values, newLength, values.length, (byte) 0);
-
-        length = newLength;
-    }
-
-    public int popInt() {
-        int pop = values[capacity - 1] & 0xFF;
-        length--;
-        return pop;
-    }
-
     public int indexOfByte(byte value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -291,30 +207,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    public void appendLong(long value) {
-        if (value < 0 || value >= 256) {
-            throw new SequenceStoreException(value);
-        }
-        ensureCapacity(length + 1);
-        values[length] = (byte) value;
-        length++;
-    }
-
-    public void appendInt(int value) {
-        if (value < 0 || value >= 256) {
-            throw new SequenceStoreException(value);
-        }
-        ensureCapacity(length + 1);
-        values[length] = (byte) value;
-        length++;
-    }
-
-    public void appendByte(byte value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
     }
 
     @Override
@@ -376,5 +268,93 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     @Override
     public ListStorageType getElementType() {
         return ListStorageType.Byte;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasInternalByteArray() {
+        return true;
+    }
+
+    @ExportMessage(name = "getInternalByteArray")
+    byte[] getInternalByteArrayMessage() {
+        return values;
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset) {
+        return values[byteOffset];
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value) {
+        values[byteOffset] = value;
+    }
+
+    @ExportMessage
+    short readShort(int byteOffset) {
+        return PythonUtils.arrayAccessor.getShort(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeShort(int byteOffset, short value) {
+        PythonUtils.arrayAccessor.putShort(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    int readInt(int byteOffset) {
+        return PythonUtils.arrayAccessor.getInt(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeInt(int byteOffset, int value) {
+        PythonUtils.arrayAccessor.putInt(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    long readLong(int byteOffset) {
+        return PythonUtils.arrayAccessor.getLong(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeLong(int byteOffset, long value) {
+        PythonUtils.arrayAccessor.putLong(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    float readFloat(int byteOffset) {
+        return PythonUtils.arrayAccessor.getFloat(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeFloat(int byteOffset, float value) {
+        PythonUtils.arrayAccessor.putFloat(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    double readDouble(int byteOffset) {
+        return PythonUtils.arrayAccessor.getDouble(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeDouble(int byteOffset, double value) {
+        PythonUtils.arrayAccessor.putDouble(values, byteOffset, value);
     }
 }

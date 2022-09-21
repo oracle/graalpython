@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [inner, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, inner]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,13 +36,11 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                     FunctionBodyNode SourceSection: [15,46]`@decorator1â†µ  def in...`
                       WriteLocalVariableNodeGen SourceSection: [15,46]`@decorator1â†µ  def in...`
                         Identifier: inner
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,inner,Illegal]
+                        Frame: [0,inner,Illegal]
                         PythonCallUnary SourceSection: [15,26]`@decorator1`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [15,26]`@decorator1`
                             Identifier: decorator1
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: inner SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -68,9 +66,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                                     FunctionBodyNode SourceSection: [42,46]`pass`
                                       ExpressionStatementNode SourceSection: [42,46]`pass`
                                         EmptyNode SourceSection: [42,46]`pass`
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [0,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [0,<return_val>,Object]
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [1,<return_val>,Object]

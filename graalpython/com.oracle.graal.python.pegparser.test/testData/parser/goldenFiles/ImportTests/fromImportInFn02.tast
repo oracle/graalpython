@@ -1,0 +1,8 @@
+Module[0, 40]
+    FunctionDef[0, 40]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        ImportFrom[12, 40] Level 0 sys.path
+            dirname
+        ---- End of fn function ----

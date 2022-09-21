@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -71,6 +71,11 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType FileNotFoundError = PythonBuiltinClassType.FileNotFoundError;
     public static final PythonBuiltinClassType ZipImportError = PythonBuiltinClassType.ZipImportError;
     public static final PythonBuiltinClassType ZLibError = PythonBuiltinClassType.ZLibError;
+    public static final PythonBuiltinClassType CSVError = PythonBuiltinClassType.CSVError;
     public static final PythonBuiltinClassType LZMAError = PythonBuiltinClassType.LZMAError;
     public static final PythonBuiltinClassType StructError = PythonBuiltinClassType.StructError;
+    public static final PythonBuiltinClassType IOUnsupportedOperation = PythonBuiltinClassType.IOUnsupportedOperation;
+    public static final PythonBuiltinClassType PickleError = PythonBuiltinClassType.PickleError;
+    public static final PythonBuiltinClassType PicklingError = PythonBuiltinClassType.PicklingError;
+    public static final PythonBuiltinClassType UnpicklingError = PythonBuiltinClassType.UnpicklingError;
 }

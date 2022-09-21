@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,14 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -65,23 +66,33 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
         return CastToJavaIntExactNodeGen.getUncached();
     }
 
-    @Specialization
-    static int toInt(long x) {
+    @Specialization(rewriteOn = OverflowException.class)
+    static int longToInt(long x) throws OverflowException {
+        return PInt.intValueExact(x);
+    }
+
+    @Specialization(rewriteOn = OverflowException.class)
+    static int pIntToInt(PInt x) throws OverflowException {
+        return x.intValueExact();
+    }
+
+    @Specialization(replaces = "longToInt")
+    static int longToIntOverflow(long x,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
         try {
             return PInt.intValueExact(x);
         } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 
-    @Specialization
-    static int toInt(PInt x) {
+    @Specialization(replaces = "pIntToInt")
+    static int pIntToIntOverflow(PInt x,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
         try {
             return x.intValueExact();
         } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 }

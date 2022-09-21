@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,12 +26,13 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class StringLiteralNode extends SimpleLiteralNode {
 
-    private final String value;
+    private final TruffleString value;
 
-    public StringLiteralNode(String value) {
+    public StringLiteralNode(TruffleString value) {
         this.value = value;
     }
 
@@ -41,11 +42,11 @@ public final class StringLiteralNode extends SimpleLiteralNode {
     }
 
     @Override
-    public String getValue() {
+    public TruffleString getValue() {
         return value;
     }
 
-    public static StringLiteralNode create(String string) {
+    public static StringLiteralNode create(TruffleString string) {
         return new StringLiteralNode(string);
     }
 }

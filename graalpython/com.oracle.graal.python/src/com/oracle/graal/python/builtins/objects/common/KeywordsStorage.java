@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,36 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class KeywordsStorage extends HashingStorage {
@@ -82,18 +91,22 @@ public class KeywordsStorage extends HashingStorage {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    protected int findCachedStringKey(String key, int len) {
+    protected int findCachedStringKey(TruffleString key, int len, TruffleString.EqualNode equalNode) {
         for (int i = 0; i < len; i++) {
-            if (keywords[i].getName().equals(key)) {
+            if (equalNode.execute(keywords[i].getName(), key, TS_ENCODING)) {
                 return i;
             }
         }
         return -1;
     }
 
-    protected int findStringKey(String key) {
+    protected int findStringKey(TruffleString key, TruffleString.EqualNode equalNode) {
+        return findStringKey(keywords, key, equalNode);
+    }
+
+    public static int findStringKey(PKeyword[] keywords, TruffleString key, TruffleString.EqualNode equalNode) {
         for (int i = 0; i < keywords.length; i++) {
-            if (keywords[i].getName().equals(key)) {
+            if (equalNode.execute(keywords[i].getName(), key, TS_ENCODING)) {
                 return i;
             }
         }
@@ -104,27 +117,30 @@ public class KeywordsStorage extends HashingStorage {
     @ExportMessage
     @ImportStatic(PGuards.class)
     static class HasKeyWithState {
-
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static boolean cached(KeywordsStorage self, String key, ThreadState state,
-                        @Exclusive @Cached("self.length()") int cachedLen) {
-            return self.findCachedStringKey(key, cachedLen) != -1;
+        static boolean cached(KeywordsStorage self, TruffleString key, ThreadState state,
+                        @Exclusive @Cached("self.length()") int cachedLen,
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+            return self.findCachedStringKey(key, cachedLen, equalNode) != -1;
         }
 
         @Specialization(replaces = "cached")
-        static boolean string(KeywordsStorage self, String key, ThreadState state) {
-            return self.findStringKey(key) != -1;
+        static boolean string(KeywordsStorage self, TruffleString key, ThreadState state,
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+            return self.findStringKey(key, equalNode) != -1;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), state);
+                        @Shared("castToTS") @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+            return string(self, castToTruffleStringNode.execute(key), state, equalNode);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)")
+        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
         static boolean notString(KeywordsStorage self, Object key, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("self") HashingStorageLibrary lib) {
             return lib.getItemWithState(self, key, state) != null;
         }
@@ -134,43 +150,41 @@ public class KeywordsStorage extends HashingStorage {
     @ImportStatic(PGuards.class)
     public static class GetItemWithState {
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static Object cached(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen) {
-            final int idx = self.findCachedStringKey(key, cachedLen);
+        static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") ThreadState state,
+                        @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen,
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+            final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(replaces = "cached")
-        static Object string(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
-            final int idx = self.findStringKey(key);
+        static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") ThreadState state,
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+            final int idx = self.findStringKey(key, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), state);
+                        @Shared("castToTS") @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
+            return string(self, castToTruffleStringNode.execute(key), state, equalNode);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)")
+        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
         static Object notString(KeywordsStorage self, Object key, ThreadState state,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            long hash = self.getHashWithState(key, lib, state, gotState);
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             for (int i = 0; i < self.keywords.length; i++) {
-                String currentKey = self.keywords[i].getName();
-                long keyHash;
-                if (gotState.profile(state != null)) {
-                    keyHash = lib.hashWithState(currentKey, state);
-                    if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                        return self.keywords[i].getValue();
-                    }
-                } else {
-                    keyHash = lib.hash(currentKey);
-                    if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                        return self.keywords[i].getValue();
-                    }
+                TruffleString currentKey = self.keywords[i].getName();
+                long keyHash = hashNode.execute(frame, currentKey);
+                if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                    return self.keywords[i].getValue();
                 }
             }
             return null;
@@ -179,9 +193,9 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib);
+                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
+        HashingStorage newStore = generalize(lib, false, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(newStore, key, value, state);
         } else {
@@ -191,9 +205,9 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib);
+                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
+        HashingStorage newStore = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(newStore, key, state);
         } else {
@@ -201,15 +215,15 @@ public class KeywordsStorage extends HashingStorage {
         }
     }
 
-    private HashingStorage generalize(HashingStorageLibrary lib) {
-        HashingStorage newStore = EconomicMapStorage.create(length());
+    private HashingStorage generalize(HashingStorageLibrary lib, boolean isStringKey, int expectedLength) {
+        HashingStorage newStore = PDict.createNewStorage(isStringKey, expectedLength);
         newStore = lib.addAllToOther(this, newStore);
         return newStore;
     }
 
     @ExportMessage
     static class ForEachUntyped {
-        @Specialization(guards = "self.length() == cachedLen", limit = "1")
+        @Specialization(guards = {"self.length() == cachedLen", "cachedLen <= 32"}, limit = "1")
         @ExplodeLoop
         static Object cached(KeywordsStorage self, ForEachNode<Object> node, Object arg,
                         @Exclusive @Cached("self.length()") int cachedLen) {
@@ -234,7 +248,7 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public static class AddAllToOther {
-        @Specialization(guards = "self.length() == cachedLen", limit = "1")
+        @Specialization(guards = {"self.length() == cachedLen", "cachedLen <= 32"}, limit = "1")
         @ExplodeLoop
         static HashingStorage cached(KeywordsStorage self, HashingStorage other,
                         @Exclusive @Cached("self.length()") int cachedLen,
@@ -249,7 +263,7 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(KeywordsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
             for (int i = 0; i < self.length(); i++) {
                 PKeyword entry = self.keywords[i];
@@ -262,7 +276,7 @@ public class KeywordsStorage extends HashingStorage {
     @Override
     @ExportMessage
     public HashingStorage clear() {
-        return EconomicMapStorage.create();
+        return EmptyStorage.INSTANCE;
     }
 
     @Override
@@ -272,8 +286,8 @@ public class KeywordsStorage extends HashingStorage {
         return this;
     }
 
-    @Override
     @ExportMessage
+    @Override
     public HashingStorageIterable<Object> keys() {
         return new HashingStorageIterable<>(new KeysIterator(this));
     }
@@ -295,6 +309,7 @@ public class KeywordsStorage extends HashingStorage {
 
         public abstract void nextIndex();
 
+        @Override
         public Object next() {
             if (hasNext()) {
                 Object result = storage.keywords[index].getName();

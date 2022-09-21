@@ -1,0 +1,13 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      format: [DefLocal, Local]
+    Scope format Function
+        Varnames: self
+        Symbols:
+            a: [Use, GlobalImplicit]
+            count: [DefLocal, Use, Local]
+            frame: [DefLocal, Local]
+            name: [DefLocal, Local]
+            self: [DefParam, Use, Local]
+            value: [DefLocal, Local]

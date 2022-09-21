@@ -1,0 +1,5 @@
+Disassembly of <module>:
+  1:0   -   1:1         0 LOAD_BYTE_O                       1
+  1:0   -   1:1         2 PRINT_EXPR
+  1:0   -   1:1         3 LOAD_NONE
+  1:0   -   1:1         4 RETURN_VALUE

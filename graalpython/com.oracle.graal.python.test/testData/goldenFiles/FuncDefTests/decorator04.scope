@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: outer
         Kind: Function
-        FrameDescriptor: [inner, <return_val>]
+        FrameDescriptor: [<return_val>, inner]
         CellVars: Empty
         FreeVars: Empty
         Scope: inner

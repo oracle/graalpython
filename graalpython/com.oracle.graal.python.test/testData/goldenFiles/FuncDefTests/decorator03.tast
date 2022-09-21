@@ -14,26 +14,20 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
           PythonCallUnary SourceSection: [0,23]`@some.path.to.decora...`
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
-              GetAttributeNodeGen SourceSection: None
+              GetAttributeNode SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: to
-                  CachedDispatchFirst SourceSection: None
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
-                GetAttributeNodeGen SourceSection: None
+                GetAttributeNode SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: path
-                    CachedDispatchFirst SourceSection: None
-                    LookupAndCallBinaryNodeGen SourceSection: None
+                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                       Op: __getattribute__
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                   ReadNameNodeGen SourceSection: None
                     Identifier: some
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
             FunctionDefinitionNode Name: fn SourceSection: None
               Arguments: None
               KwArguments: None
@@ -59,6 +53,5 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                       FunctionBodyNode SourceSection: [34,38]`pass`
                         ExpressionStatementNode SourceSection: [34,38]`pass`
                           EmptyNode SourceSection: [34,38]`pass`
-                    Return Expresssion: ReadLocalVariableNode SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
+                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                      Frame: [0,<return_val>,Object]

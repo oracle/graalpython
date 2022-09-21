@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,9 +37,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -48,6 +46,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     protected final GeneratorInfo generatorInfo;
@@ -56,19 +55,18 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     @CompilationFinal private RootCallTarget generatorCallTarget;
     @CompilationFinal private PCode generatorCode;
 
-    public GeneratorFunctionDefinitionNode(String name, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, GeneratorInfo generatorInfo,
-                    Map<String, ExpressionNode> annotations) {
-        super(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, executionCellSlots, annotations);
+    public GeneratorFunctionDefinitionNode(TruffleString name, TruffleString qualname, TruffleString enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults,
+                    KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, GeneratorInfo generatorInfo, Map<TruffleString, ExpressionNode> annotations) {
+        super(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget, definitionCellSlots, annotations);
         this.frameDescriptor = frameDescriptor;
         this.generatorInfo = generatorInfo;
     }
 
-    public static GeneratorFunctionDefinitionNode create(String name, String qualname, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
-                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots, GeneratorInfo generatorInfo,
-                    Map<String, ExpressionNode> annotations) {
-        return new GeneratorFunctionDefinitionNode(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget,
-                        frameDescriptor, definitionCellSlots, executionCellSlots, generatorInfo, annotations);
+    public static GeneratorFunctionDefinitionNode create(TruffleString name, TruffleString qualname, TruffleString enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults,
+                    KwDefaultExpressionNode[] kwDefaults,
+                    RootCallTarget callTarget, FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, GeneratorInfo generatorInfo, Map<TruffleString, ExpressionNode> annotations) {
+        return new GeneratorFunctionDefinitionNode(name, qualname, enclosingClassName, doc, defaults, kwDefaults, callTarget, frameDescriptor, definitionCellSlots, generatorInfo, annotations);
     }
 
     @Override
@@ -84,31 +82,30 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         }
         PKeyword[] kwDefaultValues = null;
         if (kwDefaults != null) {
-            kwDefaultValues = new PKeyword[kwDefaults.length];
+            kwDefaultValues = PKeyword.create(kwDefaults.length);
             for (int i = 0; i < kwDefaults.length; i++) {
                 kwDefaultValues[i] = new PKeyword(kwDefaults[i].name, kwDefaults[i].execute(frame));
             }
         }
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return withDocString(frame, factory().createFunction(functionName, qualname, enclosingClassName, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
+        return withDocString(frame, factory().createFunction(functionName, qualname, getGeneratorCode(), PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure));
     }
 
-    public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonContext ctx) {
+    public GeneratorFunctionRootNode getGeneratorFunctionRootNode(PythonLanguage language) {
         if (generatorCallTarget == null) {
-            return new GeneratorFunctionRootNode(ctx.getLanguage(), callTarget, functionName, frameDescriptor,
-                            executionCellSlots, ((PRootNode) callTarget.getRootNode()).getSignature(), generatorInfo);
+            return new GeneratorFunctionRootNode(language, callTarget, functionName, frameDescriptor, getExecutionCellSlots(), ((PRootNode) callTarget.getRootNode()).getSignature(), generatorInfo);
         }
         return (GeneratorFunctionRootNode) generatorCallTarget.getRootNode();
     }
 
     protected PCode getGeneratorCode() {
+        PythonLanguage lang = PythonLanguage.get(this);
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            generatorCallTarget = PythonUtils.getOrCreateCallTarget(getGeneratorFunctionRootNode(getContext()));
+            generatorCallTarget = PythonUtils.getOrCreateCallTarget(getGeneratorFunctionRootNode(lang));
         }
-        PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
         CompilerAsserts.partialEvaluationConstant(lang);
-        if (lang.singleContextAssumption.isValid()) {
+        if (lang.isSingleContext()) {
             if (generatorCode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 generatorCode = factory().createCode(generatorCallTarget);
@@ -126,5 +123,4 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     public FrameDescriptor getFrameDescriptor() {
         return frameDescriptor;
     }
-
 }

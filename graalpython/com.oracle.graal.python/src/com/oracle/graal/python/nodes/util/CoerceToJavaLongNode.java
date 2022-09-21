@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongExactNodeGen;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLo
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -90,7 +92,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     }
 
     @Specialization
-    public long toLong(long x) {
+    public static long toLong(long x) {
         return x;
     }
 
@@ -102,8 +104,19 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     @Specialization(guards = "!isNumber(x)")
     public long toLong(Object x,
                     @Cached PRaiseNode raise,
-                    @Cached LookupAndCallUnaryDynamicNode callIntNode) {
-        Object result = callIntNode.executeObject(x, __INT__);
+                    @Cached("create(Int)") LookupAndCallUnaryNode callIntNode) {
+        Object result = callIntNode.executeObject(null, x);
+        return toLong(x, raise, result);
+    }
+
+    @TruffleBoundary
+    @Specialization(guards = "!isNumber(x)", replaces = "toLong")
+    public long toLongUncached(Object x) {
+        Object result = LookupAndCallUnaryDynamicNode.getUncached().executeObject(x, T___INT__);
+        return CoerceToJavaLongNode.this.toLong(x, PRaiseNode.getUncached(), result);
+    }
+
+    private long toLong(Object x, PRaiseNode raise, Object result) {
         if (result == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, x);
         }

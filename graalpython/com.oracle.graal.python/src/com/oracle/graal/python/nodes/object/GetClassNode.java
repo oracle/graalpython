@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,38 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
@@ -71,99 +85,142 @@ public abstract class GetClassNode extends PNodeWithContext {
         return GetClassNodeGen.getUncached();
     }
 
-    public abstract Object execute(boolean object);
-
-    public abstract Object execute(int object);
-
-    public abstract Object execute(long object);
-
-    public abstract Object execute(double object);
-
     public abstract Object execute(Object object);
 
-    protected PythonBuiltinClass lookupType(PythonContext context, Object klass) {
-        return context.getCore().lookupType((PythonBuiltinClassType) klass);
+    public final Object execute(@SuppressWarnings("unused") int i) {
+        return PythonBuiltinClassType.PInt;
     }
 
-    @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonBuiltinClass getBooleanCached(@SuppressWarnings("unused") boolean object,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @Cached("getBoolean(object, contextRef)") PythonBuiltinClass klass) {
-        return klass;
+    public final Object execute(@SuppressWarnings("unused") double d) {
+        return PythonBuiltinClassType.PFloat;
+    }
+
+    /*
+     * Many nodes already specialize on Python[Abstract]Object subclasses, like PTuple. Add
+     * shortcuts that avoid interpreter overhead of testing the object for all the primitive types
+     * when not necessary.
+     */
+    public abstract Object execute(PythonAbstractObject object);
+
+    public abstract Object execute(PythonAbstractNativeObject object);
+
+    public abstract Object execute(PythonObject object);
+
+    @Specialization
+    static Object getBoolean(@SuppressWarnings("unused") Boolean object) {
+        return PythonBuiltinClassType.Boolean;
     }
 
     @Specialization
-    protected PythonBuiltinClass getBoolean(@SuppressWarnings("unused") boolean object,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getCore().lookupType(PythonBuiltinClassType.Boolean);
-    }
-
-    @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonBuiltinClass getIntCached(@SuppressWarnings("unused") int object,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @Cached("getInt(object, contextRef)") PythonBuiltinClass klass) {
-        return klass;
+    static Object getInt(@SuppressWarnings("unused") Integer object) {
+        return PythonBuiltinClassType.PInt;
     }
 
     @Specialization
-    protected PythonBuiltinClass getInt(@SuppressWarnings("unused") int object,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PInt);
-    }
-
-    @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonBuiltinClass getLongCached(@SuppressWarnings("unused") long object,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @Cached("getLong(object, contextRef)") PythonBuiltinClass klass) {
-        return klass;
+    static Object getLong(@SuppressWarnings("unused") Long object) {
+        return PythonBuiltinClassType.PInt;
     }
 
     @Specialization
-    protected PythonBuiltinClass getLong(@SuppressWarnings("unused") long object,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PInt);
-    }
-
-    @Specialization(assumptions = "singleContextAssumption()")
-    protected PythonBuiltinClass getDoubleCached(@SuppressWarnings("unused") double object,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @Cached("getDouble(object, contextRef)") PythonBuiltinClass klass) {
-        return klass;
+    static Object getDouble(@SuppressWarnings("unused") Double object) {
+        return PythonBuiltinClassType.PFloat;
     }
 
     @Specialization
-    protected PythonBuiltinClass getDouble(@SuppressWarnings("unused") double object,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getCore().lookupType(PythonBuiltinClassType.PFloat);
+    static Object getString(@SuppressWarnings("unused") TruffleString object) {
+        return PythonBuiltinClassType.PString;
     }
 
-    @Specialization(guards = {
-                    "cachedLazyClass == plib.getLazyPythonClass(object)",
-                    "isPythonBuiltinClassType(cachedLazyClass)"
-    }, replaces = {"getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached"}, assumptions = "singleContextAssumption()")
-    protected Object getPythonClassCached(@SuppressWarnings("unused") Object object,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                    @SuppressWarnings("unused") @Cached("plib.getLazyPythonClass(object)") Object cachedLazyClass,
-                    @Cached("lookupType(context, cachedLazyClass)") PythonBuiltinClass klass) {
+    @Specialization
+    static Object getNone(@SuppressWarnings("unused") PNone object) {
+        return PythonBuiltinClassType.PNone;
+    }
+
+    @Specialization
+    static Object getBuiltinClass(PythonBuiltinClass object) {
+        return object.getInitialPythonClass();
+    }
+
+    @Specialization
+    static Object getFunction(@SuppressWarnings("unused") PFunction object) {
+        return PythonBuiltinClassType.PFunction;
+    }
+
+    @Specialization
+    static Object getBuiltinFunction(@SuppressWarnings("unused") PBuiltinFunction object) {
+        return PythonBuiltinClassType.PBuiltinFunction;
+    }
+
+    @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")
+    static Object getPythonObjectConstantClass(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape,
+                    @Cached(value = "object.getInitialPythonClass()", weak = true) Object klass) {
         return klass;
     }
 
-    @Specialization(replaces = {
-                    "getBooleanCached", "getIntCached", "getLongCached", "getDoubleCached",
-                    "getBoolean", "getInt", "getLong", "getDouble",
-                    "getPythonClassCached",
-    }, limit = "3")
-    protected Object getPythonClassGeneric(Object object,
-                    @CachedLibrary("object") PythonObjectLibrary plib,
-                    @Cached("createBinaryProfile()") ConditionProfile getClassProfile,
-                    @Cached("createClassProfile()") ValueProfile classProfile,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-        Object lazyClass = plib.getLazyPythonClass(object);
-        if (getClassProfile.profile(lazyClass instanceof PythonBuiltinClassType)) {
-            return classProfile.profile(contextRef.get().getCore().lookupType((PythonBuiltinClassType) lazyClass));
-        } else {
-            return classProfile.profile(lazyClass);
-        }
+    @Specialization(guards = "hasInitialClass(object.getShape())")
+    static Object getPythonObject(@SuppressWarnings("unused") PythonObject object,
+                    @Bind("object.getInitialPythonClass()") Object klass) {
+        assert klass != null;
+        return klass;
+    }
+
+    @InliningCutoff
+    @Specialization(guards = "!hasInitialClass(object.getShape())", replaces = "getPythonObjectConstantClass")
+    static Object getPythonObject(PythonObject object,
+                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        return dylib.getOrDefault(object, CLASS, object.getInitialPythonClass());
+    }
+
+    @InliningCutoff
+    @Specialization
+    static Object getNativeObject(PythonAbstractNativeObject object,
+                    @Cached CExtNodes.GetNativeClassNode getNativeClassNode) {
+        return getNativeClassNode.execute(object);
+    }
+
+    @Specialization
+    static Object getPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization
+    static Object getNotImplemented(@SuppressWarnings("unused") PNotImplemented object) {
+        return PythonBuiltinClassType.PNotImplemented;
+    }
+
+    @Specialization
+    static Object getEllipsis(@SuppressWarnings("unused") PEllipsis object) {
+        return PythonBuiltinClassType.PEllipsis;
+    }
+
+    @Specialization
+    static Object getCell(@SuppressWarnings("unused") PCell object) {
+        return PythonBuiltinClassType.PCell;
+    }
+
+    @Specialization
+    static Object getNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+        return PythonBuiltinClassType.PInt;
+    }
+
+    @Specialization
+    static Object getTruffleException(@SuppressWarnings("unused") AbstractTruffleException object) {
+        /*
+         * Special case: if Python code asks for the class of a foreign exception, we return a
+         * Python type that inherits from BaseException. We do this because Python users usually
+         * expect that every exception inherits from BaseException.
+         */
+        assert !(object instanceof PException);
+        return PythonBuiltinClassType.PForeignException;
+    }
+
+    @Fallback
+    static Object getForeign(@SuppressWarnings("unused") Object object) {
+        return PythonBuiltinClassType.ForeignObject;
+    }
+
+    protected static boolean hasInitialClass(Shape shape) {
+        return (shape.getFlags() & PythonObject.CLASS_CHANGED_FLAG) == 0;
     }
 }

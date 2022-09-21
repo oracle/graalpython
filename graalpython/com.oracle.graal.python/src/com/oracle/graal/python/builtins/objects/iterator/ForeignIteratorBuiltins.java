@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 
 import java.util.List;
 
@@ -35,11 +34,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -57,28 +56,32 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         return ForeignIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object next(PForeignArrayIterator foreignIter,
                         @Cached PForeignToPTypeNode fromForeignNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") InteropLibrary interop,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary pyObjLib) {
-            if (foreignIter.getCursor() >= foreignIter.getSize(interop, pyObjLib)) {
-                throw raise(StopIteration);
+                        @Cached GilNode gil) {
+            if (foreignIter.getCursor() >= foreignIter.getSize(interop, asSizeNode)) {
+                throw raiseStopIteration();
             }
 
+            gil.release(true);
             try {
                 Object element = interop.readArrayElement(foreignIter.getForeignArray(), foreignIter.advance());
                 return fromForeignNode.executeConvert(element);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw raise(PythonErrorType.StopIteration);
+                throw raiseStopIteration();
+            } finally {
+                gil.acquire();
             }
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

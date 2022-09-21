@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.test.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.*;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.*;
+import org.junit.Test;
 
 public class MultiAssignTests {
 
@@ -59,5 +59,33 @@ public class MultiAssignTests {
         String source = "(a, b), [c, d] = [[1, 2], [3, 4]]\n" + //
                         "print(a, b, c, d)\n";
         assertPrints("1 2 3 4\n", source);
+    }
+
+    @Test
+    public void starUnpacking() {
+        String source = "a, *b, c = 1, 2, 3, 4, 5\n" +
+                        "print(a, b, c)";
+        assertPrints("1 [2, 3, 4] 5\n", source);
+    }
+
+    @Test
+    public void unpackGenericIterable() {
+        String source = "class Iterable:\n" +
+                        "    def __iter__(self):\n" +
+                        "        return iter([1, 2])\n" +
+                        "\n" +
+                        "a, b = Iterable()\n" +
+                        "print(a, b)\n";
+        assertPrints("1 2\n", source);
+    }
+
+    @Test
+    public void unpackGenericIterableStar() {
+        String source = "class Iterable:\n" +
+                        "    def __iter__(self):\n" +
+                        "        return iter([1, 2, 3, 4, 5])\n" +
+                        "a, *b, c = Iterable()\n" +
+                        "print(a, b, c)\n";
+        assertPrints("1 [2, 3, 4] 5\n", source);
     }
 }

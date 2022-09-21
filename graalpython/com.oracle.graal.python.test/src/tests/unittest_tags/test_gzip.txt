@@ -42,10 +42,13 @@
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_textio_readlines
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_with_open
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_write
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_write_array
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_write_bytearray
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_write_incompatible_type
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_write_memoryview
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_write_read_with_pathlike_file
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_zero_padded_file
+*graalpython.lib-python.3.test.test_gzip.TestMain.test_main
 *graalpython.lib-python.3.test.test_gzip.TestOpen.test_bad_params
 *graalpython.lib-python.3.test.test_gzip.TestOpen.test_binary_modes
 *graalpython.lib-python.3.test.test_gzip.TestOpen.test_encoding

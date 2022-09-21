@@ -56,20 +56,15 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,49]`def gen():↵  with
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [18,20]`fn`
                           Identifier: fn
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      CachedLookupNodeGen SourceSection: None
+                      CachedLookupNodeGen SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

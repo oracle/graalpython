@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,31 +29,19 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -78,9 +66,16 @@ public final class PInt extends PythonBuiltinObject {
     private final BigInteger value;
 
     public PInt(Object clazz, Shape instanceShape, BigInteger value) {
-        super(clazz, instanceShape);
+        super(ensurePBCT(clazz), instanceShape);
         assert value != null;
         this.value = value;
+    }
+
+    private static Object ensurePBCT(Object clazz) {
+        if (clazz instanceof PythonBuiltinClass && ((PythonBuiltinClass) clazz).getType() == PythonBuiltinClassType.PInt) {
+            return PythonBuiltinClassType.PInt;
+        }
+        return clazz;
     }
 
     public static long abs(long a) {
@@ -101,195 +96,193 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public boolean isBoolean(
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        return this == context.getCore().getTrue() || this == context.getCore().getFalse();
+    public boolean isBoolean(@CachedLibrary("this") InteropLibrary self) {
+        PythonContext context = PythonContext.get(self);
+        return this == context.getTrue() || this == context.getFalse();
     }
 
     @ExportMessage
-    public boolean asBoolean(
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
-        if (this == context.getCore().getTrue()) {
+    public boolean asBoolean(@CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        PythonContext context = PythonContext.get(self);
+        if (this == context.getTrue()) {
             return true;
-        } else if (this == context.getCore().getFalse()) {
+        } else if (this == context.getFalse()) {
             return false;
         }
         throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isNumber() {
+    public boolean isNumber(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) {
+        PythonContext context = PythonContext.get(self);
+        if (isBoolean.profile(this == context.getTrue() || this == context.getFalse())) {
+            return false;
+        }
         return true;
     }
 
     @ExportMessage
-    public boolean fitsInByte() {
-        return fitsIn(MIN_BYTE, MAX_BYTE);
-    }
-
-    @ExportMessage
-    public byte asByte() throws UnsupportedMessageException {
-        try {
-            return byteValueExact();
-        } catch (ArithmeticException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    boolean fitsInShort() {
-        return fitsIn(MIN_SHORT, MAX_SHORT);
-    }
-
-    @ExportMessage(limit = "1")
-    short asShort(@CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        try {
-            return interop.asShort(intValueExact());
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
+    public boolean fitsInByte(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
+            return fitsIn(MIN_BYTE, MAX_BYTE);
+        } else {
+            return false;
         }
     }
 
     @ExportMessage
-    @TruffleBoundary
-    public boolean fitsInInt() {
-        return fitsIn(MIN_INT, MAX_INT);
-    }
-
-    @ExportMessage
-    public int asInt() throws UnsupportedMessageException {
-        try {
-            return this.intValueExact();
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage
-    public boolean fitsInLong() {
-        return fitsIn(MIN_LONG, MAX_LONG);
-    }
-
-    @ExportMessage
-    public long asLong() throws UnsupportedMessageException {
-        try {
-            return this.longValueExact();
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    boolean fitsInFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) {
-        try {
-            return fitsInLong() && interop.fitsInFloat(longValueExact());
-        } catch (OverflowException e) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    float asFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        try {
-            return interop.asFloat(longValueExact());
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    boolean fitsInDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) {
-        try {
-            return fitsInLong() && interop.fitsInDouble(longValueExact());
-        } catch (OverflowException e) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    double asDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        try {
-            return interop.asDouble(longValueExact());
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean canBeIndex() {
-        return true;
-    }
-
-    @ExportMessage
-    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached ConditionProfile gotState,
-                    @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode) {
-        if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
-            VirtualFrame frame = null;
-            if (gotState.profile(threadState != null)) {
-                frame = PArguments.frameForCall(threadState);
+    public byte asByte(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, self)) {
+            try {
+                return byteValueExact();
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
             }
-            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P,
-                            this, "__index__", "int", this, "int");
+        } else {
+            throw UnsupportedMessageException.create();
         }
-        return this;
     }
 
     @ExportMessage
-    public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
+    boolean fitsInShort(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
+            return fitsIn(MIN_SHORT, MAX_SHORT);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    short asShort(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, interop)) {
+            try {
+                return interop.asShort(intValueExact());
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public boolean fitsInInt(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
+            return fitsIn(MIN_INT, MAX_INT);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public int asInt(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, self)) {
+            try {
+                return this.intValueExact();
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public boolean fitsInLong(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
+            return fitsIn(MIN_LONG, MAX_LONG);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public long asLong(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, self)) {
+            try {
+                return this.longValueExact();
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    boolean fitsInFloat(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
-            return castToJavaIntNode.execute(this);
-        } catch (PException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            return fitsInLong(isBoolean, interop) && interop.fitsInFloat(longValueExact());
+        } catch (OverflowException e) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBeJavaDouble() {
-        return true;
+    @ExportMessage(limit = "1")
+    float asFloat(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, interop)) {
+            try {
+                return interop.asFloat(longValueExact());
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
     }
 
-    @ExportMessage
-    public double asJavaDoubleWithState(ThreadState threadState,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Cached CastToJavaDoubleNode castToDouble) {
-        return castToDouble.execute(lib.asIndexWithState(this, threadState));
+    @ExportMessage(limit = "1")
+    boolean fitsInDouble(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) {
+        try {
+            return fitsInLong(isBoolean, interop) && interop.fitsInDouble(longValueExact());
+        } catch (OverflowException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBeJavaLong() {
-        return true;
-    }
-
-    @ExportMessage
-    public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaLongExactNode castToLong) {
-        return castToLong.execute(this);
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBePInt() {
-        return true;
-    }
-
-    @ExportMessage
-    public PInt asPIntWithState(@SuppressWarnings("unused") ThreadState state) {
-        return this;
+    @ExportMessage(limit = "1")
+    double asDouble(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, interop)) {
+            try {
+                return interop.asDouble(longValueExact());
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
     }
 
     @Override
@@ -322,6 +315,16 @@ public final class PInt extends PythonBuiltinObject {
     @Override
     public String toString() {
         return toString(value);
+    }
+
+    @TruffleBoundary
+    public static String toString(int integer) {
+        return Integer.toString(integer);
+    }
+
+    @TruffleBoundary
+    public static String toString(long integer) {
+        return Long.toString(integer);
     }
 
     @TruffleBoundary
@@ -533,12 +536,8 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static BigInteger abs(BigInteger value) {
+    public static BigInteger abs(BigInteger value) {
         return value.abs();
-    }
-
-    public boolean isNative() {
-        return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
     @TruffleBoundary
@@ -587,5 +586,25 @@ public final class PInt extends PythonBuiltinObject {
 
     private boolean fitsIn(BigInteger left, BigInteger right) {
         return fitsIn(value, left, right);
+    }
+
+    /**
+     * Creates a Python {@code int} object from a Java {@code long} value by interpreting it as an
+     * unsigned number.
+     *
+     * @param factory Python object factory
+     * @param profile condition profile for the case when the unsigned value fits into Java
+     *            {@code long}
+     * @param value the value
+     * @return either {@code Long} or {@code PInt} containing an unsigned value with bit pattern
+     *         matching that of {@code value}
+     */
+    public static Object createPythonIntFromUnsignedLong(PythonObjectFactory factory, ConditionProfile profile, long value) {
+        return profile.profile(value >= 0) ? value : factory.createInt(longToUnsignedBigInt(value));
+    }
+
+    @TruffleBoundary
+    private static BigInteger longToUnsignedBigInt(long l) {
+        return BigInteger.valueOf(l >>> 32).shiftLeft(32).add(BigInteger.valueOf(l & 0xFFFFFFFFL));
     }
 }

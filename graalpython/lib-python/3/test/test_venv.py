@@ -367,10 +367,11 @@ class BasicTest(BaseTest):
         self.run_with_capture(venv.create, self.env_dir)
         envpy = os.path.join(os.path.realpath(self.env_dir),
                              self.bindir, self.exe)
+        # XXX GraalVM change: increase timeout
         out, err = check_output([envpy, '-c',
             'from multiprocessing import Pool; '
             'pool = Pool(1); '
-            'print(pool.apply_async("Python".lower).get(3)); '
+            'print(pool.apply_async("Python".lower).get(30)); '
             'pool.terminate()'])
         self.assertEqual(out.strip(), "python".encode())
 

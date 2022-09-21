@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,36 +44,55 @@
 def __gr__(self, name, mode='r', closefd=True, opener=None):
     pass
 
-def __import__(filename, module_name):
-    import sys, _imp, posix
-    module = sys.modules[module_name]
-    if filename.startswith("%s"):
-        full_filename = filename % __graalpython__.core_home
-        filename = filename[len("%s"):]
-    elif filename.startswith(__graalpython__.stdlib_home):
-        full_filename = filename
-        filename = filename[len(__graalpython__.stdlib_home):]
-    else:
-        raise RuntimeError("There was an import during bootstrap outside the core or stdlib home.")
 
-    # If we can, avoid opening the file and use our cached code
-    if not __graalpython__.has_cached_code(filename):
-        fd = posix.open(full_filename, posix.O_RDONLY)
-        content = posix.read(fd, sys.maxsize)
-        posix.close(fd)
-        code = compile(content, filename, "exec")
-    else:
-        # n.b.: for these builtin modules, there's never a full path and none of
-        # them can be packages
-        code = __graalpython__.get_cached_code(filename)
-
-    exec(code, module.__dict__)
-    return module
+# TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
+#  on 'descriptor'. We should revisit that.
+def _f(): pass
+FunctionType = type(_f)
+descriptor = type(FunctionType.__code__)
 
 
-__import__("%s/functions.py", "builtins")
-__import__("%s/property.py", "builtins")
-__import__("%s/exceptions.py", "builtins")
-__import__("%s/super.py", "builtins")
-__import__("%s/ellipsis.py", "builtins")
-__import__("%s/timsort.py", "builtins")
+@__graalpython__.builtin
+def input(module, prompt=None):
+    import sys
+    if(not hasattr(sys, "stdin")):
+        raise RuntimeError('input(): lost sys.stdin')
+    if(not hasattr(sys, "stdout")):
+        raise RuntimeError('input(): lost sys.stdout')
+    if(not hasattr(sys, "stderr")):
+        raise RuntimeError('input(): lost sys.stderr')
+
+    if prompt is not None:
+        print(prompt, end="", flush=hasattr(sys.stdout, "flush"))
+
+    result = []
+    while True:
+        ch = sys.stdin.read(1)
+        if ch:
+            if ch == "\n":
+                break
+            result.append(ch)
+        else:
+            if(len(result) == 0):
+                raise EOFError('EOF when reading a line')
+            break
+    return "".join(result)
+
+
+class filter(object):
+    def __init__(self, predicateOrNone, iterable):
+        self.predicateOrNone = predicateOrNone
+        self.iterable = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            item = next(self.iterable)
+            if self.predicateOrNone is None:
+                if item:
+                    return item
+            else:
+                if self.predicateOrNone(item):
+                    return item

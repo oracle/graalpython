@@ -45,7 +45,5 @@ ModuleRootNode Name: <module 'call17'> SourceSection: [0,22]`def fn(): foo(arg =
                             EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10,13]`foo`
                             Identifier: foo
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]

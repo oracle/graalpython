@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import java.util.List;
-
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class BaseBlockNode extends StatementNode {
 
@@ -38,32 +38,28 @@ public abstract class BaseBlockNode extends StatementNode {
         this.statements = statements;
     }
 
-    protected StatementNode[] insertStatementsBefore(StatementNode insertBefore, List<StatementNode> insertees) {
-        int insertAt = -1;
-        for (int i = 0; i < statements.length; i++) {
-            StatementNode stmt = statements[i];
-
-            if (stmt.equals(insertBefore)) {
-                insertAt = i;
-            }
-        }
-
-        assert insertAt != -1;
-        StatementNode[] extendedStatements = new StatementNode[statements.length + insertees.size()];
-        PythonUtils.arraycopy(statements, 0, extendedStatements, 0, insertAt);
-
-        for (int i = 0; i < insertees.size(); i++) {
-            extendedStatements[i + insertAt] = insertees.get(i);
-        }
-
-        for (int i = insertAt; i < statements.length; i++) {
-            extendedStatements[i + insertees.size()] = statements[i];
-        }
-
-        return extendedStatements;
-    }
-
     public final StatementNode[] getStatements() {
         return statements;
+    }
+
+    @Override
+    @ExplodeLoop
+    public void executeVoid(VirtualFrame frame) {
+        for (int i = 0; i < statements.length; i++) {
+            statements[i].executeVoid(frame);
+        }
+    }
+
+    @Override
+    @ExplodeLoop
+    public Object returnExecute(VirtualFrame frame) {
+        for (int i = 0; i < statements.length - 1; i++) {
+            statements[i].executeVoid(frame);
+        }
+        if (statements.length > 0) {
+            return statements[statements.length - 1].returnExecute(frame);
+        } else {
+            return PNone.NONE;
+        }
     }
 }

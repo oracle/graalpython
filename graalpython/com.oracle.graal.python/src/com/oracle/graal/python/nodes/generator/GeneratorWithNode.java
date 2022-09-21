@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,12 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
+    public Object returnExecute(VirtualFrame frame) {
+        // We do not use returnExecute inside generators
+        throw new IllegalStateException();
+    }
+
+    @Override
     protected Object getWithObject(VirtualFrame frame) {
         Object withObject = gen.getIterator(frame, withObjectSlot);
         if (withObject == null) {
@@ -81,9 +87,11 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void doBody(VirtualFrame frame) {
+    protected Object doBody(VirtualFrame frame, boolean isReturn) {
+        assert !isReturn; // not supported in generators
         try {
-            super.doBody(frame);
+            super.doBody(frame, isReturn);
+            return null;
         } catch (YieldException e) {
             gen.setActive(frame, yieldSlot, true);
             throw e;
@@ -91,9 +99,9 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException pException) {
+    protected boolean handleException(VirtualFrame frame, Object withObject, Object exitCallable, Object exceptionObject, PException exceptionState, PException chain) {
         reset(frame);
-        super.handleException(frame, withObject, exitCallable, pException);
+        return super.handleException(frame, withObject, exitCallable, exceptionObject, exceptionState, chain);
     }
 
     @Override

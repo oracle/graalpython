@@ -1,0 +1,19 @@
+Disassembly of <module>:
+  1:0   -   2:22        0 COLLECTION_FROM_STACK             0    (PKeyword[])
+  1:0   -   2:22        2 MAKE_FUNCTION                     2    (foo)
+  1:0   -   2:22        5 STORE_NAME                        0    (foo)
+  1:0   -   2:22        7 LOAD_NONE
+  1:0   -   2:22        8 RETURN_VALUE
+
+Disassembly of foo:
+  2:2   -   2:7         0 LOAD_GLOBAL                       0    (print)
+  2:8   -   2:9         2 LOAD_FAST                         0    (a)
+  2:11  -   2:12        4 LOAD_FAST                         1    (b)
+  2:14  -   2:15        6 LOAD_FAST                         3    (c)
+  2:17  -   2:18        8 LOAD_FAST                         2    (d)
+  2:20  -   2:21       10 LOAD_FAST                         4    (e)
+  2:2   -   2:22       12 COLLECTION_FROM_STACK             5    (Object[])
+  2:2   -   2:22       14 CALL_FUNCTION_VARARGS
+  2:2   -   2:22       15 POP_TOP
+  2:2   -   2:22       16 LOAD_NONE
+  2:2   -   2:22       17 RETURN_VALUE

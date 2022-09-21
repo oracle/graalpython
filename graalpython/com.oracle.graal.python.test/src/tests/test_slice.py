@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -194,3 +194,11 @@ def test_correct_error():
         [1][:"42"]
     except TypeError as e:
         assert "slice indices must be integers" in str(e)
+
+
+def test_slice_eq():
+    # Note: large numbers that do not get interned when boxed...
+    assert slice(2, 10000, 10) == slice(2, 10000, 10)
+    assert slice(None, 12345, 10) == slice(None, 12345, 10)
+    assert slice(1, 10000, 10) != slice(None, 10000, 10)
+    assert slice(2, 10000, 10) != slice(2, 10000, 1)

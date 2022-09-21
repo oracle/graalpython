@@ -39,16 +39,11 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                           Arguments:
                             ReadGlobalOrBuiltinNodeGen SourceSection: [23,26]`bar`
                               Identifier: bar
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [33,43]`nifty+spit`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                            AddNodeGen SourceSection: [33,43]`nifty+spit`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [33,38]`nifty`
                                 Identifier: nifty
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [39,43]`spit`
                                 Identifier: spit
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KwArguments: None
                           Documentation: None
                           FreeVarSlots: None
@@ -62,7 +57,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [foo, spaz, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, foo, spaz]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -72,29 +67,21 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: foo
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,foo,Illegal]
+                                      Frame: [0,foo,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: spaz
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [1,spaz,Illegal]
+                                      Frame: [1,spaz,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
                                   FrameReturnNode SourceSection: None
-                                    FunctionBodyNode SourceSection: [45,46]`0`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
-                                        IntegerLiteralNode SourceSection: [45,46]`0`
-                                          Value: 0
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                                    LambdaBodyNode SourceSection: [45,46]`0`
+                                      IntegerLiteralNode SourceSection: [45,46]`0`
+                                        Value: 0
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                  Frame: [2,<return_val>,Object]
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]

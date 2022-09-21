@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,45 +25,36 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-    @CompilationFinal private BranchProfile asyncProfile;
-    @CompilationFinal FrameSlot iteratorSlot;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
+    private final int iteratorSlot;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
-    @Child PRaiseNode raise;
 
-    public ForRepeatingNode(StatementNode target, StatementNode body) {
+    public ForRepeatingNode(StatementNode target, StatementNode body, int iteratorSlot) {
+        this.iteratorSlot = iteratorSlot;
         this.nextElement = ForNextElementNodeGen.create(target);
         this.body = body;
     }
@@ -78,12 +69,6 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
             throw new IllegalStateException(e);
         }
         body.executeVoid(frame);
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-            asyncProfile = BranchProfile.create();
-        }
-        contextRef.get().triggerAsyncActions(frame, asyncProfile);
         return true;
     }
 }
@@ -112,7 +97,18 @@ abstract class ForNextElementNode extends PNodeWithContext {
             profiledIterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, profiledIterator.next());
+        ((WriteNode) target).executeInt(frame, profiledIterator.next());
+        return true;
+    }
+
+    @Specialization
+    protected boolean doObjectIterator(VirtualFrame frame, PObjectSequenceIterator iterator,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
+            return false;
+        }
+        ((WriteNode) target).executeObject(frame, iterator.next());
         return true;
     }
 
@@ -123,7 +119,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
             iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, iterator.next());
+        ((WriteNode) target).executeLong(frame, iterator.next());
         return true;
     }
 
@@ -134,20 +130,19 @@ abstract class ForNextElementNode extends PNodeWithContext {
             iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).doWrite(frame, iterator.next());
+        ((WriteNode) target).executeDouble(frame, iterator.next());
         return true;
     }
 
     @Specialization
     protected boolean doIterator(VirtualFrame frame, Object object,
-                    @Cached("create()") GetNextNode next,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile,
-                    @Cached PRaiseNode raise) {
+                    @Cached GetNextNode next,
+                    @Cached IsBuiltinClassProfile errorProfile) {
         try {
-            ((WriteNode) target).doWrite(frame, next.execute(frame, object));
+            ((WriteNode) target).executeObject(frame, next.execute(frame, object));
             return true;
         } catch (PException e) {
-            e.expectStopIteration(errorProfile, raise, object);
+            e.expectStopIteration(errorProfile);
             return false;
         }
     }
@@ -156,14 +151,15 @@ abstract class ForNextElementNode extends PNodeWithContext {
 @NodeInfo(shortName = "for")
 public final class ForNode extends LoopNode {
 
-    @CompilationFinal private FrameSlot iteratorSlot;
+    private final int iteratorSlot;
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
     @Child private ExpressionNode iterator;
 
-    public ForNode(StatementNode body, StatementNode target, ExpressionNode iterator) {
+    public ForNode(StatementNode body, StatementNode target, ExpressionNode iterator, int iteratorSlot) {
         this.iterator = iterator;
-        this.loopNode = Truffle.getRuntime().createLoopNode(new ForRepeatingNode(target, body));
+        this.iteratorSlot = iteratorSlot;
+        this.loopNode = Truffle.getRuntime().createLoopNode(new ForRepeatingNode(target, body, iteratorSlot));
     }
 
     public StatementNode getTarget() {
@@ -181,23 +177,11 @@ public final class ForNode extends LoopNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        if (iteratorSlot == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getLock().lock();
-            try {
-                if (iteratorSlot == null) {
-                    iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
-                    ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
-                }
-            } finally {
-                getLock().unlock();
-            }
-        }
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {
             loopNode.execute(frame);
         } finally {
-            frame.setObject(iteratorSlot, null);
+            frame.clear(iteratorSlot);
         }
     }
 }

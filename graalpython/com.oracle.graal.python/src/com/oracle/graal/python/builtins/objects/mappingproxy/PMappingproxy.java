@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PMappingproxy extends PythonBuiltinObject {
     private final Object mapping;
 
@@ -59,12 +54,5 @@ public final class PMappingproxy extends PythonBuiltinObject {
 
     public Object getMapping() {
         return mapping;
-    }
-
-    /* this is correct because it cannot be subclassed in Python */
-    @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
-    Object getIteratorWithState(ThreadState state,
-                    @CachedLibrary("this.getMapping()") PythonObjectLibrary lib) {
-        return lib.getIteratorWithState(mapping, state);
     }
 }

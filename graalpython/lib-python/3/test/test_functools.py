@@ -159,6 +159,7 @@ class TestPartial:
         self.assertRaises(ZeroDivisionError, self.partial(f), 1, 0)
         self.assertRaises(ZeroDivisionError, self.partial(f, y=0), 1)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_weakref(self):
         f = self.partial(int, base=16)
         p = proxy(f)
@@ -1888,7 +1889,6 @@ class TestSingleDispatch(unittest.TestCase):
                                  c.Collection, c.Sized, c.Iterable,
                                  c.Container, object])
 
-    @support.impl_detail("timeout", graalvm=False)
     def test_register_abc(self):
         c = collections.abc
         d = {"a": "b"}
@@ -2024,7 +2024,6 @@ class TestSingleDispatch(unittest.TestCase):
         aa = AA()
         self.assertEqual(fun(aa), 'fun A')
 
-    @support.impl_detail("timeout", graalvm=False)
     def test_mro_conflicts(self):
         c = collections.abc
         @functools.singledispatch
@@ -2255,7 +2254,6 @@ class TestSingleDispatch(unittest.TestCase):
             g._clear_cache()
             self.assertEqual(len(td), 0)
 
-    @support.impl_detail("timeout", graalvm=False)
     def test_annotations(self):
         @functools.singledispatch
         def i(arg):

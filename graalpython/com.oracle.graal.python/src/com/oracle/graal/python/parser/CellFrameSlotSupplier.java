@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,12 +25,10 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.truffle.api.frame.FrameSlot;
-
 public interface CellFrameSlotSupplier {
-    FrameSlot[] getCellVarSlots();
+    int[] getCellVarSlots();
 
-    FrameSlot[] getFreeVarSlots();
+    int[] getFreeVarSlots();
 
-    FrameSlot[] getFreeVarDefinitionSlots();
+    int[] getFreeVarDefinitionSlots();
 }

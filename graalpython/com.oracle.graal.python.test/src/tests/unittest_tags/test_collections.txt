@@ -16,6 +16,7 @@
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_Sequence
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_Sequence_mixins
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_Set
+*graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_Set_interoperability_with_real_sets
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_arithmetic_Set
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_equality_Set
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_hash_Set
@@ -23,7 +24,9 @@
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue16373
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue26915
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue8750
+*graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue_4920
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue_5647
+*graalpython.lib-python.3.test.test_collections.TestCounter.test_basics
 *graalpython.lib-python.3.test.test_collections.TestCounter.test_conversions
 *graalpython.lib-python.3.test.test_collections.TestCounter.test_copy_subclass
 *graalpython.lib-python.3.test.test_collections.TestCounter.test_copying
@@ -41,6 +44,7 @@
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_defaults
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_factory
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_factory_doc_attr
+*graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_field_descriptor
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_field_doc
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_field_doc_reuse
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_instance
@@ -54,12 +58,16 @@
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_readonly
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_repr
 *graalpython.lib-python.3.test.test_collections.TestNamedTuple.test_tupleness
+*graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_AsyncGenerator
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_AsyncIterable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_AsyncIterator
+*graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Awaitable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Callable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Collection
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Container
+*graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Coroutine
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Generator
+*graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Hashable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Iterable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Iterator
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Reversible
@@ -67,6 +75,7 @@
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_direct_subclassing
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_registration
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_dict_copy
+*graalpython.lib-python.3.test.test_collections.TestUserObjects.test_dict_protocol
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_list_copy
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_list_protocol
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_str_protocol

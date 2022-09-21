@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,14 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
-    public static final double TIMEOUT_MAX = 2 ^ 31;
+    public static final double TIMEOUT_MAX = Math.pow(2, 31);
     public static final boolean DEFAULT_BLOCKING = true;
-    public static final double UNSET_TIMEOUT = -1.0;
+    public static final double UNSET_TIMEOUT = -1;
 
     AbstractPythonLock(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
@@ -64,12 +65,12 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
     protected abstract boolean acquireNonBlocking();
 
-    protected abstract boolean acquireBlocking();
+    protected abstract boolean acquireBlocking(Node node);
 
-    protected abstract boolean acquireTimeout(long timeout);
+    protected abstract boolean acquireTimeout(Node node, long timeout);
 
-    protected boolean acquireTimeout(double timeout) {
-        return acquireTimeout(getTimeoutInMillis(timeout));
+    protected boolean acquireTimeout(Node node, double timeout) {
+        return acquireTimeout(node, getTimeoutInMillis(timeout));
     }
 
     public abstract void release();

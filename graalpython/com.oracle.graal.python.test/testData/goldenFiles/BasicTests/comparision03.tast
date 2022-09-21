@@ -7,25 +7,15 @@ ModuleRootNode Name: <module 'comparision03'> SourceSection: [0,22]`1 < '10' > T
   InnerRootNode SourceSection: [0,22]`1 < '10' > True != 1...`
     AndNode SourceSection: [0,22]`1 < '10' > True != 1...`
       AndNode SourceSection: None
-        BinaryComparisonNodeGen SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __lt__
+        LtNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [0,1]`1`
             Value: 1
           StringLiteralNode SourceSection: [4,8]`'10'`
-        BinaryComparisonNodeGen SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __gt__
+        GtNodeGen SourceSection: None
           StringLiteralNode SourceSection: [4,8]`'10'`
           BooleanLiteralNode SourceSection: [11,15]`True`
         YesNodeGen SourceSection: None
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
-      BinaryComparisonNodeGen SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __ne__
+      NeNodeGen SourceSection: None
         BooleanLiteralNode SourceSection: [11,15]`True`
         DoubleLiteralNode SourceSection: [19,22]`1.0`
       YesNodeGen SourceSection: None
-        IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None

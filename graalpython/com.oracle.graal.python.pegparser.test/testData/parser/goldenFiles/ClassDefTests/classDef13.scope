@@ -1,0 +1,10 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      Point: [DefLocal, Use, Local]
+      a: [DefLocal, Local]
+      p: [DefLocal, Use, Local]
+    Scope Point Class
+        Symbols:
+            x: [DefLocal, Local]
+            y: [DefLocal, Local]

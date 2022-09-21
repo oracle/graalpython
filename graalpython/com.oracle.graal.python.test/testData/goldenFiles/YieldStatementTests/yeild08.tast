@@ -41,19 +41,13 @@ ModuleRootNode Name: <module 'yeild08'> SourceSection: [0,22]`def f(): 1 + (yiel
                       GeneratorExpressionWithSideEffects SourceSection: [9,22]`1 + (yield)*2`
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: <>temp0
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<>temp0,Illegal]
+                          Frame: [0,<>temp0,Illegal]
                           IntegerLiteralNode SourceSection: [9,10]`1`
                             Value: 1
-                        BinaryArithmeticExpression SourceSection: None
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          ReadGeneratorFrameVariableNode SourceSection: None
+                        AddNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNodeGen SourceSection: None
                             Frame: [0,<>temp0,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          BinaryArithmeticExpression SourceSection: [13,22]`(yield)*2`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mul__
+                          MulNodeGen SourceSection: [13,22]`(yield)*2`
                             YieldNode SourceSection: [14,19]`yield`
                               flagSlot: 0
                               EmptyNode SourceSection: None
@@ -61,9 +55,8 @@ ModuleRootNode Name: <module 'yeild08'> SourceSection: [0,22]`def f(): 1 + (yiel
                             IntegerLiteralNode SourceSection: [21,22]`2`
                               Value: 2
                         GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                    Frame: [1,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

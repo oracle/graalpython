@@ -4,6 +4,4 @@
 *graalpython.lib-python.3.test.test_coroutines.CAPITest.test_tp_await_1
 *graalpython.lib-python.3.test.test_coroutines.CAPITest.test_tp_await_2
 *graalpython.lib-python.3.test.test_coroutines.CAPITest.test_tp_await_3
-*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_comp_7
-*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_for_tuple
 *graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_gen_1

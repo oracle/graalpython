@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import site
 import subprocess
 import tempfile
 import importlib
+import time
 
 import sys
 
@@ -99,17 +100,25 @@ def pip_package(name=None, try_import=False):
         return wrapper
     return decorator
 
-def run_cmd(args, msg="", failOnError=True, cwd=None, env=None):
-    cwd_log = "cd " + cwd if cwd else ""
+def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **kwargs):
+    cwd_log = "cd " + cwd + " ;" if cwd else ""
     print("+", cwd_log, ' '.join(args))
-    result = subprocess.run(args, cwd=cwd, env=env)
+    result = subprocess.run(args, cwd=cwd, env=env, capture_output=quiet, **kwargs)
     if failOnError and result.returncode != 0:
-        xit(msg, status=result.returncode)
+        xit_msg = [msg]
+        if result.stdout:
+            xit_msg.append("stdout:")
+            xit_msg.append(result.stdout.decode("utf-8"))
+        if result.stderr:
+            xit_msg.append("stderr:")
+            xit_msg.append(result.stderr.decode("utf-8"))
+        xit("{}", os.linesep.join(xit_msg))
     return result.returncode
 
 def known_packages():
     @pip_package()
     def pytest(**kwargs):
+        setuptools(**kwargs)
         wcwidth(**kwargs)
         pluggy(**kwargs)
         atomicwrites(**kwargs)
@@ -131,7 +140,7 @@ def known_packages():
     @pip_package()
     def attrs(**kwargs):
 
-        install_from_pypi("attrs==19.1.0", **kwargs)
+        install_from_pypi("attrs==19.2.0", **kwargs)
 
     @pip_package()
     def pyparsing(**kwargs):
@@ -231,6 +240,17 @@ def known_packages():
         Cython(**kwargs)
         install_from_pypi("h5py==2.10.0", **kwargs)
 
+    @pip_package()
+    def sortedcontainers(**kwargs):
+        install_from_pypi("sortedcontainers==2.1.0", **kwargs)
+
+    @pip_package()
+    def hypothesis(**kwargs):
+        setuptools(**kwargs)
+        attrs(**kwargs)
+        sortedcontainers(**kwargs)
+        install_from_pypi("hypothesis==5.41.1", **kwargs)
+
     # Does not yet work
     # def h5py(**kwargs):
     #     try:
@@ -263,7 +283,7 @@ def known_packages():
     def numpy(**kwargs):
         setuptools(**kwargs)
         # honor following selected env variables: BLAS, LAPACK, ATLAS
-        numpy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        numpy_build_env = {}
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 numpy_build_env[key] = os.environ[key]
@@ -276,7 +296,7 @@ def known_packages():
 
     @pip_package()
     def certifi(**kwargs):
-        install_from_pypi("certifi==2019.9.11", **kwargs)
+        install_from_pypi("certifi==2020.11.8", **kwargs)
 
     @pip_package()
     def idna(**kwargs):
@@ -320,38 +340,66 @@ def known_packages():
 
     @pip_package()
     def scipy(**kwargs):
-        if sys.implementation.name == "graalpython":
-            venv_path = os.environ.get("VIRTUAL_ENV", None)
-            if not venv_path:
-                xit("SciPy can only be installed within a virtual env.")
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        scipy_build_env = {}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                scipy_build_env[key] = os.environ[key]
 
-            r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
-            llvm_bin_dir = r.splitlines()[-1].strip()
-            if not os.path.isdir(llvm_bin_dir):
-                xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
-
-            # currently we need 'ar', 'ranlib', and 'ld.lld'
-            llvm_bins = {"llvm-ar": ("ar",), "llvm-ranlib": ("ranlib",), "ld.lld": ("ld.lld", "ld")}
-            for binary in llvm_bins.keys():
-                llvm_bin = os.path.join(llvm_bin_dir, binary)
-                if not os.path.isfile(llvm_bin):
-                    xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
-                else:
-                    for name in llvm_bins[binary]:
-                        dest = os.path.join(venv_path, "bin", name)
-                        if os.path.exists(dest):
-                            os.unlink(dest)
-                        os.symlink(llvm_bin, dest)
+        if sys.implementation.name == "graalpy":
+            if not os.environ.get("VIRTUAL_ENV", None):
+                xit("SciPy can only be installed within a venv.")
+            from distutils.sysconfig import get_config_var
+            scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
 
         # install dependencies
         numpy(**kwargs)
 
-        # honor following selected env variables: BLAS, LAPACK, ATLAS
-        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
-        for key in ("BLAS", "LAPACK", "ATLAS"):
-            if key in os.environ:
-                scipy_build_env[key] = os.environ[key]
         install_from_pypi("scipy==1.3.1", env=scipy_build_env, **kwargs)
+
+    @pip_package()
+    def cycler(**kwargs):
+        six(**kwargs)
+        install_from_pypi("cycler==0.10.0", **kwargs)
+
+    @pip_package()
+    def cppy(**kwargs):
+        install_from_pypi("cppy==1.1.0", **kwargs)
+
+    @pip_package()
+    def cassowary(**kwargs):
+        install_from_pypi("cassowary==0.5.2", **kwargs)
+
+    @pip_package(name="PIL")
+    def Pillow(**kwargs):
+        setuptools(**kwargs)
+        build_env = {"MAX_CONCURRENCY": "0"}
+        build_cmd = ["build_ext", "--disable-jpeg"]
+        zlib_root = os.environ.get("ZLIB_ROOT", None)
+        if zlib_root:
+            build_cmd += ["-I", os.path.join(zlib_root, "include"), "-L", os.path.join(zlib_root, "lib")]
+        else:
+            info("If Pillow installation fails due to missing zlib, try to set environment variable ZLIB_ROOT.")
+        install_from_pypi("Pillow==6.2.0", build_cmd=build_cmd, env=build_env, **kwargs)
+
+    @pip_package()
+    def matplotlib(**kwargs):
+        setuptools(**kwargs)
+        certifi(**kwargs)
+        cycler(**kwargs)
+        cassowary(**kwargs)
+        pyparsing(**kwargs)
+        dateutil(**kwargs)
+        numpy(**kwargs)
+        Pillow(**kwargs)
+
+        def download_freetype(extracted_dir):
+            target_dir = os.path.join(extracted_dir, "build")
+            os.makedirs(target_dir, exist_ok=True)
+            package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://sourceforge.net/projects/freetype/files/freetype2/2.6.1/%s.tar.gz")
+            _download_with_curl_and_extract(target_dir, package_pattern % "freetype-2.6.1")
+
+        install_from_pypi("matplotlib==3.3.2", pre_install_hook=download_freetype, **kwargs)
 
     return locals()
 
@@ -359,22 +407,53 @@ def known_packages():
 KNOWN_PACKAGES = known_packages()
 
 
-def xit(msg, status=-1):
-    error(msg)
+def xit(fmt, *args, **kwargs):
+    error(fmt, *args, **kwargs)
     exit(-1)
 
 
-def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None):
+def _download_with_curl_and_extract(dest_dir, url, quiet=False):
     name = url[url.rfind("/")+1:]
+
+    downloaded_path = os.path.join(dest_dir, name)
+
+    # first try direct connection
+    if run_cmd(["curl", "-L", "-o", downloaded_path, url], failOnError=False, quiet=quiet) != 0:
+        # honor env var 'HTTP_PROXY', 'HTTPS_PROXY', and 'NO_PROXY'
+        env = os.environ
+        curl_opts = []
+        using_proxy = False
+        if url.startswith("http://") and "HTTP_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTP_PROXY"]]
+            using_proxy = True
+        elif url.startswith("https://") and "HTTPS_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+            using_proxy = True
+        if using_proxy and "NO_PROXY" in env:
+            curl_opts += ["--noproxy", env["NO_PROXY"]]
+        run_cmd(["curl", "-L"] + curl_opts + ["-o", downloaded_path, url], msg="Download error", quiet=quiet)
+
+    if name.endswith(".tar.gz"):
+        run_cmd(["tar", "xzf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.gz", quiet=quiet)
+        bare_name = name[:-len(".tar.gz")]
+    elif name.endswith(".tar.bz2"):
+        run_cmd(["tar", "xjf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.bz2", quiet=quiet)
+        bare_name = name[:-len(".tar.bz2")]
+    elif name.endswith(".zip"):
+        run_cmd(["unzip", "-u", downloaded_path, "-d", dest_dir], msg="Error extracting zip", quiet=quiet)
+        bare_name = name[:-len(".zip")]
+    else:
+        xit("Unknown file type: {!s}", name)
+
+    return bare_name
+
+
+def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None, pre_install_hook=None, build_cmd=[]):
     tempdir = tempfile.mkdtemp()
 
-    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
+    quiet = "-q" in extra_opts
+
     os_env = os.environ
-    curl_opts = []
-    if url.startswith("http://") and "HTTP_PROXY" in os_env:
-        curl_opts += ["--proxy", os_env["HTTP_PROXY"]]
-    elif url.startswith("https://") and "HTTPS_PROXY" in os_env:
-        curl_opts += ["--proxy", os_env["HTTPS_PROXY"]]
 
     # honor env var 'CFLAGS' and the explicitly passed env
     setup_env = os_env.copy()
@@ -382,27 +461,11 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
     setup_env['CFLAGS'] = cflags if cflags else ""
 
-    if run_cmd(["curl", "-L", "-o", os.path.join(tempdir, name), url], failOnError=False) != 0:
-        # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
-        env = os.environ
-        curl_opts = []
-        if url.startswith("http://") and "HTTP_PROXY" in env:
-            curl_opts += ["--proxy", env["HTTP_PROXY"]]
-        elif url.startswith("https://") and "HTTPS_PROXY" in env:
-            curl_opts += ["--proxy", env["HTTPS_PROXY"]]
-        run_cmd(["curl", "-L"] + curl_opts + ["-o", os.path.join(tempdir, name), url], msg="Download error")
+    user_build_cmd = os_env.get("GINSTALL_BUILD_CMD", "")
+    if user_build_cmd:
+        build_cmd = user_build_cmd.split(" ")
 
-    if name.endswith(".tar.gz"):
-        run_cmd(["tar", "xzf", os.path.join(tempdir, name), "-C", tempdir], msg="Error extracting tar.gz")
-        bare_name = name[:-len(".tar.gz")]
-    elif name.endswith(".tar.bz2"):
-        run_cmd(["tar", "xjf", os.path.join(tempdir, name), "-C", tempdir], msg="Error extracting tar.bz2")
-        bare_name = name[:-len(".tar.bz2")]
-    elif name.endswith(".zip"):
-        run_cmd(["unzip", "-u", os.path.join(tempdir, name), "-d", tempdir], msg="Error extracting zip")
-        bare_name = name[:-len(".zip")]
-    else:
-        xit("Unknown file type: %s" % name)
+    bare_name = _download_with_curl_and_extract(tempdir, url, quiet=quiet)
 
     file_realpath = os.path.dirname(os.path.realpath(__file__))
     patches_dir = os.path.join(Path(file_realpath).parent, 'patches', package)
@@ -412,7 +475,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
 
     patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
     if patch_file_path:
-        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, ""), "-p1", "-i", patch_file_path])
+        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, ""), "-p1", "-i", patch_file_path], quiet=quiet)
 
     whl_patches_dir = os.path.join(patches_dir, "whl")
     patch_file_path = first_existing(package, versions, whl_patches_dir, ".patch")
@@ -420,16 +483,23 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     subdir = "" if subdir is None else subdir
     if patch_file_path:
         os.path.join(tempdir, bare_name, subdir)
-        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path])
+        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path], quiet=quiet)
 
-    if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
+    if pre_install_hook:
+        pre_install_hook(os.path.join(tempdir, bare_name))
+
+    if "--user" not in extra_opts and "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
         user_arg = ["--user"]
     else:
         user_arg = []
-    status = run_cmd([sys.executable, "setup.py", "install"] + user_arg + extra_opts, env=setup_env,
-                     cwd=os.path.join(tempdir, bare_name))
+    start = time.time()
+    status = run_cmd([sys.executable, "setup.py"] + build_cmd + ["install"] + user_arg + extra_opts, env=setup_env,
+                     cwd=os.path.join(tempdir, bare_name), quiet=quiet)
+    end = time.time()
     if status != 0 and not ignore_errors:
-        xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
+        xit("An error occurred trying to run `setup.py install {!s} {}'", user_arg, " ".join(extra_opts))
+    elif quiet:
+        info("{} successfully installed (took {:.2f} s)", package, (end - start))
 
 # NOTE: Following 3 functions are duplicated in pip_hook.py:
 # creates a search list of a versioned file:
@@ -461,7 +531,7 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 # end of code duplicated in pip_hook.py
 
-def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env={}):
+def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env=None, pre_install_hook=None, build_cmd=[]):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
@@ -476,7 +546,7 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
         # this is already the url to the actual package
         pass
     else:
-        r = subprocess.check_output("curl -L %s" % url, shell=True).decode("utf8")
+        r = subprocess.check_output("curl -L %s" % url, stderr=subprocess.DEVNULL, shell=True).decode("utf8")
         url = None
         try:
             urls = json.loads(r)["urls"]
@@ -488,11 +558,28 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
                     url = url_info["url"]
                     break
 
+    # make copy of env
+    env = env.copy() if env is not None else os.environ.copy()
+    from distutils.sysconfig import get_config_var
+
+    def set_if_exists(env_var, conf_var):
+        conf_value = get_config_var(conf_var)
+        if conf_value:
+            env.setdefault(env_var, conf_value)
+
+    set_if_exists("CC", "CC")
+    set_if_exists("CXX", "CXX")
+    set_if_exists("AR", "AR")
+    set_if_exists("RANLIB", "RANLIB")
+    set_if_exists("CFLAGS", "CFLAGS")
+    set_if_exists("LDFLAGS", "CCSHARED")
+
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
-                          ignore_errors=ignore_errors, env=env, version=version)
+                          ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook,
+                          build_cmd=build_cmd)
     else:
-        xit("Package not found: '%s'" % package)
+        xit("Package not found: '{!s}'", package)
 
 def get_site_packages_path():
     if site.ENABLE_USER_SITE:
@@ -505,6 +592,7 @@ def get_site_packages_path():
 
 def main(argv):
     parser = argparse.ArgumentParser(description="The simple Python package installer for GraalVM")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Do not show build output")
 
     subparsers = parser.add_subparsers(title="Commands", dest="command", metavar="Use COMMAND --help for further help.")
 
@@ -516,7 +604,8 @@ def main(argv):
     install_parser = subparsers.add_parser(
         "install",
         help="install a known package",
-        description="Install a known package. Known packages are " + ", ".join(KNOWN_PACKAGES.keys())
+        description="Install a known package. Known packages are:\n" + "\n".join(sorted(KNOWN_PACKAGES.keys())),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     install_parser.add_argument(
         "package",
@@ -525,6 +614,11 @@ def main(argv):
     install_parser.add_argument(
         "--prefix",
         help="user-site path prefix"
+    )
+    install_parser.add_argument(
+        "--user",
+        action='store_true',
+        help="install into user site",
     )
 
     subparsers.add_parser(
@@ -545,6 +639,8 @@ def main(argv):
     )
 
     args = parser.parse_args(argv)
+
+    quiet_flag = ["-q"] if args.quiet else []
 
     if args.command == "list":
         user_site = get_site_packages_path()
@@ -571,19 +667,21 @@ def main(argv):
             if deleted:
                 info("Deleted {}", p)
             else:
-                xit("Unknown package: '%s'" % pkg)
+                xit("Unknown package: '{!s}'", pkg)
     elif args.command == "install":
         for pkg in args.package.split(","):
             if pkg not in KNOWN_PACKAGES:
-                xit("Unknown package: '%s'" % pkg)
+                xit("Unknown package: '{!s}'", pkg)
             else:
+                extra_opts = [] + quiet_flag
                 if args.prefix:
-                    KNOWN_PACKAGES[pkg](extra_opts=["--prefix", args.prefix])
-                else:
-                    KNOWN_PACKAGES[pkg]()
+                    extra_opts += ["--prefix", args.prefix]
+                if args.user:
+                    extra_opts += ["--user"]
+                KNOWN_PACKAGES[pkg](extra_opts=extra_opts)
     elif args.command == "pypi":
         for pkg in args.package.split(","):
-            install_from_pypi(pkg, ignore_errors=False)
+            install_from_pypi(pkg, extra_opts=quiet_flag, ignore_errors=False)
 
 
 if __name__ == "__main__":

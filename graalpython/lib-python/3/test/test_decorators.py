@@ -1,4 +1,5 @@
 import unittest
+from test import support
 
 def funcattrs(**kwds):
     def decorate(func):
@@ -151,6 +152,8 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(counts['double'], 4)
 
     def test_errors(self):
+        support.skipIfBCI(self)
+
 
         # Test SyntaxErrors:
         for stmt in ("x,", "x, y", "x = y", "pass", "import sys"):

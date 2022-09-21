@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -30,13 +30,12 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -65,6 +65,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -79,9 +80,15 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @NodeChild("calleeNode")
 public abstract class PythonCallNode extends ExpressionNode {
+
+    private static final TruffleString T_UNKNOWN = tsLiteral("~unknown");
 
     @Child private CallNode callNode = CallNode.create();
 
@@ -92,14 +99,14 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Children protected final ExpressionNode[] argumentNodes;
     @Child private PositionalArgumentsNode positionalArguments;
     @Child private KeywordArgumentsNode keywordArguments;
-    @Child private GetAttributeNode getNameAttributeNode;
-    @Child private StringNodes.CastToJavaStringCheckedNode castToStringNode;
+    @Child private PyObjectFunctionStr pyObjectFunctionStr;
+    @Child private StringNodes.CastToTruffleStringCheckedNode castToStringNode;
 
-    protected final String calleeName;
+    protected final TruffleString calleeName;
 
     protected abstract ExpressionNode getCalleeNode();
 
-    PythonCallNode(String calleeName, ExpressionNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
+    PythonCallNode(TruffleString calleeName, ExpressionNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
         this.calleeName = calleeName;
         this.argumentNodes = argumentNodes;
         this.positionalArguments = positionalArguments;
@@ -110,7 +117,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         assert !(starArgs instanceof EmptyNode) : "pass null instead";
         assert !(kwArgs instanceof EmptyNode) : "pass null instead";
 
-        String calleeName = "~unknown";
+        TruffleString calleeName = T_UNKNOWN;
         ExpressionNode getCallableNode = calleeNode;
 
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
@@ -148,7 +155,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         return argumentNodes;
     }
 
-    private static class PythonCallUnary extends ExpressionNode {
+    private static final class PythonCallUnary extends ExpressionNode {
         @Child CallUnaryMethodNode callUnary = CallUnaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Child ExpressionNode argumentNode;
@@ -175,7 +182,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    private static class PythonCallBinary extends ExpressionNode {
+    private static final class PythonCallBinary extends ExpressionNode {
         @Child CallBinaryMethodNode callBinary = CallBinaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Children final ExpressionNode[] argumentNodes;
@@ -203,7 +210,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    private static class PythonCallTernary extends ExpressionNode {
+    private static final class PythonCallTernary extends ExpressionNode {
         @Child CallTernaryMethodNode callTernary = CallTernaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Children final ExpressionNode[] argumentNodes;
@@ -232,7 +239,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    private static class PythonCallQuaternary extends ExpressionNode {
+    private static final class PythonCallQuaternary extends ExpressionNode {
         @Child CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Children final ExpressionNode[] argumentNodes;
@@ -262,48 +269,24 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    /**
-     * If the argument length is fixed 1, 2, or 3 arguments, returns an expression node that uses
-     * special call semantics, i.e., it can avoid creating a stack frame if the call target is a
-     * builtin python function that takes 1, 2, or 3 arguments exactly. Otherwise, returns itself.
-     */
-    public ExpressionNode asSpecialCall() {
-        if (argumentNodes == null || keywordArguments != null) {
-            return this;
-        } else {
-            switch (argumentNodes.length) {
-                case 1:
-                    return new PythonCallUnary(getCalleeNode(), argumentNodes[0]);
-                case 2:
-                    return new PythonCallBinary(getCalleeNode(), argumentNodes);
-                case 3:
-                    return new PythonCallTernary(getCalleeNode(), argumentNodes);
-                case 4:
-                    return new PythonCallQuaternary(getCalleeNode(), argumentNodes);
-                default:
-                    return this;
-            }
-        }
-    }
-
     @NodeChild("object")
     protected abstract static class GetCallAttributeNode extends ExpressionNode {
 
-        protected final String key;
+        protected final TruffleString key;
 
-        protected GetCallAttributeNode(String key) {
+        protected GetCallAttributeNode(TruffleString key) {
             this.key = key;
         }
 
-        @Specialization(guards = "lib.isForeignObject(object)")
+        @Specialization(guards = "isForeignObjectNode.execute(object)", limit = "1")
         Object getForeignInvoke(Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode) {
             return new ForeignInvoke(object, key);
         }
 
-        @Specialization(guards = "!lib.isForeignObject(object)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isForeignObjectNode.execute(object)", limit = "1")
         static Object getCallAttribute(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, object);
         }
@@ -311,15 +294,15 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     protected static final class ForeignInvoke {
         private final Object receiver;
-        private final String identifier;
+        private final TruffleString identifier;
 
-        public ForeignInvoke(Object object, String key) {
+        public ForeignInvoke(Object object, TruffleString key) {
             this.receiver = object;
             this.identifier = key;
         }
     }
 
-    public final String getCalleeName() {
+    public final TruffleString getCalleeName() {
         return calleeName;
     }
 
@@ -343,25 +326,26 @@ public abstract class PythonCallNode extends ExpressionNode {
                 keywordsError.enter();
                 if (castToStringNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    castToStringNode = insert(StringNodes.CastToJavaStringCheckedNode.create());
+                    castToStringNode = insert(StringNodes.CastToTruffleStringCheckedNode.create());
                 }
-                Object functionName = getNameAttributeNode().executeObject(frame, callable);
-                String keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_MUST_BE_STRINGS, new Object[]{functionName});
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, functionName, keyName);
+                TruffleString functionName = getFunctionName(frame, callable);
+                TruffleString keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
             } catch (NonMappingException ex) {
                 keywordsError.enter();
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, getNameAttributeNode().executeObject(frame, callable), ex.getObject());
+                TruffleString functionName = getFunctionName(frame, callable);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, ex.getObject());
             }
         }
         return result;
     }
 
-    private GetAttributeNode getNameAttributeNode() {
-        if (getNameAttributeNode == null) {
+    private TruffleString getFunctionName(VirtualFrame frame, Object callable) {
+        if (pyObjectFunctionStr == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__NAME__));
+            pyObjectFunctionStr = insert(PyObjectFunctionStr.create());
         }
-        return getNameAttributeNode;
+        return pyObjectFunctionStr.execute(frame, callable);
     }
 
     @ImportStatic({PythonOptions.class})
@@ -374,13 +358,14 @@ public abstract class PythonCallNode extends ExpressionNode {
         @Specialization
         Object call(VirtualFrame frame, ForeignInvoke callable, Object[] arguments, PKeyword[] keywords,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") PForeignToPTypeNode fromForeign,
-                        @Cached("create()") BranchProfile typeError,
-                        @Cached("create()") BranchProfile invokeError,
-                        @Cached("create()") GetAnyAttributeNode getAttrNode,
+                        @Cached PForeignToPTypeNode fromForeign,
+                        @Cached BranchProfile typeError,
+                        @Cached BranchProfile invokeError,
+                        @Cached GetAnyAttributeNode getAttrNode,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
             try {
-                return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));
+                return fromForeign.executeConvert(interop.invokeMember(callable.receiver, toJavaStringNode.execute(callable.identifier), arguments));
             } catch (ArityException | UnsupportedTypeException e) {
                 typeError.enter();
                 throw raise.raise(PythonErrorType.TypeError, e);
@@ -396,7 +381,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
                     @Cached PRaiseNode raise,
-                    @Cached("create()") BranchProfile keywordsError,
+                    @Cached BranchProfile keywordsError,
                     @Cached InvokeForeign invoke) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
@@ -436,7 +421,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     @Specialization(guards = "!isForeignInvoke(callable)")
     Object call(VirtualFrame frame, Object callable, @Cached PRaiseNode raise,
-                    @Cached("create()") BranchProfile keywordsError) {
+                    @Cached BranchProfile keywordsError) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
         return callNode.execute(frame, callable, arguments, keywords);
@@ -452,6 +437,6 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     private boolean isBreakpoint(Class<?> tag) {
-        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equals(BuiltinNames.BREAKPOINT);
+        return tag == DebuggerTags.AlwaysHalt.class && calleeName.equalsUncached(BuiltinNames.T_BREAKPOINT, TS_ENCODING);
     }
 }

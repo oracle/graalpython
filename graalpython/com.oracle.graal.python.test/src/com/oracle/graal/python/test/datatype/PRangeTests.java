@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,13 +28,12 @@ package com.oracle.graal.python.test.datatype;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -46,11 +45,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public class PRangeTests {
-    @Before
-    public void setup() {
-        PythonTests.enterContext();
-    }
-
     static class TestRoot extends RootNode {
         protected TestRoot(PythonLanguage language) {
             super(language);
@@ -68,52 +62,69 @@ public class PRangeTests {
 
     @Test
     public void loopWithOnlyStop() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.getUncached().createIntRange(10);
-        int index = 0;
-        TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
-        Object iter = PythonObjectLibrary.getUncached().getIterator(range);
-        GetNextNode next = GetNextNode.create();
-        testRoot.doInsert(next);
-        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
+        PythonTests.enterContext();
+        try {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PRange range = factory.createIntRange(10);
+            int index = 0;
+            TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
+            Object iter = PyObjectGetIter.getUncached().execute(null, range);
+            GetNextNode next = GetNextNode.create();
+            testRoot.doInsert(next);
+            IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
 
-        while (true) {
-            try {
-                int item = next.executeInt(null, iter);
-                assertEquals(index, item);
-            } catch (PException e) {
-                e.expectStopIteration(errorProfile);
-                break;
+            while (true) {
+                try {
+                    int item = next.executeInt(null, iter);
+                    assertEquals(index, item);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+                index++;
             }
-            index++;
+        } finally {
+            PythonTests.closeContext();
         }
     }
 
     @Test
     public void loopWithStep() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
-        int index = 0;
-        TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
-        Object iter = PythonObjectLibrary.getUncached().getIterator(range);
-        GetNextNode next = GetNextNode.create();
-        testRoot.doInsert(next);
-        IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
+        PythonTests.enterContext();
+        try {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
+            int index = 0;
+            TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
+            Object iter = PyObjectGetIter.getUncached().execute(null, range);
+            GetNextNode next = GetNextNode.create();
+            testRoot.doInsert(next);
+            IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
 
-        while (true) {
-            try {
-                int item = next.executeInt(null, iter);
-                assertEquals(index, item);
-            } catch (PException e) {
-                e.expectStopIteration(errorProfile);
-                break;
+            while (true) {
+                try {
+                    int item = next.executeInt(null, iter);
+                    assertEquals(index, item);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+                index += 2;
             }
-            index += 2;
+        } finally {
+            PythonTests.closeContext();
         }
     }
 
     @Test
     public void getItem() {
-        PIntRange range = PythonObjectFactory.getUncached().createIntRange(10);
-        assertEquals(3, range.getIntItemNormalized(3));
+        PythonTests.enterContext();
+        try {
+            PIntRange range = PythonObjectFactory.getUncached().createIntRange(10);
+            assertEquals(3, range.getIntItemNormalized(3));
+        } finally {
+            PythonTests.closeContext();
+        }
     }
 
     @Test

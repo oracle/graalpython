@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,12 +25,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.builtins.Builtin;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -39,17 +38,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "gc")
 public final class GcModuleBuiltins extends PythonBuiltins {
@@ -60,8 +57,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
-        builtinConstants.put("DEBUG_LEAK", 0);
+    public void initialize(Python3Core core) {
+        addBuiltinConstant("DEBUG_LEAK", 0);
         super.initialize(core);
     }
 
@@ -69,11 +66,22 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level,
-                        @Cached BranchProfile asyncProfile) {
-            PythonUtils.forceFullGC();
+        @TruffleBoundary
+        int collect(@SuppressWarnings("unused") Object level,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                PythonUtils.forceFullGC();
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    // doesn't matter, just trying to give the GC more time
+                }
+            } finally {
+                gil.acquire();
+            }
             // collect some weak references now
-            getContext().triggerAsyncActions(frame, asyncProfile);
+            PythonContext.triggerAsyncActions(this);
             return 0;
         }
     }
@@ -82,8 +90,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcIsEnabledNode extends PythonBuiltinNode {
         @Specialization
-        boolean isenabled(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return ctx.isGcEnabled();
+        boolean isenabled() {
+            return getContext().isGcEnabled();
         }
     }
 
@@ -91,8 +99,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DisableNode extends PythonBuiltinNode {
         @Specialization
-        PNone disable(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            ctx.setGcEnabled(false);
+        PNone disable() {
+            getContext().setGcEnabled(false);
             return PNone.NONE;
         }
     }
@@ -101,8 +109,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnableNode extends PythonBuiltinNode {
         @Specialization
-        PNone enable(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            ctx.setGcEnabled(true);
+        PNone enable() {
+            getContext().setGcEnabled(true);
             return PNone.NONE;
         }
     }

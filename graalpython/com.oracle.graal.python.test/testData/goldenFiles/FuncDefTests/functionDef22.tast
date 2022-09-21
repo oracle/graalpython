@@ -12,13 +12,13 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
           ReadNameNodeGen SourceSection: [76,81]`print`
             Identifier: print
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [82,88]`test()`
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [82,86]`test`
               Identifier: test
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,76]`def test():â†µ  a = 1;...`
           Identifier: test
@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [a, fn1, fn2, <return_val>]
+              FrameDescriptor: 4 slots [<return_val>, a, fn1, fn2]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -47,14 +47,12 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                     FunctionBodyNode SourceSection: [14,74]`a = 1;â†µ  def fn1(): ...`
                       WriteLocalVariableNodeGen SourceSection: [14,19]`a = 1`
                         Identifier: a
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,a,Illegal]
+                        Frame: [0,a,Illegal]
                         IntegerLiteralNode SourceSection: [18,19]`1`
                           Value: 1
                       WriteLocalVariableNodeGen SourceSection: [23,41]`def fn1(): passâ†µ  `
                         Identifier: fn1
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,fn1,Illegal]
+                        Frame: [1,fn1,Illegal]
                         FunctionDefinitionNode Name: fn1 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -80,13 +78,11 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                                   FunctionBodyNode SourceSection: [34,38]`pass`
                                     ExpressionStatementNode SourceSection: [34,38]`pass`
                                       EmptyNode SourceSection: [34,38]`pass`
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [0,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                  Frame: [0,<return_val>,Object]
                       WriteLocalVariableNodeGen SourceSection: [41,59]`def fn2(): passâ†µ  `
                         Identifier: fn2
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,fn2,Illegal]
+                        Frame: [2,fn2,Illegal]
                         FunctionDefinitionNode Name: fn2 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -112,19 +108,12 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                                   FunctionBodyNode SourceSection: [52,56]`pass`
                                     ExpressionStatementNode SourceSection: [52,56]`pass`
                                       EmptyNode SourceSection: [52,56]`pass`
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [0,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                  Frame: [0,<return_val>,Object]
                       FrameReturnNode SourceSection: [59,74]`return locals()`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [3,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [66,74]`locals()`
-                            CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
-                              Identifier: locals
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                        PythonCallNodeGen SourceSection: [66,74]`locals()`
+                          CallNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
+                            Identifier: locals
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [3,<return_val>,Object]

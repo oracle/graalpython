@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,9 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates the factory method (which must be static) in the class specified by
- * {@link ArgumentClinic#conversionClass()}.
+ * {@link ArgumentClinic#conversionClass()}. There can be more such methods, but they must take
+ * different number of arguments. The argument clinic code generator will choose the one suitable
+ * given the provided extra arguments and other properties of the {@link ArgumentClinic} annotation.
  */
 @Target(ElementType.METHOD)
 public @interface ClinicConverterFactory {

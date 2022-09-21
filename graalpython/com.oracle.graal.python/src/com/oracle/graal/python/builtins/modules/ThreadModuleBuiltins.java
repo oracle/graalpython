@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,52 +41,84 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = "_thread")
+@CoreFunctions(defineModule = J__THREAD)
 public class ThreadModuleBuiltins extends PythonBuiltins {
+    private static final HiddenKey THREAD_COUNT = new HiddenKey("thread_count");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "__truffle_get_timeout_max__", minNumOfPositionalArgs = 0)
+    @Override
+    public void initialize(Python3Core core) {
+        addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
+        addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
+        addBuiltinConstant(THREAD_COUNT, 0);
+        super.initialize(core);
+    }
+
+    @Builtin(name = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PThreadLocal)
     @GenerateNodeFactory
-    abstract static class GetTimeoutMaxConstNode extends PythonBuiltinNode {
+    abstract static class ThreadLocalNode extends PythonBuiltinNode {
         @Specialization
-        double getId() {
-            return TIMEOUT_MAX;
+        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs) {
+            return factory().createThreadLocal(cls, args, keywordArgs);
+        }
+    }
+
+    @Builtin(name = "allocate_lock", maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class AllocateLockNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        PLock construct(Object self, Object unused) {
+            return factory().createLock(PythonBuiltinClassType.PLock);
         }
     }
 
@@ -110,21 +142,25 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "get_ident", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
+    public abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        long getId() {
+        public static long getId() {
             return Thread.currentThread().getId();
         }
     }
 
-    @Builtin(name = "_count", minNumOfPositionalArgs = 0)
+    @Builtin(name = "_count", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class GetThreadCountNode extends PythonBuiltinNode {
+    abstract static class GetThreadCountNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        long getCount() {
-            return getContext().getThreadGroup().activeCount();
+        long getCount(PythonModule self) {
+            try {
+                return DynamicObjectLibrary.getUncached().getIntOrDefault(self, THREAD_COUNT, 0);
+            } catch (UnexpectedResultException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 
@@ -140,7 +176,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
         private long setAndGetStackSizeInternal(long stackSize) {
             if (invalidSizeProfile.profile(stackSize < 0)) {
-                throw raise(ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
             }
             return getContext().getAndSetPythonsThreadStackSize(stackSize);
         }
@@ -160,29 +196,69 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
+        @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
+            PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
-                Object[] arguments = getArgsNode.executeWith(frame, args);
-                PKeyword[] keywords = getKwArgsNode.execute(kwargs);
+                try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+                    // if args is an arbitrary iterable, converting it to an Object[] may run
+                    // Python code
+                    Object[] arguments = getArgsNode.executeWith(null, args);
+                    PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
-                // n.b.: It is important to pass 'null' frame here because each thread has it's own
-                // stack and if we would pass the current frame, this would be connected as a caller
-                // which is incorrect. However, the thread-local 'topframeref' is initialized with
-                // EMPTY which will be picked up.
-                callNode.execute(null, callable, arguments, keywords);
+                    // the increment is protected by the gil
+                    DynamicObjectLibrary lib = DynamicObjectLibrary.getUncached();
+                    int curCount = 0;
+                    try {
+                        curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 0);
+                    } catch (UnexpectedResultException ure) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                    lib.putInt(threadModule, THREAD_COUNT, curCount + 1);
+                    try {
+                        // n.b.: It is important to pass 'null' frame here because each thread has
+                        // it's own stack and if we would pass the current frame, this would be
+                        // connected as a caller which is incorrect. However, the thread-local
+                        // 'topframeref' is initialized with EMPTY which will be picked up.
+                        callNode.execute(null, callable, arguments, keywords);
+                    } finally {
+                        // the catch blocks run ofter the gil is released, so we decrement the
+                        // threadcount here while still protected by the gil
+                        try {
+                            curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 1);
+                        } catch (UnexpectedResultException ure) {
+                            throw CompilerDirectives.shouldNotReachHere();
+                        }
+                        lib.putInt(threadModule, THREAD_COUNT, curCount - 1);
+                    }
+                } catch (PythonThreadKillException e) {
+                    return;
+                } catch (PException e) {
+                    dumpError(context, e.getUnreifiedException(), callable);
+                    // TODO (cbasca): when GR-30386 is completed use the intrinsified
+                    // sys.unraisablehook
+                    // WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in
+                    // thread started by", callable);
+                }
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
             pThread.start();
             return pThread.getId();
+        }
+
+        @TruffleBoundary
+        static void dumpError(PythonContext context, PBaseException exception, Object object) {
+            PrintWriter err = new PrintWriter(context.getStandardErr());
+            err.println(String.format("%s in thread started by %s", exception.toString(), object));
         }
     }
 
@@ -191,11 +267,23 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class SetSentinelNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object setSentinel(
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object setSentinel() {
             PLock sentinelLock = factory().createLock();
-            context.setSentinelLockWeakref(new WeakReference<>(sentinelLock));
+            PythonContext.get(this).setSentinelLockWeakref(new WeakReference<>(sentinelLock));
             return sentinelLock;
+        }
+    }
+
+    @Builtin(name = "interrupt_main", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "interrupt_main()\n" +
+                    "\n" +
+                    "Raise a KeyboardInterrupt in the main thread.\n" +
+                    "A subthread can use this function to interrupt the main thread.")
+    @GenerateNodeFactory
+    abstract static class InterruptMainThreadNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getCount(@SuppressWarnings("unused") PythonModule self) {
+            // TODO: implement me
+            return PNone.NONE;
         }
     }
 }

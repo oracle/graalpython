@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,16 +41,27 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
+import java.util.Locale;
+
 import com.ibm.icu.lang.UCharacter;
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.util.PythonUtils;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
 public class StringUtils {
 
@@ -159,7 +170,7 @@ public class StringUtils {
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
-                            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
+                            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", st, i, i + 9, ILLEGAl_CHARACTER);
                         }
                         i += 9;
                         continue;
@@ -190,17 +201,28 @@ public class StringUtils {
         return sb.toString();
     }
 
+    public static String unescapeString(int startOffset, int endOffset, Source source, ParserErrorCallback errors, String text) {
+        try {
+            return unescapeJavaString(errors, text);
+        } catch (PException e) {
+            e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
+            TruffleString message = PyObjectStrAsTruffleStringNode.getUncached().execute(e.getUnreifiedException());
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), toTruffleStringUncached(PythonUtils.formatJString("(unicode error) %s", message)));
+        }
+    }
+
     public static void warnInvalidEscapeSequence(ParserErrorCallback errorCallback, char nextChar) {
-        errorCallback.warn(PythonBuiltinClassType.DeprecationWarning, "invalid escape sequence '\\%c'", nextChar);
+        errorCallback.warn(PythonBuiltinClassType.DeprecationWarning, INVALID_ESCAPE_SEQUENCE, nextChar);
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
-    private static final String MALFORMED_ERROR = " malformed \\N character escape";
+    private static final String MALFORMED_ERROR = "malformed \\N character escape";
     private static final String TRUNCATED_XXX_ERROR = "truncated \\xXX escape";
     private static final String TRUNCATED_UXXXX_ERROR = "truncated \\uXXXX escape";
     private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
-    private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
+    private static final String UNKNOWN_UNICODE_ERROR = "unknown Unicode character name";
     private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
+    private static final TruffleString INVALID_ESCAPE_SEQUENCE = tsLiteral("invalid escape sequence '\\%c'");
 
     private static int getHexValue(String text, int start, int len) {
         int digit;
@@ -211,17 +233,17 @@ public class StringUtils {
                 if (digit == -1) {
                     // Like cpython, raise error with the wrong character first,
                     // even if there are not enough characters
-                    throw createTruncatedError(start - 2, index - 1, len);
+                    throw createTruncatedError(text, start - 2, index - 1, len);
                 }
                 result = result * 16 + digit;
             } else {
-                throw createTruncatedError(start - 2, index - 1, len);
+                throw createTruncatedError(text, start - 2, index - 1, len);
             }
         }
         return result;
     }
 
-    private static PException createTruncatedError(int startIndex, int endIndex, int len) {
+    private static PException createTruncatedError(String text, int startIndex, int endIndex, int len) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -234,7 +256,7 @@ public class StringUtils {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        return PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+        return PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, startIndex, endIndex, truncatedMessage);
     }
 
     /**
@@ -245,18 +267,18 @@ public class StringUtils {
      * @param offset this is offset of the open brace
      * @return offset of the close brace
      */
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, offset, MALFORMED_ERROR);
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length(), MALFORMED_ERROR);
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
@@ -265,25 +287,26 @@ public class StringUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+            throw PConstructAndRaiseNode.raiseUncachedUnicodeDecodeError("unicodeescape", text, offset - 2, text.length(), UNKNOWN_UNICODE_ERROR);
         }
         return closeIndex;
     }
 
-    @CompilerDirectives.TruffleBoundary
-    public static int getCodePoint(String charName) {
-        int possibleChar = UCharacter.getCharFromName(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
+    @TruffleBoundary
+    public static int getCodePoint(String characterName) {
+        // CPython's logic for resolving these character names goes like this:
+        // 1) handle Hangul Syllables in region AC00-D7A3
+        // 2) handle CJK Ideographs
+        // 3) handle character names as given in UnicodeData.txt
+        // 4) handle all aliases as given in NameAliases.txt
+        // With ICU's UCharacter, we get cases 1), 2) and 3). As for 4), the aliases, ICU only
+        // handles aliases of type 'correction'. Therefore, we extract the contents of
+        // NameAliases.txt and handle aliases by ourselves.
+        String normalizedName = characterName.trim().toUpperCase(Locale.ROOT);
+        if (UnicodeCharacterAliases.CHARACTER_ALIASES.containsKey(normalizedName)) {
+            return UnicodeCharacterAliases.CHARACTER_ALIASES.get(normalizedName);
+        } else {
+            return UCharacter.getCharFromName(characterName);
         }
-        possibleChar = UCharacter.getCharFromExtendedName(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        possibleChar = UCharacter.getCharFromNameAlias(charName);
-        if (possibleChar > -1) {
-            return possibleChar;
-        }
-        return -1;
     }
 }

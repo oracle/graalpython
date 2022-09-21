@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
           Identifier: Test
           PythonCallBinary SourceSection: [0,129]`class Test():â†µ    de...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: Test SourceSection: None
               Arguments: None
               KwArguments: None
@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,129]`class Test():â†µ    de...`
                 Name: Test
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,17 +40,13 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                         QualName: Test
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [18,129]`def fn1(format):â†µ   ...`
-                        SetItemNodeGen SourceSection: [18,70]`def fn1(format):â†µ   ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [18,70]`def fn1(format):â†µ   ...`
+                          Identifier: fn1
                           FunctionDefinitionNode Name: fn1 SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -67,7 +62,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [format, <return_val>]
+                              FrameDescriptor: 2 slots [<return_val>, format]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -76,34 +71,21 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: format
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,format,Illegal]
+                                      Frame: [0,format,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     FunctionBodyNode SourceSection: [43,65]`return (format % arg...`
                                       FrameReturnNode SourceSection: [43,65]`return (format % arg...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [51,64]`format % args`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
-                                            ReadLocalVariableNode SourceSection: [51,57]`format`
-                                              Frame: [0,format,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [60,64]`args`
-                                              Identifier: args
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                                        ModNodeGen SourceSection: [51,64]`format % args`
+                                          ReadLocalVariableNodeGen SourceSection: [51,57]`format`
+                                            Frame: [0,format,Illegal]
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [60,64]`args`
+                                            Identifier: args
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [1,<return_val>,Object]
+                        WriteNameNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
+                          Identifier: fn2
                           FunctionDefinitionNode Name: fn2 SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -119,7 +101,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [args, kwds, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, args, kwds]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -129,41 +111,31 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: args
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,args,Illegal]
+                                        Frame: [0,args,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadVarArgsNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: kwds
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,kwds,Illegal]
+                                        Frame: [1,kwds,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadVarKeywordsNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                     FunctionBodyNode SourceSection: [102,128]`return self(*args, *...`
                                       FrameReturnNode SourceSection: [102,128]`return self(*args, *...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
-                                          PythonCallNodeGen SourceSection: [109,128]`self(*args, **kwds)`
-                                            CallNodeGen SourceSection: None
-                                            PositionalArgumentsNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [115,119]`args`
-                                                Frame: [0,args,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ExecutePositionalStarargsNodeGen SourceSection: None
-                                            KeywordArgumentsNodeGen SourceSection: None
-                                              ExecuteKeywordArgumentsNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [123,127]`kwds`
-                                                Frame: [1,kwds,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [109,113]`self`
-                                              Identifier: self
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                        PythonCallNodeGen SourceSection: [109,128]`self(*args, **kwds)`
+                                          CallNodeGen SourceSection: None
+                                          PositionalArgumentsNode SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: [115,119]`args`
+                                              Frame: [0,args,Illegal]
+                                            ExecutePositionalStarargsNodeGen SourceSection: None
+                                          KeywordArgumentsNodeGen SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: [123,127]`kwds`
+                                              Frame: [1,kwds,Illegal]
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [109,113]`self`
+                                            Identifier: self
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [2,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

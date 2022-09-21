@@ -1,0 +1,33 @@
+Module[0, 165]
+    FunctionDef[0, 165]
+        Name:merge
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[10, 19] sequences
+        ---- Function body of merge ----
+        For[26, 165]
+            Target: Name[30, 32] Value: "s1" Store
+            Iter: Name[36, 45] Value: "sequences"
+            Body:
+                For[55, 165]
+                    Target: Name[59, 61] Value: "s2" Store
+                    Iter: Name[65, 74] Value: "sequences"
+                    Body:
+                        If[88, 133]
+                            Test: 
+                                Compare[91, 110]
+                                    LHS: Name[91, 100] Value: "candidate"
+                                    Op: In
+                                    RHS: 
+                                        Subscript[104, 106]
+                                            Slice: 
+                                                Slice[107, 109]
+                                                    Start: LONG[107, 108] Value: 1
+                                                    Stop: 
+                                                    Step: 
+                                            Value: Name[104, 106] Value: "s2"
+                            Then:
+                                Break[128, 133]
+                    Else:
+                        Break[160, 165]
+        ---- End of merge function ----

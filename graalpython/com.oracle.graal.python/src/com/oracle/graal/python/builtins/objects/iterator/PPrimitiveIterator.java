@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,30 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PPrimitiveIterator extends PBuiltinIterator {
 
-    final int size;
-    final PList store;
+    final Object store;
 
-    public PPrimitiveIterator(Object clazz, Shape instanceShape, PList store, int size) {
+    public PPrimitiveIterator(Object clazz, Shape instanceShape, Object store) {
         super(clazz, instanceShape);
-        this.size = size;
         this.store = store;
     }
 
-    public PList getObject() {
+    public final Object getObject() {
         return store;
     }
-
-    public int getSize() {
-        return size;
-    }
-
-    public abstract TypedSequenceStorage getSequenceStorage();
 
     public abstract boolean hasNext();
 }

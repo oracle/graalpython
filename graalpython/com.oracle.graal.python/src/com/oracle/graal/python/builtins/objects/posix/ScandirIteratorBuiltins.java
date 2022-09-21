@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,34 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.TruffleFile;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PScandirIterator)
 public class ScandirIteratorBuiltins extends PythonBuiltins {
@@ -66,9 +77,19 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         return ScandirIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = "close", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CloseNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone close(PScandirIterator self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            self.ref.rewindAndClose(posixLib, getPosixSupport());
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         PScandirIterator iter(PScandirIterator self) {
@@ -76,23 +97,31 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PDirEntry next(PScandirIterator self) {
-            if (self.hasNext()) {
-                TruffleFile next = self.next();
-                return factory().createDirEntry(next.getName(), next, self.isProduceBytes());
-            } else {
-                throw raise(PythonBuiltinClassType.StopIteration);
+        PDirEntry next(VirtualFrame frame, PScandirIterator self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            if (self.ref.isReleased()) {
+                throw raiseStopIteration();
+            }
+            try {
+                Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.getReference());
+                if (dirEntryData == null) {
+                    self.ref.rewindAndClose(posixLib, getPosixSupport());
+                    throw raiseStopIteration();
+                }
+                return factory().createDirEntry(dirEntryData, self.path);
+            } catch (PosixException e) {
+                self.ref.rewindAndClose(posixLib, getPosixSupport());
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ENTER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
         PScandirIterator iter(PScandirIterator self) {
@@ -100,22 +129,49 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
-        PNone exit(PScandirIterator self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
-            self.close();
+        @SuppressWarnings("unused")
+        PNone exit(PScandirIterator self, Object type, Object value, Object traceback,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            self.ref.rewindAndClose(posixLib, getPosixSupport());
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "path", minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    abstract static class PathNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        String path(PScandirIterator self) {
-            return self.getPath();
+    static class ReleaseCallback implements AsyncAction {
+
+        private final PScandirIterator.DirStreamRef ref;
+
+        ReleaseCallback(PScandirIterator.DirStreamRef ref) {
+            this.ref = ref;
+        }
+
+        @Override
+        public void execute(PythonContext context) {
+            if (ref.isReleased()) {
+                return;
+            }
+            PythonLanguage language = context.getLanguage();
+            CallTarget callTarget = language.createCachedCallTarget(ReleaserRootNode::new, ReleaserRootNode.class);
+            callTarget.call(ref);
+        }
+
+        private static class ReleaserRootNode extends RootNode {
+            @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
+
+            ReleaserRootNode(TruffleLanguage<?> language) {
+                super(language);
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                PScandirIterator.DirStreamRef ref = (PScandirIterator.DirStreamRef) frame.getArguments()[0];
+                ref.rewindAndClose(posixSupportLibrary, PythonContext.get(this).getPosixSupport());
+                return null;
+            }
         }
     }
 }

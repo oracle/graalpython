@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -23,6 +23,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # builtin function len()
 
+# igv: function_root_call_len_at
 def call_len(num, ll):
     length = 0
     for i in range(num):

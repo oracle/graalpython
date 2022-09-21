@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -24,6 +24,7 @@
 # modulo ops
 
 
+# igv: function_root_docompute_at
 def docompute(num):
     for i in range(num):
         sum = 0

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -107,7 +107,7 @@ class TestPyCapsule(CPyExtTestCase):
         code='''Py_ssize_t wrap_PyCapsule_SetContext(char * name, Py_ssize_t ptr) {
             PyObject* capsule = PyCapsule_New((void*)ptr, name, NULL);
             PyCapsule_SetContext(capsule, (void*)ptr);
-            return PyCapsule_GetContext(capsule);
+            return (Py_ssize_t) PyCapsule_GetContext(capsule);
         }
         ''',
         resultspec="n",

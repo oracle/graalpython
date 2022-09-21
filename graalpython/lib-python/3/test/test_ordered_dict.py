@@ -469,6 +469,7 @@ class OrderedDictTests:
         del obj
         support.gc_collect()
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_highly_nested_subclass(self):
         # Issues 25395 and 35983: test that the trashcan mechanism works
         # correctly for OrderedDict: deleting a highly nested OrderDict
@@ -637,6 +638,7 @@ class OrderedDictTests:
         dict.update(od, [('spam', 1)])
         self.assertNotIn('NULL', repr(od))
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_reference_loop(self):
         # Issue 25935
         OrderedDict = self.OrderedDict
@@ -648,6 +650,7 @@ class OrderedDictTests:
         gc.collect()
         self.assertIsNone(r())
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, self.OrderedDict)
         support.check_free_after_iterating(self, lambda d: iter(d.keys()), self.OrderedDict)

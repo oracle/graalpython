@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -133,7 +133,8 @@ public class PosixTest {
     public void lseek() throws IOException {
         Files.write(tmpfile, "hello".getBytes());
         assertPrints("b'llo'\n", open("0") +
-                        "posix.lseek(fd, 2, posix.SEEK_SET)\n" +
+                        "import os\n" +
+                        "posix.lseek(fd, 2, os.SEEK_SET)\n" +
                         "print(posix.read(fd, 3))");
     }
 
@@ -176,10 +177,13 @@ public class PosixTest {
 
     @Test
     public void printToFile() throws IOException {
-        assertPrints("", open("posix.O_CREAT") +
+        assertPrints("", open("posix.O_RDWR") +
                         "import _io\n" +
                         "f = _io.FileIO(fd, mode='w')\n" +
-                        "print('hello', file=_io.TextIOWrapper(f))");
+                        "txt = _io.TextIOWrapper(f)\n" +
+                        "print('hello', file=txt)\n" +
+                        // Until we have support for finalizers. we need to call `close`.
+                        "txt.close()");
         assertEquals("hello\n", new String(Files.readAllBytes(tmpfile)));
     }
 

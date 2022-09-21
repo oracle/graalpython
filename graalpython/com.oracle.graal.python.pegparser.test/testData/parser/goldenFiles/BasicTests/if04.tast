@@ -1,0 +1,17 @@
+Module[0, 53]
+    Assign[0, 53]
+        LHS: Name[0, 9] Value: "predicate" Store
+        RHS: 
+            IfExp[12, 53]
+                Test: 
+                    Compare[20, 36]
+                        LHS: Name[20, 24] Value: "func"
+                        Op: IsNot
+                        RHS: NONE[32, 36] Value: null
+                Then: Name[12, 16] Value: "func"
+                Else: 
+                    Lambda[42, 53]
+                        ArgumentsTy[0, 0]
+                            Args:
+                                ArgTy[49, 50] a
+                        Body: Name[52, 53] Value: "a"

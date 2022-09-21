@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.charset;
 
-import com.oracle.graal.python.util.PythonUtils;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+
+import com.oracle.graal.python.util.PythonUtils;
 
 public class PythonRawUnicodeEscapeCharsetEncoder extends CharsetEncoder {
     protected PythonRawUnicodeEscapeCharsetEncoder(Charset cs) {
@@ -73,17 +74,16 @@ public class PythonRawUnicodeEscapeCharsetEncoder extends CharsetEncoder {
                 if (Character.isLowSurrogate(low)) {
                     codePoint = Character.toCodePoint(ch, low);
                 } else {
-                    // Unpaired surrogate, this shouldn't happen in any sanely constructed Java
-                    // String
-                    source.position(source.position() - 2);
-                    return CoderResult.malformedForLength(2);
+                    // Unpaired surrogate - emit the high surrogate as is and process the low in the
+                    // next iteration
+                    source.position(source.position() - 1);
                 }
             }
             if (codePoint <= 0xFF) {
                 // ASCII
                 target.put((byte) codePoint);
             } else {
-                String hexString = PythonUtils.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
+                String hexString = PythonUtils.formatJString((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
                 for (int i = 0; i < hexString.length(); i++) {
                     if (!target.hasRemaining()) {
                         source.position(initialPosition);

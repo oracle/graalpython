@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -23,9 +23,9 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+// skip GIL
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
@@ -41,6 +41,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public interface PythonParser {
 
@@ -75,6 +76,10 @@ public interface PythonParser {
          */
         Eval,
         /**
+         * Parse the given input as required for Python's compile with mode='func_type'.
+         */
+        FuncType,
+        /**
          * Used for parsing expressions inside f-strings. Such expression should have the same scope
          * as the f-string itself.
          */
@@ -98,28 +103,26 @@ public interface PythonParser {
         Exec
     }
 
-    public interface ParserErrorCallback {
-        RuntimeException raise(PythonBuiltinClassType type, String message, Object... args);
-
-        default RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+    public abstract class ParserErrorCallback {
+        public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section, TruffleString message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, source, section, message, arguments);
         }
 
-        RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments);
+        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, TruffleString message, Object... arguments);
 
-        default RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
+        public final RuntimeException raiseInvalidSyntax(Node location, TruffleString message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, location, message, arguments);
         }
 
-        RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments);
+        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Node location, TruffleString message, Object... arguments);
 
-        default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+        public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
             return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
-        void warn(PythonBuiltinClassType type, String format, Object... args);
+        public abstract void warn(PythonBuiltinClassType type, TruffleString format, Object... args);
 
-        PythonLanguage getLanguage();
+        public abstract PythonContext getContext();
     }
 
     /**
@@ -127,19 +130,11 @@ public interface PythonParser {
      * according the TruffleLanguage.ParsingRequest can be influence the result of parsing if there
      * are provided argumentsNames.
      *
+     * @param optimizeLevel The level corresponds to optimization level from CPython 0 - default -
+     *            no optimization, 1 - skip asserts, 2 - skip module and functions documentations
      * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
-    Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);
-
-    /**
-     * Check if an expression can be parsed as an identifier
-     */
-    boolean isIdentifier(PythonCore core, String snippet);
-
-    /**
-     * Unescape Python escapes from a Java string
-     */
-    public abstract String unescapeJavaString(PythonCore core, String str);
+    Node parse(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);
 
     /**
      * Runtime exception used to indicate incomplete source code during parsing.
@@ -152,9 +147,14 @@ public interface PythonParser {
         private Source source;
         private final int line;
 
-        public PIncompleteSourceException(String message, Throwable cause, int line) {
+        public PIncompleteSourceException(String message, Throwable cause, int line, Source source) {
             super(message, cause, UNLIMITED_STACK_TRACE, null);
             this.line = line;
+            this.source = source;
+        }
+
+        public PIncompleteSourceException(String message, Throwable cause, int line) {
+            this(message, cause, line, null);
         }
 
         public void setSource(Source source) {

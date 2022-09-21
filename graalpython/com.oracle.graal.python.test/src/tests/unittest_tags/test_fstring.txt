@@ -53,5 +53,6 @@
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_side_effect_order
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_str_format_differences
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_unterminated_string
+*graalpython.lib-python.3.test.test_fstring.TestCase.test_walrus
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_yield
 *graalpython.lib-python.3.test.test_fstring.TestCase.test_yield_send

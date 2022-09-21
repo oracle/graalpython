@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -54,25 +56,35 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
-@ReportPolymorphism
 @GenerateUncached
 public abstract class CallNode extends PNodeWithContext {
     public static CallNode create() {
@@ -103,27 +115,90 @@ public abstract class CallNode extends PNodeWithContext {
         return executeInternal(null, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public final Object execute(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords) {
+    public final Object execute(Frame frame, Object callableObject, Object[] arguments, PKeyword[] keywords) {
         return executeInternal(frame, callableObject, arguments, keywords);
     }
 
-    public final Object execute(VirtualFrame frame, Object callableObject, Object... arguments) {
+    public final Object execute(Frame frame, Object callableObject, Object... arguments) {
         return executeInternal(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    @Specialization(guards = "!isCallable(callableObject) || isClass(callableObject, iLib)", limit = "3")
-    protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
-                    @SuppressWarnings("unused") @CachedLibrary("callableObject") InteropLibrary iLib) {
+    @Specialization
+    protected Object boundDescriptor(VirtualFrame frame, BoundDescriptor descriptor, Object[] arguments, PKeyword[] keywords,
+                    @Cached CallNode subNode) {
+        return subNode.executeInternal(frame, descriptor.descriptor, PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords);
+    }
+
+    @Specialization
+    protected Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords,
+                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
+                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+    }
+
+    @Specialization
+    protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords,
+                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
+                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+    }
+
+    @Specialization
+    protected Object doType(VirtualFrame frame, PythonBuiltinClassType callableObject, Object[] arguments, PKeyword[] keywords,
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
+    @Specialization(guards = "isPythonClass(callableObject)", replaces = "doType")
+    protected Object doPythonClass(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
+        Object call = callAttrGetterNode.execute(callableObject);
+        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+    }
+
+    @Specialization(guards = {"!isCallable(callableObject)", "!isForeignMethod(callableObject)"}, replaces = {"doType", "doPythonClass"})
+    protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
+        Object call = callAttrGetterNode.execute(callableObject);
+        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+    }
+
+    @Specialization
+    protected Object doForeignMethod(ForeignMethod callable, Object[] arguments, PKeyword[] keywords,
+                    @Cached PRaiseNode raise,
+                    @Cached PForeignToPTypeNode fromForeign,
+                    @Cached BranchProfile keywordsError,
+                    @Cached BranchProfile typeError,
+                    @Cached GilNode gil,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
+        if (keywords.length != 0) {
+            keywordsError.enter();
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+        }
+        gil.release(true);
+        try {
+            return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
+        } catch (ArityException | UnsupportedTypeException e) {
+            typeError.enter();
+            throw raise.raise(TypeError, e);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+            // PyObjectGetMethod is supposed to have checked isMemberInvocable
+            throw CompilerDirectives.shouldNotReachHere("Cannot invoke member");
+        } finally {
+            gil.acquire();
+        }
+    }
+
     private static Object callCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords, PRaiseNode raise, CallVarargsMethodNode callCallNode, Object call) {
         if (call == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
+            throw raise.raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
         }
         return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
     }
@@ -144,7 +219,7 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, (PFunction) callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(limit = "1", guards = {"callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"}, assumptions = "singleContextAssumption()")
+    @Specialization(limit = "1", guards = {"isSingleContext()", "callable == cachedCallable", "isPBuiltinFunction(cachedCallable.getFunction())"})
     protected Object builtinMethodCallBuiltinDirectCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached("callable") PBuiltinMethod cachedCallable,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
@@ -161,46 +236,32 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())", limit = "3")
+    @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
-                    @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
+        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())", limit = "3")
+    @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
-                    @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
-    }
-
-    @Specialization
-    protected Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
-    }
-
-    @Specialization
-    protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
+        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
     }
 
     @Specialization(replaces = {"doObjectAndType", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallBuiltinDirectCached",
-                    "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"})
+                    "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"}, guards = "!isForeignMethod(callableObject)")
+    @Megamorphic
     protected Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs,
-                    @Cached PRaiseNode raise,
-                    @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Cached(parameters = "Call") LookupCallableSlotInMRONode callAttrGetterNode,
+                    @Cached GetClassNode getClassNode,
+                    @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
         if (callableObject instanceof PFunction) {
             return functionCall(frame, (PFunction) callableObject, arguments, keywords, dispatch, createArgs);
         } else if (callableObject instanceof PBuiltinFunction) {
@@ -216,16 +277,15 @@ public abstract class CallNode extends PNodeWithContext {
         } else if (callableObject instanceof PBuiltinMethod) {
             PBuiltinMethod method = (PBuiltinMethod) callableObject;
             return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
+        } else if (callableObject instanceof BoundDescriptor) {
+            return doGeneric(frame, ((BoundDescriptor) callableObject).descriptor,
+                            PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords,
+                            dispatch, createArgs, raise, callAttrGetterNode, getClassNode, callCallNode);
         }
-        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(callableObject, SpecialMethodNames.__CALL__));
+        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(getClassNode.execute(callableObject)));
     }
 
-    @Override
-    public Node copy() {
-        if (isAdoptable()) {
-            return create();
-        } else {
-            return super.copy();
-        }
+    protected static boolean isForeignMethod(Object object) {
+        return object instanceof ForeignMethod;
     }
 }

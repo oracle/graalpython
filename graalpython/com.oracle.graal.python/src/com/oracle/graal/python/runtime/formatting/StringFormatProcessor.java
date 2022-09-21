@@ -1,34 +1,35 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import java.nio.charset.StandardCharsets;
-
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class StringFormatProcessor extends FormatProcessor<String> {
     private final String formatText;
 
-    public StringFormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
+    public StringFormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
         super(core, raiseNode, getItemNode, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100));
         index = 0;
         this.formatText = format;
@@ -60,12 +61,13 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
 
     @Override
     Object parseMappingKey(int start, int end) {
-        return formatText.substring(start, end);
+        return toTruffleStringUncached(formatText.substring(start, end));
     }
 
     @Override
-    protected boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass) {
-        return !isString(args1, lazyClass) && isMapping(args1);
+    protected boolean isMapping(Object obj) {
+        // unicodeobject.c PyUnicode_Format()
+        return !(obj instanceof PTuple || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.getUncached().execute(obj);
     }
 
     private static boolean isOneCharacter(String str) {
@@ -77,12 +79,15 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         InternalFormat.Formatter f;
         TextFormatter ft;
         Object arg = getArg();
-        if (arg instanceof String && isOneCharacter((String) arg)) {
+        if (arg instanceof PString) {
+            arg = ((PString) arg).getValueUncached();
+        }
+        if (arg instanceof TruffleString && ((TruffleString) arg).codePointLengthUncached(TS_ENCODING) == 1) {
+            f = ft = setupFormat(new TextFormatter(raiseNode, buffer, spec));
+            ft.format(((TruffleString) arg).toJavaStringUncached());
+        } else if (isJavaString(arg) && isOneCharacter((String) arg)) {
             f = ft = setupFormat(new TextFormatter(raiseNode, buffer, spec));
             ft.format((String) arg);
-        } else if (arg instanceof PString && isOneCharacter(((PString) arg).getValue())) {
-            f = ft = new TextFormatter(raiseNode, buffer, spec);
-            ft.format(((PString) arg).getCharSequence());
         } else {
             f = formatInteger(asNumber(arg, spec.type), spec);
             if (f == null) {
@@ -94,28 +99,23 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
 
     @Override
     protected InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec) {
+        Object arg = getArg();
+        TruffleString result;
         switch (spec.type) {
             case 'a': // repr as ascii
+                result = PyObjectAsciiNode.getUncached().execute(null, arg);
+                break;
             case 's': // String: converts any object using __str__(), __unicode__() ...
+                result = PyObjectStrAsTruffleStringNode.getUncached().execute(null, arg);
+                break;
             case 'r': // ... or repr().
-                Object arg = getArg();
-                // Get hold of the actual object to display (may set needUnicode)
-                Object attribute = spec.type == 's' ? lookupAttribute(arg, __STR__) : lookupAttribute(arg, __REPR__);
-                if (attribute != PNone.NO_VALUE) {
-                    Object result = call(attribute, arg);
-                    if (PGuards.isString(result)) {
-                        if (spec.type == 'a') {
-                            // this is mostly what encode('ascii', 'backslashreplace') would do
-                            result = new String(BytesUtils.unicodeNonAsciiEscape(result.toString()), StandardCharsets.US_ASCII);
-                        }
-                        TextFormatter ft = new TextFormatter(raiseNode, buffer, spec);
-                        ft.format(result.toString());
-                        return ft;
-                    }
-                }
-                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, (spec.type == 's' ? __STR__ : __REPR__));
+                result = PyObjectReprAsTruffleStringNode.getUncached().execute(null, arg);
+                break;
             default:
                 return null;
         }
+        TextFormatter ft = new TextFormatter(raiseNode, buffer, spec);
+        ft.format(result.toJavaStringUncached());
+        return ft;
     }
 }

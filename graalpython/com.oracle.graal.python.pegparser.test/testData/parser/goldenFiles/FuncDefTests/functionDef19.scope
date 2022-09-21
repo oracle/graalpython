@@ -1,0 +1,13 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      __build_class__: [DefLocal, Local]
+    Scope __build_class__ Function
+        Flags: [HasVarArgs, HasVarKeywords]
+        Varnames: func, name, metaclass, bases, kwargs
+        Symbols:
+            bases: [DefParam, Local]
+            func: [DefParam, Local]
+            kwargs: [DefParam, Local]
+            metaclass: [DefParam, Local]
+            name: [DefParam, Local]

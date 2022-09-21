@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'while05'> SourceSection: [0,78]`def gen(x):↵   w
         WriteNameNodeGen SourceSection: [0,78]`def gen(x):↵   while...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-            FrameDescriptor: 2 slots [x, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, x]
             Active Flags: 3
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'while05'> SourceSection: [0,78]`def gen(x):↵   w
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [x, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, x]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -42,52 +42,37 @@ ModuleRootNode Name: <module 'while05'> SourceSection: [0,78]`def gen(x):↵   w
                       GeneratorBlockNode SourceSection: None
                         IfNode SourceSection: [29,58]`if x == 1:↵       br...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [32,38]`x == 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
-                              ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
+                            EqNodeGen SourceSection: [32,38]`x == 1`
+                              ReadGeneratorFrameVariableNodeGen SourceSection: [32,33]`x`
                                 Frame: [0,x,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [37,38]`1`
                                 Value: 1
                           BreakNode SourceSection: [47,52]`break`
                           BlockNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: [58,65]`x = x-1`
                           Identifier: x
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,x,Illegal]
-                          BinaryArithmeticExpression SourceSection: [62,65]`x-1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __sub__
-                            ReadGeneratorFrameVariableNode SourceSection: [62,63]`x`
+                          Frame: [0,x,Illegal]
+                          SubNodeGen SourceSection: [62,65]`x-1`
+                            ReadGeneratorFrameVariableNodeGen SourceSection: [62,63]`x`
                               Frame: [0,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [64,65]`1`
                               Value: 1
                         ExpressionStatementNode SourceSection: [71,78]`yield x`
                           YieldNode SourceSection: [71,78]`yield x`
                             flagSlot: 0
-                            ReadGeneratorFrameVariableNode SourceSection: [77,78]`x`
+                            ReadGeneratorFrameVariableNodeGen SourceSection: [77,78]`x`
                               Frame: [0,x,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [21,22]`x`
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                    Frame: [1,<return_val>,Object]
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,x,Illegal]
+                    Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,52 +40,22 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-
-import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
-public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements IndirectCallNode {
+public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
     @Child private PythonObjectFactory objectFactory;
-    @Child private PRaiseNode raiseNode;
     @Child private PConstructAndRaiseNode constructAndRaiseNode;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-    private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-    private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-    @Override
-    public Assumption needNotPassFrameAssumption() {
-        return dontNeedCallerFrame;
-    }
-
-    @Override
-    public Assumption needNotPassExceptionAssumption() {
-        return dontNeedExceptionState;
-    }
 
     protected final PythonObjectFactory factory() {
         if (objectFactory == null) {
@@ -93,25 +63,13 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
             if (isAdoptable()) {
                 objectFactory = insert(PythonObjectFactory.create());
             } else {
-                objectFactory = getCore().factory();
+                objectFactory = factory();
             }
         }
         return objectFactory;
     }
 
-    protected final PRaiseNode getRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                raiseNode = insert(PRaiseNode.create());
-            } else {
-                raiseNode = PRaiseNode.getUncached();
-            }
-        }
-        return raiseNode;
-    }
-
-    private PConstructAndRaiseNode getConstructAndRaiseNode() {
+    public final PConstructAndRaiseNode getConstructAndRaiseNode() {
         if (constructAndRaiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
@@ -119,8 +77,8 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return constructAndRaiseNode;
     }
 
-    public final PythonCore getCore() {
-        return getContext().getCore();
+    public final Python3Core getCore() {
+        return getContext();
     }
 
     public final Object getPythonClass(Object lazyClass, ConditionProfile profile) {
@@ -131,44 +89,24 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         }
     }
 
-    protected final ContextReference<PythonContext> getContextRef() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef;
+    public final Object getPosixSupport() {
+        return getContext().getPosixSupport();
     }
 
-    public final PythonContext getContext() {
-        return getContextRef().get();
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), null, null);
     }
 
-    public PException raise(PythonBuiltinClassType type, String string) {
-        return getRaiseNode().raise(type, string);
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, null);
     }
 
-    public PException raise(Object exceptionType) {
-        return getRaiseNode().raise(exceptionType);
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2);
     }
 
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        return getRaiseNode().raise(type, cause, format, arguments);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        return getRaiseNode().raise(type, format, arguments);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
-        return getRaiseNode().raise(type, arguments);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, Exception e) {
-        return getRaiseNode().raise(type, e);
-    }
-
-    public final PException raiseOverflow() {
-        return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
+    public final PException raiseOSError(VirtualFrame frame, int code, TruffleString message) {
+        return getConstructAndRaiseNode().raiseOSError(frame, code, message, null, null);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {
@@ -179,19 +117,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getConstructAndRaiseNode().raiseOSError(frame, oserror, e);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
-        return getConstructAndRaiseNode().raiseOSError(frame, oserror, filename);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e, String filename) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e, filename);
-    }
-
-    public final PException raiseOSError(VirtualFrame frame, Exception e, String filename, String filename2) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e, filename, filename2);
+    public final PException raiseOSError(VirtualFrame frame, Exception e, TruffleString.EqualNode eqNode) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e, eqNode);
     }
 }

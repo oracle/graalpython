@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,17 +27,9 @@ package com.oracle.graal.python.test.runtime;
 
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import com.oracle.graal.python.test.PythonTests;
-
 public class GetAttributeDispatchTests {
-    @Before
-    public void setUp() {
-        PythonTests.enterContext();
-    }
-
     @Test
     public void cachedModuleAttr() {
         String source = "import time\n" + //

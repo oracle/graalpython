@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,29 @@ PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py
 PyObject * _PyLong_Zero;
 PyObject * _PyLong_One;
 
+/* 
+ * There are 4 different modes for 'PyLong_AsPrimitive:
+ * - MODE_COERCE_UNSIGNED
+ *     Will coerce the object to a Python integer and returns it as unsigned primitive.
+ * - MODE_COERCE_SIGNED 1
+ *     Will coerce the object to a Python integer and returns it as signed primitive.
+ * - MODE_PINT_UNSIGNED 2
+ *     Requires the object to be a Python integer and returns it as unsigned primitive.
+ * - MODE_PINT_SIGNED 3
+ *     Requires the object to be a Python integer and returns it as signed primitive.
+ * - MODE_COERCE_MASK 4
+ *     Will coerce the object to a Python integer and does a lossy cast to an unsigned primitive.
+ */
+#define MODE_COERCE_UNSIGNED 0
+#define MODE_COERCE_SIGNED 1
+#define MODE_PINT_UNSIGNED 2
+#define MODE_PINT_SIGNED 3
+#define MODE_COERCE_MASK 4
+
 typedef uint64_t (*as_primitive_t)(PyObject*, int32_t, size_t);
 UPCALL_TYPED_ID(PyLong_AsPrimitive, as_primitive_t);
 long PyLong_AsLong(PyObject *obj) {
-    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
+    return (long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -59,13 +78,17 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
+    long result = _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
 
 long long PyLong_AsLongLong(PyObject *obj) {
-    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    return (long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
 
 long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
@@ -75,16 +98,37 @@ long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
 }
 
 unsigned long long PyLong_AsUnsignedLongLong(PyObject *obj) {
-    return as_unsigned_long_long(obj);
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
+}
+
+unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long long));
 }
 
 unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
     if (obj == NULL) {
         PyErr_BadInternalCall();
-        return (unsigned long)-1;
+        return (unsigned long) -1;
     }
-    return (unsigned long) _jls_PyLong_AsPrimitive(obj, 0, sizeof(unsigned long));
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long));
 }
+
+unsigned long PyLong_AsUnsignedLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long) -1;
+    }
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long));
+}
+
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
 }
@@ -95,11 +139,11 @@ PyObject * PyLong_FromDouble(double n) {
 }
 
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(Py_ssize_t));
+    return _jls_PyLong_AsPrimitive(obj, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
 
 size_t PyLong_AsSize_t(PyObject *obj) {
-    return _jls_PyLong_AsPrimitive(obj, 0, sizeof(size_t));
+    return _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(size_t));
 }
 
 typedef PyObject* (*from_long_fun_t)(int64_t, int32_t);
@@ -120,11 +164,10 @@ PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
     return _jls_PyLong_FromLongLong(n, 0);
 }
 
-typedef PyObject* (*fromVoidPtr_fun_t)(void*);
-UPCALL_TYPED_ID(PyLong_FromVoidPtr, fromVoidPtr_fun_t);
+typedef PyObject* (*fromVoidPtr_fun_t)(void*, int32_t);
 PyObject * PyLong_FromVoidPtr(void *p) {
 	// directly do the upcall to avoid a cast to primitive and reference counting
-    return _jls_PyLong_FromVoidPtr(p);
+    return ((fromVoidPtr_fun_t)_jls_PyLong_FromLongLong)(p, 0);
 }
 
 UPCALL_ID(PyLong_AsVoidPtr);
@@ -139,6 +182,10 @@ int _PyLong_Sign(PyObject *vv) {
 
 PyObject * PyLong_FromSize_t(size_t n)  {
 	return PyLong_FromUnsignedLongLong(n);
+}
+
+double PyLong_AsDouble(PyObject *v)  {
+    return (double)PyLong_AsLongLong(v);
 }
 
 UPCALL_ID(PyLong_FromString);
@@ -250,6 +297,8 @@ int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int lit
     size_t j;                   /* # bytes filled */
     unsigned char* p;           /* pointer to next byte in bytes */
     int pincr;                  /* direction to move p */
+
+    v = native_pointer_to_java(v);
 
     assert(v != NULL && PyLong_Check(v));
 

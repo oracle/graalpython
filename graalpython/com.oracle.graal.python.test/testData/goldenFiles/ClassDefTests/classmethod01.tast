@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
           Identifier: A
           PythonCallBinary SourceSection: [0,73]`class A:↵    @classm...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: A SourceSection: None
               Arguments: None
               KwArguments: None
@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,73]`class A:↵    @classm...`
                 Name: A
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,28 +40,17 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                         QualName: A
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [13,73]`@classmethod↵    def...`
-                        SetItemNodeGen SourceSection: [13,73]`@classmethod↵    def...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [13,73]`@classmethod↵    def...`
+                          Identifier: method
                           PythonCallUnary SourceSection: [13,25]`@classmethod`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: classmethod
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              Identifier: classmethod
                             FunctionDefinitionNode Name: method SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -78,7 +66,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                 CelVars: None
                                 FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, string, <return_val>]
+                                FrameDescriptor: 3 slots [<return_val>, self, string]
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
@@ -88,23 +76,20 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: self
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [0,self,Illegal]
+                                          Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: string
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,string,Illegal]
+                                          Frame: [1,string,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 1
                                       FunctionBodyNode SourceSection: [68,72]`pass`
                                         ExpressionStatementNode SourceSection: [68,72]`pass`
                                           EmptyNode SourceSection: [68,72]`pass`
-                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                      Frame: [2,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

@@ -9,10 +9,9 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,20]`i for i in range(3)`
         Name: <genexpr>
-        FrameDescriptor: 2 slots [i, <return_val>]
+        FrameDescriptor: 2 slots [<return_val>, i]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -25,7 +24,7 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 2 slots [i, <return_val>]
+          FrameDescriptor: 2 slots [<return_val>, i]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
@@ -36,26 +35,23 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
                 ExpressionStatementNode SourceSection: [1,2]`i`
                   YieldNode SourceSection: [1,2]`i`
                     flagSlot: 0
-                    ReadGeneratorFrameVariableNode SourceSection: [1,2]`i`
+                    ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`i`
                       Frame: [0,i,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: i
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,i,Illegal]
+                  Frame: [0,i,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextNode SourceSection: None
+                GetNextCached SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
-                Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
+                  GetClassNodeGen SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
+                Frame: [1,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
@@ -65,7 +61,7 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
             ReadNameNodeGen SourceSection: [12,17]`range`
               Identifier: range
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [18,19]`3`
               Value: 3
         PythonObjectFactoryNodeGen SourceSection: None

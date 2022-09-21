@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ def test_lambda_simple():
     v = l(5)
     assert v == 10
 
-def test_lambda_condition_special():
-    v = [a for a in (1,2,3) if lambda x : x*2]
-    assert v == [1,2,3]
 
+def test_lambda_condition_special():
+    v = [a for a in (1,2,3) if (lambda x : x*2)]
+    assert v == [1,2,3]

@@ -15,9 +15,9 @@ ModuleRootNode Name: <module 'raise04'> SourceSection: [0,33]`raise NameError('P
             ReadNameNodeGen SourceSection: [6,15]`NameError`
               Identifier: NameError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             StringLiteralNode SourceSection: [16,23]`'Pavel'`
           ReadNameNodeGen SourceSection: [30,33]`exc`
             Identifier: exc
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None

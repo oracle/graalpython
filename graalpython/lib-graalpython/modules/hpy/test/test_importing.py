@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,33 +21,54 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pytest
 from .support import HPyTest
-
-# this function should probably goes somewhere into hpy.universal and/or and
-# hpy package and/or an import hook, or whatever. I do not want to think about
-# this now.
-def import_module_properly(mod):
-    raise NotImplementedError("fix me eventually")
-
-# this was moved from support.py, where it did not belong
-## class HPyLoader(ExtensionFileLoader):
-##     def create_module(self, spec):
-##         import hpy.universal
-##         return hpy.universal.load_from_spec(spec)
 
 
 class TestImporting(HPyTest):
 
-    @pytest.mark.xfail
-    def test_importing_attributes(self):
+    def full_import(self, name, mod_filename):
+        import importlib
         import sys
-        modname = 'mytest'
-        so_filename = self.compile_module("""
+        import os
+        if name in sys.modules:
+            raise ValueError(
+                "Test module {!r} already present in sys.modules".format(name))
+        importlib.invalidate_caches()
+        mod_dir = os.path.dirname(mod_filename)
+        sys.path.insert(0, mod_dir)
+        try:
+            module = importlib.import_module(name)
+            assert sys.modules[name] is module
+        finally:
+            # assert that the module import didn't change the sys.path entry
+            # that was added above, then remove the entry.
+            assert sys.path[0] == mod_dir
+            del sys.path[0]
+            if name in sys.modules:
+                del sys.modules[name]
+        return module
+
+    def test_importing_attributes(self, hpy_abi, tmpdir):
+        import pytest
+        if not self.supports_ordinary_make_module_imports():
+            pytest.skip()
+        mod = self.make_module("""
             @INIT
-        """, name=modname)
-        mod = import_module_properly(so_filename, modname)
-        assert mod in sys.modules
+        """, name='mytest')
+        mod = self.full_import(mod.__name__, mod.__file__)
+        assert mod.__name__ == 'mytest'
+        assert mod.__package__ == ''
+        assert mod.__doc__ == 'some test for hpy'
         assert mod.__loader__.name == 'mytest'
         assert mod.__spec__.loader is mod.__loader__
+        assert mod.__spec__.name == 'mytest'
         assert mod.__file__
+
+        if hpy_abi == 'cpython':
+            from sysconfig import get_config_var
+            ext = get_config_var('EXT_SUFFIX')
+        else:
+            ext = '.hpy.so'
+
+        assert repr(mod) == '<module \'mytest\' from {}>'.format(
+            repr(str(tmpdir.join('mytest' + ext))))

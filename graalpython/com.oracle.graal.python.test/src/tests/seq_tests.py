@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -214,6 +214,14 @@ class CommonTest(unittest.TestCase):
             self.assertTrue(i not in u)
 
         self.assertRaises(TypeError, u.__contains__)
+
+        # define function such that we use the same code in multiple calls
+        def isin(l, item):
+            return item in l
+        # activate generic case (compares built-in type to object)
+        assert not isin([object()], list)
+        # use generic case to compare built-in types
+        assert isin([type([])], list)
 
 # TODO These test fails
 #    def test_contains_fake(self):

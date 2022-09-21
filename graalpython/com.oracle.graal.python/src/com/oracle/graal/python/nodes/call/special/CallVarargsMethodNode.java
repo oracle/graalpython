@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,23 +44,23 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode.VarargsBuiltinDirectInvocationNotSupported;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
-@ReportPolymorphism
-public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
+public abstract class CallVarargsMethodNode extends AbstractCallMethodNode {
 
     public abstract Object execute(Frame frame, Object callable, Object[] arguments, PKeyword[] keywords);
 
@@ -72,10 +72,9 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return CallVarargsMethodNodeGen.getUncached();
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, //
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()",  //
-                    rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, //
-                    assumptions = "singleContextAssumption()")
+                    rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
     Object callVarargsDirect(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                     @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
                     @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode,
@@ -92,8 +91,8 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -102,9 +101,11 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return builtinNode.varArgExecute(frame, func.getSelf(), arguments, keywords);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, //
+                    limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getVarargs(frame, func.getFunction())") PythonVarargsBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
@@ -136,6 +137,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization(replaces = {"callVarargsDirect", "callVarargs", "callSelfMethodSingleContext", "callSelfMethod", "callUnary", "callBinary", "callTernary", "callQuaternary"})
+    @Megamorphic
     Object call(VirtualFrame frame, Object func, Object[] arguments, PKeyword[] keywords,
                     @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {

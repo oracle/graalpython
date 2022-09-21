@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.CSTRING;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeMember {
     // PyObject_VAR_HEAD
@@ -70,7 +75,7 @@ public enum NativeMember {
 
     // PyTypeObject
     TP_FLAGS("tp_flags", PRIMITIVE),
-    TP_NAME("tp_name"),
+    TP_NAME("tp_name", CSTRING),
     TP_BASE("tp_base", OBJECT),
     TP_BASES("tp_bases", OBJECT),
     TP_MRO("tp_mro", OBJECT),
@@ -94,8 +99,10 @@ public enum NativeMember {
     TP_SETATTR("tp_setattr"),
     TP_GETATTRO("tp_getattro"),
     TP_SETATTRO("tp_setattro"),
+    TP_ITER("tp_iter"),
     TP_ITERNEXT("tp_iternext"),
     TP_NEW("tp_new"),
+    TP_INIT("tp_init"),
     TP_DICT("tp_dict", OBJECT),
     TP_STR("tp_str"),
     TP_REPR("tp_repr"),
@@ -103,13 +110,17 @@ public enum NativeMember {
     TP_CLEAR("tp_clear"),
     _BASE("_base"),
     TP_VECTORCALL_OFFSET("tp_vectorcall_offset", PRIMITIVE),
+    TP_CALL("tp_call"),
 
     // PySequenceMethods
     SQ_ITEM("sq_item"),
     SQ_REPEAT("sq_repeat"),
+    SQ_CONCAT("sq_concat"),
+    SQ_LENGTH("sq_length"),
 
     // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
+    MA_VERSION_TAG("ma_version_tag", PRIMITIVE),
 
     // PyASCIIObject
     UNICODE_LENGTH("length", PRIMITIVE),
@@ -186,6 +197,9 @@ public enum NativeMember {
     // PyLongObject
     OB_DIGIT("ob_digit"),
 
+    // PyComplexObject
+    COMPLEX_CVAL("cval"),
+
     // PySliceObject
     START("start", OBJECT),
     STOP("stop", OBJECT),
@@ -222,9 +236,12 @@ public enum NativeMember {
 
     // PyCFunctionObject
     M_ML("m_ml"),
+    M_SELF("m_self"),
+    M_MODULE("m_module"),
 
     // PyDateTime_Date
     DATETIME_DATA("data"),
+    DATETIME_TZINFO("tzinfo"),
 
     // PySetObject
     SET_USED("used", PRIMITIVE),
@@ -233,36 +250,103 @@ public enum NativeMember {
     // PyFrameObject
     F_BACK("f_back", OBJECT),
     F_LINENO("f_lineno", PRIMITIVE),
-    F_CODE("f_code", OBJECT);
+    F_CODE("f_code", OBJECT),
 
-    private final String memberName;
+    // propertyobject
+    PROP_GET("prop_get", OBJECT),
+    PROP_SET("prop_set", OBJECT),
+    PROP_DEL("prop_del", OBJECT),
+    PROP_DOC("prop_doc", OBJECT),
+    PROP_GETTERDOC("getter_doc", PRIMITIVE),
+
+    // PyFunctionObject
+    FUNC_CODE("func_code", OBJECT),
+    FUNC_GLOBALS("func_globals", OBJECT),
+    FUNC_DEFAULTS("func_defaults", OBJECT),
+    FUNC_KWDEFAULTS("func_kwdefaults", OBJECT),
+    FUNC_CLOSURE("func_closure", OBJECT),
+    FUNC_DOC("func_doc", OBJECT),
+    FUNC_NAME("func_name", OBJECT),
+    FUNC_DICT("func_dict", OBJECT),
+    FUNC_WEAKREFLIST("func_weakreflist", OBJECT),
+    FUNC_MODULE("func_module", OBJECT),
+    FUNC_ANNOTATIONS("func_annotations", OBJECT),
+    FUNC_QUALNAME("func_qualname", OBJECT),
+    FUNC_VECTORCALL("vectorcall"),
+
+    // PyCodeObject
+    CO_ARGCOUNT("co_argcount", PRIMITIVE),
+    CO_POSONLYARGCOUNT("co_posonlyargcount", PRIMITIVE),
+    CO_KWONLYCOUNT("co_kwonlyargcount", PRIMITIVE),
+    CO_NLOCALS("co_nlocals", PRIMITIVE),
+    CO_STACKSIZE("co_stacksize", PRIMITIVE),
+    CO_FLAGS("co_flags", PRIMITIVE),
+    CO_FIRSTLINENO("co_firstlineno", PRIMITIVE),
+    CO_CODE("co_code", OBJECT),
+    CO_CONSTS("co_consts", OBJECT),
+    CO_NAMES("co_names", OBJECT),
+    CO_VARNAMES("co_varnames", OBJECT),
+    CO_FREEVARS("co_freevars", OBJECT),
+    CO_CELLVARS("co_cellvars", OBJECT),
+
+    // PyStopIterationObject
+    VALUE("value", OBJECT);
+
+    private final String jMemberName;
+    private final TruffleString tMemberName;
     private final NativeMemberType type;
 
-    NativeMember(String name) {
-        this.memberName = name;
+    private NativeMember(String name) {
+        this.jMemberName = name;
+        this.tMemberName = toTruffleStringUncached(name);
         this.type = POINTER;
     }
 
-    NativeMember(String name, NativeMemberType type) {
-        this.memberName = name;
+    private NativeMember(String name, NativeMemberType type) {
+        this.jMemberName = name;
+        this.tMemberName = toTruffleStringUncached(name);
         this.type = type;
     }
 
-    public String getMemberName() {
-        return memberName;
+    public TruffleString getMemberNameTruffleString() {
+        return tMemberName;
+    }
+
+    public String getMemberNameJavaString() {
+        // TODO GR-37896: needed because sulong and interop do not yet support TruffleString
+        return jMemberName;
     }
 
     public NativeMemberType getType() {
         return type;
     }
 
-    public static boolean isValid(String name) {
-        CompilerAsserts.neverPartOfCompilation();
-        for (NativeMember nativeMember : NativeMember.values()) {
-            if (nativeMember.memberName.equals(name)) {
-                return true;
+    @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
+
+    public static NativeMember byName(String name) {
+        for (NativeMember nativeMember : VALUES) {
+            if (name.equals(nativeMember.jMemberName)) {
+                return nativeMember;
             }
         }
-        return false;
+        return null;
+    }
+
+    @ExplodeLoop
+    public static NativeMember byName(TruffleString name, TruffleString.EqualNode eqNode) {
+        for (NativeMember nativeMember : VALUES) {
+            if (eqNode.execute(nativeMember.tMemberName, name, TS_ENCODING)) {
+                return nativeMember;
+            }
+        }
+        return null;
+    }
+
+    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
+        return byName(name, eqNode) != null;
+    }
+
+    public static boolean isValid(String name) {
+        return byName(name) != null;
     }
 }

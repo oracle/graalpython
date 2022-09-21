@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,21 +42,17 @@ package com.oracle.graal.python.nodes.literal;
 
 import java.lang.reflect.Array;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -154,24 +150,6 @@ public abstract class SequenceLiteralNode extends LiteralNode {
                             elements[i] = values[i].executeDouble(frame);
                         }
                         storage = new DoubleSequenceStorage(elements, values.length);
-                        break;
-                    }
-                    case List: {
-                        PList[] elements = new PList[getCapacityEstimate()];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = PList.expect(values[i].execute(frame));
-                        }
-                        storage = new ListSequenceStorage(elements, values.length);
-                        break;
-                    }
-                    case Tuple: {
-                        PTuple[] elements = new PTuple[getCapacityEstimate()];
-                        array = elements;
-                        for (; i < values.length; i++) {
-                            elements[i] = PTuple.expect(values[i].execute(frame));
-                        }
-                        storage = new TupleSequenceStorage(elements, values.length);
                         break;
                     }
                     case Generic: {

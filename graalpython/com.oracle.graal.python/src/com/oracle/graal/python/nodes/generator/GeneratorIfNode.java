@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -48,6 +48,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
     protected final ConditionProfile needsConditionProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile needsThenUpdateProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsElseUpdateProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile conditionProfile = ConditionProfile.createCountingProfile();
     protected final BranchProfile seenYield = BranchProfile.create();
     protected final BranchProfile seenThen = BranchProfile.create();
     protected final BranchProfile seenElse = BranchProfile.create();
@@ -80,7 +81,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
             if (needsConditionProfile.profile(!startThenFlag && !startElseFlag)) {
                 thenFlag = condition.executeBoolean(frame);
             }
-            if (thenFlag) {
+            if (conditionProfile.profile(thenFlag)) {
                 seenThen.enter();
                 then.executeVoid(frame);
             } else {

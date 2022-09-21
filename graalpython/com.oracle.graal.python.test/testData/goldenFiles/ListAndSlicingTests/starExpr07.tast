@@ -13,31 +13,25 @@ ModuleRootNode Name: <module 'starExpr07'> SourceSection: [0,16]`[a, *b, c] = se
           ReadNameNodeGen SourceSection: [13,16]`seq`
             Identifier: seq
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
-            WriteLocalFrameSlotNodeGen SourceSection: None
-              Frame: [0,<>temp0,Illegal]
+            Frame: [0,<>temp0,Illegal]
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp1
-            WriteLocalFrameSlotNodeGen SourceSection: None
-              Frame: [1,<>temp1,Illegal]
+            Frame: [1,<>temp1,Illegal]
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp2
-            WriteLocalFrameSlotNodeGen SourceSection: None
-              Frame: [2,<>temp2,Illegal]
+            Frame: [2,<>temp2,Illegal]
           WriteNameNodeGen SourceSection: None
             Identifier: a
-            ReadLocalVariableNode SourceSection: None
+            ReadLocalVariableNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: b
-            ReadLocalVariableNode SourceSection: None
+            ReadLocalVariableNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: c
-            ReadLocalVariableNode SourceSection: None
+            ReadLocalVariableNodeGen SourceSection: None
               Frame: [2,<>temp2,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None

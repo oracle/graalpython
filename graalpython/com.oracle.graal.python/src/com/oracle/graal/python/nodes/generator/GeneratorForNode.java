@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -37,8 +36,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -55,8 +52,6 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
-    @CompilationFinal private BranchProfile asyncProfile;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final int iteratorSlot;
 
@@ -94,7 +89,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 e.expectStopIteration(errorProfile);
                 return;
             }
-            target.doWrite(frame, value);
+            target.executeObject(frame, value);
         } else {
             iterator = startIterator;
         }
@@ -111,16 +106,11 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                target.doWrite(frame, value);
+                target.executeObject(frame, value);
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                if (contextRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asyncProfile = BranchProfile.create();
-                    contextRef = lookupContextReference(PythonLanguage.class);
-                }
-                contextRef.get().triggerAsyncActions(frame, asyncProfile);
+                PythonContext.triggerAsyncActions(this);
             }
             return;
         } catch (YieldException e) {

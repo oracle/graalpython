@@ -46,9 +46,8 @@ ModuleRootNode Name: <module 'yeild10'> SourceSection: [0,24]`def f(): return; y
                             Value: 1
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PRLock extends AbstractPythonLock {
@@ -101,20 +103,21 @@ public final class PRLock extends AbstractPythonLock {
 
     @Override
     @TruffleBoundary
-    protected boolean acquireBlocking() {
-        lock.lock();
-        return true;
+    protected boolean acquireBlocking(Node node) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (l) -> {
+            l.lockInterruptibly();
+            b[0] = true;
+        }, lock);
+        return b[0];
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireTimeout(long timeout) {
-        try {
-            return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+    protected boolean acquireTimeout(Node node, long timeout) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (l) -> b[0] = l.tryLock(timeout, TimeUnit.MILLISECONDS), lock);
+        return b[0];
     }
 
     @Override

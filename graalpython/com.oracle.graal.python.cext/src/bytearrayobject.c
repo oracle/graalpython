@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,5 +54,10 @@ int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
     ptr = (void *) PyByteArray_AS_STRING(obj);
     /* cannot fail if view != NULL and readonly == 0 */
     (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
+    obj->ob_exports++;
     return 0;
+}
+
+void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
+    obj->ob_exports--;
 }

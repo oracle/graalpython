@@ -1,0 +1,4 @@
+Module[0, 16]
+    Assign[0, 16]
+        LHS: Name[0, 1] Value: "t" Store
+        RHS: RAW[5, 15] Value: "strange,"

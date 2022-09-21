@@ -5,11 +5,11 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.273.10",
+    "mxversion": "5.311.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "21.0.0",
+    "version": "23.0.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "1b1cbe7cf67fedcb1dcfd8b409408e4f4c9ec0d9",
+                "version": "98fb946635802e01b8c892e4ecee44c48fb7ffa3",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "1b1cbe7cf67fedcb1dcfd8b409408e4f4c9ec0d9",
+                "version": "98fb946635802e01b8c892e4ecee44c48fb7ffa3",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "1b1cbe7cf67fedcb1dcfd8b409408e4f4c9ec0d9",
+                "version": "98fb946635802e01b8c892e4ecee44c48fb7ffa3",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -107,32 +107,37 @@ suite = {
                 "version": "1.8",
             },
         },
+        "XZ-5.2.6": {
+            "urls": [
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.6.tar.gz",
+            ],
+            "packedResource": True,
+            "sha1": "1b1acd2e62203a7abceee6f573f1a96cdf5fbc8f",
+        },
+        "BOUNCYCASTLE-PROVIDER": {
+            "sha1": "46a080368d38b428d237a59458f9bc915222894d",
+            "sourceSha1": "c092c4f5af620ea5fd40a48d844c556826bebb63",
+            "maven": {
+              "groupId": "org.bouncycastle",
+              "artifactId": "bcprov-jdk15on",
+              "version": "1.68",
+            },
+        },
+        "BOUNCYCASTLE-PKIX": {
+            "sha1": "81da950604ff0b2652348cbd2b48fde46ced9867",
+            "sourceSha1": "a5407438fed5d271f129d85e3f92cc027fa246a9",
+            "maven": {
+                "groupId": "org.bouncycastle",
+                "artifactId": "bcpkix-jdk15on",
+                "version": "1.68",
+            },
+        },
         "BZIP2": {
             "urls": [
                 "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/bzip2-1.0.8.tar.gz",
             ],
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
-        },
-        "ICU4J-66.1" : {
-            "moduleName" : "com.ibm.icu",
-            "sha1" : "72c7519b6d91f7a1f993bd44a99fe95d67211b27",
-            "sourceSha1" : "57d00b7135ca8fa82311d6b9fd345309e4c46f0b",
-            "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j",
-              "version" : "66.1",
-            },
-        },
-        "ICU4J-CHARSET-66.1" : {
-            "moduleName" : "com.ibm.icu.charset",
-            "sha1" : "292f8736709f5c69afd9275faf92fac11a342b3e",
-            "sourceSha1" : "e981b54cb052d22f5512626dac6a29c79b1460d6",
-            "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j-charset",
-              "version" : "66.1",
-            },
         },
         "NETBEANS-LIB-PROFILER" : {
             "moduleName" : "org.netbeans.modules.org-netbeans-lib-profiler",
@@ -193,6 +198,26 @@ suite = {
                 "modules"
             ],
         },
+
+        "com.oracle.graal.python.jni": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.jni",
+            "source": [
+                "include",
+                "src",
+            ],
+        },
+
+        "com.oracle.graal.python.frozen": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.frozen",
+        },
+
+        "com.oracle.graal.python.pegparser.generator": {
+            "type": "python",
+            "path": "graalpython/com.oracle.graal.python.pegparser.generator",
+            "source": [],
+        },
     },
 
     "projects": {
@@ -213,16 +238,46 @@ suite = {
             "vpath": False,
         },
 
+        "com.oracle.graal.python.pegparser": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "javaCompliance": "11+",
+            "dependencies": [
+                "truffle:ICU4J",
+            ],
+            "buildDependencies": [
+                "com.oracle.graal.python.pegparser.generator",
+            ],
+        },
+
+        "com.oracle.graal.python.pegparser.test": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "testProject": True,
+            "javaCompliance": "11+",
+            "dependencies": [
+                "com.oracle.graal.python.pegparser",
+                "mx:JUNIT",
+            ],
+        },
+
+        "com.oracle.graal.python.pegparser.generator": {
+            "subDir": "graalpython",
+            "native": True,
+        },
+
         "com.oracle.graal.python.shell": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
-                "sulong:SULONG_TOOLCHAIN_LAUNCHERS",
+            ],
+            "requires": [
+                "java.management",
             ],
             "jacoco": "include",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -230,7 +285,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "jacoco": "include",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -241,33 +296,77 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations"
             ],
+            "requires": [
+                "java.compiler",
+            ],
             "jacoco": "exclude",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "checkstyle": "com.oracle.graal.python",
-            "workingSets": "Truffle,Python",
+        },
+
+        # FROZEN MODULES
+        "com.oracle.graal.python.frozen": {
+            "subDir": "graalpython",
+            "vpath": True,
+            "type": "GraalpythonProject",
+            "args": [
+                "<path:com.oracle.graal.python.frozen>/freeze_modules.py",
+                "--python-lib",
+                "<suite:graalpython>/graalpython/lib-python/3",
+                "--binary-dir",
+                "<output_root:com.oracle.graal.python.frozen>/com/oracle/graal/python/builtins/objects/module/",
+                "--sources-dir",
+                "<path:com.oracle.graal.python>/src/com/oracle/graal/python/builtins/objects/module/",
+            ],
+            "platformDependent": False,
+            "buildDependencies": [
+                # a bit ugly, we need the same dist dependencies as the full GRAALPYTHON dist + python-lib
+                "com.oracle.graal.python",
+                "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_JNI",
+                "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_COVERAGE",
+                "tools:TRUFFLE_PROFILER",
+                "regex:TREGEX",
+                "sdk:GRAAL_SDK",
+                "sulong:SULONG_API",
+                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
+                "GRAALPYTHON_PYTHON_LIB",
+            ],
         },
 
         # GRAALPYTHON
         "com.oracle.graal.python": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
+            "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
+                "com.oracle.graal.python.pegparser",
                 "truffle:TRUFFLE_API",
+                "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "XZ-1.8",
-                "ICU4J-66.1",
-                "ICU4J-CHARSET-66.1",
-                "sdk:JLINE3",
+                "truffle:ICU4J",
+                "truffle:ICU4J-CHARSET",
+                "regex:TREGEX",
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+            ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+                "jdk.security.auth",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
-            "javaCompliance": "8+",
-            "checkstyleVersion": "8.8",
+            "javaCompliance": "11+",
+            "checkstyleVersion": "8.36.1",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -287,12 +386,23 @@ suite = {
                 "mx:JUNIT",
                 "NETBEANS-LIB-PROFILER",
             ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+            ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "8+",
-            "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
+            "javaCompliance": "11+",
+            "annotationProcessors": [
+                "GRAALPYTHON_PROCESSOR",
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
             "workingSets": "Truffle,Python",
             "testProject": True,
+            "javaProperties" : {
+                "test.graalpython.home" : "<suite:graalpython>/graalpython"
+             },
         },
 
         # GRAALPYTHON BENCH
@@ -302,11 +412,15 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python",
                 "sdk:GRAAL_SDK",
+                "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
+            ],
+            "requires": [
+                "java.logging",
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "annotationProcessors" : ["mx:JMH_1_21"],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated" : True,
@@ -321,7 +435,7 @@ suite = {
                 "mx:JUNIT"
             ],
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "8+",
+            "javaCompliance": "11+",
             "workingSets": "Truffle,Python",
             "testProject": True,
         },
@@ -331,19 +445,40 @@ suite = {
             "vpath": True,
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
+            "args": [
+                "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                "<output_root:com.oracle.graal.python.cext>",
+            ],
             "buildDependencies": [
                 "GRAALPYTHON",
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+                "XZ-5.2.6",
                 "BZIP2",
             ],
             "buildEnv": {
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "ARCH": "<arch>",
                 "OS": "<os>",
+                "XZ-5.2.6": "<path:XZ-5.2.6>",
                 "BZIP2": "<path:BZIP2>",
             },
+        },
+
+        "com.oracle.graal.python.jni": {
+            "dir": "graalpython/com.oracle.graal.python.jni",
+            "native": "shared_lib",
+            "deliverable": "pythonjni",
+            "buildDependencies": [
+                "com.oracle.graal.python", # for the generated JNI header file
+            ],
+            "use_jdk_headers": True, # the generated JNI header includes jni.h
+            "cflags": ["-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                       "-g", "-O3", "-Werror",
+                       "-I<path:com.oracle.graal.python.cext>/include",
+                       "-I<path:com.oracle.graal.python.cext>/hpy"
+            ],
         },
 
         "python-lib": {
@@ -394,28 +529,66 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
             ],
-            "overlaps" : [
-                "sulong:SULONG_TOOLCHAIN_LAUNCHERS"
-            ],
             "description": "GraalPython launcher",
+        },
+
+        "GRAALPYTHON_JNI" : {
+            "native": True,
+            "platformDependent": True,
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+            ],
+            "dependencies": [
+                "com.oracle.graal.python.jni",
+            ],
+            "layout": {
+                "./": "dependency:com.oracle.graal.python.jni",
+            },
+            "description": "Contains the native library needed by HPy JNI backend.",
+            "maven": True,
+        },
+
+        "GRAALPYTHON_PEGPARSER": {
+            "dependencies": [
+                "com.oracle.graal.python.pegparser",
+            ],
+            "exclude": [
+                "truffle:ICU4J",
+            ],
+            "description": "GraalPython PEG parser",
+            "internal": True,
         },
 
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
+                "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_JNI",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
-                "truffle:ANTLR4",
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
-            "sourcesPath": "graalpython.src.zip",
+            "exclude": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "XZ-1.8",
+                "truffle:ANTLR4",
+                "truffle:ICU4J",
+                # TODO this fails native image build for some reason
+                # "truffle:ICU4J-CHARSET",
+            ],
+            "javaProperties": {
+                "python.jni.library": "<lib:pythonjni>"
+            },
             "description": "GraalPython engine",
         },
 
@@ -423,12 +596,13 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.processor",
             ],
-            "sourcesPath": "graalpython-processor.src.zip",
             "description": "GraalPython Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
         },
 
         "GRAALPYTHON_PYTHON_LIB": {
+            "native": True, # makes this a tar archive
+            "relpath": True, # relpath for tar archives is False but probably should be True
             "dependencies": ["python-lib", "python-test-support-lib"],
             "description": "Python 3 lib files",
             "maven": False,
@@ -438,6 +612,7 @@ suite = {
             "description": "unit tests",
             "dependencies": [
                 "com.oracle.graal.python.test",
+                "com.oracle.graal.python.pegparser.test",
             ],
             "exclude": ["mx:JUNIT"],
             "distDependencies": [
@@ -445,7 +620,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_TCK",
             ],
-            "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
         },
 
@@ -458,7 +632,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "sdk:GRAAL_SDK",
             ],
-            "sourcesPath": "graalpython.bench.src.zip",
             "testDistribution" : True,
             "maven": False,
         },
@@ -472,14 +645,16 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
             ],
-            "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
         },
 
         "GRAALPYTHON_GRAALVM_SUPPORT": {
             "native": True,
             "platformDependent": True,
-            "description": "Graal.Python support distribution for the GraalVM",
+            "description": "GraalVM Python support distribution for the GraalVM",
+            "distDependencies": [
+                "GRAALPYTHON_JNI",
+            ],
             "layout": {
                 "./": [
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
@@ -489,6 +664,7 @@ suite = {
                 ],
                 "./lib-graalpython/": [
                     "dependency:graalpython:com.oracle.graal.python.cext/*",
+                    "extracted-dependency:GRAALPYTHON_JNI/*",
                 ],
             },
             "maven": False,
@@ -496,9 +672,9 @@ suite = {
 
         "GRAALPYTHON_GRAALVM_DOCS": {
             "native": True,
-            "description": "Graal.Python documentation files for the GraalVM",
+            "description": "GraalVM Python documentation files for the GraalVM",
             "layout": {
-                "README_GRAALPYTHON.md": "file:README.md",
+                "README_GRAALPY.md": "file:README.md",
                 "./": "file:docs",
             },
             "maven": False,
@@ -507,10 +683,10 @@ suite = {
         "GRAALPYTHON_GRAALVM_LICENSES": {
             "native": True,
             "platformDependent": True,
-            "description": "Graal.Python support distribution for the GraalVM license files",
+            "description": "GraalVM Python support distribution for the GraalVM license files",
             "layout": {
-                "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
-                "THIRD_PARTY_LICENSE_GRAALPYTHON.txt": "file:THIRD_PARTY_LICENSE.txt",
+                "LICENSE_GRAALPY.txt": "file:LICENSE",
+                "THIRD_PARTY_LICENSE_GRAALPY.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
         },

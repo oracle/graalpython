@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,44 +73,45 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_SUBTRACT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.NB_XOR;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ILSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INVERT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IPOW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INVERT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -126,13 +127,14 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
@@ -172,40 +174,40 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
                     NB_XOR,
     };
 
-    @CompilationFinal(dimensions = 1) private static final String[] NUMBER_METHODS_MAPPING = new String[]{
-                    __ABS__,
-                    __ADD__,
-                    __AND__,
-                    __BOOL__,
-                    __DIVMOD__,
-                    __FLOAT__,
-                    __FLOORDIV__,
-                    __INDEX__,
-                    __IADD__,
-                    __IAND__,
-                    __IFLOORDIV__,
-                    __ILSHIFT__,
-                    __IMUL__,
-                    __IOR__,
-                    __IPOW__,
-                    __IMOD__,
-                    __IRSHIFT__,
-                    __ISUB__,
-                    __ITRUEDIV__,
-                    __IXOR__,
-                    __INT__,
-                    __INVERT__,
-                    __LSHIFT__,
-                    __MUL__,
-                    __NEG__,
-                    __OR__,
-                    __POS__,
-                    __POW__,
-                    __MOD__,
-                    __RSHIFT__,
-                    __SUB__,
-                    __TRUEDIV__,
-                    __XOR__
+    @CompilationFinal(dimensions = 1) private static final TruffleString[] NUMBER_METHODS_MAPPING = new TruffleString[]{
+                    T___ABS__,
+                    T___ADD__,
+                    T___AND__,
+                    T___BOOL__,
+                    T___DIVMOD__,
+                    T___FLOAT__,
+                    T___FLOORDIV__,
+                    T___INDEX__,
+                    T___IADD__,
+                    T___IAND__,
+                    T___IFLOORDIV__,
+                    T___ILSHIFT__,
+                    T___IMUL__,
+                    T___IOR__,
+                    T___IPOW__,
+                    T___IMOD__,
+                    T___IRSHIFT__,
+                    T___ISUB__,
+                    T___ITRUEDIV__,
+                    T___IXOR__,
+                    T___INT__,
+                    T___INVERT__,
+                    T___LSHIFT__,
+                    T___MUL__,
+                    T___NEG__,
+                    T___OR__,
+                    T___POS__,
+                    T___POW__,
+                    T___MOD__,
+                    T___RSHIFT__,
+                    T___SUB__,
+                    T___TRUEDIV__,
+                    T___XOR__
     };
 
     public PyNumberMethodsWrapper(PythonManagedClass delegate) {
@@ -235,9 +237,15 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadMethodNode readMethodNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
-        // translate key to attribute name
-        return toSulongNode.execute(readMethodNode.execute(getPythonClass(lib), member));
+                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            // translate key to attribute name
+            return toSulongNode.execute(readMethodNode.execute(getPythonClass(lib), member));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -270,7 +278,7 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
         @Specialization(replaces = "getMethodCached")
         static Object getMethod(PythonManagedClass clazz, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached LookupAttributeInMRONode.Dynamic lookupNode) throws UnknownIdentifierException {
-            String translate = translate(key);
+            TruffleString translate = translate(key);
             if (translate != null) {
                 return lookupNode.execute(clazz, translate);
             }
@@ -283,9 +291,9 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    private static String translate(String key) {
+    private static TruffleString translate(String key) {
         for (int i = 0; i < NUMBER_METHODS.length; i++) {
-            if (NUMBER_METHODS[i].getMemberName().equals(key)) {
+            if (NUMBER_METHODS[i].getMemberNameJavaString().equals(key)) {
                 return NUMBER_METHODS_MAPPING[i];
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,54 +40,74 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNodeGen.GetSulongTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @GenerateUncached
 abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
     public abstract Object execute(PythonNativeWrapper obj);
 
-    @Specialization(guards = "obj.isIntLike()")
-    Object doIntLike(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+    @Specialization(guards = {"isSingleContext()", "obj.isIntLike()"})
+    static Object doIntLikeSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getLongobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization(guards = "obj.isBool()")
-    Object doBool(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+    @Specialization(guards = {"isSingleContext()", "obj.isBool()"})
+    static Object doBoolSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getBoolobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization(guards = "obj.isDouble()")
-    Object doDouble(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+    @Specialization(guards = {"isSingleContext()", "obj.isDouble()"})
+    static Object doDoubleSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getFloatobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization
-    Object doGeneric(PythonNativeWrapper obj,
+    @Specialization(guards = "obj.isIntLike()")
+    static Object doIntLike(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                    @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(PythonBuiltinClassType.PInt);
+    }
+
+    @Specialization(guards = "obj.isBool()")
+    static Object doBool(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                    @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(PythonBuiltinClassType.Boolean);
+    }
+
+    @Specialization(guards = "obj.isDouble()")
+    static Object doDouble(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                    @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(PythonBuiltinClassType.PFloat);
+    }
+
+    @Specialization(replaces = {"doIntLike", "doBool", "doDouble"})
+    static Object doGeneric(PythonNativeWrapper obj,
                     @Cached GetSulongTypeNode getSulongTypeNode,
                     @Cached AsPythonObjectNode getDelegate,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-        return getSulongTypeNode.execute(lib.getLazyPythonClass(getDelegate.execute(obj)));
+                    @Cached GetClassNode getClassNode) {
+        return getSulongTypeNode.execute(getClassNode.execute(getDelegate.execute(obj)));
     }
 
     protected static Object getLongobjectType() {
@@ -107,62 +127,83 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
         public abstract Object execute(Object clazz);
 
-        @Specialization(guards = "clazz == cachedClass", limit = "10")
-        Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClass"}, limit = "10")
+        static Object doBuiltinCachedResult(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("getSulongTypeForBuiltinClass(clazz, context)") Object sulongType) {
-            return sulongType;
+                        @Cached("getLLVMTypeForBuiltinClass(clazz, getContext())") Object llvmType) {
+            return llvmType;
         }
 
-        @Specialization(replaces = "doBuiltinCached")
-        Object doBuiltinGeneric(PythonBuiltinClassType clazz,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return getSulongTypeForBuiltinClass(clazz, context);
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClass"}, limit = "1")
+        Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+                        @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass) {
+            return getLLVMTypeForBuiltinClass(cachedClass, getContext());
         }
 
-        @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
-        Object doGeneric(@SuppressWarnings("unused") PythonManagedClass clazz,
+        @Specialization(replaces = {"doBuiltinCachedResult", "doBuiltinCached"})
+        Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
+            return getLLVMTypeForBuiltinClass(clazz, getContext());
+        }
+
+        @Specialization(guards = {"isSingleContext()", "clazz == cachedClass"})
+        static Object doManagedClassCached(@SuppressWarnings("unused") PythonManagedClass clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonManagedClass cachedClass,
-                        @Cached(value = "doGeneric(clazz)", allowUncached = true) Object sulongType) {
-            return sulongType;
+                        @Cached("getLLVMTypeForClass(clazz)") Object llvmType) {
+            return llvmType;
         }
 
-        @Specialization
-        Object doGeneric(PythonManagedClass clazz) {
-            return getSulongTypeForClass(clazz);
+        @Specialization(replaces = "doManagedClassCached")
+        static Object doManagedClass(PythonManagedClass clazz) {
+            return getLLVMTypeForClass(clazz);
         }
 
-        protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz, PythonContext context) {
-            PythonBuiltinClass pythonClass = context.getCore().lookupType(clazz);
-            return getSulongTypeForClass(pythonClass);
+        @Specialization(guards = {"mro.length() == cachedLen"})
+        static Object doNativeClassCachedLen(@SuppressWarnings("unused") PythonAbstractNativeObject clazz,
+                        @Cached @SuppressWarnings("unused") GetMroStorageNode getMroStorageNode,
+                        @Bind("getMroStorageNode.execute(clazz)") MroSequenceStorage mro,
+                        @Cached("mro.length()") int cachedLen) {
+            return findBuiltinClass(mro, cachedLen);
         }
 
-        private static Object getSulongTypeForClass(PythonManagedClass pythonClass) {
-            Object sulongType = pythonClass.getSulongType();
-            if (sulongType == null) {
+        @Specialization(replaces = {"doNativeClassCachedLen"})
+        static Object doNativeClass(PythonAbstractNativeObject clazz,
+                        @Cached GetMroStorageNode getMroStorageNode) {
+            MroSequenceStorage mro = getMroStorageNode.execute(clazz);
+            return findBuiltinClass(mro, mro.length());
+        }
+
+        protected static Object getLLVMTypeForBuiltinClass(PythonBuiltinClassType clazz, PythonContext context) {
+            PythonBuiltinClass pythonClass = context.lookupType(clazz);
+            return getLLVMTypeForClass(pythonClass);
+        }
+
+        protected static Object getLLVMTypeForClass(PythonManagedClass pythonClass) {
+            Object llvmType = pythonClass.getSulongType();
+            if (llvmType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                sulongType = findBuiltinClass(pythonClass);
-                if (sulongType == null) {
-                    throw new IllegalStateException("sulong type for " + GetNameNode.getUncached().execute(pythonClass) + " was not registered");
+                MroSequenceStorage mro = GetMroStorageNodeGen.getUncached().execute(pythonClass);
+                llvmType = findBuiltinClass(mro, mro.length());
+                if (llvmType != null) {
+                    pythonClass.setSulongType(llvmType);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere("LLVM type for " + GetNameNode.getUncached().execute(pythonClass) + " was not registered");
                 }
             }
-            return sulongType;
+            return llvmType;
         }
 
-        private static Object findBuiltinClass(PythonManagedClass pythonClass) {
-            PythonAbstractClass[] mro = GetMroNode.getUncached().execute(pythonClass);
-            Object sulongType = null;
-            for (PythonAbstractClass superClass : mro) {
+        @ExplodeLoop
+        private static Object findBuiltinClass(MroSequenceStorage mro, int mroLength) {
+            for (int i = 0; i < mroLength; i++) {
+                Object superClass = mro.getItemNormalized(i);
                 if (superClass instanceof PythonManagedClass) {
-                    sulongType = ((PythonManagedClass) superClass).getSulongType();
-                    if (sulongType != null) {
-                        pythonClass.setSulongType(sulongType);
-                        break;
+                    Object llvmType = ((PythonManagedClass) superClass).getSulongType();
+                    if (llvmType != null) {
+                        return llvmType;
                     }
                 }
             }
-            return sulongType;
+            return null;
         }
     }
 }

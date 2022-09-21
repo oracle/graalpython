@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -52,20 +56,21 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = ZipImportModuleBuiltins.ZIPIMPORT_MODULE_NAME)
+@CoreFunctions(defineModule = ZipImportModuleBuiltins.J_ZIPIMPORT_MODULE_NAME)
 public class ZipImportModuleBuiltins extends PythonBuiltins {
 
-    protected static final String ZIPIMPORT_MODULE_NAME = "zipimport";
+    protected static final String J_ZIPIMPORT_MODULE_NAME = "zipimport";
+    protected static final TruffleString T_ZIPIMPORT_MODULE_NAME = tsLiteral(J_ZIPIMPORT_MODULE_NAME);
 
-    private static final String ZIP_DIRECTORY_CACHE_NAME = "_zip_directory_cache";
+    private static final TruffleString T_ZIP_DIRECTORY_CACHE_NAME = tsLiteral("_zip_directory_cache");
 
-    private static final String ZIPIMPORTER_DOC = "zipimporter(archivepath) -> zipimporter object\n" +
+    private static final String J_ZIPIMPORTER_DOC = "zipimporter(archivepath) -> zipimporter object\n" +
                     "\n" +
                     "Create a new zipimporter instance. 'archivepath' must be a path to\n" +
                     "a zipfile. ZipImportError is raised if 'archivepath' doesn't point to\n" +
@@ -80,21 +85,23 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put(ZIP_DIRECTORY_CACHE_NAME, core.factory().createDict());
+        addBuiltinConstant(T_ZIP_DIRECTORY_CACHE_NAME, core.factory().createDict());
 
     }
 
-    @Builtin(name = "zipimporter", constructsClass = PythonBuiltinClassType.PZipImporter, minNumOfPositionalArgs = 2, doc = ZIPIMPORTER_DOC)
+    @Builtin(name = "zipimporter", constructsClass = PythonBuiltinClassType.PZipImporter, minNumOfPositionalArgs = 2, doc = J_ZIPIMPORTER_DOC)
     @GenerateNodeFactory
     public abstract static class ZipImporterNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         public PZipImporter createNew(Object cls, @SuppressWarnings("unused") Object path,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            PythonModule module = getCore().lookupBuiltinModule(ZIPIMPORT_MODULE_NAME);
-            return factory().createZipImporter(cls, (PDict) readNode.execute(module, ZIP_DIRECTORY_CACHE_NAME), getContext().getEnv().getFileNameSeparator());
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+            PythonModule module = getCore().lookupBuiltinModule(T_ZIPIMPORT_MODULE_NAME);
+            return factory().createZipImporter(cls, (PDict) readNode.execute(module, T_ZIP_DIRECTORY_CACHE_NAME),
+                            fromJavaStringNode.execute(getContext().getEnv().getFileNameSeparator(), TS_ENCODING));
         }
 
     }

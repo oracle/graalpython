@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,72 +38,158 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GetHPyHandleForSingleton;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFactory.GetHPyHandleForSingletonNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
+    private static final int UNINITIALIZED = Integer.MIN_VALUE;
 
+    public static final Object NULL_HANDLE_DELEGATE = PNone.NO_VALUE;
     public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
-    public static final String I = "_i";
+    public static final String J_I = "_i";
+    public static final TruffleString T_I = tsLiteral(J_I);
 
     private final Object delegate;
-    private int id = -1;
+    /**
+     * The ID of the handle if it was allocated in the handle table.
+     * <p>
+     * The value also encodes the state:<br/>
+     * (1) If the value is {@link #UNINITIALIZED}, then the handle was never allocated in the handle
+     * table.<br/>
+     * (2) If the value is zero or positive then this is the index for the handle table. If the<br/>
+     * (3) If the value is negative but not {@link #UNINITIALIZED} then the handle was already
+     * closed (only used in HPy debug mode)<br/>
+     * </p>
+     */
+    private int id;
 
     private GraalHPyHandle() {
-        this.delegate = null;
-        this.id = 0;
+        this(NULL_HANDLE_DELEGATE, 0);
     }
 
-    public GraalHPyHandle(Object delegate) {
+    private GraalHPyHandle(Object delegate) {
+        this(delegate, UNINITIALIZED);
+    }
+
+    private GraalHPyHandle(Object delegate, int id) {
         assert delegate != null : "HPy handles to Java null are not allowed";
-        this.delegate = delegate;
+        assert delegate != NULL_HANDLE_DELEGATE || id == 0 : "must not not create more than on HPy_NULL";
+        this.delegate = assertNoJavaString(delegate);
+        this.id = id;
+    }
+
+    public static GraalHPyHandle createSingleton(Object delegate, int handle) {
+        assert handle <= GraalHPyBoxing.SINGLETON_HANDLE_MAX;
+        return new GraalHPyHandle(delegate, handle);
+    }
+
+    public static GraalHPyHandle create(Object delegate) {
+        return new GraalHPyHandle(delegate);
+    }
+
+    public static GraalHPyHandle createField(Object delegate, int idx) {
+        return new GraalHPyHandle(delegate, idx);
+    }
+
+    public static GraalHPyHandle createGlobal(Object delegate, int idx) {
+        return new GraalHPyHandle(delegate, idx);
+    }
+
+    /**
+     * This is basically like {@code toNative} but also returns the ID.
+     */
+    public int getIdUncached(GraalHPyContext context) {
+        return getId(context, ConditionProfile.getUncached(), GetHPyHandleForSingletonNodeGen.getUncached());
+    }
+
+    public int getId(GraalHPyContext context, ConditionProfile hasIdProfile, GetHPyHandleForSingleton getSingletonNode) {
+        int result = id;
+        if (!isPointer(hasIdProfile)) {
+            assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
+            result = getSingletonNode.execute(this.delegate);
+            if (result == -1) {
+                // profiled by the node
+                result = context.getHPyHandleForNonSingleton(this.delegate);
+            }
+            id = result;
+        }
+        assert isValidId(this.delegate, result);
+        return result;
+    }
+
+    public boolean isValidId(Object obj, int id) {
+        if (delegate == PNone.NO_VALUE) {
+            // special case of HPy_NULL internally represented as NO_VALUE
+            return id == 0;
+        }
+        int singletonId = GraalHPyContext.getHPyHandleForSingleton(obj);
+        return singletonId == -1 || singletonId == id;
     }
 
     @ExportMessage
     boolean isPointer(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isAllocatedProfile.profile(id != -1);
+                    @Exclusive @Cached ConditionProfile isNativeProfile) {
+        return isNativeProfile.profile(id >= 0 || delegate instanceof Integer || delegate instanceof Double);
     }
 
     @ExportMessage
-    long asPointer(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) throws UnsupportedMessageException {
-        if (!isPointer(isAllocatedProfile)) {
+    long asPointer() throws UnsupportedMessageException {
+        // note: we don't use a profile here since 'asPointer' is usually used right after
+        // 'isPointer'
+        if (!isPointer(ConditionProfile.getUncached())) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
-        return id;
+        if (id != UNINITIALIZED) {
+            return GraalHPyBoxing.boxHandle(id);
+        } else if (delegate instanceof Integer) {
+            return GraalHPyBoxing.boxInt((Integer) delegate);
+        } else if (delegate instanceof Double) {
+            return GraalHPyBoxing.boxDouble((Double) delegate);
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
+    /**
+     * Allocates the handle in the global handle table of the provided HPy context. If this is used
+     * in compiled code, this {@code GraalHPyHandle} object will definitively be allocated.
+     */
     @ExportMessage
-    void toNative(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("createCountingProfile()") ConditionProfile notNativeProfile) {
-        if (notNativeProfile.profile(!isPointer(isAllocatedProfile))) {
-            id = context.getHPyContext().getHPyHandleForObject(this);
-        }
+    void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
+                    @Cached GetHPyHandleForSingleton getSingletonNode,
+                    @CachedLibrary("this") InteropLibrary lib) {
+        getId(PythonContext.get(lib).getHPyContext(), isNativeProfile, getSingletonNode);
     }
 
     @ExportMessage
@@ -114,24 +200,27 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     static class GetNativeType {
-        @Specialization(assumptions = "singleContextAssumption()")
-        static Object doSingleContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @Cached("getHPyNativeType()") Object hpyNativeType) {
+
+        @Specialization(guards = "isSingleContext(lib)")
+        @SuppressWarnings("unused")
+        static Object doSingleContext(GraalHPyHandle handle,
+                        @CachedLibrary("handle") InteropLibrary lib,
+                        @Cached("getHPyNativeType(lib)") Object hpyNativeType) {
             return hpyNativeType;
         }
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext().getHPyNativeType();
+                        @CachedLibrary("handle") InteropLibrary lib) {
+            return PythonContext.get(lib).getHPyContext().getHPyNativeType();
         }
 
-        static Object getHPyNativeType() {
-            return PythonLanguage.getContext().getHPyContext().getHPyNativeType();
+        static Object getHPyNativeType(Node node) {
+            return PythonContext.get(node).getHPyContext().getHPyNativeType();
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        static boolean isSingleContext(Node node) {
+            return PythonLanguage.get(node).isSingleContext();
         }
     }
 
@@ -143,7 +232,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     Object getNativePointer(
                     @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isPointer(isAllocatedProfile) ? id : null;
+        return isPointer(isAllocatedProfile) ? GraalHPyBoxing.boxHandle(id) : null;
     }
 
     @ExportMessage
@@ -161,37 +250,68 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{I});
+        return new PythonAbstractObject.Keys(new TruffleString[]{T_I});
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isMemberReadable(String key) {
-        return I.equals(key);
+    boolean isMemberReadable(String key,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) {
+        TruffleString tmember = fromJavaStringNode.execute(key, TS_ENCODING);
+        return eqNode.execute(T_I, tmember, TS_ENCODING);
     }
 
     @ExportMessage
-    Object readMember(String key) throws UnknownIdentifierException {
-        if (I.equals(key)) {
+    Object readMember(String key,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws UnknownIdentifierException {
+        TruffleString tmember = fromJavaStringNode.execute(key, TS_ENCODING);
+        if (eqNode.execute(T_I, tmember, TS_ENCODING)) {
             return this;
         }
         throw UnknownIdentifierException.create(key);
+    }
+
+    @ExportMessage
+    boolean isNull() {
+        return id == 0;
+    }
+
+    static boolean isAllocated(int id) {
+        return id != UNINITIALIZED && id != 0;
+    }
+
+    boolean isAllocated() {
+        return GraalHPyHandle.isAllocated(id);
+    }
+
+    boolean isValid() {
+        return id > 0;
+    }
+
+    void closeAndInvalidate(GraalHPyContext hpyContext) {
+        assert id != UNINITIALIZED;
+        if (hpyContext.releaseHPyHandleForObject(id)) {
+            id = -id;
+        }
+    }
+
+    int getGlobalId() {
+        assert id > 0 : "any HPyGlobal handle already has an id";
+        return id;
+    }
+
+    int getFieldId() {
+        assert id >= 0 : "any HPyField handle already has an id";
+        return id;
     }
 
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
     }
 
-    public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        if (isPointer(isAllocatedProfile)) {
-            try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer(isAllocatedProfile));
-                id = -1;
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("trying to release non-native handle that claims to be native");
-            }
-        }
-        // nothing to do if the handle never got 'toNative'
+    static boolean wasAllocated(int id) {
+        return id != UNINITIALIZED;
     }
 }

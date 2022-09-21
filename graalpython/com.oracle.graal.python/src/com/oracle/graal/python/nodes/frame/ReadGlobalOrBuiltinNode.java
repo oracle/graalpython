@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,15 +28,15 @@ package com.oracle.graal.python.nodes.frame;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -45,38 +45,123 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeInfo(shortName = "read_global")
 public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
-    @Child private ReadAttributeFromObjectNode readFromModuleNode = ReadAttributeFromObjectNode.create();
+    private static final ReadGlobalOrBuiltinNode UNCACHED = new ReadGlobalOrBuiltinNode(null) {
+        @Override
+        protected Object executeWithGlobals(VirtualFrame frame, Object globals) {
+            throw CompilerDirectives.shouldNotReachHere("uncached ReadGlobalOrBuiltinNode must be used with #read");
+        }
+
+        @Override
+        public Object read(Frame frame, Object globals, TruffleString name) {
+            Object result;
+            if (globals instanceof PythonModule) {
+                result = ReadAttributeFromObjectNode.getUncached().execute(globals, name);
+            } else {
+                result = PyDictGetItem.getUncached().execute(frame, (PDict) globals, name);
+            }
+            if (result == null || result == PNone.NO_VALUE) {
+                PythonContext context = PythonContext.get(this);
+                PythonModule builtins = context.getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);
+                result = ReadAttributeFromObjectNode.getUncached().execute(builtins, name);
+            }
+            if (result != PNone.NO_VALUE) {
+                return result;
+            } else {
+                throw PRaiseNode.raiseUncached(this, NameError, ErrorMessages.NAME_NOT_DEFINED, name);
+            }
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+    };
+
+    @CompilationFinal private boolean wasReadFromModule = false;
     @Child private ReadBuiltinNode readFromBuiltinsNode;
 
-    protected final String attributeId;
-    protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    @Override
+    public final Object execute(VirtualFrame frame) {
+        return executeWithGlobals(frame, getGlobals(frame));
+    }
 
-    protected ReadGlobalOrBuiltinNode(String attributeId) {
+    @Override
+    public final int executeInt(VirtualFrame frame) throws UnexpectedResultException {
+        Object value = execute(frame);
+        if (value instanceof Integer) {
+            return (int) value;
+        }
+        throw new UnexpectedResultException(value);
+    }
+
+    @Override
+    public final long executeLong(VirtualFrame frame) throws UnexpectedResultException {
+        Object value = execute(frame);
+        if (value instanceof Long) {
+            return (long) value;
+        }
+        throw new UnexpectedResultException(value);
+    }
+
+    @Override
+    public final double executeDouble(VirtualFrame frame) throws UnexpectedResultException {
+        Object o = execute(frame);
+        if (o instanceof Double) {
+            return (double) o;
+        }
+        throw new UnexpectedResultException(o);
+    }
+
+    @Override
+    public final boolean executeBoolean(VirtualFrame frame) throws UnexpectedResultException {
+        Object o = execute(frame);
+        if (o instanceof Boolean) {
+            return (boolean) o;
+        }
+        throw new UnexpectedResultException(o);
+    }
+
+    protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
+
+    public Object read(Frame frame, Object globals, TruffleString name) {
+        assert name == attributeId : "cached ReadGlobalOrBuiltinNode can only be used with cached attributeId";
+        return executeWithGlobals((VirtualFrame) frame, globals);
+    }
+
+    protected final TruffleString attributeId;
+
+    protected ReadGlobalOrBuiltinNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static ReadGlobalOrBuiltinNode create(String attributeId) {
+    public static ReadGlobalOrBuiltinNode create(TruffleString attributeId) {
         return ReadGlobalOrBuiltinNodeGen.create(attributeId);
+    }
+
+    public static ReadGlobalOrBuiltinNode getUncached() {
+        return UNCACHED;
     }
 
     @Override
@@ -84,79 +169,58 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return WriteGlobalNode.create(attributeId, rhs);
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
-    protected Object readGlobalCached(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals) {
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
+    protected Object readGlobalCached(@SuppressWarnings("unused") PythonModule globals,
+                    @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode,
+                    @Cached(value = "globals", weak = true) PythonModule cachedGlobals) {
         Object result = readFromModuleNode.execute(cachedGlobals, attributeId);
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "readGlobalCached")
-    protected Object readGlobal(VirtualFrame frame) {
-        Object result = readFromModuleNode.execute(PArguments.getGlobals(frame), attributeId);
+    @InliningCutoff
+    @Specialization(replaces = "readGlobalCached")
+    protected Object readGlobal(PythonModule globals,
+                    @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode) {
+        Object result = readFromModuleNode.execute(globals, attributeId);
         return returnGlobalOrBuiltin(result);
     }
 
-    protected static HashingStorage getStorage(Object cachedGlobals) {
-        return ((PDict) cachedGlobals).getDictStorage();
-    }
-
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)",
-                    "getStorage(cachedGlobals) == cachedStorage"}, assumptions = "singleContextAssumption", limit = "1")
-    protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") VirtualFrame frame,
-                    @SuppressWarnings("unused") @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
-                    @Cached(value = "getStorage(getGlobals(frame))", weak = true) HashingStorage cachedStorage,
-                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile builtinProfile) {
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
+                    "cachedGlobals.getDictStorage() == cachedStorage"}, limit = "1")
+    protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals,
+                    @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
+                    @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
+                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(cachedStorage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    protected static HashingStorage getDictStorage(Object cachedGlobals) {
-        return ((PDict) cachedGlobals).getDictStorage();
-    }
-
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals",
-                    "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
-    protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
-                    @CachedLibrary(value = "getDictStorage(cachedGlobals)") HashingStorageLibrary hlib,
-                    @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
-        Object result = hlib.getItem(getDictStorage(cachedGlobals), attributeId);
+    @InliningCutoff
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals",
+                    "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
+    protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals,
+                    @Cached(value = "globals", weak = true) PDict cachedGlobals,
+                    @CachedLibrary(value = "cachedGlobals.getDictStorage()") HashingStorageLibrary hlib) {
+        Object result = hlib.getItem(cachedGlobals.getDictStorage(), attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    public static HashingStorage getGlobalStorage(VirtualFrame frame) {
-        return ((PDict) PArguments.getGlobals(frame)).getDictStorage();
-    }
-
-    @Specialization(guards = "isBuiltinDict(getGlobals(frame), builtinProfile)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
-    protected Object readGlobalBuiltinDict(VirtualFrame frame,
-                    @CachedLibrary("getGlobalStorage(frame)") HashingStorageLibrary hlib,
-                    @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
-        Object result = hlib.getItem(getGlobalStorage(frame), attributeId);
+    @InliningCutoff
+    @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
+    protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals,
+                    @Bind("globals.getDictStorage()") HashingStorage storage,
+                    @CachedLibrary("storage") HashingStorageLibrary hlib) {
+        Object result = hlib.getItem(storage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, rewriteOn = PException.class, assumptions = "singleContextAssumption", limit = "1")
-    protected Object readGlobalDictCached(VirtualFrame frame,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
-                    @Cached GetItemNode getItemNode) {
-        return returnGlobalOrBuiltin(getItemNode.execute(frame, cachedGlobals, attributeId));
-    }
-
-    @Specialization(guards = "isDict(getGlobals(frame))", rewriteOn = PException.class, replaces = "readGlobalDictCached")
-    protected Object readGlobalDict(VirtualFrame frame,
-                    @Cached GetItemNode getItemNode) {
-        return returnGlobalOrBuiltin(getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId));
-    }
-
-    @Specialization(guards = "isDict(getGlobals(frame))", replaces = {"readGlobalDict", "readGlobalDictCached"})
-    protected Object readGlobalDictWithException(VirtualFrame frame,
+    @InliningCutoff
+    @Specialization
+    protected Object readGlobalDictGeneric(VirtualFrame frame, PDict globals,
                     @Cached GetItemNode getItemNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
         try {
-            Object result = getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId);
+            Object result = getItemNode.execute(frame, globals, attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
             e.expect(KeyError, errorProfile);
@@ -165,7 +229,11 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 
     private Object returnGlobalOrBuiltin(Object result) {
-        if (isGlobalProfile.profile(result != PNone.NO_VALUE)) {
+        if (result != PNone.NO_VALUE) {
+            if (!wasReadFromModule) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                wasReadFromModule = true;
+            }
             return result;
         } else {
             if (readFromBuiltinsNode == null) {
@@ -176,7 +244,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         }
     }
 
-    public String getAttributeId() {
+    @Override
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 
@@ -191,12 +260,11 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 }
 
-abstract class ReadBuiltinNode extends Node {
+abstract class ReadBuiltinNode extends PNodeWithContext {
     protected static final Assumption singleCoreNotInitialized = Truffle.getRuntime().createAssumption();
 
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
     @CompilationFinal private ConditionProfile isCoreInitializedProfile;
 
@@ -205,45 +273,49 @@ abstract class ReadBuiltinNode extends Node {
 
     public abstract Object execute();
 
-    protected ReadBuiltinNode(String attributeId) {
+    protected ReadBuiltinNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
     // TODO: (tfel) Think about how we can globally catch writes to the builtin
     // module so we can treat anything read from it as constant here.
-    @Specialization(assumptions = "singleContextAssumption")
+    @Specialization(guards = "isSingleContext()")
     Object returnBuiltinFromConstantModule(
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("getBuiltins(context)") PythonModule builtins) {
+                    @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
         if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
             return builtin;
         } else {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
+            throw raiseNameNotDefined();
         }
     }
 
-    @Specialization
-    Object returnBuiltin(
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        PythonModule builtins = getBuiltins(context);
-        return returnBuiltinFromConstantModule(context, builtins);
+    @InliningCutoff
+    private PException raiseNameNotDefined() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        throw raiseNode.raise(NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
     }
 
-    protected PythonModule getBuiltins(PythonContext context) {
-        PythonCore core = context.getCore();
-        if (ensureIsCoreInitializedProfile().profile(core.isInitialized())) {
+    @InliningCutoff
+    @Specialization
+    Object returnBuiltin() {
+        PythonModule builtins = getBuiltins();
+        return returnBuiltinFromConstantModule(builtins);
+    }
+
+    protected PythonModule getBuiltins() {
+        PythonContext context = PythonContext.get(this);
+        if (ensureContextInitializedProfile().profile(context.isInitialized())) {
             return context.getBuiltins();
         } else {
-            return core.lookupBuiltinModule(BuiltinNames.BUILTINS);
+            return context.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
         }
     }
 
-    private ConditionProfile ensureIsCoreInitializedProfile() {
+    private ConditionProfile ensureContextInitializedProfile() {
         if (isCoreInitializedProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             isCoreInitializedProfile = ConditionProfile.createBinaryProfile();

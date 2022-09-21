@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: __import__
         Kind: Function
-        FrameDescriptor: [filename, code, module, module_name, sys, posix, <return_val>, fd, content]
+        FrameDescriptor: [<return_val>, code, content, fd, filename, module, module_name, posix, sys]
         CellVars: Empty
         FreeVars: Empty
     Scope: __gr__
         Kind: Function
-        FrameDescriptor: [mode, closefd, opener, name, self, <return_val>]
+        FrameDescriptor: [<return_val>, closefd, mode, name, opener, self]
         CellVars: Empty
         FreeVars: Empty

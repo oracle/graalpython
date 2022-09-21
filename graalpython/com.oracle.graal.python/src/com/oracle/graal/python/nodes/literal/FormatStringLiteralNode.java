@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,102 +38,84 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.nodes.literal;
 
-import java.util.Arrays;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public class FormatStringLiteralNode extends LiteralNode {
-    private static final String EMPTY_STRING = "";
-
-    private final StringPart[] parts;
 
     /**
-     * The size of this array is total number of actual String literals and expressions inside the
-     * f-string. Slots that do not represent actual String literal are left {@code null}, for each
-     * such slot there is an expression in {@link #expressions}.
+     * The parts array can basically contain only StringLiteralNodes and
+     * FormatStringExpressionNodes.
      */
-    @CompilationFinal(dimensions = 1) private final String[] literals;
-    @Children ExpressionNode[] expressions;
-    @Children CastToJavaStringNode[] castToJavaStringNodes;
+    @Children ExpressionNode[] parts;
+    @Children CastToTruffleStringNode[] castToStringNodes;
+    @Child TruffleStringBuilder.AppendStringNode appendStringNode;
+    @Child TruffleStringBuilder.ToStringNode toStringNode;
 
-    public FormatStringLiteralNode(StringPart[] parts, ExpressionNode[] exprs, String[] literals) {
+    public FormatStringLiteralNode(ExpressionNode[] parts) {
         this.parts = parts;
-        this.expressions = exprs;
-        this.literals = literals;
     }
 
-    public static final class StringPart {
-        /**
-         * Marks, whether the value is formatted string
-         */
-        public final boolean isFormatString;
-        public final String text;
-
-        public StringPart(String text, boolean isFormatString) {
-            this.text = text;
-            this.isFormatString = isFormatString;
-        }
-
-        public boolean isFormatString() {
-            return isFormatString;
-        }
-
-        public String getText() {
-            return text;
-        }
-    }
-
-    public StringPart[] getParts() {
+    public ExpressionNode[] getParts() {
         return parts;
     }
 
     @Override
     @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
+    public TruffleString execute(VirtualFrame frame) {
         if (parts.length == 0) {
-            return EMPTY_STRING;
+            return T_EMPTY_STRING;
         }
 
         // Get all the Strings and calculate the resulting String size
-        String[] values = Arrays.copyOf(literals, literals.length);
-        int exprIndex = 0;
+        TruffleString[] values = new TruffleString[parts.length];
         int length = 0;
-        ensureCastNodes();
-        for (int i = 0; i < literals.length; i++) {
-            if (values[i] == null) {
-                values[i] = castToJavaStringNodes[exprIndex].execute(expressions[exprIndex].execute(frame));
-                exprIndex++;
+        ensureNodes();
+        for (int i = 0; i < parts.length; i++) {
+            Object stringPart = parts[i].execute(frame);
+            try {
+                values[i] = castToStringNodes[i].execute(stringPart);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-            length += values[i].length();
+            length += values[i].byteLength(TS_ENCODING);
         }
 
         // Create the result
-        char[] result = new char[length];
-        int nextIndex = 0;
-        for (String value : values) {
-            PythonUtils.getChars(value, 0, value.length(), result, nextIndex);
-            nextIndex += value.length();
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, length);
+        for (TruffleString value : values) {
+            appendStringNode.execute(sb, value);
         }
-        return PythonUtils.newString(result);
+        return toStringNode.execute(sb);
     }
 
-    private void ensureCastNodes() {
-        if (castToJavaStringNodes == null) {
+    private void ensureNodes() {
+        if (castToStringNodes == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            CastToJavaStringNode[] nodes = new CastToJavaStringNode[expressions.length];
+            CastToTruffleStringNode[] nodes = new CastToTruffleStringNode[parts.length];
             for (int i = 0; i < nodes.length; i++) {
-                nodes[i] = CastToJavaStringNode.create();
+                nodes[i] = CastToTruffleStringNode.create();
             }
-            castToJavaStringNodes = insert(nodes);
+            castToStringNodes = insert(nodes);
+        }
+        if (appendStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            appendStringNode = insert(TruffleStringBuilder.AppendStringNode.create());
+        }
+        if (toStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            toStringNode = insert(TruffleStringBuilder.ToStringNode.create());
         }
     }
 }

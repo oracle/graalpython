@@ -1,0 +1,25 @@
+Module[0, 64]
+    FunctionDef[0, 64]
+        Name:fn
+        ArgumentsTy[0, 0]
+            Args:
+                ArgTy[7, 14] someset
+        ---- Function body of fn ----
+        Return[17, 64] 
+            Call[24, 64]
+                Target: 
+                    Attribute[24, 28] 
+                        Receiver: RAW[24, 28] Value: ", "
+                        Attr: join
+                Args:
+                    GeneratorExp[33, 64]
+                        Element: 
+                            JoinedStr[34, 43]
+                                 Values:
+                                    FormattedValue[37, 41]
+                                        Value: Name[1, 5] Value: "name"
+                                        Conversion: -1
+                        ComprehensionTy[44, 63]
+                            Target: Name[48, 52] Value: "name" Store
+                            Iterator: Name[56, 63] Value: "someset"
+        ---- End of fn function ----

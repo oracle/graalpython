@@ -266,6 +266,7 @@
 *graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_implicit_from_string
 *graalpython.lib-python.3.test.test_decimal.PyImplicitConstructionTest.test_rop
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_abc
+*graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_complex
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_create_decimal_from_float
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_exception_hierarchy
 *graalpython.lib-python.3.test.test_decimal.PyPythonAPItests.test_from_float

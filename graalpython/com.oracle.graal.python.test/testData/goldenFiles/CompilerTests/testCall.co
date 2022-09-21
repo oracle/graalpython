@@ -1,0 +1,5 @@
+Disassembly of <module>:
+  1:0   -   1:5         0 LOAD_NAME                         0    (range)
+  1:6   -   1:9         2 LOAD_NAME                         1    (num)
+  1:0   -   1:10        4 CALL_FUNCTION                     1
+  1:0   -   1:10        6 RETURN_VALUE

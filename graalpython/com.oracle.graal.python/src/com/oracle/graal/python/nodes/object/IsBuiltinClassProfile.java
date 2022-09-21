@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -59,16 +58,16 @@ public final class IsBuiltinClassProfile extends Node {
     @CompilationFinal private boolean noMatch;
     @CompilationFinal private boolean adoptable;
 
-    @Child private PythonObjectLibrary lib;
+    @Child private GetClassNode getClassNode;
 
     private static final IsBuiltinClassProfile UNCACHED = new IsBuiltinClassProfile(false);
 
     /* private constructor */
     private IsBuiltinClassProfile(boolean isCached) {
         if (isCached) {
-            this.lib = PythonObjectLibrary.getFactory().createDispatched(3);
+            this.getClassNode = GetClassNode.create();
         } else {
-            this.lib = PythonObjectLibrary.getUncached();
+            this.getClassNode = GetClassNode.getUncached();
         }
         this.adoptable = isCached;
     }
@@ -82,23 +81,19 @@ public final class IsBuiltinClassProfile extends Node {
     }
 
     public boolean profileIsAnyBuiltinObject(PythonObject object) {
-        return profileIsAnyBuiltinClass(lib.getLazyPythonClass(object));
+        return profileIsAnyBuiltinClass(getClassNode.execute(object));
     }
 
     public boolean profileIsOtherBuiltinObject(PythonObject object, PythonBuiltinClassType type) {
-        return profileIsOtherBuiltinClass(lib.getLazyPythonClass(object), type);
+        return profileIsOtherBuiltinClass(getClassNode.execute(object), type);
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type) {
-        return profileClass(lib.getLazyPythonClass(object.getUnreifiedException()), type);
-    }
-
-    public boolean profileException(PException object, PythonBuiltinClassType type, PythonObjectLibrary elib) {
-        return profileClass(elib.getLazyPythonClass(object.getUnreifiedException()), type);
+        return profileClass(getClassNode.execute(object.getUnreifiedException()), type);
     }
 
     public boolean profileObject(Object object, PythonBuiltinClassType type) {
-        return profileClass(lib.getLazyPythonClass(object), type);
+        return profileClass(getClassNode.execute(object), type);
 
     }
 

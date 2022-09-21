@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,8 +25,10 @@
  */
 package com.oracle.graal.python.test.basic;
 
-import org.junit.*;
-import static com.oracle.graal.python.test.PythonTests.*;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
+import static com.oracle.graal.python.test.PythonTests.createSource;
+
+import org.junit.Test;
 
 public class HelloWorldTests {
 
@@ -37,7 +39,7 @@ public class HelloWorldTests {
 
     @Test
     public void helloworldAgain() {
-        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "try: print(value)\nexcept:print('hello')\nvalue='world'");
+        org.graalvm.polyglot.Source source = createSource("try: print(value)\nexcept:print('hello')\nvalue='world'");
         assertPrints("hello\n", source);
         assertPrints("hello\n", source);
     }

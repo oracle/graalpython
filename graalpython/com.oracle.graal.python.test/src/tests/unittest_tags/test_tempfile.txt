@@ -20,10 +20,12 @@
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_choose_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_collision_with_existing_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_collision_with_existing_file
+*graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_mode
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_non_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_nonexisting_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_read_only_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_basic
+*graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_basic_with_bytes_names
 *graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_choose_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_basic
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_basic_many
@@ -54,6 +56,7 @@
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_after_rollover
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_before_rollover
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_context_manager_during_rollover
+*graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_del_on_close
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_fileno
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_after_rollover
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_before_rollover
@@ -62,6 +65,7 @@
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_sparse
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_text_mode
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_text_newline_and_encoding
+*graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_truncate_with_size_parameter
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_write_sequential
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_writelines
 *graalpython.lib-python.3.test.test_tempfile.TestSpooledTemporaryFile.test_writelines_sequential
@@ -73,8 +77,11 @@
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_flags
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_mkdtemp_failure
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_modes
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_multiple_close
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_warnings_on_cleanup
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_basic
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_has_no_name
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_mode_and_encoding
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_multiple_close
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_no_leak_fd

@@ -1,0 +1,10 @@
+Module[0, 5]
+    UnaryOp[0, 5]
+        Op: USub
+        Value: UnaryOp[1, 5]
+            Op: USub
+            Value: UnaryOp[2, 5]
+                Op: USub
+                Value: UnaryOp[3, 5]
+                    Op: USub
+                    Value: LONG[4, 5] Value: 2

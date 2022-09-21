@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,37 +41,32 @@
 
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
-public class BadOPCodeNode extends PRootNodeWithFileName {
+public class BadOPCodeNode extends PRootNode {
 
-    private String name = "<invalid code>";
-
-    @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> context;
+    private final String name;
 
     public BadOPCodeNode(TruffleLanguage<?> language) {
         super(language);
+        this.name = "<invalid code>";
+    }
+
+    public BadOPCodeNode(TruffleLanguage<?> language, TruffleString name) {
+        super(language);
+        this.name = name.toJavaStringUncached();
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        throw getContext().getCore().raise(PythonBuiltinClassType.SystemError, "unknown opcode");
-    }
-
-    private PythonContext getContext() {
-        if (context == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            context = lookupContextReference(PythonLanguage.class);
-        }
-        return context.get();
+        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_OPCODE);
     }
 
     @Override
@@ -87,9 +82,5 @@ public class BadOPCodeNode extends PRootNodeWithFileName {
     @Override
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

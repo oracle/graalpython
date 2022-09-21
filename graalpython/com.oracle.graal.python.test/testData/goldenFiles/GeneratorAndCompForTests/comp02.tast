@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: abcs, , base, 
+              CellVarsSlots: abcs, base
             FunctionRootNode SourceSection: [0,203]`def mro(cls, abcs=No...`
               Name: mro
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
@@ -27,26 +27,24 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
               CelVars: abcs, base
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+              FrameDescriptor: 6 slots [<>temp4, <return_val>, abcs, base, cls, other]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: abcs, , base, 
+                CellVarsSlots: abcs, base
               InnerRootNode SourceSection: [0,203]`def mro(cls, abcs=No...`
                 ReturnTargetNode SourceSection: [0,203]`def mro(cls, abcs=No...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: cls
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,cls,Illegal]
+                        Frame: [0,cls,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: abcs
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: None
                           Frame: [1,abcs,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -57,23 +55,19 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalCellNodeGen SourceSection: None
                                 Identifier: base
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,base,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [55,155]`if not any(issubclas...`
                               NotNodeGen SourceSection: [58,109]`not any(issubclass(b...`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 PythonCallUnary SourceSection: [62,109]`any(issubclass(b, ba...`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [62,65]`any`
                                     Identifier: any
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   GeneratorExpressionNode SourceSection: [66,108]`issubclass(b, base) ...`
                                     Name: <genexpr>
-                                    FrameDescriptor: 3 slots [b, base, <return_val>]
+                                    FrameDescriptor: 3 slots [<return_val>, b, base]
                                     Enclosing
-                                      FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                                      FrameDescriptor: 6 slots [<>temp4, <return_val>, abcs, base, cls, other]
                                     Active Flags: 2
                                     For Nodes: 1
                                     Block Nodes: 0
@@ -84,9 +78,9 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       CelVars: None
                                       FreeVars: base
                                       NeedsCellFrame: False
-                                      FrameDescriptor: 3 slots [b, base, <return_val>]
+                                      FrameDescriptor: 3 slots [<return_val>, b, base]
                                       ExecutionSlots:
-                                        FreeVarsSlots: base, 
+                                        FreeVarsSlots: base
                                         CellVarsSlots: None
                                       InnerRootNode SourceSection: [66,108]`issubclass(b, base) ...`
                                         GeneratorReturnTargetNode SourceSection: [66,108]`issubclass(b, base) ...`
@@ -99,47 +93,37 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                                   CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [66,76]`issubclass`
                                                     Identifier: issubclass
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGeneratorFrameVariableNode SourceSection: [77,78]`b`
+                                                  ReadGeneratorFrameVariableNodeGen SourceSection: [77,78]`b`
                                                     Frame: [0,b,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [80,84]`base`
-                                                    ReadGeneratorFrameVariableNode SourceSection: None
+                                                    ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                       Frame: [1,base,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadFromCellNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
                                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                                               Identifier: b
-                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [0,b,Illegal]
+                                              Frame: [0,b,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
-                                            GetNextNode SourceSection: None
+                                            GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                            Frame: [2,<return_val>,Object]
                                           BlockNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                           PRaiseNodeGen SourceSection: None
                                     GetIteratorExpressionNodeGen SourceSection: [95,108]`cls.__bases__`
-                                      GetAttributeNodeGen SourceSection: [95,108]`cls.__bases__`
+                                      GetAttributeNode SourceSection: [95,108]`cls.__bases__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __bases__
-                                          CachedDispatchFirst SourceSection: None
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [95,98]`cls`
+                                        ReadLocalVariableNodeGen SourceSection: [95,98]`cls`
                                           Frame: [0,cls,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [123,150]`abstract_bases.appen...`
                                 PythonCallUnary SourceSection: [123,150]`abstract_bases.appen...`
@@ -147,34 +131,27 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [123,137]`abstract_bases`
                                       Identifier: abstract_bases
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalCellNodeGen SourceSection: [145,149]`base`
-                                    ReadLocalVariableNode SourceSection: None
+                                    ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,base,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadFromCellNodeGen SourceSection: None
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [41,45]`abcs`
                             ReadLocalCellNodeGen SourceSection: [41,45]`abcs`
-                              ReadLocalVariableNode SourceSection: None
+                              ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,abcs,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadFromCellNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [155,203]`other = [mro(base, a...`
                         Identifier: other
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,other,Illegal]
+                        Frame: [3,other,Illegal]
                         PythonCallUnary SourceSection: [164,202]`mro(base, abcs=abcs)...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                             Name: <genexpr>
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 3 slots [<return_val>, abcs, base]
                             Enclosing
-                              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                              FrameDescriptor: 6 slots [<>temp4, <return_val>, abcs, base, cls, other]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -185,9 +162,9 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                               CelVars: None
                               FreeVars: abcs
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                              FrameDescriptor: 3 slots [<return_val>, abcs, base]
                               ExecutionSlots:
-                                FreeVarsSlots: abcs, 
+                                FreeVarsSlots: abcs
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                                 GeneratorReturnTargetNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
@@ -198,46 +175,38 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                         flagSlot: 0
                                         PythonCallNodeGen SourceSection: [164,184]`mro(base, abcs=abcs)...`
                                           CallNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [168,172]`base`
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: [168,172]`base`
                                             Frame: [0,base,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
                                             ExecuteKeywordArgumentsNode SourceSection: None
                                               KeywordLiteralNode SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [179,183]`abcs`
-                                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [1,abcs,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadFromCellNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [164,167]`mro`
                                             Identifier: mro
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: base
-                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,base,Illegal]
+                                      Frame: [0,base,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                      GetClassNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                    Frame: [2,<return_val>,Object]
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [197,202]`other`
-                              ReadLocalVariableNode SourceSection: [197,202]`other`
+                              ReadLocalVariableNodeGen SourceSection: [197,202]`other`
                                 Frame: [3,other,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [5,<return_val>,Object]

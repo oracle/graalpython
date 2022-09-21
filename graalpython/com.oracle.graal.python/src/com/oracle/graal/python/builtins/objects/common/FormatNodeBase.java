@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class FormatNodeBase extends PythonBinaryClinicBuiltinNode {
     @Override
@@ -58,8 +59,8 @@ public abstract class FormatNodeBase extends PythonBinaryClinicBuiltinNode {
 
     // applies to all types: empty format string => use __str__
     @Specialization(guards = "formatString.isEmpty()")
-    public static Object formatEmptyString(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                    @Cached("create(__STR__)") LookupAndCallUnaryNode lookupAndCallNode) {
+    public static Object formatEmptyString(VirtualFrame frame, Object self, @SuppressWarnings("unused") TruffleString formatString,
+                    @Cached("create(Str)") LookupAndCallUnaryNode lookupAndCallNode) {
         return lookupAndCallNode.executeObject(frame, self);
     }
 }

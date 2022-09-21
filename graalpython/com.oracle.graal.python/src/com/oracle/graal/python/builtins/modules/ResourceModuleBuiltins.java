@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,30 +50,74 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "resource")
 public class ResourceModuleBuiltins extends PythonBuiltins {
+
+    static int RUSAGE_CHILDREN = -1;
+    static int RUSAGE_SELF = 0;
+    static int RUSAGE_THREAD = 1;
+
+    static final StructSequence.BuiltinTypeDescriptor STRUCT_RUSAGE_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PStructRusage,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "struct_rusage: Result from getrusage.\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "    (utime,stime,maxrss,ixrss,idrss,isrss,minflt,majflt,\n" +
+                    "    nswap,inblock,oublock,msgsnd,msgrcv,nsignals,nvcsw,nivcsw)\n" +
+                    "or via the attributes ru_utime, ru_stime, ru_maxrss, and so on.",
+                    // @formatter:on
+                    16,
+                    new String[]{
+                                    "ru_utime", "ru_stime", "ru_maxrss",
+                                    "ru_ixrss", "ru_idrss", "ru_isrss",
+                                    "ru_minflt", "ru_majflt",
+                                    "ru_nswap", "ru_inblock", "ru_oublock",
+                                    "ru_msgsnd", "ru_msgrcv", "ru_nsignals",
+                                    "ru_nvcsw", "ru_nivcsw"
+                    },
+                    new String[]{
+                                    "user time used", "system time used", "max. resident set size",
+                                    "shared memory size", "unshared data size", "unshared stack size",
+                                    "page faults not requiring I/O", "page faults requiring I/O",
+                                    "number of swap outs", "block input operations", "block output operations",
+                                    "IPC messages sent", "IPC messages received", "signals received",
+                                    "voluntary context switches", "involuntary context switches"
+                    });
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ResourceModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        addBuiltinConstant("RUSAGE_CHILDREN", RUSAGE_CHILDREN);
+        addBuiltinConstant("RUSAGE_SELF", RUSAGE_SELF);
+        addBuiltinConstant("RUSAGE_THREAD", RUSAGE_THREAD);
+        StructSequence.initType(core, STRUCT_RUSAGE_DESC);
+    }
+
     @Builtin(name = "getrusage", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(ResourceModuleBuiltins.class)
     abstract static class GetRuUsageNode extends PythonBuiltinNode {
-        protected static int RUSAGE_CHILDREN = -1;
-        protected static int RUSAGE_SELF = 0;
-        protected static int RUSAGE_THREAD = 1;
 
         @Specialization(guards = {"who == RUSAGE_THREAD"})
         @TruffleBoundary
@@ -85,7 +129,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             double ru_stime = 0; // time in system mode (float)
             long ru_maxrss; // maximum resident set size
 
-            if (!TruffleOptions.AOT) {
+            if (!ImageInfo.inImageCode()) {
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
                 if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
                     ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
@@ -121,9 +165,9 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             long ru_nsignals = -1; // signals received
             long ru_nvcsw = -1; // voluntary context switches
             long ru_nivcsw = -1; // nvoluntary context switches
-            return factory().createTuple(new Object[]{ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
+            return factory().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
                             ru_minflt, ru_majflt, ru_nswap, ru_inblock, ru_oublock, ru_msgsnd, ru_msgrcv, ru_nsignals,
-                            ru_nvcsw, ru_nivcsw});
+                            ru_nvcsw, ru_nivcsw);
         }
 
         @Specialization(guards = {"who == RUSAGE_SELF"})
@@ -135,7 +179,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             double ru_stime = 0; // time in system mode (float)
             long ru_maxrss;
 
-            if (!TruffleOptions.AOT) {
+            if (!ImageInfo.inImageCode()) {
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
                 if (threadMXBean.isThreadCpuTimeSupported()) {
                     for (long thId : threadMXBean.getAllThreadIds()) {
@@ -179,14 +223,14 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             long ru_nsignals = -1; // signals received
             long ru_nvcsw = -1; // voluntary context switches
             long ru_nivcsw = -1; // nvoluntary context switches
-            return factory().createTuple(new Object[]{ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
+            return factory().createStructSeq(STRUCT_RUSAGE_DESC, ru_utime, ru_stime, ru_maxrss, ru_ixrss, ru_idrss, ru_isrss,
                             ru_minflt, ru_majflt, ru_nswap, ru_inblock, ru_oublock, ru_msgsnd, ru_msgrcv, ru_nsignals,
-                            ru_nvcsw, ru_nivcsw});
+                            ru_nvcsw, ru_nivcsw);
         }
 
         @Fallback
         PTuple getruusage(@SuppressWarnings("unused") Object who) {
-            throw raise(ValueError, "rusage usage not yet implemented for specified arg.");
+            throw raise(ValueError, ErrorMessages.RUSAGE_NOT_YET_IMPLEMENED);
         }
     }
 }

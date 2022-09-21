@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,13 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -54,15 +57,19 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockN
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PSemLock})
 public class SemLockBuiltins extends PythonBuiltins {
@@ -73,8 +80,8 @@ public class SemLockBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
-        builtinConstants.put("SEM_VALUE_MAX", Integer.MAX_VALUE);
+    public void initialize(Python3Core core) {
+        addBuiltinConstant("SEM_VALUE_MAX", Integer.MAX_VALUE);
         super.initialize(core);
     }
 
@@ -93,6 +100,15 @@ public class SemLockBuiltins extends PythonBuiltins {
         @Specialization
         boolean isMine(PSemLock self) {
             return self.isMine();
+        }
+    }
+
+    @Builtin(name = "_is_zero", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsZeroNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isZero(PSemLock self) {
+            return self.isZero();
         }
     }
 
@@ -119,8 +135,8 @@ public class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getName(@SuppressWarnings("unused") PSemLock self) {
-            return PNone.NONE;
+        TruffleString getName(PSemLock self) {
+            return self.getName();
         }
     }
 
@@ -143,27 +159,71 @@ public class SemLockBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "LockBuiltins.DEFAULT_BLOCKING")
     @GenerateNodeFactory
-    abstract static class AcquireNode extends PythonTernaryBuiltinNode {
+    abstract static class AcquireNode extends PythonTernaryClinicBuiltinNode {
 
-        @Specialization
-        boolean doAcquire(VirtualFrame frame, PSemLock self, Object blocking, Object timeout,
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SemLockBuiltinsClinicProviders.AcquireNodeClinicProviderGen.INSTANCE;
+        }
+
+        protected static boolean isFast(PSemLock self) {
+            return self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine();
+        }
+
+        @Specialization(guards = "isFast(self)")
+        boolean fast(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") Object timeout) {
+            self.increaseCount();
+            return true;
+        }
+
+        @Specialization(guards = "!isFast(self)")
+        Object slow(VirtualFrame frame, PSemLock self, boolean blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
-            if (self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine()) {
-                self.increaseCount();
-                return true;
+            Object tout = timeout;
+            if (!blocking) {
+                tout = LockBuiltins.UNSET_TIMEOUT;
             }
-            return acquireLockNode.doAcquire(frame, self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, tout);
         }
     }
 
-    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @Builtin(name = J___ENTER__, minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object doEnter(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, timeout);
+        }
+    }
+
+    @Builtin(name = "_rebuild", minNumOfPositionalArgs = 4, parameterNames = {"handle", "kind", "maxvalue", "name"})
+    @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    abstract static class RebuildNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SemLockBuiltinsClinicProviders.RebuildNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, TruffleString name) {
+            SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+            Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
+            if (semaphore == null) {
+                // TODO can this even happen? cpython simply creates a semlock object with the
+                // provided handle
+                semaphore = newSemaphore(0);
+            }
+            return factory().createSemLock(PythonBuiltinClassType.PSemLock, name, kind, semaphore);
+        }
+
+        @TruffleBoundary
+        private static Semaphore newSemaphore(int value) {
+            return new Semaphore(value);
         }
     }
 
@@ -183,12 +243,11 @@ public class SemLockBuiltins extends PythonBuiltins {
                 assert self.getCount() == 1;
             }
             self.release();
-            self.decreaseCount();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @Builtin(name = J___EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ExitLockNode extends PythonBuiltinNode {
         @Specialization

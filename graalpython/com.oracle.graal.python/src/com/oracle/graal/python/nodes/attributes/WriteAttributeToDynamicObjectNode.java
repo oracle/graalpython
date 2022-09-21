@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,25 +40,33 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 
+/**
+ * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
+ * object has dict, also bypasses any other additional logic in
+ * {@link WriteAttributeToDynamicObjectNode}. The only functionality this node provides on top of
+ * {@link DynamicObjectLibrary} is casting of the key to {@code java.lang.String}.
+ */
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 @GenerateUncached
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
-    public abstract boolean execute(Object primary, Object key, Object value);
+    public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
-    public abstract boolean execute(Object primary, String key, Object value);
+    public abstract boolean execute(Object primary, TruffleString key, Object value);
+
+    public abstract boolean execute(Object primary, Object key, Object value);
 
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();
@@ -68,19 +76,23 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return WriteAttributeToDynamicObjectNodeGen.getUncached();
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected boolean writeDirect(DynamicObject dynamicObject, @SuppressWarnings("unused") String key, Object value,
-                    @Cached("key") String cachedKey,
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean writeDirect(DynamicObject dynamicObject, TruffleString key, Object value,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        dylib.put(dynamicObject, cachedKey, value);
+        dylib.put(dynamicObject, key, value);
         return true;
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "writeDirect")
-    protected boolean write(DynamicObject dynamicObject, Object key, Object value,
-                    @Cached CastToJavaStringNode castNode,
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean writeDirectHidden(DynamicObject dynamicObject, HiddenKey key, Object value,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        dylib.put(dynamicObject, key, value);
+        return true;
+    }
+
+    @Specialization(guards = "!isHiddenKey(key)", replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean write(DynamicObject dynamicObject, Object key, Object value,
+                    @Cached CastToTruffleStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         dylib.put(dynamicObject, attrKey(key, castNode), value);
         return true;

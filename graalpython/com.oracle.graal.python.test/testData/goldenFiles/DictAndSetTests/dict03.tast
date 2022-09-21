@@ -5,13 +5,14 @@ ModuleRootNode Name: <module 'dict03'> SourceSection: [0,6]`{a:b,}`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,6]`{a:b,}`
-    DictLiteralNodeGen SourceSection: [0,6]`{a:b,}`
+    DynamicDictLiteralNodeGen SourceSection: [0,6]`{a:b,}`
       PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [1,2]`a`
         Identifier: a
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [3,4]`b`
         Identifier: b
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
+      CachedDispatchFirst SourceSection: None

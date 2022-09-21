@@ -144,9 +144,12 @@
 *graalpython.lib-python.3.test.test_zipfile.OtherTests.test_zipfile_with_short_extra_field
 *graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_non_pyfile
 *graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_pathlike
+*graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_pyfile
 *graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_pyfile_bad_syntax
 *graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_python_directory
 *graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_python_directory_filtered
+*graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_python_package
+*graalpython.lib-python.3.test.test_zipfile.PyZipFileTests.test_write_with_optimization
 *graalpython.lib-python.3.test.test_zipfile.StoredBadCrcTests.test_read_with_bad_crc
 *graalpython.lib-python.3.test.test_zipfile.StoredBadCrcTests.test_testzip_with_bad_crc
 *graalpython.lib-python.3.test.test_zipfile.StoredTestZip64InSmallFiles.test_absolute_arcnames
@@ -192,12 +195,15 @@
 *graalpython.lib-python.3.test.test_zipfile.StoredTestsWithSourceFile.test_writing_errors
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_close_after_close
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_write_after_close
+*graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_execute_zip2
+*graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_execute_zip64
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_read_zip64_with_exe_prepended
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_read_zip_with_exe_prepended
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_dir_parent
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_implied_dirs_performance
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_iterdir_and_types
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_joinpath
+*graalpython.lib-python.3.test.test_zipfile.TestPath.test_joinpath_constant_time
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_missing_dir_parent
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_mutability
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open
@@ -225,4 +231,5 @@
 *graalpython.lib-python.3.test.test_zipfile.ZipInfoTests.test_from_dir
 *graalpython.lib-python.3.test.test_zipfile.ZipInfoTests.test_from_file
 *graalpython.lib-python.3.test.test_zipfile.ZipInfoTests.test_from_file_bytes
+*graalpython.lib-python.3.test.test_zipfile.ZipInfoTests.test_from_file_fileno
 *graalpython.lib-python.3.test.test_zipfile.ZipInfoTests.test_from_file_pathlike

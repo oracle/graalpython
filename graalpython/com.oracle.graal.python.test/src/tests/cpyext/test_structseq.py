@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,64 +39,104 @@
 
 import sys
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+
 __dir__ = __file__.rpartition("/")[0]
 
-# 
-# class TestPyStructSequenceTypes(object):
-#     def test_properties(self):
-#         TestPyStructSequence = CPyExtType("TestPyStructSequence",
-#                                           """
-#                                static PyStructSequence_Field typeinfo_fields[] = {
-#                                    {"element0",      "The first element."},
-#                                    {"element1",      "The second element."},
-#                                    {NULL, NULL,}
-#                                };
-#            
-#                                static PyStructSequence_Desc typeinfo_desc = { 
-#                                    "TestPyStructSequenceTypes.TestPyStructSequence",
-#                                    "Information about some custom struct type",
-#                                    typeinfo_fields,
-#                                    2,
-#                                };
-#                                 """,
-#                                 ready_code="""if(PyStructSequence_InitType2(&TestPyStructSequenceType, &typeinfo_desc) < 0) {
-#                                  return NULL;
-#                              }
-#                              Py_INCREF(&TestPyStructSequenceType);
-#                              """,
-#         )
-#         assert TestPyStructSequence.__doc__ == "Information about some custom struct type"
-# 
-#         tester = TestPyStructSequence()
-#         assert hasattr(tester.element0)
-#         assert hasattr(tester.element1)
+
+class TestPyStructSequenceTypes(object):
+    def test_properties(self):
+        TestPyStructSequence = CPyExtType("TestPyStructSequence",
+                                          """
+                               static PyStructSequence_Field typeinfo_fields[] = {
+                                   {"element0",      "The first element."},
+                                   {"element1",      "The second element."},
+                                   {NULL, NULL,}
+                               };
+
+                               static PyStructSequence_Desc typeinfo_desc = { 
+                                   "TestPyStructSequenceTypes.TestPyStructSequence",
+                                   "Information about some custom struct type",
+                                   typeinfo_fields,
+                                   2,
+                               };
+                                """,
+                                          ready_code="""
+                               /* our template initializes refcnt to 1; so reset */
+                               Py_SET_REFCNT(&TestPyStructSequenceType, 0);
+                               if(PyStructSequence_InitType2(&TestPyStructSequenceType, &typeinfo_desc) < 0) {
+                                 return NULL;
+                               }
+                               Py_INCREF(&TestPyStructSequenceType);
+                               """,
+                                          )
+        assert TestPyStructSequence.__doc__ == "Information about some custom struct type"
+
+        tester = TestPyStructSequence(("hello", "world"))
+        assert hasattr(tester, "element0")
+        assert hasattr(tester, "element1")
+        assert tester.element0 == "hello"
+        assert tester.element1 == "world"
+
+    def test_structseq_newtype(self):
+        TestPyStructSequenceNewType = CPyExtType("TestPyStructSequenceNewType", """
+                               static PyStructSequence_Field typeinfo_fields[] = {
+                                   {"element0",      "The first element."},
+                                   {"element1",      "The second element."},
+                                   {"element2",      "The third element."},
+                                   {NULL, NULL,}
+                               };
+
+                               static PyStructSequence_Desc typeinfo_desc = {
+                                   "TestPyStructSequenceNewType.TestPyStructSequenceNewType",
+                                   "Information about some new struct type",
+                                   typeinfo_fields,
+                                   3,
+                               };
+                                """,
+                                post_ready_code="""
+                                PyTypeObject *new_type = PyStructSequence_NewType(&typeinfo_desc);
+                                if (new_type == NULL)
+                                     return NULL;
+                                PyModule_AddObject(m, "TestPyStructSequenceNewType", (PyObject *)new_type);
+                                return m;
+                             """,
+        )
+        assert TestPyStructSequenceNewType.__doc__ == "Information about some new struct type"
+
+        tester = TestPyStructSequenceNewType(("hello", "beautiful", "world"))
+        assert hasattr(tester, "element0")
+        assert hasattr(tester, "element1")
+        assert hasattr(tester, "element2")
+        assert tester.element0 == "hello"
+        assert tester.element1 == "beautiful"
+        assert tester.element2 == "world"
 
 
 class TestPyStructSequence(CPyExtTestCase):
- 
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyStructSequence, self).compile_module(name)
- 
+
     test_PyStructSequence_InitType2 = CPyExtFunction(
         lambda args: 0,
-        lambda: ( (0,), ),
+        lambda: ((0,),),
         code='''
         static PyTypeObject CustomStructSeqType;
-          
+
         static PyStructSequence_Field typeinfo_fields[] = {
             {"element0",      "The first element."},
             {"element1",      "The second element."},
             {NULL, NULL,}
         };
-          
+
         static PyStructSequence_Desc typeinfo_desc = { 
             "custom.named.tuple",
             "Information about some custom struct type",
             typeinfo_fields,
             2,
         };
-          
+
         int wrap_PyStructSequence_InitType2(int n) {
             return PyStructSequence_InitType2(&CustomStructSeqType, &typeinfo_desc);
         }
@@ -110,12 +150,8 @@ class TestPyStructSequence(CPyExtTestCase):
 
     test_PyStructSequence_Usage = CPyExtFunction(
         lambda args: args[0],
-        lambda: ( 
+        lambda: (
             (("hello", "world",),),
-#             ("john", "doe",), 
-#             (1, "doe",), 
-#             ("john", False,), 
-#             ("john", None,), 
         ),
         code='''
         static PyTypeObject CustomStructSeqType;
@@ -125,14 +161,14 @@ class TestPyStructSequence(CPyExtTestCase):
             {"element1",      "The second element."},
             {NULL, NULL,}
         };
-         
-        static PyStructSequence_Desc typeinfo_desc = { 
+
+        static PyStructSequence_Desc typeinfo_desc = {
             "custom.named.tuple",
             "Information about some custom struct type",
             typeinfo_fields,
             2,
         };
-         
+
         PyObject* wrap_PyStructSequence_Usage(PyObject* elements) {
             Py_ssize_t i = 0;
             PyObject* elem = NULL;

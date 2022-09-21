@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -55,13 +55,13 @@ import com.oracle.truffle.api.library.ExportMessage;
  * A simple interop-capable object that is used to initialize the HPy C API.
  */
 @ExportLibrary(InteropLibrary.class)
-public class GraalHPyInitObject implements TruffleObject {
+public final class GraalHPyInitObject implements TruffleObject {
 
-    public static final String SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
-    public static final String SET_HPY_NATIVE_TYPE = "setHPyNativeType";
-    public static final String SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
-    public static final String SET_HPY_NULL_HANDLE = "setHPyNullHandle";
-    public static final String SET_WCHAR_SIZE = "setWcharSize";
+    public static final String J_SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
+    public static final String J_SET_HPY_NATIVE_TYPE = "setHPyNativeType";
+    public static final String J_SET_HPYFIELD_NATIVE_TYPE = "setHPyFieldNativeType";
+    public static final String J_SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
+    public static final String J_SET_WCHAR_SIZE = "setWcharSize";
     private final GraalHPyContext hpyContext;
 
     public GraalHPyInitObject(GraalHPyContext hpyContext) {
@@ -69,23 +69,26 @@ public class GraalHPyInitObject implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_HPY_NULL_HANDLE, SET_WCHAR_SIZE});
+        return new PythonAbstractObject.Keys(new String[]{J_SET_HPY_CONTEXT_NATIVE_TYPE, J_SET_HPY_NATIVE_TYPE, J_SET_HPYFIELD_NATIVE_TYPE, J_SET_HPY_ARRAY_NATIVE_TYPE, J_SET_WCHAR_SIZE});
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberInvocable(String key) {
         switch (key) {
-            case SET_HPY_CONTEXT_NATIVE_TYPE:
-            case SET_HPY_NATIVE_TYPE:
-            case SET_HPY_ARRAY_NATIVE_TYPE:
-            case SET_HPY_NULL_HANDLE:
-            case SET_WCHAR_SIZE:
+            case J_SET_HPY_CONTEXT_NATIVE_TYPE:
+            case J_SET_HPY_NATIVE_TYPE:
+            case J_SET_HPYFIELD_NATIVE_TYPE:
+            case J_SET_HPY_ARRAY_NATIVE_TYPE:
+            case J_SET_WCHAR_SIZE:
                 return true;
         }
         return false;
@@ -93,31 +96,31 @@ public class GraalHPyInitObject implements TruffleObject {
 
     @ExportMessage
     @TruffleBoundary
-    Object invokeMember(String key, Object[] arguments,
-                    @Cached HPyEnsureHandleNode ensureHandleNode) throws UnsupportedMessageException, ArityException {
+    @SuppressWarnings({"try", "unused"})
+    Object invokeMember(String key, Object[] arguments) throws UnsupportedMessageException, ArityException {
+        try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, 1, arguments.length);
+            }
 
-        if (arguments.length != 1) {
-            throw ArityException.create(1, arguments.length);
+            switch (key) {
+                case J_SET_HPY_CONTEXT_NATIVE_TYPE:
+                    hpyContext.setHPyContextNativeType(arguments[0]);
+                    return 0;
+                case J_SET_HPY_NATIVE_TYPE:
+                    hpyContext.setHPyNativeType(arguments[0]);
+                    return 0;
+                case J_SET_HPYFIELD_NATIVE_TYPE:
+                    hpyContext.setHPyFieldNativeType(arguments[0]);
+                    return 0;
+                case J_SET_HPY_ARRAY_NATIVE_TYPE:
+                    hpyContext.setHPyArrayNativeType(arguments[0]);
+                    return 0;
+                case J_SET_WCHAR_SIZE:
+                    hpyContext.setWcharSize(((Number) arguments[0]).longValue());
+                    return 0;
+            }
+            throw UnsupportedMessageException.create();
         }
-
-        switch (key) {
-            case SET_HPY_CONTEXT_NATIVE_TYPE:
-                hpyContext.setHPyContextNativeType(arguments[0]);
-                return 0;
-            case SET_HPY_NATIVE_TYPE:
-                hpyContext.setHPyNativeType(arguments[0]);
-                return 0;
-            case SET_HPY_ARRAY_NATIVE_TYPE:
-                hpyContext.setHPyArrayNativeType(arguments[0]);
-                return 0;
-            case SET_HPY_NULL_HANDLE:
-                hpyContext.setNullHandle(ensureHandleNode.execute(hpyContext, arguments[0]));
-                return 0;
-            case SET_WCHAR_SIZE:
-                hpyContext.setWcharSize(((Number) arguments[0]).longValue());
-                return 0;
-        }
-        throw UnsupportedMessageException.create();
     }
-
 }

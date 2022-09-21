@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,38 +40,67 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @ImportStatic({NativeMember.class, PythonOptions.class})
 public abstract class PyDateTimeMRNode extends Node {
 
-    public abstract Object execute(PythonObject object, String key);
+    public enum DateTimeMode {
+        DATE,
+        TIME,
+        DATE_TIME
+    }
 
-    public static final String YEAR = "year";
-    public static final String MONTH = "month";
-    public static final String DAY = "day";
-    public static final String HOUR = "hour";
-    public static final String MIN = "minute";
-    public static final String SEC = "second";
-    public static final String USEC = "microsecond";
+    static DateTimeMode getModeFromTypeName(TruffleString typeName, TruffleString.EqualNode eqNode) {
+        if (eqNode.execute(T_DATE, typeName, TS_ENCODING)) {
+            return DateTimeMode.DATE;
+        } else if (eqNode.execute(T_DATETIME, typeName, TS_ENCODING)) {
+            return DateTimeMode.DATE_TIME;
+        } else if (eqNode.execute(T_TIME, typeName, TS_ENCODING)) {
+            return DateTimeMode.TIME;
+        }
+        return null;
+    }
+
+    public abstract Object execute(PythonObject object, String key, DateTimeMode mode);
+
+    public static final TruffleString T_YEAR = tsLiteral("year");
+    public static final TruffleString T_MONTH = tsLiteral("month");
+    public static final TruffleString T_DAY = tsLiteral("day");
+    public static final TruffleString T_HOUR = tsLiteral("hour");
+    public static final TruffleString T_MIN = tsLiteral("minute");
+    public static final TruffleString T_SEC = tsLiteral("second");
+    public static final TruffleString T_USEC = tsLiteral("microsecond");
+    public static final TruffleString T_TZINFO = tsLiteral("tzinfo");
 
     /**
      * Fields are packed into successive bytes, each viewed as unsigned and big-endian, unless
      * otherwise noted:
      *
-     * <code>
+     * PyDateTime_DateTime:
+     *
+     * <pre>
      * byte offset
      *  0           year     2 bytes, 1-9999
      *  2           month    1 byte, 1-12
@@ -81,10 +110,32 @@ public abstract class PyDateTimeMRNode extends Node {
      *  6           second   1 byte, 0-59
      *  7           usecond  3 bytes, 0-999999
      * 10
-     * </code>
+     * </pre>
+     *
+     * PyDateTime_Date:
+     *
+     * <pre>
+     * byte offset
+     *  0           year     2 bytes, 1-9999
+     *  2           month    1 byte, 1-12
+     *  3           day      1 byte, 1-31
+     * 10
+     * </pre>
+     *
+     * PyDateTime_Time:
+     *
+     * <pre>
+     * byte offset
+     *  4           hour     1 byte, 0-23
+     *  5           minute   1 byte, 0-59
+     *  6           second   1 byte, 0-59
+     *  7           usecond  3 bytes, 0-999999
+     * 10
+     * </pre>
      */
-    @Specialization(guards = "eq(DATETIME_DATA,key)")
-    Object doData(PythonObject object, @SuppressWarnings("unused") String key,
+    @Specialization(guards = {"eq(DATETIME_DATA, key)", "cachedMode == mode", "cachedMode != null"}, limit = "1")
+    static Object doData(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") DateTimeMode mode,
+                    @Cached("mode") DateTimeMode cachedMode,
                     @Cached PInteropGetAttributeNode getYearNode,
                     @Cached PInteropGetAttributeNode getMonthNode,
                     @Cached PInteropGetAttributeNode getDayNode,
@@ -92,40 +143,64 @@ public abstract class PyDateTimeMRNode extends Node {
                     @Cached PInteropGetAttributeNode getMinNode,
                     @Cached PInteropGetAttributeNode getSecNode,
                     @Cached PInteropGetAttributeNode getUSecNode,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-        // passing null here should be ok, since we should be in an interop situation
-        int year = lib.asSize(getYearNode.execute(object, YEAR));
-        int month = lib.asSize(getMonthNode.execute(object, MONTH));
-        int day = lib.asSize(getDayNode.execute(object, DAY));
-        int hour = lib.asSize(getHourNode.execute(object, HOUR));
-        int min = lib.asSize(getMinNode.execute(object, MIN));
-        int sec = lib.asSize(getSecNode.execute(object, SEC));
-        int usec = lib.asSize(getUSecNode.execute(object, USEC));
-        assert year >= 0 && year < 0x10000;
-        assert month >= 0 && month < 0x100;
-        assert day >= 0 && day < 0x100;
-        assert hour >= 0 && hour < 0x100;
-        assert min >= 0 && min < 0x100;
-        assert sec >= 0 && sec < 0x100;
-        assert usec >= 0 && sec < 0x1000000;
-        byte[] data = new byte[]{(byte) (year >> 8), (byte) year, (byte) month, (byte) day, (byte) hour, (byte) min, (byte) sec, (byte) (usec >> 16), (byte) (usec >> 8), (byte) usec};
+                    @Cached PyNumberAsSizeNode asSizeNode) {
 
+        // passing null here should be ok, since we should be in an interop situation
+        int year = -1;
+        int month = -1;
+        int day = -1;
+        int hour = -1;
+        int min = -1;
+        int sec = -1;
+        int usec = -1;
+        if (cachedMode == DateTimeMode.DATE || cachedMode == DateTimeMode.DATE_TIME) {
+            year = asSizeNode.executeExact(null, getYearNode.execute(object, T_YEAR));
+            month = asSizeNode.executeExact(null, getMonthNode.execute(object, T_MONTH));
+            day = asSizeNode.executeExact(null, getDayNode.execute(object, T_DAY));
+            assert year >= 0 && year < 0x10000;
+            assert month >= 0 && month < 0x100;
+            assert day >= 0 && day < 0x100;
+        }
+        if (cachedMode == DateTimeMode.TIME || cachedMode == DateTimeMode.DATE_TIME) {
+            hour = asSizeNode.executeExact(null, getHourNode.execute(object, T_HOUR));
+            min = asSizeNode.executeExact(null, getMinNode.execute(object, T_MIN));
+            sec = asSizeNode.executeExact(null, getSecNode.execute(object, T_SEC));
+            usec = asSizeNode.executeExact(null, getUSecNode.execute(object, T_USEC));
+            assert hour >= 0 && hour < 0x100;
+            assert min >= 0 && min < 0x100;
+            assert sec >= 0 && sec < 0x100;
+            assert usec >= 0 && sec < 0x1000000;
+        }
+
+        byte[] data;
+        switch (cachedMode) {
+            case DATE:
+                data = new byte[]{(byte) (year >> 8), (byte) year, (byte) month, (byte) day};
+                break;
+            case TIME:
+                data = new byte[]{(byte) hour, (byte) min, (byte) sec, (byte) (usec >> 16), (byte) (usec >> 8), (byte) usec};
+                break;
+            case DATE_TIME:
+                data = new byte[]{(byte) (year >> 8), (byte) year, (byte) month, (byte) day, (byte) hour, (byte) min, (byte) sec, (byte) (usec >> 16), (byte) (usec >> 8), (byte) usec};
+                break;
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
         return new CByteArrayWrapper(data);
     }
 
-    protected static GetAttributeNode createAttr(String expected) {
-        return GetAttributeNode.create(expected, null);
+    @Specialization(guards = "eq(DATETIME_TZINFO, key)")
+    static Object doTzinfo(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") DateTimeMode mode,
+                    @Cached ReadAttributeFromObjectNode getTzinfoNode,
+                    @Cached ToSulongNode toSulongNode) {
+        Object value = getTzinfoNode.execute(object, T_TZINFO);
+        if (value != PNone.NO_VALUE) {
+            return toSulongNode.execute(value);
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     protected static boolean eq(NativeMember expected, String actual) {
-        return expected.getMemberName().equals(actual);
-    }
-
-    public static PyDateTimeMRNode create() {
-        return PyDateTimeMRNodeGen.create();
-    }
-
-    public static PyDateTimeMRNode getUncached() {
-        return PyDateTimeMRNodeGen.getUncached();
+        return expected.getMemberNameJavaString().equals(actual);
     }
 }

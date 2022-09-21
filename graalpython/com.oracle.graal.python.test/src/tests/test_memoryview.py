@@ -1,8 +1,10 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
+import sys
+import pytest
 
 def test_subscript():
     v = memoryview(b'abcefg')
@@ -162,3 +164,30 @@ def test_pack():
     assert b == b'\x01'
     memoryview(b).cast('?')[0] = False
     assert b == b'\x00'
+
+def test_read_after_resize():
+    if sys.implementation.name != "graalpy":
+        return
+    # CPython prevents resizing of acquired buffers at all to avoid a segfault
+    # We don't want to impose locking on managed objects because we cannot automatically
+    # release the lock by reference counting. Check that we don't hard crash when
+    # does an out-of-bound read on a resized buffer
+    b = bytearray(b'12341251452134523463456435643')
+    m = memoryview(b)
+    assert m[1] == ord('2')
+    b.clear()
+    with pytest.raises(IndexError):
+        print(m[1])
+    with pytest.raises(IndexError):
+        m[1] = 3
+    with pytest.raises(IndexError):
+        print(m.tobytes())
+
+def test_mmap():
+    import mmap
+    m = mmap.mmap(-1, 1)
+    mv = memoryview(m)
+    assert len(mv) == 1
+    assert mv.__getitem__(0) == 0
+    mv.__setitem__(0, 1)
+    assert mv.__getitem__(0) == 1

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.map;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 
 import java.util.List;
 
@@ -52,10 +53,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -66,11 +67,11 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
@@ -81,32 +82,32 @@ public final class MapBuiltins extends PythonBuiltins {
         return MapBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 3, takesVarArgs = true)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 3, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
-        @Specialization(guards = "args.length == 0", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "args.length == 0")
         static PNone doOne(VirtualFrame frame, PMap self, Object func, Object iterable, @SuppressWarnings("unused") Object[] args,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
             self.setFunction(func);
-            self.setIterators(new Object[]{lib.getIteratorWithFrame(iterable, frame)});
+            self.setIterators(new Object[]{getIter.execute(frame, iterable)});
             return PNone.NONE;
         }
 
         @Specialization(replaces = "doOne")
         static PNone doGeneric(VirtualFrame frame, PMap self, Object func, Object iterable, Object[] args,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
             self.setFunction(func);
             Object[] iterators = new Object[args.length + 1];
-            iterators[0] = lib.getIteratorWithFrame(iterable, frame);
+            iterators[0] = getIter.execute(frame, iterable);
             for (int i = 0; i < args.length; i++) {
-                iterators[i + 1] = lib.getIteratorWithFrame(args[i], frame);
+                iterators[i + 1] = getIter.execute(frame, args[i]);
             }
             self.setIterators(iterators);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIterators().length == 1")
@@ -119,7 +120,7 @@ public final class MapBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
                         @Cached CallVarargsMethodNode callNode,
-                        @Cached("create()") GetNextNode next) {
+                        @Cached GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
@@ -129,7 +130,7 @@ public final class MapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -139,14 +140,14 @@ public final class MapBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doit(VirtualFrame frame, PMap self, Object x,
                         @Cached BranchProfile moreThanOne,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary argsLib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile profile) {
             PMap iterMap = factory().createMap(PythonBuiltinClassType.PMap);
@@ -160,12 +161,11 @@ public final class MapBuiltins extends PythonBuiltins {
             } else {
                 args = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
-            InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, argsLib);
-            ThreadState state = PArguments.getThreadState(frame);
+            InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, getIter);
             while (true) {
                 try {
                     Object n = next.execute(frame, iterMap);
-                    if (lib.equalsWithState(n, x, lib, state)) {
+                    if (eqNode.execute(frame, n, x)) {
                         return true;
                     }
                 } catch (PException e) {
@@ -174,6 +174,19 @@ public final class MapBuiltins extends PythonBuiltins {
                 }
             }
             return false;
+        }
+    }
+
+    @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonBuiltinNode {
+        @Specialization
+        PTuple doit(PMap self, @SuppressWarnings("unused") Object ignored) {
+            Object[] iterators = self.getIterators();
+            Object[] args = new Object[iterators.length + 1];
+            args[0] = self.getFunction();
+            System.arraycopy(iterators, 0, args, 1, iterators.length);
+            return factory().createTuple(new Object[]{PythonBuiltinClassType.PMap, factory().createTuple(args)});
         }
     }
 }

@@ -5,3 +5,7 @@
 *graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_redirect_url_withfrag
 *graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_sites_no_connection_close
 *graalpython.lib-python.3.test.test_urllib2net.OtherNetworkTests.test_urlwithfrag
+*graalpython.lib-python.3.test.test_urllib2net.TimeoutTest.test_http_basic
+*graalpython.lib-python.3.test.test_urllib2net.TimeoutTest.test_http_default_timeout
+*graalpython.lib-python.3.test.test_urllib2net.TimeoutTest.test_http_no_timeout
+*graalpython.lib-python.3.test.test_urllib2net.TimeoutTest.test_http_timeout

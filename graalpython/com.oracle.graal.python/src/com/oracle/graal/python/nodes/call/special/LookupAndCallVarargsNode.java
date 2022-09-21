@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,33 +41,41 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class LookupAndCallVarargsNode extends Node {
-    protected final String name;
-    protected final boolean ignoreDescriptorException;
+    protected final TruffleString name;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
-    public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name, false);
+    public static LookupAndCallVarargsNode create(TruffleString name) {
+        return LookupAndCallVarargsNodeGen.create(name);
     }
 
-    LookupAndCallVarargsNode(String name, boolean ignoreDescriptorException) {
+    LookupAndCallVarargsNode(TruffleString name) {
         this.name = name;
-        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
-    @Specialization(limit = "3")
+    @Specialization(guards = {"callable.getClass() == cachedClass"}, limit = "3")
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
-                    @CachedLibrary("callable") PythonObjectLibrary plib,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(frame, plib.getLazyPythonClass(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+                    @SuppressWarnings("unused") @Cached("callable.getClass()") Class<?> cachedClass,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    @Specialization(replaces = "callObject")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object callable, Object[] arguments,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

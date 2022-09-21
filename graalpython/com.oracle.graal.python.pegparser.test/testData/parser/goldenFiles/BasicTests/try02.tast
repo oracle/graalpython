@@ -1,0 +1,10 @@
+Module[0, 43]
+    Try[0, 3]
+        Body:
+            Pass[7, 11]
+        Except:
+            ExceptHandler[12, 18]
+                Type: Name[19, 29] Value: "ValueError"
+                Var: va
+                Body:
+                    Pass[39, 43]

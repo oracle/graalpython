@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,27 @@
  */
 package com.oracle.graal.python.nodes;
 
+import java.util.ArrayList;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -69,6 +79,18 @@ public abstract class PRootNode extends RootNode {
 
     private int nodeCount = -1;
 
+    /**
+     * This contains all the deprecation warnings that were issued while parsing the contents of
+     * this root node. They cannot be raised/printed immediately because the parse result might be
+     * cached, in which case the parser will not trigger them directly. At the place where the code
+     * would "logically" be parsed, the warnings can be raised via
+     * {@link #triggerDeprecationWarnings()}.
+     */
+    @CompilationFinal(dimensions = 1) private String[] deprecationWarnings;
+
+    // contains the code of this root node in marshaled/serialized form
+    private byte[] code;
+
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
     }
@@ -77,13 +99,26 @@ public abstract class PRootNode extends RootNode {
         super(language, frameDescriptor);
     }
 
-    public final int getNodeCount() {
+    /**
+     * Imprecise node count used for inlining heuristics, saturated at
+     * {@link PythonOptions#BuiltinsInliningMaxCallerSize}.
+     */
+    public final int getNodeCountForInlining() {
         CompilerAsserts.neverPartOfCompilation();
         int n = nodeCount;
         if (n != -1) {
             return n;
         }
-        return nodeCount = NodeUtil.countNodes(this);
+        int maxSize = PythonLanguage.get(this).getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+        NodeCounterWithLimit counter = new NodeCounterWithLimit(maxSize);
+        accept(counter);
+        return nodeCount = counter.getCount();
+    }
+
+    public final void setNodeCountForInlining(int newCount) {
+        // We accept the potential race in the callers of the getter and this setter
+        assert newCount > 0 && newCount <= PythonLanguage.get(this).getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+        nodeCount = newCount;
     }
 
     public ConditionProfile getFrameEscapedProfile() {
@@ -110,6 +145,28 @@ public abstract class PRootNode extends RootNode {
     public void setNeedsExceptionState() {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
         dontNeedExceptionState.invalidate();
+    }
+
+    public final void triggerDeprecationWarnings() {
+        if (deprecationWarnings != null) {
+            triggerDeprecationWarningsBoundary();
+        }
+    }
+
+    @TruffleBoundary
+    private void triggerDeprecationWarningsBoundary() {
+        Python3Core errors = PythonContext.get(this);
+        try {
+            for (String warning : deprecationWarnings) {
+                errors.warn(PythonBuiltinClassType.DeprecationWarning, ErrorMessages.S, warning);
+            }
+        } catch (Exception e) {
+            throw PythonParserImpl.handleParserError(errors, getSourceSection().getSource(), e);
+        }
+    }
+
+    public final void setDeprecationWarnings(ArrayList<String> deprecationWarnings) {
+        this.deprecationWarnings = deprecationWarnings == null || deprecationWarnings.isEmpty() ? null : deprecationWarnings.toArray(new String[0]);
     }
 
     @Override
@@ -154,5 +211,24 @@ public abstract class PRootNode extends RootNode {
 
     private static Assumption createExceptionStateAssumption() {
         return Truffle.getRuntime().createAssumption("does not need exception state");
+    }
+
+    public final void setCode(byte[] data) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert this.code == null;
+        this.code = data;
+    }
+
+    @TruffleBoundary
+    public final byte[] getCode() {
+        if (code != null) {
+            return code;
+        }
+        return code = extractCode();
+    }
+
+    protected byte[] extractCode() {
+        // no code for non-user functions
+        return PythonUtils.EMPTY_BYTE_ARRAY;
     }
 }

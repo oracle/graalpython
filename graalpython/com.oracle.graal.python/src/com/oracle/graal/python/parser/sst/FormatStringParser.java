@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,18 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_EMPTY_EXPRESSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_EXPECTING_CLOSING_BRACE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_HASH_IN_EXPRESSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_INVALID_CONVERSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_SINGLE_BRACE;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_TOO_MANY_NESTED_PARS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_UNMATCHED_PAR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_UNTERMINATED_STRING;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_MESSAGE_NESTED_TOO_DEEPLY;
+
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -48,20 +60,10 @@ import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.source.Source;
+import java.util.Arrays;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class FormatStringParser {
-
-    // error messages from parsing
-    public static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "f-string: empty expression not allowed";
-    public static final String ERROR_MESSAGE_SINGLE_BRACE = "f-string: single '}' is not allowed";
-    public static final String ERROR_MESSAGE_INVALID_CONVERSION = "f-string: invalid conversion character: expected 's', 'r', or 'a'";
-    public static final String ERROR_MESSAGE_UNTERMINATED_STRING = "f-string: unterminated string";
-    public static final String ERROR_MESSAGE_BACKSLASH_IN_EXPRESSION = "f-string expression part cannot include a backslash";
-    public static final String ERROR_MESSAGE_HASH_IN_EXPRESSION = "f-string expression part cannot include '#'";
-    public static final String ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH = "f-string: closing parenthesis '%c' does not match opening parenthesis '%c'";
-    public static final String ERROR_MESSAGE_UNMATCHED_PAR = "f-string: unmatched '%c'";
-    public static final String ERROR_MESSAGE_TOO_MANY_NESTED_PARS = "f-string: too many nested parenthesis";
-    public static final String ERROR_MESSAGE_EXPECTING_CLOSING_BRACE = "f-string: expecting '}'";
 
     // token types and Token data holder (public for testing purposes)
     public static final byte TOKEN_TYPE_STRING = 1;
@@ -89,18 +91,84 @@ public final class FormatStringParser {
             this.startIndex = startIndex;
             this.endIndex = endIndex;
         }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder("Token(");
+            sb.append("Type: ").append(type);
+            sb.append(", [").append(startIndex).append(", ").append(endIndex).append("], Inner tokens: ");
+            sb.append(formatTokensCount).append(')');
+            return sb.toString();
+        }
+    }
+
+    private static SSTNode createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource,
+                    Source source, PythonSSTNodeFactory nodeFactory, ParserErrorCallback errorCallback, FStringExprParser exprParser) {
+        Token token = tokens.get(tokenIndex);
+        String code = text.substring(token.startIndex, token.endIndex);
+        if (token.type == TOKEN_TYPE_STRING) {
+            if (!isRawString) {
+                code = StringUtils.unescapeString(textOffsetInSource, textOffsetInSource + code.length(), source, errorCallback, code);
+            }
+            return new StringLiteralSSTNode.RawStringLiteralSSTNode(code, textOffsetInSource + token.startIndex, textOffsetInSource + token.endIndex);
+        }
+        int specTokensCount = token.formatTokensCount;
+        // the expression has to be wrapped in ()
+        code = "(" + code + ")";
+        SSTNode expression = exprParser.parseExpression(errorCallback, code, nodeFactory, source.isInteractive());
+        SSTNode specifier = null;
+        if (specTokensCount > 0) {
+            SSTNode[] specifierParts = new SSTNode[specTokensCount];
+            int specifierTokenStartIndex = tokenIndex + 1;
+            Token specToken = tokens.get(specifierTokenStartIndex);
+            int specifierStartOffset = textOffsetInSource + tokens.get(specifierTokenStartIndex).startIndex - ((specToken != null && specToken.type != TOKEN_TYPE_STRING) ? 1 : 0);
+            int realCount = 0;
+            int i;
+
+            for (i = 0; i < specTokensCount; i++) {
+                specToken = tokens.get(specifierTokenStartIndex + i);
+                specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, isRawString, partOffsetInSource, textOffsetInSource, source,
+                                nodeFactory, errorCallback, exprParser);
+                i = i + specToken.formatTokensCount;
+            }
+
+            if (realCount < i) {
+                specifierParts = Arrays.copyOf(specifierParts, realCount);
+            }
+
+            int specifierEndOffset = textOffsetInSource;
+            if (specToken != null) {
+                specifierEndOffset = textOffsetInSource + specToken.endIndex + (specToken.type != TOKEN_TYPE_STRING ? 1 : 0);
+            }
+            specifier = new StringLiteralSSTNode.FormatStringLiteralSSTNode(specifierParts, specifierStartOffset, specifierEndOffset);
+        }
+        StringLiteralSSTNode.FormatStringConversionType conversionType;
+        switch (token.type) {
+            case TOKEN_TYPE_EXPRESSION_STR:
+                conversionType = StringLiteralSSTNode.FormatStringConversionType.STR_CONVERTION;
+                break;
+            case TOKEN_TYPE_EXPRESSION_REPR:
+                conversionType = StringLiteralSSTNode.FormatStringConversionType.REPR_CONVERSION;
+                break;
+            case TOKEN_TYPE_EXPRESSION_ASCII:
+                conversionType = StringLiteralSSTNode.FormatStringConversionType.ASCII_CONVERSION;
+                break;
+            default:
+                conversionType = StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION;
+        }
+        int endOffset = specifier == null ? textOffsetInSource + token.endIndex : specifier.endOffset;
+        if (conversionType != StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION) {
+            endOffset = endOffset + 2;
+        }
+        return new StringLiteralSSTNode.FormatExpressionSSTNode(code, expression, specifier, conversionType, textOffsetInSource + token.startIndex, endOffset);
     }
 
     /**
-     * Parses f-string into an array of literal string values (the return value) and a list of
-     * SSTNodes of the expressions inside the f-string (parameter). The string literals array size
-     * matches the number of Strings that should be concatenated at runtime - it contains
-     * {@code null} in positions that should be generated by an expression.
+     * Parses f-string into an array of SSTNodes. The nodes can be RawStringLiteralSSTNode or
+     * FormatExpressionSSTNode.
      */
-    static String[] parse(ArrayList<SSTNode> expressions, ArrayList<String> formatStringExprsSources, ParserErrorCallback errorCallback, String text, boolean isRawString,
-                    PythonSSTNodeFactory nodeFactory,
-                    FStringExprParser exprParser) {
-        // fast and imprecise estimate of the capacity for the tokens array
+    public static void parse(ArrayList<SSTNode> formatStringParts, String text, boolean isRawString, int partOffsetInSource, int textOffsetInSource, Source source, FStringExprParser exprParser,
+                    ParserErrorCallback errorCallback, PythonSSTNodeFactory nodeFactory) {
         int estimatedTokensCount = 1;
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
@@ -117,111 +185,17 @@ public final class FormatStringParser {
         ArrayList<Token> tokens = new ArrayList<>(estimatedTokensCount);
         createTokens(tokens, errorCallback, 0, text, isRawString, 0);
 
-        int topLevelTokensCount = 0;
-        int expressionsCount = 0;
+        // create nodes from the tokens
         int tokenIndex = 0;
+        Token token;
+
         while (tokenIndex < tokens.size()) {
-            topLevelTokensCount++;
-            Token token = tokens.get(tokenIndex++);
-            if (token.type != TOKEN_TYPE_STRING) {
-                expressionsCount++;
-                tokenIndex += token.formatTokensCount;
-            }
+            token = tokens.get(tokenIndex);
+            SSTNode part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, isRawString, partOffsetInSource, textOffsetInSource, source, nodeFactory, errorCallback, exprParser);
+            formatStringParts.add(part);
+            tokenIndex = tokenIndex + 1 + token.formatTokensCount;
         }
 
-        // create the literals array with markers for expressions
-        String[] literals = new String[topLevelTokensCount];
-        tokenIndex = 0;
-        int literalIndex = 0;
-        while (tokenIndex < tokens.size()) {
-            Token token = tokens.get(tokenIndex++);
-            if (token.type == TOKEN_TYPE_STRING) {
-                literals[literalIndex] = text.substring(token.startIndex, token.endIndex);
-            } else {
-                // skip any tokens that belong to the format specifier
-                tokenIndex += token.formatTokensCount;
-            }
-            literalIndex++;
-        }
-
-        // create the expressions array
-        ArrayList<String> expressionSources = createExpressionSources(text, tokens, 0, tokens.size(), expressionsCount);
-        expressions.ensureCapacity(expressions.size() + expressionsCount);
-        for (String expressionSource : expressionSources) {
-            formatStringExprsSources.add(expressionSource);
-            expressions.add(exprParser.parseExpression(expressionSource, nodeFactory));
-        }
-
-        return literals;
-    }
-
-    // public for testing
-    public static ArrayList<String> createExpressionSources(String text, ArrayList<Token> tokens, int tokensStartIndex, int tokensStopIndex, int resultPresize) {
-        ArrayList<String> result = new ArrayList<>(resultPresize);
-        for (int index = tokensStartIndex; index < tokensStopIndex; index++) {
-            Token token = tokens.get(index);
-            if (token.type == TOKEN_TYPE_STRING) {
-                continue;
-            }
-            // processing only expressions
-            StringBuilder expression = new StringBuilder("format(");
-            switch (token.type) {
-                case TOKEN_TYPE_EXPRESSION_ASCII:
-                    expression.append("ascii(");
-                    break;
-                case TOKEN_TYPE_EXPRESSION_REPR:
-                    expression.append("repr(");
-                    break;
-                case TOKEN_TYPE_EXPRESSION_STR:
-                    expression.append("str(");
-                    break;
-            }
-            String exprSrc = text.substring(token.startIndex, token.endIndex).trim();
-            expression.append("(").append(exprSrc).append(")");
-            if (token.type != TOKEN_TYPE_EXPRESSION) {
-                expression.append(")");
-            }
-            int fmtTokensCount = token.formatTokensCount;
-            if (fmtTokensCount == 0) {
-                // there is no format specifier
-                expression.append(")");
-            } else {
-                // the expression has token[TOKEN_FMT_TOKENS_COUNT] specifiers parts
-                // obtains expressions in the format specifier
-                int indexPlusOne = index + 1;
-                ArrayList<String> specifierExpressions = createExpressionSources(text, tokens, indexPlusOne, indexPlusOne + fmtTokensCount, fmtTokensCount);
-                expression.append(",(");
-                boolean first = true;
-                int expressionIndex = 0;
-                // move the index after the format specifier
-                index = indexPlusOne + fmtTokensCount;
-                for (int sindex = indexPlusOne; sindex < index; sindex++) {
-                    Token stoken = tokens.get(sindex);
-                    if (first) {
-                        first = false;
-                    } else {
-                        // we have to concat the string in the sources here
-                        // for example f'{10.123}:{3}.{4}' has simplified source: format(10.123,
-                        // 3+"."+4)
-                        expression.append("+");
-                    }
-                    if (stoken.type == TOKEN_TYPE_STRING) {
-                        // add the string
-                        expression.append("\"").append(text, stoken.startIndex, stoken.endIndex).append("\"");
-                    } else {
-                        // add the expression source
-                        expression.append(specifierExpressions.get(expressionIndex));
-                        expressionIndex++;
-                        // skip the nested format specifiers
-                        sindex += stoken.formatTokensCount;
-                    }
-                }
-                index--;
-                expression.append("))");
-            }
-            result.add(expression.toString());
-        }
-        return result;
     }
 
     // parsing the format string
@@ -291,7 +265,7 @@ public final class FormatStringParser {
                                     // Missing the closing brace. The escape sequence is malformed,
                                     // which will be reported by the String escaping code later,
                                     // here we just end the parsing
-                                    index = len - 1;
+                                    index = len;
                                     break parserLoop;
                                 }
                             }
@@ -330,7 +304,7 @@ public final class FormatStringParser {
                     } else if (recursionLevel == 2) {
                         // we are inside formatting expression of another formatting expression,
                         // example: f'{42:{42:{42}}}'. This level of nesting is not allowed.
-                        throw raiseInvalidSyntax(errorCallback, "f-string: expressions nested too deeply");
+                        throw raiseInvalidSyntax(errorCallback, ERROR_MESSAGE_NESTED_TOO_DEEPLY);
                     } else {
                         index--;
                         state = STATE_EXPRESSION;
@@ -613,12 +587,12 @@ public final class FormatStringParser {
         throw errorCallback.raiseInvalidSyntax(source, source.createUnavailableSection(), ERROR_MESSAGE_CLOSING_PAR_DOES_NOT_MATCH, closing, opening);
     }
 
-    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, String message) {
+    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, TruffleString message) {
         Source source = Source.newBuilder(PythonLanguage.ID, "unknown", "<fstring>").build();
         throw errorCallback.raiseInvalidSyntax(source, source.createUnavailableSection(), message);
     }
 
-    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, String message, Object... args) {
+    private static RuntimeException raiseInvalidSyntax(ParserErrorCallback errorCallback, TruffleString message, Object... args) {
         Source source = Source.newBuilder(PythonLanguage.ID, "unknown", "<fstring>").build();
         throw errorCallback.raiseInvalidSyntax(source, source.createUnavailableSection(), message, args);
     }

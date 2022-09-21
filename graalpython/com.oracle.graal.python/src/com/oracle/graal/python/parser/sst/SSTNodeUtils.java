@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.parser.ScopeInfo;
 
 public class SSTNodeUtils {
     /**
-     * 
+     *
      * @param name of the result function
      * @param functionScope scope that belongs to the function
      * @param body block of statements that creates that creates the function body
@@ -56,7 +56,7 @@ public class SSTNodeUtils {
         for (String arg : arguments) {
             argBuilder.addParam(arg, null, null);
             // create arguments slots in frame descriptor
-            functionScope.createSlotIfNotPresent(arg);
+            functionScope.defineSlot(arg);
         }
         // if the last statement is an expression, then wrap the expression with the return
         // statement
@@ -69,6 +69,6 @@ public class SSTNodeUtils {
                 block.statements[index] = new ReturnSSTNode(expression, expression.getStartOffset(), expression.getEndOffset());
             }
         }
-        return new FunctionDefSSTNode(functionScope, name, null, argBuilder, body, body.getStartOffset(), body.getEndOffset());
+        return new FunctionDefSSTNode(functionScope, name, null, argBuilder, body, null, body.getStartOffset(), body.getEndOffset());
     }
 }

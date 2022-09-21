@@ -1,0 +1,22 @@
+Module[0, 36]
+    ListComp[0, 36]
+        Element: BinOp[1, 5]
+            Op: Pow
+            LHS: Name[1, 2] Value: "x"
+            RHS: Name[4, 5] Value: "y"
+        ComprehensionTy[6, 35]
+            Target: Name[10, 11] Value: "x" Store
+            Iterator: 
+                Call[15, 24]
+                    Target: Name[15, 20] Value: "range"
+                    Args:
+                        LONG[21, 23] Value: 20
+            Ifs:
+                BinOp[28, 35]
+                    Op: Mod
+                    LHS: 
+                        BinOp[28, 31]
+                            Op: Mult
+                            LHS: Name[28, 29] Value: "x"
+                            RHS: Name[30, 31] Value: "y"
+                    RHS: LONG[34, 35] Value: 3

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -9,11 +9,6 @@
 PyTypeObject PyEllipsis_Type = PY_TRUFFLE_TYPE("ellipsis", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 PyTypeObject PySlice_Type = PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PySliceObject));
 
-PyObject _Py_EllipsisObject = {
-    _PyObject_EXTRA_INIT
-    1, &PyEllipsis_Type
-};
-
 // Taken from CPython ceval.c
 /* Extract a slice index from a PyLong or an object with the
    nb_index slot defined, and store in *pi.
@@ -21,6 +16,7 @@ PyObject _Py_EllipsisObject = {
    and silently boost values less than PY_SSIZE_T_MIN to PY_SSIZE_T_MIN.
    Return 0 on error, 1 on success. */
 int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
+	v = native_pointer_to_java(v);
     if (v != Py_None) {
         Py_ssize_t x;
         if (PyIndex_Check(v)) {
@@ -41,6 +37,7 @@ int _PyEval_SliceIndex(PyObject *v, Py_ssize_t *pi) {
 
 // Taken from CPython
 int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
+	_r = native_pointer_to_java(_r);
     PySliceObject *r = (PySliceObject*)_r;
     /* this is harder to get right than you might think */
 

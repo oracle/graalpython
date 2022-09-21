@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,13 +32,13 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CoerceToObjec
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.ComputeIndicesFactory;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -65,8 +64,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -76,8 +75,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class SliceLiteralNode extends ExpressionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
-    public abstract PSlice execute(VirtualFrame frame, Object start, Object stop, Object step);
 
     @Specialization
     public PSlice doInt(int start, int stop, int step) {
@@ -98,12 +95,12 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
     @SuppressWarnings("unused")
-    public Object sliceStop(int first, PNone second, PNone third) {
+    public PSlice sliceStop(int first, PNone second, PNone third) {
         return factory.createIntSlice(0, first, 1, true, true);
     }
 
     @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
-    public Object doGeneric(Object start, Object stop, Object step) {
+    public PSlice doGeneric(Object start, Object stop, Object step) {
         return factory.createObjectSlice(start, stop, step);
     }
 
@@ -181,7 +178,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     @GenerateUncached
     public abstract static class ComputeIndices extends PNodeWithContext {
 
-        public abstract SliceInfo execute(PSlice slice, int i);
+        public abstract SliceInfo execute(Frame frame, PSlice slice, int i);
 
         @Specialization(guards = "length >= 0")
         SliceInfo doSliceInt(PIntSlice slice, int length) {
@@ -189,13 +186,13 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization(guards = "length >= 0")
-        SliceInfo doSliceObject(PObjectSlice slice, int length,
+        SliceInfo doSliceObject(VirtualFrame frame, PObjectSlice slice, int length,
                         @Cached SliceExactCastToInt castStartNode,
                         @Cached SliceExactCastToInt castStopNode,
                         @Cached SliceExactCastToInt castStepNode) {
-            Object startIn = castStartNode.execute(slice.getStart());
-            Object stopIn = castStopNode.execute(slice.getStop());
-            Object stepIn = castStepNode.execute(slice.getStep());
+            Object startIn = castStartNode.execute(frame, slice.getStart());
+            Object stopIn = castStopNode.execute(frame, slice.getStop());
+            Object stepIn = castStepNode.execute(frame, slice.getStep());
             return PObjectSlice.computeIndices(startIn, stopIn, stepIn, length);
         }
 
@@ -287,7 +284,11 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization
         SliceInfo doSliceInt(PIntSlice slice) {
-            return new SliceInfo(slice.getIntStart(), slice.getIntStop(), slice.getIntStep());
+            int start = slice.getIntStart();
+            if (slice.isStartNone()) {
+                start = slice.getIntStep() >= 0 ? 0 : Integer.MAX_VALUE;
+            }
+            return new SliceInfo(start, slice.getIntStop(), slice.getIntStep());
         }
 
         @Specialization
@@ -352,22 +353,21 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class SliceExactCastToInt extends Node {
 
-        public abstract Object execute(Object x);
+        public abstract Object execute(Frame frame, Object x);
 
         @Specialization
         protected Object doNone(@SuppressWarnings("unused") PNone i) {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isPNone(i)", limit = "2")
+        @Specialization(guards = "!isPNone(i)")
         protected Object doGeneric(Object i,
-                        @Cached BranchProfile exceptionProfile,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("i") PythonObjectLibrary lib) {
-            if (lib.canBeIndex(i)) {
-                return lib.asSize(i);
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (indexCheckNode.execute(i)) {
+                return asSizeNode.executeExact(null, i);
             }
-            exceptionProfile.enter();
             throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
         }
     }
@@ -384,14 +384,14 @@ public abstract class SliceLiteralNode extends ExpressionNode {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isPNone(i)", limit = "2")
+        @Specialization(guards = "!isPNone(i)")
         protected Object doGeneric(Object i,
                         @Cached BranchProfile exceptionProfile,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("i") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntLossyNode cast) {
-            if (lib.canBeIndex(i)) {
-                return cast.execute(lib.asIndex(i));
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (indexCheckNode.execute(i)) {
+                return asSizeNode.executeLossy(null, i);
             }
             exceptionProfile.enter();
             throw raise.raise(TypeError, ErrorMessages.SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX);
@@ -452,14 +452,15 @@ public abstract class SliceLiteralNode extends ExpressionNode {
             }
         }
 
-        @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"})
         int doGeneric(VirtualFrame frame, Object i,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("i") PythonObjectLibrary lib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            if (lib.canBeIndex(i)) {
+            if (indexCheckNode.execute(i)) {
                 try {
-                    return lib.asSizeWithState(i, PArguments.getThreadState(frame));
+                    return asSizeNode.executeExact(frame, i);
                 } catch (PException e) {
                     e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
                     return overflowValue;

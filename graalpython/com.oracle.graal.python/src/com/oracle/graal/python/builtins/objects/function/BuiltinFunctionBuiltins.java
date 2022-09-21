@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,10 +26,10 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -45,14 +46,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunction)
 public class BuiltinFunctionBuiltins extends PythonBuiltins {
@@ -62,51 +64,53 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
-        Object reprModuleFunction(PBuiltinFunction self) {
+        static TruffleString reprModuleFunction(PBuiltinFunction self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             // (tfel): these really shouldn't be accessible, I think
-            return PythonUtils.format("<built-in function %s>", self.getName());
+            return simpleTruffleStringFormatNode.format("<built-in function %s>", self.getName());
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
-        Object reprClassFunction(PBuiltinFunction self) {
-            return PythonUtils.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
+        static TruffleString reprClassFunction(PBuiltinFunction self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }
 
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+        static TruffleString getName(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getName();
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
+        TruffleString setName(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__name__", "builtin function");
         }
     }
 
-    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getQualname(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+        static TruffleString getQualname(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getQualname();
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
+        TruffleString setQualname(@SuppressWarnings("unused") PBuiltinFunction self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, "__qualname__", "builtin function");
         }
     }
 
-    @Builtin(name = __OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
@@ -118,7 +122,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
         Object objclass(PBuiltinFunction self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             return getPythonClass(self.getEnclosingType(), profile);
         }
     }

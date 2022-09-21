@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertContainsNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -53,33 +54,38 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
+    public static final TruffleString T_CODE = tsLiteral("code");
 
     private PTuple args; // can be null for lazily generated message
 
     // in case of lazily generated messages, these will be used to construct the message:
     private final boolean hasMessageFormat;
-    private final String messageFormat;
+    private final TruffleString messageFormat;
     private final Object[] messageArgs;
 
     private PException exception;
@@ -88,6 +94,52 @@ public final class PBaseException extends PythonObject {
     private PBaseException context;
     private PBaseException cause;
     private boolean suppressContext = false;
+    // the data instance is used to store additional information for some of the builtin exceptions
+    // not unlike subclassing
+    private Object[] exceptionAttributes;
+
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, PTuple args) {
+        super(cls, instanceShape);
+        this.exceptionAttributes = exceptionAttributes;
+        this.args = args;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes) {
+        super(cls, instanceShape);
+        assertContainsNoJavaString(exceptionAttributes);
+        this.exceptionAttributes = exceptionAttributes;
+        this.args = null;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Object[] exceptionAttributes, TruffleString format, Object[] formatArgs) {
+        super(cls, instanceShape);
+        this.exceptionAttributes = exceptionAttributes;
+        this.args = null;
+        this.hasMessageFormat = true;
+        this.messageFormat = format;
+        this.messageArgs = formatArgs;
+    }
+
+    public Object getExceptionAttribute(int idx) {
+        assert exceptionAttributes != null : "PBaseException internal attributes are null";
+        assert idx >= 0 && idx < exceptionAttributes.length : "index to access PBaseException internal attributes is out of range";
+        return exceptionAttributes[idx];
+    }
+
+    public Object[] getExceptionAttributes() {
+        return exceptionAttributes;
+    }
+
+    public void setExceptionAttributes(Object[] exceptionAttributes) {
+        assertContainsNoJavaString(exceptionAttributes);
+        this.exceptionAttributes = exceptionAttributes;
+    }
 
     public PBaseException getContext() {
         return context;
@@ -112,30 +164,6 @@ public final class PBaseException extends PythonObject {
 
     public void setSuppressContext(boolean suppressContext) {
         this.suppressContext = suppressContext;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape, PTuple args) {
-        super(cls, instanceShape);
-        this.args = args;
-        this.hasMessageFormat = false;
-        this.messageFormat = null;
-        this.messageArgs = null;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.args = null;
-        this.hasMessageFormat = false;
-        this.messageFormat = null;
-        this.messageArgs = null;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape, String format, Object[] args) {
-        super(cls, instanceShape);
-        this.args = null;
-        this.hasMessageFormat = true;
-        this.messageFormat = format;
-        this.messageArgs = args;
     }
 
     public PException getException() {
@@ -182,7 +210,7 @@ public final class PBaseException extends PythonObject {
         this.args = args;
     }
 
-    public String getMessageFormat() {
+    public TruffleString getMessageFormat() {
         return messageFormat;
     }
 
@@ -192,23 +220,18 @@ public final class PBaseException extends PythonObject {
 
     public Object[] getMessageArgs() {
         // clone message args to ensure that they stay unmodified
-        return messageArgs.clone();
+        return messageArgs != null ? messageArgs.clone() : PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @TruffleBoundary
-    public String getFormattedMessage(PythonObjectLibrary lib) {
-        final Object clazz;
-        if (lib == null) {
-            clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(this);
-        } else {
-            clazz = lib.getLazyPythonClass(this);
-        }
-        String typeName = GetNameNode.doSlowPath(clazz);
+    public String getFormattedMessage() {
+        final Object clazz = GetClassNode.getUncached().execute(this);
+        String typeName = GetNameNode.doSlowPath(clazz).toJavaStringUncached();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(lib, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(messageFormat.toJavaStringUncached(), getMessageArgs());
             } else if (hasMessageFormat) {
-                return typeName + ": " + messageFormat;
+                return typeName + ": " + messageFormat.toJavaStringUncached();
             } else {
                 return typeName;
             }
@@ -226,7 +249,29 @@ public final class PBaseException extends PythonObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return getFormattedMessage(PythonObjectLibrary.getUncached());
+        // We *MUST NOT* call anything here that may need a context!
+        StringBuilder sb = new StringBuilder(this.getInitialPythonClass().toString());
+        if (messageArgs != null && messageArgs.length > 0) {
+            sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append("\", args = (");
+            for (Object arg : messageArgs) {
+                if (arg instanceof PythonObject) {
+                    sb.append(arg);
+                } else {
+                    String fqn = arg.getClass().getName();
+                    if (fqn.startsWith("java.lang.")) {
+                        sb.append(arg);
+                    } else {
+                        // we do not risk printing arbitrary objects
+                        sb.append("a ").append(fqn);
+                    }
+                }
+                sb.append(", ");
+            }
+            sb.append(") )");
+        } else if (hasMessageFormat) {
+            sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append('"');
+        }
+        return sb.toString();
     }
 
     public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
@@ -274,26 +319,37 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     RuntimeException throwException(
                     @Cached PRaiseNode raiseNode,
-                    @CachedLanguage PythonLanguage language) {
-        throw raiseNode.raiseExceptionObject(this, language);
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            throw raiseNode.raiseExceptionObject(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     ExceptionType getExceptionType(
-                    @CachedLibrary("this") PythonObjectLibrary lib) {
-        Object clazz = lib.getLazyPythonClass(this);
-        if (clazz instanceof PythonBuiltinClass) {
-            clazz = ((PythonBuiltinClass) clazz).getType();
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object clazz = getClassNode.execute(this);
+            if (clazz instanceof PythonBuiltinClass) {
+                clazz = ((PythonBuiltinClass) clazz).getType();
+            }
+            // these are the only ones we'll raise, we don't want to report user subtypes of
+            // SyntaxError as Truffle syntax errors
+            if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
+                return ExceptionType.PARSE_ERROR;
+            }
+            if (clazz == PythonBuiltinClassType.SystemExit) {
+                return ExceptionType.EXIT;
+            }
+            return ExceptionType.RUNTIME_ERROR;
+        } finally {
+            gil.release(mustRelease);
         }
-        // these are the only ones we'll raise, we don't want to report user subtypes of
-        // SyntaxError as Truffle syntax errors
-        if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
-            return ExceptionType.PARSE_ERROR;
-        }
-        if (clazz == PythonBuiltinClassType.SystemExit) {
-            return ExceptionType.EXIT;
-        }
-        return ExceptionType.RUNTIME_ERROR;
     }
 
     @ExportMessage
@@ -309,46 +365,74 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib) {
-        return getFormattedMessage(lib);
+    String getExceptionMessage(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getFormattedMessage();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     int getExceptionExitStatus(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Cached CastToJavaIntExactNode castToInt,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
-        if (getExceptionType(lib) == ExceptionType.EXIT) {
-            try {
-                // Avoiding getattr because this message shouldn't have side-effects
-                Object code = readNode.execute(this, "code");
-                if (code == PNone.NO_VALUE) {
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (getExceptionType(getClassNode, gil) == ExceptionType.EXIT) {
+                try {
+                    // Avoiding getattr because this message shouldn't have side-effects
+                    Object code = readNode.execute(this, T_CODE);
+                    if (code == PNone.NO_VALUE) {
+                        return 1;
+                    }
+                    // Avoid side-effects in integer conversion too
+                    try {
+                        return castToInt.execute(code);
+                    } catch (CannotCastException | PException e) {
+                        return 1;
+                    }
+                } catch (PException e) {
                     return 1;
                 }
-                return (int) lib.asJavaLong(code);
-            } catch (PException e) {
-                return 1;
             }
+            unsupportedProfile.enter();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        unsupportedProfile.enter();
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    boolean hasExceptionCause() {
-        return cause != null || (!suppressContext && context != null);
+    boolean hasExceptionCause(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return cause != null || (!suppressContext && context != null);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     Object getExceptionCause(
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
-        if (cause != null) {
-            return cause;
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (cause != null) {
+                return cause;
+            }
+            if (!suppressContext && context != null) {
+                return context;
+            }
+            unsupportedProfile.enter();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        if (!suppressContext && context != null) {
-            return context;
-        }
-        unsupportedProfile.enter();
-        throw UnsupportedMessageException.create();
     }
 }

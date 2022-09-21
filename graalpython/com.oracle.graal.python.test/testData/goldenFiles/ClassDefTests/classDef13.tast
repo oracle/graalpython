@@ -10,8 +10,8 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
         Identifier: Point
         PythonCallBinary SourceSection: [0,29]`class Point:↵  x = 0...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Point SourceSection: None
             Arguments: None
             KwArguments: None
@@ -22,8 +22,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [0,29]`class Point:↵  x = 0...`
               Name: Point
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -38,24 +37,17 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                       QualName: Point
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [15,28]`x = 0↵  y = 0`
-                      SetItemNodeGen SourceSection: [15,20]`x = 0`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15,20]`x = 0`
+                        Identifier: x
                         IntegerLiteralNode SourceSection: [19,20]`0`
                           Value: 0
-                      SetItemNodeGen SourceSection: [23,28]`y = 0`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23,28]`y = 0`
+                        Identifier: y
                         IntegerLiteralNode SourceSection: [27,28]`0`
                           Value: 0
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -67,37 +59,29 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
           ReadNameNodeGen SourceSection: [33,38]`Point`
             Identifier: Point
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
         SideEffect:
           WriteNameNodeGen SourceSection: [41,54]`a = p.x + p.y`
             Identifier: a
-            BinaryArithmeticExpression SourceSection: [45,54]`p.x + p.y`
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __add__
-              GetAttributeNodeGen SourceSection: [45,48]`p.x`
+            AddNodeGen SourceSection: [45,54]`p.x + p.y`
+              GetAttributeNode SourceSection: [45,48]`p.x`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: x
-                  CachedDispatchFirst SourceSection: None
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [45,46]`p`
                   Identifier: p
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
-              GetAttributeNodeGen SourceSection: [51,54]`p.y`
+                    GetClassNodeGen SourceSection: None
+              GetAttributeNode SourceSection: [51,54]`p.y`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: y
-                  CachedDispatchFirst SourceSection: None
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                 ReadNameNodeGen SourceSection: [51,52]`p`
                   Identifier: p
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None

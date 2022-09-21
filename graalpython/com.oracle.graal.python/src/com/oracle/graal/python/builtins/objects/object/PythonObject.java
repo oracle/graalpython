@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,23 +42,38 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
-    private static final byte CLASS_CHANGED_FLAG = 1;
+    public static final byte CLASS_CHANGED_FLAG = 0b1;
+    /**
+     * Indicates that the object doesn't allow {@code __dict__}, but may have slots
+     */
+    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 0b10;
+    /**
+     * Indicates that the shape has some properties that may contain {@link PNone#NO_VALUE} and
+     * therefore the shape itself is not enough to resolve any lookups.
+     */
+    public static final byte HAS_NO_VALUE_PROPERTIES = 0b100;
+    /**
+     * Indicates that the object has a dict in the form of an actual dictionary
+     */
+    public static final byte HAS_MATERIALIZED_DICT = 0b1000;
+    /**
+     * Indicates that the object is a static base in the CPython's tp_new_wrapper sense.
+     *
+     * @see com.oracle.graal.python.nodes.function.builtins.WrapTpNew
+     */
+    public static final byte IS_STATIC_BASE = 0b10000;
 
     private final Object initialPythonClass;
+
+    private Object[] hpyData;
 
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
@@ -78,40 +94,22 @@ public class PythonObject extends PythonAbstractObject {
         return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
     }
 
-    @ExportMessage
-    public void setLazyPythonClass(Object cls,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        // n.b.: the CLASS property is usually a constant property that is stored in the shape in
+    public void setPythonClass(Object cls, DynamicObjectLibrary dylib) {
+        // n.b.: the CLASS property is usually a constant property that is stored in the shape
+        // in
         // single-context-mode. If we change it for the first time, there's an implicit shape
         // transition
         dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
         dylib.put(this, CLASS, cls);
     }
 
-    @ExportMessage
-    public static class GetLazyPythonClass {
-        public static boolean hasInitialClass(PythonObject self, DynamicObjectLibrary dylib) {
-            return (dylib.getShapeFlags(self) & CLASS_CHANGED_FLAG) == 0;
-        }
+    public void setDict(DynamicObjectLibrary dylib, PDict dict) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
+        dylib.put(this, DICT, dict);
+    }
 
-        public static Object getInitialClass(PythonObject self) {
-            return self.initialPythonClass;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass(self, dylib)"}, limit = "1", assumptions = "singleContextAssumption()")
-        public static Object getConstantClass(PythonObject self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
-                        @Cached("self.getShape()") Shape cachedShape,
-                        @Cached(value = "getInitialClass(self)", weak = true) Object klass) {
-            return klass;
-        }
-
-        @Specialization(replaces = "getConstantClass")
-        public static Object getPythonClass(PythonObject self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return dylib.getOrDefault(self, CLASS, self.initialPythonClass);
-        }
+    public Object getInitialPythonClass() {
+        return initialPythonClass;
     }
 
     public final DynamicObject getStorage() {
@@ -121,23 +119,25 @@ public class PythonObject extends PythonAbstractObject {
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public final Object getAttribute(Object key) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), key, PNone.NO_VALUE);
+        return DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), assertNoJavaString(key), PNone.NO_VALUE);
     }
 
     @SuppressWarnings("deprecation")
     @TruffleBoundary
-    public void setAttribute(Object name, Object value) {
+    public void setAttribute(Object nameObj, Object value) {
+        Object name = assertNoJavaString(nameObj);
+        assert name instanceof TruffleString || name instanceof HiddenKey : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
-        DynamicObjectLibrary.getUncached().putWithFlags(getStorage(), name, value, 0);
+        DynamicObjectLibrary.getUncached().put(getStorage(), name, assertNoJavaString(value));
     }
 
     @SuppressWarnings("deprecation")
     @TruffleBoundary
-    public List<String> getAttributeNames() {
-        ArrayList<String> keyList = new ArrayList<>();
+    public List<TruffleString> getAttributeNames() {
+        ArrayList<TruffleString> keyList = new ArrayList<>();
         for (Object o : getStorage().getShape().getKeyList()) {
-            if (o instanceof String && DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), o, PNone.NO_VALUE) != PNone.NO_VALUE) {
-                keyList.add((String) o);
+            if (o instanceof TruffleString && DynamicObjectLibrary.getUncached().getOrDefault(getStorage(), o, PNone.NO_VALUE) != PNone.NO_VALUE) {
+                keyList.add((TruffleString) o);
             }
         }
         return keyList;
@@ -161,38 +161,37 @@ public class PythonObject extends PythonAbstractObject {
         String className = "unknown";
         Object storedPythonClass = DynamicObjectLibrary.getUncached().getOrDefault(this, CLASS, null);
         if (storedPythonClass instanceof PythonManagedClass) {
-            className = ((PythonManagedClass) storedPythonClass).getQualName();
+            className = ((PythonManagedClass) storedPythonClass).getQualName().toJavaStringUncached();
         } else if (storedPythonClass instanceof PythonBuiltinClassType) {
-            className = ((PythonBuiltinClassType) storedPythonClass).getName();
+            className = ((PythonBuiltinClassType) storedPythonClass).getName().toJavaStringUncached();
         } else if (PGuards.isNativeClass(storedPythonClass)) {
             className = "native";
         }
         return "<" + className + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
-    @ExportMessage
-    public boolean hasDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return dylib.containsKey(this, DICT);
-    }
-
-    @ExportMessage
-    public PDict getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return (PDict) dylib.getOrDefault(this, DICT, null);
-    }
-
-    @ExportMessage
-    public final void setDict(PDict dict,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(this, DICT, dict);
-    }
-
-    @ExportMessage
-    public final void deleteDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(this, DICT, null);
-    }
-
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
+    }
+
+    public final Object[] getHPyData() {
+        return hpyData;
+    }
+
+    public final void setHPyData(Object[] hpyFields) {
+        this.hpyData = hpyFields;
+    }
+
+    public final void setHPyNativeSpace(Object dataPtr) {
+        if (hpyData == null) {
+            hpyData = new Object[]{dataPtr};
+        } else {
+            hpyData[0] = dataPtr;
+        }
+    }
+
+    public final Object getHPyNativeSpace() {
+        return hpyData != null ? hpyData[0] : 0L;
     }
 }

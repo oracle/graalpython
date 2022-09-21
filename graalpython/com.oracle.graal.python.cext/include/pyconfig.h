@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,11 @@
 #ifndef Py_PYCONFIG_H
 #define Py_PYCONFIG_H
 
+/* Enable GNU extensions on systems that have them. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 // required for __UINT32_MAX__ etc.
 #include <limits.h>
 
@@ -62,6 +67,13 @@
 #define SIZEOF_VOID_P __SIZEOF_POINTER__
 #define SIZEOF_WCHAR_T __SIZEOF_WCHAR_T__
 #define SIZEOF__BOOL 1
+
+/* Define if your compiler supports function prototype */
+#define HAVE_PROTOTYPES 1
+
+/* Define to 1 if you have the ANSI C header files. */
+#define STDC_HEADERS 1
+
 # ifndef UINT_MAX
 #define UINT_MAX __UINT32_MAX__
 #endif

@@ -72,6 +72,8 @@ class AllTest(unittest.TestCase):
         blacklist = set([
             # Will raise a SyntaxError when compiling the exec statement
             '__future__',
+            # XXX Graalpython change: we don't have shared memory, so that module is missing SharedMemoryManager
+            'multiprocessing.managers',
         ])
 
         if not sys.platform.startswith('java'):

@@ -1,0 +1,38 @@
+Disassembly of <module>:
+  1:0   -   6:37        0 LOAD_BUILD_CLASS
+  1:0   -   6:37        1 MAKE_FUNCTION                     0    (HandlerTask)
+  1:0   -   6:37        4 LOAD_STRING                       0    ('HandlerTask')
+  1:18  -   1:22        6 LOAD_GLOBAL                       0    (Task)
+  1:0   -   6:37        8 COLLECTION_FROM_STACK             3    (Object[])
+  1:0   -   6:37       10 CALL_FUNCTION_VARARGS
+  1:0   -   6:37       11 STORE_NAME                        1    (HandlerTask)
+  1:0   -   6:37       13 LOAD_NONE
+  1:0   -   6:37       14 RETURN_VALUE
+
+Disassembly of HandlerTask:
+  1:0   -   6:37        0 LOAD_NAME                         0    (__name__)
+  1:0   -   6:37        2 STORE_NAME                        1    (__module__)
+  1:0   -   6:37        4 LOAD_STRING                       0    ('HandlerTask')
+  1:0   -   6:37        6 STORE_NAME                        2    (__qualname__)
+  2:4   -   6:37        8 MAKE_FUNCTION                     0    (HandlerTask.__init__)
+  2:4   -   6:37       11 STORE_NAME                        3    (__init__)
+  2:4   -   6:37       13 LOAD_NONE
+  2:4   -   6:37       14 RETURN_VALUE
+
+Disassembly of HandlerTask.__init__:
+  4:12  -   4:13        0 LOAD_BYTE_I                       0                                      can quicken
+  4:8   -   4:9         2 STORE_FAST                        6    (x)                               generalizes: 0
+  5:14  -   5:24        4 LOAD_GLOBAL                       0    (ValueError)
+  5:8   -   5:24        6 RAISE_VARARGS                     1
+  6:8   -   6:12        8 LOAD_GLOBAL                       1    (Task)
+  6:22  -   6:26       10 LOAD_FAST                         0    (self)
+  6:27  -   6:28       12 LOAD_FAST                         1    (i)
+  6:29  -   6:30       14 LOAD_FAST                         2    (p)
+  6:31  -   6:32       16 LOAD_FAST                         3    (w)
+  6:33  -   6:34       18 LOAD_FAST                         4    (s)
+  6:35  -   6:36       20 LOAD_FAST                         5    (r)
+  6:8   -   6:37       22 COLLECTION_FROM_STACK             7    (Object[])
+  6:8   -   6:37       24 CALL_METHOD_VARARGS               2    (__init__)
+  6:8   -   6:37       26 POP_TOP
+  6:8   -   6:37       27 LOAD_NONE
+  6:8   -   6:37       28 RETURN_VALUE

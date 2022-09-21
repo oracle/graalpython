@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import java.util.Objects;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -239,7 +241,6 @@ public final class ReadCallerFrameNode extends Node {
      * @param frameAccess - the desired {@link FrameInstance} access kind
      */
     public static Frame getCurrentFrame(Node requestingNode, FrameInstance.FrameAccess frameAccess) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
         return getFrame(Objects.requireNonNull(requestingNode), null, frameAccess, FrameSelector.ALL_PYTHON_FRAMES, 0);
     }
 
@@ -259,8 +260,8 @@ public final class ReadCallerFrameNode extends Node {
         return getFrame(null, Objects.requireNonNull(startFrame), frameAccess, selector, level);
     }
 
+    @TruffleBoundary
     private static Frame getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        assert CompilerDirectives.inInterpreter();
         final Frame[] outputFrame = new Frame[1];
         Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;
@@ -274,9 +275,9 @@ public final class ReadCallerFrameNode extends Node {
              * the stack (or not). That last Python caller before the Python frame we need must push
              * the info.
              *
-             * This can easily be seen when this is used to {@link PythonContext#peekTopFrameInfo()}
-             * , because in that case, that info must be set by the caller that is somewhere up the
-             * stack.
+             * This can easily be seen when this is used to
+             * {@link PythonContext#peekTopFrameInfo(PythonLanguage)} , because in that case, that
+             * info must be set by the caller that is somewhere up the stack.
              *
              * <pre>
              *                      ================

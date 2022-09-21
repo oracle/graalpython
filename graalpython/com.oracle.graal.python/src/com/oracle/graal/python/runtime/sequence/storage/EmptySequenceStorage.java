@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,14 +27,15 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class EmptySequenceStorage extends SequenceStorage {
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
@@ -45,6 +46,8 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
         if (value instanceof Byte) {
             generalized = new ByteSequenceStorage(16);
+        } else if (value instanceof Boolean) {
+            generalized = new BoolSequenceStorage(16);
         } else if (value instanceof Integer) {
             if (target instanceof ByteSequenceStorage) {
                 generalized = new ByteSequenceStorage(16);
@@ -59,10 +62,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
             }
         } else if (value instanceof Double) {
             generalized = new DoubleSequenceStorage();
-        } else if (value instanceof PList) {
-            generalized = new ListSequenceStorage(0);
-        } else if (value instanceof PTuple) {
-            generalized = new TupleSequenceStorage();
         } else {
             generalized = new ObjectSequenceStorage(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
@@ -76,15 +75,10 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public int length() {
-        return 0;
-    }
-
-    @Override
     public void setNewLength(int length) {
         if (length != 0) {
             CompilerDirectives.transferToInterpreter();
-            PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
+            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
         }
     }
 
@@ -100,24 +94,24 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        return new Object[]{};
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @Override
     public Object getItemNormalized(int idx) {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
     }
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
+        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
     }
 
     @Override
@@ -158,5 +152,46 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public ListStorageType getElementType() {
         return ListStorageType.Empty;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return 0;
+    }
+
+    @ExportMessage
+    byte readByte(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    short readShort(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    int readInt(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    long readLong(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    float readFloat(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
+    }
+
+    @ExportMessage
+    double readDouble(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
+        throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 }

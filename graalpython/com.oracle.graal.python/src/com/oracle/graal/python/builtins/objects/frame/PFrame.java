@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,14 @@ package com.oracle.graal.python.builtins.objects.frame;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -61,14 +62,39 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PFrame extends PythonBuiltinObject {
     private Object[] arguments;
     private final Object localsDict;
-    private final boolean inClassScope;
     private final Reference virtualFrameInfo;
     private Node location;
     private RootCallTarget callTarget;
     private int line = -2;
     private int lasti = -1;
 
+    /*
+     * when emitting trace events, the line number will not be correct by default, so it has be
+     * manually managed
+     */
+    private boolean lockLine = false;
+
+    private Object localTraceFun = null;
+
+    private boolean traceLine = true;
+
     private PFrame.Reference backref = null;
+
+    public Object getLocalTraceFun() {
+        return localTraceFun;
+    }
+
+    public void setLocalTraceFun(Object localTraceFun) {
+        this.localTraceFun = localTraceFun;
+    }
+
+    public boolean getTraceLine() {
+        return traceLine;
+    }
+
+    public void setTraceLine(boolean traceLine) {
+        this.traceLine = traceLine;
+    }
 
     // TODO: frames: this is a large object, think about how to make this
     // smaller
@@ -94,16 +120,15 @@ public final class PFrame extends PythonBuiltinObject {
 
         public void materialize(PythonLanguage lang, Frame targetFrame, PRootNode location) {
             Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
-            boolean inClassScope = PArguments.getSpecialArgument(targetFrame) instanceof ClassBodyRootNode;
             CompilerAsserts.partialEvaluationConstant(location);
             if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(lang, curFrameInfo, location, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location);
                 } else {
                     assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
                     // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict);
                 }
             }
             // TODO: frames: update location
@@ -151,23 +176,21 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, boolean inClassScope) {
-        this(lang, virtualFrameInfo, location, null, inClassScope);
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location) {
+        this(lang, virtualFrameInfo, location, null);
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
-        this.inClassScope = inClassScope;
     }
 
     private PFrame(PythonLanguage lang, Object locals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = null;
         this.location = null;
-        this.inClassScope = false;
         this.localsDict = locals;
     }
 
@@ -179,9 +202,8 @@ public final class PFrame extends PythonBuiltinObject {
         Reference curFrameInfo = new Reference(null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.location = code.getRootNode();
-        this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
-        this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
+        this.location = GetCodeRootNode.getUncached().execute(code);
+        this.line = this.location == null ? code.getFirstLineNo() : -2;
         this.arguments = frameArgs;
 
         localsDict = locals;
@@ -217,7 +239,19 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public void setLine(int line) {
+        if (lockLine) {
+            return;
+        }
         this.line = line;
+    }
+
+    public void setLineLock(int line) {
+        this.line = line;
+        this.lockLine = true;
+    }
+
+    public void lineUnlock() {
+        this.lockLine = false;
     }
 
     @TruffleBoundary
@@ -225,6 +259,8 @@ public final class PFrame extends PythonBuiltinObject {
         if (line == -2) {
             if (location == null) {
                 line = -1;
+            } else if (location instanceof PBytecodeRootNode) {
+                return ((PBytecodeRootNode) location).bciToLine(lasti);
             } else {
                 SourceSection sourceSection = location.getEncapsulatingSourceSection();
                 if (sourceSection == null) {
@@ -282,10 +318,6 @@ public final class PFrame extends PythonBuiltinObject {
         return virtualFrameInfo != null;
     }
 
-    public boolean inClassScope() {
-        return inClassScope;
-    }
-
     public RootCallTarget getTarget() {
         if (callTarget == null) {
             if (location != null) {
@@ -307,6 +339,10 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setLocation(Node location) {
         this.location = location;
+    }
+
+    public Node getLocation() {
+        return location;
     }
 
     /**

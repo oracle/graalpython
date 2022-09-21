@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,8 +50,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
-import java.util.List;
 
+import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
@@ -300,22 +300,20 @@ public class JavaInteropTest {
                             "}",
                             "suite.py").build();
             Value suite = context.eval(suitePy);
-
-            Value listConverter = context.eval("python", "list");
-            Value libraries = suite.getMember("libraries");
+            Value libraries = suite.getHashValue("libraries");
             assertNotNull("libraries found", libraries);
-            final List<Object> suiteKeys = Arrays.asList(listConverter.execute(suite.invokeMember("keys")).as(Object[].class));
-            assertTrue("Libraries found among keys: " + suiteKeys, suiteKeys.contains("libraries"));
-
             Value dacapo = null;
-            for (Object k : listConverter.execute(libraries.invokeMember("keys")).as(List.class)) {
+            for (Object k : libraries.getHashKeysIterator().as(Iterable.class)) {
+                if (k instanceof TruffleString) {
+                    k = ((TruffleString) k).toJavaStringUncached();
+                }
                 System.err.println("k " + k);
                 if ("DACAPO".equals(k)) {
-                    dacapo = libraries.getMember((String) k);
+                    dacapo = libraries.getHashValue(k);
                 }
             }
             assertNotNull("Dacapo found", dacapo);
-            assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getMember("sha1").toString());
+            assertEquals("'e39957904b7e79caf4fa54f30e8e4ee74d4e9e37'", dacapo.getHashValue("sha1").toString());
         }
 
         @ExportLibrary(InteropLibrary.class)
@@ -342,7 +340,7 @@ public class JavaInteropTest {
             @ExportMessage
             Object invokeMember(String member, Object... arguments) throws ArityException, UnknownIdentifierException {
                 if (arguments.length != 0) {
-                    throw ArityException.create(0, arguments.length);
+                    throw ArityException.create(0, 0, arguments.length);
                 } else if (!member.equals("getMyName")) {
                     throw UnknownIdentifierException.create(member);
                 } else {
@@ -398,7 +396,7 @@ public class JavaInteropTest {
             @ExportMessage
             Object execute(Object... arguments) throws ArityException {
                 if (arguments.length != 0) {
-                    throw ArityException.create(0, arguments.length);
+                    throw ArityException.create(0, 0, arguments.length);
                 } else {
                     return self.getMyName();
                 }

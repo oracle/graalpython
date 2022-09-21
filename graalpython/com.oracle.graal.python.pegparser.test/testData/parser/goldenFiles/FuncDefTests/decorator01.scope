@@ -1,0 +1,18 @@
+ScopeEnvironment
+  Scope null Module
+    Flags: [HasChildWithFreeVars]
+    Symbols:
+      getNumber: [DefLocal, Use, Local]
+      mydecorator: [DefLocal, Use, Local]
+      print: [Use, GlobalImplicit]
+    Scope mydecorator Function
+        Flags: [HasChildWithFreeVars]
+        Varnames: fn
+        Symbols:
+            fn: [DefParam, Cell]
+            wrap: [DefLocal, Use, Local]
+      Scope wrap Function
+            Flags: [HasFreeVars]
+            Symbols:
+                  fn: [Use, Free]
+    Scope getNumber Function

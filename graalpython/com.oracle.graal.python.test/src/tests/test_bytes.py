@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -350,6 +350,9 @@ def test_eq():
     assert NotImplemented == bytes.__eq__(b'1', '1')
     assert_raises(TypeError, lambda: bytes.__eq__('1', bytearray(b'1')))
 
+def test_upper_lower():
+    assert b'AA\xc1\xe1' == b'aA\xc1\xe1'.upper()
+    assert b'aa\xc1\xe1' == b'aA\xc1\xe1'.lower()
 
 class ByteArraySubclass(bytearray):
     pass
@@ -693,35 +696,38 @@ def test_add_mv_to_bytearray():
     mv = memoryview(b'world')
     ba += mv
     assert ba == b'hello world'
-    
+
 def test_bytearray_init():
     ba = bytearray(b'abc')
     assert_raises(TypeError, bytearray.__init__, ba, encoding='latin1')
     assert_raises(TypeError, bytearray.__init__, ba, errors='replace', encoding='latin1')
     assert_raises(TypeError, bytearray.__init__, ba, errors='replace')
-    
+
     bytearray.__init__(ba, b'xxx')
     assert ba == bytearray(b'xxx')
     bytearray.__init__(ba, 'zzz', encoding='latin1')
     assert ba == bytearray(b'zzz')
     bytearray.__init__(ba, 1)
     assert ba == bytearray(b'\x00')
-    
+
 def test_bytes_init():
     ba = bytes(b'abc')
-    
+
     bytes.__init__(ba, b'zzz')
     assert ba == bytes(b'abc')
-    
+
+    ba = bytes('abc', encoding='utf-8')
+    assert ba == b'abc'
+
 def test_bytes_mod():
     assert b'%s' % (b'a') == b'a'
     raised = False
     try:
-        b'%s' % (b'a', b'b') 
+        b'%s' % (b'a', b'b')
     except TypeError:
         raised = True
     assert raised
-    
+
 def test__bytes__():
     class C: pass
     setattr(C, "__bytes__", bytes)
@@ -731,14 +737,14 @@ def test__bytes__():
     setattr(C, "__bytes__", bytes)
     assert bytes(C()) == b''
     assert bytes(C(1)) == b''
-    
+
     setattr(C, "__bytes__", complex)
     raised = False
     try:
         bytes(C(1))
     except(TypeError):
         raised = True
-    assert raised    
+    assert raised
 
     def b(o):
         return b'abc'
@@ -749,7 +755,7 @@ def test__bytes__():
 
     class BAA(BA): pass
     assert bytes(BAA(b'cde')) == b'abc'
-        
+
 class BaseLikeBytes:
 
     def test_maketrans(self):
@@ -792,6 +798,10 @@ class BaseLikeBytes:
             self.assertEqual(c, b'hee')
             c = b.translate(None, delete=b'e')
             self.assertEqual(c, b'hllo')
+
+        t = bytearray(range(256))
+        self.assertEqual(b'\xff'.translate(t), b'\xff')
+        self.assertEqual(b'\xff'.translate(t, t), b'')
 
 class BytesTest(BaseLikeBytes, unittest.TestCase):
     type2test = bytes

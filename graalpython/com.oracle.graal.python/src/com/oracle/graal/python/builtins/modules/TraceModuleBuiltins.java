@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -54,10 +56,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -78,8 +79,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.tools.coverage.CoverageTracker;
 import com.oracle.truffle.tools.coverage.RootCoverage;
 import com.oracle.truffle.tools.coverage.SectionCoverage;
@@ -99,13 +100,13 @@ public class TraceModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "start", parameterNames = {"mod", "count", "countfuncs", "ignoremods", "ignoredirs"}, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class TraceNew extends PythonBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         @TruffleBoundary
         PNone doit(PythonModule mod, Object count, Object countfuncs, PSequence ignoremods, PSequence ignoredirs,
                         @Cached SequenceNodes.GetSequenceStorageNode getStore,
                         @Cached SequenceStorageNodes.ToArrayNode toArray,
                         @Cached CastToJavaStringNode castStr,
-                        @CachedLibrary("count") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached WriteAttributeToObjectNode writeNode) {
             Object currentTracker = readNode.execute(mod, TRACKER);
@@ -114,10 +115,9 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             SourceSectionFilter.Builder filter = SourceSectionFilter.newBuilder();
             filter.includeInternal(false).mimeTypeIs(PythonLanguage.MIME_TYPE);
             PythonContext context = getContext();
-            String stdLibHome = context.getStdlibHome();
             filter.sourceIs((src) -> {
                 String path = src.getPath();
-                return path != null && !path.contains(stdLibHome);
+                return path != null;
             });
 
             Object[] ignoreMods = toArray.execute(getStore.execute(ignoremods));
@@ -172,11 +172,11 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (tracker == null) {
-                throw raise(PythonBuiltinClassType.NotImplementedError, "coverage tracker not available");
+                throw raise(PythonBuiltinClassType.NotImplementedError, toTruffleStringUncached("coverage tracker not available"));
             }
             writeNode.execute(mod, TRACK_FUNCS, countfuncs);
 
-            tracker.start(new CoverageTracker.Config(filter.build(), lib.isTrue(count)));
+            tracker.start(new CoverageTracker.Config(filter.build(), isTrueNode.execute(null, count)));
 
             return PNone.NONE;
         }
@@ -204,11 +204,11 @@ public class TraceModuleBuiltins extends PythonBuiltins {
     abstract static class Results extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple start(VirtualFrame frame, PythonModule mod,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrue,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             Object currentTracker = readNode.execute(mod, TRACKER);
-            boolean countFuncs = lib.isTrueWithState(readNode.execute(mod, TRACK_FUNCS), PArguments.getThreadState(frame));
+            boolean countFuncs = isTrue.execute(frame, readNode.execute(mod, TRACK_FUNCS));
 
             CoverageTracker tracker;
             if (currentTracker instanceof CoverageTracker) {
@@ -228,7 +228,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                     continue;
                 }
 
-                String modName;
+                TruffleString modName;
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(filename);
                 String baseName = file.getName();
                 if (baseName != null) {
@@ -239,12 +239,12 @@ public class TraceModuleBuiltins extends PythonBuiltins {
 
                 RootCoverage[] rootCoverage = getRootCoverage(c);
                 for (RootCoverage r : rootCoverage) {
-                    String name = getRootName(r);
+                    TruffleString name = toTruffleStringUncached(getRootName(r));
                     if (name == null) {
                         continue;
                     }
                     if (countFuncs) {
-                        PTuple tp = factory().createTuple(new Object[]{filename, modName, name});
+                        PTuple tp = factory().createTuple(new Object[]{toTruffleStringUncached(filename), modName, name});
                         setItemNode.execute(frame, calledFuncs, tp, 1);
                     }
                     SectionCoverage[] sectionCoverage = getSectionCoverage(r);
@@ -255,7 +255,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                             if (cnt < 0) {
                                 cnt = 1;
                             }
-                            PTuple ctp = factory().createTuple(new Object[]{filename, startLine});
+                            PTuple ctp = factory().createTuple(new Object[]{toTruffleStringUncached(filename), startLine});
                             setItemNode.execute(frame, counts, ctp, cnt);
                         }
                     }
@@ -295,11 +295,11 @@ public class TraceModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String deriveModuleName(TruffleFile file, String baseName) {
+        private static TruffleString deriveModuleName(TruffleFile file, String baseName) {
             if (baseName.endsWith("__init__.py")) {
-                return file.getParent().getName();
+                return toTruffleStringUncached(file.getParent().getName());
             } else {
-                return baseName.replaceFirst("\\.py$", "");
+                return toTruffleStringUncached(baseName.replaceFirst("\\.py$", ""));
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -119,16 +120,17 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         return handleValidAssumption;
     }
 
-    protected static Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+    protected static boolean isSingleContext() {
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.get(null).isSingleContext();
     }
 
     @ExportMessage(name = "getDelegate")
     protected static class GetDelegate {
-        @Specialization(guards = {"cachedWrapper == wrapper", "delegate != null"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isSingleContext()", "cachedWrapper == wrapper", "delegate != null"})
         protected static Object getCachedDel(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
-                        @Cached(value = "wrapper.getDelegatePrivate()", weak = true) Object delegate) {
+                        @Cached(value = "wrapper.getDelegateSlowPath()", weak = true) Object delegate) {
             return delegate;
         }
 
@@ -138,7 +140,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
     }
 
-    protected final Object getDelegatePrivate() {
+    /**
+     * Only use this method if acting behing a {@code TruffleBoundary}. It returns the delegate of
+     * this wrapper for uncached paths such that a uncached library lookup can be avoided.
+     */
+    public final Object getDelegateSlowPath() {
         return delegate;
     }
 
@@ -149,7 +155,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     @ExportMessage(name = "getNativePointer")
     protected static class GetNativePointer {
-        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
+        @Specialization(guards = {"isSingleContext()", "cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"cachedAssumption"})
         protected static Object getCachedPtr(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
@@ -178,7 +184,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     @ExportMessage(name = "isNative")
     protected static class IsNative {
-        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
+        @Specialization(guards = {"isSingleContext()", "cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"cachedAssumption"})
         protected static boolean isCachedNative(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,

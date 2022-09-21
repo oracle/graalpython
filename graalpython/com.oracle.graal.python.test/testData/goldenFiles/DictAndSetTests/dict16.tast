@@ -1,0 +1,19 @@
+ModuleRootNode Name: <module 'dict16'> SourceSection: [0,14]`{'a':'b',c:14}`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,14]`{'a':'b',c:14}`
+    DynamicDictLiteralNodeGen SourceSection: [0,14]`{'a':'b',c:14}`
+      PythonObjectFactoryNodeGen SourceSection: None
+      StringLiteralNode SourceSection: [1,4]`'a'`
+      ReadNameNodeGen SourceSection: [9,10]`c`
+        Identifier: c
+        IsBuiltinClassProfile SourceSection: None
+          GetClassNodeGen SourceSection: None
+      StringLiteralNode SourceSection: [5,8]`'b'`
+      IntegerLiteralNode SourceSection: [11,13]`14`
+        Value: 14
+      CachedDispatchFirst SourceSection: None
+      CachedDispatchFirst SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -66,10 +64,6 @@ public abstract class ReadLocalsNode extends Node {
         return PArguments.isGeneratorFrame(frame.getArguments());
     }
 
-    protected static boolean inClassBody(PFrame frame) {
-        return PArguments.getSpecialArgument(frame.getArguments()) instanceof ClassBodyRootNode;
-    }
-
     protected static PFrame getPFrame(Frame frame) {
         Reference frameInfo = PArguments.getCurrentFrameInfo(frame);
         return frameInfo != null ? frameInfo.getPyFrame() : null;
@@ -82,21 +76,9 @@ public abstract class ReadLocalsNode extends Node {
         return localsDict;
     }
 
-    @Specialization(guards = {"inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    static Object freshLocalsInClassBody(@SuppressWarnings("unused") VirtualFrame callingFrame, PFrame frame) {
-        // the namespace argument stores the locals
-        return PArguments.getArgument(frame.getArguments(), 0);
-    }
-
-    @Specialization(guards = {"inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object frameInClassBody(PFrame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
-        return frame.getLocals(factory);
-    }
-
-    @Specialization(guards = {"!inClassBody(frame)", "!isGeneratorFrame(frame)"})
-    Object frameToUpdate(PFrame frame,
-                    @Shared("factory") @Cached PythonObjectFactory factory) {
+    @Specialization(guards = {"!isGeneratorFrame(frame)"})
+    static Object frameToUpdate(PFrame frame,
+                    @Cached PythonObjectFactory factory) {
         return frame.getLocals(factory);
     }
 

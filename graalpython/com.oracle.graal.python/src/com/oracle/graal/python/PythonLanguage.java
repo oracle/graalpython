@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -25,51 +25,74 @@
  */
 package com.oracle.graal.python;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.MroShape;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.CompilationUnit;
+import com.oracle.graal.python.compiler.Compiler;
+import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.NodeFactory;
+import com.oracle.graal.python.pegparser.NodeFactoryImp;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.InteropMap;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
-import com.oracle.graal.python.util.PFunctionArgsFinder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -78,13 +101,13 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
@@ -95,23 +118,33 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
+                implementationName = PythonLanguage.IMPLEMENTATION_NAME, //
                 version = PythonLanguage.VERSION, //
-                characterMimeTypes = PythonLanguage.MIME_TYPE, //
-                dependentLanguages = "llvm", //
+                characterMimeTypes = {PythonLanguage.MIME_TYPE,
+                                PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
+                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2}, //
+                byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
+                defaultMimeType = PythonLanguage.MIME_TYPE, //
+                dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
-                fileTypeDetectors = PythonFileDetector.class)
+                fileTypeDetectors = PythonFileDetector.class, //
+                website = "https://www.graalvm.org/python/")
 @ProvidedTags({
                 StandardTags.CallTag.class,
                 StandardTags.StatementTag.class,
@@ -124,24 +157,77 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 DebuggerTags.AlwaysHalt.class
 })
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
+    public static final String J_GRAALPYTHON_ID = "graalpy";
+    public static final TruffleString T_GRAALPYTHON_ID = tsLiteral(J_GRAALPYTHON_ID);
     public static final String ID = "python";
     public static final String NAME = "Python";
+    public static final String IMPLEMENTATION_NAME = "GraalVM Python";
     public static final int MAJOR = 3;
     public static final int MINOR = 8;
     public static final int MICRO = 5;
-    // Note: update hexversion in sys.py when updating release level
-    public static final String RELEASE_LEVEL = "alpha";
+    public static final int RELEASE_LEVEL_ALPHA = 0xA;
+    public static final int RELEASE_LEVEL_BETA = 0xB;
+    public static final int RELEASE_LEVEL_GAMMA = 0xC;
+    public static final int RELEASE_LEVEL_FINAL = 0xF;
+    public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
+    public static final TruffleString RELEASE_LEVEL_STRING;
+    public static final String FROZEN_FILENAME_PREFIX = "<frozen ";
+    public static final String FROZEN_FILENAME_SUFFIX = ">";
+
+    static {
+        switch (RELEASE_LEVEL) {
+            case RELEASE_LEVEL_ALPHA:
+                RELEASE_LEVEL_STRING = tsLiteral("alpha");
+                break;
+            case RELEASE_LEVEL_BETA:
+                RELEASE_LEVEL_STRING = tsLiteral("beta");
+                break;
+            case RELEASE_LEVEL_GAMMA:
+                RELEASE_LEVEL_STRING = tsLiteral("rc");
+                break;
+            case RELEASE_LEVEL_FINAL:
+            default:
+                RELEASE_LEVEL_STRING = tsLiteral("final");
+        }
+    }
+    public static final int RELEASE_SERIAL = 0;
+    public static final int VERSION_HEX = MAJOR << 24 |
+                    MINOR << 16 |
+                    MICRO << 8 |
+                    RELEASE_LEVEL_ALPHA << 4 |
+                    RELEASE_SERIAL;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
     // Rarely updated version of the C API, we should take it from the imported CPython version
     public static final int API_VERSION = 1013;
 
     public static final String MIME_TYPE = "text/x-python";
-    public static final String EXTENSION = ".py";
-    public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
+    static final String MIME_TYPE_COMPILE0 = "text/x-python-compile0";
+    static final String MIME_TYPE_COMPILE1 = "text/x-python-compile1";
+    static final String MIME_TYPE_COMPILE2 = "text/x-python-compile2";
+    static final String[] MIME_TYPE_COMPILE = {PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2};
+    static final String[] MIME_TYPE_EVAL = {PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2};
+    static final String MIME_TYPE_EVAL0 = "text/x-python-eval0";
+    static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
+    static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
+    public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
+
+    public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
     private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
-    public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+    private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
+
+    /**
+     * This assumption will be valid if no context set a trace or profile function at any point.
+     * Calling sys.settrace(None) or sys.setprofile(None) will not invalidate it
+     */
+    public final Assumption noTracingOrProfilingAssumption = Assumption.create("No tracing function was set");
+
+    @CompilationFinal private boolean singleContext = true;
+
+    public boolean isSingleContext() {
+        return singleContext;
+    }
 
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
@@ -149,17 +235,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
-    private final NodeFactory nodeFactory;
-    private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+    private final RootNodeFactory nodeFactory;
+
     /**
-     * A thread-safe map that maps arithmetic operators (i.e.
-     * {@link com.oracle.graal.python.nodes.expression.UnaryArithmetic},
-     * {@link com.oracle.graal.python.nodes.expression.BinaryArithmetic},
-     * {@link com.oracle.graal.python.nodes.expression.TernaryArithmetic}, and
-     * {@link com.oracle.graal.python.nodes.expression.InplaceArithmetic}) to call targets. Use this
-     * map to retrieve a singleton instance (per engine) such that proper AST sharing is possible.
+     * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
+     * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
+     * targets and allows AST sharing across contexts. The key in this map is either a single value
+     * or a list of values.
      */
-    private final AtomicReference<ConcurrentHashMap<Object, WeakReference<RootCallTarget>>> arithmeticOpCallTargetCacheRef = new AtomicReference<>();
+    private final ConcurrentHashMap<Object, RootCallTarget> cachedCallTargets = new ConcurrentHashMap<>();
+
+    /**
+     * A map to retrieve call targets of special slot methods for a given BuiltinMethodDescriptor.
+     * Used to perform uncached calls to slots. The call targets are not directly part of
+     * descriptors because that would make them specific to a language instance. We want to have
+     * them global in order to be able to efficiently compare them in guards.
+     */
+    private final ConcurrentHashMap<BuiltinMethodDescriptor, RootCallTarget> descriptorCallTargets = new ConcurrentHashMap<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -171,18 +263,35 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
      * globally per language instance, that is, they are shared between different Contexts in the
      * same engine.
+     *
+     * Top level contexts use this map to initialize their shared multiprocessing data. Inner
+     * children contexts created for the multiprocessing module ignore this map in
+     * {@link PythonLanguage} and instead inherit it in the shared multiprocessing data from their
+     * parent context. This way, the child inner contexts do not have to run in the same engine
+     * (have the same language instance), but can still share the named semaphores.
      */
-    public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
-
-    /*
-     * We need to store this here, because the check is on the language and can come from a thread
-     * that has no context, but we enable or disable threads with a context option. So we store this
-     * here when a context is created.
-     */
-    private Boolean isWithThread = null;
+    public final ConcurrentHashMap<TruffleString, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
+
+    /** A shared shape for the C symbol cache (lazily initialized). */
+    private Shape cApiSymbolCache;
+    private Shape hpySymbolCache;
+
+    /** Strong reference to the C API library call target (workaround until GR-32297 is fixed). */
+    public CallTarget capiLibraryCallTarget;
+
+    /** For fast access to the PythonThreadState object by the owning thread. */
+    private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+
+    public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
+
+    private final MroShape mroShapeRoot = MroShape.createRoot();
+
+    public static PythonLanguage get(Node node) {
+        return REFERENCE.get(node);
+    }
 
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
@@ -199,17 +308,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public PythonLanguage() {
-        this.nodeFactory = NodeFactory.create(this);
+        this.nodeFactory = RootNodeFactory.create(this);
     }
 
-    public NodeFactory getNodeFactory() {
+    public RootNodeFactory getNodeFactory() {
         return nodeFactory;
+    }
+
+    /**
+     * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b> Instead, use
+     * {@link PythonContext#getThreadState(PythonLanguage)}}.
+     */
+    public ContextThreadLocal<PythonThreadState> getThreadStateLocal() {
+        return threadState;
+    }
+
+    public MroShape getMroShapeRoot() {
+        return mroShapeRoot;
     }
 
     @Override
     protected void finalizeContext(PythonContext context) {
-        context.shutdownThreads();
-        context.runShutdownHooks();
+        context.finalizeContext();
         super.finalizeContext(context);
     }
 
@@ -221,35 +341,32 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
         if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
-            PythonCore.writeInfo("Cannot use preinitialized context.");
+            Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
         context.initializeHomeAndPrefixPaths(newEnv, getLanguageHome());
-        PythonCore.writeInfo("Using preinitialized context.");
+        Python3Core.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
     }
 
     @Override
     protected PythonContext createContext(Env env) {
-        assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
-        this.isWithThread = PythonOptions.isWithThread(env);
-        Python3Core newCore = new Python3Core(new PythonParserImpl(env));
-        final PythonContext context = new PythonContext(this, env, newCore);
+        final PythonContext context = new PythonContext(this, env, new PythonParserImpl(env));
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
         if (engineOptionsUnroll == null) {
-            this.engineOptionsStorage = engineOptionsUnroll = PythonOptions.createEngineOptionValuesStorage(env);
+            this.engineOptionsStorage = PythonOptions.createEngineOptionValuesStorage(env);
         } else {
             assert Arrays.equals(engineOptionsUnroll, PythonOptions.createEngineOptionValuesStorage(env)) : "invalid engine options";
         }
 
         OptionValues options = this.engineOptions;
         if (options == null) {
-            this.engineOptions = options = PythonOptions.createEngineOptions(env);
+            this.engineOptions = PythonOptions.createEngineOptions(env);
         } else {
-            assert options.equals(PythonOptions.createEngineOptions(env)) : "invalid engine options";
+            assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
         return context;
     }
@@ -273,27 +390,279 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.initialize();
     }
 
-    @Override
-    protected CallTarget parse(ParsingRequest request) {
-        PythonContext context = getCurrentContext(PythonLanguage.class);
-        PythonCore core = context.getCore();
-        Source source = request.getSource();
-        CompilerDirectives.transferToInterpreter();
-        if (core.isInitialized()) {
-            context.initializeMainModule(source.getPath());
-        }
-        if (!request.getArgumentNames().isEmpty()) {
-            return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
-        }
-        RootNode root = doParse(context, source);
-        if (core.isInitialized()) {
-            return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root));
+    public static String getCompileMimeType(int optimize) {
+        if (optimize <= 0) {
+            return MIME_TYPE_COMPILE0;
+        } else if (optimize == 1) {
+            return MIME_TYPE_COMPILE1;
         } else {
-            return PythonUtils.getOrCreateCallTarget(root);
+            return MIME_TYPE_COMPILE2;
         }
     }
 
-    private RootNode doParse(PythonContext context, Source source) {
+    public static String getEvalMimeType(int optimize) {
+        if (optimize <= 0) {
+            return MIME_TYPE_EVAL0;
+        } else if (optimize == 1) {
+            return MIME_TYPE_EVAL1;
+        } else {
+            return MIME_TYPE_EVAL2;
+        }
+    }
+
+    @Override
+    protected CallTarget parse(ParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
+            return parseForBytecodeInterpreter(request);
+        }
+        Source source = request.getSource();
+        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
+            if (!request.getArgumentNames().isEmpty()) {
+                return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
+            }
+            RootNode root = doParse(context, source, 0);
+            if (root instanceof PRootNode) {
+                GilNode gil = GilNode.getUncached();
+                boolean wasAcquired = gil.acquire(context, root);
+                try {
+                    ((PRootNode) root).triggerDeprecationWarnings();
+                } finally {
+                    gil.release(context, wasAcquired);
+                }
+            }
+            if (context.isCoreInitialized()) {
+                return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
+            } else {
+                return PythonUtils.getOrCreateCallTarget(root);
+            }
+        }
+        if (!request.getArgumentNames().isEmpty()) {
+            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
+        }
+
+        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
+            byte[] bytes = source.getBytes().toByteArray();
+            if (bytes.length == 0) {
+                return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
+            }
+            return PythonUtils.getOrCreateCallTarget(context.getSerializer().deserialize(context, bytes));
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
+            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.Eval, optimize, context, source, null, null));
+            }
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
+            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
+            }
+        }
+        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private CallTarget parseForBytecodeInterpreter(ParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        Source source = request.getSource();
+        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
+            if (!request.getArgumentNames().isEmpty() && source.isInteractive()) {
+                throw new IllegalStateException("parse with arguments not allowed for interactive sources");
+            }
+            InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
+            return parseForBytecodeInterpreter(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames());
+        }
+        if (!request.getArgumentNames().isEmpty()) {
+            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
+        }
+        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
+            byte[] bytes = source.getBytes().toByteArray();
+            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(bytes);
+            boolean internal = shouldMarkSourceInternal(context);
+            // The original file path should be passed as the name
+            String name = source.getName();
+            if (name != null && !name.isEmpty()) {
+                Source textSource = tryLoadSource(context, code, internal, name);
+                if (textSource == null) {
+                    if (name.startsWith(FROZEN_FILENAME_PREFIX) && name.endsWith(FROZEN_FILENAME_SUFFIX)) {
+                        String id = name.substring(FROZEN_FILENAME_PREFIX.length(), name.length() - FROZEN_FILENAME_SUFFIX.length());
+                        String fs = context.getEnv().getFileNameSeparator();
+                        String path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
+                        textSource = tryLoadSource(context, code, internal, path);
+                        if (textSource == null) {
+                            path = context.getStdlibHome() + fs + id.replace(".", fs) + fs + "__init__.py";
+                            textSource = tryLoadSource(context, code, internal, path);
+                        }
+                    }
+                }
+                if (textSource != null) {
+                    source = textSource;
+                }
+            }
+            if (internal && !source.isInternal()) {
+                source = Source.newBuilder(source).internal(true).build();
+            }
+            PBytecodeRootNode rootNode = PBytecodeRootNode.create(this, code, source);
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
+            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize, false, null);
+            }
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
+            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize, false, null);
+            }
+        }
+        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
+    }
+
+    private Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
+        try {
+            return Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
+        } catch (IOException | SecurityException | UnsupportedOperationException e) {
+            return null;
+        }
+    }
+
+    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames) {
+        RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+        try {
+            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
+            ModTy mod = (ModTy) parser.parse();
+            assert mod != null;
+            return compileForBytecodeInterpreter(context, mod, source, topLevel, optimize, argumentNames, errorCb);
+        } catch (PException e) {
+            if (topLevel) {
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            }
+            throw e;
+        }
+    }
+
+    @TruffleBoundary
+    public RootCallTarget compileForBytecodeInterpreter(PythonContext context, ModTy mod, Source source, boolean topLevel, int optimize, List<String> argumentNames,
+                    RaisePythonExceptionErrorCallback errorCallback) {
+        RaisePythonExceptionErrorCallback errorCb = errorCallback;
+        if (errorCb == null) {
+            errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
+        }
+        try {
+            Compiler compiler = new Compiler(errorCb);
+            boolean hasArguments = argumentNames != null && !argumentNames.isEmpty();
+            if (hasArguments) {
+                mod = transformASTForExecutionWithArguments(argumentNames, mod);
+            }
+            CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize);
+            CodeUnit co = cu.assemble();
+            RootNode rootNode = PBytecodeRootNode.create(this, co, source, errorCb);
+            if (topLevel) {
+                GilNode gil = GilNode.getUncached();
+                boolean wasAcquired = gil.acquire(context, rootNode);
+                try {
+                    errorCb.triggerDeprecationWarnings();
+                } finally {
+                    gil.release(context, wasAcquired);
+                }
+            }
+            if (hasArguments) {
+                rootNode = new RootNodeWithArguments(this, rootNode);
+            }
+            if (topLevel && context.isCoreInitialized()) {
+                rootNode = new TopLevelExceptionHandler(this, rootNode, source);
+            }
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        } catch (PException e) {
+            if (topLevel) {
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            }
+            throw e;
+        }
+    }
+
+    private ModTy transformASTForExecutionWithArguments(List<String> argumentNames, ModTy mod) {
+        NodeFactory nodeFactory = new NodeFactoryImp();
+        ArgTy[] astArgArray = new ArgTy[argumentNames.size()];
+        for (int i = 0; i < astArgArray.length; i++) {
+            astArgArray[i] = nodeFactory.createArgument(argumentNames.get(i), null, null, SourceRange.ARTIFICIAL_RANGE);
+        }
+        ArgumentsTy astArgs = nodeFactory.createArguments(null, null, astArgArray, null, null);
+        StmtTy[] body = ((ModTy.Module) mod).body;
+        if (body != null && body.length > 0) {
+            body = Arrays.copyOf(body, body.length);
+            StmtTy lastStmt = body[body.length - 1];
+            if (lastStmt instanceof StmtTy.Expr) {
+                body[body.length - 1] = nodeFactory.createReturn(((StmtTy.Expr) lastStmt).value, lastStmt.getSourceRange());
+            }
+        }
+        String fnName = "execute";
+        StmtTy astFunction = nodeFactory.createFunctionDef(fnName, astArgs, body, null, null, SourceRange.ARTIFICIAL_RANGE);
+        /*
+         * We cannot use a return in a module, but we piggy-back on the fact that we return the last
+         * expression in a module (see Compiler)
+         */
+        StmtTy astGetFunction = nodeFactory.createExpression(nodeFactory.createVariable(fnName, SourceRange.ARTIFICIAL_RANGE));
+        return nodeFactory.createModule(new StmtTy[]{astFunction, astGetFunction}, SourceRange.ARTIFICIAL_RANGE);
+    }
+
+    private static class RootNodeWithArguments extends RootNode {
+        private final RootNode innerRootNode;
+        @Child private DirectCallNode callModuleNode;
+        @Child private CallNode callFunctionNode;
+
+        public RootNodeWithArguments(PythonLanguage language, RootNode innerRootNode) {
+            super(language);
+            this.innerRootNode = innerRootNode;
+            callModuleNode = DirectCallNode.create(innerRootNode.getCallTarget());
+            callFunctionNode = CallNode.create();
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object function = callModuleNode.call(frame.getArguments());
+            Object[] arguments = PythonUtils.arrayCopyOfRange(frame.getArguments(), PArguments.USER_ARGUMENTS_OFFSET, frame.getArguments().length);
+            return callFunctionNode.execute(frame, function, arguments);
+        }
+
+        @Override
+        public SourceSection getSourceSection() {
+            return innerRootNode.getSourceSection();
+        }
+    }
+
+    private ExecutableNode parseForBytecodeInterpreter(InlineParsingRequest request) {
+        PythonContext context = PythonContext.get(null);
+        RootCallTarget callTarget = parseForBytecodeInterpreter(context, request.getSource(), InputType.EVAL, false, 0, false, null);
+        return new ExecutableNode(this) {
+            @Child private GilNode gilNode = GilNode.create();
+            @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
+            @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
+            @Child private ReadLocalsNode readLocalsNode = ReadLocalsNode.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                Object[] arguments = PArguments.create();
+                // escape?
+                PFrame pFrame = materializeFrameNode.execute(frame, this, false, true, frame);
+                Object locals = readLocalsNode.execute(frame, pFrame);
+                PArguments.setCustomLocals(arguments, locals);
+                PArguments.setSpecialArgument(arguments, locals);
+                PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    return invokeNode.execute(callTarget, arguments);
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
+            }
+        };
+    }
+
+    private RootNode doParse(PythonContext context, Source source, int optimize) {
         ParserMode mode;
         if (source.isInteractive()) {
             if (context.getOption(PythonOptions.TerminalIsInteractive)) {
@@ -309,9 +678,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // by default we assume a module
             mode = ParserMode.File;
         }
-        PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null, null);
+            return (RootNode) context.getParser().parse(mode, optimize, context, source, null, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -325,7 +693,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         CompilerDirectives.transferToInterpreter();
         final PythonLanguage lang = this;
         final RootNode executableNode = new RootNode(lang) {
-            @Node.Child private RootNode rootNode;
+            @Child private DirectCallNode callNode;
+            @Child private GilNode gilNode;
 
             protected Object[] preparePArguments(VirtualFrame frame) {
                 int argumentsLength = frame.getArguments().length;
@@ -338,23 +707,33 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Override
             @TruffleBoundary
             public Object execute(VirtualFrame frame) {
-                PythonContext context = lookupContextReference(PythonLanguage.class).get();
+                PythonContext context = PythonContext.get(callNode);
                 assert context != null;
                 if (!context.isInitialized()) {
                     context.initialize();
                 }
-                if (rootNode == null) {
+                if (callNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    parse(context, frame);
+                    RootCallTarget callTarget = parse(context, frame);
+                    callNode = insert(DirectCallNode.create(callTarget));
                 }
-                Object[] args = preparePArguments(frame);
-                Object result = InvokeNode.invokeUncached(rootNode.getCallTarget(), args);
-                return result;
+                if (gilNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    gilNode = insert(GilNode.create());
+                }
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    Object[] args = preparePArguments(frame);
+                    return callNode.call(args);
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
             }
 
-            private void parse(PythonContext context, VirtualFrame frame) {
+            private RootCallTarget parse(PythonContext context, VirtualFrame frame) {
                 CompilerAsserts.neverPartOfCompilation();
-                rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, context.getCore(), source, frame, argumentNames);
+                RootNode rootNode = (RootNode) context.getParser().parse(ParserMode.WithArguments, 0, context, source, frame, argumentNames);
+                return rootNode.getCallTarget();
             }
         };
         return executableNode;
@@ -363,20 +742,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected ExecutableNode parse(InlineParsingRequest request) {
         CompilerDirectives.transferToInterpreter();
+        RootNode rootNode = request.getLocation().getRootNode();
+        if (rootNode instanceof PBytecodeGeneratorRootNode) {
+            rootNode = ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
+        }
+        if (rootNode instanceof PBytecodeRootNode) {
+            return parseForBytecodeInterpreter(request);
+        }
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {
-            @CompilationFinal private ContextReference<PythonContext> contextRef;
             @CompilationFinal private volatile PythonContext cachedContext;
+            @Child private GilNode gilNode;
             @Child private ExpressionNode expression;
 
             @Override
             public Object execute(VirtualFrame frame) {
-                if (contextRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    contextRef = lookupContextReference(PythonLanguage.class);
-                }
-                PythonContext context = contextRef.get();
+                PythonContext context = PythonContext.get(gilNode);
                 assert context != null && context.isInitialized();
                 PythonContext cachedCtx = cachedContext;
                 if (cachedCtx == null) {
@@ -384,13 +766,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     parseAndCache(context);
                     cachedCtx = context;
                 }
-                Object result;
-                if (context == cachedCtx) {
-                    result = expression.execute(frame);
-                } else {
-                    result = parseAndEval(context, frame.materialize());
+                if (gilNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    gilNode = insert(GilNode.create());
                 }
-                return result;
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    Object result;
+                    if (context == cachedCtx) {
+                        result = expression.execute(frame);
+                    } else {
+                        result = parseAndEval(context, frame.materialize());
+                    }
+                    return result;
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
             }
 
             private void parseAndCache(PythonContext context) {
@@ -410,8 +801,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        PythonCore pythonCore = context.getCore();
-        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame, null);
+        return (ExpressionNode) context.getParser().parse(ParserMode.InlineEvaluation, 0, context, code, lexicalContextFrame, null);
     }
 
     @Override
@@ -422,12 +812,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             if (interopLib.isBoolean(value)) {
                 if (interopLib.asBoolean(value)) {
-                    return context.getCore().getTrue();
+                    return context.getTrue();
                 } else {
-                    return context.getCore().getFalse();
+                    return context.getFalse();
                 }
             } else if (interopLib.isString(value)) {
-                return factory.createString(interopLib.asString(value));
+                return factory.createString(interopLib.asTruffleString(value).switchEncodingUncached(TS_ENCODING));
             } else if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
                 // TODO: (tfel) once the interop protocol allows us to
                 // distinguish fixed point from floating point reliably, we can
@@ -482,16 +872,32 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getLanguageHome();
     }
 
-    public static PythonLanguage getCurrent() {
-        return getCurrentLanguage(PythonLanguage.class);
+    /**
+     * If this object can be cached in the AST.
+     */
+    public static boolean canCache(Object value) {
+        CompilerAsserts.neverPartOfCompilation();
+        // We cache strings with at most 16 characters. This corresponds to byte length of 64 for
+        // TruffleStrings since we are using UTF-32 encoding. Note that if the string contains only
+        // ASCII characters, which is the usual case, the actual amount of memory taken by the
+        // string is just 16 bytes - TruffleString#byteLength() reports the length as if the string
+        // was not compacted.
+        return value instanceof Long ||
+                        value instanceof Integer ||
+                        value instanceof Boolean ||
+                        value instanceof Double ||
+                        (isJavaString(value) && ((String) value).length() <= 16) ||
+                        (value instanceof TruffleString && ((TruffleString) value).byteLength(TS_ENCODING) <= 64) ||
+                        isContextInsensitiveSingleton(value);
     }
 
-    public static PythonContext getContext() {
-        return getCurrentContext(PythonLanguage.class);
-    }
-
-    public static PythonCore getCore() {
-        return getCurrentContext(PythonLanguage.class).getCore();
+    private static boolean isContextInsensitiveSingleton(Object value) {
+        for (Object singleton : CONTEXT_INSENSITIVE_SINGLETONS) {
+            if (value == singleton) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -500,59 +906,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    @TruffleBoundary
-    // Remove in GR-26206
-    @SuppressWarnings("deprecation")
-    protected Iterable<com.oracle.truffle.api.Scope> findLocalScopes(PythonContext context, Node node, Frame frame) {
-        ArrayList<com.oracle.truffle.api.Scope> scopes = new ArrayList<>();
-        for (com.oracle.truffle.api.Scope s : super.findLocalScopes(context, node, frame)) {
-            if (frame == null) {
-                PFunctionArgsFinder argsFinder = new PFunctionArgsFinder(node);
-
-                com.oracle.truffle.api.Scope.Builder scopeBuilder = com.oracle.truffle.api.Scope.newBuilder(s.getName(), s.getVariables()).node(s.getNode()).receiver(s.getReceiverName(),
-                                s.getReceiver()).rootInstance(
-                                                s.getRootInstance()).arguments(argsFinder.collectArgs());
-
-                scopes.add(scopeBuilder.build());
-            } else {
-                scopes.add(s);
-            }
-        }
-
-        if (frame != null) {
-            PythonObject globals = PArguments.getGlobalsSafe(frame);
-            if (globals != null) {
-                scopes.add(com.oracle.truffle.api.Scope.newBuilder("globals()", scopeFromObject(globals)).build());
-            }
-            Frame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
-            if (generatorFrame != null) {
-                for (com.oracle.truffle.api.Scope s : super.findLocalScopes(context, node, generatorFrame)) {
-                    scopes.add(s);
-                }
-            }
-        }
-        return scopes;
-    }
-
-    private static InteropMap scopeFromObject(PythonObject globals) {
-        if (globals instanceof PDict) {
-            return InteropMap.fromPDict((PDict) globals);
-        } else {
-            return InteropMap.fromPythonObject(globals);
-        }
-    }
-
-    @Override
-    // Remove in GR-26206
-    @SuppressWarnings("deprecation")
-    protected Iterable<com.oracle.truffle.api.Scope> findTopScopes(PythonContext context) {
-        ArrayList<com.oracle.truffle.api.Scope> scopes = new ArrayList<>();
-        if (context.getBuiltins() != null) {
-            // false during initialization
-            scopes.add(com.oracle.truffle.api.Scope.newBuilder(BuiltinNames.__MAIN__, context.getMainModule()).build());
-            scopes.add(com.oracle.truffle.api.Scope.newBuilder(BuiltinNames.BUILTINS, scopeFromObject(context.getBuiltins())).build());
-        }
-        return scopes;
+    protected Object getScope(PythonContext context) {
+        return context.getTopScopeObject();
     }
 
     @TruffleBoundary
@@ -560,12 +915,33 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, clazz);
     }
 
-    public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
+    @TruffleBoundary
+    public static TruffleLogger getLogger(String name) {
+        return TruffleLogger.getLogger(ID, name);
+    }
+
+    /**
+     * Loggers that should report any known incompatibility with CPython, which is silently ignored
+     * in order to be able to continue the execution. Example is setting the stack size limit: it
+     * would be too drastic measure to raise error, because the program may continue and work
+     * correctly even if it is ignored.
+     *
+     * The logger name is prefixed with "compatibility" such that
+     * {@code --log.python.compatibility.level=LEVEL} can turn on compatibility related logging for
+     * all classes.
+     */
+    @TruffleBoundary
+    public static TruffleLogger getCompatibilityLogger(Class<?> clazz) {
+        return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
+    }
+
+    public static Source newSource(PythonContext ctxt, TruffleString tsrc, TruffleString name, boolean mayBeFile, String mime) {
         try {
             SourceBuilder sourceBuilder = null;
+            String src = tsrc.toJavaStringUncached();
             if (mayBeFile) {
                 try {
-                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+                    TruffleFile truffleFile = ctxt.getPublicTruffleFileRelaxed(name, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
                     if (truffleFile.exists()) {
                         // XXX: (tfel): We don't know if the expression has anything to do with the
                         // filename that's given. We would really have to compare the entire
@@ -582,7 +958,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
             }
             if (sourceBuilder == null) {
-                sourceBuilder = Source.newBuilder(ID, src, name);
+                sourceBuilder = Source.newBuilder(ID, src, name.toJavaStringUncached());
+            }
+            if (mime != null) {
+                sourceBuilder.mimeType(mime);
             }
             return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {
@@ -594,47 +973,35 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return newSource(ctxt, Source.newBuilder(ID, src).name(name));
     }
 
-    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
-        boolean coreIsInitialized = ctxt.getCore().isInitialized();
-        boolean internal = !coreIsInitialized && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
-        if (internal) {
+    private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
+        if (shouldMarkSourceInternal(context)) {
             srcBuilder.internal(true);
         }
         return srcBuilder.build();
     }
 
+    private static boolean shouldMarkSourceInternal(PythonContext ctxt) {
+        return !ctxt.isCoreInitialized() && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
+    }
+
     @Override
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
-        singleContextAssumption.invalidate();
+        singleContext = false;
     }
 
-    private final ConcurrentHashMap<String, CallTarget> cachedCode = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, String[]> cachedCodeModulePath = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TruffleString, CallTarget> cachedCode = new ConcurrentHashMap<>();
 
     @TruffleBoundary
-    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
-        return cachedCode.computeIfAbsent(filename, f -> {
-            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+    public CallTarget cacheCode(TruffleString filename, Supplier<CallTarget> createCode) {
+        if (!singleContext) {
+            return cachedCode.computeIfAbsent(filename, f -> {
+                LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+                return createCode.get();
+            });
+        } else {
             return createCode.get();
-        });
-    }
-
-    @TruffleBoundary
-    public String[] cachedCodeModulePath(String name) {
-        return cachedCodeModulePath.get(name);
-    }
-
-    @TruffleBoundary
-    public boolean hasCachedCode(String name) {
-        return cachedCode.get(name) != null;
-    }
-
-    @TruffleBoundary
-    public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode, String[] modulepath) {
-        CallTarget ct = cacheCode(filename, createCode);
-        cachedCodeModulePath.computeIfAbsent(filename, t -> modulepath);
-        return ct;
+        }
     }
 
     @Override
@@ -642,21 +1009,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        if (isWithThread == null) {
-            isWithThread = false;
-        }
-        return isWithThread;
+        return true;
     }
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        singleThreadedAssumption.invalidate();
-        context.initializeMultiThreading();
+        if (singleThreadedAssumption.isValid()) {
+            singleThreadedAssumption.invalidate();
+            context.initializeMultiThreading();
+        }
     }
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
-        context.attachThread(thread);
+        context.attachThread(thread, threadState);
     }
 
     @Override
@@ -664,21 +1030,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.disposeThread(thread);
     }
 
-    public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
-        String key = builtin.name() + nodeClass.getName();
-        return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
-    }
-
     public Shape getEmptyShape() {
         return emptyShape;
     }
 
-    public Shape getShapeForClass(PythonManagedClass klass) {
-        if (singleContextAssumption.isValid()) {
+    public Shape getShapeForClass(PythonAbstractClass klass) {
+        if (isSingleContext()) {
             return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
         } else {
             return getEmptyShape();
         }
+    }
+
+    public static Shape getShapeForClassWithoutDict(PythonManagedClass klass) {
+        return Shape.newBuilder(klass.getInstanceShape()).shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG).build();
     }
 
     public Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {
@@ -686,85 +1051,70 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Shape shape = builtinTypeInstanceShapes[ordinal];
         if (shape == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            shape = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0).build();
+            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0);
+            if (!type.isBuiltinWithDict()) {
+                shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
+            }
+            shape = shapeBuilder.build();
             builtinTypeInstanceShapes[ordinal] = shape;
         }
         return shape;
     }
 
     /**
-     * Retrieve a call target for the given {@link UnaryArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
+     * Returns the shape used for the C API symbol cache.
      */
     @TruffleBoundary
-    public RootCallTarget getOrCreateUnaryArithmeticCallTarget(UnaryArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    public synchronized Shape getCApiSymbolCacheShape() {
+        if (cApiSymbolCache == null) {
+            cApiSymbolCache = Shape.newBuilder().build();
+        }
+        return cApiSymbolCache;
     }
 
     /**
-     * Retrieve a call target for the given {@link BinaryArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
+     * Returns the shape used for the HPy API symbol cache.
      */
     @TruffleBoundary
-    public RootCallTarget getOrCreateBinaryArithmeticCallTarget(BinaryArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    public synchronized Shape getHPySymbolCacheShape() {
+        if (hpySymbolCache == null) {
+            hpySymbolCache = Shape.newBuilder().build();
+        }
+        return hpySymbolCache;
     }
 
     /**
-     * Retrieve a call target for the given {@link TernaryArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
+     * Cache call targets that are created for every new context, based on a single key.
      */
-    @TruffleBoundary
-    public RootCallTarget getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
-    }
-
-    /**
-     * Retrieve a call target for the given {@link InplaceArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
-     */
-    @TruffleBoundary
-    public RootCallTarget getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
-    }
-
-    private RootCallTarget getOrCreateArithmeticCallTarget(Object arithmeticOperator, Function<PythonLanguage, RootCallTarget> supplier) {
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
         CompilerAsserts.neverPartOfCompilation();
-        ConcurrentHashMap<Object, WeakReference<RootCallTarget>> arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.get();
-        if (arithmeticOpCallTargetCache == null) {
-            arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.updateAndGet((v) -> {
-                // IMPORTANT: only create a new instance if we still see 'null'; otherwise we would
-                // overwrite the update of a different thread
-                if (v == null) {
-                    return new ConcurrentHashMap<>();
-                }
-                return v;
-            });
+        if (!singleContext) {
+            return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+        } else {
+            return PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
         }
+    }
 
-        WeakReference<RootCallTarget> ctRef = arithmeticOpCallTargetCache.compute(arithmeticOperator, (k, v) -> {
-            RootCallTarget cachedCallTarget = v != null ? v.get() : null;
-            if (cachedCallTarget == null) {
-                return new WeakReference<>(supplier.apply(this));
-            }
-            return v;
-        });
+    /**
+     * Cache call targets that are created for every new context, based on a list of keys.
+     */
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object... cacheKeys) {
+        return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
+    }
 
-        RootCallTarget callTarget = ctRef.get();
-        if (callTarget == null) {
-            // Bad luck: we ensured that there is a mapping in the cache but the weak value got
-            // collected before we could strongly reference it. Now, we need to be conservative and
-            // create the call target eagerly, hold a strong reference to it until we've put it into
-            // the map.
-            final RootCallTarget callTargetToCache = supplier.apply(this);
-            callTarget = callTargetToCache;
-            arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
-        }
-        assert callTarget != null;
+    public void registerBuiltinDescriptorCallTarget(BuiltinMethodDescriptor descriptor, RootCallTarget callTarget) {
+        descriptorCallTargets.put(descriptor, callTarget);
+    }
+
+    /**
+     * Gets a {@link CallTarget} for given {@link BuiltinMethodDescriptor}. The
+     * {@link BuiltinMethodDescriptor} must have been inserted into the slots of some Python class
+     * in the current context, otherwise its {@link CallTarget} will not be cached here.
+     */
+    @TruffleBoundary
+    public RootCallTarget getDescriptorCallTarget(BuiltinMethodDescriptor descriptor) {
+        RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
+        assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor;
         return callTarget;
     }
 }

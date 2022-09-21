@@ -216,6 +216,7 @@ class BaseLockTests(BaseTestCase):
         ref = weakref.ref(lock)
         self.assertIsNotNone(ref())
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_weakref_deleted(self):
         lock = self.locktype()
         ref = weakref.ref(lock)

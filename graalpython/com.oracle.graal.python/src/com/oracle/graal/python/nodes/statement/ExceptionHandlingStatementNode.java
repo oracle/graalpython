@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -53,9 +54,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -66,41 +67,37 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private PythonObjectFactory ofactory;
+    @Child private InteropLibrary lib;
     @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
     @CompilationFinal private LoopConditionProfile contextChainContextProfile;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
-    protected void tryChainExceptionFromHandler(PException handlerException, Throwable handledException) {
+    protected void tryChainExceptionFromHandler(PException handlerException, PException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
-        if (handledException != handlerException && handledException instanceof PException) {
-            chainExceptions(handlerException.getUnreifiedException(), (PException) handledException);
+        if (handledException != handlerException) {
+            chainExceptions(handlerException.getUnreifiedException(), handledException, getContextChainHandledProfile(), getContextChainContextProfile());
         }
     }
 
-    protected void tryChainPreexistingException(VirtualFrame frame, Throwable handledException) {
+    protected void tryChainPreexistingException(VirtualFrame frame, PException handledException) {
         // Chain a preexisting (before the try started) exception to the handled exception
-        if (handledException instanceof PException) {
-            PException pException = (PException) handledException;
-            PException preexisting = getExceptionForChaining(frame);
-            if (preexisting != null) {
-                chainExceptions(pException.getUnreifiedException(), preexisting);
-            }
+        PException preexisting = getExceptionForChaining(frame);
+        if (preexisting != null) {
+            chainExceptions(handledException.getUnreifiedException(), preexisting, getContextChainHandledProfile(), getContextChainContextProfile());
         }
     }
 
     protected void tryChainPreexistingException(VirtualFrame frame, PBaseException handledException) {
         PException preexisting = getExceptionForChaining(frame);
         if (preexisting != null) {
-            chainExceptions(handledException, preexisting);
+            chainExceptions(handledException, preexisting, getContextChainHandledProfile(), getContextChainContextProfile());
         }
     }
 
-    public void chainExceptions(PBaseException currentException, PException contextException) {
+    public static void chainExceptions(PBaseException currentException, PException contextException, ConditionProfile p1, ConditionProfile p2) {
         PBaseException context = contextException.getUnreifiedException();
         if (currentException != context) {
             PBaseException e = currentException;
-            while (getContextChainHandledProfile().profile(e != null)) {
+            while (p1.profile(e != null)) {
                 if (e.getContext() == context) {
                     // We have already chained this exception in an inner block, do nothing
                     return;
@@ -108,7 +105,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
                 e = e.getContext();
             }
             e = context;
-            while (getContextChainContextProfile().profile(e != null)) {
+            while (p2.profile(e != null)) {
                 if (e.getContext() == currentException) {
                     e.setContext(null);
                 }
@@ -119,6 +116,10 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             }
             currentException.setContext(context);
         }
+    }
+
+    public static void chainExceptions(PBaseException currentException, PException contextException) {
+        chainExceptions(currentException, contextException, ConditionProfile.getUncached(), ConditionProfile.getUncached());
     }
 
     protected void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
@@ -163,22 +164,6 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return contextChainContextProfile;
     }
 
-    protected final PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
-    }
-
-    protected final PythonLanguage getPythonLanguage() {
-        if (languageRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            languageRef = lookupLanguageReference(PythonLanguage.class);
-        }
-        return languageRef.get();
-    }
-
     protected final PythonObjectFactory factory() {
         if (ofactory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -187,12 +172,24 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return ofactory;
     }
 
+    private InteropLibrary getInteropLibrary() {
+        if (lib == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lib = insert(InteropLibrary.getFactory().createDispatched(3));
+        }
+        return lib;
+    }
+
+    protected final boolean isTruffleException(Throwable t) {
+        return getInteropLibrary().isException(t);
+    }
+
     protected final boolean shouldCatchAllExceptions() {
-        return getPythonLanguage().getEngineOption(PythonOptions.CatchAllExceptions);
+        return PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions);
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
-        PException pe = PException.fromObject(pythonException, node, false, e);
+        PException pe = PException.fromObject(pythonException, node, e);
         pe.setHideLocation(true);
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
@@ -200,15 +197,20 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return pe;
     }
 
+    protected PException exceptionStateForTruffleException(AbstractTruffleException exception) {
+        return wrapJavaException(exception, this, factory().createBaseException(SystemError, ErrorMessages.M, new Object[]{exception}));
+    }
+
     protected final PException wrapJavaExceptionIfApplicable(Throwable e) {
         if (e instanceof ControlFlowException) {
             return null;
         }
         if (shouldCatchAllExceptions() && (e instanceof Exception || e instanceof AssertionError)) {
-            return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
+            return wrapJavaException(e, this, factory().createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
-            return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
+            PythonContext.get(this).reacquireGilAfterStackOverflow();
+            return wrapJavaException(e, this, factory().createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         return null;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -59,17 +57,16 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -78,6 +75,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -87,18 +85,24 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  *     struct PyMethodDef {
  *         const char  *ml_name;   // The name of the built-in function/method
  *         PyCFunction ml_meth;    // The C function that implements it
- *         int ml_flags;           // Combination of METH_xxx flags, which mostly describe the args expected by the C 
- *         const char*ml_doc;      // The __doc__ attribute, or NULL 
+ *         int ml_flags;           // Combination of METH_xxx flags, which mostly describe the args expected by the C
+ *         const char*ml_doc;      // The __doc__ attribute, or NULL
  *     };
  * </pre>
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PyMethodDefWrapper extends PythonNativeWrapper {
-    public static final String ML_NAME = "ml_name";
-    public static final String ML_METH = "ml_meth";
-    public static final String ML_FLAGS = "ml_flags";
-    public static final String ML_DOC = "ml_doc";
+    public static final String J_ML_NAME = "ml_name";
+    public static final String J_ML_METH = "ml_meth";
+    public static final String J_ML_FLAGS = "ml_flags";
+    public static final String J_ML_DOC = "ml_doc";
+
+    /**
+     * Extensions that write to {@code __doc__} expect to be able to deallocate the string, so we
+     * need to keep the C pointer around in a separate hidden field.
+     */
+    public static final HiddenKey __C_DOC__ = new HiddenKey("__c_doc__");
 
     public PyMethodDefWrapper(PythonObject delegate) {
         super(delegate);
@@ -112,10 +116,10 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     boolean isMemberReadable(String member) {
         switch (member) {
-            case ML_NAME:
-            case ML_METH:
-            case ML_FLAGS:
-            case ML_DOC:
+            case J_ML_NAME:
+            case J_ML_METH:
+            case J_ML_FLAGS:
+            case J_ML_DOC:
                 return true;
             default:
                 return false;
@@ -124,14 +128,20 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new InteropArray(new Object[]{ML_NAME, ML_METH, ML_FLAGS, ML_DOC});
+        return new InteropArray(new Object[]{J_ML_NAME, J_ML_METH, J_ML_FLAGS, J_ML_DOC});
     }
 
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(lib.getDelegate(this), member);
+                    @Cached ReadFieldNode readFieldNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readFieldNode.execute(lib.getDelegate(this), member);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @GenerateUncached
@@ -144,99 +154,85 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"eq(ML_NAME, key)"})
+        @Specialization(guards = {"eq(J_ML_NAME, key)"})
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
-            Object name = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
+                        @Shared("castToStringNode") @Cached CastToTruffleStringNode castToStringNode) {
+            Object name = getAttrNode.execute(object, SpecialAttributeNames.T___NAME__);
             if (!PGuards.isPNone(name)) {
                 try {
-                    return new CStringWrapper(castToJavaStringNode.execute(name));
+                    return new CStringWrapper(castToStringNode.execute(name));
                 } catch (CannotCastException e) {
                     // fall through
                 }
             }
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
-        @Specialization(guards = {"eq(ML_DOC, key)"})
+        @Specialization(guards = {"eq(J_ML_DOC, key)"})
         static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
-            Object doc = getAttrNode.execute(object, __DOC__);
+                        @Shared("castToStringNode") @Cached CastToTruffleStringNode castToStringNode) {
+            Object doc = getAttrNode.execute(object, __C_DOC__);
+            if (doc != PNone.NO_VALUE) {
+                return doc;
+            }
+            doc = getAttrNode.execute(object, T___DOC__);
             if (!PGuards.isPNone(doc)) {
                 try {
-                    return new CStringWrapper(castToJavaStringNode.execute(doc));
+                    return new CStringWrapper(castToStringNode.execute(doc));
                 } catch (CannotCastException e) {
                     // fall through
                 }
             }
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
         }
 
-        @Specialization(guards = {"eq(ML_METH, key)"})
-        static Object getMeth(PythonObject object, @SuppressWarnings("unused") String key,
+        @Specialization(guards = {"eq(J_ML_METH, key)"})
+        static Object getMethFromBuiltinMethod(PBuiltinMethod object, String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return getMethFromBuiltinFunction(object.getFunction(), key, toSulongNode);
+        }
+
+        @Specialization(guards = {"eq(J_ML_METH, key)"})
+        static Object getMethFromBuiltinFunction(PBuiltinFunction object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            PKeyword[] kwDefaults = object.getKwDefaults();
+            for (int i = 0; i < kwDefaults.length; i++) {
+                if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
+                    return kwDefaults[i].getValue();
+                }
+            }
             return toSulongNode.execute(object);
         }
 
-        @Specialization(guards = {"eq(ML_FLAGS, key)"})
-        static Object getFlags(PythonObject object, @SuppressWarnings("unused") String key) {
-            PBuiltinFunction fun = null;
-            if (object instanceof PBuiltinFunction) {
-                fun = (PBuiltinFunction) object;
-            } else if (object instanceof PBuiltinMethod) {
-                fun = ((PBuiltinMethod) object).getFunction();
+        @Specialization(guards = {"eq(J_ML_METH, key)"}, replaces = {"getMethFromBuiltinMethod", "getMethFromBuiltinFunction"})
+        static Object getMeth(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            if (object instanceof PBuiltinMethod) {
+                return getMethFromBuiltinMethod((PBuiltinMethod) object, key, toSulongNode);
+            } else if (object instanceof PBuiltinFunction) {
+                return getMethFromBuiltinFunction((PBuiltinFunction) object, key, toSulongNode);
             }
-            if (fun != null) {
-                return getFlags(fun);
+            return toSulongNode.execute(object);
+        }
+
+        @Specialization(guards = {"eq(J_ML_FLAGS, key)"})
+        static Object getFlags(PythonObject object, @SuppressWarnings("unused") String key) {
+            if (object instanceof PBuiltinFunction) {
+                return ((PBuiltinFunction) object).getFlags();
+            } else if (object instanceof PBuiltinMethod) {
+                return ((PBuiltinMethod) object).getFunction().getFlags();
             }
             return 0;
-        }
-
-        @TruffleBoundary
-        private static int getFlags(PBuiltinFunction object) {
-            Builtin builtin = getBuiltin(object);
-            int flags = 0;
-            if (builtin.isClassmethod()) {
-                flags |= CExtContext.METH_CLASS;
-            }
-            if (builtin.isStaticmethod()) {
-                flags |= CExtContext.METH_STATIC;
-            }
-            Signature signature = object.getSignature();
-            int params = signature.getParameterIds().length;
-            if (params == 1) {
-                // only 'self'
-                flags |= CExtContext.METH_NOARGS;
-            } else if (params == 2) {
-                flags |= CExtContext.METH_O;
-            } else if (signature.takesKeywordArgs()) {
-                flags |= CExtContext.METH_VARARGS;
-            } else if (signature.takesVarArgs()) {
-                flags |= CExtContext.METH_VARARGS;
-            }
-            return flags | CExtContext.METH_FASTCALL;
-        }
-
-        @TruffleBoundary
-        private static Builtin getBuiltin(PBuiltinFunction delegate) {
-            NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = delegate.getBuiltinNodeFactory();
-            if (builtinNodeFactory != null) {
-                assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + delegate + " is expected to have a Builtin annotated node.";
-                return builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0];
-            }
-            return null;
         }
     }
 
     @ExportMessage
     protected boolean isMemberModifiable(String member) {
-        return ML_DOC.equals(member);
+        return J_ML_DOC.equals(member);
     }
 
     @ExportMessage
@@ -247,8 +243,14 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached WriteFieldNode writeFieldNode) throws UnsupportedMessageException, UnknownIdentifierException {
-        writeFieldNode.execute(lib.getDelegate(this), member, value);
+                    @Exclusive @Cached WriteFieldNode writeFieldNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            writeFieldNode.execute(lib.getDelegate(this), member, value);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -271,23 +273,26 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"!isBuiltinMethod(object)", "!isBuiltinFunction(object)", "eq(ML_DOC, key)"})
+        @Specialization(guards = {"!isBuiltinMethod(object)", "!isBuiltinFunction(object)", "eq(J_ML_DOC, key)"})
         static void doPythonObject(PythonObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                        @Shared("writeAttrDynamic") @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
                         @Shared("fromCharPointerNode") @Cached FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
-            setAttrNode.execute(object, __DOC__, fromCharPointerNode.execute(value));
+            setAttrNode.execute(object, T___DOC__, fromCharPointerNode.execute(value));
+            writeAttrToDynamicObjectNode.execute(object, __C_DOC__, value);
         }
 
-        @Specialization(guards = {"isBuiltinMethod(object) || isBuiltinFunction(object)", "eq(ML_DOC, key)"})
+        @Specialization(guards = {"isBuiltinMethod(object) || isBuiltinFunction(object)", "eq(J_ML_DOC, key)"})
         static void doBuiltinFunctionOrMethod(PythonBuiltinObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
-                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
+                        @Shared("writeAttrDynamic") @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
                         @Shared("fromCharPointerNode") @Cached FromCharPointerNode fromCharPointerNode) {
             // Since CPython does directly write to `ml_doc`, writing the __doc__ attribute
             // circumvents any checks if the attribute may be written according to the common Python
             // rules. So, directly write to the Python object's storage.
-            writeAttrToDynamicObjectNode.execute(object.getStorage(), __DOC__, fromCharPointerNode.execute(value));
+            writeAttrToDynamicObjectNode.execute(object, T___DOC__, fromCharPointerNode.execute(value));
+            writeAttrToDynamicObjectNode.execute(object, __C_DOC__, value);
         }
     }
 

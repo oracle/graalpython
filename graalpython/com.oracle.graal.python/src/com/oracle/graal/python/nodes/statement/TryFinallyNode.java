@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,13 +28,17 @@ package com.oracle.graal.python.nodes.statement;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class TryFinallyNode extends ExceptionHandlingStatementNode {
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
+    @Child private InteropLibrary excLib;
 
     private final BranchProfile exceptionProfile = BranchProfile.create();
 
@@ -48,22 +52,52 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
         if (finalbody == null) {
             body.executeVoid(frame);
         } else {
-            try {
-                body.executeVoid(frame);
-            } catch (PException handledException) {
-                handleException(frame, handledException);
-            } catch (ControlFlowException e) {
-                finalbody.executeVoid(frame);
-                throw e;
-            } catch (Throwable e) {
-                PException pe = wrapJavaExceptionIfApplicable(e);
-                if (pe == null) {
-                    throw e;
-                }
-                handleException(frame, pe);
-            }
-            finalbody.executeVoid(frame);
+            executeImpl(frame, false);
         }
+    }
+
+    @Override
+    public Object returnExecute(VirtualFrame frame) {
+        if (finalbody == null) {
+            return body.returnExecute(frame);
+        } else {
+            return executeImpl(frame, true);
+        }
+    }
+
+    public Object executeImpl(VirtualFrame frame, boolean isReturn) {
+        assert finalbody != null;
+        Object result = null;
+        try {
+            // The assumption is that finally blocks usually do not return, we execute those in
+            // control flow exceptions mode to be able to execute the body with 'returnExecute'
+            result = body.genericExecute(frame, isReturn);
+        } catch (PException handledException) {
+            handleException(frame, handledException);
+        } catch (ControlFlowException e) {
+            finalbody.executeVoid(frame);
+            throw e;
+        } catch (AbstractTruffleException e) {
+            if (excLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excLib = insert(InteropLibrary.getFactory().createDispatched(2));
+            }
+            if (excLib.isException(e)) {
+                finalbody.executeVoid(frame);
+            }
+            throw e;
+        } catch (ThreadDeath td) {
+            // do not handle, result of TruffleContext.closeCancelled()
+            throw td;
+        } catch (Throwable e) {
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe == null) {
+                throw e;
+            }
+            handleException(frame, pe);
+        }
+        finalbody.executeVoid(frame);
+        return result;
     }
 
     private void handleException(VirtualFrame frame, PException handledException) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,63 +40,67 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
-    private final String attributeId;
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    private final TruffleString attributeId;
 
-    DeleteGlobalNode(String attributeId) {
+    DeleteGlobalNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static DeleteGlobalNode create(String attributeId) {
+    public static DeleteGlobalNode create(TruffleString attributeId) {
         return DeleteGlobalNodeGen.create(attributeId);
     }
 
-    public abstract Object execute(VirtualFrame frame, Object value);
+    @Override
+    public final void executeVoid(VirtualFrame frame) {
+        executeWithGlobals(frame, getGlobals(frame));
+    }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
-    Object deleteDictCached(VirtualFrame frame,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
+    public abstract Object executeWithGlobals(VirtualFrame frame, Object globals);
+
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
+    Object deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals,
+                    @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached DeleteItemNode deleteNode) {
         deleteNode.executeWith(frame, cachedGlobals, attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = "isDict(getGlobals(frame))", replaces = "deleteDictCached")
-    Object deleteDict(VirtualFrame frame,
+    @Specialization(replaces = "deleteDictCached")
+    Object deleteDict(VirtualFrame frame, PDict globals,
                     @Cached DeleteItemNode deleteNode) {
-        deleteNode.executeWith(frame, PArguments.getGlobals(frame), attributeId);
+        deleteNode.executeWith(frame, globals, attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
-    Object deleteModuleCached(VirtualFrame frame,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
+    Object deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals,
+                    @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Cached DeleteAttributeNode storeNode) {
         storeNode.execute(frame, cachedGlobals, attributeId);
         return PNone.NONE;
     }
 
-    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "deleteModuleCached")
-    Object deleteModule(VirtualFrame frame,
+    @Specialization(replaces = "deleteModuleCached")
+    Object deleteModule(VirtualFrame frame, PythonModule globals,
                     @Cached DeleteAttributeNode storeNode) {
-        storeNode.execute(frame, PArguments.getGlobals(frame), attributeId);
+        storeNode.execute(frame, globals, attributeId);
         return PNone.NONE;
     }
 
     @Override
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 }

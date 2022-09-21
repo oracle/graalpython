@@ -1,5 +1,9 @@
+*graalpython.lib-python.3.test.test_array.ArrayReconstructorTest.test_error
+*graalpython.lib-python.3.test.test_array.ArrayReconstructorTest.test_numbers
+*graalpython.lib-python.3.test.test_array.ArrayReconstructorTest.test_unicode
 *graalpython.lib-python.3.test.test_array.ByteTest.test_add
 *graalpython.lib-python.3.test.test_array.ByteTest.test_assignment
+*graalpython.lib-python.3.test.test_array.ByteTest.test_buffer
 *graalpython.lib-python.3.test.test_array.ByteTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.ByteTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.ByteTest.test_byteswap
@@ -49,6 +53,7 @@
 *graalpython.lib-python.3.test.test_array.ByteTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.ByteTest.test_str
 *graalpython.lib-python.3.test.test_array.ByteTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.ByteTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.ByteTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.ByteTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.ByteTest.test_tofromlist
@@ -58,6 +63,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_add
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_alloc_overflow
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_assignment
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_buffer
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_byteswap
@@ -107,6 +113,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_str
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_tofromlist
@@ -114,6 +121,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_weakref
 *graalpython.lib-python.3.test.test_array.FloatTest.test_add
 *graalpython.lib-python.3.test.test_array.FloatTest.test_assignment
+*graalpython.lib-python.3.test.test_array.FloatTest.test_buffer
 *graalpython.lib-python.3.test.test_array.FloatTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.FloatTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.FloatTest.test_byteswap
@@ -163,6 +171,7 @@
 *graalpython.lib-python.3.test.test_array.FloatTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.FloatTest.test_str
 *graalpython.lib-python.3.test.test_array.FloatTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.FloatTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.FloatTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.FloatTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.FloatTest.test_tofromlist
@@ -170,6 +179,7 @@
 *graalpython.lib-python.3.test.test_array.FloatTest.test_weakref
 *graalpython.lib-python.3.test.test_array.IntTest.test_add
 *graalpython.lib-python.3.test.test_array.IntTest.test_assignment
+*graalpython.lib-python.3.test.test_array.IntTest.test_buffer
 *graalpython.lib-python.3.test.test_array.IntTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.IntTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.IntTest.test_byteswap
@@ -219,6 +229,7 @@
 *graalpython.lib-python.3.test.test_array.IntTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.IntTest.test_str
 *graalpython.lib-python.3.test.test_array.IntTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.IntTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.IntTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.IntTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.IntTest.test_tofromlist
@@ -241,6 +252,7 @@
 *graalpython.lib-python.3.test.test_array.LargeArrayTest.test_tolist
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_add
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_assignment
+*graalpython.lib-python.3.test.test_array.LongLongTest.test_buffer
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_byteswap
@@ -290,6 +302,7 @@
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_str
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.LongLongTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_tofromlist
@@ -298,6 +311,7 @@
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_weakref
 *graalpython.lib-python.3.test.test_array.LongTest.test_add
 *graalpython.lib-python.3.test.test_array.LongTest.test_assignment
+*graalpython.lib-python.3.test.test_array.LongTest.test_buffer
 *graalpython.lib-python.3.test.test_array.LongTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.LongTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.LongTest.test_byteswap
@@ -347,6 +361,7 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.LongTest.test_str
 *graalpython.lib-python.3.test.test_array.LongTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.LongTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.LongTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.LongTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.LongTest.test_tofromlist
@@ -357,6 +372,7 @@
 *graalpython.lib-python.3.test.test_array.MiscTest.test_empty
 *graalpython.lib-python.3.test.test_array.ShortTest.test_add
 *graalpython.lib-python.3.test.test_array.ShortTest.test_assignment
+*graalpython.lib-python.3.test.test_array.ShortTest.test_buffer
 *graalpython.lib-python.3.test.test_array.ShortTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.ShortTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.ShortTest.test_byteswap
@@ -406,6 +422,7 @@
 *graalpython.lib-python.3.test.test_array.ShortTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.ShortTest.test_str
 *graalpython.lib-python.3.test.test_array.ShortTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.ShortTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.ShortTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.ShortTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.ShortTest.test_tofromlist
@@ -413,6 +430,7 @@
 *graalpython.lib-python.3.test.test_array.ShortTest.test_type_error
 *graalpython.lib-python.3.test.test_array.ShortTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_add
+*graalpython.lib-python.3.test.test_array.UnicodeTest.test_buffer
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_byteswap
@@ -466,6 +484,7 @@
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_add
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_assignment
+*graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_bytes_extend
@@ -516,6 +535,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_str
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_tofromlist
@@ -524,6 +544,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_add
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_assignment
+*graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_bytes_extend
@@ -574,6 +595,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_str
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_tofromlist
@@ -582,6 +604,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_add
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_assignment
+*graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_bytes_extend
@@ -632,6 +655,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_str
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_tofromlist
@@ -640,6 +664,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_add
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_assignment
+*graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_bytes_extend
@@ -690,6 +715,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_str
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_tofromlist
@@ -698,6 +724,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_add
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_assignment
+*graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_bug_782369
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_bytes_extend
@@ -748,6 +775,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_sizeof_without_buffer
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_str
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_subclass_with_kwargs
+*graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_subclassing
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_tofrombytes
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_tofromlist

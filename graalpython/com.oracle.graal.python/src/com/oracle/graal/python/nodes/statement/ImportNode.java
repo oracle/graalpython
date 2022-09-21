@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,12 +29,13 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateWrapper
 public class ImportNode extends AbstractImportNode {
-    private final String moduleName;
+    private final TruffleString moduleName;
 
-    public ImportNode(String moduleName) {
+    public ImportNode(TruffleString moduleName) {
         this.moduleName = moduleName;
     }
 
@@ -70,7 +71,11 @@ public class ImportNode extends AbstractImportNode {
         return new ImportNodeWrapper(this, this, probe);
     }
 
-    public String getModuleName() {
+    public TruffleString getModuleName() {
         return moduleName;
+    }
+
+    public static ImportExpression createAsExpression(TruffleString moduleName) {
+        return new ImportNode(moduleName).asExpression();
     }
 }

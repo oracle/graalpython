@@ -15,17 +15,17 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
           FreeVarSlots: None
           ExecutionSlots:
             FreeVarsSlots: None
-            CellVarsSlots: var, 
+            CellVarsSlots: var
           FunctionRootNode SourceSection: [0,112]`def outer():â†µ    var...`
             Name: outer
             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
             CelVars: var
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [var, toInternal, <return_val>]
+            FrameDescriptor: 3 slots [<return_val>, toInternal, var]
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: var, 
+              CellVarsSlots: var
             InnerRootNode SourceSection: [0,112]`def outer():â†µ    var...`
               ReturnTargetNode SourceSection: [0,112]`def outer():â†µ    var...`
                 Body: BlockNode SourceSection: None
@@ -33,21 +33,19 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                   FunctionBodyNode SourceSection: [17,110]`var = Noneâ†µ    def t...`
                     WriteLocalCellNodeGen SourceSection: [17,27]`var = None`
                       Identifier: var
-                      ReadLocalVariableNode SourceSection: None
+                      ReadLocalVariableNodeGen SourceSection: None
                         Frame: [0,var,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                       ObjectLiteralNode SourceSection: [23,27]`None`
                     WriteLocalVariableNodeGen SourceSection: [32,93]`def toInternal(obj):...`
                       Identifier: toInternal
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,toInternal,Illegal]
+                      Frame: [1,toInternal,Illegal]
                       FunctionDefinitionNode Name: toInternal SourceSection: None
                         Arguments: None
                         KwArguments: None
                         Documentation: None
-                        FreeVarSlots: var, 
+                        FreeVarSlots: var
                         ExecutionSlots:
-                          FreeVarsSlots: var, 
+                          FreeVarsSlots: var
                           CellVarsSlots: None
                         FunctionRootNode SourceSection: [32,93]`def toInternal(obj):...`
                           Name: toInternal
@@ -56,17 +54,16 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                           CelVars: None
                           FreeVars: var
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [obj, x, var, <return_val>]
+                          FrameDescriptor: 4 slots [<return_val>, obj, var, x]
                           ExecutionSlots:
-                            FreeVarsSlots: var, 
+                            FreeVarsSlots: var
                             CellVarsSlots: None
                           InnerRootNode SourceSection: [32,93]`def toInternal(obj):...`
                             ReturnTargetNode SourceSection: [32,93]`def toInternal(obj):...`
                               Body: BlockNode SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: obj
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [0,obj,Illegal]
+                                  Frame: [0,obj,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -75,24 +72,16 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                                     EmptyNode SourceSection: [61,73]`nonlocal var`
                                   WriteLocalVariableNodeGen SourceSection: [82,88]`x = 10`
                                     Identifier: x
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,x,Illegal]
+                                    Frame: [1,x,Illegal]
                                     IntegerLiteralNode SourceSection: [86,88]`10`
                                       Value: 10
-                              Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [3,<return_val>,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                              Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                Frame: [3,<return_val>,Object]
                     FrameReturnNode SourceSection: [93,110]`return toInternal`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
-                        ReadLocalVariableNode SourceSection: [100,110]`toInternal`
-                          Frame: [1,toInternal,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
-                  ReadVariableFromFrameNodeGen SourceSection: None
+                      ReadLocalVariableNodeGen SourceSection: [100,110]`toInternal`
+                        Frame: [1,toInternal,Illegal]
+                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [112,125]`fnc = outer()`
         Identifier: fnc
         PythonCallNodeGen SourceSection: [118,125]`outer()`
@@ -100,57 +89,48 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
           ReadNameNodeGen SourceSection: [118,123]`outer`
             Identifier: outer
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [126,142]`c = fnc.__code__`
         Identifier: c
-        GetAttributeNodeGen SourceSection: [130,142]`fnc.__code__`
+        GetAttributeNode SourceSection: [130,142]`fnc.__code__`
           GetFixedAttributeNodeGen SourceSection: None
             Key: __code__
-            CachedDispatchFirst SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __getattribute__
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [130,133]`fnc`
             Identifier: fnc
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [144,175]`print("free > ", c.c...`
         PythonCallBinary SourceSection: [144,175]`print("free > ", c.c...`
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [144,149]`print`
             Identifier: print
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [150,159]`"free > "`
-          GetAttributeNodeGen SourceSection: [161,174]`c.co_freevars`
+          GetAttributeNode SourceSection: [161,174]`c.co_freevars`
             GetFixedAttributeNodeGen SourceSection: None
               Key: co_freevars
-              CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
+              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [161,162]`c`
               Identifier: c
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       PythonCallBinary SourceSection: [176,207]`print("cell > ", c.c...`
         CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [176,181]`print`
           Identifier: print
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         StringLiteralNode SourceSection: [182,191]`"cell > "`
-        GetAttributeNodeGen SourceSection: [193,206]`c.co_cellvars`
+        GetAttributeNode SourceSection: [193,206]`c.co_cellvars`
           GetFixedAttributeNodeGen SourceSection: None
             Key: co_cellvars
-            CachedDispatchFirst SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __getattribute__
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
           ReadNameNodeGen SourceSection: [193,194]`c`
             Identifier: c
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None

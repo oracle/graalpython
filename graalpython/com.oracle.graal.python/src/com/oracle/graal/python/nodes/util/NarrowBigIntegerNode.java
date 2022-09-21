@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,12 +56,12 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
     public abstract Object execute(BigInteger x);
 
     @Specialization(guards = "x.signum() == 0")
-    Object narrowBigInteger0(@SuppressWarnings("unused") BigInteger x) {
+    static Object narrowBigInteger0(@SuppressWarnings("unused") BigInteger x) {
         return 0;
     }
 
     @Specialization(guards = "x.signum() != 0")
-    Object narrowBigInteger(BigInteger x,
+    static Object narrowBigInteger(BigInteger x,
                     @Cached ConditionProfile fitsIntProfile,
                     @Cached ConditionProfile fitsLongProfile,
                     @Cached PythonObjectFactory factory) {

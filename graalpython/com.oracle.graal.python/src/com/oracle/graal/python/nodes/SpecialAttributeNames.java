@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,43 +40,122 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 public abstract class SpecialAttributeNames {
-    public static final String __DOC__ = "__doc__";
-    public static final String __DEFAULTS__ = "__defaults__";
-    public static final String __CODE__ = "__code__";
-    public static final String __GLOBALS__ = "__globals__";
-    public static final String __CLASSCELL__ = "__classcell__";
-    public static final String __CLOSURE__ = "__closure__";
-    public static final String __ANNOTATIONS__ = "__annotations__";
-    public static final String __KWDEFAULTS__ = "__kwdefaults__";
-    public static final String __SELF__ = "__self__";
-    public static final String __FUNC__ = "__func__";
-    public static final String __MODULE__ = "__module__";
-    public static final String __DICT__ = "__dict__";
-    public static final String __CLASS__ = "__class__";
-    public static final String __BASE__ = "__base__";
-    public static final String __BASES__ = "__bases__";
-    public static final String __NAME__ = "__name__";
-    public static final String __QUALNAME__ = "__qualname__";
-    public static final String __MRO__ = "__mro__";
-    public static final String __MRO_ENTRIES__ = "__mro_entries__";
-    public static final String __LOADER__ = "__loader__";
-    public static final String __PACKAGE__ = "__package__";
-    public static final String __SPEC__ = "__spec__";
-    public static final String __PATH__ = "__path__";
-    public static final String __FILE__ = "__file__";
-    public static final String __CACHED__ = "__cached__";
-    public static final String __TEXT_SIGNATURE__ = "__text_signature__";
-    public static final String __TRACEBACK__ = "__traceback__";
-    public static final String __CAUSE__ = "__cause__";
-    public static final String __CONTEXT__ = "__context__";
-    public static final String __SUPPRESS_CONTEXT__ = "__suppress_context__";
-    public static final String __BASICSIZE__ = "__basicsize__";
-    public static final String __SLOTS__ = "__slots__";
-    public static final String __DICTOFFSET__ = "__dictoffset__";
-    public static final String __ITEMSIZE__ = "__itemsize__";
-    public static final String __WEAKREF__ = "__weakref__";
-    public static final String __WEAKLISTOFFSET__ = "__weaklistoffset__";
-    public static final String __ALL__ = "__all__";
-    public static final String __FLAGS__ = "__flags__";
+    public static final TruffleString T___ = tsLiteral("_");
+
+    public static final String J___DOC__ = "__doc__";
+    public static final TruffleString T___DOC__ = tsLiteral(J___DOC__);
+
+    public static final String J___DEFAULTS__ = "__defaults__";
+    public static final TruffleString T___DEFAULTS__ = tsLiteral(J___DEFAULTS__);
+
+    public static final String J___CODE__ = "__code__";
+    public static final TruffleString T___CODE__ = tsLiteral(J___CODE__);
+
+    public static final String J___GLOBALS__ = "__globals__";
+
+    public static final String J___CLASSCELL__ = "__classcell__";
+    public static final TruffleString T___CLASSCELL__ = tsLiteral(J___CLASSCELL__);
+
+    public static final String J___CLOSURE__ = "__closure__";
+
+    public static final String J___ANNOTATIONS__ = "__annotations__";
+    public static final TruffleString T___ANNOTATIONS__ = tsLiteral(J___ANNOTATIONS__);
+
+    public static final String J___KWDEFAULTS__ = "__kwdefaults__";
+
+    public static final String J___SELF__ = "__self__";
+
+    public static final String J___FUNC__ = "__func__";
+
+    public static final String J___MODULE__ = "__module__";
+    public static final TruffleString T___MODULE__ = tsLiteral(J___MODULE__);
+
+    public static final String J___DICT__ = "__dict__";
+    public static final TruffleString T___DICT__ = tsLiteral(J___DICT__);
+
+    public static final String J___CLASS__ = "__class__";
+    public static final TruffleString T___CLASS__ = tsLiteral(J___CLASS__);
+
+    public static final String J___BASE__ = "__base__";
+
+    public static final TruffleString T___NEWOBJ__ = tsLiteral("__newobj__");
+
+    public static final TruffleString T___NEWOBJ_EX__ = tsLiteral("__newobj_ex__");
+
+    public static final String J___BASES__ = "__bases__";
+    public static final TruffleString T___BASES__ = tsLiteral(J___BASES__);
+
+    public static final String J___NAME__ = "__name__";
+    public static final TruffleString T___NAME__ = tsLiteral(J___NAME__);
+
+    public static final String J___QUALNAME__ = "__qualname__";
+    public static final TruffleString T___QUALNAME__ = tsLiteral(J___QUALNAME__);
+
+    public static final String J___MRO__ = "__mro__";
+
+    public static final TruffleString T___MRO_ENTRIES__ = tsLiteral("__mro_entries__");
+
+    public static final TruffleString T___LOADER__ = tsLiteral("__loader__");
+
+    public static final TruffleString T___PACKAGE__ = tsLiteral("__package__");
+
+    public static final TruffleString T___SPEC__ = tsLiteral("__spec__");
+
+    public static final TruffleString T___PATH__ = tsLiteral("__path__");
+
+    public static final TruffleString T___FILE__ = tsLiteral("__file__");
+
+    public static final TruffleString T___ORIGNAME__ = tsLiteral("__origname__");
+
+    public static final TruffleString T___CACHED__ = tsLiteral("__cached__");
+
+    public static final String J___TEXT_SIGNATURE__ = "__text_signature__";
+    public static final TruffleString T___TEXT_SIGNATURE__ = tsLiteral(J___TEXT_SIGNATURE__);
+
+    public static final String J___TRACEBACK__ = "__traceback__";
+    public static final TruffleString T___TRACEBACK__ = tsLiteral(J___TRACEBACK__);
+
+    public static final String J___CAUSE__ = "__cause__";
+    public static final TruffleString T___CAUSE__ = tsLiteral(J___CAUSE__);
+
+    public static final String J___CONTEXT__ = "__context__";
+    public static final TruffleString T___CONTEXT__ = tsLiteral(J___CONTEXT__);
+
+    public static final String J___SUPPRESS_CONTEXT__ = "__suppress_context__";
+
+    public static final String J___BASICSIZE__ = "__basicsize__";
+    public static final TruffleString T___BASICSIZE__ = tsLiteral(J___BASICSIZE__);
+
+    public static final TruffleString T___SLOTS__ = tsLiteral("__slots__");
+
+    public static final TruffleString T___SLOTNAMES__ = tsLiteral("__slotnames__");
+
+    public static final String J___DICTOFFSET__ = "__dictoffset__";
+    public static final TruffleString T___DICTOFFSET__ = tsLiteral(J___DICTOFFSET__);
+
+    public static final String J___ITEMSIZE__ = "__itemsize__";
+    public static final TruffleString T___ITEMSIZE__ = tsLiteral(J___ITEMSIZE__);
+
+    public static final TruffleString T___WEAKREF__ = tsLiteral("__weakref__");
+
+    public static final TruffleString T___WEAKLISTOFFSET__ = tsLiteral("__weaklistoffset__");
+
+    public static final TruffleString T___ALL__ = tsLiteral("__all__");
+
+    public static final String J___FLAGS__ = "__flags__";
+    public static final TruffleString T___FLAGS__ = tsLiteral(J___FLAGS__);
+
+    public static final String J___ABSTRACTMETHODS__ = "__abstractmethods__";
+    public static final TruffleString T___ABSTRACTMETHODS__ = tsLiteral(J___ABSTRACTMETHODS__);
+
+    public static final TruffleString T___ORIG_BASES__ = tsLiteral("__orig_bases__");
+
+    // specific to super
+    public static final String J___THISCLASS__ = "__thisclass__";
+    public static final String J___SELF_CLASS__ = "__self_class__";
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -36,7 +36,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -91,8 +90,8 @@ public final class PTuple extends PSequence {
         this.store = store;
     }
 
-    @ExportMessage.Ignore
     @Override
+    @ExportMessage.Ignore
     public boolean equals(Object other) {
         CompilerAsserts.neverPartOfCompilation();
         if (!(other instanceof PTuple)) {
@@ -109,21 +108,6 @@ public final class PTuple extends PSequence {
         return super.hashCode();
     }
 
-    public static PTuple require(Object value) {
-        if (value instanceof PTuple) {
-            return (PTuple) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PTuple required.");
-    }
-
-    public static PTuple expect(Object value) throws UnexpectedResultException {
-        if (value instanceof PTuple) {
-            return (PTuple) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
     public long getHash() {
         return hash;
     }
@@ -135,7 +119,7 @@ public final class PTuple extends PSequence {
     @SuppressWarnings({"static-method", "unused"})
     public static void setItem(int idx, Object value) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        PythonLanguage.getCore().raise(PythonBuiltinClassType.PTuple, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+        throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.PTuple, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
     }
 
     @ExportMessage

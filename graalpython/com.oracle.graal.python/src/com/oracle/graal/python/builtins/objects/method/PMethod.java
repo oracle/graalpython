@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,22 +25,17 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PMethod extends PythonBuiltinObject {
 
     final Object function;
@@ -67,12 +62,6 @@ public final class PMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isCallable() {
-        return true;
-    }
-
-    @ExportMessage
     boolean hasExecutableName(
                     @CachedLibrary("this.function") InteropLibrary lib) {
         return lib.hasExecutableName(function);
@@ -92,21 +81,5 @@ public final class PMethod extends PythonBuiltinObject {
     @ExportMessage
     protected boolean hasSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) {
         return lib.hasSourceLocation(function);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isHashable() {
-        return true;
-    }
-
-    @Ignore
-    public long hash() {
-        return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
-    }
-
-    @ExportMessage
-    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
-        return hash();
     }
 }

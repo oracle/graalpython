@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -53,7 +53,7 @@ public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithCon
 
     public abstract void execute();
 
-    @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption"})
+    @Specialization(guards = "isSingleContext()", assumptions = "nativeObjectsAllManagedAssumption")
     @TruffleBoundary
     static void doValid(
                     @Cached("nativeObjectsAllManagedAssumption()") Assumption nativeObjectsAllManagedAssumption) {
@@ -65,7 +65,7 @@ public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithCon
         // nothing to do
     }
 
-    static Assumption nativeObjectsAllManagedAssumption() {
-        return PythonLanguage.getContext().getNativeObjectsAllManagedAssumption();
+    Assumption nativeObjectsAllManagedAssumption() {
+        return PythonContext.get(this).getNativeObjectsAllManagedAssumption();
     }
 }

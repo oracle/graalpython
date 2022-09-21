@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,8 +81,8 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
                     @Cached CopyKeywordsNode copyKeywordsNode,
                     @SuppressWarnings("unused") @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
                     @Cached("len(lib, starargs)") int cachedLen) {
-        PKeyword[] keywords = new PKeyword[cachedLen];
-        copyKeywordsNode.executeWithoutState(starargs, keywords);
+        PKeyword[] keywords = PKeyword.create(cachedLen);
+        copyKeywordsNode.execute(starargs, keywords);
         return keywords;
     }
 
@@ -133,5 +133,13 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
 
     static int len(HashingStorageLibrary lib, PDict dict) {
         return lib.length(dict.getDictStorage());
+    }
+
+    public static ExpandKeywordStarargsNode create() {
+        return ExpandKeywordStarargsNodeGen.create();
+    }
+
+    public static ExpandKeywordStarargsNode getUncached() {
+        return ExpandKeywordStarargsNodeGen.getUncached();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,13 +47,13 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class IndexConversionNode extends IntConversionBaseNode {
@@ -61,22 +61,27 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
         super(defaultValue, useDefaultForNone);
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    @Specialization(guards = "!isHandledPNone(value)")
     int doOthers(VirtualFrame frame, Object value,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary indexLib) {
-        if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
+                    @Cached PyNumberAsSizeNode asSizeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+            throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
         }
-        Object result = lib.asIndexWithFrame(value, frame);
-        return indexLib.asSizeWithFrame(result, TypeError, frame);
+        return asSizeNode.executeExact(frame, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
     public static IndexConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return IndexConversionNodeGen.create(defaultValue, useDefaultForNone);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static IndexConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return IndexConversionNodeGen.create(0, false);
     }
 }

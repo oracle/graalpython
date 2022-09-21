@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,27 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.cell;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PCell extends PythonAbstractObject {
     private final Assumption effectivelyFinal;
     private Object ref;
 
     public PCell(Assumption effectivelyFinalAssumption) {
         this.effectivelyFinal = effectivelyFinalAssumption;
+    }
+
+    public static PCell[] toCellArray(Object[] closure) {
+        PCell[] cells = new PCell[closure.length];
+        PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
+        return cells;
     }
 
     public Object getRef() {
@@ -117,18 +115,5 @@ public final class PCell extends PythonAbstractObject {
     public int compareTo(Object o) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PCell;
-    }
-
-    @ExportMessage
-    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,78 +44,53 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @NodeChild(value = "rhs", type = ExpressionNode.class)
 public abstract class WriteNameNode extends StatementNode implements WriteNode, AccessNameNode {
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
-    protected WriteNameNode(String attributeId) {
+    protected WriteNameNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static WriteNameNode create(String attributeId, ExpressionNode rhs) {
+    public static WriteNameNode create(TruffleString attributeId, ExpressionNode rhs) {
         return WriteNameNodeGen.create(attributeId, rhs);
     }
 
-    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
+    public static WriteNameNode create(TruffleString attributeId) {
+        return WriteNameNodeGen.create(attributeId, null);
+    }
+
+    public abstract void execute(VirtualFrame frame, Object value);
+
+    @Specialization(guards = "!hasLocals(frame)")
+    protected static void writeGlobal(VirtualFrame frame, Object value,
+                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
+        setItem.executeObject(frame, value);
+    }
+
+    @Specialization(guards = "hasLocalsDict(frame)")
     protected void writeLocalsDict(VirtualFrame frame, Object value,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode setItem) {
+                    @Cached HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
         setItem.execute(frame, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "hasLocals(frame)")
     protected void writeLocal(VirtualFrame frame, Object value,
-                    @Cached("create()") SetItemNode setItem) {
+                    @Cached SetItemNode setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.executeWith(frame, frameLocals, attributeId, value);
     }
 
-    @Specialization(guards = "!hasLocals(frame)")
-    protected void writeGlobal(VirtualFrame frame, Object value,
-                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
-        setItem.executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, boolean value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, int value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, long value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, double value) {
-        executeWithValue(frame, value);
-    }
-
-    public void doWrite(VirtualFrame frame, Object value) {
-        executeWithValue(frame, value);
-    }
-
-    public abstract void executeWithValue(VirtualFrame frame, boolean value);
-
-    public abstract void executeWithValue(VirtualFrame frame, int value);
-
-    public abstract void executeWithValue(VirtualFrame frame, long value);
-
-    public abstract void executeWithValue(VirtualFrame frame, double value);
-
-    public abstract void executeWithValue(VirtualFrame frame, Object value);
-
-    public String getAttributeId() {
+    public final TruffleString getAttributeId() {
         return attributeId;
     }
 }

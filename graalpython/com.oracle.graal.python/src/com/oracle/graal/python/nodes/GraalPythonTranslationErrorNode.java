@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,10 +28,13 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.*;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public final class GraalPythonTranslationErrorNode extends ExpressionNode {
 
-    public static final String MESSAGE = "GraalPythonTranslationError";
+    public static final TruffleString T_MESSAGE = tsLiteral("GraalPythonTranslationError");
 
     private static GraalPythonTranslationErrorNode instance = new GraalPythonTranslationErrorNode();
 
@@ -44,7 +47,7 @@ public final class GraalPythonTranslationErrorNode extends ExpressionNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        return MESSAGE;
+        return T_MESSAGE;
     }
 
 }

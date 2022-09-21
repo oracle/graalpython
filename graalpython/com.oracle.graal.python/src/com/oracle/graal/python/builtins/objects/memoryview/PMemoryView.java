@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,23 +40,33 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
-// TODO interop lib
-@ExportLibrary(PythonObjectLibrary.class)
+// TODO interop library
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
 
@@ -67,10 +77,13 @@ public final class PMemoryView extends PythonBuiltinObject {
     public static final int FLAG_PIL = 0x010;
 
     private Object owner;
+    // The buffer object that the PythonBufferAccessLibrary API delegates to
+    private Object buffer;
+    private boolean shouldReleaseImmediately;
     private final int len;
     private final boolean readonly;
     private final int itemsize;
-    private final String formatString;
+    private final TruffleString formatString;
     private final BufferFormat format;
     private final int ndim;
     // We cannot easily add numbers to pointers in Java, so the actual pointer is bufPointer +
@@ -87,13 +100,15 @@ public final class PMemoryView extends PythonBuiltinObject {
     private BufferReference reference;
     private int flags;
 
-    // Cached hash value, required to compy with CPython's semantics
+    // Cached hash value, required to comply with CPython's semantics
     private int cachedHash = -1;
 
-    public PMemoryView(Object cls, Shape instanceShape, MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
-                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
+    public PMemoryView(Object cls, Shape instanceShape, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
+                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
+        PythonBufferAccessLibrary.assertIsBuffer(buffer);
+        this.buffer = buffer;
         this.owner = owner;
         this.len = len;
         this.readonly = readonly;
@@ -107,15 +122,9 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.strides = strides;
         this.suboffsets = suboffsets;
         this.flags = flags;
-        if (managedBuffer != null) {
-            createReference(references, managedBuffer);
+        if (bufferLifecycleManager != null) {
+            this.reference = BufferReference.createBufferReference(this, bufferLifecycleManager, context);
         }
-    }
-
-    @TruffleBoundary
-    private void createReference(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer) {
-        this.reference = new BufferReference(this, managedBuffer, references.queue);
-        references.set.add(this.reference);
     }
 
     // From CPython init_strides_from_shape
@@ -128,10 +137,15 @@ public final class PMemoryView extends PythonBuiltinObject {
         return strides;
     }
 
-    public ManagedBuffer getManagedBuffer() {
-        return (reference != null) ? reference.getManagedBuffer() : null;
+    public BufferLifecycleManager getLifecycleManager() {
+        return (reference != null) ? reference.getLifecycleManager() : null;
     }
 
+    public Object getBuffer() {
+        return buffer;
+    }
+
+    @Ignore
     public Object getOwner() {
         return owner;
     }
@@ -144,11 +158,13 @@ public final class PMemoryView extends PythonBuiltinObject {
         return readonly;
     }
 
+    @ExportMessage
     public int getItemSize() {
         return itemsize;
     }
 
-    public String getFormatString() {
+    @ExportMessage
+    public TruffleString getFormatString() {
         return formatString;
     }
 
@@ -185,11 +201,11 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     public boolean isCContiguous() {
-        return (flags & FLAG_C) != 0;
+        return (flags & (FLAG_C | FLAG_SCALAR)) != 0;
     }
 
     public boolean isFortranContiguous() {
-        return (flags & FLAG_FORTRAN) != 0;
+        return (flags & (FLAG_FORTRAN | FLAG_SCALAR)) != 0;
     }
 
     public int getFlags() {
@@ -218,10 +234,35 @@ public final class PMemoryView extends PythonBuiltinObject {
             reference.markReleased();
             reference = null;
         }
+        buffer = null;
         owner = null;
     }
 
-    public void checkReleased(PythonBuiltinBaseNode node) {
+    public void setShouldReleaseImmediately(boolean shouldReleaseImmediately) {
+        this.shouldReleaseImmediately = shouldReleaseImmediately;
+    }
+
+    void checkReleased(PRaiseNode raiseNode) {
+        if (isReleased()) {
+            throw raiseNode.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+        }
+    }
+
+    boolean checkShouldReleaseBuffer() {
+        if (getReference() != null) {
+            return getReference().getLifecycleManager().decrementExports() == 0;
+        }
+        return false;
+    }
+
+    void checkExports(PRaiseNode node) {
+        long exports = getExports().get();
+        if (exports > 0) {
+            throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
+        }
+    }
+
+    public void checkReleased(PNodeWithRaise node) {
         if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
@@ -234,12 +275,194 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
     int getBufferLength() {
         return getLength();
     }
 
     @ExportMessage
-    byte[] getBufferBytes(@Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
-        return toJavaBytesNode.execute(this);
+    Object acquire(int requestedFlags,
+                    @Cached PRaiseNode raiseNode) {
+        checkReleased(raiseNode);
+        if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_WRITABLE);
+        }
+        if (BufferFlags.requestsCContiguous(requestedFlags) && !isCContiguous()) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
+        }
+        if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_FORTRAN_CONTIGUOUS);
+        }
+        if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isCContiguous() && !isFortranContiguous()) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_CONTIGUOUS);
+        }
+        if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_REQUIRES_SUBOFFSETS);
+        }
+        if (!BufferFlags.requestsStrides(requestedFlags) && !isCContiguous()) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_UNDERLYING_BUF_ISNT_C_CONTIGUOUS);
+        }
+        // TODO should reflect the cast to unsigned bytes if necessary
+        if (!BufferFlags.requestsShape(requestedFlags) && BufferFlags.requestsFormat(requestedFlags)) {
+            throw raiseNode.raise(BufferError, ErrorMessages.MV_CANNOT_CAST_UNSIGNED_BYTES_IF_FMT_FLAG);
+        }
+        exports.incrementAndGet();
+        return this;
+    }
+
+    @ExportMessage
+    void release(
+                    @Cached PRaiseNode raiseNode,
+                    @Cached ReleaseBufferNode releaseNode) {
+        /*
+         * This is a bit hacky - the shouldReleaseImmediately marker is used when this is a helper
+         * memoryview that was created to hold a buffer for native object. In the future there
+         * should be no such helper memoryviews, the C buffer should have a separate implementation.
+         */
+        if (shouldReleaseImmediately) {
+            checkExports(raiseNode);
+            if (checkShouldReleaseBuffer()) {
+                releaseNode.execute(getLifecycleManager());
+            }
+            setReleased();
+        } else {
+            long l = exports.decrementAndGet();
+            assert l >= 0;
+        }
+    }
+
+    @ExportMessage
+    boolean isReadonly() {
+        return readonly;
+    }
+
+    @ExportMessage
+    boolean hasInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        // Allow direct access only when we have no offset
+        return offset == 0 && bufferLib.hasInternalByteArray(buffer);
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert hasInternalByteArray(bufferLib);
+        return bufferLib.getInternalByteArray(buffer);
+    }
+
+    @ExportMessage
+    void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        bufferLib.readIntoByteArray(buffer, offset + srcOffset, dest, destOffset, length);
+    }
+
+    @ExportMessage
+    void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        bufferLib.writeFromByteArray(buffer, offset + destOffset, src, srcOffset, length);
+    }
+
+    @ExportMessage
+    void readIntoBuffer(int srcOffset, Object dest, int destOffset, int length, PythonBufferAccessLibrary otherLib,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        bufferLib.readIntoBuffer(buffer, offset + srcOffset, dest, destOffset, length, otherLib);
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readByte(buffer, byteOffset);
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeByte(buffer, offset + byteOffset, value);
+    }
+
+    @ExportMessage
+    short readShort(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readShort(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeShort(int byteOffset, short value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeShort(buffer, offset + byteOffset, value);
+    }
+
+    @ExportMessage
+    int readInt(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readInt(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeInt(int byteOffset, int value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeInt(buffer, offset + byteOffset, value);
+    }
+
+    @ExportMessage
+    long readLong(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readLong(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeLong(int byteOffset, long value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeLong(buffer, offset + byteOffset, value);
+    }
+
+    @ExportMessage
+    float readFloat(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readFloat(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeFloat(int byteOffset, float value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert !readonly;
+        bufferLib.writeFloat(buffer, offset + byteOffset, value);
+    }
+
+    @ExportMessage
+    double readDouble(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readDouble(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeDouble(int byteOffset, double value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeDouble(buffer, offset + byteOffset, value);
     }
 }

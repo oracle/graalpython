@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,20 +40,19 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
-    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization
     static Object doGeneric(VirtualFrame frame, Object value,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        return lib.getIteratorWithState(value, PArguments.getThreadState(frame));
+                    @Cached PyObjectGetIter getIter) {
+        return getIter.execute(frame, value);
     }
 
     public static GetIteratorExpressionNode create(ExpressionNode collection) {

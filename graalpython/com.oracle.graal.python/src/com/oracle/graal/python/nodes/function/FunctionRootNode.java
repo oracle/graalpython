@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,27 +29,19 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -57,13 +49,12 @@ import com.oracle.truffle.api.source.SourceSection;
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
 public class FunctionRootNode extends PClosureFunctionRootNode {
-    @CompilationFinal private BranchProfile asyncProfile;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
+    private final ExpressionNode doc;
 
     @Child private ExpressionNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -72,7 +63,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     private boolean isPythonInternal;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor,
-                    ExpressionNode uninitializedBody, ExecutionCellSlots executionCellSlots, Signature signature) {
+                    ExpressionNode uninitializedBody, ExecutionCellSlots executionCellSlots, Signature signature, ExpressionNode doc) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.executionCellSlots = executionCellSlots;
 
@@ -85,13 +76,14 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.uninitializedBody = uninitializedBody;
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
         this.isPythonInternal = isRewritten;
+        this.doc = doc;
     }
 
     /**
      * Creates a shallow copy.
      */
     private FunctionRootNode(FunctionRootNode other) {
-        super(PythonLanguage.getCurrent(), other.getFrameDescriptor(), other.executionCellSlots, other.getSignature());
+        super(PythonLanguage.get(other), other.getFrameDescriptor(), other.executionCellSlots, other.getSignature());
         this.executionCellSlots = other.executionCellSlots;
 
         this.sourceSection = other.getSourceSection();
@@ -100,6 +92,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.generatorFrameProfile = other.isGenerator ? ValueProfile.createClassProfile() : null;
         this.isPythonInternal = other.isPythonInternal;
         this.uninitializedBody = other.uninitializedBody;
+        this.doc = other.doc;
     }
 
     @Override
@@ -109,8 +102,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isPythonInternal, getFrameDescriptor(), uninitializedBody, executionCellSlots,
-                        getSignature());
+        return new FunctionRootNode(PythonLanguage.get(this), getSourceSection(), functionName, isGenerator, isPythonInternal, getFrameDescriptor(), uninitializedBody, executionCellSlots,
+                        getSignature(), doc);
     }
 
     /**
@@ -120,12 +113,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public FunctionRootNode rewriteWithNewSignature(Signature newSignature, NodeVisitor nodeVisitor, Function<ExpressionNode, ExpressionNode> bodyFun) {
         ExpressionNode newUninitializedBody = bodyFun.apply(NodeUtil.cloneNode(uninitializedBody));
         newUninitializedBody.accept(nodeVisitor);
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
-                        newSignature);
-    }
-
-    public boolean isLambda() {
-        return functionName.equals(BuiltinNames.LAMBDA_NAME);
+        return new FunctionRootNode(PythonLanguage.get(this), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
+                        newSignature, doc);
     }
 
     @Override
@@ -133,7 +122,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         return functionName;
     }
 
-    public FrameSlot[] getCellVarSlots() {
+    public int[] getCellVarSlots() {
         return cellVarSlots;
     }
 
@@ -145,12 +134,12 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @ExplodeLoop
     private void initializeCellVars(Frame frame) {
         for (int i = 0; i < cellVarSlots.length; i++) {
-            FrameSlot frameSlot = cellVarSlots[i];
+            int frameSlot = cellVarSlots[i];
 
             // get the cell
             PCell cell = null;
             if (isGenerator) {
-                cell = (PCell) FrameUtil.getObjectSafe(frame, frameSlot);
+                cell = (PCell) frame.getObject(frameSlot);
             }
             if (cell == null) {
                 cell = new PCell(cellEffectivelyFinalAssumptions[i]);
@@ -174,14 +163,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
-        if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asyncProfile = BranchProfile.create();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            contextRef.get().triggerAsyncActions(frame, asyncProfile);
-        }
         try {
             return body.execute(frame);
         } finally {
@@ -221,6 +202,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     public ExecutionCellSlots getExecutionCellSlots() {
         return executionCellSlots;
+    }
+
+    public ExpressionNode getDoc() {
+        return doc;
     }
 
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,3 +51,58 @@ def test_return_noval():
 
     assert method(10) is None
     assert method("value") is None
+
+def test_return_in_finally():
+    def override_explicit():
+        try:
+            return 0
+        finally:
+            return 42
+
+    def override_implicit():
+        try:
+            pass
+        finally:
+            return 'correct'
+
+    assert override_explicit() == 42
+    assert override_implicit() == 'correct'
+
+def test_return_in_try():
+    def basic(arg):
+        try:
+            if arg:
+                raise ValueError()
+            return 1 # can be 'terminating'
+        except ValueError as e:
+            return 2 # can be 'terminating'
+
+    assert basic(True) == 2
+    assert basic(False) == 1
+
+    def with_orelse(arg):
+        try:
+            if arg:
+                return 'try'
+        except:
+            pass
+        else:
+            return 'else'
+
+    assert with_orelse(True) == 'try'
+    assert with_orelse(False) == 'else'
+
+
+def test_return_in_try_finally():
+    def foo(arg):
+        try:
+            if arg:
+                raise ValueError()
+            return 'try'
+        except ValueError as e:
+            return 'except'
+        finally:
+            return 'finally'
+
+    assert foo(True) == 'finally'
+    assert foo(False) == 'finally'

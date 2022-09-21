@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,10 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PSemLock extends AbstractPythonLock {
     public static final int RECURSIVE_MUTEX = 0;
@@ -52,12 +55,12 @@ public final class PSemLock extends AbstractPythonLock {
 
     private final Semaphore semaphore;
     private final int kind;
-    private final String name;
+    private final TruffleString name;
 
-    private int lastThreadID = -1;
+    private long lastThreadID = -1;
     private int count;
 
-    public PSemLock(Object cls, Shape instanceShape, String name, int kind, Semaphore sharedSemaphore) {
+    public PSemLock(Object cls, Shape instanceShape, TruffleString name, int kind, Semaphore sharedSemaphore) {
         super(cls, instanceShape);
         this.name = name;
         this.semaphore = sharedSemaphore;
@@ -67,36 +70,46 @@ public final class PSemLock extends AbstractPythonLock {
     @Override
     @TruffleBoundary
     protected boolean acquireNonBlocking() {
-        return semaphore.tryAcquire();
+        boolean ret = semaphore.tryAcquire();
+        if (ret) {
+            lastThreadID = Thread.currentThread().getId();
+            count++;
+        }
+        return ret;
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireBlocking() {
-        try {
-            semaphore.acquire();
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
+    protected boolean acquireBlocking(Node node) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> {
+            s.acquire();
+            b[0] = true;
+        }, semaphore);
+        if (b[0]) {
+            lastThreadID = Thread.currentThread().getId();
+            count++;
         }
+        return b[0];
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireTimeout(long timeout) {
-        try {
-            return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
+    protected boolean acquireTimeout(Node node, long timeout) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> b[0] = s.tryAcquire(timeout, TimeUnit.MILLISECONDS), semaphore);
+        if (b[0]) {
+            lastThreadID = Thread.currentThread().getId();
+            count++;
         }
+        return b[0];
     }
 
     @Override
     @TruffleBoundary
     public void release() {
         semaphore.release();
+        count--;
     }
 
     @Override
@@ -116,6 +129,7 @@ public final class PSemLock extends AbstractPythonLock {
 
     public void increaseCount() {
         count++;
+        lastThreadID = Thread.currentThread().getId();
     }
 
     public void decreaseCount() {
@@ -127,11 +141,15 @@ public final class PSemLock extends AbstractPythonLock {
         return count > 0 && lastThreadID == Thread.currentThread().getId();
     }
 
+    public boolean isZero() {
+        return semaphore.availablePermits() == 0;
+    }
+
     public int getKind() {
         return kind;
     }
 
-    public String getName() {
+    public TruffleString getName() {
         return name;
     }
 }

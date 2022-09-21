@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -74,16 +74,12 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
         return executeInternal(frame, cls);
     }
 
-    public final PTuple execute(Object cls) {
-        return executeInternal(null, cls);
-    }
-
     @Specialization(guards = "!isUncached()")
-    PTuple getBasesCached(VirtualFrame frame, Object cls,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode,
+    static PTuple getBasesCached(VirtualFrame frame, Object cls,
+                    @Cached("create(GetAttribute)") LookupAndCallBinaryNode getAttributeNode,
                     @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
         try {
-            Object bases = getAttributeNode.executeObject(frame, cls, __BASES__);
+            Object bases = getAttributeNode.executeObject(frame, cls, T___BASES__);
             if (bases instanceof PTuple) {
                 return (PTuple) bases;
             }
@@ -94,13 +90,13 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "getBasesCached")
-    PTuple getBasesUncached(VirtualFrame frame, Object cls,
+    static PTuple getBasesUncached(VirtualFrame frame, Object cls,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Cached CallNode callGetattributeNode,
                     @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
-        Object getattr = lookupGetattributeNode.execute(cls, __GETATTRIBUTE__);
+        Object getattr = lookupGetattributeNode.execute(cls, T___GETATTRIBUTE__);
         try {
-            Object bases = callGetattributeNode.execute(frame, getattr, cls, __BASES__);
+            Object bases = callGetattributeNode.execute(frame, getattr, cls, T___BASES__);
             if (bases instanceof PTuple) {
                 return (PTuple) bases;
             }

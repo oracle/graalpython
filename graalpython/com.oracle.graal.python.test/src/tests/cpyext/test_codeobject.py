@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,6 +62,17 @@ class TestCodeobject(CPyExtTestCase):
 
     testmod = type(sys)("foo")
 
+    test_PyCode_NewEmpty = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            ("file.c", "myfunc", 54),
+        ),
+        resultspec="O",
+        argspec="ssi",
+        arguments=["char* filename", "char* funcname", "int firstlineno"],
+        cmpfunc=lambda cr, pr: pr[0] == cr.co_filename and pr[1] == cr.co_name and pr[2] == cr.co_firstlineno,
+    )
+
     test_PyCode_New = CPyExtFunction(
         lambda args: args,
         lambda: (
@@ -78,6 +89,31 @@ class TestCodeobject(CPyExtTestCase):
         argspec="iiiiiOOOOOOOOiO",
         arguments=[
             "int argcount", "int kwonlyargcount",
+            "int nlocals", "int stacksize", "int flags",
+            "PyObject* code", "PyObject* consts", "PyObject* names",
+            "PyObject* varnames", "PyObject* freevars", "PyObject* cellvars",
+            "PyObject* filename", "PyObject* name", "int firstlineno",
+            "PyObject* lnotab",
+        ],
+        cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
+    )
+    
+    test_PyCode_NewWithPosOnlyArgs = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            (
+                1, 0, 2,
+                3, 4, 0,
+                b"", tuple(), tuple(),
+                ("a", "b", "c"), tuple(), tuple(),
+                "filename", "name", 1,
+                b"",
+            ),
+        ),
+        resultspec="O",
+        argspec="iiiiiiOOOOOOOOiO",
+        arguments=[
+            "int argcount", "int posonlyargcount", "int kwonlyargcount",
             "int nlocals", "int stacksize", "int flags",
             "PyObject* code", "PyObject* consts", "PyObject* names",
             "PyObject* varnames", "PyObject* freevars", "PyObject* cellvars",

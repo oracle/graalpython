@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -365,5 +365,8 @@ def _main(width=400, height=400):
     s.addObject(Halfspace(Point(0,0,0), Vector.UP), CheckerboardSurface())
     s.render(c)
 
-def __benchmark__():
-    _main()
+def __benchmark__(*args):
+    _main(*args)
+
+def java_embedded_bench_entrypoint(width=400, height=400):
+    _main(int(width), int(height))

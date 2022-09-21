@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.referencetype;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALLBACK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.objectHashCode;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALLBACK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -56,24 +57,28 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReferenceType)
 public class ReferenceTypeBuiltins extends PythonBuiltins {
@@ -82,7 +87,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         return ReferenceTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -93,7 +98,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__callback__
-    @Builtin(name = __CALLBACK__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___CALLBACK__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallbackPropertyNode extends PythonBuiltinNode {
         @Specialization
@@ -103,7 +108,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__call__()
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallNode extends PythonBuiltinNode {
         @Specialization
@@ -113,7 +118,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__hash__
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeHashNode extends PythonUnaryBuiltinNode {
         static long HASH_UNSET = -1;
@@ -125,13 +130,11 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         long computeHash(VirtualFrame frame, PReferenceType self,
-                        @Cached("createBinaryProfile()") ConditionProfile referentProfile,
-                        // n.b.: we cannot directly specialize on lib.getObject() here, because it
-                        // might go away in the meantime!
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached ConditionProfile referentProfile,
+                        @Cached PyObjectHashNode hashNode) {
             Object referent = self.getObject();
             if (referentProfile.profile(referent != null)) {
-                long hash = lib.hashWithFrame(referent, frame);
+                long hash = hashNode.execute(frame, referent);
                 self.setHash(hash);
                 return hash;
             } else {
@@ -146,44 +149,47 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__repr__
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class RefTypeReprNode extends PythonBuiltinNode {
+    abstract static class RefTypeReprNode extends PythonBuiltinNode {
         @Specialization(guards = "self.getObject() == null")
-        @TruffleBoundary
-        public String repr(PReferenceType self) {
-            return String.format("<weakref at %s; dead>", self.hashCode());
+        static TruffleString repr(PReferenceType self,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<weakref at %d; dead>", objectHashCode(self));
         }
 
         @Specialization(guards = "self.getObject() != null")
-        public String repr(VirtualFrame frame, PReferenceType self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached TypeNodes.GetNameNode getNameNode) {
+        static TruffleString repr(VirtualFrame frame, PReferenceType self,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.GetNameNode getNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             Object object = self.getObject();
-            Object cls = lib.getLazyPythonClass(object);
-            Object className = getNameNode.execute(cls);
-            Object name = lib.lookupAttribute(object, frame, __NAME__);
-            return doFormat(self, object, className, name);
+            Object cls = getClassNode.execute(object);
+            TruffleString className = getNameNode.execute(cls);
+            Object name = lookup.execute(frame, object, T___NAME__);
+            if (name == PNone.NO_VALUE) {
+                return simpleTruffleStringFormatNode.format("<weakref at %d; to '%s' at %d>", objectHashCode(self), className, objectHashCode(object));
+            } else {
+                return simpleTruffleStringFormatNode.format("<weakref at %d; to '%s' at %d (%s)>", objectHashCode(self), className, objectHashCode(object), toStr(name));
+            }
         }
 
         @TruffleBoundary
-        private static String doFormat(PReferenceType self, Object object, Object className, Object name) {
-            if (name == PNone.NO_VALUE) {
-                return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), className, object.hashCode());
-            } else {
-                return String.format("<weakref at %s; to '%s' at %s (%s)>", self.hashCode(), className, object.hashCode(), name);
-            }
+        private static String toStr(Object o) {
+            // TODO GR-37980
+            return o.toString();
         }
     }
 
     // ref.__eq__
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
         Object eq(VirtualFrame frame, PReferenceType self, PReferenceType other,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return eqNode.executeWith(frame, self.getObject(), other.getObject());
+                        @Cached BinaryComparisonNode.EqNode eqNode) {
+            return eqNode.executeObject(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
@@ -193,13 +199,13 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__ne__
-    @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeNeNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
         Object ne(VirtualFrame frame, PReferenceType self, PReferenceType other,
-                        @Cached("create(__NE__, __NE__, __NE__)") BinaryComparisonNode neNode) {
-            return neNode.executeWith(frame, self.getObject(), other.getObject());
+                        @Cached BinaryComparisonNode.NeNode neNode) {
+            return neNode.executeObject(frame, self.getObject(), other.getObject());
         }
 
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")

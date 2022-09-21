@@ -1,0 +1,14 @@
+Module[0, 33]
+    FunctionDef[0, 33]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        Call[10, 33]
+            Target: 
+                Attribute[10, 14] 
+                    Receiver: RAW[10, 14] Value: "in"
+                    Attr: format
+            KWArgs:
+                KeywordTy[22, 32]
+                    name: RAW[27, 32] Value: "Baf"
+        ---- End of fn function ----

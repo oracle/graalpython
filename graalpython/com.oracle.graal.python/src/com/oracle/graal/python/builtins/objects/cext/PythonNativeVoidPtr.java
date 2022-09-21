@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,21 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Represents the value of a native pointer as Python int.<br/>
@@ -63,19 +54,18 @@ import com.oracle.truffle.api.library.ExportMessage;
  * representation of a pointer, we would need to send a to-native message. However, we try to avoid
  * this eager transformation using this wrapper.
  */
-@ExportLibrary(PythonObjectLibrary.class)
 public class PythonNativeVoidPtr extends PythonAbstractObject {
-    private final TruffleObject object;
+    private final Object object;
     private final long nativePointerValue;
     private final boolean hasNativePointer;
 
-    public PythonNativeVoidPtr(TruffleObject object) {
+    public PythonNativeVoidPtr(Object object) {
         this.object = object;
         this.nativePointerValue = 0;
         this.hasNativePointer = false;
     }
 
-    public PythonNativeVoidPtr(TruffleObject object, long nativePointerValue) {
+    public PythonNativeVoidPtr(Object object, long nativePointerValue) {
         this.object = object;
         this.nativePointerValue = nativePointerValue;
         this.hasNativePointer = true;
@@ -99,38 +89,8 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     }
 
     @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PInt;
-    }
-
-    @ExportMessage
-    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
-    }
-
-    @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("PythonNativeVoidPtr(%s)", object);
-    }
-
-    @ExportMessage(limit = "2")
-    long hashWithState(@SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("this.getPointerObject()") InteropLibrary lib) {
-        if (lib.hasIdentity(object)) {
-            try {
-                return lib.identityHashCode(object);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        return hashCodeBoundary(object);
-    }
-
-    @TruffleBoundary
-    private static long hashCodeBoundary(Object object) {
-        return object.hashCode();
+        return PythonUtils.formatJString("PythonNativeVoidPtr(%s)", object);
     }
 }

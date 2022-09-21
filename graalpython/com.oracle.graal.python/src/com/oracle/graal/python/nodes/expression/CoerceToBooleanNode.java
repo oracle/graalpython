@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,21 +25,19 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateWrapper
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
-    @Child protected IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
@@ -67,71 +65,71 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
-    @ReportPolymorphism
     public abstract static class YesNode extends CoerceToBooleanNode {
         @Specialization
-        boolean doBoolean(boolean operand) {
+        static boolean doBoolean(boolean operand) {
             return operand;
         }
 
         @Specialization
-        boolean doInteger(int operand) {
+        static boolean doInteger(int operand) {
             return operand != 0;
         }
 
         @Specialization
-        boolean doLong(long operand) {
+        static boolean doLong(long operand) {
             return operand != 0L;
         }
 
         @Specialization
-        boolean doDouble(double operand) {
+        static boolean doDouble(double operand) {
             return operand != 0;
         }
 
         @Specialization
-        boolean doString(String operand) {
-            return operand.length() != 0;
+        static boolean doString(TruffleString operand) {
+            return !operand.isEmpty();
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean doObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.isTrueWithState(object, PArguments.getThreadState(frame));
+        @Megamorphic
+        @Specialization
+        static boolean doObject(VirtualFrame frame, Object object,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return isTrue.execute(frame, object);
         }
     }
 
-    @ReportPolymorphism
     public abstract static class NotNode extends CoerceToBooleanNode {
         @Specialization
-        boolean doBool(boolean operand) {
+        static boolean doBool(boolean operand) {
             return !operand;
         }
 
         @Specialization
-        boolean doInteger(int operand) {
+        static boolean doInteger(int operand) {
             return operand == 0;
         }
 
         @Specialization
-        boolean doLong(long operand) {
+        static boolean doLong(long operand) {
             return operand == 0L;
         }
 
         @Specialization
-        boolean doDouble(double operand) {
+        static boolean doDouble(double operand) {
             return operand == 0;
         }
 
         @Specialization
-        boolean doString(String operand) {
-            return operand.length() == 0;
+        static boolean doString(TruffleString operand) {
+            return operand.isEmpty();
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean doObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return !lib.isTrueWithState(object, PArguments.getThreadState(frame));
+        @Megamorphic
+        @Specialization
+        static boolean doObject(VirtualFrame frame, Object object,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return !isTrue.execute(frame, object);
         }
     }
 }

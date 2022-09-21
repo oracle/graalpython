@@ -2716,7 +2716,7 @@ SUCH DAMAGE.
 
 ================================================================================
 
-ICU4J 66.1
+ICU4J 69.1
 
 COPYRIGHT AND PERMISSION NOTICE (ICU 58 and later)
 
@@ -3004,9 +3004,9 @@ property of their respective owners.
  #  Copyright (c) 2013 International Business Machines Corporation
  #  and others. All Rights Reserved.
  #
- # Project: http://code.google.com/p/lao-dictionary/
- # Dictionary: http://lao-dictionary.googlecode.com/git/Lao-Dictionary.txt
- # License: http://lao-dictionary.googlecode.com/git/Lao-Dictionary-LICENSE.txt
+ # Project: https://github.com/veer66/lao-dictionary
+ # Dictionary: https://github.com/veer66/lao-dictionary/blob/master/Lao-Dictionary.txt
+ # License: https://github.com/veer66/lao-dictionary/blob/master/Lao-Dictionary-LICENSE.txt
  #              (copied below)
  #
  #  This file is derived from the above dictionary, with slight
@@ -3200,3 +3200,177 @@ AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+XY (liblzma)
+
+https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING  
+   1 
+   2 XZ Utils Licensing
+   3 ==================
+   4 
+   5     Different licenses apply to different files in this package. Here
+   6     is a rough summary of which licenses apply to which parts of this
+   7     package (but check the individual files to be sure!):
+   8 
+   9       - liblzma is in the public domain.
+  10 
+  11       - xz, xzdec, and lzmadec command line tools are in the public
+  12         domain unless GNU getopt_long had to be compiled and linked
+  13         in from the lib directory. The getopt_long code is under
+  14         GNU LGPLv2.1+.
+  15 
+  16       - The scripts to grep, diff, and view compressed files have been
+  17         adapted from gzip. These scripts and their documentation are
+  18         under GNU GPLv2+.
+  19 
+  20       - All the documentation in the doc directory and most of the
+  21         XZ Utils specific documentation files in other directories
+  22         are in the public domain.
+  23 
+  24       - Translated messages are in the public domain.
+  25 
+  26       - The build system contains public domain files, and files that
+  27         are under GNU GPLv2+ or GNU GPLv3+. None of these files end up
+  28         in the binaries being built.
+  29 
+  30       - Test files and test code in the tests directory, and debugging
+  31         utilities in the debug directory are in the public domain.
+  32 
+  33       - The extra directory may contain public domain files, and files
+  34         that are under various free software licenses.
+  35 
+  36     You can do whatever you want with the files that have been put into
+  37     the public domain. If you find public domain legally problematic,
+  38     take the previous sentence as a license grant. If you still find
+  39     the lack of copyright legally problematic, you have too many
+  40     lawyers.
+  41 
+  42     As usual, this software is provided "as is", without any warranty.
+  43 
+  44     If you copy significant amounts of public domain code from XZ Utils
+  45     into your project, acknowledging this somewhere in your software is
+  46     polite (especially if it is proprietary, non-free software), but
+  47     naturally it is not legally required. Here is an example of a good
+  48     notice to put into "about box" or into documentation:
+  49 
+  50         This software includes code from XZ Utils <https://tukaani.org/xz/>.
+  51 
+  52     The following license texts are included in the following files:
+  53       - COPYING.LGPLv2.1: GNU Lesser General Public License version 2.1
+  54       - COPYING.GPLv2: GNU General Public License version 2
+  55       - COPYING.GPLv3: GNU General Public License version 3
+  56 
+  57     Note that the toolchain (compiler, linker etc.) may add some code
+  58     pieces that are copyrighted. Thus, it is possible that e.g. liblzma
+  59     binary wouldn't actually be in the public domain in its entirety
+  60     even though it contains no copyrighted code from the XZ Utils source
+  61     package.
+  62 
+  63     If you have questions, don't hesitate to ask the author(s) for more
+  64     information.
+  65 
+
+ === AUTHORS file ===
+Authors of XZ Utils
+===================
+    XZ Utils is developed and maintained by Lasse Collin
+    <lasse.collin@tukaani.org>.
+    Major parts of liblzma are based on code written by Igor Pavlov,
+    specifically the LZMA SDK <http://7-zip.org/sdk.html>. Without
+    this code, XZ Utils wouldn't exist.
+    The SHA-256 implementation in liblzma is based on the code found from
+    7-Zip <http://7-zip.org/>, which has a modified version of the SHA-256
+    code found from Crypto++ <http://www.cryptopp.com/>. The SHA-256 code
+    in Crypto++ was written by Kevin Springle and Wei Dai.
+    Some scripts have been adapted from gzip. The original versions
+    were written by Jean-loup Gailly, Charles Levert, and Paul Eggert.
+    Andrew Dudman helped adapting the scripts and their man pages for
+    XZ Utils.
+    The GNU Autotools-based build system contains files from many authors,
+    which I'm not trying to list here.
+    Several people have contributed fixes or reported bugs. Most of them
+    are mentioned in the file THANKS.
+
+======================================================
+Many source files in root have this
+###############################################################################
+#
+# Author: Lasse Collin
+#
+# This file has been put into the public domain.
+# You can do whatever you want with this file.
+#
+###############################################################################
+
+=== Files in liblzma have ====
+/**
+   2  * \file        api/lzma.h
+   3  * \brief       The public API of liblzma data compression library
+   4  *
+   5  * liblzma is a public domain general-purpose data compression library with
+   6  * a zlib-like API. The native file format is .xz, but also the old .lzma
+   7  * format and raw (no headers) streams are supported. Multiple compression
+   8  * algorithms (filters) are supported. Currently LZMA2 is the primary filter.
+   9  *
+  10  * liblzma is part of XZ Utils <http://tukaani.org/xz/>. XZ Utils includes
+  11  * a gzip-like command line tool named xz and some other tools. XZ Utils
+  12  * is developed and maintained by Lasse Collin.
+  13  *
+  14  * Major parts of liblzma are based on Igor Pavlov's public domain LZMA SDK
+  15  * <http://7-zip.org/sdk.html>.
+  16  *
+  17  * The SHA-256 implementation is based on the public domain code found from
+  18  * 7-Zip <http://7-zip.org/>, which has a modified version of the public
+  19  * domain SHA-256 code found from Crypto++ <http://www.cryptopp.com/>.
+  20  * The SHA-256 code in Crypto++ was written by Kevin Springle and Wei Dai.
+  21  */
+  22 
+  23 /*
+  24  * Author: Lasse Collin
+  25  *
+  26  * This file has been put into the public domain.
+  27  * You can do whatever you want with this file.
+  28  */
+  29 
+  =======
+  
+  //  Authors:    Igor Pavlov
+   7 //              Lasse Collin
+   8 //
+   9 //  This file has been put into the public domain.
+  10 //  You can do whatever you want with this file.
+  
+  === lzmainfo, xz, xzdec sources ===
+   1 ///////////////////////////////////////////////////////////////////////////////
+   2 //
+   3 /// \file       lzmainfo.c
+   4 /// \brief      lzmainfo tool for compatibility with LZMA Utils
+   5 //
+   6 //  Author:     Lasse Collin
+   7 //
+   8 //  This file has been put into the public domain.
+   9 //  You can do whatever you want with this file.
+  10 //
+  11 ///////////////////////////////////////////////////////////////////////////////
+  12 
+  
+==== common sources =====
+     //  Authors:    Lasse Collin
+  38 //              Joachim Henke
+  39 //
+  40 //  This file has been put into the public domain.
+  41 //  You can do whatever you want with this file.
+  42 //
+  43 ///////////////////////////////////////////////////////////////////////////////
+==== scripts sources ====
+   2 .\" Authors: Andrew Dudman
+   3 .\"          Lasse Collin
+   4 .\"
+   5 .\" This file has been put into the public domain.
+   6 .\" You can do whatever you want with this file.
+   7 .\"
+   8 .\" (Note that this file is not based on gzip's zless.1.)
+   =
+
+Oracle GraalPython uses only the "public domain" source files that belong to liblzma.

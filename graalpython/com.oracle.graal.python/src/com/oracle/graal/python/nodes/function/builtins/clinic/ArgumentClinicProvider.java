@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,27 +43,50 @@ package com.oracle.graal.python.nodes.function.builtins.clinic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 
 public abstract class ArgumentClinicProvider {
+
     public static final ArgumentClinicProvider NOOP = new NoopArgumentClinic();
+
+    private final int acceptsBoolean;
+    private final int acceptsInt;
+    private final int acceptsLong;
+    private final int acceptsDouble;
+    private final int hasCastNode;
+
+    public ArgumentClinicProvider(int acceptsBoolean, int acceptsInt, int acceptsLong, int acceptsDouble, int hasCastNode) {
+        this.acceptsBoolean = acceptsBoolean;
+        this.acceptsInt = acceptsInt;
+        this.acceptsLong = acceptsLong;
+        this.acceptsDouble = acceptsDouble;
+        this.hasCastNode = hasCastNode;
+    }
 
     /**
      * The variants of the 'accept' method serve as a fast-path check, without allocating any extra
      * node, the result should be a compilation constant provided that argIndex is a compilation
      * constant.
      */
-    public boolean acceptsBoolean(@SuppressWarnings("unused") int argIndex) {
-        return false;
+    public final boolean acceptsBoolean(int argIndex) {
+        return (acceptsBoolean & (1 << argIndex)) != 0;
     }
 
-    public boolean acceptsInt(@SuppressWarnings("unused") int argIndex) {
-        return false;
+    public final boolean acceptsInt(int argIndex) {
+        return (acceptsInt & (1 << argIndex)) != 0;
     }
 
-    public boolean acceptsLong(@SuppressWarnings("unused") int argIndex) {
-        return false;
+    public final boolean acceptsLong(int argIndex) {
+        return (acceptsLong & (1 << argIndex)) != 0;
     }
 
-    public boolean acceptsDouble(@SuppressWarnings("unused") int argIndex) {
-        return false;
+    public final boolean acceptsDouble(int argIndex) {
+        return (acceptsDouble & (1 << argIndex)) != 0;
+    }
+
+    /**
+     * Fast-path check if given argument has a cast node associated with it. The result should be a
+     * compilation constant given that the argument is constant.
+     */
+    public final boolean hasCastNode(int argIndex) {
+        return (hasCastNode & (1 << argIndex)) != 0;
     }
 
     /**
@@ -74,33 +97,9 @@ public abstract class ArgumentClinicProvider {
         throw new IllegalStateException("createCastNode should not be called unless hasCastNode returns true");
     }
 
-    /**
-     * Fast-path check if given argument has a cast node associated with it. The result should be a
-     * compilation constant given that the argument is constant.
-     */
-    public boolean hasCastNode(@SuppressWarnings("unused") int argIndex) {
-        return false;
-    }
-
     private static final class NoopArgumentClinic extends ArgumentClinicProvider {
-        @Override
-        public boolean acceptsBoolean(@SuppressWarnings("unused") int argIndex) {
-            return true;
-        }
-
-        @Override
-        public boolean acceptsInt(@SuppressWarnings("unused") int argIndex) {
-            return true;
-        }
-
-        @Override
-        public boolean acceptsLong(@SuppressWarnings("unused") int argIndex) {
-            return true;
-        }
-
-        @Override
-        public boolean acceptsDouble(@SuppressWarnings("unused") int argIndex) {
-            return true;
+        NoopArgumentClinic() {
+            super(0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0);
         }
     }
 }

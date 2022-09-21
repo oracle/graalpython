@@ -1,0 +1,3 @@
+Disassembly of <module>:
+  1:0   -   1:14        0 LOAD_CONST_COLLECTION             0    ([a, 1, None] type Object into tuple)
+  1:0   -   1:14        3 RETURN_VALUE

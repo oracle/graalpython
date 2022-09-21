@@ -15,15 +15,13 @@ ModuleRootNode Name: <module 'starExpr04'> SourceSection: [0,14]`*a, = range(5)`
             ReadNameNodeGen SourceSection: [6,11]`range`
               Identifier: range
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [12,13]`5`
               Value: 5
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
-            WriteLocalFrameSlotNodeGen SourceSection: None
-              Frame: [0,<>temp0,Illegal]
+            Frame: [0,<>temp0,Illegal]
           WriteNameNodeGen SourceSection: None
             Identifier: a
-            ReadLocalVariableNode SourceSection: None
+            ReadLocalVariableNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,257 +25,505 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.EqNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.GeNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.GtNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LeNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LtNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.NeNodeGen;
+import com.oracle.graal.python.nodes.object.IsNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
+@TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class BinaryComparisonNode extends BinaryOpNode {
 
-    protected final String magicMethod;
-    protected final String magicReverseMethod;
-    private final String operation;
-    protected final ConditionProfile profile = ConditionProfile.createBinaryProfile();
+    private abstract static class ErrorNode extends BinaryComparisonNode {
+        @Child private PRaiseNode raiseNode;
 
-    @Child private LookupAndCallBinaryNode callNode;
-    @Child private PRaiseNode raiseNode;
-    @Child private IsNode isNode;
-
-    BinaryComparisonNode(String magicMethod, String magicReverseMethod, String operation) {
-        this.magicMethod = magicMethod;
-        this.magicReverseMethod = magicReverseMethod;
-        this.operation = operation;
-        // see cpython://Objects/object.c#do_richcompare - CPython always calls the reverse method
-        this.callNode = LookupAndCallBinaryNode.create(magicMethod, magicReverseMethod, true, true);
-    }
-
-    public static BinaryComparisonNode create(String magicMethod, String magicReverseMethod, String operation, ExpressionNode left, ExpressionNode right) {
-        return BinaryComparisonNodeGen.create(magicMethod, magicReverseMethod, operation, left, right);
-    }
-
-    public static BinaryComparisonNode create(String magicMethod, String magicReverseMethod, String operation) {
-        return create(magicMethod, magicReverseMethod, operation, null, null);
-    }
-
-    public abstract boolean executeBool(VirtualFrame frame, Object left, Object right) throws UnexpectedResultException;
-
-    private boolean handleNotImplemented(Object left, Object right) {
-        // just like python, if no implementation is available, do something sensible for
-        // == and !=
-        if (magicMethod == __EQ__) {
-            return ensureIsNode().execute(left, right);
-        } else if (magicMethod == __NE__) {
-            return !ensureIsNode().execute(left, right);
-        } else {
+        protected final RuntimeException noSupported(Object left, Object right) {
             if (raiseNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
-            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, operation, left, right);
+            throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, operator(), left, right);
+        }
+
+        protected abstract String operator();
+
+        public abstract boolean cmp(TruffleString l, TruffleString r, TruffleString.CompareIntsUTF32Node compareIntsUTF32Node);
+    }
+
+    private abstract static class FallbackNode extends BinaryComparisonNode {
+        @Child private IsNode isNode;
+
+        protected final IsNode ensureIsNode() {
+            if (isNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isNode = insert(IsNode.create());
+            }
+            return isNode;
+        }
+
+        public abstract boolean cmp(TruffleString l, TruffleString r, TruffleString.EqualNode equalNode);
+    }
+
+    public abstract boolean cmp(int l, int r);
+
+    public abstract boolean cmp(long l, long r);
+
+    public abstract boolean cmp(char l, char r);
+
+    public abstract boolean cmp(byte l, byte r);
+
+    public abstract boolean cmp(double l, double r);
+
+    public abstract boolean executeBool(VirtualFrame frame, Object left, Object right) throws UnexpectedResultException;
+
+    public abstract static class LeNode extends ErrorNode {
+
+        @Specialization
+        @Override
+        public final boolean cmp(int l, int r) {
+            return l <= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(long l, long r) {
+            return l <= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(char l, char r) {
+            return l <= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(byte l, byte r) {
+            return l <= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(double l, double r) {
+            return l <= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) <= 0;
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l <= r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l <= r;
+        }
+
+        @Specialization
+        protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            Object result = callNode.executeObject(frame, left, right);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                throw noSupported(left, right);
+            }
+            return result;
+        }
+
+        protected static LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Le, SpecialMethodSlot.Ge, true, true);
+        }
+
+        @Override
+        protected final String operator() {
+            return "<=";
+        }
+
+        public static LeNode create() {
+            return LeNodeGen.create(null, null);
         }
     }
 
-    private static int asInt(boolean left) {
-        return left ? 1 : 0;
-    }
+    public abstract static class LtNode extends ErrorNode {
 
-    private static long asLong(boolean left) {
-        return left ? 1L : 0L;
-    }
+        @Specialization
+        @Override
+        public final boolean cmp(int l, int r) {
+            return l < r;
+        }
 
-    private static double asDouble(boolean left) {
-        return left ? 1.0 : 0.0;
-    }
+        @Specialization
+        @Override
+        public final boolean cmp(long l, long r) {
+            return l < r;
+        }
 
-    private boolean profileCondition(boolean value) {
-        return profile.profile(value);
-    }
+        @Specialization
+        @Override
+        public final boolean cmp(char l, char r) {
+            return l < r;
+        }
 
-    @Specialization
-    boolean doBB(VirtualFrame frame, boolean left, boolean right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(byte l, byte r) {
+            return l < r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(double l, double r) {
+            return l < r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) < 0;
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l < r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l < r;
+        }
+
+        @Specialization
+        protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            Object result = callNode.executeObject(frame, left, right);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                throw noSupported(left, right);
+            }
+            return result;
+        }
+
+        protected static LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Lt, SpecialMethodSlot.Gt, true, true);
+        }
+
+        @Override
+        protected String operator() {
+            return "<";
+        }
+
+        public static LtNode create() {
+            return LtNodeGen.create(null, null);
         }
     }
 
-    @Specialization
-    boolean doBI(VirtualFrame frame, boolean left, int right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, asInt(left), right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+    public abstract static class GeNode extends ErrorNode {
+
+        @Specialization
+        @Override
+        public final boolean cmp(int l, int r) {
+            return l >= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(long l, long r) {
+            return l >= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(char l, char r) {
+            return l >= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(byte l, byte r) {
+            return l >= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(double l, double r) {
+            return l >= r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) >= 0;
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l >= r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l >= r;
+        }
+
+        @Specialization
+        protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            Object result = callNode.executeObject(frame, left, right);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                throw noSupported(left, right);
+            }
+            return result;
+        }
+
+        protected static LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Ge, SpecialMethodSlot.Le, true, true);
+        }
+
+        @Override
+        protected String operator() {
+            return ">=";
+        }
+
+        public static GeNode create() {
+            return GeNodeGen.create(null, null);
         }
     }
 
-    @Specialization
-    boolean doBL(VirtualFrame frame, boolean left, long right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, asLong(left), right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+    public abstract static class GtNode extends ErrorNode {
+
+        @Specialization
+        @Override
+        public final boolean cmp(int l, int r) {
+            return l > r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(long l, long r) {
+            return l > r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(char l, char r) {
+            return l > r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(byte l, byte r) {
+            return l > r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(double l, double r) {
+            return l > r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.CompareIntsUTF32Node compareIntsUTF32Node) {
+            return StringUtils.compareStrings(l, r, compareIntsUTF32Node) > 0;
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l > r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l > r;
+        }
+
+        @Specialization
+        protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            Object result = callNode.executeObject(frame, left, right);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                throw noSupported(left, right);
+            }
+            return result;
+        }
+
+        protected static LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Gt, SpecialMethodSlot.Lt, true, true);
+        }
+
+        @Override
+        protected String operator() {
+            return ">";
+        }
+
+        public static GtNode create() {
+            return GtNodeGen.create(null, null);
         }
     }
 
-    @Specialization
-    boolean doBD(VirtualFrame frame, boolean left, double right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, asDouble(left), right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+    public abstract static class EqNode extends FallbackNode {
+
+        @Specialization
+        @Override
+        public final boolean cmp(int l, int r) {
+            return l == r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(long l, long r) {
+            return l == r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(char l, char r) {
+            return l == r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(byte l, byte r) {
+            return l == r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(double l, double r) {
+            return l == r;
+        }
+
+        @Specialization
+        @Override
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return equalNode.execute(l, r, TS_ENCODING);
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l == r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l == r;
+        }
+
+        @Specialization
+        protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            Object result = callNode.executeObject(frame, left, right);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                // just like python, if no implementation is available, do something sensible for
+                // == and !=
+                return ensureIsNode().execute(left, right);
+            }
+            return result;
+        }
+
+        protected static LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Eq, SpecialMethodSlot.Eq, true, true);
+        }
+
+        public static EqNode create() {
+            return EqNodeGen.create(null, null);
         }
     }
 
-    @Specialization
-    boolean doIB(VirtualFrame frame, int left, boolean right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, asInt(right)));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
-        }
-    }
+    public abstract static class NeNode extends FallbackNode {
 
-    @Specialization
-    boolean doII(VirtualFrame frame, int left, int right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(int l, int r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doIL(VirtualFrame frame, int left, long right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, (long) left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(long l, long r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doID(VirtualFrame frame, int left, double right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(char l, char r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doLB(VirtualFrame frame, long left, boolean right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, asLong(right)));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(byte l, byte r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doLI(VirtualFrame frame, long left, int right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, (long) right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(double l, double r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doLI(VirtualFrame frame, long left, long right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        @Override
+        public final boolean cmp(TruffleString l, TruffleString r,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return !equalNode.execute(l, r, TS_ENCODING);
         }
-    }
 
-    @Specialization
-    boolean doLI(VirtualFrame frame, long left, double right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doDB(VirtualFrame frame, double left, boolean right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, asDouble(right)));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l != r;
         }
-    }
 
-    @Specialization
-    boolean doDI(VirtualFrame frame, double left, int right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        @Specialization
+        protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
+            Object result = callNode.executeObject(frame, left, right);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                // just like python, if no implementation is available, do something sensible for
+                // == and !=
+                return !ensureIsNode().execute(left, right);
+            }
+            return result;
         }
-    }
 
-    @Specialization
-    boolean doDL(VirtualFrame frame, double left, long right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        protected static LookupAndCallBinaryNode createCallNode() {
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Ne, SpecialMethodSlot.Ne, true, true);
         }
-    }
 
-    @Specialization
-    boolean doDD(VirtualFrame frame, double left, double right) {
-        try {
-            return profileCondition(callNode.executeBool(frame, left, right));
-        } catch (UnexpectedResultException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        public static NeNode create() {
+            return NeNodeGen.create(null, null);
         }
-    }
-
-    @Specialization
-    Object doGeneric(VirtualFrame frame, Object left, Object right) {
-        Object result = callNode.executeObject(frame, left, right);
-        if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return handleNotImplemented(left, right);
-        }
-        return result;
-    }
-
-    private IsNode ensureIsNode() {
-        if (isNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isNode = insert(IsNodeGen.create());
-        }
-        return isNode;
     }
 }

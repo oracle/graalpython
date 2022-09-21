@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,191 +40,63 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
-// cpython://Objects/abstract.c#ternary_op
-// Order operations are tried until either a valid result or error: v.op(v,w,z), w.op(v,w,z), z.op(v,w,z)
-@ImportStatic({SpecialMethodNames.class})
+// actual implementation is in the subclasses: one for reversible, other for non-reversible.
+@ImportStatic({SpecialMethodNames.class, PythonOptions.class})
 public abstract class LookupAndCallTernaryNode extends Node {
     public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2, Object arg3);
     }
 
-    protected final String name;
-    private final boolean isReversible;
-    protected final boolean ignoreDescriptorException;
-    @Child private CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
-    @Child private CallTernaryMethodNode reverseDispatchNode;
-    @Child private CallTernaryMethodNode thirdDispatchNode;
-    @Child private LookupSpecialMethodNode getThirdAttrNode;
-    @Child private GetClassNode thirdGetClassNode;
-    @Child private NotImplementedHandler handler;
-    protected final Supplier<NotImplementedHandler> handlerFactory;
+    protected final TruffleString name;
+    protected final SpecialMethodSlot slot;
+    @Child protected CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
-    public abstract Object execute(VirtualFrame frame, Object arg1, int arg2, Object arg3);
-
-    public static LookupAndCallTernaryNode create(String name) {
-        return LookupAndCallTernaryNodeGen.create(name, false, null, false);
+    public static LookupAndCallTernaryNode create(TruffleString name) {
+        // Use SpecialMethodSlot overload for special slots, if there is a need to create
+        // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
+        // to try to lookup a slot and use that if found
+        assert SpecialMethodSlot.findSpecialSlotUncached(name) == null : name;
+        return LookupAndCallNonReversibleTernaryNodeGen.create(name);
     }
 
-    public static LookupAndCallTernaryNode createReversible(
-                    String name, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, false);
+    public static LookupAndCallTernaryNode create(SpecialMethodSlot slot) {
+        return LookupAndCallNonReversibleTernaryNodeGen.create(slot);
     }
 
-    LookupAndCallTernaryNode(
-                    String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
+    public static LookupAndCallTernaryNode createReversible(TruffleString name, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallReversibleTernaryNodeGen.create(name, handlerFactory);
+    }
+
+    public static LookupAndCallTernaryNode createReversible(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallReversibleTernaryNodeGen.create(slot, handlerFactory);
+    }
+
+    LookupAndCallTernaryNode(TruffleString name) {
         this.name = name;
-        this.isReversible = isReversible;
-        this.handlerFactory = handlerFactory;
-        this.ignoreDescriptorException = ignoreDescriptorException;
+        this.slot = null;
     }
 
-    protected boolean isReversible() {
-        return isReversible;
+    LookupAndCallTernaryNode(SpecialMethodSlot slot) {
+        this.slot = slot;
+        this.name = slot.getName();
     }
 
-    @Specialization(guards = "!isReversible()")
-    Object callObject(
-                    VirtualFrame frame,
-                    Object arg1,
-                    int arg2,
-                    Object arg3,
-                    @Cached("create()") GetClassNode getclass,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(frame, getattr.executeObject(frame, getclass.execute(arg1), name), arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = "!isReversible()")
-    Object callObject(
-                    VirtualFrame frame,
-                    Object arg1,
-                    Object arg2,
-                    Object arg3,
-                    @Cached("create()") GetClassNode getclass,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(frame, getattr.executeObject(frame, getclass.execute(arg1), name), arg1, arg2, arg3);
-    }
-
-    private CallTernaryMethodNode ensureReverseDispatch() {
-        // this also serves as a branch profile
-        if (reverseDispatchNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            reverseDispatchNode = insert(CallTernaryMethodNode.create());
+    protected final LookupSpecialBaseNode createLookup() {
+        if (slot != null) {
+            return LookupSpecialMethodSlotNode.create(slot);
         }
-        return reverseDispatchNode;
-    }
-
-    private LookupSpecialMethodNode ensureGetAttrZ() {
-        // this also serves as a branch profile
-        if (getThirdAttrNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThirdAttrNode = insert(LookupSpecialMethodNode.create(name, ignoreDescriptorException));
-        }
-        return getThirdAttrNode;
-    }
-
-    private CallTernaryMethodNode ensureThirdDispatch() {
-        // this also serves as a branch profile
-        if (thirdDispatchNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            thirdDispatchNode = insert(CallTernaryMethodNode.create());
-        }
-        return thirdDispatchNode;
-    }
-
-    private GetClassNode ensureThirdGetClass() {
-        if (thirdGetClassNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            thirdGetClassNode = insert(GetClassNode.create());
-        }
-        return thirdGetClassNode;
-    }
-
-    @Specialization(guards = "isReversible()")
-    Object callObject(
-                    VirtualFrame frame,
-                    Object v,
-                    Object w,
-                    Object z,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
-                    @Cached("create()") GetClassNode getClass,
-                    @Cached("create()") GetClassNode getClassR,
-                    @Cached("create()") IsSubtypeNode isSubtype,
-                    @Cached("create()") IsSameTypeNode isSameTypeNode,
-                    @Cached("create()") BranchProfile notImplementedBranch) {
-        // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
-        // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
-        // of this method is modeled after this. However, this method also merges the logic from
-        // slot_nb_power/wrap_ternaryfunc_r in that it swaps arguments around. The reversal is
-        // undone for builtin functions in BuiltinFunctionRootNode, just like it would be undone in
-        // CPython using its slot wrappers
-        Object leftClass = getClass.execute(v);
-        Object rightClass = getClassR.execute(w);
-
-        Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object leftCallable = getattr.execute(frame, leftClass, v);
-        Object rightCallable = PNone.NO_VALUE;
-
-        if (!isSameTypeNode.execute(leftClass, rightClass)) {
-            rightCallable = getattrR.execute(frame, rightClass, w);
-            if (rightCallable == leftCallable) {
-                rightCallable = PNone.NO_VALUE;
-            }
-        }
-        if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && isSubtype.execute(frame, rightClass, leftClass)) {
-                result = ensureReverseDispatch().execute(frame, rightCallable, v, w, z);
-                if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                    return result;
-                }
-                rightCallable = PNone.NO_VALUE;
-            }
-            result = dispatchNode.execute(frame, leftCallable, v, w, z);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-        if (rightCallable != PNone.NO_VALUE) {
-            result = ensureReverseDispatch().execute(frame, rightCallable, v, w, z);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-
-        Object zCallable = ensureGetAttrZ().execute(frame, ensureThirdGetClass().execute(z), z);
-        if (zCallable != PNone.NO_VALUE && zCallable != leftCallable && zCallable != rightCallable) {
-            result = ensureThirdDispatch().execute(frame, zCallable, v, w, z);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
-        }
-
-        notImplementedBranch.enter();
-        if (handlerFactory != null) {
-            if (handler == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handler = insert(handlerFactory.get());
-            }
-            return handler.execute(v, w, z);
-        }
-        return result;
+        return LookupSpecialMethodNode.create(name);
     }
 }

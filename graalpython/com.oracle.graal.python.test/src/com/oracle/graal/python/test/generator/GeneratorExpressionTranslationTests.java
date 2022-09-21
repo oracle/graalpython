@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -41,7 +41,7 @@ public class GeneratorExpressionTranslationTests {
     private static RootNode getFunctionRoot(Node root, String functionName) {
         NodeUtil.findAllNodeInstances(root, FunctionDefinitionNode.class);
         for (FunctionDefinitionNode node : NodeUtil.findAllNodeInstances(root, FunctionDefinitionNode.class)) {
-            if (node.getFunctionName().equals(functionName)) {
+            if (node.getFunctionName().toJavaStringUncached().equals(functionName)) {
                 return node.getFunctionRoot();
             }
         }

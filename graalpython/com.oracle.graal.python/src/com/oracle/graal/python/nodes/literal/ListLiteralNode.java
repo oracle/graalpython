@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,53 +29,27 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public final class ListLiteralNode extends SequenceLiteralNode {
+public final class ListLiteralNode extends SequenceLiteralNode implements ListOrigin {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ListLiteralNode.class);
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private SequenceStorageNodes.AppendNode appendNode;
 
-    /**
-     * This class serves the purpose of updating the size estimate for the lists constructed here
-     * over time. The estimate is updated slowly, it takes {@link #NUM_DIGITS_POW2} lists to reach a
-     * size one larger than the current estimate to increase the estimate for new lists.
-     */
-    @ValueType
-    private static final class SizeEstimate {
-        private static final int NUM_DIGITS = 3;
-        private static final int NUM_DIGITS_POW2 = 1 << NUM_DIGITS;
-
-        @CompilationFinal private int shiftedStorageSizeEstimate;
-
-        private SizeEstimate(int storageSizeEstimate) {
-            shiftedStorageSizeEstimate = storageSizeEstimate * NUM_DIGITS_POW2;
-        }
-
-        private int estimate() {
-            return shiftedStorageSizeEstimate >> NUM_DIGITS;
-        }
-
-        private int updateFrom(int newSizeEstimate) {
-            shiftedStorageSizeEstimate = shiftedStorageSizeEstimate + newSizeEstimate - estimate();
-            return shiftedStorageSizeEstimate;
-        }
-    }
-
-    @CompilationFinal private SizeEstimate initialCapacity;
+    private final SizeEstimate initialCapacity;
     private final boolean hasStarredExpressions;
 
     public ListLiteralNode(ExpressionNode[] values) {
@@ -132,21 +106,18 @@ public final class ListLiteralNode extends SequenceLiteralNode {
         return appendNode;
     }
 
+    @Override
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
-            if (lookupContextReference(PythonLanguage.class).get().getOption(PythonOptions.OverallocateLiteralLists)) {
-                if (newStore.capacity() > initialCapacity.estimate()) {
-                    initialCapacity.updateFrom(newStore.capacity());
-                    LOGGER.finest(() -> {
-                        return String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.capacity(),
-                                        initialCapacity.estimate());
-                    });
+            if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
+                if (newStore.getCapacity() > initialCapacity.estimate()) {
+                    initialCapacity.updateFrom(newStore.getCapacity());
+                    LOGGER.finest(() -> String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.getCapacity(),
+                                    initialCapacity.estimate()));
                 }
                 if (newStore.getElementType().generalizesFrom(type)) {
                     type = newStore.getElementType();
-                    LOGGER.finest(() -> {
-                        return String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name());
-                    });
+                    LOGGER.finest(() -> String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name()));
                 }
             }
         }

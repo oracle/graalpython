@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ public @interface ArgumentClinic {
      * Specifies a predefined conversion routine to use. Other fields of this annotation specify
      * configuration for the conversion routine. Note that not all routines support all the
      * configuration options.
-     * 
+     *
      * Conversion routines are implemented in {@code ConverterFactory}. It creates Java code
      * snippets that instantiate the actual cast nodes, which should implement
      * {@code ArgumentCastNode}.
@@ -66,8 +66,9 @@ public @interface ArgumentClinic {
 
     /**
      * The string should contain valid Java constant value expression, for example, {@code true}, or
-     * {@code \"some string\"}. You may have to update the annotation processor to include import of
-     * necessary packages or use fully qualified names.
+     * {@code \"some string\"}. Another supported value is an identifier of a static field inside
+     * the annotated class or its enclosing class. For anything else, you may have to update the
+     * annotation processor to include import of necessary packages or use fully qualified names.
      */
     String defaultValue() default "";
 
@@ -84,10 +85,13 @@ public @interface ArgumentClinic {
     Class<?> conversionClass() default void.class;
 
     /**
-     * Specifies arguments to the factory method. String literals must be explicitly quoted:
-     * {@code args = "\"abc\""}
+     * Specifies arguments to the factory method. Follows the same rules as {@link #defaultValue()}.
      */
     String[] args() default {};
+
+    String VALUE_EMPTY_TSTRING = "T_EMPTY_STRING";
+    String VALUE_NONE = "PNone.NONE";
+    String VALUE_NO_VALUE = "PNone.NO_VALUE";
 
     enum PrimitiveType {
         Boolean,
@@ -107,20 +111,36 @@ public @interface ArgumentClinic {
          */
         Boolean,
         /**
-         * GraalPython specific converter that narrows any String representation to Java String.
+         * Corresponds to CPython's {@code bool(accept=int)} converter. Supports
+         * {@link #defaultValue()}.
+         */
+        IntToBoolean,
+        /**
+         * GraalPython specific converter that narrows any String representation to Truffle String.
          * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
-        String,
+        TString,
         /**
          * Corresponds to CPython's {@code int} converter. Supports {@link #defaultValue()}, and
          * {@link #useDefaultForNone()}.
          */
         Int,
         /**
-         * Corresponds to CPython's {@code Py_ssize_t} converter. Supports {@link #defaultValue()},
-         * and {@link #useDefaultForNone()}.
+         * Corresponds to CPython's {@code long} converter ("L"/"l" for old style conversions).
+         * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
+         */
+        Long,
+        /**
+         * Corresponds to CPython's {@code Py_ssize_t} converter, except that it converts the result
+         * into Java integer. Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
         Index,
+        /**
+         * Roughly corresponds to CPython's legacy "n" converter: calls the __index__ and then
+         * converts it to Java long. Supports {@link #defaultValue()}, and
+         * {@link #useDefaultForNone()}.
+         */
+        LongIndex,
         /**
          * Corresponds to CPython's {@code slice_index} converter. Supports {@link #defaultValue()},
          * and {@link #useDefaultForNone()}.
@@ -132,8 +152,27 @@ public @interface ArgumentClinic {
          */
         CodePoint,
         /**
-         * Corresponds to CPython's {@code Py_buffer} converter.
+         * Corresponds to CPython's {@code object(subclass_of="&PyTuple_Type"))} converter.
          */
-        Buffer,
+        Tuple,
+        /**
+         * Corresponds to CPython's {@code Py_buffer} converter for a readonly contiguous buffer.
+         * Returns an opaque buffer object that is accessed using {@code PythonBufferAccessLibrary}.
+         * Must be explicitly released using {@code PythonBufferAccessLibrary.release}, typically in
+         * a {@code finally} block.
+         */
+        ReadableBuffer,
+        /**
+         * Corresponds to CPython's {@code Py_buffer(accept{rwbuffer})} converter for a read-write
+         * contiguous buffer. Returns an opaque buffer object that is accessed using
+         * {@code PythonBufferAccessLibrary}. Must be explicitly released using
+         * {@code PythonBufferAccessLibrary.release}, typically in a {@code finally} block.
+         */
+        WritableBuffer,
+        /**
+         * Corresponds to CPython's {@code double} converter. Supports {@link #defaultValue()}, and
+         * {@link #useDefaultForNone()}.
+         */
+        Double,
     }
 }

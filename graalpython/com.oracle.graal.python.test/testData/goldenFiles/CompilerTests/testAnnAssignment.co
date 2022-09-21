@@ -1,0 +1,10 @@
+Disassembly of <module>:
+  1:0   -   1:11        0 SETUP_ANNOTATIONS
+  1:9   -   1:11        1 LOAD_BYTE_O                       12
+  1:0   -   1:1         3 STORE_NAME                        0    (a)
+  1:3   -   1:6         5 LOAD_NAME                         1    (int)
+  1:0   -   1:11        7 LOAD_NAME                         2    (__annotations__)
+  1:0   -   1:11        9 LOAD_STRING                       0    ('a')
+  1:0   -   1:11       11 STORE_SUBSCR
+  1:0   -   1:11       12 LOAD_NONE
+  1:0   -   1:11       13 RETURN_VALUE

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,21 +41,32 @@
 
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J___FUTURE__;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
+import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.AnnotationSSTNode;
+import com.oracle.graal.python.parser.sst.ArgDefListBuilder;
 import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
@@ -65,6 +76,7 @@ import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.CallSSTNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
@@ -80,6 +92,7 @@ import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.StringLiteralSSTNode.RawStringLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
 import com.oracle.graal.python.parser.sst.TernaryIfSSTNode;
@@ -87,11 +100,14 @@ import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonSSTNodeFactory {
 
@@ -99,19 +115,20 @@ public final class PythonSSTNodeFactory {
      * Service that allows parsing expressions found inside f-strings to SST nodes.
      */
     public interface FStringExprParser {
-        SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory);
+        SSTNode parseExpression(PythonParser.ParserErrorCallback errorCallback, String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource);
     }
 
-    private final NodeFactory nodeFactory;
+    private final RootNodeFactory rootNodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
     private FStringExprParser fStringExprParser;
+    private boolean futureAnnotations = false;
 
     public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
-        this.nodeFactory = NodeFactory.create(errors.getLanguage());
-        this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
+        this.rootNodeFactory = RootNodeFactory.create(errors.getContext().getLanguage());
+        this.scopeEnvironment = new ScopeEnvironment();
         this.source = source;
         this.fStringExprParser = fStringExprParser;
     }
@@ -120,8 +137,14 @@ public final class PythonSSTNodeFactory {
         return scopeEnvironment;
     }
 
-    public void throwSyntaxError(int startOffset, int endOffset, String message, Object... messageParams) {
+    public void throwSyntaxError(int startOffset, int endOffset, TruffleString message, Object... messageParams) {
         throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message, messageParams);
+    }
+
+    public SSTNode createDecorator(String name, ArgListBuilder arg, int startOffset, int endOffset) {
+        int dotIndex = name.indexOf('.');
+        String mangledName = dotIndex == -1 ? mangleNameInCurrentScope(name) : mangleNameInCurrentScope(name.substring(0, dotIndex)) + name.substring(dotIndex);
+        return new DecoratorSSTNode(mangledName, arg, startOffset, endOffset);
     }
 
     public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
@@ -137,6 +160,7 @@ public final class PythonSSTNodeFactory {
                 // create local variable just for the top module
                 varName = name.substring(0, dotIndex);
             }
+            varName = mangleNameInCurrentScope(varName);
         }
         scopeEnvironment.createLocal(varName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
@@ -145,6 +169,9 @@ public final class PythonSSTNodeFactory {
     public SSTNode createImportFrom(String from, String[][] asNames, int startOffset, int endOffset) {
         if (asNames != null) {
             for (String[] asName : asNames) {
+                if (J___FUTURE__.equals(from) && asName[0].equals("annotations")) {
+                    futureAnnotations = true;
+                }
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
             }
         } else {
@@ -156,14 +183,104 @@ public final class PythonSSTNodeFactory {
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
     }
 
+    public SSTNode createAnnotationType(SSTNode type) {
+        SSTNode annotType = type;
+        if (futureAnnotations && type != null) {
+            final String value = source.getCharacters().subSequence(type.getStartOffset(), type.getEndOffset()).toString();
+            annotType = new RawStringLiteralSSTNode(value, type.getStartOffset(), type.getEndOffset());
+        }
+        return annotType;
+    }
+
+    public FunctionDefSSTNode createFunctionDef(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset,
+                    int endOffset) {
+        SSTNode annotation = createAnnotationType(resultAnnotation);
+        return new FunctionDefSSTNode(functionScope, name, enclosingClassName, argBuilder, body, annotation, startOffset, endOffset);
+    }
+
+    public String mangleNameInCurrentScope(String name) {
+        if (cannotBeMangled(name)) {
+            return name;
+        }
+        // then name can be mangled if is under class
+        ScopeInfo scope = scopeEnvironment.getCurrentScope();
+        while (scope != null && scope.getScopeKind() != ScopeKind.Class) {
+            scope = scope.getParent();
+        }
+
+        if (scope != null) {
+            try {
+                return mangleName(scope.getScopeId(), name);
+            } catch (OverflowException e) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+            }
+        }
+        return name;
+    }
+
+    /**
+     * Tests if the provided identifier is a candidate for name mangling.
+     */
+    @TruffleBoundary
+    private static boolean cannotBeMangled(String identifier) {
+        int len = identifier.length();
+        // Don't mangle __whatever__ or names with dots.
+        return len < 3 || identifier.charAt(0) != '_' || identifier.charAt(1) != '_' || (identifier.charAt(len - 1) == '_' && identifier.charAt(len - 2) == '_') || identifier.indexOf('.') != -1;
+    }
+
+    @TruffleBoundary
+    public static TruffleString mangleName(TruffleString privateobj, TruffleString ident) throws OverflowException {
+        return toTruffleStringUncached(mangleName(privateobj.toJavaStringUncached(), ident.toJavaStringUncached()));
+    }
+
+    /**
+     * Implements semantics of {@code parser.c:_Py_Mangle}
+     */
+    @TruffleBoundary
+    public static String mangleName(String privateobj, String ident) throws OverflowException {
+        // Name mangling: __private becomes _classname__private. This is independent from how
+        // the name is used.
+        if (cannotBeMangled(ident)) {
+            return ident;
+        }
+        // The length of 'privateobj' must be checked because if someone uses the 'type' constructor
+        // it's allowed to pass an empty name.
+        String privateobjStripped;
+        if (privateobj.length() > 0 && privateobj.charAt(0) == '_') {
+            // trim leading '_'
+            int index = 1;
+            int scopeNameLen = privateobj.length();
+            while (index < scopeNameLen && privateobj.charAt(index) == '_') {
+                index++;
+            }
+            privateobjStripped = index != scopeNameLen ? privateobj.substring(index) : null;
+        } else {
+            privateobjStripped = privateobj;
+        }
+        if (privateobjStripped != null) {
+            if ((long) privateobjStripped.length() + ident.length() >= Integer.MAX_VALUE) {
+                throw OverflowException.INSTANCE;
+            }
+            // ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes
+            return '_' + privateobjStripped + ident;
+        }
+        return ident;
+    }
+
     public VarLookupSSTNode createVariableLookup(String name, int start, int stop) {
-        scopeEnvironment.addSeenVar(name);
-        return new VarLookupSSTNode(name, start, stop);
+        String mangleName = mangleNameInCurrentScope(name);
+        scopeEnvironment.addSeenVar(mangleName);
+        return new VarLookupSSTNode(mangleName, start, stop);
     }
 
     public SSTNode createClassDefinition(String name, ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
         // scopeEnvironment.createLocal(name);
         return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
+    }
+
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
+        String mangledName = mangleNameInCurrentScope(name);
+        return new GetAttributeSSTNode(receiver, mangledName, startOffset, endOffset);
     }
 
     public SSTNode registerGlobal(String[] names, int startOffset, int endOffset) {
@@ -224,13 +341,14 @@ public final class PythonSSTNodeFactory {
         return new WithSSTNode(expression, target, body, start, end);
     }
 
-    public SSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int lineNumber,
+    public ForComprehensionSSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, ForComprehensionSSTNode innerFor,
+                    PythonBuiltinClassType resultType, int lineNumber,
                     int level, int startOffset, int endOffset) {
         for (SSTNode variable : variables) {
             checkAssignable(variable, variable.getStartOffset(), variable.getEndOffset());
             declareVar(variable);
         }
-        return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, resultType, lineNumber, level, startOffset, endOffset);
+        return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, innerFor, resultType, lineNumber, level, startOffset, endOffset);
     }
 
     public SSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int stop) {
@@ -244,7 +362,14 @@ public final class PythonSSTNodeFactory {
         return new AssignmentSSTNode(lhs, rhs, start, stop);
     }
 
-    public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
+    public SSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int start, int end) {
+        checkAssignable(annotation.getLhs(), start, end);
+        declareVar(annotation.getLhs());
+        return new AnnAssignmentSSTNode(annotation, rhs, start, end);
+    }
+
+    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int start, int end) {
+        SSTNode annotType = createAnnotationType(type);
         // checking if the annotation has the right target
         if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
             if (lhs instanceof CollectionSSTNode) {
@@ -257,12 +382,10 @@ public final class PythonSSTNodeFactory {
             }
             throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.ILLEGAL_TARGET_FOR_ANNOTATION);
         }
-        checkAssignable(lhs, start, end);
-        declareVar(lhs);
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
         }
-        return new AnnAssignmentSSTNode(lhs, type, rhs, start, end);
+        return new AnnotationSSTNode(lhs, annotType, start, end);
     }
 
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
@@ -276,8 +399,8 @@ public final class PythonSSTNodeFactory {
     }
 
     private void checkForbiddenName(String name, int startOffset, int endOffset) {
-        if (BuiltinNames.__DEBUG__.equals(name)) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, BuiltinNames.__DEBUG__);
+        if (BuiltinNames.J___DEBUG__.equals(name)) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, BuiltinNames.T___DEBUG__);
         }
     }
 
@@ -328,16 +451,16 @@ public final class PythonSSTNodeFactory {
             if (resultType == PythonBuiltinClassType.PGenerator) {
                 throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "generator expression");
             }
-            String calleeName;
+            TruffleString calleeName;
             switch (resultType) {
                 case PList:
-                    calleeName = BuiltinNames.LIST;
+                    calleeName = BuiltinNames.T_LIST;
                     break;
                 case PSet:
-                    calleeName = BuiltinNames.SET;
+                    calleeName = BuiltinNames.T_SET;
                     break;
                 case PDict:
-                    calleeName = BuiltinNames.DICT;
+                    calleeName = BuiltinNames.T_DICT;
                     break;
                 default:
                     calleeName = null;
@@ -392,22 +515,22 @@ public final class PythonSSTNodeFactory {
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
         ScopeKind scopeKind = scopeEnvironment.getScopeKind();
         if (!(scopeKind == ScopeKind.Function || scopeKind == ScopeKind.Generator)) {
-            String message;
+            TruffleString message;
             switch (scopeKind) {
                 case ListComp:
-                    message = "'yield' inside list comprehension";
+                    message = ErrorMessages.YIELD_INSIDE_LIST_COMPREHENSION;
                     break;
                 case DictComp:
-                    message = "'yield' inside dict comprehension";
+                    message = ErrorMessages.YIELD_INSIDE_DICT_COMPREHENSION;
                     break;
                 case SetComp:
-                    message = "'yield' inside set comprehension";
+                    message = ErrorMessages.YIELD_INSIDE_SET_COMPREHENSION;
                     break;
                 case GenExp:
-                    message = "'yield' inside generator expression";
+                    message = ErrorMessages.YIELD_INSIDE_GENERATOR_COMPREHENSION;
                     break;
                 default:
-                    message = "'yield' outside function";
+                    message = ErrorMessages.YIELD_OUTSIDE_FUNCTION;
             }
             throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message);
         }
@@ -419,7 +542,8 @@ public final class PythonSSTNodeFactory {
         return StringLiteralSSTNode.create(values, startOffset, endOffset, source, errors, this, fStringExprParser);
     }
 
-    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame) {
+    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame, ArrayList<String> deprecationWarnings) {
+        assert currentFrame == null || mode == ParserMode.InlineEvaluation || mode == ParserMode.WithArguments;
         Node result;
         boolean isGen = false;
         Frame useFrame = currentFrame;
@@ -438,9 +562,9 @@ public final class PythonSSTNodeFactory {
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
         scopeEnvironment.setFreeVarsInRootScope(useFrame);
-        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
+        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, mode == PythonParser.ParserMode.Statement);
         if (isGen) {
-            factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source, factoryVisitor);
+            factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, factoryVisitor);
         }
         if (mode == PythonParser.ParserMode.Deserialization) {
             result = parserSSTResult.accept(factoryVisitor);
@@ -449,20 +573,20 @@ public final class PythonSSTNodeFactory {
                             ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
                             : parserSSTResult instanceof BlockSSTNode
                                             ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
-                                            : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
-            FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
+                                            : FactorySSTVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
             switch (mode) {
                 case Eval:
                     scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-                    StatementNode evalReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(body, scopeEnvironment.getReturnSlot()));
-                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
-                    FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getCurrentScope().getReturnSlot());
+                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getCurrentScope().getReturnSlot()));
+                    ExecutionCellSlots executionCellSlots = scopeEnvironment.getExecutionCellSlots();
+                    FunctionRootNode functionRoot = rootNodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     returnTarget,
-                                    scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+                                    executionCellSlots, Signature.EMPTY, null);
                     result = functionRoot;
                     break;
                 case File:
-                    result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    result = rootNodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
@@ -470,13 +594,13 @@ public final class PythonSSTNodeFactory {
                     result = body;
                     break;
                 case InteractiveStatement:
-                    result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
+                                    scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
                 case Statement:
-                    ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
-                    printExpression.assignSourceSection(body.getSourceSection());
-                    result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    body.assignSourceSection(body.getSourceSection());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, scopeEnvironment.getGlobalScope().createFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
@@ -496,12 +620,15 @@ public final class PythonSSTNodeFactory {
                     throw new RuntimeException("unexpected mode: " + mode);
             }
         }
+        if (result instanceof PRootNode) {
+            ((PRootNode) result).setDeprecationWarnings(deprecationWarnings);
+        }
         return result;
     }
 
-    private static String getModuleDoc(ExpressionNode from) {
+    private static TruffleString getModuleDoc(ExpressionNode from) {
         StringLiteralNode sln = StringUtils.extractDoc(from);
-        String doc = null;
+        TruffleString doc = null;
         if (sln != null) {
             doc = sln.getValue();
         }

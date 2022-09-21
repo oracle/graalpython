@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class IntSequenceStorage extends TypedSequenceStorage {
 
@@ -70,7 +69,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new IntSequenceStorage(Arrays.copyOf(values, length));
+        return new IntSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
@@ -160,32 +159,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return new IntSequenceStorage(newArray);
     }
 
-    public void setIntSliceInBound(int start, int stop, int step, IntSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            setNewLength(length);
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        setNewLength(length > stop ? length : stop);
-    }
-
-    public int popInt() {
-        int pop = values[length - 1];
-        decLength();
-        return pop;
-    }
-
     public int indexOfInt(int value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -194,24 +167,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    public void appendInt(int value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        incLength();
-    }
-
-    public void extendWithIntStorage(IntSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        int[] otherValues = other.values;
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        setNewLength(extendedLength);
     }
 
     @Override

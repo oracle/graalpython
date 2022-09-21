@@ -1,0 +1,10 @@
+*graalpython.lib-python.3.test.test_dict_version.DictSubtypeVersionTests.test_clear
+*graalpython.lib-python.3.test.test_dict_version.DictSubtypeVersionTests.test_delitem
+*graalpython.lib-python.3.test.test_dict_version.DictSubtypeVersionTests.test_pop
+*graalpython.lib-python.3.test.test_dict_version.DictSubtypeVersionTests.test_popitem
+*graalpython.lib-python.3.test.test_dict_version.DictSubtypeVersionTests.test_setdefault
+*graalpython.lib-python.3.test.test_dict_version.DictVersionTests.test_clear
+*graalpython.lib-python.3.test.test_dict_version.DictVersionTests.test_delitem
+*graalpython.lib-python.3.test.test_dict_version.DictVersionTests.test_pop
+*graalpython.lib-python.3.test.test_dict_version.DictVersionTests.test_popitem
+*graalpython.lib-python.3.test.test_dict_version.DictVersionTests.test_setdefault

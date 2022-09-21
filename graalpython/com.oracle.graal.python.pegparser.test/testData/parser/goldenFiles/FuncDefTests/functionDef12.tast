@@ -1,0 +1,22 @@
+Module[0, 81]
+    FunctionDef[0, 72]
+        Name:outer
+        ArgumentsTy[0, 0]
+        ---- Function body of outer ----
+        FunctionDef[18, 48]
+            Name:inner
+            ArgumentsTy[0, 0]
+            ---- Function body of inner ----
+            Call[39, 48]
+                Target: Name[39, 44] Value: "print"
+                Args:
+                    Name[45, 46] Value: "x"
+            ---- End of inner function ----
+        Assign[54, 60]
+            LHS: Name[54, 55] Value: "x" Store
+            RHS: LONG[58, 60] Value: 12
+        Call[65, 72]
+            Target: Name[65, 70] Value: "inner"
+        ---- End of outer function ----
+    Call[74, 81]
+        Target: Name[74, 79] Value: "outer"

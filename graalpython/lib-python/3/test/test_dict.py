@@ -494,7 +494,6 @@ class DictTest(unittest.TestCase):
         x.fail = True
         self.assertRaises(Exc, d.pop, x)
 
-    @support.impl_detail("endless loop", graalvm=False)
     def test_mutating_iteration(self):
         # changing dict size during iteration
         d = {}

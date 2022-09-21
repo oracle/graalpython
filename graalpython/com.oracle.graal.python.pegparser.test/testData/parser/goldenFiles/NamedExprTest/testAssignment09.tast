@@ -1,0 +1,10 @@
+Module[0, 32]
+    If[0, 32]
+        Test: 
+            BoolOp[3, 26]: And
+                BOOLEAN[3, 7] Value: true
+                NamedExpr[13, 25]
+                    Target: Name[13, 17] Value: "spam" Store
+                    Value: BOOLEAN[21, 25] Value: true
+        Then:
+            Pass[28, 32]

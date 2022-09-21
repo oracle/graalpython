@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,8 +68,12 @@ public final class ReferenceStack<T> implements Iterable<T> {
 
     @SuppressWarnings("unchecked")
     public T get(int idx) {
-        assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        return (T) nativeObjectWrapperList[idx];
+        if (0 <= idx && idx < nativeObjectWrapperList.length) {
+            return (T) nativeObjectWrapperList[idx];
+        } else {
+            assert false : "incorrect reference ID";
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,16 +42,15 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @ImportStatic(PGuards.class)
 abstract class CastToJavaLongNode extends PNodeWithContext {
@@ -59,26 +58,31 @@ abstract class CastToJavaLongNode extends PNodeWithContext {
     public abstract long execute(Object x) throws CannotCastException;
 
     @Specialization
-    long doLong(boolean x) {
+    static long doLong(byte x) {
+        return x;
+    }
+
+    @Specialization
+    static long doLong(int x) {
+        return x;
+    }
+
+    @Specialization
+    static long doLong(long x) {
+        return x;
+    }
+
+    @Specialization
+    static long doLong(boolean x) {
         return x ? 1 : 0;
     }
 
     @Specialization
-    long doLong(int x) {
-        return x;
-    }
-
-    @Specialization
-    long doLong(long x) {
-        return x;
-    }
-
-    @Specialization(limit = "1")
     static long doNativeObject(PythonNativeObject x,
-                    @CachedLibrary("x") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PInt)) {
-            CompilerDirectives.transferToInterpreter();
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
         }
         // the object's type is not a subclass of 'int'

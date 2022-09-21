@@ -36,9 +36,11 @@ ModuleRootNode Name: <module 'funcDoc04'> SourceSection: [0,34]`def fn(): '123' 
                     FunctionBodyNode SourceSection: [10,34]`'123' f'456' '789'; ...`
                       ExpressionStatementNode SourceSection: [10,28]`'123' f'456' '789'`
                         FormatStringLiteralNode SourceSection: [10,28]`'123' f'456' '789'`
-                          Values: <n>123, <f>456, <n>789
+                          Parts: 3
+                          StringLiteralNode SourceSection: [10,15]`'123'`
+                          StringLiteralNode SourceSection: [18,21]`456`
+                          StringLiteralNode SourceSection: [23,28]`'789'`
                       ExpressionStatementNode SourceSection: [30,34]`pass`
                         EmptyNode SourceSection: [30,34]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                    Frame: [0,<return_val>,Object]

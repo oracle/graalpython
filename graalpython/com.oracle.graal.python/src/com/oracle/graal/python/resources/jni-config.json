@@ -1,0 +1,51 @@
+[
+{
+  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext",
+  "methods":[
+    {"name":"ctxAsStruct","parameterTypes":["long"] },
+    {"name":"ctxClose","parameterTypes":["long"] },
+    {"name":"ctxDictNew","parameterTypes":[] },
+    {"name":"ctxDup","parameterTypes":["long"] },
+    {"name":"ctxFloatAsDouble","parameterTypes":["long"] },
+    {"name":"ctxFloatFromDouble","parameterTypes":["double"] },
+    {"name":"ctxGetItemi","parameterTypes":["long","long"] },
+    {"name":"ctxSetItem","parameterTypes":["long","long","long"] },
+    {"name":"ctxSetItemi","parameterTypes":["long","long","long"] },
+    {"name":"ctxLength","parameterTypes":["long"] },
+    {"name":"ctxListCheck","parameterTypes":["long"] },
+    {"name":"ctxBulkClose","parameterTypes":["long","int"] },
+    {"name":"ctxListNew","parameterTypes":["long"] },
+    {"name":"ctxLongAsLong","parameterTypes":["long"] },
+    {"name":"ctxLongAsDouble","parameterTypes":["long"] },
+    {"name":"ctxLongFromLong","parameterTypes":["long"] },
+    {"name":"ctxNew","parameterTypes":["long","long"] },
+    {"name":"ctxNumberCheck","parameterTypes":["long"] },
+    {"name":"ctxTypeCheck","parameterTypes":["long", "long"] },
+    {"name":"ctxTypeCheckG","parameterTypes":["long", "long"] },
+    {"name":"ctxTypeGenericNew","parameterTypes":["long"] },
+    {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"] },
+    {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] },
+    {"name":"ctxTupleFromArray","parameterTypes":["long[]", "boolean"] },
+    {"name":"ctxSetItems","parameterTypes":["long", "java.lang.String", "long"] },
+    {"name":"ctxGetItems","parameterTypes":["long", "java.lang.String"] },
+    {"name":"ctxGlobalLoad","parameterTypes":["long"] },
+    {"name":"ctxGlobalStore","parameterTypes":["long","long"] },
+    {"name":"ctxFieldLoad","parameterTypes":["long","long"] },
+    {"name":"ctxFieldStore","parameterTypes":["long","long","long"] },
+    {"name":"ctxType","parameterTypes":["long"] },
+    {"name":"ctxTypeGetName","parameterTypes":["long"] },
+    {"name":"ctxContextVarGet","parameterTypes":["long", "long", "long"] },
+    {"name":"ctxIs","parameterTypes":["long", "long"] },
+    {"name":"ctxIsG","parameterTypes":["long", "long"] },
+    {"name":"ctxCapsuleNew","parameterTypes":["long", "long", "long"] },
+    {"name":"ctxCapsuleGet","parameterTypes":["long", "int", "long"] },
+    {"name":"ctxGetAttrs","parameterTypes":["long", "java.lang.String"] },
+    {"name":"getHPyDebugContext","parameterTypes":[] }
+  ],
+  "fields":[
+    {"name":"hpyHandleTable"},
+    {"name":"hpyGlobalsTable"},
+    {"name":"nextHandle"}
+  ]
+}
+]

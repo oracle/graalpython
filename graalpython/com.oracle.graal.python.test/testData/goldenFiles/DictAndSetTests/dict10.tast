@@ -6,15 +6,17 @@ ModuleRootNode Name: <module 'dict10'> SourceSection: [0,46]`{**{"a": "hello", "
   Documentation: None
   InnerRootNode SourceSection: [0,46]`{**{"a": "hello", "b...`
     DictConcatNodeGen SourceSection: [0,46]`{**{"a": "hello", "b...`
-      DictLiteralNodeGen SourceSection: None
+      EmptyDictLiteralNode SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      DictLiteralNodeGen SourceSection: [3,31]`{"a": "hello", "b": ...`
+      DynamicDictLiteralNodeGen SourceSection: [3,31]`{"a": "hello", "b": ...`
         PythonObjectFactoryNodeGen SourceSection: None
         StringLiteralNode SourceSection: [4,7]`"a"`
         StringLiteralNode SourceSection: [18,21]`"b"`
         StringLiteralNode SourceSection: [9,16]`"hello"`
         StringLiteralNode SourceSection: [23,30]`"world"`
-      DictLiteralNodeGen SourceSection: [35,45]`{3:4, 5:6}`
+        CachedDispatchFirst SourceSection: None
+        CachedDispatchFirst SourceSection: None
+      DynamicDictLiteralNodeGen SourceSection: [35,45]`{3:4, 5:6}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [36,37]`3`
           Value: 3
@@ -24,3 +26,5 @@ ModuleRootNode Name: <module 'dict10'> SourceSection: [0,46]`{**{"a": "hello", "
           Value: 4
         IntegerLiteralNode SourceSection: [43,44]`6`
           Value: 6
+        CachedDispatchFirst SourceSection: None
+        CachedDispatchFirst SourceSection: None

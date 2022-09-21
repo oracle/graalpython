@@ -464,11 +464,13 @@ class TestDialectRegistry(unittest.TestCase):
         self.assertRaises(TypeError, csv.reader, [], quoting = -1)
         self.assertRaises(TypeError, csv.reader, [], quoting = 100)
 
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
     def test_copy(self):
         for name in csv.list_dialects():
             dialect = csv.get_dialect(name)
             self.assertRaises(TypeError, copy.copy, dialect)
 
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
     def test_pickle(self):
         for name in csv.list_dialects():
             dialect = csv.get_dialect(name)

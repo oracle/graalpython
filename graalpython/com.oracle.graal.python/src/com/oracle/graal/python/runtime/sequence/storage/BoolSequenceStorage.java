@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -67,7 +67,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new BoolSequenceStorage(Arrays.copyOf(values, length));
+        return new BoolSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
@@ -124,7 +124,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    public void insertBoolItem(int idx, boolean value) {
+    private void insertBoolItem(int idx, boolean value) {
         ensureCapacity(length + 1);
 
         // shifting tail to the right by one slot
@@ -157,60 +157,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         return new BoolSequenceStorage(newArray);
     }
 
-    public void setBoolSliceInBound(int start, int stop, int step, BoolSequenceStorage sequence) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (start == 0 && stop == length) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        length = length > stop ? length : stop;
-    }
-
-    public boolean popBool() {
-        boolean pop = values[capacity - 1];
-        length--;
-        return pop;
-    }
-
-    public int indexOfBool(boolean value) {
-        for (int i = 0; i < length; i++) {
-            if (values[i] == value) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    public void appendBool(boolean value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
-    }
-
-    public void extendWithBoolStorage(BoolSequenceStorage other) throws ArithmeticException {
-        boolean[] otherValues = other.values;
-        int extendedLength = Math.addExact(length, otherValues.length);
-        ensureCapacity(extendedLength);
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        length = extendedLength;
-    }
-
     @Override
     public void reverse() {
         if (length > 0) {
@@ -228,7 +174,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object getIndicativeValue() {
-        return 0;
+        return false;
     }
 
     @Override

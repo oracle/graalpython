@@ -1,0 +1,4 @@
+Module[0, 7]
+    Assign[0, 7]
+        LHS: Name[0, 1] Value: "t" Store
+        RHS: LONG[5, 6] Value: 2

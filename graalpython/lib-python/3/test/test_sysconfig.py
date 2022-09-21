@@ -5,7 +5,7 @@ import subprocess
 import shutil
 from copy import copy
 
-from test.support import (import_module, TESTFN, unlink, check_warnings,
+from test.support import (import_module, TESTFN, unlink, check_warnings, impl_detail,
                           captured_stdout, skip_unless_symlink, change_cwd,
                           PythonSymlink)
 
@@ -228,7 +228,8 @@ class TestSysConfig(unittest.TestCase):
         self.assertTrue(os.path.isfile(config_h), config_h)
 
     def test_get_scheme_names(self):
-        wanted = ('nt', 'nt_user', 'osx_framework_user',
+        # XXX Graalpython change: add our scheme
+        wanted = ('graalpy', 'nt', 'nt_user', 'osx_framework_user',
                   'posix_home', 'posix_prefix', 'posix_user')
         self.assertEqual(get_scheme_names(), wanted)
 
@@ -316,6 +317,7 @@ class TestSysConfig(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(my_platform, test_platform)
 
+    @impl_detail("no srcdir", graalvm=False)
     def test_srcdir(self):
         # See Issues #15322, #15364.
         srcdir = sysconfig.get_config_var('srcdir')
@@ -363,6 +365,8 @@ class TestSysConfig(unittest.TestCase):
         self.assertIsNotNone(vars['SO'])
         self.assertEqual(vars['SO'], vars['EXT_SUFFIX'])
 
+    # We intentionally have a different suffix to avoid clashes with CPython
+    @impl_detail("different suffix", graalvm=False)
     @unittest.skipUnless(sys.platform == 'linux' and
                          hasattr(sys.implementation, '_multiarch'),
                          'multiarch-specific test')
@@ -381,6 +385,7 @@ class TestSysConfig(unittest.TestCase):
             else: # 8 byte pointer size
                 self.assertTrue(suffix.endswith('x86_64-linux-gnu.so'), suffix)
 
+    @impl_detail("different suffix", graalvm=False)
     @unittest.skipUnless(sys.platform == 'darwin', 'OS X-specific test')
     def test_osx_ext_suffix(self):
         suffix = sysconfig.get_config_var('EXT_SUFFIX')
@@ -388,6 +393,7 @@ class TestSysConfig(unittest.TestCase):
 
 class MakefileTests(unittest.TestCase):
 
+    @impl_detail("no Makefile", graalvm=False)
     @unittest.skipIf(sys.platform.startswith('win'),
                      'Test is not Windows compatible')
     def test_get_makefile_filename(self):

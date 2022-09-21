@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -76,7 +76,7 @@ def test_class_construction():
     assert global_log[0] == ["__prepare__", ("Foo", tuple()), {}]
 
     initial_dict = {'__qualname__': 'test_class_construction.<locals>.Foo', '__module__': 'tests.test_metaclass'}
-    # if sys.implementation.name == "graalpython":
+    # if sys.implementation.name == "graalpy":
     #     initial_dict = {
     #         '__module__': 'test_metaclass'
     #     }
@@ -113,7 +113,7 @@ def test_metaclass_methods():
         '__init__': MyClass.__init__,
         '__module__': 'tests.test_metaclass'
     }
-    # if sys.implementation.name == "graalpython":
+    # if sys.implementation.name == "graalpy":
     #     ns_dict = {
     #         '__init__': MyClass.__init__,
     #         '__module__': 'test_metaclass',
@@ -128,7 +128,7 @@ def test_metaclass_methods():
     assert len(global_log) == 4
     assert global_log[2] == ['__call__', MyClass, (1, 2), {}]
     assert global_log[3] == ['MyKlass object', 1, 2]
-    
+
 
 class A:
     class B:

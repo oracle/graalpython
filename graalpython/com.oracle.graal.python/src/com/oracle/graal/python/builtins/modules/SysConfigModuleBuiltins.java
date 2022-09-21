@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,22 +40,25 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-
-import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.object.HiddenKey;
+
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SYSCONFIG;
 
 /**
  * this builtin module is used to fill in truffle land config options into the sysconfig python
@@ -63,12 +66,14 @@ import com.oracle.truffle.api.dsl.Specialization;
  */
 @CoreFunctions(defineModule = "_sysconfig")
 public class SysConfigModuleBuiltins extends PythonBuiltins {
-    private static final EconomicMap<String, Object> STATIC_CONFIG_OPTIONS = EconomicMap.create();
+    private static final HiddenKey CONFIG_OPTIONS = new HiddenKey("__data__");
 
     @Override
-    public void initialize(PythonCore core) {
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PInt.intValue(core.getLanguage().getEngineOption(PythonOptions.WithThread)));
+    public void initialize(Python3Core core) {
         super.initialize(core);
+        LinkedHashMap<String, Object> configOptions = new LinkedHashMap<>();
+        configOptions.put("WITH_THREAD", 1);
+        core.lookupBuiltinModule(T__SYSCONFIG).setAttribute(CONFIG_OPTIONS, configOptions);
     }
 
     @Override
@@ -76,12 +81,16 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
         return SysConfigModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "get_config_vars", takesVarArgs = true)
+    @Builtin(name = "get_config_vars", minNumOfPositionalArgs = 1, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetConfigVarsNode extends PythonBuiltinNode {
         @Specialization
-        PDict select(@SuppressWarnings("unused") Object[] arguments) {
-            return factory().createDict(STATIC_CONFIG_OPTIONS);
+        @SuppressWarnings("unchecked")
+        PDict select(PythonModule self,
+                        @SuppressWarnings("unused") Object[] arguments,
+                        @Cached ReadAttributeFromObjectNode readNode) {
+            LinkedHashMap<String, Object> configOptions = (LinkedHashMap<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
+            return factory().createDictFromMap(configOptions);
         }
     }
 }

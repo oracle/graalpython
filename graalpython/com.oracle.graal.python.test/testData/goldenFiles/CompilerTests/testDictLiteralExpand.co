@@ -1,0 +1,12 @@
+Disassembly of <module>:
+  1:1   -   1:4         0 LOAD_STRING                       0    ('a')
+  1:6   -   1:9         2 LOAD_STRING                       1    ('b')
+  1:11  -   1:12        4 LOAD_BYTE_O                       1
+  1:14  -   1:15        6 LOAD_BYTE_O                       2
+  1:0   -   1:33        8 COLLECTION_FROM_STACK             4    (dict)
+  1:19  -   1:20       10 LOAD_NAME                         0    (a)
+  1:0   -   1:33       12 COLLECTION_ADD_COLLECTION         0    (dict)
+  1:22  -   1:26       14 LOAD_NONE
+  1:28  -   1:32       15 LOAD_TRUE_O
+  1:0   -   1:33       16 COLLECTION_ADD_STACK              2    (dict)
+  1:0   -   1:33       18 RETURN_VALUE

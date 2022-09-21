@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'yeild03'> SourceSection: [0,19]`def f(): x += yiel
         WriteNameNodeGen SourceSection: [0,19]`def f(): x += yield`
           Identifier: f
           GeneratorFunctionDefinitionNode Name: f SourceSection: None
-            FrameDescriptor: 2 slots [x, <return_val>]
+            FrameDescriptor: 2 slots [<return_val>, x]
             Active Flags: 2
             For Nodes: 0
             Block Nodes: 0
@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'yeild03'> SourceSection: [0,19]`def f(): x += yiel
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [x, <return_val>]
+              FrameDescriptor: 2 slots [<return_val>, x]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -39,20 +39,17 @@ ModuleRootNode Name: <module 'yeild03'> SourceSection: [0,19]`def f(): x += yiel
                   FunctionBodyNode SourceSection: [9,19]`x += yield`
                     WriteGeneratorFrameVariableNodeGen SourceSection: [9,19]`x += yield`
                       Identifier: x
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [0,x,Illegal]
+                      Frame: [0,x,Illegal]
                       LookupAndCallInplaceNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [9,10]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [9,10]`x`
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         YieldNode SourceSection: [14,19]`yield`
                           flagSlot: 0
                           EmptyNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                         ObjectLiteralNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                    Frame: [1,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

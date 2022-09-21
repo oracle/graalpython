@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,10 +97,10 @@ PyObject* PyMemoryView_FromObject(PyObject *v) {
 }
 
 /* called back from the above upcall only if the object was native */
-PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
+PyObject* PyTruffle_MemoryViewFromObject(PyObject *v, int flags) {
     if (PyObject_CheckBuffer(v)) {
         Py_buffer* buffer = malloc(sizeof(Py_buffer));
-        if (PyObject_GetBuffer(v, buffer, PyBUF_FULL_RO) < 0) {
+        if (PyObject_GetBuffer(v, buffer, flags) < 0) {
             return NULL;
         }
         Py_ssize_t ndim = buffer->ndim;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,39 +40,42 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DEL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
-import java.util.Iterator;
-
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.MapCursor;
-
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.LazyString;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EconomicMapStorage extends HashingStorage {
@@ -85,116 +88,63 @@ public class EconomicMapStorage extends HashingStorage {
         return new EconomicMapStorage(initialCapacity, false);
     }
 
-    public static EconomicMapStorage create(EconomicMap<? extends Object, Object> map) {
-        return new EconomicMapStorage(map);
-    }
-
-    static final class DictKey {
-        final Object value;
-        final long hash;
-
-        DictKey(Object value, long hash) {
-            this.value = value;
-            this.hash = hash;
-        }
-
-        @Override
-        public int hashCode() {
-            return (int) hash;
-        }
-    }
-
-    private final PEMap map;
+    private final ObjectHashMap map;
 
     private EconomicMapStorage(int initialCapacity, boolean hasSideEffects) {
-        this.map = PEMap.create(initialCapacity, false, hasSideEffects);
+        this.map = new ObjectHashMap(initialCapacity, hasSideEffects);
     }
 
     private EconomicMapStorage() {
         this(4, false);
     }
 
-    private EconomicMapStorage(EconomicMapStorage original) {
-        this(original.map.size(), original.map.hasSideEffect());
-        this.map.putAll(original.map);
+    private EconomicMapStorage(ObjectHashMap original) {
+        this.map = original.copy();
     }
 
-    @TruffleBoundary
-    public EconomicMapStorage(EconomicMap<? extends Object, ? extends Object> map) {
-        this(map.size(), false);
-        MapCursor<? extends Object, ? extends Object> c = map.getEntries();
-        while (c.advance()) {
-            Object key = c.getKey();
-            assert key instanceof Integer || key instanceof String;
-            this.map.put(new DictKey(key, key.hashCode()), c.getValue());
-        }
-    }
-
-    @Override
     @ExportMessage
+    @Override
     public int length() {
         return map.size();
-    }
-
-    public static String toString(PString key, ValueProfile profile) {
-        CharSequence profiled = profile.profile(key.getCharSequence());
-        if (profiled instanceof String) {
-            return (String) profiled;
-        } else if (profiled instanceof LazyString) {
-            return ((LazyString) profiled).toString();
-        }
-        return generic(profiled);
-    }
-
-    @TruffleBoundary
-    private static String generic(CharSequence profiled) {
-        return profiled.toString();
     }
 
     @ExportMessage
     @ImportStatic(PGuards.class)
     static class GetItemWithState {
-
         @Specialization
-        static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, key.hashCode());
-            return self.map.get(newKey, lib, lib, findProfile, gotState, state);
+        static Object getItemTruffleString(EconomicMapStorage self, TruffleString key, ThreadState state,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode) {
+            return getNode.get(state, self.map, key, PyObjectHashNode.hash(key, hashCodeNode));
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile)"})
-        static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createClassProfile()") ValueProfile profile,
-                        @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            final String k = EconomicMapStorage.toString(key, profile);
-            return getItemString(self, k, state, findProfile, lib, gotState);
+        @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
+        static Object getItemPString(EconomicMapStorage self, PString key, ThreadState state,
+                        @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
+                        @Shared("builtinProfile") @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isBuiltinClassProfile) {
+            final TruffleString k = stringMaterializeNode.execute(key);
+            return getItemTruffleString(self, k, state, hashCodeNode, getNode);
         }
 
-        @Specialization(replaces = "getItemString", limit = "3")
+        @Specialization(replaces = {"getItemTruffleString", "getItemPString"})
         static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            final long h = self.getHashWithState(key, lib, state, gotState);
-            DictKey newKey = new DictKey(key, h);
-            return self.map.get(newKey, lib, otherlib, findProfile, gotState, state);
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            return getNode.get(state, self.map, key, hashNode.execute(frame, key));
         }
     }
 
+    @ExportMessage
     protected static boolean hasSideEffect(EconomicMapStorage self) {
         return self.map.hasSideEffect();
     }
 
     protected static void convertToSideEffectMap(EconomicMapStorage self) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        self.map.setSideEffectFlag();
+        self.map.setSideEffectingKeysFlag();
     }
 
     @SuppressWarnings("unused")
@@ -207,109 +157,97 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         static boolean maySideEffect(PythonObject o, LookupInheritedAttributeNode.Dynamic lookup) {
-            boolean se = lookup.execute(o, __DEL__) != PNone.NO_VALUE;
-            se = se || !PGuards.isBuiltinFunction(lookup.execute(o, __EQ__));
-            se = se || !PGuards.isBuiltinFunction(lookup.execute(o, __HASH__));
-            return se;
+            return !PGuards.isBuiltinFunction(lookup.execute(o, T___EQ__)) || !PGuards.isBuiltinFunction(lookup.execute(o, T___HASH__));
         }
 
         @Specialization
-        static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, key.hashCode());
-            self.map.put(newKey, value, lib, lib, findProfile, gotState, state);
+        static HashingStorage setItemTruffleString(EconomicMapStorage self, TruffleString key, Object value, ThreadState state,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            putNode.put(state, self.map, key, PyObjectHashNode.hash(key, hashCodeNode), assertNoJavaString(value));
             return self;
         }
 
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile)"})
+        @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
-                        @Exclusive @Cached("createClassProfile()") ValueProfile profile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            final String k = EconomicMapStorage.toString(key, profile);
-            return setItemString(self, k, value, state, findProfile, lib, gotState);
+                        @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
+                        @Shared("tsHash") @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+            final TruffleString k = stringMaterializeNode.execute(key);
+            return setItemTruffleString(self, k, value, state, hashCodeNode, putNode, gotState);
         }
 
-        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile) || !isBuiltin(value,builtinProfile)", "maySideEffect(key, lookup) || maySideEffect(value, lookup)"})
+        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile) || !isBuiltin(value,builtinProfile)",
+                        "maySideEffect(key, lookup) || maySideEffect(value, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, PythonObject key, PythonObject value, ThreadState state,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
-            return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
+            return setItemGeneric(self, key, value, state, putNode, hashNode, gotState);
         }
 
-        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile)", "maySideEffect(key, lookup)"})
+        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile)", "maySideEffect(key, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, PythonObject key, Object value, ThreadState state,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
-            return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
+            return setItemGeneric(self, key, value, state, putNode, hashNode, gotState);
         }
 
-        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(value,builtinProfile)", "maySideEffect(value, lookup)"})
+        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(value,builtinProfile)", "maySideEffect(value, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, Object key, PythonObject value, ThreadState state,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
-            return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
+            return setItemGeneric(self, key, value, state, putNode, hashNode, gotState);
         }
 
-        @Specialization(replaces = "setItemString", limit = "3")
+        @Specialization(replaces = {"setItemPString", "setItemTruffleString"})
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
-            self.map.put(newKey, value, lib, otherlib, findProfile, gotState, state);
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            convertToSideEffectMap(self);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            putNode.put(state, self.map, key, hashNode.execute(frame, key), assertNoJavaString(value));
             return self;
         }
     }
 
-    @TruffleBoundary
-    static boolean advance(MapCursor<DictKey, Object> cursor) {
+    static boolean advance(MapCursor cursor) {
         return cursor.advance();
     }
 
-    @TruffleBoundary
-    static DictKey getDictKey(MapCursor<DictKey, Object> cursor) {
+    static DictKey getDictKey(MapCursor cursor) {
         return cursor.getKey();
     }
 
-    static Object getKey(MapCursor<DictKey, Object> cursor) {
-        return getDictKey(cursor).value;
+    static Object getKey(MapCursor cursor) {
+        return getDictKey(cursor).getValue();
     }
 
-    @TruffleBoundary
-    static Object getValue(MapCursor<DictKey, Object> cursor) {
+    static Object getValue(MapCursor cursor) {
         return cursor.getValue();
     }
 
-    @Override
     @ExportMessage
-    Object forEachUntyped(ForEachNode<Object> node, Object arg) {
-        Object result = arg;
-        MapCursor<DictKey, Object> cursor = map.getEntries();
-        while (advance(cursor)) {
-            result = node.execute(getKey(cursor), result);
-        }
-        return result;
+    Object forEachUntyped(ForEachNode<Object> node, Object arg,
+                    @CachedLibrary("this") HashingStorageLibrary thisLib,
+                    @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile) {
+        return map.forEachUntyped(node, arg, loopProfile);
     }
 
     @ExportMessage
@@ -319,153 +257,139 @@ public class EconomicMapStorage extends HashingStorage {
             return !other.map.hasSideEffect() && self.map.hasSideEffect();
         }
 
-        @TruffleBoundary
         @Specialization(guards = "hasSideEffect(self, other)")
         static HashingStorage toSameTypeSideEffect(EconomicMapStorage self, EconomicMapStorage other,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode) {
             convertToSideEffectMap(other);
-            return toSameType(self, other, findProfile, gotState, lib);
+            return toSameType(self, other, thisLib, loopProfile, putNode);
         }
 
-        @Specialization
+        @Specialization(guards = "!hasSideEffect(self, other)")
         static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            other.map.putAll(self.map, lib, findProfile, gotState);
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode) {
+            MapCursor cursor = self.map.getEntries();
+            // get/put may throw, but we ignore that small inaccuracy
+            final int size = self.map.size();
+            loopProfile.profileCounted(size);
+            LoopNode.reportLoopCount(thisLib, size);
+            while (loopProfile.inject(advance(cursor))) {
+                putNode.put(null, other.map, cursor.getKey().getValue(), cursor.getKey().getPythonHash(), cursor.getValue());
+            }
             return other;
         }
 
-        @TruffleBoundary
         @Specialization
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
+            MapCursor cursor = self.map.getEntries();
+            // get/put may throw, but we ignore that small inaccuracy
+            final int size = self.map.size();
+            loopProfile.profileCounted(size);
+            LoopNode.reportLoopCount(thisLib, size);
+            while (loopProfile.inject(advance(cursor))) {
                 result = lib.setItem(result, getKey(cursor), getValue(cursor));
             }
             return result;
         }
     }
 
-    protected static boolean hasSideEffect(Object o, LookupInheritedAttributeNode.Dynamic lookup) {
-        return o instanceof PythonObject && lookup.execute(o, __DEL__) != PNone.NO_VALUE;
+    @ExportMessage
+    HashingStorage delItemWithState(Object key, ThreadState state,
+                    @Cached ObjectHashMap.RemoveNode removeNode,
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
+        VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+        removeNode.remove(state, map, key, hashNode.execute(frame, key));
+        return this;
     }
 
     @ExportMessage
-    static class DelItemWithState {
-
-        @Specialization(guards = "!hasSideEffect(self)", limit = "2")
-        static HashingStorage delItemWithState(EconomicMapStorage self, Object key, ThreadState state,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
-            self.map.removeKey(newKey, lib, otherlib, gotState, state);
-            return self;
-        }
-
-        @Specialization(limit = "2")
-        static HashingStorage delItemWithStateWithSideEffect(EconomicMapStorage self, Object key, ThreadState state,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached CallUnaryMethodNode callNode,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
-            Object value = self.map.removeKey(newKey, lib, otherlib, gotState, state);
-            if (hasSideEffect(key, lookup)) {
-                callNode.executeObject(lookup.execute(key, __DEL__), key);
-            }
-            if (hasSideEffect(value, lookup)) {
-                callNode.executeObject(lookup.execute(value, __DEL__), value);
-            }
-            return self;
-        }
-    }
-
-    @ExportMessage
-    static class Clear {
-
-        @Specialization(guards = "!hasSideEffect(self)")
-        static HashingStorage clear(EconomicMapStorage self) {
-            self.map.clear();
-            return self;
-        }
-
-        @Specialization
-        static HashingStorage clearWithSideEffect(EconomicMapStorage self,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached CallUnaryMethodNode callNode) {
-            if (self.map.size() == 0) {
-                return self;
-            }
-            Object[] entries = new Object[self.map.size() * 2];
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            int i = 0;
-            while (advance(cursor)) {
-                Object key = getKey(cursor);
-                Object value = getValue(cursor);
-                entries[i++] = hasSideEffect(key, lookup) ? key : null;
-                entries[i++] = hasSideEffect(value, lookup) ? value : null;
-            }
-            self.map.clear();
-            for (Object o : entries) {
-                if (o != null) {
-                    callNode.executeObject(lookup.execute(o, __DEL__), o);
-                }
-            }
-            return self;
-        }
-
-    }
-
     @Override
+    HashingStorage clear() {
+        map.clear();
+        return this;
+    }
+
     @ExportMessage
+    @Override
     public HashingStorage copy() {
-        return new EconomicMapStorage(this);
+        return new EconomicMapStorage(this.map);
     }
 
     @ExportMessage
     public static class EqualsWithState {
-        @TruffleBoundary
         @Specialization
         static boolean equalSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             if (self.map.size() != other.map.size()) {
                 return false;
             }
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
-                Object otherValue = other.map.get(getDictKey(cursor), compareLib1, compareLib2, findProfile, gotState, state);
-                if (otherValue != null && !compareLib1.equalsWithState(otherValue, getValue(cursor), compareLib2, state)) {
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            MapCursor cursor = self.map.getEntries();
+            int counter = 0;
+            try {
+                while (loopProfile.profile(advance(cursor))) {
+                    if (CompilerDirectives.hasNextTier()) {
+                        counter++;
+                    }
+                    Object otherValue = getNode.get(state, other.map, cursor.getKey());
+                    if (earlyExitProfile.profile(!(otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))))) {
+                        // if->continue such that the "true" count of the profile represents the
+                        // loop iterations and the "false" count the early exit
+                        continue;
+                    }
                     return false;
+                }
+            } finally {
+                if (counter != 0) {
+                    LoopNode.reportLoopCount(thisLib, counter);
                 }
             }
             return true;
         }
 
-        @TruffleBoundary
         @Specialization
         static boolean equalGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary selflib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary otherlib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2) {
-            if (self.map.size() != otherlib.lengthWithState(other, state)) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary otherlib,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            if (self.map.size() != otherlib.length(other)) {
                 return false;
             }
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
-                Object otherValue = selflib.getItemWithState(self, getKey(cursor), state);
-                if (otherValue != null && !compareLib1.equalsWithState(otherValue, getValue(cursor), compareLib2, state)) {
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            MapCursor cursor = self.map.getEntries();
+            int counter = 0;
+            try {
+                while (loopProfile.profile(advance(cursor))) {
+                    if (CompilerDirectives.hasNextTier()) {
+                        counter++;
+                    }
+                    Object otherValue = otherlib.getItemWithState(other, getKey(cursor), state);
+                    if (earlyExitProfile.profile(!(otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))))) {
+                        // if->continue such that the "true" count of the profile represents the
+                        // loop iterations and the "false" count the early exit
+                        continue;
+                    }
                     return false;
+                }
+            } finally {
+                if (counter != 0) {
+                    LoopNode.reportLoopCount(thisLib, counter);
                 }
             }
             return true;
@@ -474,21 +398,32 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class CompareKeysWithState {
-        @TruffleBoundary
         @Specialization
         static int compareSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode) {
             int size = self.map.size();
             int size2 = other.map.size();
             if (size > size2) {
                 return 1;
             }
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
-                if (!other.map.containsKey(getDictKey(cursor), lib, lib, findProfile, gotState, state)) {
+            MapCursor cursor = self.map.getEntries();
+            int counter = 0;
+            try {
+                while (loopProfile.profile(advance(cursor))) {
+                    if (CompilerDirectives.hasNextTier()) {
+                        counter++;
+                    }
+                    if (earlyExitProfile.profile(getNode.get(state, other.map, getDictKey(cursor)) != null)) {
+                        continue;
+                    }
                     return 1;
+                }
+            } finally {
+                if (counter != 0) {
+                    LoopNode.reportLoopCount(thisLib, counter);
                 }
             }
             if (size == size2) {
@@ -498,19 +433,32 @@ public class EconomicMapStorage extends HashingStorage {
             }
         }
 
-        @TruffleBoundary
-        @Specialization(limit = "4")
+        @Specialization
         static int compareGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary("other") HashingStorageLibrary lib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             int size = self.map.size();
             int length = lib.length(other);
             if (size > length) {
                 return 1;
             }
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
-                if (!lib.hasKeyWithState(other, getKey(cursor), state)) {
+            MapCursor cursor = self.map.getEntries();
+            int counter = 0;
+            try {
+                while (loopProfile.inject(advance(cursor))) {
+                    if (CompilerDirectives.hasNextTier()) {
+                        counter++;
+                    }
+                    if (earlyExitProfile.profile(lib.hasKeyWithState(other, getKey(cursor), state))) {
+                        continue;
+                    }
                     return 1;
+                }
+            } finally {
+                if (counter != 0) {
+                    LoopNode.reportLoopCount(thisLib, counter);
                 }
             }
             if (size == length) {
@@ -523,31 +471,50 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class IntersectWithState {
-        @TruffleBoundary
         @Specialization
         static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("setSideEffect") @Cached BranchProfile setSideEffectFlag) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
-                if (other.map.containsKey(getDictKey(cursor), lib, lib, findProfile, gotState, state)) {
-                    result.map.put(getDictKey(cursor), getValue(cursor));
+            ObjectHashMap resultMap = result.map;
+            ObjectHashMap otherMap = other.map;
+            if (self.map.hasSideEffect() || otherMap.hasSideEffect()) {
+                setSideEffectFlag.enter();
+                resultMap.setSideEffectingKeysFlag();
+            }
+            MapCursor cursor = self.map.getEntries();
+            // get/put may throw, but we ignore that small inaccuracy
+            final int size = self.map.size();
+            loopProfile.profileCounted(size);
+            LoopNode.reportLoopCount(thisLib, size);
+            while (loopProfile.inject(advance(cursor))) {
+                if (getNode.get(state, otherMap, getDictKey(cursor)) != null) {
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
         }
 
-        @TruffleBoundary
-        @Specialization(limit = "4")
+        @Specialization
         static HashingStorage intersectGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("other") HashingStorageLibrary hlib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
+            ObjectHashMap resultMap = result.map;
+            resultMap.setSideEffectingKeysFlag();
+            MapCursor cursor = self.map.getEntries();
+            // get/put may throw, but we ignore that small inaccuracy
+            final int size = self.map.size();
+            loopProfile.profileCounted(size);
+            LoopNode.reportLoopCount(thisLib, size);
+            while (loopProfile.inject(advance(cursor))) {
                 if (hlib.hasKey(other, getKey(cursor))) {
-                    result.map.put(getDictKey(cursor), getValue(cursor));
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -556,31 +523,50 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class DiffWithState {
-        @TruffleBoundary
         @Specialization
         static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("setSideEffect") @Cached BranchProfile setSideEffectFlag) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
-                if (!other.map.containsKey(getDictKey(cursor), lib, lib, findProfile, gotState, state)) {
-                    result.map.put(getDictKey(cursor), getValue(cursor));
+            ObjectHashMap resultMap = result.map;
+            ObjectHashMap otherMap = other.map;
+            if (self.map.hasSideEffect() || otherMap.hasSideEffect()) {
+                setSideEffectFlag.enter();
+                resultMap.setSideEffectingKeysFlag();
+            }
+            MapCursor cursor = self.map.getEntries();
+            // get/put may throw, but we ignore that small inaccuracy
+            final int size = self.map.size();
+            loopProfile.profileCounted(size);
+            LoopNode.reportLoopCount(thisLib, size);
+            while (loopProfile.inject(advance(cursor))) {
+                if (getNode.get(state, otherMap, getDictKey(cursor)) == null) {
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
         }
 
-        @TruffleBoundary
-        @Specialization(limit = "4")
+        @Specialization
         static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("other") HashingStorageLibrary hlib) {
+                        @CachedLibrary("self") HashingStorageLibrary thisLib,
+                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             EconomicMapStorage result = EconomicMapStorage.create();
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (advance(cursor)) {
+            ObjectHashMap resultMap = result.map;
+            resultMap.setSideEffectingKeysFlag();
+            MapCursor cursor = self.map.getEntries();
+            // get/put may throw, but we ignore that small inaccuracy
+            final int size = self.map.size();
+            loopProfile.profileCounted(size);
+            LoopNode.reportLoopCount(thisLib, size);
+            while (loopProfile.profile(advance(cursor))) {
                 if (!hlib.hasKey(other, getKey(cursor))) {
-                    result.map.put(getDictKey(cursor), getValue(cursor));
+                    putNode.put(state, resultMap, getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -590,76 +576,38 @@ public class EconomicMapStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage xor(HashingStorage other,
                     @CachedLibrary("this") HashingStorageLibrary selfLib,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary otherLib) {
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary otherLib) {
         HashingStorage a = selfLib.diff(this, other);
         HashingStorage b = otherLib.diff(other, this);
         return selfLib.union(a, b);
     }
 
-    @Override
     @ExportMessage
+    @Override
     public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new KeysIterator(map.getKeys().iterator()));
+        return map.keys();
     }
 
-    @Override
     @ExportMessage
+    @Override
     public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new KeysIterator(map.reverseKeyIterator()));
+        return map.reverseKeys();
     }
 
-    static final class KeysIterator implements Iterator<Object> {
-        private final Iterator<DictKey> keysIterator;
-
-        KeysIterator(Iterator<DictKey> iter) {
-            this.keysIterator = iter;
-        }
-
-        public Iterator<DictKey> getKeysIterator() {
-            return keysIterator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return keysIterator.hasNext();
-        }
-
-        @Override
-        public Object next() {
-            return keysIterator.next().value;
+    protected void setValueForAllKeys(VirtualFrame frame, Object value, PutNode putNode, ConditionProfile hasFrame, LoopConditionProfile loopProfile) {
+        MapCursor cursor = map.getEntries();
+        final int size = map.size();
+        loopProfile.profileCounted(size);
+        LoopNode.reportLoopCount(putNode, size);
+        ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
+        while (loopProfile.inject(advance(cursor))) {
+            putNode.put(state, map, getDictKey(cursor), value);
         }
     }
 
-    protected void setValue(DictKey key, Object value, PythonObjectLibrary lib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
-        this.map.put(key, value, lib, lib, findProfile, gotState, state);
-    }
-
-    protected HashingStorageIterable<DictKey> dictKeys() {
-        return new HashingStorageIterable<>(new DictKeysIterator(map.getKeys().iterator()));
-    }
-
-    static final class DictKeysIterator implements Iterator<DictKey> {
-        private final Iterator<DictKey> keysIterator;
-
-        DictKeysIterator(Iterator<DictKey> iter) {
-            this.keysIterator = iter;
-        }
-
-        public Iterator<DictKey> getKeysIterator() {
-            return keysIterator;
-        }
-
-        @TruffleBoundary
-        @Override
-        public boolean hasNext() {
-            return keysIterator.hasNext();
-        }
-
-        @TruffleBoundary
-        @Override
-        public DictKey next() {
-            return keysIterator.next();
-        }
+    @TruffleBoundary
+    public void putUncached(TruffleString key, Object value) {
+        ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
     @Override
@@ -668,8 +616,14 @@ public class EconomicMapStorage extends HashingStorage {
         StringBuilder builder = new StringBuilder();
         builder.append("map(size=").append(length()).append(", {");
         String sep = "";
-        MapCursor<DictKey, Object> cursor = map.getEntries();
+        MapCursor cursor = map.getEntries();
+        int i = 0;
         while (advance(cursor)) {
+            i++;
+            if (i >= 100) {
+                builder.append("...");
+                break;
+            }
             builder.append(sep);
             builder.append("(").append(getKey(cursor)).append(",").append(getValue(cursor)).append(")");
             sep = ",";

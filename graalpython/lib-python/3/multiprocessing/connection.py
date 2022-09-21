@@ -47,9 +47,11 @@ _mmap_counter = itertools.count()
 default_family = 'AF_INET'
 families = ['AF_INET']
 
-if hasattr(socket, 'AF_UNIX'):
-    default_family = 'AF_UNIX'
-    families += ['AF_UNIX']
+# Begin Truffle change
+# if hasattr(socket, 'AF_UNIX'):
+#    default_family = 'AF_UNIX'
+#    families += ['AF_UNIX']
+# End Truffle change
 
 if sys.platform == 'win32':
     default_family = 'AF_PIPE'
@@ -121,8 +123,10 @@ class _ConnectionBase:
 
     def __init__(self, handle, readable=True, writable=True):
         handle = handle.__index__()
-        if handle < 0:
-            raise ValueError("invalid handle")
+        # Begin Truffle change        
+        # if handle < 0:
+        #    raise ValueError("invalid handle")
+        # End Truffle change
         if not readable and not writable:
             raise ValueError(
                 "at least one of `readable` and `writable` must be True")
@@ -363,11 +367,22 @@ class Connection(_ConnectionBase):
         _read = _multiprocessing.recv
     else:
         def _close(self, _close=os.close):
-            _close(self._handle)
+            # Begin Truffle change
+            # _close(self._handle)
+            if(self._handle < 0):
+                _multiprocessing._close(self._handle)
+            else:    
+                _close(self._handle)
+            # End Truffle change
         _write = os.write
         _read = os.read
 
     def _send(self, buf, write=_write):
+        # Begin Truffle change
+        if(self._handle < 0):
+            self._send_mp_write(buf.tobytes())
+            return
+        # End Truffle change
         remaining = len(buf)
         while True:
             n = write(self._handle, buf)
@@ -377,6 +392,10 @@ class Connection(_ConnectionBase):
             buf = buf[n:]
 
     def _recv(self, size, read=_read):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._recv_mp_read(size)
+        # End Truffle change
         buf = io.BytesIO()
         handle = self._handle
         remaining = size
@@ -393,6 +412,11 @@ class Connection(_ConnectionBase):
         return buf
 
     def _send_bytes(self, buf):
+        # Begin Truffle change
+        if self._handle < 0:
+            self._send_mp_write(buf.tobytes())
+            return
+        # End Truffle change
         n = len(buf)
         if n > 0x7fffffff:
             pre_header = struct.pack("!i", -1)
@@ -416,6 +440,10 @@ class Connection(_ConnectionBase):
                 self._send(header + buf)
 
     def _recv_bytes(self, maxsize=None):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._recv_mp_read(maxsize)
+        # End Truffle change
         buf = self._recv(4)
         size, = struct.unpack("!i", buf.getvalue())
         if size == -1:
@@ -425,10 +453,20 @@ class Connection(_ConnectionBase):
             return None
         return self._recv(size)
 
+    # Begin Truffle change
+    def _recv_mp_read(self, size):
+        # size is irelevant, _multiprocessing._read returns 
+        # the whole byte array at once
+        chunk = _multiprocessing._read(self._handle, size)
+        return io.BytesIO(chunk)
+
+    def _send_mp_write(self, bytes):        
+        _multiprocessing._write(self._handle, bytes)
+    # End Truffle change
+
     def _poll(self, timeout):
         r = wait([self], timeout)
         return bool(r)
-
 
 #
 # Public functions
@@ -529,7 +567,10 @@ if sys.platform != 'win32':
             c1 = Connection(s1.detach())
             c2 = Connection(s2.detach())
         else:
-            fd1, fd2 = os.pipe()
+            # Begin Truffle change
+            # fd1, fd2 = os.pipe()
+            fd1, fd2 = _multiprocessing._pipe()
+            # End Truffle change
             c1 = Connection(fd1, writable=False)
             c2 = Connection(fd2, readable=False)
 
@@ -909,6 +950,7 @@ if sys.platform == 'win32':
 
 else:
 
+# Begin Truffle change: original wait works only with actual file descriptors
     import selectors
 
     # poll/select have the advantage of not requiring any extra file
@@ -919,12 +961,12 @@ else:
     else:
         _WaitSelector = selectors.SelectSelector
 
-    def wait(object_list, timeout=None):
+    def original_wait(object_list, timeout=None):
         '''
         Wait till an object in object_list is ready/readable.
 
         Returns list of those objects in object_list which are ready/readable.
-        '''
+        #'''
         with _WaitSelector() as selector:
             for obj in object_list:
                 selector.register(obj, selectors.EVENT_READ)
@@ -941,6 +983,43 @@ else:
                         timeout = deadline - time.monotonic()
                         if timeout < 0:
                             return ready
+
+
+    def wait(object_list, timeout=None):
+        '''
+        Wait till an object in object_list is ready/readable.
+
+        Returns list of those objects in object_list which are ready/readable.
+        #'''
+
+        mp_select_list = []
+        mp_original_objs = []
+        selectors_list = []
+        for obj in object_list:
+            fileno = obj.fileno() if hasattr(obj, "fileno") else obj
+            if(fileno < 0):
+                mp_select_list.append(fileno)
+                mp_original_objs.append(obj)
+            else:
+                selectors_list.append(obj)
+
+        # If there are no "fake" multiprocessing fds, then just use the original implementation
+        if not mp_select_list:
+            return original_wait(object_list, timeout)
+
+        # From the docs:
+        # timeout is None -> block until ready
+        # timeout <= 0    -> no blocking, just check
+        # Our internal builtin only takes float value to make it simpler:
+        # timeout == 0 -> block until ready
+        # timeout < 0  -> no blocking
+        if timeout is None:
+            normalized_timeout = 0
+        else:
+            t = float(timeout)
+            normalized_timeout = -1 if t == 0 else t
+        return _multiprocessing._select(mp_select_list, mp_original_objs, selectors_list, normalized_timeout)
+# End Truffle change
 
 #
 # Make connection and socket objects sharable if possible

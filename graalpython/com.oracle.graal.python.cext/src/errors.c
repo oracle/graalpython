@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -163,15 +163,19 @@ NO_INLINE
 PyObject* PyErr_Format(PyObject* exception, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    PyObject* formatted_msg = PyTruffle_Unicode_FromFormat(fmt, args);
+    PyObject* formatted_msg = PyUnicode_FromFormatV(fmt, args);
     va_end(args);
     UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));
     return NULL;
 }
 
-UPCALL_ID(PyErr_WriteUnraisable);
 void PyErr_WriteUnraisable(PyObject *obj) {
-    UPCALL_CEXT_VOID(_jls_PyErr_WriteUnraisable, native_to_java(obj));
+    _PyErr_WriteUnraisableMsg(NULL, obj);
+}
+
+UPCALL_ID(_PyErr_WriteUnraisableMsg);
+void _PyErr_WriteUnraisableMsg(const char *err_msg_str, PyObject *obj) {
+    UPCALL_CEXT_VOID(_jls__PyErr_WriteUnraisableMsg, err_msg_str != NULL ? polyglot_from_string(err_msg_str, SRC_CS) : NULL, native_to_java(obj));
 }
 
 UPCALL_ID(PyErr_Display);
@@ -209,6 +213,16 @@ PyObject* PyErr_SetFromErrno(PyObject* exc) {
 }
 
 // taken from CPython "Python/errors.c"
+PyObject *
+PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
+{
+    PyObject *name = filename ? PyUnicode_DecodeFSDefault(filename) : NULL;
+    PyObject *result = PyErr_SetFromErrnoWithFilenameObjects(exc, name, NULL);
+    Py_XDECREF(name);
+    return result;
+}
+
+// taken from CPython "Python/errors.c"
 PyObject* PyErr_SetFromErrnoWithFilenameObject(PyObject* exc, PyObject* filenameObject) {
     return PyErr_SetFromErrnoWithFilenameObjects(exc, filenameObject, NULL);
 }
@@ -223,7 +237,7 @@ PyObject* PyErr_SetFromErrnoWithFilenameObjects(PyObject* exc, PyObject* filenam
         char *s = strerror(i);
         // TODO(fa): use PyUnicode_DecodeLocale once available
         // message = PyUnicode_DecodeLocale(s, "surrogateescape");
-        message = polyglot_from_string(s, SRC_CS);
+        message = PyUnicode_FromString(s);
     }
     else {
         /* Sometimes errno didn't get set */

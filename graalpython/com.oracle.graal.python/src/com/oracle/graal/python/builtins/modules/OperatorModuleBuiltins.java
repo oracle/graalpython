@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,30 +41,28 @@
 
 package com.oracle.graal.python.builtins.modules;
 
-import java.math.BigInteger;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -83,88 +81,22 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "truth", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class TruthNode extends PythonUnaryBuiltinNode {
-
+    abstract static class TruthNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean doBoolean(boolean value) {
-            return value;
-        }
-
-        @Specialization
-        public boolean doNone(@SuppressWarnings("unused") PNone value) {
-            return false;
-        }
-
-        @Specialization
-        public boolean doInt(long value) {
-            return value != 0;
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public boolean doPInt(PInt value) {
-            return !value.getValue().equals(BigInteger.ZERO);
-        }
-
-        @Specialization
-        public boolean doDouble(double value) {
-            return value != 0;
-        }
-
-        @Specialization
-        public boolean doString(String value) {
-            return !value.isEmpty();
-        }
-
-        private @Child LookupAndCallUnaryNode boolNode;
-        private @Child LookupAndCallUnaryNode lenNode;
-
-        @Fallback
-        public boolean doObject(VirtualFrame frame, Object value) {
-            if (boolNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                boolNode = insert((LookupAndCallUnaryNode.create(SpecialMethodNames.__BOOL__)));
-            }
-            Object result = boolNode.executeObject(frame, value);
-            if (result != PNone.NO_VALUE) {
-                return (boolean) result;
-            }
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert((LookupAndCallUnaryNode.create(SpecialMethodNames.__LEN__)));
-            }
-
-            result = lenNode.executeObject(frame, value);
-            if (result == PNone.NO_VALUE) {
-                return false;
-            }
-            return (int) result != 0;
+        static Object doObject(VirtualFrame frame, Object object,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            return isTrueNode.execute(frame, object);
         }
     }
 
     @Builtin(name = "getitem", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object doDict(PDict dict, Object item) {
-            return dict.getItem(item);
-        }
-
-        @Specialization
-        public Object doSequence(VirtualFrame frame, PSequence value, Object index,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(frame, getStorage.execute(value), index);
-        }
-
-        @Specialization
-        public Object doObject(VirtualFrame frame, Object value, Object index,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return getItemNode.executeObject(frame, value, index);
+        static Object doObject(VirtualFrame frame, Object value, Object index,
+                        @Cached PyObjectGetItem getItem) {
+            return getItem.execute(frame, value, index);
         }
     }
 
@@ -172,22 +104,74 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_compare_digest", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
+    abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public boolean doString(String arg1, String arg2) {
-            return arg1.equals(arg2);
+        boolean compare(VirtualFrame frame, Object left, Object right,
+                        @Cached CastToJavaStringNode cast,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            try {
+                String leftString = cast.execute(left);
+                String rightString = cast.execute(right);
+                return tscmp(leftString, rightString);
+            } catch (CannotCastException e) {
+                if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
+                    throw raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
+                }
+                Object savedState = IndirectCallContext.enter(frame, this);
+                Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
+                try {
+                    Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
+                    try {
+                        return tscmp(bufferLib.getCopiedByteArray(leftBuffer), bufferLib.getCopiedByteArray(rightBuffer));
+                    } finally {
+                        bufferLib.release(rightBuffer);
+                    }
+                } finally {
+                    bufferLib.release(leftBuffer);
+                    IndirectCallContext.exit(frame, this, savedState);
+                }
+            }
         }
 
+        // Comparison that's safe against timing attacks
+        @TruffleBoundary
+        private static boolean tscmp(String leftIn, String right) {
+            String left = leftIn;
+            int result = 0;
+            if (left.length() != right.length()) {
+                left = right;
+                result = 1;
+            }
+            for (int i = 0; i < left.length(); i++) {
+                result |= left.charAt(i) ^ right.charAt(i);
+            }
+            return result == 0;
+        }
+
+        @TruffleBoundary
+        private static boolean tscmp(byte[] leftIn, byte[] right) {
+            byte[] left = leftIn;
+            int result = 0;
+            if (left.length != right.length) {
+                left = right;
+                result = 1;
+            }
+            for (int i = 0; i < left.length; i++) {
+                result |= left[i] ^ right[i];
+            }
+            return result == 0;
+        }
     }
 
     @Builtin(name = "index", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object asIndex(VirtualFrame frame, Object value,
-                        @CachedLibrary(value = "value") PythonObjectLibrary pol) {
-            return pol.asIndexWithFrame(value, frame);
+        @Specialization
+        static Object asIndex(VirtualFrame frame, Object value,
+                        @Cached PyNumberIndexNode index) {
+            return index.execute(frame, value);
         }
     }
 }

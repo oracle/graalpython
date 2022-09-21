@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,9 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
+
+import static com.oracle.graal.python.parser.sst.FactorySSTVisitor.ts;
 
 public final class ArgDefListBuilder {
 
@@ -84,7 +87,6 @@ public final class ArgDefListBuilder {
 
     }
 
-    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;
@@ -198,15 +200,15 @@ public final class ArgDefListBuilder {
             for (Parameter param : args) {
                 if (param.name != null) {
                     // don't put splat marker
-                    functionScope.createSlotIfNotPresent(param.name);
+                    functionScope.defineSlot(param.name);
                 } else {
-                    functionScope.createSlotIfNotPresent(SPLAT_MARKER_NAME);
+                    functionScope.defineSlot(SPLAT_MARKER_NAME);
                 }
             }
         }
         if (kwargs != null) {
             for (Parameter param : kwargs) {
-                functionScope.createSlotIfNotPresent(param.name);
+                functionScope.defineSlot(param.name);
             }
         }
     }
@@ -240,7 +242,7 @@ public final class ArgDefListBuilder {
 
     public StatementNode[] getArgumentNodes(ScopeEnvironment scopeEnvironment) {
         if (args == null && kwargs == null) {
-            return new StatementNode[0];
+            return StatementNode.EMPTY_STATEMENT_ARRAY;
         }
         boolean starMarker = hasSplatStarMarker();
         int delta = starMarker ? 1 : 0;
@@ -251,21 +253,21 @@ public final class ArgDefListBuilder {
         for (int i = 0; i < argsLen - delta; i++) {
             if (splatIndex == i) {
                 if (!starMarker) {
-                    nodes[i] = scopeEnvironment.getWriteVarArgsToLocal(args.get(i).name, i);
+                    nodes[i] = scopeEnvironment.getWriteVarArgsToLocal(args.get(i).name);
                 }
             } else {
                 nodes[i] = scopeEnvironment.getWriteArgumentToLocal(args.get(i).name, i);
             }
         }
 
-        String[] kwId = kwargIndex == -1 ? PythonUtils.EMPTY_STRING_ARRAY : new String[kwargsLen - 1];
+        TruffleString[] kwId = kwargIndex == -1 ? PythonUtils.EMPTY_TRUFFLESTRING_ARRAY : new TruffleString[kwargsLen - 1];
         delta = argsLen - delta;
         int starMarkerDelta = starMarker ? 0 : 1;
         for (int i = 0; i < kwargsLen; i++) {
             if (i != kwargIndex) {
                 nodes[i + delta] = scopeEnvironment.getWriteArgumentToLocal(kwargs.get(i).name, i + delta - starMarkerDelta);
                 if (kwargIndex != -1) {
-                    kwId[i] = kwargs.get(i).name;
+                    kwId[i] = ts(kwargs.get(i).name);
                 }
             } else {
                 nodes[i + delta] = scopeEnvironment.getWriteKwArgsToLocal(kwargs.get(i).name, kwId);
@@ -290,7 +292,7 @@ public final class ArgDefListBuilder {
 
     public ExpressionNode[] getDefaultParameterValues(FactorySSTVisitor visitor) {
         if (argsWithDefValue == null) {
-            return EMPTY;
+            return ExpressionNode.EMPTY_ARRAY;
         }
         ExpressionNode[] nodes = new ExpressionNode[argsWithDefValue.size()];
         for (int i = 0; i < argsWithDefValue.size(); i++) {
@@ -305,7 +307,7 @@ public final class ArgDefListBuilder {
         }
         FunctionDefinitionNode.KwDefaultExpressionNode[] nodes = new FunctionDefinitionNode.KwDefaultExpressionNode[kwargsWithDefValue.size()];
         for (int i = 0; i < kwargsWithDefValue.size(); i++) {
-            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(kwargsWithDefValue.get(i).name, (ExpressionNode) kwargsWithDefValue.get(i).value.accept(visitor));
+            nodes[i] = FunctionDefinitionNode.KwDefaultExpressionNode.create(ts(kwargsWithDefValue.get(i).name), (ExpressionNode) kwargsWithDefValue.get(i).value.accept(visitor));
         }
         return nodes;
     }
@@ -315,27 +317,27 @@ public final class ArgDefListBuilder {
             return Signature.EMPTY;
         }
         int i;
-        String[] ids = null;
-        String[] kwids = null;
+        TruffleString[] ids = null;
+        TruffleString[] kwids = null;
         boolean splatMarker = hasSplatStarMarker();
         if (args != null) {
-            ids = new String[args.size() - (splatIndex == -1 ? 0 : 1)];
+            ids = new TruffleString[args.size() - (splatIndex == -1 ? 0 : 1)];
             i = 0;
             if (ids.length > 0) {
                 for (Parameter param : args) {
                     if (i != splatIndex) {
-                        ids[i++] = param.name;
+                        ids[i++] = ts(param.name);
                     }
                 }
             }
         }
         if (kwargs != null) {
-            kwids = new String[kwargs.size() - (kwargIndex == -1 ? 0 : 1)];
+            kwids = new TruffleString[kwargs.size() - (kwargIndex == -1 ? 0 : 1)];
             i = 0;
             if (kwids.length > 0) {
                 for (Parameter param : kwargs) {
                     if (i != kwargIndex) {
-                        kwids[i++] = param.name;
+                        kwids[i++] = ts(param.name);
                     }
                 }
             }

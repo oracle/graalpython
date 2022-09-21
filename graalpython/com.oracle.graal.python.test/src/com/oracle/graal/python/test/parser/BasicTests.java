@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,15 @@
 
 package com.oracle.graal.python.test.parser;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.io.File;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.nodes.frame.PythonFrame;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -100,6 +103,11 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void annAssign02() throws Exception {
+        checkTreeResult("a: 1");
+    }
+
+    @Test
     public void assert01() throws Exception {
         checkTreeResult("assert True");
     }
@@ -125,9 +133,7 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void inline01() throws Exception {
-        FrameDescriptor fd = new FrameDescriptor(44);
-        fd.addFrameSlot("a");
-        fd.addFrameSlot("b");
+        FrameDescriptor fd = PythonFrame.createTestFrameDescriptor(tsLiteral("a"), tsLiteral("b"));
         Frame frame = Truffle.getRuntime().createVirtualFrame(new Object[]{2, 3, null}, fd);
         checkTreeResult("a + b", PythonParser.ParserMode.InlineEvaluation, frame);
     }
@@ -700,6 +706,16 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void tryPrint() throws Exception {
+        checkScopeAndTree(
+                        "try:\n" +
+                                        "  1\n" +
+                                        "except:\n" +
+                                        "  pass",
+                        PythonParser.ParserMode.Statement);
+    }
+
+    @Test
     public void tuple01() throws Exception {
         checkTreeResult("(1, 2, 3)");
     }
@@ -919,31 +935,52 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void withPrint() throws Exception {
+        checkScopeAndTree(
+                        "with A():\n" +
+                                        "  1",
+                        PythonParser.ParserMode.Statement);
+    }
+
+    @Test
     public void spaceEnd() throws Exception {
         checkTreeResult("x=5 ");
     }
 
     @Test
     public void isIdentifier() throws Exception {
-        PythonCore core = context.getCore();
-        PythonParser parser = core.getParser();
-        Assert.assertTrue(parser.isIdentifier(core, "hello"));
-        Assert.assertTrue(parser.isIdentifier(core, "_"));
-        Assert.assertTrue(parser.isIdentifier(core, "b0"));
-        Assert.assertTrue(parser.isIdentifier(core, "bc"));
-        Assert.assertTrue(parser.isIdentifier(core, "b_"));
-        Assert.assertTrue(parser.isIdentifier(core, "µ"));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("hello")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("_")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("b0")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("bc")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("b_")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("µ")));
 
-        Assert.assertFalse(parser.isIdentifier(core, " hello"));
-        Assert.assertFalse(parser.isIdentifier(core, "hello "));
-        Assert.assertFalse(parser.isIdentifier(core, "hel lo"));
-        Assert.assertFalse(parser.isIdentifier(core, "hel?o"));
-        Assert.assertFalse(parser.isIdentifier(core, "hel!o"));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("for")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("break")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("while")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("return")));
+        Assert.assertTrue(StringUtils.isIdentifierUncached(tsLiteral("def")));
 
-        Assert.assertFalse(parser.isIdentifier(core, " "));
-        Assert.assertFalse(parser.isIdentifier(core, "["));
-        Assert.assertFalse(parser.isIdentifier(core, "©"));
-        Assert.assertFalse(parser.isIdentifier(core, "0"));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral(" hello")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hello ")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hel lo")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hel?o")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("hel!o")));
+
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral(" ")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("[")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("©")));
+        Assert.assertFalse(StringUtils.isIdentifierUncached(tsLiteral("0")));
+    }
+
+    @Test
+    public void issueGR28345() throws Exception {
+        // wrong node offsets when unicode with various length is used in a comment
+        checkTreeResult("def test_isidentifier():\n" +
+                        "  # \"𝔘𝔫𝔦𝔠𝔬𝔡𝔢\"\n" +
+                        "  self.checkequal(True, 'helloworld', 'startswith', ('hellowo',\n" +
+                        "                                                           'rld', 'lowo'), 3)");
     }
 
     private void checkScopeAndTree() throws Exception {

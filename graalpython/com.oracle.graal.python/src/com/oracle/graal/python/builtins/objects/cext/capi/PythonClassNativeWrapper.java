@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper mimics the correct shape
@@ -51,10 +53,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  */
 public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
-    private Object getBufferProc;
-    private Object releaseBufferProc;
 
-    private PythonClassNativeWrapper(PythonManagedClass object, String name) {
+    private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name) {
         super(object);
         this.nameWrapper = new CStringWrapper(name);
     }
@@ -63,23 +63,7 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         return nameWrapper;
     }
 
-    public Object getGetBufferProc() {
-        return getBufferProc;
-    }
-
-    public void setGetBufferProc(Object getBufferProc) {
-        this.getBufferProc = getBufferProc;
-    }
-
-    public Object getReleaseBufferProc() {
-        return releaseBufferProc;
-    }
-
-    public void setReleaseBufferProc(Object releaseBufferProc) {
-        this.releaseBufferProc = releaseBufferProc;
-    }
-
-    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, String name) {
+    public static PythonClassNativeWrapper wrap(PythonManagedClass obj, TruffleString name) {
         // important: native wrappers are cached
         PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
         if (nativeWrapper == null) {
@@ -89,7 +73,7 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
         return nativeWrapper;
     }
 
-    public static PythonClassNativeWrapper wrapNewRef(PythonManagedClass obj, String name) {
+    public static PythonClassNativeWrapper wrapNewRef(PythonManagedClass obj, TruffleString name) {
         // important: native wrappers are cached
         PythonClassNativeWrapper nativeWrapper = obj.getClassNativeWrapper();
         if (nativeWrapper == null) {
@@ -106,6 +90,6 @@ public class PythonClassNativeWrapper extends DynamicObjectNativeWrapper.PythonO
     @TruffleBoundary
     public String toString() {
         PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return String.format("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
+        return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
     }
 }

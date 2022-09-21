@@ -1,3 +1,15 @@
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_args
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_badargs
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_bound_methods
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_clear
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_exit
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_order
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_print_tracebacks
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_raise
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_raise_unnormalized
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_shutdown
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_stress
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_unregister
 *graalpython.lib-python.3.test.test_atexit.SubinterpreterTest.test_callback_on_subinterpreter_teardown
 *graalpython.lib-python.3.test.test_atexit.SubinterpreterTest.test_callbacks_leak
 *graalpython.lib-python.3.test.test_atexit.SubinterpreterTest.test_callbacks_leak_refcycle

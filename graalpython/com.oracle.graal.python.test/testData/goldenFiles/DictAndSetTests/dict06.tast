@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'dict06'> SourceSection: [0,6]`{**{}}`
   Documentation: None
   InnerRootNode SourceSection: [0,6]`{**{}}`
     DictConcatNodeGen SourceSection: [0,6]`{**{}}`
-      DictLiteralNodeGen SourceSection: None
+      EmptyDictLiteralNode SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      DictLiteralNodeGen SourceSection: [3,5]`{}`
+      EmptyDictLiteralNode SourceSection: [3,5]`{}`
         PythonObjectFactoryNodeGen SourceSection: None

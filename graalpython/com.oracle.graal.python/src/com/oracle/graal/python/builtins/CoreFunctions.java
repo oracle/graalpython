@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,9 +32,19 @@ import java.lang.annotation.RetentionPolicy;
 public @interface CoreFunctions {
     String defineModule() default "";
 
+    String extendsModule() default "";
+
+    /**
+     * Most builtins are not OS specific. If specified, the builtin is included only if the os
+     * matches
+     */
+    PythonOS os() default PythonOS.PLATFORM_ANY;
+
     String publicName() default "";
 
     PythonBuiltinClassType[] extendClasses() default {};
 
     String pythonFile() default "";
+
+    boolean isEager() default false;
 }

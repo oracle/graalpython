@@ -1,8 +1,7 @@
 """Access to Python's configuration information."""
 
-import sys
-
 import os
+import sys
 from os.path import pardir, realpath
 
 __all__ = [
@@ -20,6 +19,18 @@ __all__ = [
 ]
 
 _INSTALL_SCHEMES = {
+    # Graalpython change: custom scheme
+    # Keep in sync with distutils.sysconfig_graalpython, distutils.install and site module
+    'graalpy': {
+        'stdlib': '{installed_base}/lib-python/3',
+        'platstdlib': '{base}/lib-python/3',
+        'purelib': '{base}/lib/python{py_version_short}/site-packages',
+        'platlib': '{base}/lib/python{py_version_short}/site-packages',
+        'include': '{installed_base}/include',
+        'platinclude': '{installed_base}/include',
+        'scripts': '{base}/bin',
+        'data': '{base}',
+    },
     'posix_prefix': {
         'stdlib': '{installed_base}/{platlibdir}/python{py_version_short}',
         'platstdlib': '{platbase}/{platlibdir}/python{py_version_short}',
@@ -178,10 +189,12 @@ def _expand_vars(scheme, vars):
 
 
 def _get_default_scheme():
-    if os.name == 'posix':
-        # the default scheme for posix is posix_prefix
-        return 'posix_prefix'
-    return os.name
+    # XXX Graalpython change
+    return 'graalpy'
+    # if os.name == 'posix':
+    #     # the default scheme for posix is posix_prefix
+    #     return 'posix_prefix'
+    # return os.name
 
 
 # NOTE: site.py has copy of this function.

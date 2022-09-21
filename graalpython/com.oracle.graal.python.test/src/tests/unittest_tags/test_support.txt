@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_support.TestSupport.test_captured_stdout
 *graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd
 *graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd__chdir_warning
+*graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd__non_existent_dir
 *graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd__non_existent_dir__quiet_true
 *graalpython.lib-python.3.test.test_support.TestSupport.test_check_syntax_error
 *graalpython.lib-python.3.test.test_support.TestSupport.test_detect_api_mismatch
@@ -20,3 +21,18 @@
 *graalpython.lib-python.3.test.test_support.TestSupport.test_import_module
 *graalpython.lib-python.3.test.test_support.TestSupport.test_make_bad_fd
 *graalpython.lib-python.3.test.test_support.TestSupport.test_match_test
+*graalpython.lib-python.3.test.test_support.TestSupport.test_print_warning
+*graalpython.lib-python.3.test.test_support.TestSupport.test_python_is_optimized
+*graalpython.lib-python.3.test.test_support.TestSupport.test_rmtree
+*graalpython.lib-python.3.test.test_support.TestSupport.test_sortdict
+*graalpython.lib-python.3.test.test_support.TestSupport.test_swap_attr
+*graalpython.lib-python.3.test.test_support.TestSupport.test_swap_item
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_cwd
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_cwd__name_none
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_dir
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_dir__existing_dir__quiet_default
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_dir__existing_dir__quiet_true
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_dir__forked_child
+*graalpython.lib-python.3.test.test_support.TestSupport.test_temp_dir__path_none
+*graalpython.lib-python.3.test.test_support.TestSupport.test_unlink
+*graalpython.lib-python.3.test.test_support.TestSupport.test_unload

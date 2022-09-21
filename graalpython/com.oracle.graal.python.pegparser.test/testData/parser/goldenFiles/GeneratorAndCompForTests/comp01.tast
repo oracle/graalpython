@@ -1,0 +1,25 @@
+Module[0, 94]
+    Assign[0, 94]
+        LHS: Name[0, 6] Value: "resutl" Store
+        RHS: 
+            DictComp[9, 94]
+                Key: Name[10, 11] Value: "i"
+                Value: Call[13, 42]
+                    Target: Name[13, 18] Value: "tuple"
+                    Args:
+                        GeneratorExp[18, 42]
+                            Element: Name[19, 20] Value: "j"
+                            ComprehensionTy[21, 41]
+                                Target: Name[25, 26] Value: "j" Store
+                                Iterator: Name[30, 31] Value: "t"
+                                Ifs:
+                                    Compare[35, 41]
+                                        LHS: Name[35, 36] Value: "i"
+                                        Op: NotEq
+                                        RHS: Name[40, 41] Value: "j"
+                ComprehensionTy[64, 82]
+                    Target: Name[68, 69] Value: "t" Store
+                    Iterator: Name[73, 82] Value: "something"
+                ComprehensionTy[83, 93]
+                    Target: Name[87, 88] Value: "i" Store
+                    Iterator: Name[92, 93] Value: "t"

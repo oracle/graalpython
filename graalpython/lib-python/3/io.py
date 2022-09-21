@@ -59,7 +59,8 @@ from _io import (DEFAULT_BUFFER_SIZE, BlockingIOError, UnsupportedOperation,
 OpenWrapper = _io.open # for compatibility with _pyio
 
 # Pretend this exception was created here.
-UnsupportedOperation.__module__ = "io"
+# Truffle change: we do this directly on the builtin type
+# UnsupportedOperation.__module__ = "io"
 
 # for seek()
 SEEK_SET = 0

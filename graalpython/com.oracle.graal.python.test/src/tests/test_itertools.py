@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2021, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -101,3 +101,32 @@ class CombinationsTests(unittest.TestCase):
 
         data = [None, None, None, 20]
         assert list(map(lambda x: x[0], list(groupby(data)))) == [None, 20]
+
+    def test_generators(self):
+        # test that generators are accepted like input values
+        
+        def g(seqn):
+            for i in seqn:
+                yield i
+
+        def g2(seqn):
+            for i in seqn:
+                yield (i, i)
+        
+        self.assertEqual(list(accumulate(g([1,2]))), [1, 3])
+        self.assertEqual(list(chain(g([1,2]), g([3,4]))), [1, 2, 3, 4])
+        self.assertEqual(list(combinations(g([1,2]), 2)), [(1, 2)])
+        self.assertEqual(list(combinations_with_replacement(g([1,2]), 2)), [(1, 1), (1, 2), (2, 2)])
+        self.assertEqual(list(dropwhile(lambda a:0, g([1,2]))), [1, 2])
+        self.assertEqual(list(filterfalse(lambda a:0, g([1,2]))), [1, 2])
+        self.assertEqual(list(groupby(g([1,2])))[0][0], 1)
+        self.assertEqual(list(islice(g([1,2,3]),2)), [1, 2])
+        self.assertEqual(list(permutations(g([1,2]), 2)), [(1, 2), (2, 1)])
+        self.assertEqual(list(product(g([1,2]), repeat=2)), [(1, 1), (1, 2), (2, 1), (2, 2)])
+        self.assertEqual(list(starmap(pow, g2([2,3]))), [4, 27])
+        c = cycle(g([1,2]))
+        self.assertEqual(next(c), 1)
+        self.assertEqual(list(takewhile(lambda a:a, g([1,2]))), [1, 2])
+        self.assertEqual(list(tee(g([1, 2]))[0]), [1, 2])
+        self.assertEqual(list(zip_longest(g2([2,3]))), [((2, 2),), ((3, 3),)])
+        

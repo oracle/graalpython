@@ -1,0 +1,12 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      divide: [DefLocal, Local]
+    Scope divide Function
+        Varnames: x, y
+        Symbols:
+            ZeroDivisionError: [Use, GlobalImplicit]
+            print: [Use, GlobalImplicit]
+            result: [DefLocal, Use, Local]
+            x: [DefParam, Use, Local]
+            y: [DefParam, Use, Local]

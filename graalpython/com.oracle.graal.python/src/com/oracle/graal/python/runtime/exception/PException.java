@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,22 +44,22 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -81,7 +81,7 @@ public final class PException extends AbstractTruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
     /** A marker object indicating that there is for sure no exception. */
-    public static final PException NO_EXCEPTION = new PException(null, (Node) null);
+    public static final PException NO_EXCEPTION = new PException(null, null);
 
     private String message = null;
     protected final PBaseException pythonException;
@@ -89,35 +89,44 @@ public final class PException extends AbstractTruffleException {
     private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
     private Node catchLocation;
+    private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
 
-    public PException(PBaseException actual, Node node) {
+    private PException(PBaseException actual, Node node) {
         super(node);
         this.pythonException = actual;
     }
 
-    public PException(PBaseException actual, Node node, Throwable wrapped) {
+    private PException(PBaseException actual, Node node, Throwable wrapped) {
         super(null, wrapped, UNLIMITED_STACK_TRACE, node);
         this.pythonException = actual;
     }
 
-    public PException(PBaseException actual, LazyTraceback traceback) {
+    private PException(PBaseException actual, LazyTraceback traceback, Throwable wrapped) {
+        super(null, wrapped, UNLIMITED_STACK_TRACE, null);
         this.pythonException = actual;
         this.traceback = traceback;
         reified = true;
     }
 
     public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace) {
-        return fromObject(actual, node, withJavaStacktrace, null);
+        Throwable wrapped = null;
+        if (withJavaStacktrace) {
+            // Create a carrier for the java stacktrace as PException cannot have one
+            wrapped = createStacktraceCarrier();
+        }
+        return fromObject(actual, node, wrapped);
     }
 
-    public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace, Throwable cause) {
-        PException pException = new PException(actual, node, cause);
+    @TruffleBoundary
+    private static RuntimeException createStacktraceCarrier() {
+        return new RuntimeException();
+    }
+
+    public static PException fromObject(PBaseException actual, Node node, Throwable wrapped) {
+        PException pException = new PException(actual, node, wrapped);
         actual.setException(pException);
-        if (withJavaStacktrace) {
-            pException = (PException) pException.forceFillInStackTrace();
-        }
         return pException;
     }
 
@@ -131,11 +140,13 @@ public final class PException extends AbstractTruffleException {
 
     public static PException fromExceptionInfo(PBaseException pythonException, LazyTraceback traceback, boolean withJavaStacktrace) {
         pythonException.ensureReified();
-        PException pException = new PException(pythonException, traceback);
-        pythonException.setException(pException);
+        Throwable wrapped = null;
         if (withJavaStacktrace) {
-            pException = (PException) pException.forceFillInStackTrace();
+            // Create a carrier for the java stacktrace as PException cannot have one
+            wrapped = createStacktraceCarrier();
         }
+        PException pException = new PException(pythonException, traceback, wrapped);
+        pythonException.setException(pException);
         return pException;
     }
 
@@ -160,10 +171,6 @@ public final class PException extends AbstractTruffleException {
         return getMessage();
     }
 
-    public Throwable forceFillInStackTrace() {
-        return super.fillInStackTrace();
-    }
-
     public boolean shouldHideLocation() {
         return hideLocation;
     }
@@ -176,11 +183,14 @@ public final class PException extends AbstractTruffleException {
         return catchLocation;
     }
 
+    public int getCatchBci() {
+        return catchBci;
+    }
+
     /**
      * Return the associated {@link PBaseException}. This method doesn't ensure traceback
      * consistency and should be avoided unless you can guarantee that the exception will not escape
-     * to the program. Use
-     * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame, Node)
+     * to the program. Use {@link PException#setCatchingFrameAndGetEscapedException(Frame, Node)
      * reifyAndGetPythonException}.
      */
     public PBaseException getUnreifiedException() {
@@ -199,25 +209,28 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
-    public void expectStopIteration(IsBuiltinClassProfile profile, PRaiseNode raise, Object o) {
-        if (!profile.profileException(this, PythonBuiltinClassType.StopIteration)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(getUnreifiedException());
-            if (IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.AttributeError)) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, PythonObjectLibrary.getUncached().getLazyPythonClass(o));
-            }
-            throw this;
-        }
-    }
-
-    public void expectStopIteration(IsBuiltinClassProfile profile, PythonObjectLibrary lib) {
-        if (!profile.profileException(this, PythonBuiltinClassType.StopIteration, lib)) {
-            throw this;
-        }
-    }
-
     public void expectAttributeError(IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
+            throw this;
+        }
+    }
+
+    public boolean expectTypeOrOverflowError(IsBuiltinClassProfile profile) {
+        boolean ofError = !profile.profileException(this, PythonBuiltinClassType.TypeError);
+        if (ofError && !profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
+            throw this;
+        }
+        return ofError;
+    }
+
+    public void expectOverflowError(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
+            throw this;
+        }
+    }
+
+    public void expectTypeError(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.TypeError)) {
             throw this;
         }
     }
@@ -231,7 +244,7 @@ public final class PException extends AbstractTruffleException {
     @TruffleBoundary
     public Iterable<TruffleStackTraceElement> getTruffleStackTrace() {
         if (tracebackCutoffTarget == null) {
-            tracebackCutoffTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
+            tracebackCutoffTarget = Truffle.getRuntime().iterateFrames(FrameInstance::getCallTarget, 0);
         }
         // Cause may contain wrapped Java exception
         if (getCause() != null) {
@@ -257,15 +270,20 @@ public final class PException extends AbstractTruffleException {
      *
      * @param frame The current frame of the exception handler.
      */
-    public void setCatchingFrameReference(VirtualFrame frame, Node catchLocation) {
+    public void setCatchingFrameReference(Frame frame, Node catchLocation) {
         setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+    }
+
+    public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
+        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+        this.catchBci = catchBci;
     }
 
     /**
      * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference, Node)} and @{link
      * {@link #getEscapedException()}}
      */
-    public PBaseException setCatchingFrameAndGetEscapedException(VirtualFrame frame, Node catchLocation) {
+    public PBaseException setCatchingFrameAndGetEscapedException(Frame frame, Node catchLocation) {
         setCatchingFrameReference(frame, catchLocation);
         return this.getEscapedException();
     }
@@ -355,8 +373,13 @@ public final class PException extends AbstractTruffleException {
     }
 
     @ExportMessage
-    RuntimeException throwException() {
-        throw getExceptionForReraise();
+    RuntimeException throwException(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            throw getExceptionForReraise();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

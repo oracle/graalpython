@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Instrument;
+import org.graalvm.polyglot.Source;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.test.PythonTests;
@@ -62,12 +69,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.Instrument;
-import org.graalvm.polyglot.Source;
-import org.junit.Test;
-
 @SuppressWarnings("all")
 public class ReadAndWriteVariableTagsTests extends PythonTests {
 
@@ -75,6 +76,11 @@ public class ReadAndWriteVariableTagsTests extends PythonTests {
 
     private static Context newContext(Engine engine) {
         return Context.newBuilder().allowExperimentalOptions(true).allowAllAccess(true).engine(engine).build();
+    }
+
+    @Before
+    public void before() {
+        PythonTests.skipOnBytecodeInterpreter();
     }
 
     @Test
@@ -266,17 +272,18 @@ public class ReadAndWriteVariableTagsTests extends PythonTests {
             InstrumentableNode inode = (InstrumentableNode) node;
 
             NodeObjectDescriptor descr = (NodeObjectDescriptor) inode.getNodeObject();
-            String name = null;
+            Object oname = null;
             try {
                 if (inode.hasTag(StandardTags.WriteVariableTag.class)) {
-                    name = (String) INTEROP.readMember(descr, StandardTags.WriteVariableTag.NAME);
+                    oname = INTEROP.readMember(descr, StandardTags.WriteVariableTag.NAME);
                 } else if (inode.hasTag(StandardTags.ReadVariableTag.class)) {
-                    name = (String) INTEROP.readMember(descr, StandardTags.ReadVariableTag.NAME);
+                    oname = INTEROP.readMember(descr, StandardTags.ReadVariableTag.NAME);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
 
             }
-            assertTrue("Attribute name was not found", name != null);
+            assertTrue("Attribute name was not found", oname != null);
+            String name = oname.toString();
             Set<InstrumentableNode> nodes = result.get(name);
             if (nodes == null) {
                 nodes = new HashSet<>();

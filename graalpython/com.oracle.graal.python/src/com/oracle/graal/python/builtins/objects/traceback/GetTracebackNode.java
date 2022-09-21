@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -48,7 +50,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -100,10 +102,9 @@ import com.oracle.truffle.api.nodes.Node;
  * <ul>
  * <li>When you catch a {@link PException PException} and need to obtain its corresponding
  * {@link com.oracle.graal.python.builtins.objects.exception.PBaseException PBaseException}, use the
- * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame, Node)} method, unless
- * you're just doing a simple class check. Try to avoid the
- * {@link PException#getUnreifiedException() getExceptionObject} method unless you know what you're
- * doing.</li>
+ * {@link PException#setCatchingFrameAndGetEscapedException(Frame, Node)} method, unless you're just
+ * doing a simple class check. Try to avoid the {@link PException#getUnreifiedException()
+ * getExceptionObject} method unless you know what you're doing.</li>
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
  * the program, because its Truffle stacktrace may already be frozen and it would not capture more
  * frames. If you need to rethrow without the catching site appearing in the traceback, use
@@ -167,8 +168,8 @@ public abstract class GetTracebackNode extends Node {
         return newTraceback;
     }
 
-    protected static boolean mayBeEmpty(LazyTraceback tb) {
-        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation();
+    protected boolean mayBeEmpty(LazyTraceback tb) {
+        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation() || PythonContext.get(this).getOption(PythonOptions.EnableBytecodeInterpreter);
     }
 
     public static GetTracebackNode create() {

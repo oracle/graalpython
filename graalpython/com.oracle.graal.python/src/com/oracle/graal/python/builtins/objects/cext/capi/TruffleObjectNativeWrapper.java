@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.GP_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.J_GP_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
@@ -50,10 +50,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ReadNativeMemberDispatchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -66,11 +68,11 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {GP_OBJECT, OB_BASE.getMemberName(), OB_TYPE.getMemberName(), OB_REFCNT.getMemberName()};
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {J_GP_OBJECT, OB_BASE.getMemberNameJavaString(), OB_TYPE.getMemberNameJavaString(), OB_REFCNT.getMemberNameJavaString()};
 
     public TruffleObjectNativeWrapper(Object foreignObject) {
         super(foreignObject);
@@ -105,7 +107,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     boolean isMemberModifiable(String member) {
         // we only allow to write to 'ob_refcnt'
-        return OB_REFCNT.getMemberName().equals(member);
+        return OB_REFCNT.getMemberNameJavaString().equals(member);
     }
 
     @ExportMessage
@@ -130,34 +132,46 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object execute(TruffleObjectNativeWrapper object, String key,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib,
-                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object delegate = lib.getDelegate(object);
+                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
+                        @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object delegate = lib.getDelegate(object);
 
-            // special key for the debugger
-            if (GP_OBJECT.equals(key)) {
-                return delegate;
+                // special key for the debugger
+                if (J_GP_OBJECT.equals(key)) {
+                    return delegate;
+                }
+                return readNativeMemberNode.execute(delegate, object, key);
+            } finally {
+                gil.release(mustRelease);
             }
-            return readNativeMemberNode.execute(delegate, object, key);
         }
 
         protected static boolean isObBase(String key) {
-            return OB_BASE.getMemberName().equals(key);
+            return OB_BASE.getMemberNameJavaString().equals(key);
         }
     }
 
     @ExportMessage
     void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteNativeMemberNode writeNativeMemberNode) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
-        if (OB_REFCNT.getMemberName().equals(member)) {
-            Object delegate = lib.getDelegate(this);
-            writeNativeMemberNode.execute(delegate, this, member, value);
-        } else {
-            CompilerDirectives.transferToInterpreter();
-            if (indexOf(member) == -1) {
-                throw UnknownIdentifierException.create(member);
+                    @Cached WriteNativeMemberNode writeNativeMemberNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (OB_REFCNT.getMemberNameJavaString().equals(member)) {
+                Object delegate = lib.getDelegate(this);
+                writeNativeMemberNode.execute(delegate, this, member, value);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                if (indexOf(member) == -1) {
+                    throw UnknownIdentifierException.create(member);
+                }
+                throw UnsupportedMessageException.create();
             }
-            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

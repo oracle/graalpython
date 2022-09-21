@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,7 +32,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -41,13 +41,14 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -75,18 +76,18 @@ public abstract class RaiseNode extends StatementNode {
         }
 
         // raise * from <class>
-        @Specialization(guards = "lib.isLazyPythonClass(causeClass)")
-        static void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object causeClass,
+        @Specialization(guards = "isTypeNode.execute(causeClass)", limit = "1")
+        static void setCause(VirtualFrame frame, PBaseException exception, Object causeClass,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached BranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
                         @Cached CallNode callConstructor,
-                        @Cached PRaiseNode raise,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PRaiseNode raise) {
             if (!validException.execute(frame, causeClass)) {
                 baseCheckFailedProfile.enter();
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
-            Object cause = callConstructor.execute(causeClass);
+            Object cause = callConstructor.execute(frame, causeClass);
             if (cause instanceof PBaseException) {
                 exception.setCause((PBaseException) cause);
             } else {
@@ -122,7 +123,7 @@ public abstract class RaiseNode extends StatementNode {
     static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                    @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
+                    @Cached ConditionProfile hasCurrentException) {
         PException caughtException = getCaughtExceptionNode.execute(frame);
         if (hasCurrentException.profile(caughtException == null)) {
             throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
@@ -133,27 +134,25 @@ public abstract class RaiseNode extends StatementNode {
     // raise <exception>
     @Specialization(guards = "isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
-                    @Cached BranchProfile isReraise,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached BranchProfile isReraise) {
         if (exception.getException() != null) {
             isReraise.enter();
             exception.ensureReified();
         }
-        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
     // raise <exception> from *
     @Specialization(guards = "!isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
                     @Cached BranchProfile isReraise,
-                    @Cached SetExceptionCauseNode setExceptionCauseNode,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached SetExceptionCauseNode setExceptionCauseNode) {
         if (exception.getException() != null) {
             isReraise.enter();
             exception.ensureReified();
         }
         setExceptionCauseNode.execute(frame, exception, cause);
-        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
     private void checkBaseClass(VirtualFrame frame, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
@@ -169,12 +168,11 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached ValidExceptionNode validException,
                     @Cached CallNode callConstructor,
                     @Cached BranchProfile constructorTypeErrorProfile,
-                    @Cached PRaiseNode raise,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached PRaiseNode raise) {
         checkBaseClass(frame, pythonClass, validException, raise);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (newException instanceof PBaseException) {
-            throw raise.raiseExceptionObject((PBaseException) newException, language);
+            throw raise.raiseExceptionObject((PBaseException) newException);
         } else {
             constructorTypeErrorProfile.enter();
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
@@ -187,23 +185,30 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached ValidExceptionNode validException,
                     @Cached PRaiseNode raise,
                     @Cached CallNode callConstructor,
-                    @Cached SetExceptionCauseNode setExceptionCauseNode,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached SetExceptionCauseNode setExceptionCauseNode) {
         checkBaseClass(frame, pythonClass, validException, raise);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (newException instanceof PBaseException) {
             setExceptionCauseNode.execute(frame, (PBaseException) newException, cause);
-            throw raise.raiseExceptionObject((PBaseException) newException, language);
+            throw raise.raiseExceptionObject((PBaseException) newException);
         } else {
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
     }
 
     // raise <invalid> [from *]
-    @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)")
+    @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)", limit = "3")
     @SuppressWarnings("unused")
     static void doRaise(VirtualFrame frame, Object exception, Object cause,
+                    @CachedLibrary("exception") InteropLibrary lib,
                     @Cached PRaiseNode raise) {
+        if (lib.isException(exception)) {
+            try {
+                throw lib.throwException(exception);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
         throw raiseNoException(raise);
     }
 

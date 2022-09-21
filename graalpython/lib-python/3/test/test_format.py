@@ -484,9 +484,6 @@ class FormatTest(unittest.TestCase):
         c = complex(f)
         with self.assertRaises(ValueError) as cm:
             format(c, ".%sf" % (INT_MAX + 1))
-            
-    def test_format_class(self):
-        self.assertEqual(format(type("")), "<class 'str'>")
 
     def test_g_format_has_no_trailing_zeros(self):
         # regression test for bugs.python.org/issue40780

@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
           Identifier: Test
           PythonCallBinary SourceSection: [0,76]`class Test():â†µ    ""...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: Test SourceSection: None
               Arguments: None
               KwArguments: None
@@ -25,12 +25,11 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,76]`class Test():â†µ    ""...`
                 Name: Test
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [method, __doc__]
+                FrameDescriptor: 2 slots [__doc__, method]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None
@@ -41,23 +40,16 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                         QualName: Test
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __doc__
                         StringLiteralNode SourceSection: [18,33]`"""Class doc"""`
                       FunctionBodyNode SourceSection: [38,76]`def method():â†µ      ...`
-                        SetItemNodeGen SourceSection: [38,76]`def method():â†µ      ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [38,76]`def method():â†µ      ...`
+                          Identifier: method
                           FunctionDefinitionNode Name: method SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -81,8 +73,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                                   Body: BlockNode SourceSection: None
                                     BlockNode SourceSection: None
                                     FunctionBodyNode SourceSection: [75,76]`"`
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [0,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [0,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

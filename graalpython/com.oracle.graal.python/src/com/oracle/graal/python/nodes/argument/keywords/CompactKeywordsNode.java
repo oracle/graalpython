@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,12 +53,12 @@ import com.oracle.truffle.api.nodes.Node;
 abstract class CompactKeywordsNode extends Node {
     public abstract PKeyword[] execute(PKeyword[] keys, int reshape);
 
-    @Specialization(guards = {"cachedLen == keys.length", "reshape == cachedReshape"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {"cachedLen == keys.length", "reshape == cachedReshape", "cachedLen <= 32"}, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
     PKeyword[] cached(PKeyword[] keys, @SuppressWarnings("unused") int reshape,
                     @Cached("keys.length") int cachedLen,
                     @Cached("reshape") int cachedReshape) {
-        PKeyword[] keywords = new PKeyword[cachedLen - cachedReshape];
+        PKeyword[] keywords = PKeyword.create(cachedLen - cachedReshape);
         int idx = 0;
         for (int i = 0; i < cachedLen; i++) {
             PKeyword k = keys[i];

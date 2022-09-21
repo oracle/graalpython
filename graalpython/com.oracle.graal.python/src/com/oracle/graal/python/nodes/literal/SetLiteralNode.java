@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -36,15 +35,14 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@GenerateNodeFactory
+import java.util.List;
+
 public abstract class SetLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] values;
@@ -53,14 +51,18 @@ public abstract class SetLiteralNode extends LiteralNode {
         this.values = values;
     }
 
+    public static ExpressionNode create(List<ExpressionNode> values) {
+        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
+        return SetLiteralNodeGen.create(convertedValues);
+    }
+
     @Specialization
     @ExplodeLoop
     public PSet expand(VirtualFrame frame,
-                    @CachedLanguage PythonLanguage lang,
-                    @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                    @Cached ConditionProfile hasFrame,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         // we will usually have more than 'values.length' elements
-        HashingStorage storage = PDict.createNewStorage(lang, true, values.length);
+        HashingStorage storage = PDict.createNewStorage(true, values.length);
         ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
         for (ExpressionNode n : values) {
             Object element = n.execute(frame);

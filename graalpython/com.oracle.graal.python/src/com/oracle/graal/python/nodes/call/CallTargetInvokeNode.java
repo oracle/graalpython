@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,20 +42,20 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
@@ -83,7 +83,8 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     public static CallTargetInvokeNode create(PFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, builtin, callee.isGeneratorFunction());
+        boolean isGenerator = callTarget.getRootNode() instanceof GeneratorFunctionRootNode;
+        return CallTargetInvokeNodeGen.create(callTarget, builtin, isGenerator);
     }
 
     @TruffleBoundary
@@ -105,11 +106,8 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(guards = {"globals == null", "closure == null"})
     protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
-                    @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @Cached ConditionProfile generatorFunctionProfile) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, generatorFunctionProfile, callee);
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
         // state) in the context. There are two common reasons for having a 'null' frame:
@@ -117,11 +115,12 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         // 2. This invoke node is (indirectly) used behind a TruffleBoundary.
         // This is preferably prepared using 'IndirectCallContext.enter'.
         if (profileIsNullFrame(frame == null)) {
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
+            PythonThreadState threadState = PythonContext.get(this).getThreadState(PythonLanguage.get(this));
+            Object state = IndirectCalleeContext.enter(threadState, arguments, ct);
             try {
                 return callNode.call(arguments);
             } finally {
-                IndirectCalleeContext.exit(context, frameInfo);
+                IndirectCalleeContext.exit(threadState, state);
             }
         } else {
             callContext.prepareCall(frame, arguments, ct, this);
@@ -131,12 +130,10 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(replaces = "doNoClosure")
     protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
-                    @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @Cached ConditionProfile generatorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, callee, null, null, arguments, classBodyProfile, generatorFunctionProfile, context);
+        return doNoClosure(frame, callee, null, null, arguments, generatorFunctionProfile);
     }
 
     public final CallTarget getCallTarget() {

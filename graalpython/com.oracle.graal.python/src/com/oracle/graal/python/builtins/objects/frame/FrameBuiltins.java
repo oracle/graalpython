@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.objectHashCodeAsHexString;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -34,7 +35,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -42,6 +42,9 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -50,9 +53,9 @@ import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -61,6 +64,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
@@ -70,22 +74,18 @@ public final class FrameBuiltins extends PythonBuiltins {
         return FrameBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String repr(VirtualFrame frame, PFrame self,
+        static TruffleString repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
-                        @Cached GetLinenoNode getLinenoNode) {
+                        @Cached GetLinenoNode getLinenoNode,
+                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             PCode code = getCodeNode.executeObject(frame, self);
             int lineno = getLinenoNode.executeInt(frame, self);
-            return getFormat(self, code, lineno);
-        }
-
-        @TruffleBoundary
-        private static String getFormat(PFrame self, PCode code, int lineno) {
-            return String.format("<frame at 0x%x, file '%s', line %d, code %s>",
-                            self.hashCode(), code.getFilename(), lineno, code.getName());
+            return simpleTruffleStringFormatNode.format("<frame at 0x%s, file '%s', line %d, code %s>",
+                            objectHashCodeAsHexString(self), code.getFilename(), lineno, code.getName());
         }
     }
 
@@ -103,7 +103,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
                     }
-                    return getDictNode.call(curFrame, globals, PNone.NO_VALUE);
+                    return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
                 } else {
                     return globals != null ? globals : factory().createDict();
                 }
@@ -120,7 +120,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object get(VirtualFrame frame, @SuppressWarnings("unused") PFrame self) {
             // TODO: builtins can be set per frame
-            return dictNode.call(frame, getContext().getBuiltins(), PNone.NO_VALUE);
+            return dictNode.execute(frame, getContext().getBuiltins(), PNone.NO_VALUE);
         }
     }
 
@@ -158,13 +158,37 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
-        @Specialization
-        Object get(@SuppressWarnings("unused") PFrame self) {
-            // TODO: frames: This must return the traceback if there is a
-            // handled exception here
+        @Specialization(guards = "isNoValue(v)")
+        static Object doGet(PFrame self, @SuppressWarnings("unused") PNone v) {
+            Object traceFun = self.getLocalTraceFun();
+            return traceFun == null ? PNone.NONE : traceFun;
+        }
+
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doSet(PFrame self, Object v) {
+            self.setLocalTraceFun(v == PNone.NONE ? null : v);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "f_trace_lines", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isSetter = true, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class TraceLinesNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(v)")
+        static boolean doGet(PFrame self, @SuppressWarnings("unused") PNone v) {
+            return self.getTraceLine();
+        }
+
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doSet(PFrame self, Object v, @Cached PRaiseNode raise, @Cached CastToJavaBooleanNode cast) {
+            try {
+                self.setTraceLine(cast.execute(v));
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_VALUE_MUST_BE_BOOL);
+            }
             return PNone.NONE;
         }
     }
@@ -175,18 +199,10 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract PCode executeObject(VirtualFrame frame, PFrame self);
 
         @Specialization
-        PCode get(VirtualFrame frame, PFrame self,
-                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
+        PCode get(PFrame self) {
             RootCallTarget ct = self.getTarget();
-            if (ct != null) {
-                return factory().createCode(ct);
-            }
-            // TODO: frames: this just shouldn't happen anymore
-            assert false : "should not be reached";
-            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, PythonUtils.EMPTY_BYTE_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            "<internal>",
-                            "<internal>", -1, PythonUtils.EMPTY_BYTE_ARRAY);
+            assert ct != null;
+            return factory().createCode(ct);
         }
 
         public static GetCodeNode create() {
@@ -200,7 +216,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
                         @Cached ReadLocalsNode readLocals,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached ConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode) {
             assert self.isAssociated() : "It's impossible to call f_locals on a frame without that frame having escaped";
             // Special case because this builtin can be called without going through an invoke node:
@@ -222,7 +238,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         Object getBackref(VirtualFrame frame, PFrame self,
                         @Cached BranchProfile noBackref,
                         @Cached BranchProfile topRef,
-                        @Cached("createBinaryProfile()") ConditionProfile notMaterialized,
+                        @Cached ConditionProfile notMaterialized,
                         @Cached ReadCallerFrameNode readCallerFrame) {
             PFrame.Reference backref;
             for (PFrame cur = self;; cur = backref.getPyFrame()) {

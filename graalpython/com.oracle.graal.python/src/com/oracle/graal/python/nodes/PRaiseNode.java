@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,53 +40,103 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
-@ReportPolymorphism
 public abstract class PRaiseNode extends Node {
 
-    public abstract PException execute(Object type, Object cause, Object format, Object[] arguments);
-
-    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        throw execute(type, PNone.NO_VALUE, format, arguments);
+    public final PException execute(Node raisingNode, PythonBuiltinClassType type, Object cause, Object format, Object[] arguments) {
+        return execute(raisingNode, type, null, cause, format, arguments);
     }
 
-    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
-        throw execute(type, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
+    public abstract PException execute(Node raisingNode, PythonBuiltinClassType type, Object[] data, Object cause, Object format, Object[] arguments);
+
+    public final PException raise(PythonBuiltinClassType type) {
+        throw execute(this, type, null, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, TruffleString message) {
+        throw execute(this, type, null, PNone.NO_VALUE, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+        throw execute(this, type, null, PNone.NO_VALUE, format, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, Object[] arguments) {
+        throw execute(this, type, null, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
+    }
+
+    public final PException raiseWithData(PythonBuiltinClassType type, Object[] data, Object... arguments) {
+        throw execute(this, type, data, PNone.NO_VALUE, PNone.NO_VALUE, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, Exception e) {
-        throw execute(type, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
+        throw execute(this, type, null, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object... arguments) {
+        throw execute(this, type, null, cause, format, arguments);
+    }
+
+    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType) {
+        throw PRaiseNodeGen.getUncached().execute(raisingNode, exceptionType, null, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType exceptionType, TruffleString message) {
+        throw PRaiseNodeGen.getUncached().execute(raisingNode, exceptionType, null, PNone.NO_VALUE, assertNoJavaString(message), PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, TruffleString format, Object... arguments) {
+        throw PRaiseNodeGen.getUncached().execute(raisingNode, type, null, PNone.NO_VALUE, format, arguments);
+    }
+
+    public static PException raiseUncached(Node raisingNode, PythonBuiltinClassType type, Exception e) {
+        throw PRaiseNodeGen.getUncached().execute(raisingNode, type, null, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     /**
      * Raise an error saying that the {@code result} cannot fit into an index-sized integer. Use the
      * specified {@code type} as exception class.
      */
-    public final PException raiseNumberTooLarge(Object type, Object result) {
-        return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[]{result});
+    public final PException raiseNumberTooLarge(PythonBuiltinClassType type, Object result) {
+        return execute(this, type, null, PNone.NO_VALUE, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, new Object[]{result});
+    }
+
+    public final PException raiseSystemExit(Object code) {
+        return raiseWithData(PythonBuiltinClassType.SystemExit, new Object[]{code}, code);
+    }
+
+    public final PException raiseStopIteration() {
+        return raise(PythonBuiltinClassType.StopIteration);
+    }
+
+    public final PException raiseStopIteration(Object value) {
+        final Object retVal = value != null ? value : PNone.NONE;
+        final Object[] args = {retVal};
+        return raiseWithData(PythonBuiltinClassType.StopIteration, args, retVal);
     }
 
     public final PException raiseHasNoLength(Object result) {
@@ -97,25 +147,25 @@ public abstract class PRaiseNode extends Node {
         return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, result);
     }
 
-    public final PException raise(Object exceptionType) {
-        throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
+    public final PException raiseBadInternalCall() {
+        return raise(PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
-    public final PException raise(Object exceptionType, Object message) {
-        throw execute(exceptionType, PNone.NO_VALUE, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+    public final PException raiseMemoryError() {
+        return raise(PythonBuiltinClassType.MemoryError);
     }
 
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        throw execute(type, cause, format, arguments);
+    public final PException raiseExceptionObject(PBaseException exc) {
+        throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
-    public final PException raiseExceptionObject(PBaseException exc, PythonLanguage language) {
-        throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(language));
+    private static PException raiseExceptionObject(Node raisingNode, PBaseException exc) {
+        throw raise(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
     }
 
     public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {
         exc.ensureReified();
-        if (raisingNode.isAdoptable()) {
+        if (raisingNode != null && raisingNode.isAdoptable()) {
             throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
         } else {
             throw PException.fromObject(exc, EncapsulatingNodeReference.getCurrent().get(), withJavaStacktrace);
@@ -123,96 +173,56 @@ public abstract class PRaiseNode extends Node {
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType == cachedType"}, limit = "8")
-    PException doPythonBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+    static PException doPythonBuiltinTypeCached(Node raisingNode, @SuppressWarnings("unused") PythonBuiltinClassType exceptionType, Object[] data, @SuppressWarnings("unused") PNone cause,
+                    @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
                     @Cached("exceptionType") PythonBuiltinClassType cachedType,
-                    @Cached PythonObjectFactory factory,
-                    @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(cachedType), language);
+                    @Cached PythonObjectFactory factory) {
+        throw raiseExceptionObject(raisingNode, factory.createBaseException(cachedType, data));
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = "doPythonBuiltinTypeCached")
-    PException doPythonBuiltinType(PythonBuiltinClassType exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+    static PException doPythonBuiltinType(Node raisingNode, PythonBuiltinClassType exceptionType, Object[] data, @SuppressWarnings("unused") PNone cause,
+                    @SuppressWarnings("unused") PNone format,
                     @SuppressWarnings("unused") Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(exceptionType), language);
-    }
-
-    protected static Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
-    }
-
-    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType == cachedType"}, limit = "3", assumptions = "singleContextAssumption()")
-    PException doPythonBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
-                    @SuppressWarnings("unused") Object[] arguments,
-                    @Cached("exceptionType") PythonBuiltinClass cachedType,
-                    @Cached PythonObjectFactory factory,
-                    @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(cachedType), language);
-    }
-
-    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0", "exceptionType.getType() == cachedType"}, limit = "3")
-    PException doPythonBuiltinClassCachedMulti(@SuppressWarnings("unused") PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
-                    @SuppressWarnings("unused") Object[] arguments,
-                    @Cached("exceptionType.getType()") PythonBuiltinClassType cachedType,
-                    @Cached PythonObjectFactory factory,
-                    @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(cachedType), language);
-    }
-
-    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"}, replaces = {"doPythonBuiltinClassCached", "doPythonBuiltinClassCachedMulti"})
-    PException doPythonBuiltinClass(PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(exceptionType), language);
-    }
-
-    @Specialization(guards = {"isNoValue(cause)"})
-    PException doBuiltinClass(PythonBuiltinClass exceptionType, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
-        assert format != null;
-        throw doBuiltinType(exceptionType.getType(), cause, format, arguments, factory, language);
-    }
-
-    @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length == 0"})
-    PException doPythonManagedClass(PythonManagedClass exceptionType, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, @SuppressWarnings("unused") Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(exceptionType), language);
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        throw raiseExceptionObject(raisingNode, factory.createBaseException(exceptionType, data));
     }
 
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
-    PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, Object[] arguments,
+    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format,
+                    Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
-        throw raiseExceptionObject(factory.createBaseException(type, factory.createTuple(arguments)), language);
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        ensureNoJavaStrings(arguments, fromJavaStringNode);
+        throw raiseExceptionObject(raisingNode, factory.createBaseException(type, data, factory.createTuple(arguments)));
     }
 
     @Specialization(guards = {"isNoValue(cause)"})
-    PException doBuiltinType(PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
+    static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, Object[] data, @SuppressWarnings("unused") PNone cause, TruffleString format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert format != null;
-        throw raiseExceptionObject(factory.createBaseException(type, format, arguments), language);
+        ensureNoJavaStrings(arguments, fromJavaStringNode);
+        throw raiseExceptionObject(raisingNode, factory.createBaseException(type, data, format, arguments));
     }
 
     @Specialization(guards = {"!isNoValue(cause)"})
-    PException doBuiltinTypeWithCause(PythonBuiltinClassType type, PBaseException cause, String format, Object[] arguments,
+    static PException doBuiltinTypeWithCause(Node raisingNode, PythonBuiltinClassType type, Object[] data, PBaseException cause, TruffleString format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         assert format != null;
-        PBaseException baseException = factory.createBaseException(type, format, arguments);
+        ensureNoJavaStrings(arguments, fromJavaStringNode);
+        PBaseException baseException = factory.createBaseException(type, data, format, arguments);
         baseException.setContext(cause);
         baseException.setCause(cause);
-        throw raiseExceptionObject(baseException, language);
+        throw raiseExceptionObject(raisingNode, baseException);
     }
 
     @TruffleBoundary
-    private static String getMessage(Exception e) {
+    private static TruffleString getMessage(Exception e) {
         String msg = e.getMessage();
-        return msg != null ? msg : e.getClass().getSimpleName();
+        return toTruffleStringUncached(msg != null ? msg : e.getClass().getSimpleName());
     }
 
     public static PRaiseNode create() {
@@ -221,5 +231,13 @@ public abstract class PRaiseNode extends Node {
 
     public static PRaiseNode getUncached() {
         return PRaiseNodeGen.getUncached();
+    }
+
+    private static void ensureNoJavaStrings(Object[] arguments, TruffleString.FromJavaStringNode fromJavaStringNode) {
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof String) {
+                arguments[i] = fromJavaStringNode.execute((String) arguments[i], TS_ENCODING);
+            }
+        }
     }
 }

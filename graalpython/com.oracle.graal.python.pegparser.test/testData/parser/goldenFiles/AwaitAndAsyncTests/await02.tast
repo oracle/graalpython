@@ -1,0 +1,13 @@
+Module[0, 34]
+    AsyncFunctionDef[0, 34]
+        Name:f
+        ArgumentsTy[0, 0]
+        ---- Function body of f ----
+        Assign[16, 34]
+            LHS: Name[16, 19] Value: "foo" Store
+            RHS: 
+                Await[22, 34]
+                    Value: 
+                        Call[28, 34]
+                            Target: Name[28, 32] Value: "smth"
+        ---- End of f function ----

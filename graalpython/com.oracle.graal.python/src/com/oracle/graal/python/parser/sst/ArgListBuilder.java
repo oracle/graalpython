@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,37 +42,42 @@
 package com.oracle.graal.python.parser.sst;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.keywords.ConcatKeywordsNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.argument.positional.AppendPositionalStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ConcatPositionalStarargsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.util.PythonUtils;
+
+import static com.oracle.graal.python.parser.sst.FactorySSTVisitor.ts;
 
 public final class ArgListBuilder {
 
     private static final SSTNode[] EMPTY_SSTN = new SSTNode[0];
-    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
 
     private List<SSTNode> args;
     private List<SSTNode> nameArgNodes;
     private List<String> nameArgNames;
-    private List<SSTNode> starArg;
     private List<SSTNode> kwArg;
     private SSTNode nakedForComp;
+    private BitSet isStarArgBitset;
+    private int firstStarArgIndex = -1;
 
     public ArgListBuilder() {
         // default
     }
 
-    public ArgListBuilder(int argCount, int namedArgCount, int starArgCount, int kwArgCount) {
+    public ArgListBuilder(int argCount, int namedArgCount, int kwArgCount) {
         this.args = new ArrayList<>(argCount);
         this.nameArgNodes = new ArrayList<>(namedArgCount);
         this.nameArgNames = new ArrayList<>(namedArgCount);
-        this.starArg = new ArrayList<>(starArgCount);
         this.kwArg = new ArrayList<>(kwArgCount);
+        this.isStarArgBitset = new BitSet(argCount);
     }
 
     public void addArg(SSTNode value) {
@@ -85,9 +90,9 @@ public final class ArgListBuilder {
     public ExpressionNode[] getArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode[] result;
         if (args == null || args.isEmpty()) {
-            result = EMPTY;
+            result = ExpressionNode.EMPTY_ARRAY;
         } else {
-            int len = args.size();
+            int len = firstStarArgIndex < 0 ? args.size() : firstStarArgIndex;
             result = new ExpressionNode[len];
             for (int i = 0; i < len; i++) {
                 result[i] = (ExpressionNode) args.get(i).accept(visitor);
@@ -108,8 +113,16 @@ public final class ArgListBuilder {
         return nameArgNames == null ? PythonUtils.EMPTY_STRING_ARRAY : nameArgNames.toArray(new String[nameArgNames.size()]);
     }
 
-    protected SSTNode[] getStarArg() {
-        return starArg == null ? EMPTY_SSTN : starArg.toArray(new SSTNode[starArg.size()]);
+    protected int getFirstStarArgIndex() {
+        return firstStarArgIndex;
+    }
+
+    protected void setFirstStarArgIndex(int starArgIndex) {
+        this.firstStarArgIndex = starArgIndex;
+    }
+
+    protected boolean isStarArgAt(int i) {
+        return isStarArgBitset != null && isStarArgBitset.get(i);
     }
 
     protected SSTNode[] getKwArg() {
@@ -128,12 +141,12 @@ public final class ArgListBuilder {
     public ExpressionNode[] getNameArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode[] result;
         if (nameArgNodes == null || nameArgNodes.isEmpty()) {
-            result = EMPTY;
+            result = ExpressionNode.EMPTY_ARRAY;
         } else {
             int len = nameArgNodes.size();
             result = new ExpressionNode[len];
             for (int i = 0; i < len; i++) {
-                result[i] = new KeywordLiteralNode((ExpressionNode) nameArgNodes.get(i).accept(visitor), nameArgNames.get(i));
+                result[i] = new KeywordLiteralNode((ExpressionNode) nameArgNodes.get(i).accept(visitor), ts(nameArgNames.get(i)));
             }
         }
         return result;
@@ -176,18 +189,32 @@ public final class ArgListBuilder {
     }
 
     public void addStarArg(SSTNode value) {
-        if (starArg == null) {
-            starArg = new ArrayList<>();
+        addArg(value);
+        if (isStarArgBitset == null) {
+            isStarArgBitset = new BitSet(args.size());
         }
-        starArg.add(value);
+        if (firstStarArgIndex < 0) {
+            firstStarArgIndex = args.size() - 1;
+        }
+        isStarArgBitset.set(args.size() - 1);
     }
 
     public ExpressionNode getStarArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode result = null;
-        if (starArg != null && !starArg.isEmpty()) {
-            result = (ExpressionNode) starArg.get(0).accept(visitor);
-            for (int i = 1; i < starArg.size(); i++) {
-                result = BinaryArithmetic.Add.create(result, (ExpressionNode) starArg.get(i).accept(visitor));
+        if (firstStarArgIndex >= 0) {
+            int starArgCount = args.size() - firstStarArgIndex;
+            if (starArgCount > 1) {
+                result = ListLiteralNode.create(ExpressionNode.EMPTY_ARRAY);
+                for (int i = firstStarArgIndex; i < args.size(); i++) {
+                    ExpressionNode value = (ExpressionNode) args.get(i).accept(visitor);
+                    if (isStarArgAt(i)) {
+                        result = ConcatPositionalStarargsNode.create(result, value);
+                    } else {
+                        result = AppendPositionalStarargsNode.create(result, value);
+                    }
+                }
+            } else {
+                result = (ExpressionNode) args.get(firstStarArgIndex).accept(visitor);
             }
         }
         return result;

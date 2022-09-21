@@ -23,8 +23,7 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,36]`class Enum(metaclass...`
                 Name: Enum
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -39,11 +38,10 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                         QualName: Enum
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [32,36]`pass`
                         ExpressionStatementNode SourceSection: [32,36]`pass`
                           EmptyNode SourceSection: [32,36]`pass`
@@ -55,7 +53,7 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                   ReadNameNodeGen SourceSection: [21,29]`EnumMeta`
                     Identifier: EnumMeta
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
               EmptyNode SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

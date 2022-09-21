@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,12 @@
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
 
-#include <polyglot.h>
+#include <graalvm/llvm/polyglot.h>
 
 #include "Python.h"
 #include <truffle.h>
 #include <graalvm/llvm/handles.h>
+#include "datetime.h"
 
 #define SRC_CS "utf-8"
 
@@ -66,23 +67,27 @@ typedef struct {
     PyObject *md_name;  /* for logging purposes after md_dict is cleared */
 } PyModuleObject;
 
-// taken from CPython "Objects/capsule.c"
-typedef struct {
-    PyObject_HEAD
-    void *pointer;
-    const char *name;
-    void *context;
-    PyCapsule_Destructor destructor;
-} PyCapsule;
-
 typedef struct {
     PyObject_VAR_HEAD
     int readonly;
     void *buf_delegate;
 } PyBufferDecorator;
 
+/* Taken from CPython "Objects/descrobject.c".
+ * This struct is actually private to 'descrobject.c' but we need to register
+ * it to the managed property type. */
+typedef struct {
+    PyObject_HEAD
+    PyObject *prop_get;
+    PyObject *prop_set;
+    PyObject *prop_del;
+    PyObject *prop_doc;
+    int getter_doc;
+} propertyobject;
+
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
+PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 
 typedef void (*init_upcall)();
 
@@ -120,7 +125,7 @@ int PyTruffle_Trace_Memory() {
 }
 
 /* upcall functions for calling into Python */
-void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
+extern void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 extern PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
@@ -250,6 +255,9 @@ PyObject* native_to_java_stealing(PyObject* obj) {
 
 MUST_INLINE
 PyTypeObject* native_type_to_java(PyTypeObject* type) {
+	if (type == NULL) {
+		return NULL;
+	}
 	if (points_to_handle_space(type)) {
         return (PyTypeObject *)resolve_handle(type);
     }
@@ -264,6 +272,16 @@ void* native_pointer_to_java(void* obj) {
     return obj;
 }
 
+MUST_INLINE
+void* function_pointer_to_java(void* obj) {
+    if (points_to_handle_space(obj)) {
+        return resolve_handle_cached(cache, (uint64_t)obj);
+    } else if (!polyglot_is_value(obj)) {
+    	return resolve_function(obj);
+    }
+    return obj;
+}
+
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
@@ -273,30 +291,51 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-#define JWRAPPER_DIRECT                      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_DIRECT"))
-#define JWRAPPER_FASTCALL                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL"))
-#define JWRAPPER_FASTCALL_WITH_KEYWORDS      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL_WITH_KEYWORDS"))
-#define JWRAPPER_KEYWORDS                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_KEYWORDS"))
-#define JWRAPPER_VARARGS                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_VARARGS"))
-#define JWRAPPER_NOARGS                      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NOARGS"))
-#define JWRAPPER_O                           (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_O"))
-#define JWRAPPER_UNSUPPORTED                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED"))
-#define JWRAPPER_ALLOC                       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ALLOC"))
+#define JWRAPPER_DIRECT                      1
+#define JWRAPPER_FASTCALL                    2
+#define JWRAPPER_FASTCALL_WITH_KEYWORDS      3
+#define JWRAPPER_KEYWORDS                    4
+#define JWRAPPER_VARARGS                     5
+#define JWRAPPER_NOARGS                      6
+#define JWRAPPER_O                           7
+#define JWRAPPER_UNSUPPORTED                 8
+#define JWRAPPER_ALLOC                       9
 #define JWRAPPER_SSIZE_ARG                   JWRAPPER_ALLOC
-#define JWRAPPER_GETATTR                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GETATTR"))
-#define JWRAPPER_SETATTR                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SETATTR"))
-#define JWRAPPER_RICHCMP                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_RICHCMP"))
-#define JWRAPPER_SSIZE_OBJ_ARG               (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
-#define JWRAPPER_REVERSE                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE"))
-#define JWRAPPER_POW                         (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_POW"))
-#define JWRAPPER_REVERSE_POW                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE_POW"))
-#define JWRAPPER_LT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LT"))
-#define JWRAPPER_LE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LE"))
-#define JWRAPPER_EQ                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_EQ"))
-#define JWRAPPER_NE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NE"))
-#define JWRAPPER_GT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GT"))
-#define JWRAPPER_GE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GE"))
-#define JWRAPPER_ITERNEXT                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ITERNEXT"))
+#define JWRAPPER_GETATTR                     10
+#define JWRAPPER_SETATTR                     11
+#define JWRAPPER_RICHCMP                     12
+#define JWRAPPER_SETITEM                     13
+#define JWRAPPER_UNARYFUNC                   14
+#define JWRAPPER_BINARYFUNC                  15
+#define JWRAPPER_BINARYFUNC_L                16
+#define JWRAPPER_BINARYFUNC_R                17
+#define JWRAPPER_TERNARYFUNC                 18
+#define JWRAPPER_TERNARYFUNC_R               19
+#define JWRAPPER_LT                          20
+#define JWRAPPER_LE                          21
+#define JWRAPPER_EQ                          22
+#define JWRAPPER_NE                          23
+#define JWRAPPER_GT                          24
+#define JWRAPPER_GE                          25
+#define JWRAPPER_ITERNEXT                    26
+#define JWRAPPER_INQUIRY                     27
+#define JWRAPPER_DELITEM                     28
+#define JWRAPPER_GETITEM                     29
+#define JWRAPPER_GETTER                      30
+#define JWRAPPER_SETTER                      31
+#define JWRAPPER_INITPROC                    32
+#define JWRAPPER_HASHFUNC                    33
+#define JWRAPPER_CALL                        34
+#define JWRAPPER_SETATTRO                    35
+#define JWRAPPER_DESCR_GET                   36
+#define JWRAPPER_DESCR_SET                   37
+#define JWRAPPER_LENFUNC                     38
+#define JWRAPPER_OBJOBJPROC                  39
+#define JWRAPPER_OBJOBJARGPROC               40
+#define JWRAPPER_NEW                         41
+#define JWRAPPER_MP_DELITEM                  42
+#define JWRAPPER_STR                         43
+#define JWRAPPER_REPR                        44
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \
@@ -382,12 +421,10 @@ extern PyObject* wrapped_null;
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
-/* STR */
-__attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va);
-
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
+void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
 int bytes_copy2mem(char* target, char* source, size_t nbytes);

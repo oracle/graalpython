@@ -1,0 +1,90 @@
+ModuleRootNode Name: <module 'genExpr02'> SourceSection: [0,48]`[ (s,c) for c in ('a...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,48]`[ (s,c) for c in ('a...`
+    PythonCallUnary SourceSection: [0,48]`[ (s,c) for c in ('a...`
+      CallUnaryMethodNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: list
+      GeneratorExpressionNode SourceSection: [2,47]`(s,c) for c in ('a',...`
+        Name: <genexpr>
+        FrameDescriptor: 3 slots [<return_val>, c, s]
+        Enclosing
+          FrameDescriptor:  Empty
+        Active Flags: 2
+        For Nodes: 2
+        Block Nodes: 0
+        Is Enclosing Frame Generator: false
+        FunctionRootNode SourceSection: [2,47]`(s,c) for c in ('a',...`
+          Name: <genexpr>
+          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+          CelVars: None
+          FreeVars: None
+          NeedsCellFrame: False
+          FrameDescriptor: 3 slots [<return_val>, c, s]
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          InnerRootNode SourceSection: [2,47]`(s,c) for c in ('a',...`
+            GeneratorReturnTargetNode SourceSection: [2,47]`(s,c) for c in ('a',...`
+              flagSlot: 1
+              GeneratorForNode SourceSection: [2,47]`(s,c) for c in ('a',...`
+                GeneratorForNode SourceSection: [27,47]`for s in (1,2,3,4,5)...`
+                  ExpressionStatementNode SourceSection: [2,7]`(s,c)`
+                    YieldNode SourceSection: [2,7]`(s,c)`
+                      flagSlot: 0
+                      TupleLiteralNode SourceSection: [2,7]`(s,c)`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [3,4]`s`
+                          Frame: [0,s,Illegal]
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [5,6]`c`
+                          Frame: [1,c,Illegal]
+                        PythonObjectFactoryNodeGen SourceSection: None
+                      GeneratorAccessNode SourceSection: None
+                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                    Identifier: s
+                    Frame: [0,s,Illegal]
+                  GetIteratorExpressionNodeGen SourceSection: [36,47]`(1,2,3,4,5)`
+                    TupleLiteralNode SourceSection: [36,47]`(1,2,3,4,5)`
+                      IntegerLiteralNode SourceSection: [37,38]`1`
+                        Value: 1
+                      IntegerLiteralNode SourceSection: [39,40]`2`
+                        Value: 2
+                      IntegerLiteralNode SourceSection: [41,42]`3`
+                        Value: 3
+                      IntegerLiteralNode SourceSection: [43,44]`4`
+                        Value: 4
+                      IntegerLiteralNode SourceSection: [45,46]`5`
+                        Value: 5
+                      PythonObjectFactoryNodeGen SourceSection: None
+                  GetNextCached SourceSection: None
+                    LookupAndCallUnaryNodeGen SourceSection: None
+                      Op: __next__
+                  GeneratorAccessNode SourceSection: None
+                  IsBuiltinClassProfile SourceSection: None
+                    GetClassNodeGen SourceSection: None
+                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                  Identifier: c
+                  Frame: [1,c,Illegal]
+                ArgumentExpressionNode SourceSection: None
+                  ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
+                GetNextCached SourceSection: None
+                  LookupAndCallUnaryNodeGen SourceSection: None
+                    Op: __next__
+                GeneratorAccessNode SourceSection: None
+                IsBuiltinClassProfile SourceSection: None
+                  GetClassNodeGen SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
+                Frame: [2,<return_val>,Object]
+              BlockNode SourceSection: None
+              GeneratorAccessNode SourceSection: None
+              PRaiseNodeGen SourceSection: None
+        GetIteratorExpressionNodeGen SourceSection: [17,26]`('a','b')`
+          TupleLiteralNode SourceSection: [17,26]`('a','b')`
+            StringLiteralNode SourceSection: [18,21]`'a'`
+            StringLiteralNode SourceSection: [22,25]`'b'`
+            PythonObjectFactoryNodeGen SourceSection: None
+        PythonObjectFactoryNodeGen SourceSection: None

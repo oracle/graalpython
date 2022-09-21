@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,40 +40,39 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.TruffleFile;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.object.Shape;
 
 public class PDirEntry extends PythonBuiltinObject {
-    private final TruffleFile file;
-    private final String name;
-    private Object cachedStatResult;
-    private boolean produceBytes;
 
-    public PDirEntry(Object cls, Shape instanceShape, String name, TruffleFile file, boolean produceBytes) {
+    final Object dirEntryData;
+    final PosixFileHandle scandirPath;
+    volatile PTuple statCache;
+    volatile PTuple lstatCache;
+    volatile PosixPath pathCache;
+
+    public PDirEntry(Object cls, Shape instanceShape, Object dirEntryData, PosixFileHandle scandirPath) {
         super(cls, instanceShape);
-        this.name = name;
-        this.file = file;
-        this.produceBytes = produceBytes;
+        this.dirEntryData = dirEntryData;
+        this.scandirPath = scandirPath;
     }
 
-    public TruffleFile getFile() {
-        return file;
+    PTuple getStatCache(boolean followSymlinks) {
+        return followSymlinks ? statCache : lstatCache;
     }
 
-    public String getName() {
-        return name;
+    void setStatCache(boolean followSymlinks, PTuple value) {
+        if (followSymlinks) {
+            statCache = value;
+        } else {
+            lstatCache = value;
+        }
     }
 
-    public Object getCachedStatResult() {
-        return cachedStatResult;
-    }
-
-    public void setCachedStatResult(Object cachedStatResult) {
-        this.cachedStatResult = cachedStatResult;
-    }
-
-    public boolean isProduceBytes() {
-        return produceBytes;
+    boolean produceBytes() {
+        return scandirPath instanceof PosixPath && ((PosixPath) scandirPath).wasBufferLike;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,17 +58,18 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ReadNameNode extends ExpressionNode implements ReadNode, AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
     @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
-    protected final String attributeId;
+    protected final TruffleString attributeId;
 
-    protected ReadNameNode(String attributeId) {
+    protected ReadNameNode(TruffleString attributeId) {
         this.attributeId = attributeId;
     }
 
-    public static ReadNameNode create(String attributeId) {
+    public static ReadNameNode create(TruffleString attributeId) {
         return ReadNameNodeGen.create(attributeId);
     }
 
@@ -89,10 +90,14 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
     }
 
-    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)", limit = "1")
+    @Specialization(guards = "!hasLocals(frame)")
+    protected Object readFromLocals(VirtualFrame frame) {
+        return getReadGlobalNode().execute(frame);
+    }
+
+    @Specialization(guards = "hasLocalsDict(frame)")
     protected Object readFromLocalsDict(VirtualFrame frame,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                    @CachedLibrary(value = "getStorage(frame)") HashingStorageLibrary hlib) {
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(getStorage(frame), attributeId);
         if (result == null) {
             return getReadGlobalNode().execute(frame);
@@ -103,7 +108,7 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected Object readFromLocals(VirtualFrame frame,
-                    @Cached("create()") GetItemNode getItem) {
+                    @Cached GetItemNode getItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             return getItem.execute(frame, frameLocals, attributeId);
@@ -112,16 +117,11 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         }
     }
 
-    @Specialization(guards = "!hasLocals(frame)")
-    protected Object readFromLocals(VirtualFrame frame) {
-        return getReadGlobalNode().execute(frame);
-    }
-
     public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteNameNode.create(attributeId, rhs);
     }
 
-    public String getAttributeId() {
+    public TruffleString getAttributeId() {
         return attributeId;
     }
 

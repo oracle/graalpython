@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
@@ -33,14 +32,9 @@ public final class PDoubleSequenceIterator extends PPrimitiveIterator {
 
     final DoubleSequenceStorage sequence;
 
-    public PDoubleSequenceIterator(Object clazz, Shape instanceShape, DoubleSequenceStorage sequence, PList store) {
-        super(clazz, instanceShape, store, sequence.length());
+    public PDoubleSequenceIterator(Object clazz, Shape instanceShape, DoubleSequenceStorage sequence, Object store) {
+        super(clazz, instanceShape, store);
         this.sequence = sequence;
-    }
-
-    @Override
-    public DoubleSequenceStorage getSequenceStorage() {
-        return this.sequence;
     }
 
     public double next() {

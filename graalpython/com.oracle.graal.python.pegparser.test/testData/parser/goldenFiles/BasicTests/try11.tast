@@ -1,0 +1,18 @@
+Module[0, 79]
+    FunctionDef[0, 79]
+        Name:fn
+        ArgumentsTy[0, 0]
+        ---- Function body of fn ----
+        Try[14, 17]
+            Body:
+                Pass[27, 31]
+            Except:
+                ExceptHandler[36, 42]
+                    Type: Name[43, 52] Value: "Exception"
+                    Var: err
+                    Body:
+                        Call[69, 79]
+                            Target: Name[69, 74] Value: "print"
+                            Args:
+                                Name[75, 78] Value: "err"
+        ---- End of fn function ----
