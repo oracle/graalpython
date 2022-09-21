@@ -7,10 +7,6 @@
 #  error "this header file must not be included directly"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct _traceback {
     PyObject_HEAD
     struct _traceback *tb_next;
@@ -21,7 +17,3 @@ typedef struct _traceback {
 
 PyAPI_FUNC(int) _Py_DisplaySourceLine(PyObject *, PyObject *, int, int);
 PyAPI_FUNC(void) _PyTraceback_Add(const char *, const char *, int);
-
-#ifdef __cplusplus
-}
-#endif

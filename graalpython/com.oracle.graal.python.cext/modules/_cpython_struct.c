@@ -12,6 +12,7 @@
 #define PY_SSIZE_T_CLEAN
 
 #include "capi.h"
+#include "pycore_moduleobject.h"  // _PyModule_GetState()
 #include "structmember.h"         // PyMemberDef
 #include <ctype.h>
 
@@ -26,6 +27,7 @@ class Struct "PyStructObject *" "&PyStructType"
 
 
 typedef struct {
+    PyObject *cache;
     PyObject *PyStructType;
     PyObject *unpackiter_type;
     PyObject *StructError;
@@ -34,23 +36,26 @@ typedef struct {
 static inline _structmodulestate*
 get_struct_state(PyObject *module)
 {
-    void *state = PyModule_GetState(module);
+    void *state = _PyModule_GetState(module);
     assert(state != NULL);
     return (_structmodulestate *)state;
 }
 
 static struct PyModuleDef _structmodule;
 
-#define _structmodulestate_global get_struct_state(PyState_FindModule(&_structmodule))
+#define get_struct_state_structinst(self) \
+    (get_struct_state(_PyType_GetModuleByDef(Py_TYPE(self), &_structmodule)))
+#define get_struct_state_iterinst(self) \
+    (get_struct_state(PyType_GetModule(Py_TYPE(self))))
 
 /* The translation function for each format character is table driven */
 typedef struct _formatdef {
     char format;
     Py_ssize_t size;
     Py_ssize_t alignment;
-    PyObject* (*unpack)(const char *,
+    PyObject* (*unpack)(_structmodulestate *, const char *,
                         const struct _formatdef *);
-    int (*pack)(char *, PyObject *,
+    int (*pack)(_structmodulestate *, char *, PyObject *,
                 const struct _formatdef *);
 } formatdef;
 
@@ -72,10 +77,7 @@ typedef struct {
     PyObject *weakreflist; /* List of weak references */
 } PyStructObject;
 
-
-#define PyStruct_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)_structmodulestate_global->PyStructType)
-#define PyStruct_CheckExact(op) Py_IS_TYPE(op, (PyTypeObject *)_structmodulestate_global->PyStructType)
-
+#define PyStruct_Check(op, state) PyObject_TypeCheck(op, (PyTypeObject *)(state)->PyStructType)
 
 /* Define various structs to figure out the alignments of types */
 
@@ -113,12 +115,20 @@ class cache_struct_converter(CConverter):
     converter = 'cache_struct_converter'
     c_default = "NULL"
 
+    def parse_arg(self, argname, displayname):
+        return """
+            if (!{converter}(module, {argname}, &{paramname})) {{{{
+                goto exit;
+            }}}}
+            """.format(argname=argname, paramname=self.name,
+                       converter=self.converter)
+
     def cleanup(self):
         return "Py_XDECREF(%s);\n" % self.name
 [python start generated code]*/
-/*[python end generated code: output=da39a3ee5e6b4b0d input=49957cca130ffb63]*/
+/*[python end generated code: output=da39a3ee5e6b4b0d input=d6746621c2fb1a7d]*/
 
-static int cache_struct_converter(PyObject *, PyStructObject **);
+static int cache_struct_converter(PyObject *, PyObject *, PyStructObject **);
 
 #include "clinic/_struct.c.h"
 
@@ -126,18 +136,18 @@ static int cache_struct_converter(PyObject *, PyStructObject **);
    PyLongObject if possible, otherwise fails.  Caller should decref. */
 
 static PyObject *
-get_pylong(PyObject *v)
+get_pylong(_structmodulestate *state, PyObject *v)
 {
     assert(v != NULL);
     if (!PyLong_Check(v)) {
         /* Not an integer;  try to use __index__ to convert. */
         if (PyIndex_Check(v)) {
-            v = PyNumber_Index(v);
+            v = _PyNumber_Index(v);
             if (v == NULL)
                 return NULL;
         }
         else {
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "required argument is not an integer");
             return NULL;
         }
@@ -153,11 +163,11 @@ get_pylong(PyObject *v)
    one */
 
 static int
-get_long(PyObject *v, long *p)
+get_long(_structmodulestate *state, PyObject *v, long *p)
 {
     long x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -165,7 +175,7 @@ get_long(PyObject *v, long *p)
     Py_DECREF(v);
     if (x == (long)-1 && PyErr_Occurred()) {
         if (PyErr_ExceptionMatches(PyExc_OverflowError))
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "argument out of range");
         return -1;
     }
@@ -177,11 +187,11 @@ get_long(PyObject *v, long *p)
 /* Same, but handling unsigned long */
 
 static int
-get_ulong(PyObject *v, unsigned long *p)
+get_ulong(_structmodulestate *state, PyObject *v, unsigned long *p)
 {
     unsigned long x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -189,7 +199,7 @@ get_ulong(PyObject *v, unsigned long *p)
     Py_DECREF(v);
     if (x == (unsigned long)-1 && PyErr_Occurred()) {
         if (PyErr_ExceptionMatches(PyExc_OverflowError))
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "argument out of range");
         return -1;
     }
@@ -200,11 +210,11 @@ get_ulong(PyObject *v, unsigned long *p)
 /* Same, but handling native long long. */
 
 static int
-get_longlong(PyObject *v, long long *p)
+get_longlong(_structmodulestate *state, PyObject *v, long long *p)
 {
     long long x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -212,7 +222,7 @@ get_longlong(PyObject *v, long long *p)
     Py_DECREF(v);
     if (x == (long long)-1 && PyErr_Occurred()) {
         if (PyErr_ExceptionMatches(PyExc_OverflowError))
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "argument out of range");
         return -1;
     }
@@ -223,11 +233,11 @@ get_longlong(PyObject *v, long long *p)
 /* Same, but handling native unsigned long long. */
 
 static int
-get_ulonglong(PyObject *v, unsigned long long *p)
+get_ulonglong(_structmodulestate *state, PyObject *v, unsigned long long *p)
 {
     unsigned long long x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -235,7 +245,7 @@ get_ulonglong(PyObject *v, unsigned long long *p)
     Py_DECREF(v);
     if (x == (unsigned long long)-1 && PyErr_Occurred()) {
         if (PyErr_ExceptionMatches(PyExc_OverflowError))
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "argument out of range");
         return -1;
     }
@@ -246,11 +256,11 @@ get_ulonglong(PyObject *v, unsigned long long *p)
 /* Same, but handling Py_ssize_t */
 
 static int
-get_ssize_t(PyObject *v, Py_ssize_t *p)
+get_ssize_t(_structmodulestate *state, PyObject *v, Py_ssize_t *p)
 {
     Py_ssize_t x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -258,7 +268,7 @@ get_ssize_t(PyObject *v, Py_ssize_t *p)
     Py_DECREF(v);
     if (x == (Py_ssize_t)-1 && PyErr_Occurred()) {
         if (PyErr_ExceptionMatches(PyExc_OverflowError))
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "argument out of range");
         return -1;
     }
@@ -269,11 +279,11 @@ get_ssize_t(PyObject *v, Py_ssize_t *p)
 /* Same, but handling size_t */
 
 static int
-get_size_t(PyObject *v, size_t *p)
+get_size_t(_structmodulestate *state, PyObject *v, size_t *p)
 {
     size_t x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -281,7 +291,7 @@ get_size_t(PyObject *v, size_t *p)
     Py_DECREF(v);
     if (x == (size_t)-1 && PyErr_Occurred()) {
         if (PyErr_ExceptionMatches(PyExc_OverflowError))
-            PyErr_SetString(_structmodulestate_global->StructError,
+            PyErr_SetString(state->StructError,
                             "argument out of range");
         return -1;
     }
@@ -290,7 +300,7 @@ get_size_t(PyObject *v, size_t *p)
 }
 
 
-#define RANGE_ERROR(x, f, flag, mask) return _range_error(f, flag)
+#define RANGE_ERROR(state, x, f, flag, mask) return _range_error(state, f, flag)
 
 
 /* Floating point helpers */
@@ -309,13 +319,14 @@ unpack_halffloat(const char *p,  /* start of 2-byte string */
 }
 
 static int
-pack_halffloat(char *p,      /* start of 2-byte string */
+pack_halffloat(_structmodulestate *state,
+               char *p,      /* start of 2-byte string */
                PyObject *v,  /* value to pack */
                int le)       /* true for little-endian, false for big-endian */
 {
     double x = PyFloat_AsDouble(v);
     if (x == -1.0 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -348,7 +359,7 @@ unpack_double(const char *p,  /* start of 8-byte string */
 
 /* Helper to format the range error exceptions */
 static int
-_range_error(const formatdef *f, int is_unsigned)
+_range_error(_structmodulestate *state, const formatdef *f, int is_unsigned)
 {
     /* ulargest is the largest unsigned value with f->size bytes.
      * Note that the simpler:
@@ -361,13 +372,13 @@ _range_error(const formatdef *f, int is_unsigned)
     const size_t ulargest = (size_t)-1 >> ((SIZEOF_SIZE_T - f->size)*8);
     assert(f->size >= 1 && f->size <= SIZEOF_SIZE_T);
     if (is_unsigned)
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
             "'%c' format requires 0 <= number <= %zu",
             f->format,
             ulargest);
     else {
         const Py_ssize_t largest = (Py_ssize_t)(ulargest >> 1);
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
             "'%c' format requires %zd <= number <= %zd",
             f->format,
             ~ largest,
@@ -399,25 +410,25 @@ _range_error(const formatdef *f, int is_unsigned)
    does this). */
 
 static PyObject *
-nu_char(const char *p, const formatdef *f)
+nu_char(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return PyBytes_FromStringAndSize(p, 1);
 }
 
 static PyObject *
-nu_byte(const char *p, const formatdef *f)
+nu_byte(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return PyLong_FromLong((long) *(signed char *)p);
 }
 
 static PyObject *
-nu_ubyte(const char *p, const formatdef *f)
+nu_ubyte(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return PyLong_FromLong((long) *(unsigned char *)p);
 }
 
 static PyObject *
-nu_short(const char *p, const formatdef *f)
+nu_short(_structmodulestate *state, const char *p, const formatdef *f)
 {
     short x;
     memcpy((char *)&x, p, sizeof x);
@@ -425,7 +436,7 @@ nu_short(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_ushort(const char *p, const formatdef *f)
+nu_ushort(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned short x;
     memcpy((char *)&x, p, sizeof x);
@@ -433,7 +444,7 @@ nu_ushort(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_int(const char *p, const formatdef *f)
+nu_int(_structmodulestate *state, const char *p, const formatdef *f)
 {
     int x;
     memcpy((char *)&x, p, sizeof x);
@@ -441,7 +452,7 @@ nu_int(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_uint(const char *p, const formatdef *f)
+nu_uint(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned int x;
     memcpy((char *)&x, p, sizeof x);
@@ -449,7 +460,7 @@ nu_uint(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_long(const char *p, const formatdef *f)
+nu_long(_structmodulestate *state, const char *p, const formatdef *f)
 {
     long x;
     memcpy((char *)&x, p, sizeof x);
@@ -457,7 +468,7 @@ nu_long(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_ulong(const char *p, const formatdef *f)
+nu_ulong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned long x;
     memcpy((char *)&x, p, sizeof x);
@@ -465,7 +476,7 @@ nu_ulong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_ssize_t(const char *p, const formatdef *f)
+nu_ssize_t(_structmodulestate *state, const char *p, const formatdef *f)
 {
     Py_ssize_t x;
     memcpy((char *)&x, p, sizeof x);
@@ -473,7 +484,7 @@ nu_ssize_t(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_size_t(const char *p, const formatdef *f)
+nu_size_t(_structmodulestate *state, const char *p, const formatdef *f)
 {
     size_t x;
     memcpy((char *)&x, p, sizeof x);
@@ -481,7 +492,7 @@ nu_size_t(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_longlong(const char *p, const formatdef *f)
+nu_longlong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     long long x;
     memcpy((char *)&x, p, sizeof x);
@@ -489,7 +500,7 @@ nu_longlong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_ulonglong(const char *p, const formatdef *f)
+nu_ulonglong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned long long x;
     memcpy((char *)&x, p, sizeof x);
@@ -497,7 +508,7 @@ nu_ulonglong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_bool(const char *p, const formatdef *f)
+nu_bool(_structmodulestate *state, const char *p, const formatdef *f)
 {
     _Bool x;
     memcpy((char *)&x, p, sizeof x);
@@ -506,7 +517,7 @@ nu_bool(const char *p, const formatdef *f)
 
 
 static PyObject *
-nu_halffloat(const char *p, const formatdef *f)
+nu_halffloat(_structmodulestate *state, const char *p, const formatdef *f)
 {
 #if PY_LITTLE_ENDIAN
     return unpack_halffloat(p, 1);
@@ -516,7 +527,7 @@ nu_halffloat(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_float(const char *p, const formatdef *f)
+nu_float(_structmodulestate *state, const char *p, const formatdef *f)
 {
     float x;
     memcpy((char *)&x, p, sizeof x);
@@ -524,7 +535,7 @@ nu_float(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_double(const char *p, const formatdef *f)
+nu_double(_structmodulestate *state, const char *p, const formatdef *f)
 {
     double x;
     memcpy((char *)&x, p, sizeof x);
@@ -532,7 +543,7 @@ nu_double(const char *p, const formatdef *f)
 }
 
 static PyObject *
-nu_void_p(const char *p, const formatdef *f)
+nu_void_p(_structmodulestate *state, const char *p, const formatdef *f)
 {
     void *x;
     memcpy((char *)&x, p, sizeof x);
@@ -540,13 +551,13 @@ nu_void_p(const char *p, const formatdef *f)
 }
 
 static int
-np_byte(char *p, PyObject *v, const formatdef *f)
+np_byte(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     if (x < -128 || x > 127) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "byte format requires -128 <= number <= 127");
         return -1;
     }
@@ -555,13 +566,13 @@ np_byte(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_ubyte(char *p, PyObject *v, const formatdef *f)
+np_ubyte(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     if (x < 0 || x > 255) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "ubyte format requires 0 <= number <= 255");
         return -1;
     }
@@ -570,10 +581,10 @@ np_ubyte(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_char(char *p, PyObject *v, const formatdef *f)
+np_char(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     if (!PyBytes_Check(v) || PyBytes_Size(v) != 1) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "char format requires a bytes object of length 1");
         return -1;
     }
@@ -582,14 +593,14 @@ np_char(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_short(char *p, PyObject *v, const formatdef *f)
+np_short(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
     short y;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     if (x < SHRT_MIN || x > SHRT_MAX) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "short format requires " Py_STRINGIFY(SHRT_MIN)
                         " <= number <= " Py_STRINGIFY(SHRT_MAX));
         return -1;
@@ -600,14 +611,14 @@ np_short(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_ushort(char *p, PyObject *v, const formatdef *f)
+np_ushort(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
     unsigned short y;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     if (x < 0 || x > USHRT_MAX) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "ushort format requires 0 <= number <= "
                         Py_STRINGIFY(USHRT_MAX));
         return -1;
@@ -618,15 +629,15 @@ np_ushort(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_int(char *p, PyObject *v, const formatdef *f)
+np_int(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
     int y;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
 #if (SIZEOF_LONG > SIZEOF_INT)
     if ((x < ((long)INT_MIN)) || (x > ((long)INT_MAX)))
-        RANGE_ERROR(x, f, 0, -1);
+        RANGE_ERROR(state, x, f, 0, -1);
 #endif
     y = (int)x;
     memcpy(p, (char *)&y, sizeof y);
@@ -634,76 +645,76 @@ np_int(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_uint(char *p, PyObject *v, const formatdef *f)
+np_uint(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     unsigned long x;
     unsigned int y;
-    if (get_ulong(v, &x) < 0)
+    if (get_ulong(state, v, &x) < 0)
         return -1;
     y = (unsigned int)x;
 #if (SIZEOF_LONG > SIZEOF_INT)
     if (x > ((unsigned long)UINT_MAX))
-        RANGE_ERROR(y, f, 1, -1);
+        RANGE_ERROR(state, y, f, 1, -1);
 #endif
     memcpy(p, (char *)&y, sizeof y);
     return 0;
 }
 
 static int
-np_long(char *p, PyObject *v, const formatdef *f)
+np_long(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     memcpy(p, (char *)&x, sizeof x);
     return 0;
 }
 
 static int
-np_ulong(char *p, PyObject *v, const formatdef *f)
+np_ulong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     unsigned long x;
-    if (get_ulong(v, &x) < 0)
+    if (get_ulong(state, v, &x) < 0)
         return -1;
     memcpy(p, (char *)&x, sizeof x);
     return 0;
 }
 
 static int
-np_ssize_t(char *p, PyObject *v, const formatdef *f)
+np_ssize_t(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     Py_ssize_t x;
-    if (get_ssize_t(v, &x) < 0)
+    if (get_ssize_t(state, v, &x) < 0)
         return -1;
     memcpy(p, (char *)&x, sizeof x);
     return 0;
 }
 
 static int
-np_size_t(char *p, PyObject *v, const formatdef *f)
+np_size_t(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     size_t x;
-    if (get_size_t(v, &x) < 0)
+    if (get_size_t(state, v, &x) < 0)
         return -1;
     memcpy(p, (char *)&x, sizeof x);
     return 0;
 }
 
 static int
-np_longlong(char *p, PyObject *v, const formatdef *f)
+np_longlong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long long x;
-    if (get_longlong(v, &x) < 0)
+    if (get_longlong(state, v, &x) < 0)
         return -1;
     memcpy(p, (char *)&x, sizeof x);
     return 0;
 }
 
 static int
-np_ulonglong(char *p, PyObject *v, const formatdef *f)
+np_ulonglong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     unsigned long long x;
-    if (get_ulonglong(v, &x) < 0)
+    if (get_ulonglong(state, v, &x) < 0)
         return -1;
     memcpy(p, (char *)&x, sizeof x);
     return 0;
@@ -711,7 +722,7 @@ np_ulonglong(char *p, PyObject *v, const formatdef *f)
 
 
 static int
-np_bool(char *p, PyObject *v, const formatdef *f)
+np_bool(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     int y;
     _Bool x;
@@ -724,21 +735,21 @@ np_bool(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_halffloat(char *p, PyObject *v, const formatdef *f)
+np_halffloat(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
 #if PY_LITTLE_ENDIAN
-    return pack_halffloat(p, v, 1);
+    return pack_halffloat(state, p, v, 1);
 #else
-    return pack_halffloat(p, v, 0);
+    return pack_halffloat(state, p, v, 0);
 #endif
 }
 
 static int
-np_float(char *p, PyObject *v, const formatdef *f)
+np_float(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     float x = (float)PyFloat_AsDouble(v);
     if (x == -1 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -747,11 +758,11 @@ np_float(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_double(char *p, PyObject *v, const formatdef *f)
+np_double(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     double x = PyFloat_AsDouble(v);
     if (x == -1 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -760,11 +771,11 @@ np_double(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-np_void_p(char *p, PyObject *v, const formatdef *f)
+np_void_p(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     void *x;
 
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     assert(PyLong_Check(v));
@@ -804,7 +815,7 @@ static const formatdef native_table[] = {
 /* Big-endian routines. *****************************************************/
 
 static PyObject *
-bu_int(const char *p, const formatdef *f)
+bu_int(_structmodulestate *state, const char *p, const formatdef *f)
 {
     long x = 0;
     Py_ssize_t i = f->size;
@@ -819,7 +830,7 @@ bu_int(const char *p, const formatdef *f)
 }
 
 static PyObject *
-bu_uint(const char *p, const formatdef *f)
+bu_uint(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned long x = 0;
     Py_ssize_t i = f->size;
@@ -831,7 +842,7 @@ bu_uint(const char *p, const formatdef *f)
 }
 
 static PyObject *
-bu_longlong(const char *p, const formatdef *f)
+bu_longlong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     long long x = 0;
     Py_ssize_t i = f->size;
@@ -846,7 +857,7 @@ bu_longlong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-bu_ulonglong(const char *p, const formatdef *f)
+bu_ulonglong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned long long x = 0;
     Py_ssize_t i = f->size;
@@ -858,44 +869,44 @@ bu_ulonglong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-bu_halffloat(const char *p, const formatdef *f)
+bu_halffloat(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return unpack_halffloat(p, 0);
 }
 
 static PyObject *
-bu_float(const char *p, const formatdef *f)
+bu_float(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return unpack_float(p, 0);
 }
 
 static PyObject *
-bu_double(const char *p, const formatdef *f)
+bu_double(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return unpack_double(p, 0);
 }
 
 static PyObject *
-bu_bool(const char *p, const formatdef *f)
+bu_bool(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return PyBool_FromLong(*p != 0);
 }
 
 static int
-bp_int(char *p, PyObject *v, const formatdef *f)
+bp_int(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
     Py_ssize_t i;
     unsigned char *q = (unsigned char *)p;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     i = f->size;
     if (i != SIZEOF_LONG) {
         if ((i == 2) && (x < -32768 || x > 32767))
-            RANGE_ERROR(x, f, 0, 0xffffL);
+            RANGE_ERROR(state, x, f, 0, 0xffffL);
 #if (SIZEOF_LONG != 4)
         else if ((i == 4) && (x < -2147483648L || x > 2147483647L))
-            RANGE_ERROR(x, f, 0, 0xffffffffL);
+            RANGE_ERROR(state, x, f, 0, 0xffffffffL);
 #endif
     }
     do {
@@ -906,19 +917,19 @@ bp_int(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-bp_uint(char *p, PyObject *v, const formatdef *f)
+bp_uint(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     unsigned long x;
     Py_ssize_t i;
     unsigned char *q = (unsigned char *)p;
-    if (get_ulong(v, &x) < 0)
+    if (get_ulong(state, v, &x) < 0)
         return -1;
     i = f->size;
     if (i != SIZEOF_LONG) {
         unsigned long maxint = 1;
         maxint <<= (unsigned long)(i * 8);
         if (x >= maxint)
-            RANGE_ERROR(x, f, 1, maxint - 1);
+            RANGE_ERROR(state, x, f, 1, maxint - 1);
     }
     do {
         q[--i] = (unsigned char)(x & 0xffUL);
@@ -928,10 +939,10 @@ bp_uint(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-bp_longlong(char *p, PyObject *v, const formatdef *f)
+bp_longlong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     int res;
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     res = _PyLong_AsByteArray((PyLongObject *)v,
@@ -944,10 +955,10 @@ bp_longlong(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-bp_ulonglong(char *p, PyObject *v, const formatdef *f)
+bp_ulonglong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     int res;
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     res = _PyLong_AsByteArray((PyLongObject *)v,
@@ -960,17 +971,17 @@ bp_ulonglong(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-bp_halffloat(char *p, PyObject *v, const formatdef *f)
+bp_halffloat(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
-    return pack_halffloat(p, v, 0);
+    return pack_halffloat(state, p, v, 0);
 }
 
 static int
-bp_float(char *p, PyObject *v, const formatdef *f)
+bp_float(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     double x = PyFloat_AsDouble(v);
     if (x == -1 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -978,11 +989,11 @@ bp_float(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-bp_double(char *p, PyObject *v, const formatdef *f)
+bp_double(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     double x = PyFloat_AsDouble(v);
     if (x == -1 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -990,7 +1001,7 @@ bp_double(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-bp_bool(char *p, PyObject *v, const formatdef *f)
+bp_bool(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     int y;
     y = PyObject_IsTrue(v);
@@ -1025,7 +1036,7 @@ static formatdef bigendian_table[] = {
 /* Little-endian routines. *****************************************************/
 
 static PyObject *
-lu_int(const char *p, const formatdef *f)
+lu_int(_structmodulestate *state, const char *p, const formatdef *f)
 {
     long x = 0;
     Py_ssize_t i = f->size;
@@ -1040,7 +1051,7 @@ lu_int(const char *p, const formatdef *f)
 }
 
 static PyObject *
-lu_uint(const char *p, const formatdef *f)
+lu_uint(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned long x = 0;
     Py_ssize_t i = f->size;
@@ -1052,7 +1063,7 @@ lu_uint(const char *p, const formatdef *f)
 }
 
 static PyObject *
-lu_longlong(const char *p, const formatdef *f)
+lu_longlong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     long long x = 0;
     Py_ssize_t i = f->size;
@@ -1067,7 +1078,7 @@ lu_longlong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-lu_ulonglong(const char *p, const formatdef *f)
+lu_ulonglong(_structmodulestate *state, const char *p, const formatdef *f)
 {
     unsigned long long x = 0;
     Py_ssize_t i = f->size;
@@ -1079,38 +1090,38 @@ lu_ulonglong(const char *p, const formatdef *f)
 }
 
 static PyObject *
-lu_halffloat(const char *p, const formatdef *f)
+lu_halffloat(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return unpack_halffloat(p, 1);
 }
 
 static PyObject *
-lu_float(const char *p, const formatdef *f)
+lu_float(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return unpack_float(p, 1);
 }
 
 static PyObject *
-lu_double(const char *p, const formatdef *f)
+lu_double(_structmodulestate *state, const char *p, const formatdef *f)
 {
     return unpack_double(p, 1);
 }
 
 static int
-lp_int(char *p, PyObject *v, const formatdef *f)
+lp_int(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     long x;
     Py_ssize_t i;
     unsigned char *q = (unsigned char *)p;
-    if (get_long(v, &x) < 0)
+    if (get_long(state, v, &x) < 0)
         return -1;
     i = f->size;
     if (i != SIZEOF_LONG) {
         if ((i == 2) && (x < -32768 || x > 32767))
-            RANGE_ERROR(x, f, 0, 0xffffL);
+            RANGE_ERROR(state, x, f, 0, 0xffffL);
 #if (SIZEOF_LONG != 4)
         else if ((i == 4) && (x < -2147483648L || x > 2147483647L))
-            RANGE_ERROR(x, f, 0, 0xffffffffL);
+            RANGE_ERROR(state, x, f, 0, 0xffffffffL);
 #endif
     }
     do {
@@ -1121,19 +1132,19 @@ lp_int(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-lp_uint(char *p, PyObject *v, const formatdef *f)
+lp_uint(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     unsigned long x;
     Py_ssize_t i;
     unsigned char *q = (unsigned char *)p;
-    if (get_ulong(v, &x) < 0)
+    if (get_ulong(state, v, &x) < 0)
         return -1;
     i = f->size;
     if (i != SIZEOF_LONG) {
         unsigned long maxint = 1;
         maxint <<= (unsigned long)(i * 8);
         if (x >= maxint)
-            RANGE_ERROR(x, f, 1, maxint - 1);
+            RANGE_ERROR(state, x, f, 1, maxint - 1);
     }
     do {
         *q++ = (unsigned char)(x & 0xffUL);
@@ -1143,10 +1154,10 @@ lp_uint(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-lp_longlong(char *p, PyObject *v, const formatdef *f)
+lp_longlong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     int res;
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     res = _PyLong_AsByteArray((PyLongObject*)v,
@@ -1159,10 +1170,10 @@ lp_longlong(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-lp_ulonglong(char *p, PyObject *v, const formatdef *f)
+lp_ulonglong(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     int res;
-    v = get_pylong(v);
+    v = get_pylong(state, v);
     if (v == NULL)
         return -1;
     res = _PyLong_AsByteArray((PyLongObject*)v,
@@ -1175,17 +1186,17 @@ lp_ulonglong(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-lp_halffloat(char *p, PyObject *v, const formatdef *f)
+lp_halffloat(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
-    return pack_halffloat(p, v, 1);
+    return pack_halffloat(state, p, v, 1);
 }
 
 static int
-lp_float(char *p, PyObject *v, const formatdef *f)
+lp_float(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     double x = PyFloat_AsDouble(v);
     if (x == -1 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -1193,11 +1204,11 @@ lp_float(char *p, PyObject *v, const formatdef *f)
 }
 
 static int
-lp_double(char *p, PyObject *v, const formatdef *f)
+lp_double(_structmodulestate *state, char *p, PyObject *v, const formatdef *f)
 {
     double x = PyFloat_AsDouble(v);
     if (x == -1 && PyErr_Occurred()) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "required argument is not a float");
         return -1;
     }
@@ -1257,14 +1268,14 @@ whichtable(const char **pfmt)
 /* Get the table entry for a format code */
 
 static const formatdef *
-getentry(int c, const formatdef *f)
+getentry(_structmodulestate *state, int c, const formatdef *f)
 {
     for (; f->format != '\0'; f++) {
         if (f->format == c) {
             return f;
         }
     }
-    PyErr_SetString(_structmodulestate_global->StructError, "bad char in struct format");
+    PyErr_SetString(state->StructError, "bad char in struct format");
     return NULL;
 }
 
@@ -1308,9 +1319,11 @@ prepare_s(PyStructObject *self)
     size_t ncodes;
     PyObject* self_format = native_pointer_to_java(self->s_format);
 
+    _structmodulestate *state = get_struct_state_structinst(self);
+
     fmt = PyBytes_AS_STRING(self_format);
     if (strlen(fmt) != (size_t)PyBytes_GET_SIZE(self_format)) {
-        PyErr_SetString(_structmodulestate_global->StructError,
+        PyErr_SetString(state->StructError,
                         "embedded null character");
         return -1;
     }
@@ -1336,7 +1349,7 @@ prepare_s(PyStructObject *self)
                 num = num*10 + (c - '0');
             }
             if (c == '\0') {
-                PyErr_SetString(_structmodulestate_global->StructError,
+                PyErr_SetString(state->StructError,
                                 "repeat count given without format specifier");
                 return -1;
             }
@@ -1344,7 +1357,7 @@ prepare_s(PyStructObject *self)
         else
             num = 1;
 
-        e = getentry(c, f);
+        e = getentry(state, c, f);
         if (e == NULL)
             return -1;
 
@@ -1374,14 +1387,14 @@ prepare_s(PyStructObject *self)
 
     self->s_size = size;
     self->s_len = len;
-    codes = PyMem_MALLOC((ncodes + 1) * sizeof(formatcode));
+    codes = PyMem_Malloc((ncodes + 1) * sizeof(formatcode));
     if (codes == NULL) {
         PyErr_NoMemory();
         return -1;
     }
     /* Free any s_codes value left over from a previous initialization. */
     if (self->s_codes != NULL)
-        PyMem_FREE(self->s_codes);
+        PyMem_Free(self->s_codes);
     self->s_codes = codes;
 
     s = fmt;
@@ -1397,7 +1410,7 @@ prepare_s(PyStructObject *self)
         else
             num = 1;
 
-        e = getentry(c, f);
+        e = getentry(state, c, f);
 
         size = align(size, c, e);
         if (c == 's' || c == 'p') {
@@ -1426,7 +1439,7 @@ prepare_s(PyStructObject *self)
     return 0;
 
   overflow:
-    PyErr_SetString(_structmodulestate_global->StructError,
+    PyErr_SetString(state->StructError,
                     "total struct size too long");
     return -1;
 }
@@ -1443,8 +1456,7 @@ s_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = alloc_func(type, 0);
     if (self != NULL) {
         PyStructObject *s = (PyStructObject*)self;
-        Py_INCREF(Py_None);
-        s->s_format = Py_None;
+        s->s_format = Py_NewRef(Py_None);
         s->s_codes = NULL;
         s->s_size = -1;
         s->s_len = -1;
@@ -1496,14 +1508,30 @@ Struct___init___impl(PyStructObject *self, PyObject *format)
     return ret;
 }
 
+static int
+s_clear(PyStructObject *s)
+{
+    Py_CLEAR(s->s_format);
+    return 0;
+}
+
+static int
+s_traverse(PyStructObject *s, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(s));
+    Py_VISIT(s->s_format);
+    return 0;
+}
+
 static void
 s_dealloc(PyStructObject *s)
 {
     PyTypeObject *tp = Py_TYPE(s);
+    PyObject_GC_UnTrack(s);
     if (s->weakreflist != NULL)
         PyObject_ClearWeakRefs((PyObject *)s);
     if (s->s_codes != NULL) {
-        PyMem_FREE(s->s_codes);
+        PyMem_Free(s->s_codes);
     }
     Py_XDECREF(s->s_format);
     freefunc free_func = PyType_GetSlot(Py_TYPE(s), Py_tp_free);
@@ -1512,7 +1540,8 @@ s_dealloc(PyStructObject *s)
 }
 
 static PyObject *
-s_unpack_internal(PyStructObject *soself, const char *startfrom) {
+s_unpack_internal(PyStructObject *soself, const char *startfrom,
+                  _structmodulestate *state) {
     formatcode *code;
     Py_ssize_t i = 0;
     PyObject *result = PyTuple_New(soself->s_len);
@@ -1533,7 +1562,7 @@ s_unpack_internal(PyStructObject *soself, const char *startfrom) {
                     n = code->size - 1;
                 v = PyBytes_FromStringAndSize(res + 1, n);
             } else {
-                v = e->unpack(res, e);
+                v = e->unpack(state, res, e);
             }
             if (v == NULL)
                 goto fail;
@@ -1567,14 +1596,15 @@ static PyObject *
 Struct_unpack_impl(PyStructObject *self, Py_buffer *buffer)
 /*[clinic end generated code: output=873a24faf02e848a input=3113f8e7038b2f6c]*/
 {
+    _structmodulestate *state = get_struct_state_structinst(self);
     assert(self->s_codes != NULL);
     if (buffer->len != self->s_size) {
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
                      "unpack requires a buffer of %zd bytes",
                      self->s_size);
         return NULL;
     }
-    return s_unpack_internal(self, buffer->buf);
+    return s_unpack_internal(self, buffer->buf, state);
 }
 
 /*[clinic input]
@@ -1598,11 +1628,12 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
                         Py_ssize_t offset)
 /*[clinic end generated code: output=57fac875e0977316 input=cafd4851d473c894]*/
 {
+    _structmodulestate *state = get_struct_state_structinst(self);
     assert(self->s_codes != NULL);
 
     if (offset < 0) {
         if (offset + self->s_size > 0) {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                          "not enough data to unpack %zd bytes at offset %zd",
                          self->s_size,
                          offset);
@@ -1610,7 +1641,7 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
         }
 
         if (offset + buffer->len < 0) {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                          "offset %zd out of range for %zd-byte buffer",
                          offset,
                          buffer->len);
@@ -1620,7 +1651,7 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
     }
 
     if ((buffer->len - offset) < self->s_size) {
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
                      "unpack_from requires a buffer of at least %zu bytes for "
                      "unpacking %zd bytes at offset %zd "
                      "(actual buffer size is %zd)",
@@ -1630,7 +1661,7 @@ Struct_unpack_from_impl(PyStructObject *self, Py_buffer *buffer,
                      buffer->len);
         return NULL;
     }
-    return s_unpack_internal(self, (char*)native_pointer_to_java(buffer->buf) + offset);
+    return s_unpack_internal(self, (char*)native_pointer_to_java(buffer->buf) + offset, state);
 }
 
 
@@ -1684,6 +1715,7 @@ static PyMethodDef unpackiter_methods[] = {
 static PyObject *
 unpackiter_iternext(unpackiterobject *self)
 {
+    _structmodulestate *state = get_struct_state_iterinst(self);
     PyObject *result;
     if (self->so == NULL)
         return NULL;
@@ -1695,7 +1727,8 @@ unpackiter_iternext(unpackiterobject *self)
     }
     assert(self->index + self->so->s_size <= self->buf.len);
     result = s_unpack_internal(self->so,
-                               (char*) self->buf.buf + self->index);
+                               (char*) self->buf.buf + self->index,
+                               state);
     self->index += self->so->s_size;
     return result;
 }
@@ -1720,7 +1753,8 @@ static PyType_Spec unpackiter_type_spec = {
     "_struct.unpack_iterator",
     sizeof(unpackiterobject),
     0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+    (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+     Py_TPFLAGS_IMMUTABLETYPE),
     unpackiter_type_slots
 };
 
@@ -1742,17 +1776,18 @@ static PyObject *
 Struct_iter_unpack(PyStructObject *self, PyObject *buffer)
 /*[clinic end generated code: output=172d83d0cd15dbab input=6d65b3f3107dbc99]*/
 {
+    _structmodulestate *state = get_struct_state_structinst(self);
     unpackiterobject *iter;
 
     assert(self->s_codes != NULL);
 
     if (self->s_size == 0) {
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
                      "cannot iteratively unpack with a struct of length 0");
         return NULL;
     }
 
-    iter = (unpackiterobject *) PyType_GenericAlloc((PyTypeObject *)_structmodulestate_global->unpackiter_type, 0);
+    iter = (unpackiterobject *) PyType_GenericAlloc((PyTypeObject *)state->unpackiter_type, 0);
     if (iter == NULL)
         return NULL;
 
@@ -1761,7 +1796,7 @@ Struct_iter_unpack(PyStructObject *self, PyObject *buffer)
         return NULL;
     }
     if (iter->buf.len % self->s_size != 0) {
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
                      "iterative unpacking requires a buffer of "
                      "a multiple of %zd bytes",
                      self->s_size);
@@ -1786,7 +1821,8 @@ Struct_iter_unpack(PyStructObject *self, PyObject *buffer)
  *
  */
 static int
-s_pack_internal(PyStructObject *soself, PyObject *const *args, int offset, char* buf)
+s_pack_internal(PyStructObject *soself, PyObject *const *args, int offset,
+                char* buf, _structmodulestate *state)
 {
     formatcode *code;
     /* XXX(nnorwitz): why does i need to be a local?  can we use
@@ -1807,7 +1843,7 @@ s_pack_internal(PyStructObject *soself, PyObject *const *args, int offset, char*
                 const void *p;
                 isstring = PyBytes_Check(v);
                 if (!isstring && !PyByteArray_Check(v)) {
-                    PyErr_SetString(_structmodulestate_global->StructError,
+                    PyErr_SetString(state->StructError,
                                     "argument for 's' must be a bytes object");
                     return -1;
                 }
@@ -1829,7 +1865,7 @@ s_pack_internal(PyStructObject *soself, PyObject *const *args, int offset, char*
                 const void *p;
                 isstring = PyBytes_Check(v);
                 if (!isstring && !PyByteArray_Check(v)) {
-                    PyErr_SetString(_structmodulestate_global->StructError,
+                    PyErr_SetString(state->StructError,
                                     "argument for 'p' must be a bytes object");
                     return -1;
                 }
@@ -1849,9 +1885,9 @@ s_pack_internal(PyStructObject *soself, PyObject *const *args, int offset, char*
                     n = 255;
                 *res = Py_SAFE_DOWNCAST(n, Py_ssize_t, unsigned char);
             } else {
-                if (e->pack(res, v, e) < 0) {
+                if (e->pack(state, res, v, e) < 0) {
                     if (PyLong_Check(v) && PyErr_ExceptionMatches(PyExc_OverflowError))
-                        PyErr_SetString(_structmodulestate_global->StructError,
+                        PyErr_SetString(state->StructError,
                                         "int too large to convert");
                     return -1;
                 }
@@ -1877,14 +1913,15 @@ s_pack(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
 {
     char *buf;
     PyStructObject *soself;
+    _structmodulestate *state = get_struct_state_structinst(self);
 
     /* Validate arguments. */
     soself = (PyStructObject *)self;
-    assert(PyStruct_Check(self));
+    assert(PyStruct_Check(self, state));
     assert(soself->s_codes != NULL);
     if (nargs != soself->s_len)
     {
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
             "pack expected %zd items for packing (got %zd)", soself->s_len, nargs);
         return NULL;
     }
@@ -1899,7 +1936,7 @@ s_pack(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
     }
 
     /* Call the guts */
-    if ( s_pack_internal(soself, args, 0, buf) != 0 ) {
+    if ( s_pack_internal(soself, args, 0, buf, state) != 0 ) {
         _PyBytesWriter_Dealloc(&writer);
         return NULL;
     }
@@ -1921,23 +1958,24 @@ s_pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
     PyStructObject *soself;
     Py_buffer buffer;
     Py_ssize_t offset;
+    _structmodulestate *state = get_struct_state_structinst(self);
 
     /* Validate arguments.  +1 is for the first arg as buffer. */
     soself = (PyStructObject *)self;
-    assert(PyStruct_Check(self));
+    assert(PyStruct_Check(self, state));
     assert(soself->s_codes != NULL);
     if (nargs != (soself->s_len + 2))
     {
         if (nargs == 0) {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                         "pack_into expected buffer argument");
         }
         else if (nargs == 1) {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                         "pack_into expected offset argument");
         }
         else {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                         "pack_into expected %zd items for packing (got %zd)",
                         soself->s_len, (nargs - 2));
         }
@@ -1960,7 +1998,7 @@ s_pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
     if (offset < 0) {
          /* Check that negative offset is low enough to fit data */
         if (offset + soself->s_size > 0) {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                          "no space to pack %zd bytes at offset %zd",
                          soself->s_size,
                          offset);
@@ -1970,7 +2008,7 @@ s_pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
 
         /* Check that negative offset is not crossing buffer boundary */
         if (offset + buffer.len < 0) {
-            PyErr_Format(_structmodulestate_global->StructError,
+            PyErr_Format(state->StructError,
                          "offset %zd out of range for %zd-byte buffer",
                          offset,
                          buffer.len);
@@ -1986,7 +2024,7 @@ s_pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
         assert(offset >= 0);
         assert(soself->s_size >= 0);
 
-        PyErr_Format(_structmodulestate_global->StructError,
+        PyErr_Format(state->StructError,
                      "pack_into requires a buffer of at least %zu bytes for "
                      "packing %zd bytes at offset %zd "
                      "(actual buffer size is %zd)",
@@ -1999,7 +2037,7 @@ s_pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
     }
 
     /* Call the guts */
-    if (s_pack_internal(soself, args, 2, (char*)buffer.buf + offset) != 0) {
+    if (s_pack_internal(soself, args, 2, (char*)buffer.buf + offset, state) != 0) {
         PyBuffer_Release(&buffer);
         return NULL;
     }
@@ -2071,13 +2109,15 @@ static PyType_Slot PyStructType_slots[] = {
     {Py_tp_getattro, PyObject_GenericGetAttr},
     {Py_tp_setattro, PyObject_GenericSetAttr},
     {Py_tp_doc, (void*)s__doc__},
+    {Py_tp_traverse, s_traverse},
+    {Py_tp_clear, s_clear},
     {Py_tp_methods, s_methods},
     {Py_tp_members, s_members},
     {Py_tp_getset, s_getsetlist},
     {Py_tp_init, Struct___init__},
     {Py_tp_alloc, PyType_GenericAlloc},
     {Py_tp_new, s_new},
-    {Py_tp_free, PyObject_Del},
+    {Py_tp_free, PyObject_GC_Del},
     {0, 0},
 };
 
@@ -2085,7 +2125,8 @@ static PyType_Spec PyStructType_spec = {
     "_struct.Struct",
     sizeof(PyStructObject),
     0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+     Py_TPFLAGS_BASETYPE | Py_TPFLAGS_IMMUTABLETYPE),
     PyStructType_slots
 };
 
@@ -2093,15 +2134,12 @@ static PyType_Spec PyStructType_spec = {
 /* ---- Standalone functions  ---- */
 
 #define MAXCACHE 100
-/* Please note: the name of the cache needs to be prefixed because this file
-   includes 'capi.h' which defines a global variable with name 'cache'. */
-#define STRUCT_CACHE _cpython_struct_cache
-static PyObject *STRUCT_CACHE = NULL;
 
 static int
-cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
+cache_struct_converter(PyObject *module, PyObject *fmt, PyStructObject **ptr)
 {
     PyObject * s_object;
+    _structmodulestate *state = get_struct_state(module);
 
     if (fmt == NULL) {
         Py_DECREF(*ptr);
@@ -2109,13 +2147,13 @@ cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
         return 1;
     }
 
-    if (STRUCT_CACHE == NULL) {
-        STRUCT_CACHE = PyDict_New();
-        if (STRUCT_CACHE == NULL)
+    if (state->cache == NULL) {
+        state->cache = PyDict_New();
+        if (state->cache == NULL)
             return 0;
     }
 
-    s_object = PyDict_GetItemWithError(STRUCT_CACHE, fmt);
+    s_object = PyDict_GetItemWithError(state->cache, fmt);
     if (s_object != NULL) {
         Py_INCREF(s_object);
         *ptr = (PyStructObject *)s_object;
@@ -2125,12 +2163,12 @@ cache_struct_converter(PyObject *fmt, PyStructObject **ptr)
         return 0;
     }
 
-    s_object = PyObject_CallOneArg(_structmodulestate_global->PyStructType, fmt);
+    s_object = PyObject_CallOneArg(state->PyStructType, fmt);
     if (s_object != NULL) {
-        if (PyDict_GET_SIZE(STRUCT_CACHE) >= MAXCACHE)
-            PyDict_Clear(STRUCT_CACHE);
+        if (PyDict_GET_SIZE(state->cache) >= MAXCACHE)
+            PyDict_Clear(state->cache);
         /* Attempt to cache the result */
-        if (PyDict_SetItem(STRUCT_CACHE, fmt, s_object) == -1)
+        if (PyDict_SetItem(state->cache, fmt, s_object) == -1)
             PyErr_Clear();
         *ptr = (PyStructObject *)s_object;
         return Py_CLEANUP_SUPPORTED;
@@ -2148,7 +2186,7 @@ static PyObject *
 _clearcache_impl(PyObject *module)
 /*[clinic end generated code: output=ce4fb8a7bf7cb523 input=463eaae04bab3211]*/
 {
-    Py_CLEAR(STRUCT_CACHE);
+    Py_CLEAR(get_struct_state(module)->cache);
     Py_RETURN_NONE;
 }
 
@@ -2176,7 +2214,7 @@ Return a bytes object containing the values v1, v2, ... packed according\n\
 to the format string.  See help(struct) for more on format strings.");
 
 static PyObject *
-pack(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+pack(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
 {
     PyObject *s_object = NULL;
     PyObject *format, *result;
@@ -2187,7 +2225,7 @@ pack(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
     }
     format = args[0];
 
-    if (!cache_struct_converter(format, (PyStructObject **)&s_object)) {
+    if (!cache_struct_converter(module, format, (PyStructObject **)&s_object)) {
         return NULL;
     }
     result = s_pack(s_object, args + 1, nargs - 1);
@@ -2204,7 +2242,7 @@ that the offset is a required argument.  See help(struct) for more\n\
 on format strings.");
 
 static PyObject *
-pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+pack_into(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
 {
     PyObject *s_object = NULL;
     PyObject *format, *result;
@@ -2215,7 +2253,7 @@ pack_into(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
     }
     format = args[0];
 
-    if (!cache_struct_converter(format, (PyStructObject **)&s_object)) {
+    if (!cache_struct_converter(module, format, (PyStructObject **)&s_object)) {
         return NULL;
     }
     result = s_pack_into(s_object, args + 1, nargs - 1);
@@ -2338,8 +2376,9 @@ The variable struct.error is an exception raised on errors.\n");
 static int
 _structmodule_traverse(PyObject *module, visitproc visit, void *arg)
 {
-    _structmodulestate *state = (_structmodulestate *)PyModule_GetState(module);
+    _structmodulestate *state = get_struct_state(module);
     if (state) {
+        Py_VISIT(state->cache);
         Py_VISIT(state->PyStructType);
         Py_VISIT(state->unpackiter_type);
         Py_VISIT(state->StructError);
@@ -2350,8 +2389,9 @@ _structmodule_traverse(PyObject *module, visitproc visit, void *arg)
 static int
 _structmodule_clear(PyObject *module)
 {
-    _structmodulestate *state = (_structmodulestate *)PyModule_GetState(module);
+    _structmodulestate *state = get_struct_state(module);
     if (state) {
+        Py_CLEAR(state->cache);
         Py_CLEAR(state->PyStructType);
         Py_CLEAR(state->unpackiter_type);
         Py_CLEAR(state->StructError);
@@ -2365,40 +2405,25 @@ _structmodule_free(void *module)
     _structmodule_clear((PyObject *)module);
 }
 
-static struct PyModuleDef _structmodule = {
-    PyModuleDef_HEAD_INIT,
-    "_" STRUCT_MODULE,
-    module_doc,
-    sizeof(_structmodulestate),
-    module_functions,
-    NULL,
-    _structmodule_traverse,
-    _structmodule_clear,
-    _structmodule_free,
-};
-
-PyMODINIT_FUNC
-PyInit__cpython_struct(void)
+static int
+_structmodule_exec(PyObject *m)
 {
-    PyObject *m;
+    _structmodulestate *state = get_struct_state(m);
 
-    m = PyModule_Create(&_structmodule);
-    if (m == NULL)
-        return NULL;
-
-    PyObject *PyStructType = PyType_FromSpec(&PyStructType_spec);
-    if (PyStructType == NULL) {
-        return NULL;
+    state->PyStructType = PyType_FromModuleAndSpec(
+        m, &PyStructType_spec, NULL);
+    if (state->PyStructType == NULL) {
+        return -1;
     }
-    Py_INCREF(PyStructType);
-    PyModule_AddObject(m, "Struct", PyStructType);
-    get_struct_state(m)->PyStructType = PyStructType;
-
-    PyObject *unpackiter_type = PyType_FromSpec(&unpackiter_type_spec);
-    if (unpackiter_type == NULL) {
-        return NULL;
+    if (PyModule_AddType(m, (PyTypeObject *)state->PyStructType) < 0) {
+        return -1;
     }
-    get_struct_state(m)->unpackiter_type = unpackiter_type;
+
+    state->unpackiter_type = PyType_FromModuleAndSpec(
+        m, &unpackiter_type_spec, NULL);
+    if (state->unpackiter_type == NULL) {
+        return -1;
+    }
 
     /* Check endian and swap in faster functions */
     {
@@ -2443,12 +2468,36 @@ PyInit__cpython_struct(void)
     }
 
     /* Add some symbolic constants to the module */
-    PyObject *StructError = PyErr_NewException("struct.error", NULL, NULL);
-    if (StructError == NULL)
-        return NULL;
-    Py_INCREF(StructError);
-    PyModule_AddObject(m, "error", StructError);
-    get_struct_state(m)->StructError = StructError;
+    state->StructError = PyErr_NewException("struct.error", NULL, NULL);
+    if (state->StructError == NULL) {
+        return -1;
+    }
+    if (PyModule_AddObjectRef(m, "error", state->StructError) < 0) {
+        return -1;
+    }
 
-    return m;
+    return 0;
+}
+
+static PyModuleDef_Slot _structmodule_slots[] = {
+    {Py_mod_exec, _structmodule_exec},
+    {0, NULL}
+};
+
+static struct PyModuleDef _structmodule = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "_struct",
+    .m_doc = module_doc,
+    .m_size = sizeof(_structmodulestate),
+    .m_methods = module_functions,
+    .m_slots = _structmodule_slots,
+    .m_traverse = _structmodule_traverse,
+    .m_clear = _structmodule_clear,
+    .m_free = _structmodule_free,
+};
+
+PyMODINIT_FUNC
+PyInit__struct(void)
+{
+    return PyModuleDef_Init(&_structmodule);
 }

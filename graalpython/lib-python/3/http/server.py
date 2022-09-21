@@ -103,8 +103,6 @@ import socketserver
 import sys
 import time
 import urllib.parse
-import contextlib
-from functools import partial
 
 from http import HTTPStatus
 
@@ -332,6 +330,13 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
                 return False
         self.command, self.path = command, path
 
+        # gh-87389: The purpose of replacing '//' with '/' is to protect
+        # against open redirect attacks possibly triggered if the path starts
+        # with '//' because http clients treat //path as an absolute URI
+        # without scheme (similar to http://path) rather than a path.
+        if self.path.startswith('//'):
+            self.path = '/' + self.path.lstrip('/')  # Reduce to a single /
+
         # Examine the headers and look for a Connection directive.
         try:
             self.headers = http.client.parse_headers(self.rfile,
@@ -414,7 +419,7 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
             method = getattr(self, mname)
             method()
             self.wfile.flush() #actually send the response if not already done.
-        except socket.timeout as e:
+        except TimeoutError as e:
             #a read or a write timed out.  Discard this connection
             self.log_error("Request timed out: %r", e)
             self.close_connection = True
@@ -689,6 +694,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                              parts[3], parts[4])
                 new_url = urllib.parse.urlunsplit(new_parts)
                 self.send_header("Location", new_url)
+                self.send_header("Content-Length", "0")
                 self.end_headers()
                 return None
             for index in "index.html", "index.htm":
@@ -1092,8 +1098,7 @@ class CGIHTTPRequestHandler(SimpleHTTPRequestHandler):
         env['PATH_INFO'] = uqrest
         env['PATH_TRANSLATED'] = self.translate_path(uqrest)
         env['SCRIPT_NAME'] = scriptname
-        if query:
-            env['QUERY_STRING'] = query
+        env['QUERY_STRING'] = query
         env['REMOTE_ADDR'] = self.client_address[0]
         authorization = self.headers.get("authorization")
         if authorization:
@@ -1123,12 +1128,7 @@ class CGIHTTPRequestHandler(SimpleHTTPRequestHandler):
         referer = self.headers.get('referer')
         if referer:
             env['HTTP_REFERER'] = referer
-        accept = []
-        for line in self.headers.getallmatchingheaders('accept'):
-            if line[:1] in "\t\n\r ":
-                accept.append(line.strip())
-            else:
-                accept = accept + line[7:].split(',')
+        accept = self.headers.get_all('accept', ())
         env['HTTP_ACCEPT'] = ','.join(accept)
         ua = self.headers.get('user-agent')
         if ua:
@@ -1244,7 +1244,6 @@ def test(HandlerClass=BaseHTTPRequestHandler,
 
     """
     ServerClass.address_family, addr = _get_best_family(bind, port)
-
     HandlerClass.protocol_version = protocol
     with ServerClass(addr, HandlerClass) as httpd:
         host, port = httpd.socket.getsockname()[:2]
@@ -1261,35 +1260,39 @@ def test(HandlerClass=BaseHTTPRequestHandler,
 
 if __name__ == '__main__':
     import argparse
+    import contextlib
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--cgi', action='store_true',
-                       help='Run as CGI Server')
+                        help='run as CGI server')
     parser.add_argument('--bind', '-b', metavar='ADDRESS',
-                        help='Specify alternate bind address '
-                             '[default: all interfaces]')
+                        help='specify alternate bind address '
+                             '(default: all interfaces)')
     parser.add_argument('--directory', '-d', default=os.getcwd(),
-                        help='Specify alternative directory '
-                        '[default:current directory]')
-    parser.add_argument('port', action='store',
-                        default=8000, type=int,
+                        help='specify alternate directory '
+                             '(default: current directory)')
+    parser.add_argument('port', action='store', default=8000, type=int,
                         nargs='?',
-                        help='Specify alternate port [default: 8000]')
+                        help='specify alternate port (default: 8000)')
     args = parser.parse_args()
     if args.cgi:
         handler_class = CGIHTTPRequestHandler
     else:
-        handler_class = partial(SimpleHTTPRequestHandler,
-                                directory=args.directory)
+        handler_class = SimpleHTTPRequestHandler
 
     # ensure dual-stack is not disabled; ref #38907
     class DualStackServer(ThreadingHTTPServer):
+
         def server_bind(self):
             # suppress exception when protocol is IPv4
             with contextlib.suppress(Exception):
                 self.socket.setsockopt(
                     socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             return super().server_bind()
+
+        def finish_request(self, request, client_address):
+            self.RequestHandlerClass(request, client_address, self,
+                                     directory=args.directory)
 
     test(
         HandlerClass=handler_class,
