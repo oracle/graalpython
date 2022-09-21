@@ -20,12 +20,14 @@ PyAPI_DATA(PyTypeObject) PyBool_Type;
 Don't forget to apply Py_INCREF() when returning either!!! */
 
 /* Don't use these directly */
-PyAPI_DATA(struct _longobject) _Py_FalseStruct;
-PyAPI_DATA(struct _longobject) _Py_TrueStruct;
+PyAPI_DATA(struct _longobject*) _Py_FalseStructReference;
+PyAPI_DATA(struct _longobject*) _Py_TrueStructReference;
+#define _Py_TrueStruct (*_Py_TrueStructReference)
+#define _Py_FalseStruct (*_Py_FalseStructReference)
 
 /* Use these macros */
-#define Py_False ((PyObject *) &_Py_FalseStruct)
-#define Py_True ((PyObject *) &_Py_TrueStruct)
+#define Py_False ((PyObject *) _Py_FalseStructReference)
+#define Py_True ((PyObject *) _Py_TrueStructReference)
 
 // Test if an object is the True singleton, the same as "x is True" in Python.
 PyAPI_FUNC(int) Py_IsTrue(PyObject *x);

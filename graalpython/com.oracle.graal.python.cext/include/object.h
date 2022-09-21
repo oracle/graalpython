@@ -126,13 +126,6 @@ typedef struct {
 #define _PyVarObject_CAST(op) ((PyVarObject*)(op))
 #define _PyVarObject_CAST_CONST(op) ((const PyVarObject*)(op))
 
-PyAPI_FUNC(Py_ssize_t) _Py_REFCNT(PyObject *);
-PyAPI_FUNC(void) _Py_SET_REFCNT(PyObject*, Py_ssize_t);
-PyAPI_FUNC(struct _typeobject*) _Py_TYPE(PyObject *);
-PyAPI_FUNC(void) _Py_SET_TYPE(PyObject *, struct _typeobject *);
-PyAPI_FUNC(Py_ssize_t) _Py_SIZE(PyVarObject *);
-PyAPI_FUNC(void) _Py_SET_SIZE(PyVarObject *, Py_ssize_t);
-
 
 // Test if the 'x' object is the 'y' object, the same as "x is y" in Python.
 PyAPI_FUNC(int) Py_Is(PyObject *x, PyObject *y);
