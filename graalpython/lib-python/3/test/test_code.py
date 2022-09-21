@@ -135,7 +135,7 @@ try:
 except ImportError:
     ctypes = None
 from test.support import (run_doctest, run_unittest, cpython_only,
-                          check_impl_detail)
+                          check_impl_detail, gc_collect)
 
 
 def consts(t):
@@ -213,7 +213,7 @@ class CodeTest(unittest.TestCase):
         CodeType = type(co)
 
         # test code constructor
-        return CodeType(co.co_argcount,
+        CodeType(co.co_argcount,
                         co.co_posonlyargcount,
                         co.co_kwonlyargcount,
                         co.co_nlocals,
@@ -258,11 +258,17 @@ class CodeTest(unittest.TestCase):
             ("co_cellvars", ("cellvar",)),
             ("co_filename", "newfilename"),
             ("co_name", "newname"),
-            ("co_lnotab", code2.co_lnotab),
+            ("co_linetable", code2.co_linetable),
         ):
             with self.subTest(attr=attr, value=value):
                 new_code = code.replace(**{attr: value})
                 self.assertEqual(getattr(new_code, attr), value)
+
+    def test_empty_linetable(self):
+        def func():
+            pass
+        new_code = code = func.__code__.replace(co_linetable=b'')
+        self.assertEqual(list(new_code.co_lines()), [])
 
 
 def isinterned(s):
@@ -337,6 +343,7 @@ class CodeWeakRefTest(unittest.TestCase):
         coderef = weakref.ref(f.__code__, callback)
         self.assertTrue(bool(coderef()))
         del f
+        gc_collect()  # For PyPy or other GCs.
         self.assertFalse(bool(coderef()))
         self.assertTrue(self.called)
 
