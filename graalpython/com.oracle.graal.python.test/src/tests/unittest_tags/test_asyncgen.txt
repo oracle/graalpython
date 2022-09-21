@@ -1,0 +1,5 @@
+*graalpython.lib-python.3.test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_01
+*graalpython.lib-python.3.test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_02
+*graalpython.lib-python.3.test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_03
+*graalpython.lib-python.3.test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_04
+*graalpython.lib-python.3.test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_05

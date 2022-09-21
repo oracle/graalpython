@@ -3,4 +3,6 @@
 *graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_modulo_of_string_subclasses
 *graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_no_annotations_if_not_needed
 *graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_raise_class_exceptions
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_setup_annotations_line
 *graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_try_inside_for_loop
+*graalpython.lib-python.3.test.test_opcodes.OpcodeTest.test_use_existing_annotations

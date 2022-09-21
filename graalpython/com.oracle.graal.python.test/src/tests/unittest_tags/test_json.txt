@@ -110,6 +110,7 @@
 *test.test_json.test_scanstring.TestPyScanstring.test_bad_escapes
 *test.test_json.test_scanstring.TestPyScanstring.test_overflow
 *test.test_json.test_scanstring.TestPyScanstring.test_scanstring
+*test.test_json.test_scanstring.TestPyScanstring.test_surrogates
 *test.test_json.test_separators.TestCSeparators.test_illegal_separators
 *test.test_json.test_separators.TestCSeparators.test_separators
 *test.test_json.test_separators.TestPySeparators.test_illegal_separators
