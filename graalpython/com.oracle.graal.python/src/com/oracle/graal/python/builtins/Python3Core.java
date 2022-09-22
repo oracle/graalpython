@@ -255,6 +255,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.CoroutineBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.genericalias.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescriptorBuiltins;
@@ -567,6 +568,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),
                         new TokenBuiltins(),
+                        new GenericAliasBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),

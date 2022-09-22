@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.genericalias.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -2819,6 +2820,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         PSimpleNamespace doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createSimpleNamespace(self);
+        }
+    }
+
+    @Builtin(name = "GenericAlias", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PGenericAlias)
+    @GenerateNodeFactory
+    abstract static class GenericAliasNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        PGenericAlias doit(Object cls, Object origin, Object arguments) {
+            return factory().createGenericAlias(cls, origin, arguments);
         }
     }
 }
