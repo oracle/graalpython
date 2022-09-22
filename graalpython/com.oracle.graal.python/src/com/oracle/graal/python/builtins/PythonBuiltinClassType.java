@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
@@ -148,6 +149,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PythonObject("object", J_BUILTINS),
     Super("super", J_BUILTINS),
     PCode("code", Flags.PRIVATE_DERIVED_WODICT),
+    PGenericAlias("GenericAlias", J_TYPES, Flags.PUBLIC_BASE_WODICT),
     PZip("zip", J_BUILTINS),
     PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),

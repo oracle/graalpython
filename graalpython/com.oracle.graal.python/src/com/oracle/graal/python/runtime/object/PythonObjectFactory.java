@@ -78,8 +78,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.genericalias.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -1458,5 +1459,19 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PContextVarsToken createContextVarsToken(PContextVar var, Object oldValue) {
         return trace(new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, getShape(PythonBuiltinClassType.ContextVarsToken)));
+    }
+
+    public final PGenericAlias createGenericAlias(Object cls, Object origin, Object arguments) {
+        PTuple argumentsTuple;
+        if (arguments instanceof PTuple) {
+            argumentsTuple = (PTuple) arguments;
+        } else {
+            argumentsTuple = createTuple(new Object[]{arguments});
+        }
+        return trace(new PGenericAlias(cls, getShape(cls), origin, argumentsTuple));
+    }
+
+    public final PGenericAlias createGenericAlias(Object origin, Object arguments) {
+        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments);
     }
 }
