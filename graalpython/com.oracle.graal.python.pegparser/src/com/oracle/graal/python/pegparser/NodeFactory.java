@@ -42,6 +42,9 @@ package com.oracle.graal.python.pegparser;
 
 // TODO this class has to be moved to impl package and from this package we need to do api.
 
+import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_ARG_ARRAY;
+import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_EXPR_ARRAY;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 
@@ -51,26 +54,23 @@ import com.oracle.graal.python.pegparser.AbstractParser.StarEtc;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.BoolOpTy;
-import com.oracle.graal.python.pegparser.sst.CmpOpTy;
-import com.oracle.graal.python.pegparser.sst.StmtTy.AsyncFunctionDef;
-import com.oracle.graal.python.pegparser.sst.StmtTy.FunctionDef;
-import com.oracle.graal.python.pegparser.sst.WithItemTy;
-import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
-import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-
-import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_ARG_ARRAY;
-import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_EXPR_ARRAY;
 
 public class NodeFactory {
     public StmtTy createAnnAssignment(ExprTy target, ExprTy annotation, ExprTy rhs, boolean isSimple, SourceRange sourceRange) {
@@ -399,12 +399,12 @@ public class NodeFactory {
     }
 
     public StmtTy createFunctionDefWithDecorators(StmtTy funcDef, ExprTy[] decorators) {
-        if (funcDef instanceof AsyncFunctionDef) {
+        if (funcDef instanceof StmtTy.AsyncFunctionDef) {
             StmtTy.AsyncFunctionDef f = (StmtTy.AsyncFunctionDef) funcDef;
-            return new AsyncFunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
+            return new StmtTy.AsyncFunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
         }
         StmtTy.FunctionDef f = (StmtTy.FunctionDef) funcDef;
-        return new FunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
+        return new StmtTy.FunctionDef(f.name, f.args, f.body, decorators, f.returns, f.typeComment, f.getSourceRange());
     }
 
     public StmtTy createAsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy returns, String typeComment, SourceRange sourceRange) {
@@ -522,5 +522,45 @@ public class NodeFactory {
 
     public ExprTy.Name createVariable(String name, SourceRange sourceRange) {
         return createVariable(name, sourceRange, ExprContextTy.Load);
+    }
+
+    public StmtTy createMatch(ExprTy subject, MatchCaseTy[] cases, SourceRange sourceRange) {
+        return new StmtTy.Match(subject, cases, sourceRange);
+    }
+
+    public MatchCaseTy createMatchCase(PatternTy pattern, ExprTy guard, StmtTy[] body, SourceRange sourceRange) {
+        return new MatchCaseTy(pattern, guard, body, sourceRange);
+    }
+
+    public PatternTy createMatchValue(ExprTy value, SourceRange sourceRange) {
+        return new PatternTy.MatchValue(value, sourceRange);
+    }
+
+    public PatternTy createMatchSingleton(ConstantValue value, SourceRange sourceRange) {
+        return new PatternTy.MatchSingleton(value, sourceRange);
+    }
+
+    public PatternTy createMatchSequence(PatternTy[] patterns, SourceRange sourceRange) {
+        return new PatternTy.MatchSequence(patterns, sourceRange);
+    }
+
+    public PatternTy createMatchMapping(ExprTy[] keys, PatternTy[] patterns, String rest, SourceRange sourceRange) {
+        return new PatternTy.MatchMapping(keys, patterns, rest, sourceRange);
+    }
+
+    public PatternTy createMatchClass(ExprTy cls, PatternTy[] patterns, String[] kwdAttrs, PatternTy[] kwdPatterns, SourceRange sourceRange) {
+        return new PatternTy.MatchClass(cls, patterns, kwdAttrs, kwdPatterns, sourceRange);
+    }
+
+    public PatternTy createMatchStar(String name, SourceRange sourceRange) {
+        return new PatternTy.MatchStar(name, sourceRange);
+    }
+
+    public PatternTy createMatchAs(PatternTy pattern, String name, SourceRange sourceRange) {
+        return new PatternTy.MatchAs(pattern, name, sourceRange);
+    }
+
+    public PatternTy createMatchOr(PatternTy[] patterns, SourceRange sourceRange) {
+        return new PatternTy.MatchOr(patterns, sourceRange);
     }
 }

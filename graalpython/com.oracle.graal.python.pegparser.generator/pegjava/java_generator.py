@@ -127,6 +127,7 @@ TYPE_MAPPINGS = {
     "asdl_stmt_seq*": "StmtTy[]",
     "asdl_stmt_seq**": "StmtTy[]",
     "asdl_withitem_seq*": "WithItemTy[]",
+    "asdl_pattern_seq*": "PatternTy[]",
     "comprehension_ty": "ComprehensionTy",
     "comprehension_ty*": "ComprehensionTy[]",
     "excepthandler_ty": "ExceptHandlerTy",
@@ -140,8 +141,8 @@ TYPE_MAPPINGS = {
     "match_case_ty": "MatchCaseTy",
     "match_case_ty*": "MatchCaseTy[]",
     "mod_ty": "ModTy",
-    "pattern_ty": "Object",
-    "pattern_ty*": "Object[]",
+    "pattern_ty": "PatternTy",
+    "pattern_ty*": "PatternTy[]",
     "stmt_ty": "StmtTy",
     "stmt_ty*": "StmtTy[]",
     "stmt_ty**": "StmtTy[]",
@@ -308,25 +309,26 @@ ACTION_MAPPINGS = {
     't': (1, 't'),
     'z': (11, 'z'),
 
+    # Pattern matching:
+    'CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )': (1, 'checkVersion(10, "Pattern matching is", factory.createMatch(subject, cases, $RANGE))'),
+    'CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected \':\'" ) )': (1, 'checkVersion(10, "Pattern matching is", () -> this.raiseSyntaxError("expected \':\'"))'),
+    '_PyAST_match_case ( pattern , guard , body , p -> arena )': (1, 'factory.createMatchCase(pattern, guard, body, $RANGE)'),
+    'asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )': (1, 'patterns.length == 1 ? patterns[0] : factory.createMatchOr(patterns, $RANGE)'),
+    '_PyAST_MatchSingleton ( Py_None , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.NONE, $RANGE)'),
+    '_PyAST_MatchSingleton ( Py_True , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.TRUE, $RANGE)'),
+    '_PyAST_MatchSingleton ( Py_False , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.FALSE, $RANGE)'),
+
     # TODO
     # Interactive mode:
     # '_PyPegen_interactive_exit ( p )' in rule "statement_newline: with rhs $"
     #
     # compile(..., mode='func_type') - used by ast module only
     # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
-    #
-    # Pattern matching:
-    # 'CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )' in rule "match_stmt: with rhs "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT"
-    # '_PyAST_match_case ( pattern , guard , body , p -> arena )' in rule "case_block: with rhs "case" patterns guard? ':' block"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "patterns: with rhs open_sequence_pattern"
     # '_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )' in rule "as_pattern: with rhs or_pattern 'as' pattern_capture_target"
-    # 'asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )' in rule "or_pattern: with rhs '|'.closed_pattern+"
     # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs signed_number !('+' | '-')"
     # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs complex_number"
     # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs strings"
-    # '_PyAST_MatchSingleton ( Py_None , EXTRA )' in rule "literal_pattern: with rhs 'None'"
-    # '_PyAST_MatchSingleton ( Py_True , EXTRA )' in rule "literal_pattern: with rhs 'True'"
-    # '_PyAST_MatchSingleton ( Py_False , EXTRA )' in rule "literal_pattern: with rhs 'False'"
     # '_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )' in rule "capture_pattern: with rhs pattern_capture_target"
     # '_PyPegen_set_expr_context ( p , name , Store )' in rule "pattern_capture_target: with rhs !"_" NAME !('.' | '(' | '=')"
     # '_PyAST_MatchAs ( NULL , NULL , EXTRA )' in rule "wildcard_pattern: with rhs "_""
@@ -348,7 +350,6 @@ ACTION_MAPPINGS = {
     # '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' keyword_patterns ','? ')'"
     # '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'"
     # '_PyPegen_key_pattern_pair ( p , arg , value )' in rule "keyword_pattern: with rhs NAME '=' pattern"
-    # 'CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected ':'" ) )' in rule "invalid_match_stmt: with rhs "match" subject_expr !':'"
     # 'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )' in rule "invalid_class_pattern: with rhs name_or_attr '(' invalid_class_argument_pattern"
     # '_PyPegen_ensure_real ( p , real )' in rule "real_number: with rhs NUMBER"
     # '_PyPegen_ensure_imaginary ( p , imag )' in rule "imaginary_number: with rhs NUMBER"

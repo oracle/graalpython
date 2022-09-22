@@ -3700,6 +3700,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, MATCH_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
             if (errorIndicator) {
                 return null;
@@ -3727,9 +3728,11 @@ public final class Parser extends AbstractParser {
                 (dedent_var = expect(Token.Kind.DEDENT)) != null  // token='DEDENT'
             )
             {
-                // TODO: node.action: CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )
-                ruleNotImplemented("CHECK_VERSION ( stmt_ty , 10 , \"Pattern matching is\" , _PyAST_Match ( subject , cases , EXTRA ) )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = checkVersion(10, "Pattern matching is", factory.createMatch(subject, cases, startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, MATCH_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3822,6 +3825,7 @@ public final class Parser extends AbstractParser {
             _res = (MatchCaseTy)cache.getResult(_mark, CASE_BLOCK_ID);
             return (MatchCaseTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_case_block
             if (errorIndicator) {
                 return null;
@@ -3845,7 +3849,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             StmtTy[] body;
             ExprTy guard;
-            Object pattern;
+            PatternTy pattern;
             if (
                 (_keyword = expect_SOFT_KEYWORD("case")) != null  // soft_keyword='"case"'
                 &&
@@ -3858,9 +3862,11 @@ public final class Parser extends AbstractParser {
                 (body = block_rule()) != null  // block
             )
             {
-                // TODO: node.action: _PyAST_match_case ( pattern , guard , body , p -> arena )
-                ruleNotImplemented("_PyAST_match_case ( pattern , guard , body , p -> arena )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchCase(pattern, guard, body, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, CASE_BLOCK_ID, _res);
                 return (MatchCaseTy)_res;
             }
@@ -3907,7 +3913,7 @@ public final class Parser extends AbstractParser {
     }
 
     // patterns: open_sequence_pattern | pattern
-    public Object patterns_rule()
+    public PatternTy patterns_rule()
     {
         if (errorIndicator) {
             return null;
@@ -3915,23 +3921,23 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PATTERNS_ID)) {
-            _res = (Object)cache.getResult(_mark, PATTERNS_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, PATTERNS_ID);
+            return (PatternTy)_res;
         }
         { // open_sequence_pattern
             if (errorIndicator) {
                 return null;
             }
-            Object patterns;
+            PatternTy[] patterns;
             if (
-                (patterns = (Object)open_sequence_pattern_rule()) != null  // open_sequence_pattern
+                (patterns = (PatternTy[])open_sequence_pattern_rule()) != null  // open_sequence_pattern
             )
             {
                 // TODO: node.action: _PyAST_MatchSequence ( patterns , EXTRA )
                 ruleNotImplemented("_PyAST_MatchSequence ( patterns , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, PATTERNS_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -3939,24 +3945,24 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object pattern_var;
+            PatternTy pattern_var;
             if (
                 (pattern_var = pattern_rule()) != null  // pattern
             )
             {
                 _res = pattern_var;
                 cache.putResult(_mark, PATTERNS_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, PATTERNS_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // pattern: as_pattern | or_pattern
-    public Object pattern_rule()
+    public PatternTy pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -3964,21 +3970,21 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // as_pattern
             if (errorIndicator) {
                 return null;
             }
-            Object as_pattern_var;
+            PatternTy as_pattern_var;
             if (
                 (as_pattern_var = as_pattern_rule()) != null  // as_pattern
             )
             {
                 _res = as_pattern_var;
                 cache.putResult(_mark, PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -3986,24 +3992,24 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object or_pattern_var;
+            PatternTy or_pattern_var;
             if (
                 (or_pattern_var = or_pattern_rule()) != null  // or_pattern
             )
             {
                 _res = or_pattern_var;
                 cache.putResult(_mark, PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // as_pattern: or_pattern 'as' pattern_capture_target | invalid_as_pattern
-    public Object as_pattern_rule()
+    public PatternTy as_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4011,15 +4017,15 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, AS_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, AS_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, AS_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // or_pattern 'as' pattern_capture_target
             if (errorIndicator) {
                 return null;
             }
             Token _keyword;
-            Object pattern;
+            PatternTy pattern;
             ExprTy target;
             if (
                 (pattern = or_pattern_rule()) != null  // or_pattern
@@ -4033,7 +4039,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, AS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4048,17 +4054,17 @@ public final class Parser extends AbstractParser {
             {
                 _res = invalid_as_pattern_var;
                 cache.putResult(_mark, AS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, AS_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // or_pattern: '|'.closed_pattern+
-    public Object or_pattern_rule()
+    public PatternTy or_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4066,29 +4072,32 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, OR_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, OR_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, OR_PATTERN_ID);
+            return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '|'.closed_pattern+
             if (errorIndicator) {
                 return null;
             }
-            Object patterns;
+            PatternTy[] patterns;
             if (
-                (patterns = (Object)_gather_67_rule()) != null  // '|'.closed_pattern+
+                (patterns = (PatternTy[])_gather_67_rule()) != null  // '|'.closed_pattern+
             )
             {
-                // TODO: node.action: asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )
-                ruleNotImplemented("asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = patterns.length == 1 ? patterns[0] : factory.createMatchOr(patterns, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, OR_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, OR_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // closed_pattern:
@@ -4100,7 +4109,7 @@ public final class Parser extends AbstractParser {
     //     | sequence_pattern
     //     | mapping_pattern
     //     | class_pattern
-    public Object closed_pattern_rule()
+    public PatternTy closed_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4108,21 +4117,21 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLOSED_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, CLOSED_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, CLOSED_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // literal_pattern
             if (errorIndicator) {
                 return null;
             }
-            Object literal_pattern_var;
+            PatternTy literal_pattern_var;
             if (
                 (literal_pattern_var = literal_pattern_rule()) != null  // literal_pattern
             )
             {
                 _res = literal_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4130,14 +4139,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object capture_pattern_var;
+            PatternTy capture_pattern_var;
             if (
                 (capture_pattern_var = capture_pattern_rule()) != null  // capture_pattern
             )
             {
                 _res = capture_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4145,14 +4154,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object wildcard_pattern_var;
+            PatternTy wildcard_pattern_var;
             if (
                 (wildcard_pattern_var = wildcard_pattern_rule()) != null  // wildcard_pattern
             )
             {
                 _res = wildcard_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4160,14 +4169,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object value_pattern_var;
+            PatternTy value_pattern_var;
             if (
                 (value_pattern_var = value_pattern_rule()) != null  // value_pattern
             )
             {
                 _res = value_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4175,14 +4184,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object group_pattern_var;
+            PatternTy group_pattern_var;
             if (
                 (group_pattern_var = group_pattern_rule()) != null  // group_pattern
             )
             {
                 _res = group_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4190,14 +4199,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object sequence_pattern_var;
+            PatternTy sequence_pattern_var;
             if (
                 (sequence_pattern_var = sequence_pattern_rule()) != null  // sequence_pattern
             )
             {
                 _res = sequence_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4205,14 +4214,14 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object mapping_pattern_var;
+            PatternTy mapping_pattern_var;
             if (
                 (mapping_pattern_var = mapping_pattern_rule()) != null  // mapping_pattern
             )
             {
                 _res = mapping_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4220,20 +4229,20 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object class_pattern_var;
+            PatternTy class_pattern_var;
             if (
                 (class_pattern_var = class_pattern_rule()) != null  // class_pattern
             )
             {
                 _res = class_pattern_var;
                 cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // literal_pattern:
@@ -4243,7 +4252,7 @@ public final class Parser extends AbstractParser {
     //     | 'None'
     //     | 'True'
     //     | 'False'
-    public Object literal_pattern_rule()
+    public PatternTy literal_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4251,9 +4260,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, LITERAL_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, LITERAL_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, LITERAL_PATTERN_ID);
+            return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // signed_number !('+' | '-')
             if (errorIndicator) {
                 return null;
@@ -4269,7 +4279,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchValue ( value , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4286,7 +4296,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchValue ( value , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4303,7 +4313,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchValue ( value , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4316,11 +4326,13 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(525)) != null  // token='None'
             )
             {
-                // TODO: node.action: _PyAST_MatchSingleton ( Py_None , EXTRA )
-                ruleNotImplemented("_PyAST_MatchSingleton ( Py_None , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchSingleton(ConstantValue.NONE, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4333,11 +4345,13 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(526)) != null  // token='True'
             )
             {
-                // TODO: node.action: _PyAST_MatchSingleton ( Py_True , EXTRA )
-                ruleNotImplemented("_PyAST_MatchSingleton ( Py_True , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchSingleton(ConstantValue.TRUE, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -4350,17 +4364,19 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(527)) != null  // token='False'
             )
             {
-                // TODO: node.action: _PyAST_MatchSingleton ( Py_False , EXTRA )
-                ruleNotImplemented("_PyAST_MatchSingleton ( Py_False , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchSingleton(ConstantValue.FALSE, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // literal_expr:
@@ -4728,7 +4744,7 @@ public final class Parser extends AbstractParser {
     }
 
     // capture_pattern: pattern_capture_target
-    public Object capture_pattern_rule()
+    public PatternTy capture_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4736,8 +4752,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CAPTURE_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, CAPTURE_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, CAPTURE_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // pattern_capture_target
             if (errorIndicator) {
@@ -4752,13 +4768,13 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, CAPTURE_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, CAPTURE_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // pattern_capture_target: !"_" NAME !('.' | '(' | '=')
@@ -4800,7 +4816,7 @@ public final class Parser extends AbstractParser {
     }
 
     // wildcard_pattern: "_"
-    public Object wildcard_pattern_rule()
+    public PatternTy wildcard_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4808,8 +4824,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, WILDCARD_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, WILDCARD_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, WILDCARD_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // "_"
             if (errorIndicator) {
@@ -4824,17 +4840,17 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchAs ( NULL , NULL , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, WILDCARD_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, WILDCARD_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // value_pattern: attr !('.' | '(' | '=')
-    public Object value_pattern_rule()
+    public PatternTy value_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4842,8 +4858,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, VALUE_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, VALUE_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, VALUE_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // attr !('.' | '(' | '=')
             if (errorIndicator) {
@@ -4860,13 +4876,13 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchValue ( attr , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, VALUE_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, VALUE_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // Left-recursive
@@ -4966,7 +4982,7 @@ public final class Parser extends AbstractParser {
     }
 
     // group_pattern: '(' pattern ')'
-    public Object group_pattern_rule()
+    public PatternTy group_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -4974,8 +4990,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, GROUP_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, GROUP_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, GROUP_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // '(' pattern ')'
             if (errorIndicator) {
@@ -4983,7 +4999,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             Token _literal_1;
-            Object pattern;
+            PatternTy pattern;
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
@@ -4994,17 +5010,17 @@ public final class Parser extends AbstractParser {
             {
                 _res = pattern;
                 cache.putResult(_mark, GROUP_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, GROUP_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // sequence_pattern: '[' maybe_sequence_pattern? ']' | '(' open_sequence_pattern? ')'
-    public Object sequence_pattern_rule()
+    public PatternTy sequence_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5012,8 +5028,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, SEQUENCE_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, SEQUENCE_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, SEQUENCE_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // '[' maybe_sequence_pattern? ']'
             if (errorIndicator) {
@@ -5021,7 +5037,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             Token _literal_1;
-            Object[] patterns;
+            PatternTy[] patterns;
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
@@ -5034,7 +5050,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchSequence ( patterns , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5044,7 +5060,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             Token _literal_1;
-            Object[] patterns;
+            PatternTy[] patterns;
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
@@ -5057,17 +5073,17 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchSequence ( patterns , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // open_sequence_pattern: maybe_star_pattern ',' maybe_sequence_pattern?
-    public Object[] open_sequence_pattern_rule()
+    public PatternTy[] open_sequence_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5075,39 +5091,39 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, OPEN_SEQUENCE_PATTERN_ID)) {
-            _res = (Object[])cache.getResult(_mark, OPEN_SEQUENCE_PATTERN_ID);
-            return (Object[])_res;
+            _res = (PatternTy[])cache.getResult(_mark, OPEN_SEQUENCE_PATTERN_ID);
+            return (PatternTy[])_res;
         }
         { // maybe_star_pattern ',' maybe_sequence_pattern?
             if (errorIndicator) {
                 return null;
             }
             Token _literal;
-            Object pattern;
-            Object[] patterns;
+            PatternTy pattern;
+            PatternTy[] patterns;
             if (
-                (pattern = (Object)maybe_star_pattern_rule()) != null  // maybe_star_pattern
+                (pattern = (PatternTy)maybe_star_pattern_rule()) != null  // maybe_star_pattern
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                ((patterns = (Object[])maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
+                ((patterns = (PatternTy[])maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
             )
             {
                 // TODO: node.action: _PyPegen_seq_insert_in_front ( p , pattern , patterns )
                 ruleNotImplemented("_PyPegen_seq_insert_in_front ( p , pattern , patterns )");
                 _res = null;
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
-                return (Object[])_res;
+                return (PatternTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
-        return (Object[])_res;
+        return (PatternTy[])_res;
     }
 
     // maybe_sequence_pattern: ','.maybe_star_pattern+ ','?
-    public Object[] maybe_sequence_pattern_rule()
+    public PatternTy[] maybe_sequence_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5115,17 +5131,17 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAYBE_SEQUENCE_PATTERN_ID)) {
-            _res = (Object[])cache.getResult(_mark, MAYBE_SEQUENCE_PATTERN_ID);
-            return (Object[])_res;
+            _res = (PatternTy[])cache.getResult(_mark, MAYBE_SEQUENCE_PATTERN_ID);
+            return (PatternTy[])_res;
         }
         { // ','.maybe_star_pattern+ ','?
             if (errorIndicator) {
                 return null;
             }
             Token _opt_var;
-            Object[] patterns;
+            PatternTy[] patterns;
             if (
-                (patterns = (Object[])_gather_73_rule()) != null  // ','.maybe_star_pattern+
+                (patterns = (PatternTy[])_gather_73_rule()) != null  // ','.maybe_star_pattern+
                 &&
                 ((_opt_var = (Token)expect(12)) != null || true)  // ','?
             )
@@ -5134,17 +5150,17 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("patterns");
                 _res = null;
                 cache.putResult(_mark, MAYBE_SEQUENCE_PATTERN_ID, _res);
-                return (Object[])_res;
+                return (PatternTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, MAYBE_SEQUENCE_PATTERN_ID, _res);
-        return (Object[])_res;
+        return (PatternTy[])_res;
     }
 
     // maybe_star_pattern: star_pattern | pattern
-    public Object maybe_star_pattern_rule()
+    public PatternTy maybe_star_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5152,21 +5168,21 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAYBE_STAR_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, MAYBE_STAR_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, MAYBE_STAR_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // star_pattern
             if (errorIndicator) {
                 return null;
             }
-            Object star_pattern_var;
+            PatternTy star_pattern_var;
             if (
                 (star_pattern_var = star_pattern_rule()) != null  // star_pattern
             )
             {
                 _res = star_pattern_var;
                 cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5174,24 +5190,24 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object pattern_var;
+            PatternTy pattern_var;
             if (
                 (pattern_var = pattern_rule()) != null  // pattern
             )
             {
                 _res = pattern_var;
                 cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // star_pattern: '*' pattern_capture_target | '*' wildcard_pattern
-    public Object star_pattern_rule()
+    public PatternTy star_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5199,8 +5215,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, STAR_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, STAR_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, STAR_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // '*' pattern_capture_target
             if (errorIndicator) {
@@ -5218,7 +5234,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchStar ( target -> v . Name . id , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, STAR_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5227,7 +5243,7 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object wildcard_pattern_var;
+            PatternTy wildcard_pattern_var;
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
@@ -5238,13 +5254,13 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchStar ( NULL , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, STAR_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, STAR_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // mapping_pattern:
@@ -5252,7 +5268,7 @@ public final class Parser extends AbstractParser {
     //     | '{' double_star_pattern ','? '}'
     //     | '{' items_pattern ',' double_star_pattern ','? '}'
     //     | '{' items_pattern ','? '}'
-    public Object mapping_pattern_rule()
+    public PatternTy mapping_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5260,8 +5276,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, MAPPING_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, MAPPING_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, MAPPING_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // '{' '}'
             if (errorIndicator) {
@@ -5279,7 +5295,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5305,7 +5321,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5337,7 +5353,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5363,13 +5379,13 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // items_pattern: ','.key_value_pattern+
@@ -5422,7 +5438,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             ExprTy key;
-            Object pattern;
+            PatternTy pattern;
             if (
                 (key = _tmp_77_rule()) != null  // literal_expr | attr
                 &&
@@ -5487,7 +5503,7 @@ public final class Parser extends AbstractParser {
     //     | name_or_attr '(' keyword_patterns ','? ')'
     //     | name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'
     //     | invalid_class_pattern
-    public Object class_pattern_rule()
+    public PatternTy class_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5495,8 +5511,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, CLASS_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, CLASS_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy)cache.getResult(_mark, CLASS_PATTERN_ID);
+            return (PatternTy)_res;
         }
         { // name_or_attr '(' ')'
             if (errorIndicator) {
@@ -5517,7 +5533,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5529,7 +5545,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             Token _opt_var;
             ExprTy cls;
-            Object patterns;
+            PatternTy[] patterns;
             if (
                 (cls = name_or_attr_rule()) != null  // name_or_attr
                 &&
@@ -5546,7 +5562,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5575,7 +5591,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5589,7 +5605,7 @@ public final class Parser extends AbstractParser {
             Token _opt_var;
             ExprTy cls;
             Object[] keywords;
-            Object patterns;
+            PatternTy[] patterns;
             if (
                 (cls = name_or_attr_rule()) != null  // name_or_attr
                 &&
@@ -5610,7 +5626,7 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )");
                 _res = null;
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
@@ -5625,17 +5641,17 @@ public final class Parser extends AbstractParser {
             {
                 _res = invalid_class_pattern_var;
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, CLASS_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy)_res;
     }
 
     // positional_patterns: ','.pattern+
-    public Object positional_patterns_rule()
+    public PatternTy[] positional_patterns_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5643,27 +5659,27 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, POSITIONAL_PATTERNS_ID)) {
-            _res = (Object)cache.getResult(_mark, POSITIONAL_PATTERNS_ID);
-            return (Object)_res;
+            _res = (PatternTy[])cache.getResult(_mark, POSITIONAL_PATTERNS_ID);
+            return (PatternTy[])_res;
         }
         { // ','.pattern+
             if (errorIndicator) {
                 return null;
             }
-            Object args;
+            PatternTy[] args;
             if (
-                (args = (Object)_gather_78_rule()) != null  // ','.pattern+
+                (args = (PatternTy[])_gather_78_rule()) != null  // ','.pattern+
             )
             {
                 _res = args;
                 cache.putResult(_mark, POSITIONAL_PATTERNS_ID, _res);
-                return (Object)_res;
+                return (PatternTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, POSITIONAL_PATTERNS_ID, _res);
-        return (Object)_res;
+        return (PatternTy[])_res;
     }
 
     // keyword_patterns: ','.keyword_pattern+
@@ -5716,7 +5732,7 @@ public final class Parser extends AbstractParser {
             }
             Token _literal;
             ExprTy arg;
-            Object value;
+            PatternTy value;
             if (
                 (arg = name_token()) != null  // NAME
                 &&
@@ -14378,9 +14394,7 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(false, 11)  // token=':'
             )
             {
-                // TODO: node.action: CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected ':'" ) )
-                ruleNotImplemented("CHECK_VERSION ( void * , 10 , \"Pattern matching is\" , RAISE_SYNTAX_ERROR ( \"expected ':'\" ) )");
-                _res = null;
+                _res = checkVersion(10, "Pattern matching is", () -> this.raiseSyntaxError("expected ':'"));
                 cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
                 return (ExprTy)_res;
             }
@@ -14437,11 +14451,11 @@ public final class Parser extends AbstractParser {
             }
             ExprTy _keyword;
             ExprTy _opt_var;
-            Object patterns_var;
+            PatternTy patterns_var;
             if (
                 (_keyword = (ExprTy)expect_SOFT_KEYWORD("case")) != null  // soft_keyword='"case"'
                 &&
-                (patterns_var = (Object)patterns_rule()) != null  // patterns
+                (patterns_var = (PatternTy)patterns_rule()) != null  // patterns
                 &&
                 ((_opt_var = (ExprTy)guard_rule()) != null || true)  // guard?
                 &&
@@ -14462,11 +14476,11 @@ public final class Parser extends AbstractParser {
             ExprTy _opt_var;
             ExprTy a;
             Token newline_var;
-            Object patterns_var;
+            PatternTy patterns_var;
             if (
                 (a = (ExprTy)expect_SOFT_KEYWORD("case")) != null  // soft_keyword='"case"'
                 &&
-                (patterns_var = (Object)patterns_rule()) != null  // patterns
+                (patterns_var = (PatternTy)patterns_rule()) != null  // patterns
                 &&
                 ((_opt_var = (ExprTy)guard_rule()) != null || true)  // guard?
                 &&
@@ -14506,9 +14520,9 @@ public final class Parser extends AbstractParser {
             }
             Token _keyword;
             ExprTy a;
-            Object or_pattern_var;
+            PatternTy or_pattern_var;
             if (
-                (or_pattern_var = (Object)or_pattern_rule()) != null  // or_pattern
+                (or_pattern_var = (PatternTy)or_pattern_rule()) != null  // or_pattern
                 &&
                 (_keyword = (Token)expect(519)) != null  // token='as'
                 &&
@@ -14527,9 +14541,9 @@ public final class Parser extends AbstractParser {
             }
             Token _keyword;
             ExprTy a;
-            Object or_pattern_var;
+            PatternTy or_pattern_var;
             if (
-                (or_pattern_var = (Object)or_pattern_rule()) != null  // or_pattern
+                (or_pattern_var = (PatternTy)or_pattern_rule()) != null  // or_pattern
                 &&
                 (_keyword = (Token)expect(519)) != null  // token='as'
                 &&
@@ -14566,14 +14580,14 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object a;
+            PatternTy[] a;
             ExprTy name_or_attr_var;
             if (
                 (name_or_attr_var = (ExprTy)name_or_attr_rule()) != null  // name_or_attr
                 &&
                 (_literal = (Token)expect(7)) != null  // token='('
                 &&
-                (a = (Object)invalid_class_argument_pattern_rule()) != null  // invalid_class_argument_pattern
+                (a = (PatternTy[])invalid_class_argument_pattern_rule()) != null  // invalid_class_argument_pattern
             )
             {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )
@@ -14591,7 +14605,7 @@ public final class Parser extends AbstractParser {
 
     // invalid_class_argument_pattern:
     //     | [positional_patterns ','] keyword_patterns ',' positional_patterns
-    public Object invalid_class_argument_pattern_rule()
+    public PatternTy[] invalid_class_argument_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -14599,16 +14613,16 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_CLASS_ARGUMENT_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, INVALID_CLASS_ARGUMENT_PATTERN_ID);
-            return (Object)_res;
+            _res = (PatternTy[])cache.getResult(_mark, INVALID_CLASS_ARGUMENT_PATTERN_ID);
+            return (PatternTy[])_res;
         }
         { // [positional_patterns ','] keyword_patterns ',' positional_patterns
             if (errorIndicator) {
                 return null;
             }
             Token _literal;
-            Object _opt_var;
-            Object a;
+            PatternTy[] _opt_var;
+            PatternTy[] a;
             Object[] keyword_patterns_var;
             if (
                 ((_opt_var = _tmp_234_rule()) != null || true)  // [positional_patterns ',']
@@ -14622,13 +14636,13 @@ public final class Parser extends AbstractParser {
             {
                 _res = a;
                 cache.putResult(_mark, INVALID_CLASS_ARGUMENT_PATTERN_ID, _res);
-                return (Object)_res;
+                return (PatternTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, INVALID_CLASS_ARGUMENT_PATTERN_ID, _res);
-        return (Object)_res;
+        return (PatternTy[])_res;
     }
 
     // invalid_if_stmt:
@@ -17765,7 +17779,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_68: '|' closed_pattern
-    public Object[] _loop0_68_rule()
+    public PatternTy[] _loop0_68_rule()
     {
         if (errorIndicator) {
             return null;
@@ -17774,10 +17788,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_68_ID)) {
             _res = cache.getResult(_mark, _LOOP0_68_ID);
-            return (Object[])_res;
+            return (PatternTy[])_res;
         }
         int _start_mark = mark();
-        List<Object> _children = new ArrayList<>();
+        List<PatternTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // '|' closed_pattern
@@ -17785,24 +17799,24 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object elem;
+            PatternTy elem;
             while (
                 (_literal = (Token)expect(18)) != null  // token='|'
                 &&
-                (elem = (Object)closed_pattern_rule()) != null  // closed_pattern
+                (elem = (PatternTy)closed_pattern_rule()) != null  // closed_pattern
             )
             {
                 _res = elem;
-                if (_res instanceof Object) {
-                    _children.add((Object)_res);
+                if (_res instanceof PatternTy) {
+                    _children.add((PatternTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((Object[])_res));
+                    _children.addAll(Arrays.asList((PatternTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        Object[] _seq = _children.toArray(new Object[_children.size()]);
+        PatternTy[] _seq = _children.toArray(new PatternTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_68_ID, _seq);
         return _seq;
     }
@@ -17823,15 +17837,15 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object elem;
-            Object[] seq;
+            PatternTy elem;
+            PatternTy[] seq;
             if (
-                (elem = (Object)closed_pattern_rule()) != null  // closed_pattern
+                (elem = (PatternTy)closed_pattern_rule()) != null  // closed_pattern
                 &&
-                (seq = (Object[])_loop0_68_rule()) != null  // _loop0_68
+                (seq = (PatternTy[])_loop0_68_rule()) != null  // _loop0_68
             )
             {
-                _res = insertInFront(elem, seq, Object.class);
+                _res = insertInFront(elem, seq, PatternTy.class);
                 cache.putResult(_mark, _GATHER_67_ID, _res);
                 return (Object[])_res;
             }
@@ -18061,7 +18075,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_74: ',' maybe_star_pattern
-    public Object[] _loop0_74_rule()
+    public PatternTy[] _loop0_74_rule()
     {
         if (errorIndicator) {
             return null;
@@ -18070,10 +18084,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_74_ID)) {
             _res = cache.getResult(_mark, _LOOP0_74_ID);
-            return (Object[])_res;
+            return (PatternTy[])_res;
         }
         int _start_mark = mark();
-        List<Object> _children = new ArrayList<>();
+        List<PatternTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' maybe_star_pattern
@@ -18081,24 +18095,24 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object elem;
+            PatternTy elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (Object)maybe_star_pattern_rule()) != null  // maybe_star_pattern
+                (elem = (PatternTy)maybe_star_pattern_rule()) != null  // maybe_star_pattern
             )
             {
                 _res = elem;
-                if (_res instanceof Object) {
-                    _children.add((Object)_res);
+                if (_res instanceof PatternTy) {
+                    _children.add((PatternTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((Object[])_res));
+                    _children.addAll(Arrays.asList((PatternTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        Object[] _seq = _children.toArray(new Object[_children.size()]);
+        PatternTy[] _seq = _children.toArray(new PatternTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_74_ID, _seq);
         return _seq;
     }
@@ -18119,15 +18133,15 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object elem;
-            Object[] seq;
+            PatternTy elem;
+            PatternTy[] seq;
             if (
-                (elem = (Object)maybe_star_pattern_rule()) != null  // maybe_star_pattern
+                (elem = (PatternTy)maybe_star_pattern_rule()) != null  // maybe_star_pattern
                 &&
-                (seq = (Object[])_loop0_74_rule()) != null  // _loop0_74
+                (seq = (PatternTy[])_loop0_74_rule()) != null  // _loop0_74
             )
             {
-                _res = insertInFront(elem, seq, Object.class);
+                _res = insertInFront(elem, seq, PatternTy.class);
                 cache.putResult(_mark, _GATHER_73_ID, _res);
                 return (Object[])_res;
             }
@@ -18264,7 +18278,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_79: ',' pattern
-    public Object[] _loop0_79_rule()
+    public PatternTy[] _loop0_79_rule()
     {
         if (errorIndicator) {
             return null;
@@ -18273,10 +18287,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_79_ID)) {
             _res = cache.getResult(_mark, _LOOP0_79_ID);
-            return (Object[])_res;
+            return (PatternTy[])_res;
         }
         int _start_mark = mark();
-        List<Object> _children = new ArrayList<>();
+        List<PatternTy> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' pattern
@@ -18284,24 +18298,24 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object elem;
+            PatternTy elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (Object)pattern_rule()) != null  // pattern
+                (elem = (PatternTy)pattern_rule()) != null  // pattern
             )
             {
                 _res = elem;
-                if (_res instanceof Object) {
-                    _children.add((Object)_res);
+                if (_res instanceof PatternTy) {
+                    _children.add((PatternTy)_res);
                 } else {
-                    _children.addAll(Arrays.asList((Object[])_res));
+                    _children.addAll(Arrays.asList((PatternTy[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        Object[] _seq = _children.toArray(new Object[_children.size()]);
+        PatternTy[] _seq = _children.toArray(new PatternTy[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_79_ID, _seq);
         return _seq;
     }
@@ -18322,15 +18336,15 @@ public final class Parser extends AbstractParser {
             if (errorIndicator) {
                 return null;
             }
-            Object elem;
-            Object[] seq;
+            PatternTy elem;
+            PatternTy[] seq;
             if (
-                (elem = (Object)pattern_rule()) != null  // pattern
+                (elem = (PatternTy)pattern_rule()) != null  // pattern
                 &&
-                (seq = (Object[])_loop0_79_rule()) != null  // _loop0_79
+                (seq = (PatternTy[])_loop0_79_rule()) != null  // _loop0_79
             )
             {
-                _res = insertInFront(elem, seq, Object.class);
+                _res = insertInFront(elem, seq, PatternTy.class);
                 cache.putResult(_mark, _GATHER_78_ID, _res);
                 return (Object[])_res;
             }
@@ -24440,7 +24454,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_234: positional_patterns ','
-    public Object _tmp_234_rule()
+    public PatternTy[] _tmp_234_rule()
     {
         if (errorIndicator) {
             return null;
@@ -24448,30 +24462,30 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_234_ID)) {
-            _res = (Object)cache.getResult(_mark, _TMP_234_ID);
-            return (Object)_res;
+            _res = (PatternTy[])cache.getResult(_mark, _TMP_234_ID);
+            return (PatternTy[])_res;
         }
         { // positional_patterns ','
             if (errorIndicator) {
                 return null;
             }
             Token _literal;
-            Object positional_patterns_var;
+            PatternTy[] positional_patterns_var;
             if (
-                (positional_patterns_var = (Object)positional_patterns_rule()) != null  // positional_patterns
+                (positional_patterns_var = (PatternTy[])positional_patterns_rule()) != null  // positional_patterns
                 &&
                 (_literal = (Token)expect(12)) != null  // token=','
             )
             {
                 _res = dummyName(positional_patterns_var, _literal);
                 cache.putResult(_mark, _TMP_234_ID, _res);
-                return (Object)_res;
+                return (PatternTy[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _TMP_234_ID, _res);
-        return (Object)_res;
+        return (PatternTy[])_res;
     }
 
     // _tmp_235: ASYNC
@@ -26107,7 +26121,6 @@ public final class Parser extends AbstractParser {
         return (result != null) == match;
     }
 
-    // TODO replacing asdl_pattern_seq* --> Object
     // TODO replacing pattern_ty** --> Object
     
     @Override

@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
@@ -1094,5 +1095,11 @@ abstract class AbstractParser {
     // TODO implement the check
     static <T> T checkVersion(int version, String msg, T node) {
         return node;
+    }
+
+    @SuppressWarnings("unused")
+    // TODO implement the check
+    static <T> T checkVersion(int version, String msg, Supplier<T> node) {
+        return node.get();
     }
 }
