@@ -34,8 +34,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
@@ -556,6 +558,36 @@ public final class DictBuiltins extends PythonBuiltins {
 
         protected static boolean isBuiltinDict(Object cls, TypeNodes.IsSameTypeNode isSameTypeNode) {
             return isSameTypeNode.execute(PythonBuiltinClassType.PDict, cls);
+        }
+    }
+
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class OrNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        PDict or(VirtualFrame frame, PDict self, PDict other,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached DictNodes.UpdateNode updateNode) {
+            PDict merged = factory().createDict(lib.copy(self.getDictStorage()));
+            updateNode.execute(frame, merged, other);
+            return merged;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object or(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = J___IOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IOrNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PDict or(VirtualFrame frame, PDict self, Object other,
+                        @Cached DictNodes.UpdateNode updateNode) {
+            updateNode.execute(frame, self, other);
+            return self;
         }
     }
 
