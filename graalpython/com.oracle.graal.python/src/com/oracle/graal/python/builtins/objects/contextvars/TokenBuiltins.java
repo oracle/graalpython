@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNodeGen;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -92,5 +93,14 @@ public class TokenBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         WriteAttributeToBuiltinTypeNode addMissing = WriteAttributeToBuiltinTypeNodeGen.getUncached();
         addMissing.execute(PythonBuiltinClassType.ContextVarsToken, MISSING_NAME, PContextVarsToken.MISSING);
+    }
+
+    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
+        }
     }
 }

@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -211,6 +212,15 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
         boolean ne(PReferenceType self, PReferenceType other) {
             return self != other;
+        }
+    }
+
+    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
         }
     }
 }

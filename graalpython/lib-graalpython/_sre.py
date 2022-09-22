@@ -208,6 +208,10 @@ class Match():
     def __getitem__(self, item):
         return self.__group(item)
 
+    def __class_getitem__(cls, item):
+        import types
+        return types.GenericAlias(cls, item)
+
     def __groupidx(self, idx):
         try:
             if hasattr(idx, '__index__'):
@@ -407,6 +411,10 @@ class Pattern():
 
     def __deepcopy__(self, memo):
         return self
+
+    def __class_getitem__(cls, item):
+        import types
+        return types.GenericAlias(cls, item)
 
     def _search(self, string, pos, endpos, method="search", must_advance=False):
         _check_pos(pos)

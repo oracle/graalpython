@@ -143,8 +143,8 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object classGetItem(Object cls, Object key) {
-            return cls; // TODO: use a GenericAlias
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
         }
     }
 }
