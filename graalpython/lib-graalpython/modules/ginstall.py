@@ -93,6 +93,20 @@ def get_path_env_var(var):
     return env_var
 
 
+def have_lapack():
+    lapack_env = get_path_env_var('LAPACK')
+    return lapack_env is not None
+
+
+def have_openblas():
+    blas_env = get_path_env_var('BLAS')
+    return blas_env and 'openblas' in blas_env
+
+
+def append_env_var(env, var, value):
+    env[var] = '{} {}'.format(env.get(var, ''), value)
+
+
 def pip_package(name=None, try_import=False):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -449,6 +463,9 @@ library_dirs = {lapack_lib}"""
             from distutils.sysconfig import get_config_var
             scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
             scipy_build_env["SCIPY_USE_PYTHRAN"] = "0"
+
+        if have_lapack() or have_openblas():
+            append_env_var(scipy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
 
         # install dependencies
         numpy(**kwargs)
