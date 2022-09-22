@@ -1,4 +1,4 @@
-package com.oracle.graal.python.builtins.objects.genericalias;
+package com.oracle.graal.python.builtins.objects.types;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;

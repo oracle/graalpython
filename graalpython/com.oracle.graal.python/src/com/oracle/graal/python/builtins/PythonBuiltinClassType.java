@@ -150,6 +150,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Super("super", J_BUILTINS),
     PCode("code", Flags.PRIVATE_DERIVED_WODICT),
     PGenericAlias("GenericAlias", J_TYPES, Flags.PUBLIC_BASE_WODICT),
+    PUnionType("UnionType", J_TYPES, Flags.PUBLIC_DERIVED_WODICT),
     PZip("zip", J_BUILTINS),
     PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", J_BUILTINS, Flags.PUBLIC_DERIVED_WODICT),

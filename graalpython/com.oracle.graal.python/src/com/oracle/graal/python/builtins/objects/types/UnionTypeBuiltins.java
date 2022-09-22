@@ -1,4 +1,4 @@
-package com.oracle.graal.python.builtins.objects.genericalias;
+package com.oracle.graal.python.builtins.objects.types;
 
 import java.util.List;
 
@@ -12,27 +12,18 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PGenericAlias)
-public class GenericAliasBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PUnionType)
+public class UnionTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return GenericAliasBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "__origin__", numOfPositionalOnlyArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    static abstract class OriginNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object origin(PGenericAlias self) {
-            return self.getOrigin();
-        }
+        return UnionTypeBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = "__args__", numOfPositionalOnlyArgs = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class ArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object args(PGenericAlias self) {
+        Object args(PUnionType self) {
             return self.getArgs();
         }
     }
