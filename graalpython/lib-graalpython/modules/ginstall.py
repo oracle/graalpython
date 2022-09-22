@@ -319,14 +319,16 @@ def known_packages():
         setuptools(**kwargs)
         Cython(**kwargs)
 
-        blas_lib = get_path_env_var("BLAS")
+        blas_env = get_path_env_var("BLAS")
+        blas_lib = os.path.split(blas_env)[0] if blas_env else None
         blas_include = get_path_env_var("BLAS_INCLUDE")
         openblas_lib = None
         openblas_include = None
-        if blas_lib and 'openblas' in blas_lib:
+        if blas_env and 'openblas' in blas_env:
             openblas_lib = blas_lib
             openblas_include = blas_include
-        lapack_lib = get_path_env_var('LAPACK')
+        lapack_env = get_path_env_var('LAPACK')
+        lapack_lib = os.path.split(lapack_env)[0] if lapack_env else None
         lapack_include = get_path_env_var('LAPACK_INCLUDE')
 
         def make_site_cfg(root):
