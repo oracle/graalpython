@@ -95,7 +95,7 @@ public class ParserTestBase {
     @SuppressWarnings("unused")
     public ModTy parse(String src, String moduleName, InputType inputType, boolean interactiveTerminal) {
         errorCallback = new TestErrorCallbackImpl();
-        NodeFactory factory = new NodeFactoryImp();
+        NodeFactory factory = new NodeFactory();
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
@@ -213,7 +213,7 @@ public class ParserTestBase {
     }
 
     public void checkError(String source, String... expectedErrors) {
-        NodeFactory factory = new NodeFactoryImp();
+        NodeFactory factory = new NodeFactory();
         ArrayList<String> errors = new ArrayList<>();
         ErrorCallback errorCb = new ErrorCallback() {
             @Override
