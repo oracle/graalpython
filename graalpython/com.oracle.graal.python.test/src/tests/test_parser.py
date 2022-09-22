@@ -906,3 +906,6 @@ def test_ComprehensionListExpr():
     assert [('a', 1), ('a', 2), ('b', 1), ('b', 2)] == [ (c,s) for c in ('a','b') for s in (1,2)]
     assert [(1, 'a'), (2, 'a'), (1, 'b'), (2, 'b')] == [ (s,c) for c in ('a','b') for s in (1,2)]
 
+def test_BYTE_ORDER_MARK():
+    assert eval('u"\N{BYTE ORDER MARK}"') == '\ufeff'
+

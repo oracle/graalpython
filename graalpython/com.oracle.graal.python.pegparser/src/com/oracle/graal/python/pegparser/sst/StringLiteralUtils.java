@@ -1176,6 +1176,7 @@ public abstract class StringLiteralUtils {
         CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR THREE", 0x001D);
         CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR TWO", 0x001E);
         CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR ONE", 0x001F);
+        CONTROL_CHAR_NAMES.put("BYTE ORDER MARK", 0xFEFF);
     }
 
     public static int getCodePoint(String charName) {
