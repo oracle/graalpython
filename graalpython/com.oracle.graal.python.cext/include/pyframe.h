@@ -1,3 +1,8 @@
+/* Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2022 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* Limited C API of PyFrame API
  *
  * Include "frameobject.h" to get the PyFrameObject structure.

@@ -1,3 +1,8 @@
+/* Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2022 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 #ifndef Py_PYTHON_H
 #define Py_PYTHON_H
 /* Since this is a "meta-include" file, no #ifdef __cplusplus / extern "C" { */
