@@ -332,6 +332,14 @@ public class PyCArrayBuiltins extends PythonBuiltins {
         static int Array_length(CDataObject self) {
             return self.b_length;
         }
+    }
 
+    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
+        }
     }
 }

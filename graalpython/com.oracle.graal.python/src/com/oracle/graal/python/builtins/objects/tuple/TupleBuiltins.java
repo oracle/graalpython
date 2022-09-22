@@ -551,4 +551,13 @@ public class TupleBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{factory().createTuple(self.getSequenceStorage())});
         }
     }
+
+    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
+        }
+    }
 }

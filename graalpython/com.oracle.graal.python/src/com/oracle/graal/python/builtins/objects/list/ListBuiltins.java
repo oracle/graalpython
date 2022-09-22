@@ -1173,4 +1173,13 @@ public class ListBuiltins extends PythonBuiltins {
             return factory().createSequenceReverseIterator(PythonBuiltinClassType.PReverseIterator, self, len);
         }
     }
+
+    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
+        }
+    }
 }
