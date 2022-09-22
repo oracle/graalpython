@@ -292,17 +292,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "\n" +
                     "Flags provided through command line arguments or environment vars.",
                     // @formatter:on
-                    15,
+                    16,
                     new String[]{
                                     "debug", "inspect", "interactive", "optimize", "dont_write_bytecode",
                                     "no_user_site", "no_site", "ignore_environment", "verbose",
                                     "bytes_warning", "quiet", "hash_randomization", "isolated",
-                                    "dev_mode", "utf8_mode"},
+                                    "dev_mode", "utf8_mode", "warn_default_encoding"},
                     new String[]{
                                     "-d", "-i", "-i", "-O or -OO", "-B",
                                     "-s", "-S", "-E", "-v",
                                     "-b", "-q", "-R", "-I",
-                                    "-X dev", "-X utf8"},
+                                    "-X dev", "-X utf8", "-X warn_default_encoding"},
                     false);
 
     static final StructSequence.BuiltinTypeDescriptor FLOAT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
@@ -611,7 +611,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         0, // hash_randomization
                         PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
                         false, // dev_mode
-                        0 // utf8_mode
+                        0, // utf8_mode
+                        PInt.intValue(context.getOption(PythonOptions.WarnDefaultEncodingFlag)) // warn_default_encoding
         ));
         sys.setAttribute(T___EXCEPTHOOK__, sys.getAttribute(T_EXCEPTHOOK));
         sys.setAttribute(T___UNRAISABLEHOOK__, sys.getAttribute(T_UNRAISABLEHOOK));

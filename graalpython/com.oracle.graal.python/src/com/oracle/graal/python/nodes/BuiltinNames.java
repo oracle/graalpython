@@ -311,6 +311,9 @@ public abstract class BuiltinNames {
 
     public static final String J__STRING = "_string";
 
+    public static final String J_LOCALE = "locale";
+    public static final TruffleString T_LOCALE = tsLiteral(J_LOCALE);
+
     public static final String J__CODECS_TRUFFLE = "_codecs_truffle";
     public static final TruffleString T__CODECS_TRUFFLE = tsLiteral(J__CODECS_TRUFFLE);
 

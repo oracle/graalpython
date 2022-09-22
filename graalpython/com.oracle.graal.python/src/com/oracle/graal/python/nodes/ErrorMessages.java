@@ -1345,6 +1345,7 @@ public abstract class ErrorMessages {
                     "are deprecated.  Use sys.getswitchinterval() instead.");
     public static final TruffleString WARN_CURRENT_FRAMES_MULTITHREADED = tsLiteral(
                     "GraalPy doesn't support obtaining frames of other threads. That means python debuggers can only see the currently stopped thread");
+    public static final TruffleString WARN_ENCODING_ARGUMENT_NOT_SPECIFIED = tsLiteral("'encoding' argument not specified");
 
     // error messages from parsing
     public static final TruffleString ERROR_MESSAGE_EMPTY_EXPRESSION = tsLiteral("f-string: empty expression not allowed");

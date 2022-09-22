@@ -375,6 +375,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SyntaxWarning("SyntaxWarning", J_BUILTINS, Flags.EXCEPTION),
     UnicodeWarning("UnicodeWarning", J_BUILTINS, Flags.EXCEPTION),
     UserWarning("UserWarning", J_BUILTINS, Flags.EXCEPTION),
+    EncodingWarning("EncodingWarning", J_BUILTINS, Flags.EXCEPTION),
 
     // contextvars
     ContextVarsToken("Token", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),

@@ -94,6 +94,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private boolean snaptshotStartup = false;
+    private boolean warnDefaultEncoding = false;
     private VersionAction versionAction = VersionAction.None;
     private List<String> givenArguments;
     private List<String> relaunchArgs;
@@ -307,7 +308,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             break;
                         case 'X':
                             // CPython ignores unknown/unsupported -X options, so we can do that too
-                            getShortOptionParameter(argumentIterator, remainder, 'X');
+                            String xOption = getShortOptionParameter(argumentIterator, remainder, 'X');
+                            if ("warn_default_encoding".equals(xOption)) {
+                                warnDefaultEncoding = true;
+                            }
                             break shortOptionLoop;
                         default:
                             throw abort(String.format("Unknown option -%c\n", option) + SHORT_HELP, 2);
@@ -602,6 +606,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.VerboseFlag", Boolean.toString(verboseFlag));
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
         contextBuilder.option("python.WarnOptions", warnOptions);
+        contextBuilder.option("python.WarnDefaultEncodingFlag", Boolean.toString(warnDefaultEncoding));
         contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
