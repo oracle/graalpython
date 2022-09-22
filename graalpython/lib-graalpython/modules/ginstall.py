@@ -340,11 +340,19 @@ def known_packages():
 openblas_libs = openblas
 include_dirs = {openblas_include}
 library_dirs = {openblas_lib}
-runtime_library_dirs = {openblas_lib}
- 
+runtime_library_dirs = {openblas_lib}"""
+                    if lapack_lib:
+                        cfg += f"""
+[lapack]
+lapack_libs = lapack
+include_dirs = {lapack_include}
+library_dirs = {lapack_lib}"""
+                    else:
+                        cfg += f"""
 [lapack]
 lapack_libs = openblas
 library_dirs = {openblas_lib}"""
+
                     info(cfg)
                     SITE_CFG.write(cfg)
 
@@ -353,12 +361,14 @@ library_dirs = {openblas_lib}"""
                     cfg = f"""
 [blas]
 include_dirs = {blas_include}
-library_dirs = {blas_lib}
- 
+library_dirs = {blas_lib}"""
+                    if lapack_lib:
+                        cfg += f"""
 [lapack]
 lapack_libs = lapack
 include_dirs = {lapack_include}
 library_dirs = {lapack_lib}"""
+
                     info(cfg)
                     SITE_CFG.write(cfg)
 
