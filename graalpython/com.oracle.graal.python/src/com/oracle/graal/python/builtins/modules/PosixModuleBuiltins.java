@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -2146,6 +2147,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object register(Object before, Object afterInChild, Object afterInParent) {
             // TODO should we at least call multiprocessing.util.register_after_fork?
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "waitstatus_to_exitcode", parameterNames = {"status"})
+    @GenerateNodeFactory
+    abstract static class WaitstatusToExitcode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object w2e(VirtualFrame frame, Object statusObject,
+                        @Cached PyLongAsIntNode convert) {
+            int status = convert.execute(frame, statusObject);
+            return status & 0xff00;
         }
     }
 
