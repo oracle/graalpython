@@ -537,6 +537,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
+        sys.setAttribute(tsLiteral("platlibdir"), tsLiteral("lib"));
+
         if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
             sys.setAttribute(tsLiteral("settrace"), sys.getAttribute(tsLiteral("_settrace")));
             sys.setAttribute(tsLiteral("setprofile"), sys.getAttribute(tsLiteral("_setprofile")));
