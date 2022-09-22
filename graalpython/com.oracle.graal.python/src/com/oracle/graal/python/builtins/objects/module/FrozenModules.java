@@ -135,7 +135,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule ENCODINGS_KZ1048 = new PythonFrozenModule("ENCODINGS_KZ1048", "encodings.kz1048", false);
         private static final PythonFrozenModule ENCODINGS_LATIN_1 = new PythonFrozenModule("ENCODINGS_LATIN_1", "encodings.latin_1", false);
         private static final PythonFrozenModule ENCODINGS_MAC_ARABIC = new PythonFrozenModule("ENCODINGS_MAC_ARABIC", "encodings.mac_arabic", false);
-        private static final PythonFrozenModule ENCODINGS_MAC_CENTEURO = new PythonFrozenModule("ENCODINGS_MAC_CENTEURO", "encodings.mac_centeuro", false);
         private static final PythonFrozenModule ENCODINGS_MAC_CROATIAN = new PythonFrozenModule("ENCODINGS_MAC_CROATIAN", "encodings.mac_croatian", false);
         private static final PythonFrozenModule ENCODINGS_MAC_CYRILLIC = new PythonFrozenModule("ENCODINGS_MAC_CYRILLIC", "encodings.mac_cyrillic", false);
         private static final PythonFrozenModule ENCODINGS_MAC_FARSI = new PythonFrozenModule("ENCODINGS_MAC_FARSI", "encodings.mac_farsi", false);
@@ -404,8 +403,6 @@ public final class FrozenModules {
                 return Map.ENCODINGS_LATIN_1;
             case "encodings.mac_arabic":
                 return Map.ENCODINGS_MAC_ARABIC;
-            case "encodings.mac_centeuro":
-                return Map.ENCODINGS_MAC_CENTEURO;
             case "encodings.mac_croatian":
                 return Map.ENCODINGS_MAC_CROATIAN;
             case "encodings.mac_cyrillic":
