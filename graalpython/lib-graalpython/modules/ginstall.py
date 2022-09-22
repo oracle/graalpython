@@ -392,6 +392,10 @@ library_dirs = {lapack_lib}"""
             if key in os.environ:
                 numpy_build_env[key] = os.environ[key]
 
+        if have_lapack() or have_openblas():
+            append_env_var(numpy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
+            info(f"have lapack or blas ... CLFAGS={numpy_build_env['CFLAGS']}")
+
         install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
                           pre_install_hook=make_site_cfg, **kwargs)
 
@@ -466,6 +470,7 @@ library_dirs = {lapack_lib}"""
 
         if have_lapack() or have_openblas():
             append_env_var(scipy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
+            info(f"have lapack or blas ... CFLAGS={scipy_build_env['CFLAGS']}")
 
         # install dependencies
         numpy(**kwargs)
