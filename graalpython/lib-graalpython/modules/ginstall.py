@@ -84,51 +84,13 @@ def get_module_name(package_name):
     return module_name.replace('-', '_')
 
 
-def _prepare_blas_lapack(env=None):
-    def _append_var(var, value):
-        env[var] = '{} {}'.format(env.get(var, ''), value)
-
-    def _add_lib(lib_env_var, include_env_var=None):
-        value = os.environ.get(lib_env_var, None)
-        if isinstance(value, str) and value.lower() == 'none':
-            value = None
-        if value:
-            lib_path = os.path.split(value)[0]
-            info("found {}: {}".format(lib_env_var, lib_path))
-            _append_var('LDFLAGS', '-L{}'.format(lib_path))
-            par_dir = os.path.split(lib_path)[0]
-
-            inc_path = os.environ.get(include_env_var, None) if include_env_var else None
-            if not inc_path or not os.path.exists(inc_path):
-                inc_path = os.path.join(par_dir, 'include')
-            if os.path.exists(inc_path):
-                _append_var('CPPFLAGS', '-I{}'.format(inc_path))
-            else:
-                warn("include path for {} not found in {}".format(lib_env_var, inc_path))
-
-            pkgconf_path = os.path.join(par_dir, 'lib', 'pkgconfig')
-            if os.path.exists(pkgconf_path):
-                _append_var('PKG_CONFIG_PATH', '{}'.format(pkgconf_path))
-            else:
-                warn("pkgconfig path for {} not found in {}".format(lib_env_var, pkgconf_path))
-            return True
-        else:
-            warn("{} env var not set".format(lib_env_var))
-        return False
-
-    if not env:
-        env = {}
-
-    _add_lib('BLAS', 'BLAS_INCLUDE')
-    have_lapack = _add_lib('LAPACK', 'LAPACK_INCLUDE')
-    if have_lapack:
-        # https://github.com/scipy/scipy/issues/12935
-        _append_var('CFLAGS', '-Wno-error=implicit-function-declaration')
-    info("LDFLAGS = {}".format(env.get("LDFLAGS")))
-    info("CPPFLAGS = {}".format(env.get("CPPFLAGS")))
-    info("PKG_CONFIG_PATH = {}".format(env.get("PKG_CONFIG_PATH")))
-
-    return env
+def get_path_env_var(var):
+    env_var = os.environ.get(var, None)
+    if isinstance(env_var, str) and env_var.lower() is 'none':
+        env_var = None
+    if isinstance(env_var, str) and not os.path.exists(env_var):
+        env_var = None
+    return env_var
 
 
 def pip_package(name=None, try_import=False):
@@ -356,13 +318,61 @@ def known_packages():
     def numpy(**kwargs):
         setuptools(**kwargs)
         Cython(**kwargs)
+
+        blas_lib = get_path_env_var("BLAS")
+        blas_include = get_path_env_var("BLAS_INCLUDE")
+        openblas_lib = None
+        openblas_include = None
+        if blas_lib and 'openblas' in blas_lib:
+            openblas_lib = blas_lib
+            openblas_include = blas_include
+        lapack_lib = get_path_env_var('LAPACK')
+        lapack_include = get_path_env_var('LAPACK_INCLUDE')
+
+        def make_site_cfg(root):
+            with open(os.path.join(root, "site.cfg"), "w+") as SITE_CFG:
+                if openblas_lib:
+                    info("detected OPENBLAS / [LAPACK]")
+                    cfg = f"""
+[openblas]
+openblas_libs = openblas
+include_dirs = {openblas_include}
+library_dirs = {openblas_lib}
+runtime_library_dirs = {openblas_lib}
+ 
+[lapack]
+lapack_libs = openblas
+library_dirs = {openblas_lib}"""
+                    info(cfg)
+                    SITE_CFG.write(cfg)
+
+                elif blas_lib:
+                    info("detected BLAS / [LAPACK]")
+                    cfg = f"""
+[blas]
+include_dirs = {blas_include}
+library_dirs = {blas_lib}
+ 
+[lapack]
+lapack_libs = lapack
+include_dirs = {lapack_include}
+library_dirs = {lapack_lib}"""
+                    info(cfg)
+                    SITE_CFG.write(cfg)
+
         # honor following selected env variables: BLAS, LAPACK, ATLAS
         numpy_build_env = {}
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 numpy_build_env[key] = os.environ[key]
-        # correctly detecting the CPU features is currently not supported
-        install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env, **kwargs)
+
+        install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
+                          pre_install_hook=make_site_cfg, **kwargs)
+
+        # print numpy configuration
+        info("----------------------------[ numpy configuration ]----------------------------")
+        run_cmd([sys.executable, "-c", 'import numpy as np; print(np.__version__); print(np.show_config())'])
+        info("-------------------------------------------------------------------------------")
 
     @pip_package()
     def dateutil(**kwargs):
@@ -447,7 +457,6 @@ def known_packages():
                 xit("scikit-learn can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
             scikit_learn_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
-        scikit_learn_build_env = _prepare_blas_lapack(scikit_learn_build_env)
 
         # install dependencies
         numpy(**kwargs)
