@@ -131,6 +131,7 @@
 
 #include "eval.h"
 
+#include "cpython/pyctype.h"
 #include "pystrtod.h"
 #include "fileutils.h"
 #include "tracemalloc.h"

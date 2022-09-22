@@ -45,6 +45,7 @@
 
 #include <wchar.h>
 #include <string.h>
+#include <errno.h>
 
 #define SRC_CS "utf-8"
 #define UNWRAP(_h) ((_h)._i)

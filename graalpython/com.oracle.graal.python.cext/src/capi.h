@@ -50,6 +50,7 @@
 #include <truffle.h>
 #include <graalvm/llvm/handles.h>
 #include "datetime.h"
+#include "structmember.h"
 
 #define SRC_CS "utf-8"
 

@@ -101,6 +101,7 @@
 #define HAVE_DIRENT_H 1
 #define HAVE_SENDFILE 1
 #define HAVE_SYS_STAT_H 1
+#define HAVE_ERRNO_H 1
 
 #define HAVE_STDARG_PROTOTYPES
 
