@@ -313,10 +313,15 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )': (1, 'checkVersion(10, "Pattern matching is", factory.createMatch(subject, cases, $RANGE))'),
     'CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected \':\'" ) )': (1, 'checkVersion(10, "Pattern matching is", () -> this.raiseSyntaxError("expected \':\'"))'),
     '_PyAST_match_case ( pattern , guard , body , p -> arena )': (1, 'factory.createMatchCase(pattern, guard, body, $RANGE)'),
+    '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )': (1, 'factory.createTuple(insertInFront(value, values), ExprContextTy.Load, $RANGE)'),
     'asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )': (1, 'patterns.length == 1 ? patterns[0] : factory.createMatchOr(patterns, $RANGE)'),
     '_PyAST_MatchSingleton ( Py_None , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.NONE, $RANGE)'),
     '_PyAST_MatchSingleton ( Py_True , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.TRUE, $RANGE)'),
     '_PyAST_MatchSingleton ( Py_False , EXTRA )': (1, 'factory.createMatchSingleton(ConstantValue.FALSE, $RANGE)'),
+    '_PyAST_MatchAs ( NULL , NULL , EXTRA )': (1, 'factory.createMatchAs(null, null, $RANGE)'),
+    '_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )': (1, 'factory.createMatchAs(pattern, ((ExprTy.Name) target).id, $RANGE)'),
+    '_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )': (1, 'factory.createMatchAs(null, ((ExprTy.Name) target).id, $RANGE)'),
+    '_PyPegen_set_expr_context ( p , name , Store )': (1, 'setExprContext(name, ExprContextTy.Store)'),
 
     # TODO
     # Interactive mode:
@@ -325,13 +330,9 @@ ACTION_MAPPINGS = {
     # compile(..., mode='func_type') - used by ast module only
     # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "patterns: with rhs open_sequence_pattern"
-    # '_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )' in rule "as_pattern: with rhs or_pattern 'as' pattern_capture_target"
     # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs signed_number !('+' | '-')"
     # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs complex_number"
     # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs strings"
-    # '_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )' in rule "capture_pattern: with rhs pattern_capture_target"
-    # '_PyPegen_set_expr_context ( p , name , Store )' in rule "pattern_capture_target: with rhs !"_" NAME !('.' | '(' | '=')"
-    # '_PyAST_MatchAs ( NULL , NULL , EXTRA )' in rule "wildcard_pattern: with rhs "_""
     # '_PyAST_MatchValue ( attr , EXTRA )' in rule "value_pattern: with rhs attr !('.' | '(' | '=')"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '[' maybe_sequence_pattern? ']'"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '(' open_sequence_pattern? ')'"
@@ -353,7 +354,6 @@ ACTION_MAPPINGS = {
     # 'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )' in rule "invalid_class_pattern: with rhs name_or_attr '(' invalid_class_argument_pattern"
     # '_PyPegen_ensure_real ( p , real )' in rule "real_number: with rhs NUMBER"
     # '_PyPegen_ensure_imaginary ( p , imag )' in rule "imaginary_number: with rhs NUMBER"
-    # '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )' in rule "subject_expr: with rhs star_named_expression ',' star_named_expressions?"
 }
 
 # Maps pattern to (n, replacement), where:

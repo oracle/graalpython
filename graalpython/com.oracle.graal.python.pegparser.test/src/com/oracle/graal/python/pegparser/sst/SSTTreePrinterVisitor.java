@@ -908,6 +908,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         if (node.name != null) {
             appendNewLineIndented(sb, "Name: ").append(node.name);
         }
+        level--;
         return sb.toString();
     }
 

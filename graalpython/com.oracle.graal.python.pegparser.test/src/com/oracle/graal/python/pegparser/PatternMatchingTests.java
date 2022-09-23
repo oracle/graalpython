@@ -12,13 +12,48 @@ public class PatternMatchingTests extends ParserTestBase {
     }
 
     @Test
-    public void missingColon() {
+    public void tupleSubject() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
+    public void guard() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
+    public void asPattern() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
+    public void missingColonInMatch() {
         checkSyntaxErrorMessage("match a\n    case None: pass", "expected ':'");
     }
 
     @Test
-    public void missingIndent() {
+    public void missingColonInCase() {
+        checkSyntaxErrorMessage("match a:\n    case None pass", "expected ':'");
+    }
+
+    @Test
+    public void missingIndentAfterMatch() {
         checkIndentationError("match a:\ncase None: pass");
+    }
+
+    @Test
+    public void missingIndentAfterCase() {
+        checkIndentationError("match a:\n  case None:\n  pass");
+    }
+
+    @Test
+    public void underscoreAsTarget() {
+        checkSyntaxErrorMessage("match a:\n  case None as _:\n  pass", "cannot use '_' as a target");
+    }
+
+    @Test
+    public void exprAsTarget() {
+        checkSyntaxErrorMessage("match a:\n  case None as 4:\n  pass", "invalid pattern target");
     }
 
     private void checkScopeAndTree() throws Exception {

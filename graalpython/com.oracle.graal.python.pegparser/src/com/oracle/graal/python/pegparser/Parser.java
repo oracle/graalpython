@@ -3770,6 +3770,7 @@ public final class Parser extends AbstractParser {
             _res = (ExprTy)cache.getResult(_mark, SUBJECT_EXPR_ID);
             return (ExprTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // star_named_expression ',' star_named_expressions?
             if (errorIndicator) {
                 return null;
@@ -3785,9 +3786,11 @@ public final class Parser extends AbstractParser {
                 ((values = star_named_expressions_rule()) != null || true)  // star_named_expressions?
             )
             {
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )
-                ruleNotImplemented("_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createTuple(insertInFront(value, values), ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4020,6 +4023,7 @@ public final class Parser extends AbstractParser {
             _res = (PatternTy)cache.getResult(_mark, AS_PATTERN_ID);
             return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // or_pattern 'as' pattern_capture_target
             if (errorIndicator) {
                 return null;
@@ -4035,9 +4039,11 @@ public final class Parser extends AbstractParser {
                 (target = pattern_capture_target_rule()) != null  // pattern_capture_target
             )
             {
-                // TODO: node.action: _PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )
-                ruleNotImplemented("_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchAs(pattern, ((ExprTy.Name) target).id, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, AS_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -4755,6 +4761,7 @@ public final class Parser extends AbstractParser {
             _res = (PatternTy)cache.getResult(_mark, CAPTURE_PATTERN_ID);
             return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // pattern_capture_target
             if (errorIndicator) {
                 return null;
@@ -4764,9 +4771,11 @@ public final class Parser extends AbstractParser {
                 (target = pattern_capture_target_rule()) != null  // pattern_capture_target
             )
             {
-                // TODO: node.action: _PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )
-                ruleNotImplemented("_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchAs(null, ((ExprTy.Name) target).id, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, CAPTURE_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -4802,9 +4811,7 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_71_rule(false)
             )
             {
-                // TODO: node.action: _PyPegen_set_expr_context ( p , name , Store )
-                ruleNotImplemented("_PyPegen_set_expr_context ( p , name , Store )");
-                _res = null;
+                _res = setExprContext(name, ExprContextTy.Store);
                 cache.putResult(_mark, PATTERN_CAPTURE_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4827,6 +4834,7 @@ public final class Parser extends AbstractParser {
             _res = (PatternTy)cache.getResult(_mark, WILDCARD_PATTERN_ID);
             return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // "_"
             if (errorIndicator) {
                 return null;
@@ -4836,9 +4844,11 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect_SOFT_KEYWORD("_")) != null  // soft_keyword='"_"'
             )
             {
-                // TODO: node.action: _PyAST_MatchAs ( NULL , NULL , EXTRA )
-                ruleNotImplemented("_PyAST_MatchAs ( NULL , NULL , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchAs(null, null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, WILDCARD_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
