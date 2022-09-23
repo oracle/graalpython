@@ -43,7 +43,7 @@
 # TODO: REMOVEME, temporary patch for coroutines
 # AST interpreter returns None from coroutines
 ctype = type(None)
-def _coro_close():
+def _coro_close(*args): # needs to accept receiver argument
     pass
 ctype.close = _coro_close
 # TODO -----------------------------------------------------------------------------------------------------------------
