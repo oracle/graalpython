@@ -98,8 +98,8 @@ TYPE_MAPPINGS = {
     "AugOperator*": "OperatorTy",
     "CmpopExprPair*": "CmpopExprPair",
     "CmpopExprPair**": "CmpopExprPair[]",
-    "KeyPatternPair*": "Object",
-    "KeyPatternPair**": "Object[]",
+    "KeyPatternPair*": "KeyPatternPair",
+    "KeyPatternPair**": "KeyPatternPair[]",
     "KeyValuePair*": "KeyValuePair",
     "KeyValuePair**": "KeyValuePair[]",
     "KeywordOrStarred*": "KeywordOrStarred",
@@ -331,6 +331,12 @@ ACTION_MAPPINGS = {
     '_PyPegen_seq_insert_in_front ( p , pattern , patterns )': (1, 'insertInFront(pattern, patterns)'),
     'patterns': (1, 'patterns'),
     'pattern': (1, 'pattern'),
+    '_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )': (1, 'factory.createMatchMapping(null, null, null, $RANGE)'),
+    '_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )': (1, 'factory.createMatchMapping(null, null, ((ExprTy.Name) rest).id, $RANGE)'),
+    '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), ((ExprTy.Name) rest).id, $RANGE)'),
+    '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), null, $RANGE)'),
+    '_PyPegen_key_pattern_pair ( p , key , pattern )': (1, 'new KeyPatternPair(key, pattern)'),
+    'target': (1, 'target'),
 
     # TODO
     # Interactive mode:
@@ -338,12 +344,6 @@ ACTION_MAPPINGS = {
     #
     # compile(..., mode='func_type') - used by ast module only
     # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
-    # '_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )' in rule "mapping_pattern: with rhs '{' '}'"
-    # '_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )' in rule "mapping_pattern: with rhs '{' double_star_pattern ','? '}'"
-    # '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )' in rule "mapping_pattern: with rhs '{' items_pattern ',' double_star_pattern ','? '}'"
-    # '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )' in rule "mapping_pattern: with rhs '{' items_pattern ','? '}'"
-    # '_PyPegen_key_pattern_pair ( p , key , pattern )' in rule "key_value_pattern: with rhs (literal_expr | attr) ':' pattern"
-    # 'target' in rule "double_star_pattern: with rhs '**' pattern_capture_target"
     # '_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' ')'"
     # '_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ','? ')'"
     # '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' keyword_patterns ','? ')'"

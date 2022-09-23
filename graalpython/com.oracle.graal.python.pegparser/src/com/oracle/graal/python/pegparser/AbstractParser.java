@@ -721,6 +721,24 @@ abstract class AbstractParser {
         }
     }
 
+    static ExprTy[] extractKeys(KeyPatternPair[] l) {
+        int len = l == null ? 0 : l.length;
+        ExprTy[] keys = new ExprTy[len];
+        for (int i = 0; i < len; i++) {
+            keys[i] = l[i].key;
+        }
+        return keys;
+    }
+
+    static PatternTy[] extractPatterns(KeyPatternPair[] l) {
+        int len = l == null ? 0 : l.length;
+        PatternTy[] values = new PatternTy[len];
+        for (int i = 0; i < len; i++) {
+            values[i] = l[i].pattern;
+        }
+        return values;
+    }
+
     public static final class NameDefaultPair {
         final ArgTy name;
         final ExprTy def;

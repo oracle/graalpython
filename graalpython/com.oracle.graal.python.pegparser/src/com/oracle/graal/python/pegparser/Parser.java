@@ -5307,6 +5307,7 @@ public final class Parser extends AbstractParser {
             _res = (PatternTy)cache.getResult(_mark, MAPPING_PATTERN_ID);
             return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '{' '}'
             if (errorIndicator) {
                 return null;
@@ -5319,9 +5320,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
-                // TODO: node.action: _PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )
-                ruleNotImplemented("_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchMapping(null, null, null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5345,9 +5348,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
-                // TODO: node.action: _PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )
-                ruleNotImplemented("_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchMapping(null, null, ((ExprTy.Name) rest).id, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5361,7 +5366,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             Token _literal_2;
             Token _opt_var;
-            Object[] items;
+            KeyPatternPair[] items;
             ExprTy rest;
             if (
                 (_literal = expect(25)) != null  // token='{'
@@ -5377,9 +5382,11 @@ public final class Parser extends AbstractParser {
                 (_literal_2 = expect(26)) != null  // token='}'
             )
             {
-                // TODO: node.action: _PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )
-                ruleNotImplemented("_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchMapping(extractKeys(items), extractPatterns(items), ((ExprTy.Name) rest).id, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5392,7 +5399,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             Token _opt_var;
-            Object[] items;
+            KeyPatternPair[] items;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
@@ -5403,9 +5410,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
-                // TODO: node.action: _PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )
-                ruleNotImplemented("_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchMapping(extractKeys(items), extractPatterns(items), null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5417,7 +5426,7 @@ public final class Parser extends AbstractParser {
     }
 
     // items_pattern: ','.key_value_pattern+
-    public Object[] items_pattern_rule()
+    public KeyPatternPair[] items_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5425,31 +5434,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, ITEMS_PATTERN_ID)) {
-            _res = (Object[])cache.getResult(_mark, ITEMS_PATTERN_ID);
-            return (Object[])_res;
+            _res = (KeyPatternPair[])cache.getResult(_mark, ITEMS_PATTERN_ID);
+            return (KeyPatternPair[])_res;
         }
         { // ','.key_value_pattern+
             if (errorIndicator) {
                 return null;
             }
-            Object[] _gather_75_var;
+            KeyPatternPair[] _gather_75_var;
             if (
-                (_gather_75_var = (Object[])_gather_75_rule()) != null  // ','.key_value_pattern+
+                (_gather_75_var = (KeyPatternPair[])_gather_75_rule()) != null  // ','.key_value_pattern+
             )
             {
                 _res = _gather_75_var;
                 cache.putResult(_mark, ITEMS_PATTERN_ID, _res);
-                return (Object[])_res;
+                return (KeyPatternPair[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, ITEMS_PATTERN_ID, _res);
-        return (Object[])_res;
+        return (KeyPatternPair[])_res;
     }
 
     // key_value_pattern: (literal_expr | attr) ':' pattern
-    public Object key_value_pattern_rule()
+    public KeyPatternPair key_value_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5457,8 +5466,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEY_VALUE_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, KEY_VALUE_PATTERN_ID);
-            return (Object)_res;
+            _res = (KeyPatternPair)cache.getResult(_mark, KEY_VALUE_PATTERN_ID);
+            return (KeyPatternPair)_res;
         }
         { // (literal_expr | attr) ':' pattern
             if (errorIndicator) {
@@ -5475,17 +5484,15 @@ public final class Parser extends AbstractParser {
                 (pattern = pattern_rule()) != null  // pattern
             )
             {
-                // TODO: node.action: _PyPegen_key_pattern_pair ( p , key , pattern )
-                ruleNotImplemented("_PyPegen_key_pattern_pair ( p , key , pattern )");
-                _res = null;
+                _res = new KeyPatternPair(key, pattern);
                 cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
-                return (Object)_res;
+                return (KeyPatternPair)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
-        return (Object)_res;
+        return (KeyPatternPair)_res;
     }
 
     // double_star_pattern: '**' pattern_capture_target
@@ -5512,9 +5519,7 @@ public final class Parser extends AbstractParser {
                 (target = pattern_capture_target_rule()) != null  // pattern_capture_target
             )
             {
-                // TODO: node.action: target
-                ruleNotImplemented("target");
-                _res = null;
+                _res = target;
                 cache.putResult(_mark, DOUBLE_STAR_PATTERN_ID, _res);
                 return (ExprTy)_res;
             }
@@ -5602,7 +5607,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             Token _opt_var;
             ExprTy cls;
-            Object[] keywords;
+            KeyPatternPair[] keywords;
             if (
                 (cls = name_or_attr_rule()) != null  // name_or_attr
                 &&
@@ -5632,7 +5637,7 @@ public final class Parser extends AbstractParser {
             Token _literal_2;
             Token _opt_var;
             ExprTy cls;
-            Object[] keywords;
+            KeyPatternPair[] keywords;
             PatternTy[] patterns;
             if (
                 (cls = name_or_attr_rule()) != null  // name_or_attr
@@ -5711,7 +5716,7 @@ public final class Parser extends AbstractParser {
     }
 
     // keyword_patterns: ','.keyword_pattern+
-    public Object[] keyword_patterns_rule()
+    public KeyPatternPair[] keyword_patterns_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5719,31 +5724,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEYWORD_PATTERNS_ID)) {
-            _res = (Object[])cache.getResult(_mark, KEYWORD_PATTERNS_ID);
-            return (Object[])_res;
+            _res = (KeyPatternPair[])cache.getResult(_mark, KEYWORD_PATTERNS_ID);
+            return (KeyPatternPair[])_res;
         }
         { // ','.keyword_pattern+
             if (errorIndicator) {
                 return null;
             }
-            Object[] _gather_80_var;
+            KeyPatternPair[] _gather_80_var;
             if (
-                (_gather_80_var = (Object[])_gather_80_rule()) != null  // ','.keyword_pattern+
+                (_gather_80_var = (KeyPatternPair[])_gather_80_rule()) != null  // ','.keyword_pattern+
             )
             {
                 _res = _gather_80_var;
                 cache.putResult(_mark, KEYWORD_PATTERNS_ID, _res);
-                return (Object[])_res;
+                return (KeyPatternPair[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, KEYWORD_PATTERNS_ID, _res);
-        return (Object[])_res;
+        return (KeyPatternPair[])_res;
     }
 
     // keyword_pattern: NAME '=' pattern
-    public Object keyword_pattern_rule()
+    public KeyPatternPair keyword_pattern_rule()
     {
         if (errorIndicator) {
             return null;
@@ -5751,8 +5756,8 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KEYWORD_PATTERN_ID)) {
-            _res = (Object)cache.getResult(_mark, KEYWORD_PATTERN_ID);
-            return (Object)_res;
+            _res = (KeyPatternPair)cache.getResult(_mark, KEYWORD_PATTERN_ID);
+            return (KeyPatternPair)_res;
         }
         { // NAME '=' pattern
             if (errorIndicator) {
@@ -5773,13 +5778,13 @@ public final class Parser extends AbstractParser {
                 ruleNotImplemented("_PyPegen_key_pattern_pair ( p , arg , value )");
                 _res = null;
                 cache.putResult(_mark, KEYWORD_PATTERN_ID, _res);
-                return (Object)_res;
+                return (KeyPatternPair)_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, KEYWORD_PATTERN_ID, _res);
-        return (Object)_res;
+        return (KeyPatternPair)_res;
     }
 
     // return_stmt: 'return' star_expressions?
@@ -14651,7 +14656,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             PatternTy[] _opt_var;
             PatternTy[] a;
-            Object[] keyword_patterns_var;
+            KeyPatternPair[] keyword_patterns_var;
             if (
                 ((_opt_var = _tmp_234_rule()) != null || true)  // [positional_patterns ',']
                 &&
@@ -18181,7 +18186,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_76: ',' key_value_pattern
-    public Object[] _loop0_76_rule()
+    public KeyPatternPair[] _loop0_76_rule()
     {
         if (errorIndicator) {
             return null;
@@ -18190,10 +18195,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_76_ID)) {
             _res = cache.getResult(_mark, _LOOP0_76_ID);
-            return (Object[])_res;
+            return (KeyPatternPair[])_res;
         }
         int _start_mark = mark();
-        List<Object> _children = new ArrayList<>();
+        List<KeyPatternPair> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' key_value_pattern
@@ -18201,30 +18206,30 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object elem;
+            KeyPatternPair elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (Object)key_value_pattern_rule()) != null  // key_value_pattern
+                (elem = (KeyPatternPair)key_value_pattern_rule()) != null  // key_value_pattern
             )
             {
                 _res = elem;
-                if (_res instanceof Object) {
-                    _children.add((Object)_res);
+                if (_res instanceof KeyPatternPair) {
+                    _children.add((KeyPatternPair)_res);
                 } else {
-                    _children.addAll(Arrays.asList((Object[])_res));
+                    _children.addAll(Arrays.asList((KeyPatternPair[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        Object[] _seq = _children.toArray(new Object[_children.size()]);
+        KeyPatternPair[] _seq = _children.toArray(new KeyPatternPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_76_ID, _seq);
         return _seq;
     }
 
     // _gather_75: key_value_pattern _loop0_76
-    public Object[] _gather_75_rule()
+    public KeyPatternPair[] _gather_75_rule()
     {
         if (errorIndicator) {
             return null;
@@ -18232,30 +18237,30 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_75_ID)) {
-            _res = (Object[])cache.getResult(_mark, _GATHER_75_ID);
-            return (Object[])_res;
+            _res = (KeyPatternPair[])cache.getResult(_mark, _GATHER_75_ID);
+            return (KeyPatternPair[])_res;
         }
         { // key_value_pattern _loop0_76
             if (errorIndicator) {
                 return null;
             }
-            Object elem;
-            Object[] seq;
+            KeyPatternPair elem;
+            KeyPatternPair[] seq;
             if (
-                (elem = (Object)key_value_pattern_rule()) != null  // key_value_pattern
+                (elem = (KeyPatternPair)key_value_pattern_rule()) != null  // key_value_pattern
                 &&
-                (seq = (Object[])_loop0_76_rule()) != null  // _loop0_76
+                (seq = (KeyPatternPair[])_loop0_76_rule()) != null  // _loop0_76
             )
             {
-                _res = insertInFront(elem, seq, Object.class);
+                _res = insertInFront(elem, seq, KeyPatternPair.class);
                 cache.putResult(_mark, _GATHER_75_ID, _res);
-                return (Object[])_res;
+                return (KeyPatternPair[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _GATHER_75_ID, _res);
-        return (Object[])_res;
+        return (KeyPatternPair[])_res;
     }
 
     // _tmp_77: literal_expr | attr
@@ -18384,7 +18389,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_81: ',' keyword_pattern
-    public Object[] _loop0_81_rule()
+    public KeyPatternPair[] _loop0_81_rule()
     {
         if (errorIndicator) {
             return null;
@@ -18393,10 +18398,10 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         if (cache.hasResult(_mark, _LOOP0_81_ID)) {
             _res = cache.getResult(_mark, _LOOP0_81_ID);
-            return (Object[])_res;
+            return (KeyPatternPair[])_res;
         }
         int _start_mark = mark();
-        List<Object> _children = new ArrayList<>();
+        List<KeyPatternPair> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' keyword_pattern
@@ -18404,30 +18409,30 @@ public final class Parser extends AbstractParser {
                 return null;
             }
             Token _literal;
-            Object elem;
+            KeyPatternPair elem;
             while (
                 (_literal = (Token)expect(12)) != null  // token=','
                 &&
-                (elem = (Object)keyword_pattern_rule()) != null  // keyword_pattern
+                (elem = (KeyPatternPair)keyword_pattern_rule()) != null  // keyword_pattern
             )
             {
                 _res = elem;
-                if (_res instanceof Object) {
-                    _children.add((Object)_res);
+                if (_res instanceof KeyPatternPair) {
+                    _children.add((KeyPatternPair)_res);
                 } else {
-                    _children.addAll(Arrays.asList((Object[])_res));
+                    _children.addAll(Arrays.asList((KeyPatternPair[])_res));
                 }
                 _mark = mark();
             }
             reset(_mark);
         }
-        Object[] _seq = _children.toArray(new Object[_children.size()]);
+        KeyPatternPair[] _seq = _children.toArray(new KeyPatternPair[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_81_ID, _seq);
         return _seq;
     }
 
     // _gather_80: keyword_pattern _loop0_81
-    public Object[] _gather_80_rule()
+    public KeyPatternPair[] _gather_80_rule()
     {
         if (errorIndicator) {
             return null;
@@ -18435,30 +18440,30 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _GATHER_80_ID)) {
-            _res = (Object[])cache.getResult(_mark, _GATHER_80_ID);
-            return (Object[])_res;
+            _res = (KeyPatternPair[])cache.getResult(_mark, _GATHER_80_ID);
+            return (KeyPatternPair[])_res;
         }
         { // keyword_pattern _loop0_81
             if (errorIndicator) {
                 return null;
             }
-            Object elem;
-            Object[] seq;
+            KeyPatternPair elem;
+            KeyPatternPair[] seq;
             if (
-                (elem = (Object)keyword_pattern_rule()) != null  // keyword_pattern
+                (elem = (KeyPatternPair)keyword_pattern_rule()) != null  // keyword_pattern
                 &&
-                (seq = (Object[])_loop0_81_rule()) != null  // _loop0_81
+                (seq = (KeyPatternPair[])_loop0_81_rule()) != null  // _loop0_81
             )
             {
-                _res = insertInFront(elem, seq, Object.class);
+                _res = insertInFront(elem, seq, KeyPatternPair.class);
                 cache.putResult(_mark, _GATHER_80_ID, _res);
-                return (Object[])_res;
+                return (KeyPatternPair[])_res;
             }
             reset(_mark);
         }
         _res = null;
         cache.putResult(_mark, _GATHER_80_ID, _res);
-        return (Object[])_res;
+        return (KeyPatternPair[])_res;
     }
 
     // _tmp_82: star_expressions
