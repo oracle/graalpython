@@ -337,6 +337,12 @@ ACTION_MAPPINGS = {
     '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , NULL , EXTRA )': (1, 'factory.createMatchMapping(extractKeys(items), extractPatterns(items), null, $RANGE)'),
     '_PyPegen_key_pattern_pair ( p , key , pattern )': (1, 'new KeyPatternPair(key, pattern)'),
     'target': (1, 'target'),
+    '_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )': (1, 'factory.createMatchClass(cls, null, null, null, $RANGE)'),
+    '_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, null, null, $RANGE)'),
+    '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, null, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
+    '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
+    '_PyPegen_key_pattern_pair ( p , arg , value )': (1, 'new KeyPatternPair(arg, value)'),
+    'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )': (1, 'raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns")'),
 
     # TODO
     # Interactive mode:
@@ -344,12 +350,6 @@ ACTION_MAPPINGS = {
     #
     # compile(..., mode='func_type') - used by ast module only
     # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
-    # '_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' ')'"
-    # '_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ','? ')'"
-    # '_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' keyword_patterns ','? ')'"
-    # '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'"
-    # '_PyPegen_key_pattern_pair ( p , arg , value )' in rule "keyword_pattern: with rhs NAME '=' pattern"
-    # 'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )' in rule "invalid_class_pattern: with rhs name_or_attr '(' invalid_class_argument_pattern"
 }
 
 # Maps pattern to (n, replacement), where:

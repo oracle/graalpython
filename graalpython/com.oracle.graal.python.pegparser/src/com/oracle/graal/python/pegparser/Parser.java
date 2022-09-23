@@ -5547,6 +5547,7 @@ public final class Parser extends AbstractParser {
             _res = (PatternTy)cache.getResult(_mark, CLASS_PATTERN_ID);
             return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // name_or_attr '(' ')'
             if (errorIndicator) {
                 return null;
@@ -5562,9 +5563,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )
-                ruleNotImplemented("_PyAST_MatchClass ( cls , NULL , NULL , NULL , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchClass(cls, null, null, null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5591,9 +5594,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )
-                ruleNotImplemented("_PyAST_MatchClass ( cls , patterns , NULL , NULL , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchClass(cls, patterns, null, null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5620,9 +5625,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )
-                ruleNotImplemented("_PyAST_MatchClass ( cls , NULL , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchClass(cls, null, extractNames(extractKeys(keywords)), extractPatterns(keywords), startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5655,9 +5662,11 @@ public final class Parser extends AbstractParser {
                 (_literal_2 = expect(8)) != null  // token=')'
             )
             {
-                // TODO: node.action: _PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )
-                ruleNotImplemented("_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, CLASS_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -5774,9 +5783,7 @@ public final class Parser extends AbstractParser {
                 (value = pattern_rule()) != null  // pattern
             )
             {
-                // TODO: node.action: _PyPegen_key_pattern_pair ( p , arg , value )
-                ruleNotImplemented("_PyPegen_key_pattern_pair ( p , arg , value )");
-                _res = null;
+                _res = new KeyPatternPair(arg, value);
                 cache.putResult(_mark, KEYWORD_PATTERN_ID, _res);
                 return (KeyPatternPair)_res;
             }
@@ -14623,9 +14630,7 @@ public final class Parser extends AbstractParser {
                 (a = (PatternTy[])invalid_class_argument_pattern_rule()) != null  // invalid_class_argument_pattern
             )
             {
-                // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )
-                ruleNotImplemented("RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , \"positional patterns follow keyword patterns\" )");
-                _res = null;
+                _res = raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns");
                 cache.putResult(_mark, INVALID_CLASS_PATTERN_ID, _res);
                 return (Object)_res;
             }

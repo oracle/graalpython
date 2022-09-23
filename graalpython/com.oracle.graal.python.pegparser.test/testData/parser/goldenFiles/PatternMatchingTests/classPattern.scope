@@ -1,0 +1,6 @@
+ScopeEnvironment
+  Scope null Module
+    Symbols:
+      A: [Use, GlobalImplicit]
+      a: [Use, GlobalImplicit]
+      x: [DefLocal, Local]
