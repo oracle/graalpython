@@ -4281,9 +4281,11 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_69_rule(false)
             )
             {
-                // TODO: node.action: _PyAST_MatchValue ( value , EXTRA )
-                ruleNotImplemented("_PyAST_MatchValue ( value , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchValue(value, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -4298,9 +4300,11 @@ public final class Parser extends AbstractParser {
                 (value = complex_number_rule()) != null  // complex_number
             )
             {
-                // TODO: node.action: _PyAST_MatchValue ( value , EXTRA )
-                ruleNotImplemented("_PyAST_MatchValue ( value , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchValue(value, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -4315,9 +4319,11 @@ public final class Parser extends AbstractParser {
                 (value = strings_rule()) != null  // strings
             )
             {
-                // TODO: node.action: _PyAST_MatchValue ( value , EXTRA )
-                ruleNotImplemented("_PyAST_MatchValue ( value , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchValue(value, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -4702,9 +4708,7 @@ public final class Parser extends AbstractParser {
                 (real = number_token()) != null  // NUMBER
             )
             {
-                // TODO: node.action: _PyPegen_ensure_real ( p , real )
-                ruleNotImplemented("_PyPegen_ensure_real ( p , real )");
-                _res = null;
+                _res = ensureReal(real);
                 cache.putResult(_mark, REAL_NUMBER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4736,9 +4740,7 @@ public final class Parser extends AbstractParser {
                 (imag = number_token()) != null  // NUMBER
             )
             {
-                // TODO: node.action: _PyPegen_ensure_imaginary ( p , imag )
-                ruleNotImplemented("_PyPegen_ensure_imaginary ( p , imag )");
-                _res = null;
+                _res = ensureImaginary(imag);
                 cache.putResult(_mark, IMAGINARY_NUMBER_ID, _res);
                 return (ExprTy)_res;
             }
@@ -4871,6 +4873,7 @@ public final class Parser extends AbstractParser {
             _res = (PatternTy)cache.getResult(_mark, VALUE_PATTERN_ID);
             return (PatternTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // attr !('.' | '(' | '=')
             if (errorIndicator) {
                 return null;
@@ -4882,9 +4885,11 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_72_rule(false)
             )
             {
-                // TODO: node.action: _PyAST_MatchValue ( attr , EXTRA )
-                ruleNotImplemented("_PyAST_MatchValue ( attr , EXTRA )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createMatchValue(attr, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, VALUE_PATTERN_ID, _res);
                 return (PatternTy)_res;
             }
@@ -4941,7 +4946,11 @@ public final class Parser extends AbstractParser {
                 (attr = name_token()) != null  // NAME
             )
             {
-                _res = factory.createGetAttribute(value, ((ExprTy.Name) attr).id, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGetAttribute(value, ((ExprTy.Name) attr).id, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);

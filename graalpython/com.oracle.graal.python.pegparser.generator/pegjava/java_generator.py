@@ -199,7 +199,6 @@ ACTION_MAPPINGS = {
     'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( a , PyPegen_last_item ( b , expr_ty ) , "did you forget parentheses around the comprehension target?" )': (1, 'this.raiseSyntaxErrorKnownRange(a, lastItem(b), "did you forget parentheses around the comprehension target?")'),
     '_PyAST_Assert ( a , b , EXTRA )': (1, 'factory.createAssert(a, b, $RANGE)'),
     '_PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createAssignment(a, (ExprTy) b, newTypeComment((Token) tc), $RANGE)'),
-    '_PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )': (1, 'factory.createGetAttribute(value, ((ExprTy.Name) attr).id, $LOC)'),
     '_PyAST_AugAssign ( a , b -> kind , c , EXTRA )': (1, 'factory.createAugAssignment(a, b, (ExprTy) c, $RANGE)'),
     '_PyAST_BinOp ( real , Add , imag , EXTRA )': (1, 'factory.createBinaryOp(OperatorTy.Add, real, imag, $RANGE)'),
     '_PyAST_BinOp ( real , Sub , imag , EXTRA )': (1, 'factory.createBinaryOp(OperatorTy.Sub, real, imag, $RANGE)'),
@@ -322,6 +321,11 @@ ACTION_MAPPINGS = {
     '_PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )': (1, 'factory.createMatchAs(pattern, ((ExprTy.Name) target).id, $RANGE)'),
     '_PyAST_MatchAs ( NULL , target -> v . Name . id , EXTRA )': (1, 'factory.createMatchAs(null, ((ExprTy.Name) target).id, $RANGE)'),
     '_PyPegen_set_expr_context ( p , name , Store )': (1, 'setExprContext(name, ExprContextTy.Store)'),
+    '_PyAST_MatchValue ( value , EXTRA )': (3, 'factory.createMatchValue(value, $RANGE)'),
+    '_PyAST_MatchValue ( attr , EXTRA )': (1, 'factory.createMatchValue(attr, $RANGE)'),
+    '_PyPegen_ensure_real ( p , real )': (1, 'ensureReal(real)'),
+    '_PyPegen_ensure_imaginary ( p , imag )': (1, 'ensureImaginary(imag)'),
+    '_PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )': (1, 'factory.createGetAttribute(value, ((ExprTy.Name) attr).id, ExprContextTy.Load, $RANGE)'),
 
     # TODO
     # Interactive mode:
@@ -330,10 +334,6 @@ ACTION_MAPPINGS = {
     # compile(..., mode='func_type') - used by ast module only
     # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "patterns: with rhs open_sequence_pattern"
-    # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs signed_number !('+' | '-')"
-    # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs complex_number"
-    # '_PyAST_MatchValue ( value , EXTRA )' in rule "literal_pattern: with rhs strings"
-    # '_PyAST_MatchValue ( attr , EXTRA )' in rule "value_pattern: with rhs attr !('.' | '(' | '=')"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '[' maybe_sequence_pattern? ']'"
     # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '(' open_sequence_pattern? ')'"
     # '_PyPegen_seq_insert_in_front ( p , pattern , patterns )' in rule "open_sequence_pattern: with rhs maybe_star_pattern ',' maybe_sequence_pattern?"
@@ -352,8 +352,6 @@ ACTION_MAPPINGS = {
     # '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )' in rule "class_pattern: with rhs name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'"
     # '_PyPegen_key_pattern_pair ( p , arg , value )' in rule "keyword_pattern: with rhs NAME '=' pattern"
     # 'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )' in rule "invalid_class_pattern: with rhs name_or_attr '(' invalid_class_argument_pattern"
-    # '_PyPegen_ensure_real ( p , real )' in rule "real_number: with rhs NUMBER"
-    # '_PyPegen_ensure_imaginary ( p , imag )' in rule "imaginary_number: with rhs NUMBER"
 }
 
 # Maps pattern to (n, replacement), where:

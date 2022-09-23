@@ -54,6 +54,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
@@ -1079,6 +1080,20 @@ abstract class AbstractParser {
             return comprehension.iter;
         }
         return lastItem(comprehension.ifs);
+    }
+
+    ExprTy ensureReal(ExprTy e) {
+        if (!(e instanceof ExprTy.Constant) || ((ExprTy.Constant) e).value.kind == Kind.COMPLEX) {
+            raiseSyntaxErrorKnownLocation(e, "real number required in complex literal");
+        }
+        return e;
+    }
+
+    ExprTy ensureImaginary(ExprTy e) {
+        if (!(e instanceof ExprTy.Constant) || ((ExprTy.Constant) e).value.kind != Kind.COMPLEX) {
+            raiseSyntaxErrorKnownLocation(e, "imaginary number required in complex literal");
+        }
+        return e;
     }
 
     /**

@@ -27,6 +27,16 @@ public class PatternMatchingTests extends ParserTestBase {
     }
 
     @Test
+    public void literals() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
+    public void attr() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
     public void missingColonInMatch() {
         checkSyntaxErrorMessage("match a\n    case None: pass", "expected ':'");
     }
@@ -54,6 +64,16 @@ public class PatternMatchingTests extends ParserTestBase {
     @Test
     public void exprAsTarget() {
         checkSyntaxErrorMessage("match a:\n  case None as 4:\n  pass", "invalid pattern target");
+    }
+
+    @Test
+    public void realNumberRequired() {
+        checkSyntaxErrorMessage("match a:\n    case 1j+2j: pass", "real number required in complex literal");
+    }
+
+    @Test
+    public void imaginaryNumberRequired() {
+        checkSyntaxErrorMessage("match a:\n    case 1+2: pass", "imaginary number required in complex literal");
     }
 
     private void checkScopeAndTree() throws Exception {
