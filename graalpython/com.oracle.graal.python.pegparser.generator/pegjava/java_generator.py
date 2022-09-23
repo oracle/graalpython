@@ -304,7 +304,6 @@ ACTION_MAPPINGS = {
     'f': (1, 'f'),
     'guard': (1, 'guard'),
     'k': (1, 'k'),
-    'pattern': (1, 'pattern'),
     't': (1, 't'),
     'z': (11, 'z'),
 
@@ -326,6 +325,12 @@ ACTION_MAPPINGS = {
     '_PyPegen_ensure_real ( p , real )': (1, 'ensureReal(real)'),
     '_PyPegen_ensure_imaginary ( p , imag )': (1, 'ensureImaginary(imag)'),
     '_PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )': (1, 'factory.createGetAttribute(value, ((ExprTy.Name) attr).id, ExprContextTy.Load, $RANGE)'),
+    '_PyAST_MatchSequence ( patterns , EXTRA )': (3, 'factory.createMatchSequence(patterns, $RANGE)'),
+    '_PyAST_MatchStar ( target -> v . Name . id , EXTRA )': (1, 'factory.createMatchStar(((ExprTy.Name) target).id, $RANGE)'),
+    '_PyAST_MatchStar ( NULL , EXTRA )': (1, 'factory.createMatchStar(null, $RANGE)'),
+    '_PyPegen_seq_insert_in_front ( p , pattern , patterns )': (1, 'insertInFront(pattern, patterns)'),
+    'patterns': (1, 'patterns'),
+    'pattern': (1, 'pattern'),
 
     # TODO
     # Interactive mode:
@@ -333,13 +338,6 @@ ACTION_MAPPINGS = {
     #
     # compile(..., mode='func_type') - used by ast module only
     # '_PyAST_FunctionType ( a , b , p -> arena )' in rule "func_type: with rhs '(' type_expressions? ')' '->' expression NEWLINE* $"
-    # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "patterns: with rhs open_sequence_pattern"
-    # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '[' maybe_sequence_pattern? ']'"
-    # '_PyAST_MatchSequence ( patterns , EXTRA )' in rule "sequence_pattern: with rhs '(' open_sequence_pattern? ')'"
-    # '_PyPegen_seq_insert_in_front ( p , pattern , patterns )' in rule "open_sequence_pattern: with rhs maybe_star_pattern ',' maybe_sequence_pattern?"
-    # 'patterns' in rule "maybe_sequence_pattern: with rhs ','.maybe_star_pattern+ ','?"
-    # '_PyAST_MatchStar ( target -> v . Name . id , EXTRA )' in rule "star_pattern: with rhs '*' pattern_capture_target"
-    # '_PyAST_MatchStar ( NULL , EXTRA )' in rule "star_pattern: with rhs '*' wildcard_pattern"
     # '_PyAST_MatchMapping ( NULL , NULL , NULL , EXTRA )' in rule "mapping_pattern: with rhs '{' '}'"
     # '_PyAST_MatchMapping ( NULL , NULL , rest -> v . Name . id , EXTRA )' in rule "mapping_pattern: with rhs '{' double_star_pattern ','? '}'"
     # '_PyAST_MatchMapping ( CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , items ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , items ) ) , rest -> v . Name . id , EXTRA )' in rule "mapping_pattern: with rhs '{' items_pattern ',' double_star_pattern ','? '}'"

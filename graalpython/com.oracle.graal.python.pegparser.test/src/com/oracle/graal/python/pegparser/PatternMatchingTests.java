@@ -37,6 +37,11 @@ public class PatternMatchingTests extends ParserTestBase {
     }
 
     @Test
+    public void sequence() throws Exception {
+        checkScopeAndTree();
+    }
+
+    @Test
     public void missingColonInMatch() {
         checkSyntaxErrorMessage("match a\n    case None: pass", "expected ':'");
     }

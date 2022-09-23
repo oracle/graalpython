@@ -461,6 +461,10 @@ abstract class AbstractParser {
         return insertInFront(element, seq, ExprTy.class);
     }
 
+    public PatternTy[] insertInFront(PatternTy element, PatternTy[] seq) {
+        return insertInFront(element, seq, PatternTy.class);
+    }
+
     /**
      * _PyPegen_seq_append_to_end
      */
