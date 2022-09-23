@@ -39,6 +39,7 @@
  * SOFTWARE.
  */
 #include "capi.h"
+#include "pycore_pymem.h"
 
 struct _PyTraceMalloc_Config _Py_tracemalloc_config = {
   .initialized = 0,

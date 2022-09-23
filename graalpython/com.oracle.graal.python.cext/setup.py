@@ -459,6 +459,8 @@ def build_libpython(capi_home):
     module = Extension(libpython_name,
                        sources=files,
                        extra_compile_args=cflags_warnings,
+                       include_dirs=[os.path.join(__dir__, "include"), os.path.join(__dir__, "include/internal")],
+                       define_macros=[("Py_BUILD_CORE", None)]
                        )
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
     setup(

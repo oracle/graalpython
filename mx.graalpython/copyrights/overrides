@@ -151,6 +151,7 @@ graalpython/com.oracle.graal.python.cext/include/hpy/universal/hpyfunc_trampolin
 graalpython/com.oracle.graal.python.cext/include/hpy/universal/misc_trampolines.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/version.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/iterobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/listobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longintrepr.h,python.copyright
