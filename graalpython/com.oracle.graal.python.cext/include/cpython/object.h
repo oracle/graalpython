@@ -41,12 +41,13 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
 */
 typedef struct _Py_Identifier {
     const char* string;
-    // Index in PyInterpreterState.unicode.ids.array. It is process-wide
-    // unique and must be initialized to -1.
-    Py_ssize_t index;
+    /* XXX Truffle change: CPython migrated away from keeping the pointer directly
+     * in the struct to support subinterpreters. We don't have subinterpreters, so
+     * we keep the object pointer for now */
+    PyObject *object;
 } _Py_Identifier;
 
-#define _Py_static_string_init(value) { .string = value, .index = -1 }
+#define _Py_static_string_init(value) { .string = value }
 #define _Py_static_string(varname, value)  static _Py_Identifier varname = _Py_static_string_init(value)
 #define _Py_IDENTIFIER(varname) _Py_static_string(PyId_##varname, #varname)
 

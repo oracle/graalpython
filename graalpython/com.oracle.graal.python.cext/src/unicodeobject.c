@@ -563,8 +563,6 @@ PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
             return NULL;
         }
         PyUnicode_InternInPlace(&id->object);
-        assert(!id->next);
-        id->next = NULL;
     }
     return id->object;
 }
