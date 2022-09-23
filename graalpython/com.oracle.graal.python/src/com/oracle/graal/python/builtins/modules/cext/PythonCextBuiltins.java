@@ -54,10 +54,10 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -1415,23 +1415,24 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_FatalError", parameterNames = {"msg", "status"})
+    @Builtin(name = "PyTruffle_FatalErrorFunc", parameterNames = {"func", "msg", "status"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class PyTruffleFatalErrorNode extends PythonBuiltinNode {
+    public abstract static class PyTruffleFatalErrorFuncNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        Object doStrings(TruffleString msg, int status) {
-            CExtCommonNodes.fatalError(this, PythonContext.get(this), T_EMPTY_STRING, msg, status);
+        Object doStrings(TruffleString func, TruffleString msg, int status) {
+            CExtCommonNodes.fatalError(this, PythonContext.get(this), func, msg, status);
             return PNone.NONE;
         }
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(Object msgObj, int status) {
+        Object doGeneric(Object funcObj, Object msgObj, int status) {
+            TruffleString func = funcObj == PNone.NO_VALUE ? null : (TruffleString) funcObj;
             TruffleString msg = msgObj == PNone.NO_VALUE ? null : (TruffleString) msgObj;
-            return doStrings(msg, status);
+            return doStrings(func, msg, status);
         }
     }
 
