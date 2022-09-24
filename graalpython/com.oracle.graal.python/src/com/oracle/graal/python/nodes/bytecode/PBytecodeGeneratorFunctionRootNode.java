@@ -84,7 +84,8 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         assert generatorFunction != null;
         if (rootNode.getCodeUnit().isGenerator()) {
             PGenerator generator = factory.createGenerator(generatorFunction.getName(), generatorFunction.getQualname(), rootNode, callTargets, arguments);
-            // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have to pass the information to the generator
+            // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have to
+            // pass the information to the generator
             // .gi_code.co_flags will still be wrong, but at least await will work correctly
             generator.isIterableCoroutine = (generatorFunction.getCode().getFlags() & 0x100) != 0;
             return generator;
