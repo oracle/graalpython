@@ -61,7 +61,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.net.IDN;
-import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -83,6 +82,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -108,6 +108,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 public abstract class SocketNodes {
     /**
@@ -178,14 +179,17 @@ public abstract class SocketNodes {
         @Specialization(guards = "isUnix(socket)")
         UniversalSockAddr doUnix(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached CastToTruffleStringNode toTruffleStringNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib) {
             byte[] path;
             if (unicodeCheckNode.execute(address)) {
                 // PyUnicode_EncodeFSDefault
-                path = stringGetUtf8Bytes(toJavaStringNode.execute(address));
+                TruffleString utf8 = switchEncodingNode.execute(toTruffleStringNode.execute(address), Encoding.UTF_8);
+                path = copyToByteArrayNode.execute(utf8, Encoding.UTF_8);
             } else {
                 Object buffer = bufferAcquireLib.acquireReadonly(address, frame, this);
                 try {
@@ -240,11 +244,6 @@ public abstract class SocketNodes {
                 throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
             }
             return port;
-        }
-
-        @TruffleBoundary
-        private static byte[] stringGetUtf8Bytes(String str) {
-            return str.getBytes(StandardCharsets.UTF_8);
         }
     }
 
@@ -357,7 +356,9 @@ public abstract class SocketNodes {
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PythonObjectFactory factory,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             try {
                 PythonContext context = PythonContext.get(this);
                 int family = addrLib.getFamily(addr);
@@ -378,7 +379,7 @@ public abstract class SocketNodes {
                         // linux-specific "abstract" address
                         return factory.createBytes(arrayCopyOf(path, path.length));
                     }
-                    return fromJavaStringNode.execute(bytesToString(path), TS_ENCODING);
+                    return bytesToString(path, fromByteArrayNode, switchEncodingNode);
                 } else if (family == AF_UNSPEC.value) {
                     // Can be returned from recvfrom when used on a connected socket
                     return PNone.NONE;
@@ -390,14 +391,13 @@ public abstract class SocketNodes {
             }
         }
 
-        @TruffleBoundary
-        private static String bytesToString(byte[] path) {
+        private static TruffleString bytesToString(byte[] path, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
             // PyUnicode_DecodeFSDefault
             int len = 0;
             while (len < path.length && path[len] != 0) {
                 ++len;
             }
-            return new String(path, 0, len, StandardCharsets.UTF_8);
+            return switchEncodingNode.execute(fromByteArrayNode.execute(path, 0, len, Encoding.UTF_8, true), TS_ENCODING);
         }
 
     }
