@@ -108,15 +108,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     abstract static class ToRegexSourceNode extends PNodeWithRaiseAndIndirectCall {
 
-        private static final TruffleString T_STR_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonStr,Encoding=UTF-32");
-        private static final TruffleString T_BYTES_FLAVOR_AND_ENCODING = tsLiteral("Flavor=PythonBytes,Encoding=LATIN-1");
+        private static final TruffleString T_FLAVOR_PYTHON = tsLiteral("Flavor=Python");
+        private static final TruffleString T_ENCODING_UTF_32 = tsLiteral("Encoding=UTF-32");
+        private static final TruffleString T_ENCODING_LATIN_1 = tsLiteral("Encoding=LATIN-1");
 
         public abstract Source execute(VirtualFrame frame, Object pattern, TruffleString flags, TruffleString options);
 
-        private static Source constructRegexSource(TruffleString flavorAndEncoding, TruffleString options, TruffleString pattern, TruffleString flags, ConditionProfile nonEmptyOptionsProfile,
+        private static Source constructRegexSource(TruffleString encoding, TruffleString options, TruffleString pattern, TruffleString flags, ConditionProfile nonEmptyOptionsProfile,
                         TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode, TruffleString.ToJavaStringNode toJavaStringNode) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            appendStringNode.execute(sb, flavorAndEncoding);
+            appendStringNode.execute(sb, T_FLAVOR_PYTHON);
+            appendStringNode.execute(sb, T_COMMA);
+            appendStringNode.execute(sb, encoding);
             if (nonEmptyOptionsProfile.profile(!options.isEmpty())) {
                 appendStringNode.execute(sb, T_COMMA);
                 appendStringNode.execute(sb, options);
@@ -139,7 +142,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return constructRegexSource(T_STR_FLAVOR_AND_ENCODING, options, pattern, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
+            return constructRegexSource(T_ENCODING_UTF_32, options, pattern, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
         }
 
         @Specialization
@@ -165,7 +168,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                     int bytesLen = bufferLib.getBufferLength(buffer);
                     TruffleString patternStr = fromByteArrayNode.execute(bytes, 0, bytesLen, Encoding.ISO_8859_1, false);
-                    return constructRegexSource(T_BYTES_FLAVOR_AND_ENCODING, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
+                    return constructRegexSource(T_ENCODING_LATIN_1, options, patternStr, flags, nonEmptyOptionsProfile, appendStringNode, toStringNode, toJavaStringNode);
                 } finally {
                     bufferLib.release(buffer, frame, this);
                 }
