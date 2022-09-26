@@ -118,8 +118,8 @@ public abstract class SocketNodes {
 
         @Specialization(guards = "isInet(socket)")
         UniversalSockAddr doInet(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
+                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
                         @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
@@ -142,8 +142,8 @@ public abstract class SocketNodes {
 
         @Specialization(guards = "isInet6(socket)")
         UniversalSockAddr doInet6(VirtualFrame frame, @SuppressWarnings("unused") PSocket socket, Object address, String caller,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
+                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
                         @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
@@ -181,7 +181,7 @@ public abstract class SocketNodes {
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
+                        @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib) {
             byte[] path;
             if (unicodeCheckNode.execute(address)) {
                 // PyUnicode_EncodeFSDefault
