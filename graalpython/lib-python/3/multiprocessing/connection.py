@@ -47,11 +47,9 @@ _mmap_counter = itertools.count()
 default_family = 'AF_INET'
 families = ['AF_INET']
 
-# Begin Truffle change
-# if hasattr(socket, 'AF_UNIX'):
-#    default_family = 'AF_UNIX'
-#    families += ['AF_UNIX']
-# End Truffle change
+if hasattr(socket, 'AF_UNIX'):
+   default_family = 'AF_UNIX'
+   families += ['AF_UNIX']
 
 if sys.platform == 'win32':
     default_family = 'AF_PIPE'
@@ -118,7 +116,7 @@ class _ConnectionBase:
 
     def __init__(self, handle, readable=True, writable=True):
         handle = handle.__index__()
-        # Begin Truffle change        
+        # Begin Truffle change
         # if handle < 0:
         #    raise ValueError("invalid handle")
         # End Truffle change
@@ -366,7 +364,7 @@ class Connection(_ConnectionBase):
             # _close(self._handle)
             if(self._handle < 0):
                 _multiprocessing._close(self._handle)
-            else:    
+            else:
                 _close(self._handle)
             # End Truffle change
         _write = os.write
@@ -450,12 +448,12 @@ class Connection(_ConnectionBase):
 
     # Begin Truffle change
     def _recv_mp_read(self, size):
-        # size is irelevant, _multiprocessing._read returns 
+        # size is irelevant, _multiprocessing._read returns
         # the whole byte array at once
         chunk = _multiprocessing._read(self._handle, size)
         return io.BytesIO(chunk)
 
-    def _send_mp_write(self, bytes):        
+    def _send_mp_write(self, bytes):
         _multiprocessing._write(self._handle, bytes)
     # End Truffle change
 

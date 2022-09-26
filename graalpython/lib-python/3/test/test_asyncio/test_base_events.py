@@ -1683,7 +1683,7 @@ class BaseEventLoopWithSelectorTests(test_utils.TestCase):
         self.loop.run_until_complete(protocol.done)
         self.assertEqual('CLOSED', protocol.state)
 
-    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'No UNIX Sockets')
     def test_create_datagram_endpoint_sock_unix(self):
         fut = self.loop.create_datagram_endpoint(
@@ -1695,6 +1695,7 @@ class BaseEventLoopWithSelectorTests(test_utils.TestCase):
         self.loop.run_until_complete(protocol.done)
         self.assertEqual('CLOSED', protocol.state)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @support.skip_unless_bind_unix_socket
     def test_create_datagram_endpoint_existing_sock_unix(self):
         with test_utils.unix_socket_path() as path:

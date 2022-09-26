@@ -130,7 +130,7 @@ def skipIfBCI(test):
 def isBCI():
     # TODO GR-39439: the error messages changed between 3.8 and 3.10
     return sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter
-        
+
 class Error(Exception):
     """Base class for regression test exceptions."""
 
@@ -2727,8 +2727,7 @@ def skip_if_pgo_task(test):
 _bind_nix_socket_error = None
 def skip_unless_bind_unix_socket(test):
     """Decorator for tests requiring a functional bind() for unix sockets."""
-    # GR-28433
-    if (not hasattr(socket, 'AF_UNIX')) or sys.implementation.name == 'graalpy':
+    if not hasattr(socket, 'AF_UNIX'):
         return unittest.skip('No UNIX Sockets')(test)
     global _bind_nix_socket_error
     if _bind_nix_socket_error is None:
