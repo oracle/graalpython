@@ -1839,7 +1839,7 @@ def python_coverage(args):
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
                 env['ENABLE_THREADED_GRAALPYTEST'] = "false"
                 if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env, javaAsserts=True)
+                    run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
                 else:
                     run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
 
