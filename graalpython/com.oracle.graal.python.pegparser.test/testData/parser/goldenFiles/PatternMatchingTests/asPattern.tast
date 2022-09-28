@@ -1,0 +1,25 @@
+Module[0, 99]
+    Match[0, 99]
+        Subject: Name[6, 7] Value: "a"
+        Cases:
+            MatchCaseTy[13, 49]
+                Pattern: 
+                    MatchAs[18, 35]
+                        Pattern: 
+                            MatchOr[18, 30]
+                                Patterns:
+                                    MatchSingleton[18, 22], value: true
+                                    MatchSingleton[25, 30], value: false
+                        Name: x
+                Body:
+                    Pass[45, 49]
+            MatchCaseTy[54, 74]
+                Pattern: 
+                    MatchAs[59, 60]
+                        Name: y
+                Body:
+                    Pass[70, 74]
+            MatchCaseTy[79, 99]
+                Pattern: MatchAs[84, 85]
+                Body:
+                    Pass[95, 99]

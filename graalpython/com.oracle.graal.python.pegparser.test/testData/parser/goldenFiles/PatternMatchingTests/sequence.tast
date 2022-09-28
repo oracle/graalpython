@@ -1,0 +1,93 @@
+Module[0, 314]
+    Match[0, 314]
+        Subject: Name[6, 7] Value: "a"
+        Cases:
+            MatchCaseTy[13, 33]
+                Pattern: 
+                    MatchSequence[18, 27]
+                        Patterns:
+                            MatchValue[18, 23]
+                                Value: RAW[18, 23] Value: "abc"
+                            MatchStar[25, 27]
+                Body:
+                    Pass[29, 33]
+            MatchCaseTy[38, 58]
+                Pattern: 
+                    MatchSequence[43, 52]
+                        Patterns:
+                            MatchValue[43, 48]
+                                Value: RAW[43, 48] Value: "def"
+                            MatchStar[50, 52]: x
+                Body:
+                    Pass[54, 58]
+            MatchCaseTy[63, 76]
+                Pattern: MatchSequence[68, 70]
+                Body:
+                    Pass[72, 76]
+            MatchCaseTy[81, 96]
+                Pattern: 
+                    MatchValue[87, 89]
+                        Value: LONG[87, 89] Value: 42
+                Body:
+                    Pass[92, 96]
+            MatchCaseTy[122, 138]
+                Pattern: 
+                    MatchSequence[127, 132]
+                        Patterns:
+                            MatchValue[128, 130]
+                                Value: LONG[128, 130] Value: 42
+                Body:
+                    Pass[134, 138]
+            MatchCaseTy[143, 158]
+                Pattern: MatchSequence[149, 151]
+                Body:
+                    Pass[154, 158]
+            MatchCaseTy[163, 179]
+                Pattern: 
+                    MatchSequence[168, 173]
+                        Patterns:
+                            MatchSequence[169, 171]
+                Body:
+                    Pass[175, 179]
+            MatchCaseTy[184, 199]
+                Pattern: MatchSequence[190, 192]
+                Body:
+                    Pass[195, 199]
+            MatchCaseTy[204, 217]
+                Pattern: MatchSequence[209, 211]
+                Body:
+                    Pass[213, 217]
+            MatchCaseTy[222, 237]
+                Pattern: 
+                    MatchSequence[227, 231]
+                        Patterns:
+                            MatchSequence[228, 230]
+                Body:
+                    Pass[233, 237]
+            MatchCaseTy[242, 260]
+                Pattern: 
+                    MatchSequence[247, 254]
+                        Patterns:
+                            MatchValue[248, 253]
+                                Value: RAW[248, 253] Value: "abc"
+                Body:
+                    Pass[256, 260]
+            MatchCaseTy[265, 284]
+                Pattern: 
+                    MatchSequence[270, 278]
+                        Patterns:
+                            MatchValue[271, 276]
+                                Value: RAW[271, 276] Value: "def"
+                Body:
+                    Pass[280, 284]
+            MatchCaseTy[289, 314]
+                Pattern: 
+                    MatchSequence[294, 308]
+                        Patterns:
+                            MatchValue[295, 300]
+                                Value: RAW[295, 300] Value: "ghi"
+                            MatchSequence[302, 307]
+                                Patterns:
+                                    MatchStar[303, 305]: a
+                Body:
+                    Pass[310, 314]

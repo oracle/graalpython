@@ -50,9 +50,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
@@ -459,6 +461,10 @@ abstract class AbstractParser {
         return insertInFront(element, seq, ExprTy.class);
     }
 
+    public PatternTy[] insertInFront(PatternTy element, PatternTy[] seq) {
+        return insertInFront(element, seq, PatternTy.class);
+    }
+
     /**
      * _PyPegen_seq_append_to_end
      */
@@ -713,6 +719,24 @@ abstract class AbstractParser {
             this.key = key;
             this.pattern = pattern;
         }
+    }
+
+    static ExprTy[] extractKeys(KeyPatternPair[] l) {
+        int len = l == null ? 0 : l.length;
+        ExprTy[] keys = new ExprTy[len];
+        for (int i = 0; i < len; i++) {
+            keys[i] = l[i].key;
+        }
+        return keys;
+    }
+
+    static PatternTy[] extractPatterns(KeyPatternPair[] l) {
+        int len = l == null ? 0 : l.length;
+        PatternTy[] values = new PatternTy[len];
+        for (int i = 0; i < len; i++) {
+            values[i] = l[i].pattern;
+        }
+        return values;
     }
 
     public static final class NameDefaultPair {
@@ -1080,6 +1104,20 @@ abstract class AbstractParser {
         return lastItem(comprehension.ifs);
     }
 
+    ExprTy ensureReal(ExprTy e) {
+        if (!(e instanceof ExprTy.Constant) || ((ExprTy.Constant) e).value.kind == Kind.COMPLEX) {
+            raiseSyntaxErrorKnownLocation(e, "real number required in complex literal");
+        }
+        return e;
+    }
+
+    ExprTy ensureImaginary(ExprTy e) {
+        if (!(e instanceof ExprTy.Constant) || ((ExprTy.Constant) e).value.kind != Kind.COMPLEX) {
+            raiseSyntaxErrorKnownLocation(e, "imaginary number required in complex literal");
+        }
+        return e;
+    }
+
     /**
      * CHECK Simple check whether the node is not null.
      */
@@ -1094,5 +1132,11 @@ abstract class AbstractParser {
     // TODO implement the check
     static <T> T checkVersion(int version, String msg, T node) {
         return node;
+    }
+
+    @SuppressWarnings("unused")
+    // TODO implement the check
+    static <T> T checkVersion(int version, String msg, Supplier<T> node) {
+        return node.get();
     }
 }

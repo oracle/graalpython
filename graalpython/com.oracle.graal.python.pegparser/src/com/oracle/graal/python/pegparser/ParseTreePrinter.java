@@ -49,7 +49,7 @@ public class ParseTreePrinter {
         for (String arg : args) {
             byte[] bytes = Files.readAllBytes(Paths.get(arg));
             ParserTokenizer tokenizer = new ParserTokenizer(null, bytes, InputType.FILE, false);
-            Parser parser = new Parser(tokenizer, new NodeFactoryImp(), null, null, InputType.FILE);
+            Parser parser = new Parser(tokenizer, new NodeFactory(), null, null, InputType.FILE);
             Object result = parser.parse();
             System.out.println("Result of parsing " + arg + ": " + result);
         }

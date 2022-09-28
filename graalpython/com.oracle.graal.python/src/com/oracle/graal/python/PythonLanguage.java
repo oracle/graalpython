@@ -78,7 +78,6 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
-import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
@@ -585,7 +584,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private ModTy transformASTForExecutionWithArguments(List<String> argumentNames, ModTy mod) {
-        NodeFactory nodeFactory = new NodeFactoryImp();
+        NodeFactory nodeFactory = new NodeFactory();
         ArgTy[] astArgArray = new ArgTy[argumentNames.size()];
         for (int i = 0; i < astArgArray.length; i++) {
             astArgArray[i] = nodeFactory.createArgument(argumentNames.get(i), null, null, SourceRange.ARTIFICIAL_RANGE);

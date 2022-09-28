@@ -49,7 +49,6 @@ import java.util.Stack;
 
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
-import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope.DefUse;
 import com.oracle.graal.python.pegparser.scope.Scope.ScopeFlags;
@@ -59,16 +58,17 @@ import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
+import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import com.oracle.graal.python.pegparser.sst.PatternTy;
-import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
-import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 
 /**
  * Roughly plays the role of CPython's {@code symtable}.
@@ -1031,47 +1031,73 @@ public class ScopeEnvironment {
 
         @Override
         public Void visit(MatchCaseTy node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.pattern.accept(this);
+            if (node.guard != null) {
+                node.guard.accept(this);
+            }
+            visitSequence(node.body);
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchAs node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.pattern != null) {
+                node.pattern.accept(this);
+            }
+            if (node.name != null) {
+                addDef(node.name, DefUse.DefLocal, node);
+            }
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchClass node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.cls.accept(this);
+            visitSequence(node.patterns);
+            visitSequence(node.kwdPatterns);
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchMapping node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.keys);
+            visitSequence(node.patterns);
+            if (node.rest != null) {
+                addDef(node.rest, DefUse.DefLocal, node);
+            }
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchOr node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.patterns);
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchSequence node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            visitSequence(node.patterns);
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchSingleton node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            // Nothing to do here.
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchStar node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            if (node.name != null) {
+                addDef(node.name, DefUse.DefLocal, node);
+            }
+            return null;
         }
 
         @Override
         public Void visit(PatternTy.MatchValue node) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            node.value.accept(this);
+            return null;
         }
 
         @Override

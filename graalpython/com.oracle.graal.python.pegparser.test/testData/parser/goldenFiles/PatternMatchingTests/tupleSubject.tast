@@ -1,0 +1,14 @@
+Module[0, 40]
+    Match[0, 40]
+        Subject: 
+            Tuple[6, 11]
+                Values:
+                    Name[6, 7] Value: "a"
+                    Starred[9, 11]
+                         Context: Load
+                         Expr: Name[10, 11] Value: "b"
+        Cases:
+            MatchCaseTy[17, 40]
+                Pattern: MatchSingleton[22, 26], value: null
+                Body:
+                    Pass[36, 40]

@@ -1,0 +1,13 @@
+Module[0, 47]
+    Match[0, 47]
+        Subject: Name[6, 7] Value: "a"
+        Cases:
+            MatchCaseTy[13, 47]
+                Pattern: MatchSingleton[18, 22], value: null
+                Guard: 
+                    Compare[26, 33]
+                        LHS: Name[26, 27] Value: "x"
+                        Op: Is
+                        RHS: LONG[31, 33] Value: 42
+                Body:
+                    Pass[43, 47]

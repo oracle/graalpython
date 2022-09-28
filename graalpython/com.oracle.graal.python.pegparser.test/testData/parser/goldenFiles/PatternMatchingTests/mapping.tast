@@ -1,0 +1,48 @@
+Module[0, 139]
+    Match[0, 139]
+        Subject: Name[6, 7] Value: "a"
+        Cases:
+            MatchCaseTy[13, 42]
+                Pattern: 
+                    MatchOr[18, 28]
+                        Patterns:
+                            MatchMapping[18, 20]
+                            MatchMapping[23, 28]
+                                Rest: b
+                Body:
+                    Pass[38, 42]
+            MatchCaseTy[47, 88]
+                Pattern: 
+                    MatchMapping[52, 74]
+                        Keys:
+                            Attribute[53, 56] 
+                                Receiver: Name[53, 54] Value: "x"
+                                Attr: y
+                        Patterns:
+                            MatchAs[58, 73]
+                                Pattern: 
+                                    MatchOr[58, 68]
+                                        Patterns:
+                                            MatchValue[58, 60]
+                                                Value: LONG[58, 60] Value: 42
+                                            MatchValue[63, 68]
+                                                Value: RAW[63, 68] Value: "abc"
+                                Name: z
+                Body:
+                    Pass[84, 88]
+            MatchCaseTy[93, 139]
+                Pattern: 
+                    MatchMapping[98, 125]
+                        Keys:
+                            BOOLEAN[99, 103] Value: true
+                            BinOp[108, 112]
+                                Op: Sub
+                                LHS: LONG[108, 109] Value: 1
+                                RHS: COMPLEX[110, 112] Value: 0.00000+2.00000j
+                        Patterns:
+                            MatchAs[105, 106]
+                                Name: y
+                            MatchSingleton[114, 119], value: false
+                        Rest: z
+                Body:
+                    Pass[135, 139]

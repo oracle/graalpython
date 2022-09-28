@@ -880,54 +880,87 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(StmtTy.Match node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Subject", node.subject);
+        appendNodes(sb, "Cases", node.cases);
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(MatchCaseTy node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Pattern", node.pattern);
+        appendNode(sb, "Guard", node.guard);
+        appendNodes(sb, "Body", node.body);
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(PatternTy.MatchAs node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Pattern", node.pattern);
+        if (node.name != null) {
+            appendNewLineIndented(sb, "Name: ").append(node.name);
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(PatternTy.MatchClass node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Cls", node.cls);
+        appendNodes(sb, "Patterns", node.patterns);
+        if (node.kwdAttrs != null) {
+            appendNewLineIndented(sb, "KwdAttrs:");
+            for (String s : node.kwdAttrs) {
+                sb.append(' ').append(s);
+            }
+        }
+        appendNodes(sb, "KwdPatterns", node.kwdPatterns);
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(PatternTy.MatchMapping node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNodes(sb, "Keys", node.keys);
+        appendNodes(sb, "Patterns", node.patterns);
+        if (node.rest != null) {
+            appendNewLineIndented(sb, "Rest: ").append(node.rest);
+        }
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(PatternTy.MatchOr node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNodes(sb, "Patterns", node.patterns);
+        level--;
         return sb.toString();
-
     }
 
     @Override
     public String visit(PatternTy.MatchSequence node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNodes(sb, "Patterns", node.patterns);
+        level--;
         return sb.toString();
 
     }
@@ -936,14 +969,18 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(PatternTy.MatchSingleton node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        sb.append(", value: ");
+        appendConstantValue(sb, node.value);
         return sb.toString();
-
     }
 
     @Override
     public String visit(PatternTy.MatchStar node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        if (node.name != null) {
+            sb.append(": ").append(node.name);
+        }
         return sb.toString();
 
     }
@@ -952,8 +989,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     public String visit(PatternTy.MatchValue node) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
+        level++;
+        appendNode(sb, "Value", node.value);
+        level--;
         return sb.toString();
-
     }
 
     @Override
