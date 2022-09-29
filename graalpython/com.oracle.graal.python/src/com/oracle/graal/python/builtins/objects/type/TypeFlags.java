@@ -65,6 +65,6 @@ public abstract class TypeFlags {
     public static final long DICT_SUBCLASS = (1L << 29);
     public static final long BASE_EXC_SUBCLASS = (1L << 30);
     public static final long TYPE_SUBCLASS = (1L << 31);
-    public static final long DEFAULT = HAVE_STACKLESS_EXTENSION | HAVE_VERSION_TAG;
+    public static final long DEFAULT = HAVE_STACKLESS_EXTENSION;
     public static final long HAVE_FINALIZE = 1L;
 }

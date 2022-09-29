@@ -121,27 +121,6 @@ PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS
 
 PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
-Py_ssize_t _Py_REFCNT(PyObject *obj) {
-    return obj->ob_refcnt;
-}
-
-void _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-    obj->ob_refcnt = cnt;
-}
-
-struct _typeobject* _Py_TYPE(PyObject *a) {
-    return a->ob_type;
-}
-Py_ssize_t _Py_SIZE(PyVarObject *a) {
-    return a->ob_size;
-}
-void _Py_SET_TYPE(PyObject *a, struct _typeobject *b) {
-    a->ob_type = b;
-}
-void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-    a->ob_size = b;
-}
-
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
@@ -170,49 +149,6 @@ PyObject* PyObject_Repr(PyObject* o) {
 	if (o == NULL)
 		return PyUnicode_FromString("<NULL>");
     return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));
-}
-
-// taken from CPython "Objects/call.c"
-PyObject * PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs) {
-	callable = native_pointer_to_java(callable);
-	tuple = native_pointer_to_java(tuple);
-	kwargs = native_pointer_to_java(kwargs);
-    /* get vectorcallfunc as in _PyVectorcall_Function, but without
-     * the _Py_TPFLAGS_HAVE_VECTORCALL check */
-    Py_ssize_t offset = Py_TYPE(callable)->tp_vectorcall_offset;
-    if (offset <= 0) {
-        PyErr_Format(PyExc_TypeError, "'%.200s' object does not support vectorcall",
-                     Py_TYPE(callable)->tp_name);
-        return NULL;
-    }
-    vectorcallfunc func = *(vectorcallfunc *)(((char *)callable) + offset);
-    if (func == NULL) {
-        PyErr_Format(PyExc_TypeError, "'%.200s' object does not support vectorcall",
-                     Py_TYPE(callable)->tp_name);
-        return NULL;
-    }
-
-    /* Convert arguments & call */
-    PyObject *const *args;
-    Py_ssize_t nargs = PyTuple_GET_SIZE(tuple);
-    PyObject *kwnames;
-    /* TODO(fa): we did not import header 'internal/pycore_tupleobject.h' yet */
-    /* if (_PyStack_UnpackDict(_PyTuple_ITEMS(tuple), nargs, */
-    if (_PyStack_UnpackDict(_PyTuple_CAST(tuple)->ob_item, nargs,
-        kwargs, &args, &kwnames) < 0) {
-        return NULL;
-    }
-    PyObject *result = func(callable, args, nargs, kwnames);
-    if (kwnames != NULL) {
-        Py_ssize_t i, n = PyTuple_GET_SIZE(kwnames) + nargs;
-        for (i = 0; i < n; i++) {
-            Py_DECREF(args[i]);
-        }
-        PyMem_Free((PyObject **)args);
-        Py_DECREF(kwnames);
-    }
-
-    return _Py_CheckFunctionResult(callable, result, NULL);
 }
 
 #define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')
@@ -780,70 +716,6 @@ _Py_Dealloc(PyObject *op)
     destructor dealloc = Py_TYPE(op)->tp_dealloc;
 #ifdef Py_TRACE_REFS
     _Py_ForgetReference(op);
-#else
-    _Py_INC_TPFREES(op);
 #endif
     (*dealloc)(op);
-}
-
-// taken from CPython 'Objects/call.c'
-int
-_PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs,
-                    PyObject *const **p_stack, PyObject **p_kwnames)
-{
-    PyObject **stack, **kwstack;
-    Py_ssize_t nkwargs;
-    Py_ssize_t pos, i;
-    PyObject *key, *value;
-    PyObject *kwnames;
-
-    kwargs = native_pointer_to_java(kwargs);
-    assert(nargs >= 0);
-    assert(kwargs == NULL || PyDict_CheckExact(kwargs));
-
-    if (kwargs == NULL || (nkwargs = PyDict_GET_SIZE(kwargs)) == 0) {
-        *p_stack = args;
-        *p_kwnames = NULL;
-        return 0;
-    }
-
-    if ((size_t)nargs > PY_SSIZE_T_MAX / sizeof(stack[0]) - (size_t)nkwargs) {
-        PyErr_NoMemory();
-        return -1;
-    }
-
-    stack = PyMem_Malloc((nargs + nkwargs) * sizeof(stack[0]));
-    if (stack == NULL) {
-        PyErr_NoMemory();
-        return -1;
-    }
-
-    kwnames = PyTuple_New(nkwargs);
-    if (kwnames == NULL) {
-        PyMem_Free(stack);
-        return -1;
-    }
-
-    /* Copy positional arguments */
-    for (i = 0; i < nargs; i++) {
-        Py_INCREF(args[i]);
-        stack[i] = args[i];
-    }
-
-    kwstack = stack + nargs;
-    pos = i = 0;
-    /* This loop doesn't support lookup function mutating the dictionary
-       to change its size. It's a deliberate choice for speed, this function is
-       called in the performance critical hot code. */
-    while (PyDict_Next(kwargs, &pos, &key, &value)) {
-        Py_INCREF(native_pointer_to_java(key));
-        Py_INCREF(native_pointer_to_java(value));
-        PyTuple_SET_ITEM(kwnames, i, key);
-        kwstack[i] = value;
-        i++;
-    }
-
-    *p_stack = stack;
-    *p_kwnames = kwnames;
-    return 0;
 }

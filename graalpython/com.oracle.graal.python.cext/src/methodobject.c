@@ -76,6 +76,6 @@ PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTyp
                                                get_method_flags_wrapper(ml->ml_flags),
                                                native_to_java(self),
                                                native_to_java(module),
-                                               native_to_java(cls),
+                                               native_to_java((PyObject*)cls),
                                                ml->ml_doc);
 }

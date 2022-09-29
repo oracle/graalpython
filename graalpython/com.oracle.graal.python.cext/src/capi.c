@@ -312,10 +312,6 @@ static void initialize_globals() {
     // True, False
     _Py_TrueStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
     _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
-
-    // long zero, long one
-    _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
-    _PyLong_One = (PyObject *)&_Py_TrueStruct;
 }
 
 static void initialize_bufferprocs() {

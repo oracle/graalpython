@@ -44,8 +44,7 @@
 struct _PyTraceMalloc_Config _Py_tracemalloc_config = {
   .initialized = 0,
   .tracing = 0,
-  .max_nframe = 1,
-  .use_domain = 0
+  .max_nframe = 1
 };
 
 typedef struct {

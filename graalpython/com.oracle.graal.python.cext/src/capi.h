@@ -51,6 +51,8 @@
 #include <graalvm/llvm/handles.h>
 #include "datetime.h"
 #include "structmember.h"
+#include "frameobject.h"
+#include "pycore_moduleobject.h"
 
 #define SRC_CS "utf-8"
 
@@ -59,14 +61,6 @@
 
 
 /* Private types are defined here because we need to declare the type cast. */
-typedef struct {
-    PyObject_HEAD
-    PyObject *md_dict;
-    struct PyModuleDef *md_def;
-    void *md_state;
-    PyObject *md_weaklist;
-    PyObject *md_name;  /* for logging purposes after md_dict is cleared */
-} PyModuleObject;
 
 typedef struct {
     PyObject_VAR_HEAD
