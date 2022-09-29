@@ -833,7 +833,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
             mx.abort("At least one HPy testing thread failed.")
 
 
-def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False):
+def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True):
     if env is None:
         env = os.environ
     sub_env = env.copy()
@@ -848,7 +848,8 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False):
         paths=["test_tagged_unittests.py"],
         env=sub_env,
         cwd=cwd,
-        javaAsserts=javaAsserts
+        javaAsserts=javaAsserts,
+        nonZeroIsFatal=nonZeroIsFatal,
     )
 
 
@@ -1839,7 +1840,7 @@ def python_coverage(args):
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
                 env['ENABLE_THREADED_GRAALPYTEST'] = "false"
                 if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env, javaAsserts=True)
+                    run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
                 else:
                     run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
 
