@@ -40,6 +40,9 @@
  */
 #include "capi.h"
 
+#include "pycore_pymem.h"
+#include "pycore_object.h"
+
 PyObject* PyObject_SelfIter(PyObject* obj) {
     Py_INCREF(obj);
     return obj;
@@ -718,4 +721,19 @@ _Py_Dealloc(PyObject *op)
     _Py_ForgetReference(op);
 #endif
     (*dealloc)(op);
+}
+
+void
+_Py_NewReference(PyObject *op)
+{
+    if (_Py_tracemalloc_config.tracing) {
+        _PyTraceMalloc_NewReference(op);
+    }
+#ifdef Py_REF_DEBUG
+    _Py_RefTotal++;
+#endif
+    Py_SET_REFCNT(op, 1);
+#ifdef Py_TRACE_REFS
+    _Py_AddToAllObjects(op, 1);
+#endif
 }

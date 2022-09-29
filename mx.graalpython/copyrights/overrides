@@ -163,6 +163,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_gil.h,python.co
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_interp.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_moduleobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pystate.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime.h,python.copyright
