@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
@@ -89,15 +88,18 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.AddMemberNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
@@ -155,6 +157,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttribute
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -1814,8 +1817,6 @@ public abstract class TypeNodes {
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
-        @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private GetMroNode getMroNode;
         @Child private PyObjectSetAttr writeAttrNode;
         @Child private CastToTruffleStringNode castToStringNode;
@@ -2003,7 +2004,7 @@ public abstract class TypeNodes {
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
-                        addNativeSlots(pythonClass, newSlots);
+                        addNativeSlots(language, pythonClass, newSlots);
                     }
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
@@ -2098,13 +2099,31 @@ public abstract class TypeNodes {
             return slotLenNode;
         }
 
-        private void addNativeSlots(PythonManagedClass pythonClass, PTuple slots) {
-            if (callAddNativeSlotsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create());
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+        /**
+         * If a managed type inherits from a native type (which means that the object will be
+         * allocated in native) and if the type has {@code __slots__}, we need to do following:
+         *
+         * <ol>
+         * <li>We need to increase the basicsize by {@code sizeof(PyObject *)} for each name in
+         * {@code __slots__} since each dynamic slot automatically becomes a
+         * {@link CApiMemberAccessNodes#T_OBJECT_EX} member.</li>
+         * <li>We need to install a member descriptor for each dynamic slot.</li>
+         * </ol>
+         */
+        @TruffleBoundary
+        private void addNativeSlots(PythonLanguage language, PythonManagedClass pythonClass, PTuple slots) {
+            Object typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+            int slotOffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__));
+            SequenceStorage slotsStorage = slots.getSequenceStorage();
+            for (int i = 0; i < slotsStorage.length(); i++) {
+                Object slotName = getSlotItemNode().execute(null, slotsStorage, i);
+                AddMemberNode.addMember(language, pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE,
+                                CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
-            callAddNativeSlotsNode.call(FUN_ADD_NATIVE_SLOTS, toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
+            // commit new basicSize
+            ensureWriteAttrNode().execute(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__, slotOffset);
         }
 
         private CastToListNode getCastToListNode() {
