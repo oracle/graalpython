@@ -119,7 +119,7 @@ graalpython/com.oracle.graal.python.cext/include/cpython/unicodeobject.h,python.
 graalpython/com.oracle.graal.python.cext/include/datetime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/descrobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/dictobject.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h,dynamic_annotations.copyright
 graalpython/com.oracle.graal.python.cext/include/eval.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/exports.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/fileobject.h,python.copyright
