@@ -58,13 +58,13 @@ except ImportError:
 
 # Begin Truffle change
 # try:
-#     from multiprocessing.sharedctypes import Value, copy    
-#     HAS_SHAREDCTYPES = True    
+#     from multiprocessing.sharedctypes import Value, copy
+#     HAS_SHAREDCTYPES = True
 # except ImportError:
 #     HAS_SHAREDCTYPES = False
 
 # try:
-#     from multiprocessing import shared_memory    
+#     from multiprocessing import shared_memory
 #     HAS_SHMEM = True
 # except ImportError:
 #     HAS_SHMEM = False
@@ -651,9 +651,9 @@ class _TestProcess(BaseTestCase):
         #   MAXFD = os.sysconf("SC_OPEN_MAX")
         # ValueError: unrecognized configuration name: SC_OPEN_MAX
         # q.put(os_helper.fd_count())
-        
+
         # see MAXFD = 256 in test.support.fd_count()
-        q.put(256) 
+        q.put(256)
         # End Truffle change
         evt.wait()
 
@@ -2460,12 +2460,12 @@ class _TestPool(BaseTestCase):
     def test_map_handle_iterable_exception(self):
         if self.TYPE == 'manager':
             self.skipTest('test not appropriate for {}'.format(self.TYPE))
-            
+
         # Begin Truffle change
         if self.TYPE == 'threads':
             self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
         # End Truffle change
-        
+
         # SayWhenError seen at the very first of the iterable
         with self.assertRaises(SayWhenError):
             self.pool.map(sqr, exception_throwing_generator(1, -1), 1)
@@ -2522,7 +2522,7 @@ class _TestPool(BaseTestCase):
         if self.TYPE == 'threads':
             self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
         # End Truffle change
-        
+
         # SayWhenError seen at the very first of the iterable
         it = self.pool.imap(sqr, exception_throwing_generator(1, -1), 1)
         self.assertRaises(SayWhenError, it.__next__)
@@ -2560,7 +2560,7 @@ class _TestPool(BaseTestCase):
         if self.TYPE == 'threads':
             self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
         # End Truffle change
-            
+
         # SayWhenError seen at the very first of the iterable
         it = self.pool.imap_unordered(sqr,
                                       exception_throwing_generator(1, -1),
@@ -2691,7 +2691,7 @@ class _TestPool(BaseTestCase):
         if self.TYPE == 'threads':
             self.skipTest("fails for threads with java.lang.AssertionError: Failed to find escaped frame on stack'")
         # End Truffle change
-        
+
         # Issue #20980: Should not wrap exception when using thread pool
         with self.Pool(1) as p:
             with self.assertRaises(RuntimeError):
@@ -3377,9 +3377,7 @@ class _TestListener(BaseTestCase):
         if self.TYPE == 'processes':
             self.assertRaises(OSError, l.accept)
 
-    # GR-28433
     @unittest.skipIf(IS_LINUX, "module 'socket' has no attribute 'AF_UNIX'")
-    @unittest.skipIf(sys.implementation.name == 'graalpy', "module 'socket' has no attribute 'AF_UNIX'")
     @unittest.skipUnless(util.abstract_sockets_supported,
                          "test needs abstract socket support")
     def test_abstract_socket(self):
@@ -5260,7 +5258,7 @@ class TestStartMethod(unittest.TestCase):
             # Begin Truffle change
             # 'fork' and 'forkserver' not supported
             for method in ('spawn',):
-            # End Truffle change    
+            # End Truffle change
                 try:
                     multiprocessing.set_start_method(method, force=True)
                 except ValueError:
@@ -5988,7 +5986,7 @@ def install_tests_in_module_dict(remote_globs, start_method):
                     Temp.__name__ = Temp.__qualname__ = newname
                     Temp.__module__ = __module__
                     remote_globs[newname] = Temp
-                # End Truffle change    
+                # End Truffle change
         elif issubclass(base, unittest.TestCase):
             class Temp(base, object):
                 pass

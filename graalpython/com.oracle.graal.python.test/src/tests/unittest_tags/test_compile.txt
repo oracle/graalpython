@@ -15,12 +15,15 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_dict_evaluation_order
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_duplicate_global_local
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_empty
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_encoding
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_exec_with_general_mapping_for_locals
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_extended_arg
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_float_literals
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_for_distinct_code_objects
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_import
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_indentation
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_lambda_doc
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_leading_newlines
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_literals_with_leading_zeroes
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_mangling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_merge_constants

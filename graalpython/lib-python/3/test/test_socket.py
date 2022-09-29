@@ -1903,7 +1903,7 @@ class GeneralModuleTests(unittest.TestCase):
             s.bind((socket_helper.HOSTv6, 0, 0, 0))
             self._test_socket_fileno(s, socket.AF_INET6, socket.SOCK_STREAM)
 
-        if hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpy':
+        if hasattr(socket, "AF_UNIX"):
             tmpdir = tempfile.mkdtemp()
             self.addCleanup(shutil.rmtree, tmpdir)
             s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -4402,14 +4402,12 @@ class SendrecvmsgUnixStreamTestBase(SendrecvmsgConnectedBase,
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg")
 @requireAttrs(socket, "AF_UNIX")
 class SendmsgUnixStreamTest(SendmsgStreamTests, SendrecvmsgUnixStreamTestBase):
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "recvmsg")
 @requireAttrs(socket, "AF_UNIX")
 class RecvmsgUnixStreamTest(RecvmsgTests, RecvmsgGenericStreamTests,
@@ -4417,7 +4415,6 @@ class RecvmsgUnixStreamTest(RecvmsgTests, RecvmsgGenericStreamTests,
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "recvmsg_into")
 @requireAttrs(socket, "AF_UNIX")
 class RecvmsgIntoUnixStreamTest(RecvmsgIntoTests, RecvmsgGenericStreamTests,
@@ -4425,14 +4422,12 @@ class RecvmsgIntoUnixStreamTest(RecvmsgIntoTests, RecvmsgGenericStreamTests,
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg", "recvmsg")
 @requireAttrs(socket, "AF_UNIX", "SOL_SOCKET", "SCM_RIGHTS")
 class RecvmsgSCMRightsStreamTest(SCMRightsTest, SendrecvmsgUnixStreamTestBase):
     pass
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @requireAttrs(socket.socket, "sendmsg", "recvmsg_into")
 @requireAttrs(socket, "AF_UNIX", "SOL_SOCKET", "SCM_RIGHTS")
 class RecvmsgIntoSCMRightsStreamTest(RecvmsgIntoMixin, SCMRightsTest,
@@ -4606,7 +4601,7 @@ class BasicSocketPairTest(SocketPairTest):
 
     def _check_defaults(self, sock):
         self.assertIsInstance(sock, socket.socket)
-        # GR-28433
+        # GR-40979
         if hasattr(socket, 'AF_UNIX') and sys.implementation.name != 'graalpy':
             self.assertEqual(sock.family, socket.AF_UNIX)
         else:
@@ -5413,7 +5408,6 @@ class TestExceptions(unittest.TestCase):
             sock.setblocking(False)
 
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @unittest.skipUnless(sys.platform == 'linux' and hasattr(socket, "AF_UNIX"), 'Linux specific test')
 class TestLinuxAbstractNamespace(unittest.TestCase):
 
@@ -5469,7 +5463,6 @@ class TestLinuxAbstractNamespace(unittest.TestCase):
                 self.assertRegex(s2.getsockname(), abstract_address)
                 self.assertNotEqual(s1.getsockname(), s2.getsockname())
 
-@unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
 @unittest.skipUnless(hasattr(socket, 'AF_UNIX'), 'test needs socket.AF_UNIX')
 class TestUnixDomain(unittest.TestCase):
 
@@ -5520,6 +5513,7 @@ class TestUnixDomain(unittest.TestCase):
         self.addCleanup(os_helper.unlink, path)
         self.assertEqual(self.sock.getsockname(), path)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     def testSurrogateescapeBind(self):
         # Test binding to a valid non-ASCII pathname, with the
         # non-ASCII bytes supplied using surrogateescape encoding.
@@ -5529,6 +5523,7 @@ class TestUnixDomain(unittest.TestCase):
         self.addCleanup(os_helper.unlink, path)
         self.assertEqual(self.sock.getsockname(), path)
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     def testUnencodableAddr(self):
         # Test binding to a pathname that cannot be encoded in the
         # file system encoding.

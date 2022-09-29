@@ -50,9 +50,7 @@ class FunctionalTestCaseMixin:
                    max_clients=10):
 
         if addr is None:
-            # GR-28433
-            import sys
-            if hasattr(socket, 'AF_UNIX') and family == socket.AF_UNIX and sys.implementation.name != 'graalpy':
+            if hasattr(socket, 'AF_UNIX') and family == socket.AF_UNIX:
                 with tempfile.NamedTemporaryFile() as tmp:
                     addr = tmp.name
             else:

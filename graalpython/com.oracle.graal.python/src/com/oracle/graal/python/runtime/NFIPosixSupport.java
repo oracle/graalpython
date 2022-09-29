@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.HOST_NAME_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.INET6_ADDRSTRLEN;
@@ -52,10 +53,12 @@ import static com.oracle.graal.python.runtime.PosixConstants.INET_ADDRSTRLEN;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
+import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
@@ -67,6 +70,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -241,8 +245,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
         get_sockaddr_in_members("([sint8], [sint32]):void"),
         get_sockaddr_in6_members("([sint8], [sint32], [sint8]):void"),
+        get_sockaddr_un_members("([sint8], sint32, [sint8]):sint32"),
         set_sockaddr_in_members("([sint8], sint32, sint32):sint32"),
         set_sockaddr_in6_members("([sint8], sint32, [sint8], sint32, sint32):sint32"),
+        set_sockaddr_un_members("([sint8], [sint8], sint32):sint32"),
 
         call_crypt("([sint8], [sint8], [sint32]):sint64");
 
@@ -1827,6 +1833,17 @@ public final class NFIPosixSupport extends PosixSupport {
             addr.setLenAndFamily(len, AF_INET6.value);
             return addr;
         }
+
+        @Specialization
+        static UniversalSockAddr unix(NFIPosixSupport receiver, UnixSockAddr src,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
+            byte[] path = src.getPath();
+            assert path.length <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
+            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_un_members, receiver.wrap(addr.data), receiver.wrap(path), path.length);
+            addr.setLenAndFamily(len, AF_UNIX.value);
+            return addr;
+        }
     }
 
     @ExportLibrary(UniversalSockAddrLibrary.class)
@@ -1870,6 +1887,18 @@ public final class NFIPosixSupport extends PosixSupport {
             byte[] address = new byte[16];
             invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in6_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members), nfiPosixSupport.wrap(address));
             return new Inet6SockAddr(members[0], address, members[1], members[2]);
+        }
+
+        @ExportMessage
+        UnixSockAddr asUnixSockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            if (getFamily() != AF_UNIX.value) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalArgumentException("Only AF_UNIX socket address can be converted to UnixSockAddr");
+            }
+            assert getLen() <= OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH.value + SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value;
+            byte[] pathBuf = new byte[SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value];
+            int pathLen = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_sockaddr_un_members, nfiPosixSupport.wrap(data), getLen(), nfiPosixSupport.wrap(pathBuf));
+            return new UnixSockAddr(pathBuf, 0, pathLen);
         }
 
         int getLen() {

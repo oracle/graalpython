@@ -1,0 +1,25 @@
+Module[0, 48]
+    Match[0, 48]
+        Subject: Name[6, 7] Value: "a"
+        Cases:
+            MatchCaseTy[13, 27]
+                Pattern: 
+                    MatchValue[18, 21]
+                        Value: 
+                            Attribute[18, 21] 
+                                Receiver: Name[18, 19] Value: "x"
+                                Attr: y
+                Body:
+                    Pass[23, 27]
+            MatchCaseTy[32, 48]
+                Pattern: 
+                    MatchValue[37, 42]
+                        Value: 
+                            Attribute[37, 42] 
+                                Receiver: 
+                                    Attribute[37, 40] 
+                                        Receiver: Name[37, 38] Value: "x"
+                                        Attr: y
+                                Attr: z
+                Body:
+                    Pass[44, 48]

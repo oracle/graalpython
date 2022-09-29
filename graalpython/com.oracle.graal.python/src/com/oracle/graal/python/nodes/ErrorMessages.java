@@ -47,6 +47,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");
+    public static final TruffleString AF_UNIX_NOT_SUPPORTED = tsLiteral("%s(): AF_UNIX is not supported");
+    public static final TruffleString AF_UNIX_PATH_TOO_LONG = tsLiteral("%s(): AF_UNIX path too long");
     public static final TruffleString ARRAY_ITEM_MUST_BE_UNICODE = tsLiteral("array item must be unicode character");
     public static final TruffleString S_EXPECTED_SD_ARGS_GOT_D = tsLiteral("%s expected %s%d argument%s, got %d");
     public static final TruffleString UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS = tsLiteral("unpacked tuple should have %s%d element%s, but has %d");

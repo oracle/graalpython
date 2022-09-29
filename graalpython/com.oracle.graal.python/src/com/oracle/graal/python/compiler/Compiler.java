@@ -146,7 +146,6 @@ import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
-import com.oracle.graal.python.pegparser.NodeFactoryImp;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.scope.Scope;
@@ -2873,7 +2872,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
-        NodeFactory nodeFactory = new NodeFactoryImp();
+        NodeFactory nodeFactory = new NodeFactory();
         PythonStringFactoryImpl stringFactory = new PythonStringFactoryImpl();
         FExprParser fexpParser = new FExprParser() {
             @Override

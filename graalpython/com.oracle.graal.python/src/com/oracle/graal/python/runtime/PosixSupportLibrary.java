@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
@@ -508,6 +509,42 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
+    /**
+     * Represents an address for UNIX domain sockets (the {@link PosixConstants#AF_UNIX} socket
+     * family).
+     *
+     * This is a higher level equivalent of POSIX {@code struct sockaddr_un}, see
+     * {@code man -7 unix}. It is the responsibility of the user to ensure that pathname addresses
+     * are zero terminated and abstract addresses start with a zero.
+     */
+    @ValueType
+    public static final class UnixSockAddr extends FamilySpecificSockAddr {
+        private final byte[] path;
+
+        public UnixSockAddr(byte[] path) {
+            this(path, 0, path.length);
+        }
+
+        public UnixSockAddr(byte[] path, int offset, int length) {
+            super(AF_UNIX.value);
+            assert path != null && offset >= 0 && length >= 0 && length <= PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH.value && offset + length <= path.length;
+            this.path = Arrays.copyOfRange(path, offset, offset + length);
+        }
+
+        /**
+         * Returns the path, which:
+         * <ul>
+         * <li>for unnamed addresses is of length 0,</li>
+         * <li>for pathname addresses contains the terminating zero,</li>
+         * <li>for abstract addresses start with a zero,</li>
+         * <li>should not be modified by the caller.</li>
+         * </ul>
+         */
+        public byte[] getPath() {
+            return path;
+        }
+    }
+
     // endregion
 
     // region socket messages
@@ -850,6 +887,15 @@ public abstract class PosixSupportLibrary extends Library {
          *             {@link PosixConstants#AF_INET6}
          */
         public abstract Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver);
+
+        /**
+         * Converts the address represented by the receiver (which must be of the
+         * {@link PosixConstants#AF_UNIX} family) into a {@link UnixSockAddr} instance.
+         *
+         * @throws IllegalArgumentException if the socket family of the address is not
+         *             {@link PosixConstants#AF_UNIX}
+         */
+        public abstract UnixSockAddr asUnixSockAddr(UniversalSockAddr receiver);
 
         static final LibraryFactory<UniversalSockAddrLibrary> FACTORY = LibraryFactory.resolve(UniversalSockAddrLibrary.class);
 

@@ -1,0 +1,57 @@
+Module[0, 141]
+    Match[0, 141]
+        Subject: Name[6, 7] Value: "a"
+        Cases:
+            MatchCaseTy[13, 37]
+                Pattern: 
+                    MatchValue[18, 23]
+                        Value: RAW[18, 23] Value: "abc"
+                Body:
+                    Pass[33, 37]
+            MatchCaseTy[42, 69]
+                Pattern: 
+                    MatchOr[47, 55]
+                        Patterns:
+                            MatchValue[47, 49]
+                                Value: LONG[47, 49] Value: 42
+                            MatchValue[52, 55]
+                                Value: 
+                                    UnaryOp[52, 55]
+                                        Op: USub
+                                        Value: LONG[53, 55] Value: 42
+                Body:
+                    Pass[65, 69]
+            MatchCaseTy[74, 109]
+                Pattern: 
+                    MatchOr[79, 95]
+                        Patterns:
+                            MatchValue[79, 86]
+                                Value: 
+                                    BinOp[79, 86]
+                                        Op: Add
+                                        LHS: 
+                                            UnaryOp[79, 81]
+                                                Op: USub
+                                                Value: LONG[80, 81] Value: 1
+                                        RHS: COMPLEX[84, 86] Value: 0.00000+4.00000j
+                            MatchValue[89, 95]
+                                Value: 
+                                    BinOp[89, 95]
+                                        Op: Sub
+                                        LHS: LONG[89, 90] Value: 0
+                                        RHS: COMPLEX[93, 95] Value: 0.00000+1.00000j
+                Body:
+                    Pass[105, 109]
+            MatchCaseTy[114, 141]
+                Pattern: 
+                    MatchOr[119, 127]
+                        Patterns:
+                            MatchValue[119, 122]
+                                Value: 
+                                    UnaryOp[119, 122]
+                                        Op: USub
+                                        Value: COMPLEX[120, 122] Value: 0.00000+1.00000j
+                            MatchValue[125, 127]
+                                Value: COMPLEX[125, 127] Value: 0.00000+0.00000j
+                Body:
+                    Pass[137, 141]

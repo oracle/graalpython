@@ -70,7 +70,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = AstModuleBuiltins.J__AST)
+@CoreFunctions(defineModule = AstModuleBuiltins.J__AST, isEager = true)
 public final class AstModuleBuiltins extends PythonBuiltins {
 
     private static final HiddenKey AST_STATE_KEY = new HiddenKey("ast_state");

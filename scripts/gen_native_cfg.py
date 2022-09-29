@@ -76,6 +76,7 @@ includes = '''
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <sys/unistd.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
@@ -110,6 +111,8 @@ constant_defs = '''
   i SEEK_END
 * i SEEK_DATA
 * i SEEK_HOLE
+
+  i SOMAXCONN
 
 [openFlags]
   x O_ACCMODE
@@ -195,6 +198,8 @@ constant_defs = '''
   i AF_UNSPEC
   i AF_INET
   i AF_INET6
+* i AF_PACKET
+  i AF_UNIX
 
 [socketType]
   i SOCK_DGRAM
@@ -337,10 +342,13 @@ layout_defs = '''
 
 [struct in_addr]
   s_addr
+  
+[struct sockaddr_un]
+  sun_path
 '''
 
 java_copyright = '''/*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -453,8 +461,11 @@ def to_id(name):
     return name.upper().replace(' ', '_')
 
 
-def sizeof_name(struct_name):
-    return f'SIZEOF_{to_id(struct_name)}'
+def sizeof_name(struct_name, member=None):
+    s = f'SIZEOF_{to_id(struct_name)}'
+    if member:
+        s += '_' + to_id(member)
+    return s
 
 
 def offsetof_name(struct_name, member_name):
@@ -488,6 +499,7 @@ def generate_platform():
             f.write(f'    printf("        constants.put(\\"{sizeof_name(struct_name)}\\", %zu);\\n", sizeof({struct_name}));\n')
             for member in members:
                 f.write(f'    printf("        constants.put(\\"{offsetof_name(struct_name, member)}\\", %zu);\\n", offsetof({struct_name}, {member}));\n')
+                f.write(f'    printf("        constants.put(\\"{sizeof_name(struct_name, member)}\\", %zu);\\n", sizeof((({struct_name} *) 0)->{member}));\n')
 
         f.write('    return 0;\n}\n')
 
@@ -520,6 +532,7 @@ def generate_common(filename):
         add_constant(False, 'Int', sizeof_name(struct_name))
         for member in members:
             add_constant(False, 'Int', offsetof_name(struct_name, member))
+            add_constant(False, 'Int', sizeof_name(struct_name, member))
 
     decls.append('\n')
     defs.append('\n')

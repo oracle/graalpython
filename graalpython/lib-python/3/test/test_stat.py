@@ -201,6 +201,7 @@ class TestFilemode:
                 self.assertS_IS("BLK", st_mode)
                 break
 
+    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-40979')
     @socket_helper.skip_unless_bind_unix_socket
     def test_socket(self):
         with socket.socket(socket.AF_UNIX) as s:

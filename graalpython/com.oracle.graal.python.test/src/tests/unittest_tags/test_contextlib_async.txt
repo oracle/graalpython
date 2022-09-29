@@ -2,3 +2,6 @@
 *graalpython.lib-python.3.test.test_contextlib_async.AsyncContextManagerTestCase.test_contextmanager_doc_attrib
 *graalpython.lib-python.3.test.test_contextlib_async.TestAbstractAsyncContextManager.test_exit_is_abstract
 *graalpython.lib-python.3.test.test_contextlib_async.TestAbstractAsyncContextManager.test_structural_subclassing
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_exit_exception_chaining_reference
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_instance_bypass
+*graalpython.lib-python.3.test.test_contextlib_async.TestAsyncExitStack.test_instance_docs

@@ -4,4 +4,8 @@
 *graalpython.lib-python.3.test.test_coroutines.CAPITest.test_tp_await_1
 *graalpython.lib-python.3.test.test_coroutines.CAPITest.test_tp_await_2
 *graalpython.lib-python.3.test.test_coroutines.CAPITest.test_tp_await_3
+*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_func_3
+*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_func_4
+*graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_func_5
 *graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_gen_1
+*graalpython.lib-python.3.test.test_coroutines.UnawaitedWarningDuringShutdownTest.test_unawaited_warning_during_shutdown

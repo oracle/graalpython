@@ -2319,7 +2319,6 @@ class _BasePathTest(object):
         self.assertIs((P / 'fileA\udfff').is_socket(), False)
         self.assertIs((P / 'fileA\x00').is_socket(), False)
 
-    @unittest.skipIf(sys.implementation.name == 'graalpy', 'GR-28433')
     @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix sockets required")
     def test_is_socket_true(self):
         P = self.cls(BASE, 'mysock')
