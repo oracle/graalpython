@@ -390,7 +390,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_ARGS_FOR_ALLOCFUNC = tsLiteral("invalid arguments for allocfunc (expected 2 but got %s)");
     public static final TruffleString INVALID_ARGS_FOR_FASTCALL_METHOD = tsLiteral("invalid arguments for fastcall method (expected 3 but got %s)");
     public static final TruffleString INVALID_ARGS_FOR_FASTCALL_W_KEYWORDS_METHOD = tsLiteral("invalid arguments for fastcall_with_keywords method (expected 4 but got %s)");
-    public static final TruffleString INVALID_ARGS_FOR_METHOD = tsLiteral("invalid arguments for method (expected 3 but got %s)");
+    public static final TruffleString INVALID_ARGS_FOR_METHOD = tsLiteral("invalid arguments for method (expected %d but got %d)");
     public static final TruffleString INVALID_BASE_TYPE_OBJ_FOR_CLASS = tsLiteral("Invalid base type object for class %s (base type was '%p' object).");
     public static final TruffleString INVALID_CAPI_FUNC = tsLiteral("invalid C API function: %s");
     public static final TruffleString INVALID_CONTAINER_FORMAT = tsLiteral("Invalid container format: %d");

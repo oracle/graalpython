@@ -2112,11 +2112,16 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
     abstract static class CFunctionNewExMethodNode extends Node {
 
-        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+        abstract Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc,
                         PythonObjectFactory factory);
 
+        final Object execute(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+                        PythonObjectFactory factory) {
+            return execute(methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc, factory);
+        }
+
         @Specialization
-        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object cls, Object doc,
                         PythonObjectFactory factory,
                         @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CreateFunctionNode createFunctionNode,
@@ -2128,7 +2133,12 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             dylib.put(func.getStorage(), T___NAME__, name);
             Object strDoc = charPtrToJavaObjectNode.execute(doc);
             dylib.put(func.getStorage(), T___DOC__, strDoc);
-            PBuiltinMethod method = factory.createBuiltinMethod(self, func);
+            PBuiltinMethod method;
+            if (cls != PNone.NO_VALUE) {
+                method = factory.createBuiltinMethod(self, func, cls);
+            } else {
+                method = factory.createBuiltinMethod(self, func);
+            }
             dylib.put(method.getStorage(), T___MODULE__, module);
             dylib.put(method.getStorage(), METHOD_DEF_PTR, methodDefPtr);
             return method;

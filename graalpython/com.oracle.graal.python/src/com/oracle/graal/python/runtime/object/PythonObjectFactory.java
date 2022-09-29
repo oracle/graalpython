@@ -578,15 +578,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PMethod createBuiltinMethod(Object self, PFunction function) {
-        return createMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
+        return createMethod(PythonBuiltinClassType.PBuiltinFunctionOrMethod, self, function);
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object cls, Object self, PBuiltinFunction function) {
-        return trace(new PBuiltinMethod(cls, getShape(cls), self, function));
+        return trace(new PBuiltinMethod(cls, getShape(cls), self, function, null));
+    }
+
+    public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function, Object classObject) {
+        return trace(new PBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, getShape(PythonBuiltinClassType.PBuiltinMethod), self, function, classObject));
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
-        return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
+        return createBuiltinMethod(PythonBuiltinClassType.PBuiltinFunctionOrMethod, self, function);
     }
 
     public final PFunction createFunction(TruffleString name, PCode code, PythonObject globals, PCell[] closure) {

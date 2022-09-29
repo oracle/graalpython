@@ -184,6 +184,7 @@ declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
+declare_type(PyCMethod_Type, builtin_method, PyCMethodObject);
 declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
 // tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
 // PyMethodDescr_Type. This reflects our interpreter, but we need to make sure

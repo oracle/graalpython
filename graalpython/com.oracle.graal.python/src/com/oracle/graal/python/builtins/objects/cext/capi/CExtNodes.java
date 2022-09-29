@@ -2057,6 +2057,36 @@ public abstract class CExtNodes {
     }
 
     /**
+     * Converts for native signature:
+     * {@code PyObject* meth_method(PyObject* self, PyTypeObject* defining_class, PyObject* const* args, Py_ssize_t nargs, PyObject* kwnames)}.
+     * Used with {@code METH_FASTCALL | METH_KEYWORDS | METH_METHOD} flags.
+     */
+    public abstract static class MethodArgsToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 5)"})
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode2,
+                        @Cached ToBorrowedRefNode toSulongNode4) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset]);
+            dest[destOffset + 2] = args[argsOffset + 1];
+            dest[destOffset + 3] = args[argsOffset + 2];
+            dest[destOffset + 4] = toSulongNode4.execute(args[argsOffset + 3]);
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 5)"})
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, 5, args.length - argsOffset);
+        }
+
+        public static MethodArgsToSulongNode create() {
+            return CExtNodesFactory.MethodArgsToSulongNodeGen.create();
+        }
+    }
+
+    /**
      * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc},
      * {@code ssizeargfunc}, and {@code getter}.
      */
@@ -2098,7 +2128,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, 3, args.length - argsOffset);
         }
 
         public static TernaryFirstThirdToSulongNode create() {
@@ -2166,7 +2196,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, 3, args.length - argsOffset);
         }
 
         public static TernaryFirstSecondToSulongNode create() {

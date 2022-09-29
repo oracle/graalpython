@@ -238,6 +238,7 @@ public enum NativeMember {
     M_ML("m_ml"),
     M_SELF("m_self"),
     M_MODULE("m_module"),
+    MM_CLASS("mm_class"),
 
     // PyDateTime_Date
     DATETIME_DATA("data"),

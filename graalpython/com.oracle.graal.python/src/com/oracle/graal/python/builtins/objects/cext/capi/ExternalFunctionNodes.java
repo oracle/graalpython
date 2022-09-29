@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.BinaryFirstT
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MethodArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeArgProcToSulongNode;
@@ -178,46 +179,47 @@ public abstract class ExternalFunctionNodes {
         DIRECT(1),
         FASTCALL(2, FastCallArgsToSulongNode::create),
         FASTCALL_WITH_KEYWORDS(3, FastCallWithKeywordsArgsToSulongNode::create),
-        KEYWORDS(4),               // METH_VARARGS | METH_KEYWORDS
-        VARARGS(5),                // METH_VARARGS
-        NOARGS(6),                 // METH_NOARGS
-        O(7),                      // METH_O
-        ALLOC(9, BinaryFirstToSulongNode::create),
-        GETATTR(10, BinaryFirstToSulongNode::create),
-        SETATTR(11, TernaryFirstThirdToSulongNode::create),
-        RICHCMP(12, TernaryFirstSecondToSulongNode::create),
-        SETITEM(13, SSizeObjArgProcToSulongNode::create),
-        UNARYFUNC(14),
-        BINARYFUNC(15),
-        BINARYFUNC_L(16),
-        BINARYFUNC_R(17),
-        TERNARYFUNC(18),
-        TERNARYFUNC_R(19),
-        LT(20, TernaryFirstSecondToSulongNode::create),
-        LE(21, TernaryFirstSecondToSulongNode::create),
-        EQ(22, TernaryFirstSecondToSulongNode::create),
-        NE(23, TernaryFirstSecondToSulongNode::create),
-        GT(24, TernaryFirstSecondToSulongNode::create),
-        GE(25, TernaryFirstSecondToSulongNode::create),
-        ITERNEXT(26, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
-        INQUIRY(27, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        DELITEM(28, 1, SSizeObjArgProcToSulongNode::create),
-        GETITEM(29, 0, SSizeArgProcToSulongNode::create),
-        GETTER(30, BinaryFirstToSulongNode::create),
-        SETTER(31, TernaryFirstSecondToSulongNode::create),
-        INITPROC(32, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
-        HASHFUNC(33, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        CALL(34),
-        SETATTRO(35, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
-        DESCR_GET(36),
-        DESCR_SET(37, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
-        LENFUNC(38, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        OBJOBJPROC(39, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        OBJOBJARGPROC(40, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        NEW(41),
-        MP_DELITEM(42, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
-        TP_STR(43),
-        TP_REPR(44);
+        KEYWORDS(4),                                // METH_VARARGS | METH_KEYWORDS
+        VARARGS(5),                                 // METH_VARARGS
+        NOARGS(6),                                  // METH_NOARGS
+        O(7),                                       // METH_O
+        METHOD(8, MethodArgsToSulongNode::create),  // METH_FASTCALL | METH_KEYWORDS | METH_METHOD
+        ALLOC(10, BinaryFirstToSulongNode::create),
+        GETATTR(11, BinaryFirstToSulongNode::create),
+        SETATTR(12, TernaryFirstThirdToSulongNode::create),
+        RICHCMP(13, TernaryFirstSecondToSulongNode::create),
+        SETITEM(14, SSizeObjArgProcToSulongNode::create),
+        UNARYFUNC(15),
+        BINARYFUNC(16),
+        BINARYFUNC_L(17),
+        BINARYFUNC_R(18),
+        TERNARYFUNC(19),
+        TERNARYFUNC_R(20),
+        LT(21, TernaryFirstSecondToSulongNode::create),
+        LE(22, TernaryFirstSecondToSulongNode::create),
+        EQ(23, TernaryFirstSecondToSulongNode::create),
+        NE(24, TernaryFirstSecondToSulongNode::create),
+        GT(25, TernaryFirstSecondToSulongNode::create),
+        GE(26, TernaryFirstSecondToSulongNode::create),
+        ITERNEXT(27, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
+        INQUIRY(28, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        DELITEM(29, 1, SSizeObjArgProcToSulongNode::create),
+        GETITEM(30, 0, SSizeArgProcToSulongNode::create),
+        GETTER(31, BinaryFirstToSulongNode::create),
+        SETTER(32, TernaryFirstSecondToSulongNode::create),
+        INITPROC(33, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        HASHFUNC(34, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        CALL(35),
+        SETATTRO(36, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        DESCR_GET(37),
+        DESCR_SET(38, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        LENFUNC(39, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        OBJOBJPROC(40, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        OBJOBJARGPROC(41, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        NEW(42),
+        MP_DELITEM(43, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        TP_STR(44),
+        TP_REPR(45);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -313,6 +315,10 @@ public abstract class ExternalFunctionNodes {
                 case FASTCALL_WITH_KEYWORDS:
                     nodeKlass = MethFastcallWithKeywordsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig) : l -> new MethFastcallWithKeywordsRoot(l, name, isStatic);
+                    break;
+                case METHOD:
+                    nodeKlass = MethMethodRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethMethodRoot(l, name, isStatic, sig) : l -> new MethMethodRoot(l, name, isStatic);
                     break;
                 case GETATTR:
                     nodeKlass = GetAttrFuncRootNode.class;
@@ -447,6 +453,7 @@ public abstract class ExternalFunctionNodes {
                 case KEYWORDS:
                 case FASTCALL:
                 case FASTCALL_WITH_KEYWORDS:
+                case METHOD:
                     return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
             }
             return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
@@ -944,6 +951,66 @@ public abstract class ExternalFunctionNodes {
             CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
             wrapper.free(ensureWrapperLib(wrapper), ensureReleaseNativeWrapperNode());
             releaseNativeWrapperNode.execute(cArguments[3]);
+        }
+
+        private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {
+            if (wrapperLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                wrapperLib = insert(PythonNativeWrapperLibrary.getFactory().create(wrapper));
+            }
+            return wrapperLib;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    public static final class MethMethodRoot extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, tsArray("self", "cls"), KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private PythonObjectFactory factory;
+        @Child private ReadIndexedArgumentNode readClsNode;
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+        @Child private PythonNativeWrapperLibrary wrapperLib;
+
+        public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
+            super(language, name, isStatic);
+        }
+
+        public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
+            this.factory = PythonObjectFactory.create();
+            this.readClsNode = ReadIndexedArgumentNode.create(1);
+            this.readVarargsNode = ReadVarArgsNode.create(true);
+            this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            Object cls = readClsNode.execute(frame);
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            Object[] fastcallArgs = new Object[args.length + kwargs.length];
+            Object[] fastcallKwnames = new Object[kwargs.length];
+            PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
+            for (int i = 0; i < kwargs.length; i++) {
+                fastcallKwnames[i] = kwargs[i].getName();
+                fastcallArgs[args.length + i] = kwargs[i].getValue();
+            }
+            return new Object[]{self, cls, new CPyObjectArrayWrapper(fastcallArgs), args.length, factory.createTuple(fastcallKwnames)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+            CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[2];
+            wrapper.free(ensureWrapperLib(wrapper), releaseNativeWrapperNode);
+            releaseNativeWrapperNode.execute(cArguments[4]);
         }
 
         private PythonNativeWrapperLibrary ensureWrapperLib(CPyObjectArrayWrapper wrapper) {

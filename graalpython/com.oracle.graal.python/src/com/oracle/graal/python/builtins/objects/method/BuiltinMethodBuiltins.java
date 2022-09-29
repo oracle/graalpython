@@ -68,7 +68,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinMethod})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinFunctionOrMethod})
 public class BuiltinMethodBuiltins extends PythonBuiltins {
 
     @Override

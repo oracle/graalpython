@@ -125,7 +125,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         Object[] defaults = getDefaultsNode.execute(cachedMethod);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedMethod);
         Object self = getSelf(cachedMethod);
-        return createAndCheckArgumentsNode.execute(cachedMethod, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
+        Object classObject = getClassObject(cachedMethod);
+        return createAndCheckArgumentsNode.execute(cachedMethod, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, isMethodCall(self));
     }
 
     @Specialization(guards = {"isSingleContext()", "isMethod(method)", "getFunction(method) == cachedFunction",
@@ -136,14 +137,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached GetSignatureNode getSignatureNode,
                     @Cached GetDefaultsNode getDefaultsNode,
                     @Cached GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached(value = "getSelf(method)", weak = true) Object cachedSelf) {
+                    @Cached(value = "getSelf(method)", weak = true) Object cachedSelf,
+                    @Cached(value = "getClassObject(method)", weak = true) Object cachedClassObject) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
         Signature signature = getSignatureNode.execute(cachedFunction);
         Object[] defaults = getDefaultsNode.execute(cachedFunction);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedFunction);
-        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
+        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, cachedSelf, cachedClassObject, defaults, kwdefaults, isMethodCall(cachedSelf));
     }
 
     @Specialization(guards = {"isSingleContext()", "isMethod(method)",
@@ -161,7 +163,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         Object[] defaults = getDefaultsNode.execute(cachedFunction);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedFunction);
         Object self = getSelf(method);
-        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
+        Object classObject = getClassObject(method);
+        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, isMethodCall(self));
     }
 
     @Specialization(guards = {"isSingleContext()", "isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
@@ -177,7 +180,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         Signature signature = getSignatureNode.execute(cachedCallable);
         Object[] defaults = getDefaultsNode.execute(cachedCallable);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedCallable);
-        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
+        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
     }
 
     @Specialization(guards = {"getCt.execute(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
@@ -198,10 +201,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         Object[] defaults = getDefaultsNode.execute(callable);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
         Object self = null;
+        Object classObject = null;
         if (gotMethod.profile(PGuards.isMethod(callable))) {
             self = getSelf(callable);
+            classObject = getClassObject(callable);
         }
-        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
+        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, isMethodCall(self));
     }
 
     @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached", "doCallTargetCached"})
@@ -216,9 +221,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         Object[] defaults = getDefaultsUncached(callable);
         PKeyword[] kwdefaults = getKwDefaultsUncached(callable);
         Object self = getSelf(callable);
+        Object classObject = getClassObject(callable);
         boolean methodcall = !(self instanceof PythonModule);
 
-        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, defaults, kwdefaults, methodcall);
+        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, methodcall);
     }
 
     @GenerateUncached
@@ -231,13 +237,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return CreateAndCheckArgumentsNodeGen.getUncached();
         }
 
-        public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
+        public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults,
+                        PKeyword[] kwdefaults,
                         boolean methodcall);
 
         @Specialization(guards = {"userArguments.length == cachedLength", //
                         "signature.getMaxNumOfPositionalArgs() == cachedMaxPos", //
                         "signature.getNumOfRequiredKeywords() == cachedNumKwds"}, limit = "1")
-        Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
+        Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults, PKeyword[] kwdefaults,
+                        boolean methodcall,
                         @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
                         @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
@@ -248,12 +256,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached("signature.getNumOfRequiredKeywords()") int cachedNumKwds,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
-            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds, applyPositional,
+            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, classObject, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds,
+                            applyPositional,
                             applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
         @Specialization(guards = {"userArguments.length == cachedLength"}, replaces = "doCached0", limit = "1")
-        Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
+        Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults, PKeyword[] kwdefaults,
+                        boolean methodcall,
                         @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
                         @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
@@ -262,24 +272,26 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached("userArguments.length") int cachedLength,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
-            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
+            return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, classObject, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
                             signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
         @Specialization(replaces = "doCached")
-        Object[] doUncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
+        Object[] doUncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults, PKeyword[] kwdefaults,
+                        boolean methodcall,
                         @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
                         @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
                         @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
-            return createAndCheckArguments(callable, userArguments, userArguments.length, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
+            return createAndCheckArguments(callable, userArguments, userArguments.length, keywords, signature, self, classObject, defaults, kwdefaults, methodcall,
+                            signature.getMaxNumOfPositionalArgs(),
                             signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
-        private static Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self, Object[] defaults,
-                        PKeyword[] kwdefaults, boolean methodcall, int co_argcount, int co_kwonlyargcount,
+        private static Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self, Object classObject,
+                        Object[] defaults, PKeyword[] kwdefaults, boolean methodcall, int co_argcount, int co_kwonlyargcount,
                         ApplyPositionalArguments applyPositional,
                         ApplyKeywordsNode applyKeywords,
                         HandleTooManyArgumentsNode handleTooMany,
@@ -299,9 +311,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int upfront = 0;
             // put the special w_firstarg into the scope, if it exists
             if (self != null) {
-                upfront = 1;
+                upfront++;
                 if (co_argcount > 0) {
                     PArguments.setArgument(scope_w, 0, self);
+                }
+                if (classObject != null) {
+                    upfront++;
+                    PArguments.setArgument(scope_w, 1, classObject);
                 }
             }
 
@@ -956,6 +972,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return ((PBuiltinMethod) callable).getSelf();
         } else if (callable instanceof PMethod) {
             return ((PMethod) callable).getSelf();
+        }
+        return null;
+    }
+
+    protected static Object getClassObject(Object callable) {
+        if (callable instanceof PBuiltinMethod) {
+            return ((PBuiltinMethod) callable).getClassObject();
         }
         return null;
     }

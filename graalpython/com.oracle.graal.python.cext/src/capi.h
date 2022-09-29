@@ -299,62 +299,67 @@ void initialize_hashes();
 #define JWRAPPER_VARARGS                     5
 #define JWRAPPER_NOARGS                      6
 #define JWRAPPER_O                           7
-#define JWRAPPER_UNSUPPORTED                 8
-#define JWRAPPER_ALLOC                       9
+#define JWRAPPER_METHOD                      8
+#define JWRAPPER_UNSUPPORTED                 9
+#define JWRAPPER_ALLOC                       10
 #define JWRAPPER_SSIZE_ARG                   JWRAPPER_ALLOC
-#define JWRAPPER_GETATTR                     10
-#define JWRAPPER_SETATTR                     11
-#define JWRAPPER_RICHCMP                     12
-#define JWRAPPER_SETITEM                     13
-#define JWRAPPER_UNARYFUNC                   14
-#define JWRAPPER_BINARYFUNC                  15
-#define JWRAPPER_BINARYFUNC_L                16
-#define JWRAPPER_BINARYFUNC_R                17
-#define JWRAPPER_TERNARYFUNC                 18
-#define JWRAPPER_TERNARYFUNC_R               19
-#define JWRAPPER_LT                          20
-#define JWRAPPER_LE                          21
-#define JWRAPPER_EQ                          22
-#define JWRAPPER_NE                          23
-#define JWRAPPER_GT                          24
-#define JWRAPPER_GE                          25
-#define JWRAPPER_ITERNEXT                    26
-#define JWRAPPER_INQUIRY                     27
-#define JWRAPPER_DELITEM                     28
-#define JWRAPPER_GETITEM                     29
-#define JWRAPPER_GETTER                      30
-#define JWRAPPER_SETTER                      31
-#define JWRAPPER_INITPROC                    32
-#define JWRAPPER_HASHFUNC                    33
-#define JWRAPPER_CALL                        34
-#define JWRAPPER_SETATTRO                    35
-#define JWRAPPER_DESCR_GET                   36
-#define JWRAPPER_DESCR_SET                   37
-#define JWRAPPER_LENFUNC                     38
-#define JWRAPPER_OBJOBJPROC                  39
-#define JWRAPPER_OBJOBJARGPROC               40
-#define JWRAPPER_NEW                         41
-#define JWRAPPER_MP_DELITEM                  42
-#define JWRAPPER_STR                         43
-#define JWRAPPER_REPR                        44
+#define JWRAPPER_GETATTR                     11
+#define JWRAPPER_SETATTR                     12
+#define JWRAPPER_RICHCMP                     13
+#define JWRAPPER_SETITEM                     14
+#define JWRAPPER_UNARYFUNC                   15
+#define JWRAPPER_BINARYFUNC                  16
+#define JWRAPPER_BINARYFUNC_L                17
+#define JWRAPPER_BINARYFUNC_R                18
+#define JWRAPPER_TERNARYFUNC                 19
+#define JWRAPPER_TERNARYFUNC_R               20
+#define JWRAPPER_LT                          21
+#define JWRAPPER_LE                          22
+#define JWRAPPER_EQ                          23
+#define JWRAPPER_NE                          24
+#define JWRAPPER_GT                          25
+#define JWRAPPER_GE                          26
+#define JWRAPPER_ITERNEXT                    27
+#define JWRAPPER_INQUIRY                     28
+#define JWRAPPER_DELITEM                     29
+#define JWRAPPER_GETITEM                     30
+#define JWRAPPER_GETTER                      31
+#define JWRAPPER_SETTER                      32
+#define JWRAPPER_INITPROC                    33
+#define JWRAPPER_HASHFUNC                    34
+#define JWRAPPER_CALL                        35
+#define JWRAPPER_SETATTRO                    36
+#define JWRAPPER_DESCR_GET                   37
+#define JWRAPPER_DESCR_SET                   38
+#define JWRAPPER_LENFUNC                     39
+#define JWRAPPER_OBJOBJPROC                  40
+#define JWRAPPER_OBJOBJARGPROC               41
+#define JWRAPPER_NEW                         42
+#define JWRAPPER_MP_DELITEM                  43
+#define JWRAPPER_STR                         44
+#define JWRAPPER_REPR                        45
 
 #define TDEBUG __builtin_debugtrap()
-#define get_method_flags_wrapper(flags)                                                  \
-    (((flags) < 0) ?                                                                     \
-     JWRAPPER_DIRECT :                                                                   \
-     ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
-      JWRAPPER_FASTCALL_WITH_KEYWORDS :                                                  \
-     (((flags) & METH_FASTCALL) ?                                                        \
-      JWRAPPER_FASTCALL :                                                                \
-      (((flags) & METH_KEYWORDS) ?                                                       \
-       JWRAPPER_KEYWORDS :                                                               \
-       (((flags) & METH_VARARGS) ?                                                       \
-        JWRAPPER_VARARGS :                                                               \
-        (((flags) & METH_NOARGS) ?                                                       \
-         JWRAPPER_NOARGS :                                                               \
-         (((flags) & METH_O) ?                                                           \
-          JWRAPPER_O :                                                                   \
-          JWRAPPER_UNSUPPORTED)))))))
+
+static inline int get_method_flags_wrapper(int flags) {
+    if (flags < 0)
+        return JWRAPPER_DIRECT;
+    if ((flags & (METH_FASTCALL | METH_KEYWORDS | METH_METHOD)) == (METH_FASTCALL | METH_KEYWORDS | METH_METHOD))
+        return JWRAPPER_METHOD;
+    if ((flags & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS))
+        return JWRAPPER_FASTCALL_WITH_KEYWORDS;
+    if (flags & METH_FASTCALL)
+        return JWRAPPER_FASTCALL;
+    if (flags & METH_KEYWORDS)
+        return JWRAPPER_KEYWORDS;
+    if (flags & METH_VARARGS)
+        return JWRAPPER_VARARGS;
+    if (flags & METH_NOARGS)
+        return JWRAPPER_NOARGS;
+    if (flags & METH_O)
+        return JWRAPPER_O;
+    return JWRAPPER_UNSUPPORTED;
+}
 
 #define PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\

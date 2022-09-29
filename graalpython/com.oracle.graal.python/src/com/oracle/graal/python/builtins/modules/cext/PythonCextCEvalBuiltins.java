@@ -211,7 +211,7 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
             // prepare Python frame arguments
             Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
             Signature signature = getSignatureNode.execute(code);
-            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
+            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
             if (!(locals instanceof PNone)) {

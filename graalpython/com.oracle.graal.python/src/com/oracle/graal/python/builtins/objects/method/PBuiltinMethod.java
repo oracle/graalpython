@@ -33,17 +33,19 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-// Corresponds to PyCFunction, but that name is just confusing
+// Corresponds to PyCFunction and PyCMethodObject, but that name is just confusing
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinMethod extends PythonBuiltinObject {
 
     private final PBuiltinFunction function;
     private final Object self;
+    private final Object classObject;
 
-    public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function) {
+    public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function, Object classObject) {
         super(clazz, instanceShape);
         this.self = self;
         this.function = function;
+        this.classObject = classObject;
     }
 
     public PBuiltinFunction getFunction() {
@@ -52,6 +54,10 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
 
     public Object getSelf() {
         return self;
+    }
+
+    public Object getClassObject() {
+        return classObject;
     }
 
     @Override
