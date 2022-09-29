@@ -1,3 +1,8 @@
+/* Copyright (c) 2022, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2022 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 // Implementation of PEP 585: support list[int] etc.
 #ifndef Py_GENERICALIASOBJECT_H
 #define Py_GENERICALIASOBJECT_H
