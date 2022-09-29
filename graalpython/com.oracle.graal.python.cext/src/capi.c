@@ -841,7 +841,7 @@ int WriteULongMember(PyObject* object, Py_ssize_t offset, unsigned long value) {
 
 int WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     PyObject *oldv = ReadMember(object, offset, PyObject*);
-    if (oldv == NULL) {
+    if (value == NULL && oldv == NULL) {
         return 1;
     }
     Py_XINCREF(value);
