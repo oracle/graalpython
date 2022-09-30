@@ -1604,7 +1604,7 @@ class SuppressCrashReport:
             #         self.resource.setrlimit(self.resource.RLIMIT_CORE,
             #                                 (0, self.old_value[1]))
             #     except (ValueError, OSError):
-                    pass
+            #        pass
 
             if sys.platform == 'darwin':
                 import subprocess
