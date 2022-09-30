@@ -291,7 +291,10 @@ class Sst2ObjGenerator(Generator):
 
     @staticmethod
     def visit_enum(c: model.Enum, emitter: java_file.Emitter):
-        with emitter.define(f'public Object visitNonNull({c.name.java} v)'):
+        annotations = []
+        if c.name.java == 'CmpOpTy':
+            annotations.append('@Override')
+        with emitter.define(f'public Object visitNonNull({c.name.java} v)', *annotations):
             with emitter.start_block(f'switch (v)'):
                 for m in c.members:
                     with emitter.start(f'case {m.java}:'):
