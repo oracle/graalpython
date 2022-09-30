@@ -52,7 +52,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -63,9 +62,14 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class BufferToTruffleStringNode extends PNodeWithContext {
+
+    protected final boolean allowMemoryView;
+
+    protected BufferToTruffleStringNode(boolean allowMemoryView) {
+        this.allowMemoryView = allowMemoryView;
+    }
 
     public abstract TruffleString execute(Object buffer, int byteOffset);
 
@@ -109,10 +113,10 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
         }
     }
 
-    @Specialization
+    @Specialization(guards = "allowMemoryView")
     static TruffleString doMemoryView(PMemoryView memoryView,
                     int byteOffset,
-                    @Cached BufferToTruffleStringNode bufferToTruffleStringNode) {
+                    @Cached("create(false)") BufferToTruffleStringNode bufferToTruffleStringNode) {
         int internalByteOffset = memoryView.getOffset();
         return bufferToTruffleStringNode.execute(memoryView.getBuffer(), byteOffset + internalByteOffset);
     }
@@ -133,11 +137,11 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
     }
 
     public static BufferToTruffleStringNode create() {
-        return BufferToTruffleStringNodeGen.create();
+        return create(true);
     }
 
-    public static BufferToTruffleStringNode getUncached() {
-        return BufferToTruffleStringNodeGen.getUncached();
+    public static BufferToTruffleStringNode create(boolean allowMemoryView) {
+        return BufferToTruffleStringNodeGen.create(allowMemoryView);
     }
 
     @ExportLibrary(InteropLibrary.class)
