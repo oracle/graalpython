@@ -53,14 +53,14 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
+import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
-import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
@@ -100,6 +100,7 @@ abstract class AbstractParser {
     private final InputType startRule;
 
     private final int flags;
+    private final int featureVersion;
 
     protected int level = 0;
     protected boolean callInvalidRules = false;
@@ -125,15 +126,17 @@ abstract class AbstractParser {
 
     protected abstract SSTNode runParser(InputType inputType);
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule) {
-        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), errorCb, startRule, 0);
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule, int featureVersion) {
+        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), errorCb, startRule, 0, featureVersion);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule) {
-        this(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, 0);
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule,
+                    int featureVersion) {
+        this(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, 0, featureVersion);
     }
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int flags) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int flags,
+                    int featureVersion) {
         this.tokenizer = tokenizer;
         this.factory = factory;
         this.fexprParser = fexprParser;
@@ -143,6 +146,7 @@ abstract class AbstractParser {
         this.softKeywords = getSoftKeywords();
         this.startRule = startRule;
         this.flags = flags;
+        this.featureVersion = featureVersion;
     }
 
     public SSTNode parse() {
@@ -498,7 +502,7 @@ abstract class AbstractParser {
             values[i] = getText(t);
             sourceRanges[i] = t.sourceRange;
         }
-        return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory);
+        return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory, featureVersion);
     }
 
     /**
@@ -1128,15 +1132,19 @@ abstract class AbstractParser {
         return node;
     }
 
-    @SuppressWarnings("unused")
-    // TODO implement the check
-    static <T> T checkVersion(int version, String msg, T node) {
+    <T> T checkVersion(int version, String msg, T node) {
+        checkVersion(version, msg);
         return node;
     }
 
-    @SuppressWarnings("unused")
-    // TODO implement the check
-    static <T> T checkVersion(int version, String msg, Supplier<T> node) {
+    <T> T checkVersion(int version, String msg, Supplier<T> node) {
+        checkVersion(version, msg);
         return node.get();
+    }
+
+    private void checkVersion(int version, String msg) {
+        if (featureVersion < version) {
+            raiseSyntaxError("%s only supported in Python 3.%d and greater", msg, version);
+        }
     }
 }

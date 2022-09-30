@@ -613,12 +613,12 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_276_ID = 1496;
     private static final int _TMP_277_ID = 1497;
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule) {
-        super(tokenizer, factory, fexprParser, errorCb, startRule);
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule, int featureVersion) {
+        super(tokenizer, factory, fexprParser, errorCb, startRule, featureVersion);
     }
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule) {
-        super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule);
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int featureVersion) {
+        super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, featureVersion);
     }
 
     // file: statements? $

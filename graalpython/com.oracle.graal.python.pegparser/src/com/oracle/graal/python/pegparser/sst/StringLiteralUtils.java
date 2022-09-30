@@ -79,7 +79,8 @@ public abstract class StringLiteralUtils {
         }
     }
 
-    public static <T> ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCallback, PythonStringFactory<T> stringFactory) {
+    public static <T> ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCallback, PythonStringFactory<T> stringFactory,
+                    int featureVersion) {
         assert values.length == sourceRanges.length && values.length > 0;
         PythonStringFactory.PythonStringBuilder<T> sb = null;
         BytesBuilder bb = null;
@@ -165,7 +166,7 @@ public abstract class StringLiteralUtils {
                         sb = null;
                     }
 
-                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback, stringFactory);
+                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback, stringFactory, featureVersion);
                 } else {
                     if (sb == null) {
                         sb = stringFactory.createBuilder(text.length());
@@ -207,6 +208,7 @@ public abstract class StringLiteralUtils {
         public static final String ERROR_MESSAGE_UNMATCHED_PAR = "f-string: unmatched '%c'";
         public static final String ERROR_MESSAGE_TOO_MANY_NESTED_PARS = "f-string: too many nested parenthesis";
         public static final String ERROR_MESSAGE_EXPECTING_CLOSING_BRACE = "f-string: expecting '}'";
+        public static final String ERROR_MESSAGE_SELF_DOCUMENTING_EXPRESSION = "f-string: self documenting expressions are only supported in Python 3.8 and greater";
 
         // token types and Token data holder (public for testing purposes)
         public static final byte TOKEN_TYPE_STRING = 1;
@@ -345,7 +347,7 @@ public abstract class StringLiteralUtils {
          * {@link ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
         public static void parse(ArrayList<ExprTy> formatStringParts, String text, SourceRange textSourceRange, boolean isRawString, FExprParser exprParser, ErrorCallback errorCallback,
-                        PythonStringFactory<?> stringFactory) {
+                        PythonStringFactory<?> stringFactory, int featureVersion) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -360,7 +362,7 @@ public abstract class StringLiteralUtils {
 
             // create tokens
             ArrayList<Token> tokens = new ArrayList<>(estimatedTokensCount);
-            if (createTokens(tokens, errorCallback, 0, text, textSourceRange, isRawString, 0) < 0) {
+            if (createTokens(tokens, errorCallback, 0, text, textSourceRange, isRawString, 0, featureVersion) < 0) {
                 return;
             }
 
@@ -402,7 +404,8 @@ public abstract class StringLiteralUtils {
          *            apply differently.
          * @return the index of the last processed character or {@code -1} on error
          */
-        public static int createTokens(ArrayList<Token> tokens, ErrorCallback errorCallback, int startIndex, String text, SourceRange textSourceRange, boolean isRawString, int recursionLevel) {
+        public static int createTokens(ArrayList<Token> tokens, ErrorCallback errorCallback, int startIndex, String text, SourceRange textSourceRange, boolean isRawString, int recursionLevel,
+                        int featureVersion) {
             int state = STATE_TEXT;
 
             int braceLevel = 0;
@@ -567,6 +570,10 @@ public abstract class StringLiteralUtils {
                                 break;
                             case '=':
                                 if (braceLevelInExpression == 0) {
+                                    if (featureVersion < 8) {
+                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_SELF_DOCUMENTING_EXPRESSION);
+                                        return -1;
+                                    }
                                     // The "=" mode, e.g., f'{1+1=}' produces "1+1=2"
                                     // Python allows '=' to be followed by whitespace, but nothing
                                     // else
@@ -691,7 +698,7 @@ public abstract class StringLiteralUtils {
                     case STATE_AFTER_COLON:
                         assert currentExpression != null;
                         int tokensSizeBefore = tokens.size();
-                        index = createTokens(tokens, errorCallback, index, text, textSourceRange, isRawString, recursionLevel + 1);
+                        index = createTokens(tokens, errorCallback, index, text, textSourceRange, isRawString, recursionLevel + 1, featureVersion);
                         if (index < 0) {
                             return -1;
                         }

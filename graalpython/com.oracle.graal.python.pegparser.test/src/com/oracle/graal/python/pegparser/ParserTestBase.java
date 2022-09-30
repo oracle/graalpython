@@ -66,6 +66,7 @@ import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public class ParserTestBase {
+    private static final int FEATURE_VERSION = 10;
     protected static final String GOLDEN_FILE_EXT = ".tast";
     private static final String SCOPE_FILE_EXT = ".scope";
 
@@ -100,11 +101,11 @@ public class ParserTestBase {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
                 ParserTokenizer tok = new ParserTokenizer(errorCallback, code, InputType.FSTRING, interactiveTerminal);
-                return (ExprTy) new Parser(tok, factory, this, errorCallback, InputType.FSTRING).parse();
+                return (ExprTy) new Parser(tok, factory, this, errorCallback, InputType.FSTRING, FEATURE_VERSION).parse();
             }
         };
         ParserTokenizer tokenizer = new ParserTokenizer(errorCallback, src, inputType, interactiveTerminal);
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCallback, inputType);
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCallback, inputType, FEATURE_VERSION);
         return (ModTy) parser.parse();
     }
 
@@ -236,10 +237,10 @@ public class ParserTestBase {
             @Override
             public ExprTy parse(String code, SourceRange range) {
                 ParserTokenizer tok = new ParserTokenizer(errorCb, code, InputType.FSTRING, false);
-                return (ExprTy) new Parser(tok, factory, this, errorCb, InputType.FSTRING).parse();
+                return (ExprTy) new Parser(tok, factory, this, errorCb, InputType.FSTRING, FEATURE_VERSION).parse();
             }
         };
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb, InputType.FILE);
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb, InputType.FILE, FEATURE_VERSION);
         parser.parse();
         assertEquals(Arrays.asList(expectedErrors), errors);
     }

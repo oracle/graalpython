@@ -140,6 +140,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
@@ -2889,15 +2890,19 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
+        return createParser(src, errorCb, inputType, interactiveTerminal, PythonLanguage.MINOR);
+    }
+
+    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal, int featureVersion) {
         NodeFactory nodeFactory = new NodeFactory();
         PythonStringFactoryImpl stringFactory = new PythonStringFactoryImpl();
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
                 // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
-                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING).parse();
+                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING, featureVersion).parse();
             }
         };
-        return new Parser(new ParserTokenizer(errorCb, src, inputType, interactiveTerminal), nodeFactory, fexpParser, stringFactory, errorCb, inputType);
+        return new Parser(new ParserTokenizer(errorCb, src, inputType, interactiveTerminal), nodeFactory, fexpParser, stringFactory, errorCb, inputType, featureVersion);
     }
 }

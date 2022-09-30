@@ -239,8 +239,8 @@ public class NodeFactory {
         }
     }
 
-    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory) {
-        return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb, stringFactory);
+    public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory, int featureVersion) {
+        return StringLiteralUtils.createStringLiteral(values, sourceRanges, exprParser, errorCb, stringFactory, featureVersion);
     }
 
     public ExprTy createUnaryOp(UnaryOpTy op, ExprTy value, SourceRange sourceRange) {
