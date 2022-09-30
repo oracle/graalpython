@@ -603,29 +603,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        protected Object getPaths(TruffleString key) {
-            Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            List<TruffleFile> pathsList = toolchain.getPaths(key.toJavaStringUncached());
-            if (pathsList == null) {
-                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-            }
-            Object[] paths = new Object[pathsList.size()];
-            int i = 0;
-            for (TruffleFile f : pathsList) {
-                paths[i++] = toTruffleStringUncached(f.toString());
-            }
-            return factory().createTuple(paths);
-        }
-    }
-
     // Equivalent of PyObject_TypeCheck
     @Builtin(name = "type_check", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
