@@ -563,7 +563,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 if (path != null) {
                     storage.putUncached(toTruffleStringUncached(path), factory().createTuple(tool.targets));
                 } else {
-                    LOGGER.info("Could not locate tool " + tool.name);
+                    LOGGER.fine("Could not locate tool " + tool.name);
                 }
             }
             return factory().createDict(storage);
