@@ -2004,7 +2004,7 @@ public abstract class TypeNodes {
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
-                        addNativeSlots(language, pythonClass, newSlots);
+                        addNativeSlots(frame, language, pythonClass, newSlots);
                     }
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
@@ -2110,20 +2110,41 @@ public abstract class TypeNodes {
          * <li>We need to install a member descriptor for each dynamic slot.</li>
          * </ol>
          */
-        @TruffleBoundary
-        private void addNativeSlots(PythonLanguage language, PythonManagedClass pythonClass, PTuple slots) {
-            Object typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
-            int slotOffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__));
+        private void addNativeSlots(VirtualFrame frame, PythonLanguage language, PythonManagedClass pythonClass, PTuple slots) {
             SequenceStorage slotsStorage = slots.getSequenceStorage();
+            if (slotsStorage.length() != 0) {
+                // __basicsize__ may not have been inherited yet. Therefore, iterate over the MRO
+                // and/ look for the first native class.
+                int slotOffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__));
+                if (slotOffset == 0) {
+                    for (Object cls : getMro(pythonClass)) {
+                        if (PGuards.isNativeClass(cls)) {
+                            // Use GetAnyAttributeNode since these are get-set-descriptors
+                            slotOffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
+                            break;
+                        }
+                    }
+                }
+                if (slotOffset == 0) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                slotOffset = installMemberDescriptors(language, pythonClass, slotsStorage, slotOffset);
+                // commit new basicSize
+                ensureWriteAttrNode().execute(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__, slotOffset);
+            }
+        }
+
+        @TruffleBoundary
+        private static int installMemberDescriptors(PythonLanguage language, PythonManagedClass pythonClass, SequenceStorage slotsStorage, int slotOffset) {
+            Object typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
             for (int i = 0; i < slotsStorage.length(); i++) {
-                Object slotName = getSlotItemNode().execute(null, slotsStorage, i);
+                Object slotName = SequenceStorageNodes.GetItemScalarNode.getUncached().execute(slotsStorage, i);
                 AddMemberNode.addMember(language, pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE,
                                 CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
                                 PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
-            // commit new basicSize
-            ensureWriteAttrNode().execute(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__, slotOffset);
+            return slotOffset;
         }
 
         private CastToListNode getCastToListNode() {
