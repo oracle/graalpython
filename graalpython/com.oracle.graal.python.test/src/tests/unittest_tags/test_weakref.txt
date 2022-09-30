@@ -70,8 +70,6 @@
 *graalpython.lib-python.3.test.test_weakref.WeakKeyDictionaryTestCase.test_values
 *graalpython.lib-python.3.test.test_weakref.WeakKeyDictionaryTestCase.test_write
 *graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_alive
-*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead
-*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_object_dead
 *graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_equality
 *graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_hashing
 *graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_method_dead
