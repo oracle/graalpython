@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
@@ -77,6 +78,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
     private LineReader reader;
     private History history;
     private String prompt;
+    private LinkedList<String> lineBuffer = new LinkedList<>();
 
     public JLineConsoleHandler(InputStream inStream, OutputStream outStream, boolean noPrompt) {
         this.noPrompt = noPrompt;
@@ -156,15 +158,21 @@ public class JLineConsoleHandler extends ConsoleHandler {
 
     @Override
     public String readLine(boolean showPrompt) {
-        try {
-            return reader.readLine(showPrompt ? prompt : "");
-        } catch (UserInterruptException e) {
-            throw e;
-        } catch (EndOfFileException e) {
-            return null;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        if (lineBuffer.isEmpty()) {
+            try {
+                String lines = reader.readLine(showPrompt ? prompt : "");
+                for (String line : lines.split("\n")) {
+                    lineBuffer.add(line);
+                }
+            } catch (UserInterruptException e) {
+                throw e;
+            } catch (EndOfFileException e) {
+                return null;
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
         }
+        return lineBuffer.poll();
     }
 
     @Override
