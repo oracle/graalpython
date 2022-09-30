@@ -647,9 +647,9 @@ final class Validator implements SSTreeVisitor<Void> {
     // PatternTy validation
     //////////////////////////////
 
-    // Equivalent of validate_pattern
     boolean isStarPatternOk;
 
+    // Equivalent of validate_pattern
     private void validatePattern(PatternTy pattern, boolean starOk) {
         boolean prevStarOk = isStarPatternOk;
         isStarPatternOk = starOk;

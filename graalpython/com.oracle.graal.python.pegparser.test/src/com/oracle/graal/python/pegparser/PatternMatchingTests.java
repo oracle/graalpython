@@ -98,7 +98,7 @@ public class PatternMatchingTests extends ParserTestBase {
 
     @Test
     public void missingColonInCase() {
-        checkSyntaxErrorMessage("match a:\n    case None pass", "expected ':'");
+        checkSyntaxErrorMessage("match a:\n    case None\n        pass", "expected ':'");
     }
 
     @Test
