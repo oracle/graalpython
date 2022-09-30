@@ -15,22 +15,12 @@ GZ_FILE_NAME = 'testgzfile.gz'
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 GZ_PATH = os.path.join(DIR_PATH, GZ_FILE_NAME)
 
-
-class MyIntObject:
-    def __init__(self, value):
-        self.value = value
-    def __int__(self):
-        return self.value
-
 class MyIndexObject:
     def __init__(self, value):
         self.value = value
     def __index__(self):
         return self.value
 
-class CustomInt:
-    def __int__(self):
-        return 100
 
 class ChecksumTests(unittest.TestCase):
 
@@ -46,7 +36,7 @@ class ChecksumTests(unittest.TestCase):
         self.assertEqual(zlib.crc32(b"", -1), 4294967295)
         self.assertEqual(zlib.crc32(b"", longNumber), 1286608618)
         self.assertEqual(zlib.crc32(b"", pintNumber), 3844505322)
-        self.assertEqual(zlib.crc32(b"", MyIntObject(10)), 10)
+        self.assertEqual(zlib.crc32(b"", MyIndexObject(10)), 10)
 
     def test_adler32start(self):
         self.assertEqual(zlib.adler32(b""), zlib.adler32(b"", 1))
@@ -58,7 +48,7 @@ class ChecksumTests(unittest.TestCase):
         self.assertEqual(zlib.adler32(b"", 432), 432)
         self.assertEqual(zlib.adler32(b"", longNumber), 1286608618)
         self.assertEqual(zlib.adler32(b"", pintNumber), 3844505322)
-        self.assertEqual(zlib.adler32(b"", MyIntObject(10)), 10)
+        self.assertEqual(zlib.adler32(b"", MyIndexObject(10)), 10)
 
     def test_penguins(self):
         self.assertEqual(zlib.crc32(b"penguin", 0), 0x0e5c1a120)
@@ -162,7 +152,7 @@ class CompressTests(BaseCompressTestCase, unittest.TestCase):
     def test_custom_bufsize(self):
         data = HAMLET_SCENE * 10
         compressed = zlib.compress(data, 1)
-        self.assertEqual(zlib.decompress(compressed, 15, CustomInt()), data)
+        self.assertEqual(zlib.decompress(compressed, 15, MyIndexObject(100)), data)
 
     def test_decoding_flush_ignore_error(self):
         d = zlib.decompressobj()

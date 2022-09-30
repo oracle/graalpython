@@ -105,45 +105,27 @@ def test_code_attributes():
 
 
 def test_code_copy():
-    import sys
     import types
 
     code = wrapper().__code__
-    if hasattr(types.CodeType, "co_posonlyargcount"):
-        code2 = types.CodeType(
-            code.co_argcount,
-            code.co_posonlyargcount,
-            code.co_kwonlyargcount,
-            code.co_nlocals,
-            code.co_stacksize,
-            code.co_flags,
-            code.co_code,
-            code.co_consts,
-            code.co_names,
-            code.co_varnames,
-            code.co_filename,
-            code.co_name,
-            code.co_firstlineno,
-            code.co_lnotab,
-            code.co_freevars,
-            code.co_cellvars)
-    else:
-        code2 = types.CodeType(
-            code.co_argcount,
-            code.co_kwonlyargcount,
-            code.co_nlocals,
-            code.co_stacksize,
-            code.co_flags,
-            code.co_code,
-            code.co_consts,
-            code.co_names,
-            code.co_varnames,
-            code.co_filename,
-            code.co_name,
-            code.co_firstlineno,
-            code.co_lnotab,
-            code.co_freevars,
-            code.co_cellvars)
+    code2 = types.CodeType(
+        code.co_argcount,
+        code.co_posonlyargcount,
+        code.co_kwonlyargcount,
+        code.co_nlocals,
+        code.co_stacksize,
+        code.co_flags,
+        code.co_code,
+        code.co_consts,
+        code.co_names,
+        code.co_varnames,
+        code.co_filename,
+        code.co_name,
+        code.co_firstlineno,
+        code.co_linetable,
+        code.co_freevars,
+        code.co_cellvars)
+
 
     assert code.co_argcount == code2.co_argcount
     assert code.co_kwonlyargcount == code2.co_kwonlyargcount
@@ -157,7 +139,7 @@ def test_code_copy():
     assert code.co_filename == code2.co_filename
     assert code.co_name == code2.co_name
     assert code.co_firstlineno == code2.co_firstlineno
-    assert code.co_lnotab == code2.co_lnotab
+    assert code.co_linetable == code2.co_linetable
     assert set(code.co_freevars) == set(code2.co_freevars)
     assert set(code.co_cellvars) == set(code2.co_cellvars)
 
@@ -178,10 +160,7 @@ def test_module_code():
         assert set(code.co_varnames) == set()
         assert code.co_filename.endswith("__init__.py")
         assert code.co_name.startswith("<module")
-        # AST interpreter doesn't pass this
-        if not sys.implementation.name == 'graalpy' or __graalpython__.uses_bytecode_interpreter:
-            assert code.co_firstlineno == 40
-        # assert code.co_lnotab  == b''
+        assert code.co_firstlineno == 1
         assert code.co_freevars == tuple()
         assert code.co_cellvars == tuple()
 

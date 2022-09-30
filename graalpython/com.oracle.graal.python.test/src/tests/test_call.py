@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -387,11 +387,12 @@ def test_multiple_values_with_callable_name():
     def assert_call_raises_get_message(exception, call_expr):
         return assert_get_message(exception, eval, call_expr)
 
-    msg = assert_call_raises_get_message(TypeError, "fooo(a=1, **b)") # TypeError: f26() argument after ** must be a mapping, not int
-    assert msg == "f26() argument after ** must be a mapping, not int"
+    msg = assert_call_raises_get_message(TypeError, "fooo(a=1, **b)")
+    print(msg)
+    assert msg == "tests.test_call.f26() argument after ** must be a mapping, not int"
     
-    msg = assert_call_raises_get_message(TypeError, "fooo(**{'a' : 4}, **{'a': 3})")  # TypeError: f26() got multiple values for keyword argument 'a'
-    assert msg == "f26() got multiple values for keyword argument 'a'"
+    msg = assert_call_raises_get_message(TypeError, "fooo(**{'a' : 4}, **{'a': 3})")
+    assert msg == "tests.test_call.f26() got multiple values for keyword argument 'a'"
     
 def test_runtime_args():
     mydict = {'a':1, 'b':2, 'c':3}

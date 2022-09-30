@@ -146,14 +146,9 @@ def file_not_empty(path):
 
 
 c_template = """
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 {defines}
-
-#if !GRAALVM_PYTHON && (PY_VERSION_HEX < 0x03090000)
-#define Py_SET_REFCNT(ob, v) ((_PyObject_CAST(ob)->ob_refcnt = (v)))
-#define Py_SET_TYPE(ob, v)   ((_PyObject_CAST(ob)->ob_type) = (v))
-#define Py_SET_SIZE(ob, v)   ((_PyVarObject_CAST(ob)->ob_size = (Py_ssize_t) (v)))
-#endif
 
 {customcode}
 

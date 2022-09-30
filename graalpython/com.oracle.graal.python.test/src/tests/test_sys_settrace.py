@@ -87,7 +87,6 @@ oneline_loop.events = [((), [(0, 'oneline_loop', 'call', None),
                              (3, 'oneline_loop', 'line', None),
                              (3, 'oneline_loop', 'line', None),
                              (3, 'oneline_loop', 'line', None),
-                             (3, 'oneline_loop', 'line', None),
                              (3, 'oneline_loop', 'return', None)])]
 
 def helper(): # line -5

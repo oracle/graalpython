@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -106,22 +106,7 @@ class DummyNonInt():
     pass
 
 
-class DummyIntable():
-
-    def __int__(self):
-        return 0xCAFE
-
-
-class DummyIntSubclass(float):
-
-    def __int__(self):
-        return 0xBABE
-
-
 class DummyIndexable:
-
-    def __int__(self):
-        return 0xDEAD
 
     def __index__(self):
         return 0xBEEF
@@ -140,8 +125,6 @@ class TestPyLong(CPyExtTestCase):
             (-1, -1),
             (0x7fffffff, 0x7fffffff),
             (0xffffffffffffffffffffffffffffffff, -1),
-            (DummyIntable(), 0xCAFE),
-            (DummyIntSubclass(), 0xBABE),
             (DummyNonInt(), -1),
             (DummyIndexable(), 0xBEEF if sys.version_info >= (3, 8, 0) else 0xDEAD),
         ),
@@ -336,8 +319,6 @@ class TestPyLong(CPyExtTestCase):
             (0xfffffffffffffffffffffff,),
             ("hello",),
             (DummyNonInt(),),
-            (DummyIntable(),),
-            (DummyIntSubclass(),),
         ),
         resultspec="i",
         argspec='O',
@@ -354,8 +335,6 @@ class TestPyLong(CPyExtTestCase):
             (0xfffffffffffffffffffffff,),
             ("hello",),
             (DummyNonInt(),),
-            (DummyIntable(),),
-            (DummyIntSubclass(),),
         ),
         resultspec="i",
         argspec='O',
