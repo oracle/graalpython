@@ -161,14 +161,14 @@ class TestJsonBenchmarkParsers(unittest.TestCase):
         for result in results:
             self.assertEqual(result["bench-suite"], "pypy")
             self.assertIn(result["benchmark"], ["ai", "deltablue"])
-            self.assertIn(result["metric.name"], ["time"])
+            self.assertIn(result["metric.name"], ["time", "warmup"])
             self.assertIn(result["metric.unit"], ["s"])
             self.assertEqual(result["metric.score-function"], "id")
             self.assertEqual(result["metric.type"], "numeric")
             self.assertIsInstance(result["metric.value"], float)
             self.assertIsInstance(result["metric.iteration"], int)
 
-        self.assertEqual(len(results), 100, "should have 2*50 peak values")
+        self.assertEqual(len(results), 102, "should have 2*50 warmup values and 2*1 averages")
 
     def test_pypy_results_parsing2(self):
         import mx
@@ -183,14 +183,14 @@ class TestJsonBenchmarkParsers(unittest.TestCase):
         for result in results:
             self.assertEqual(result["bench-suite"], "pypy")
             self.assertIn(result["benchmark"], ["scimark_fft"])
-            self.assertIn(result["metric.name"], ["time"])
+            self.assertIn(result["metric.name"], ["time", "warmup"])
             self.assertIn(result["metric.unit"], ["s"])
             self.assertEqual(result["metric.score-function"], "id")
             self.assertEqual(result["metric.type"], "numeric")
             self.assertIsInstance(result["metric.value"], float)
             self.assertIsInstance(result["metric.iteration"], int)
 
-        self.assertEqual(len(results), 1, "just 1 value expected")
+        self.assertEqual(len(results), 2, "2 values expected")
 
 
 if __name__ == '__main__':
