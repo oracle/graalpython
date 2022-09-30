@@ -971,7 +971,35 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @ReportPolymorphism
-    abstract static class PowNode extends PythonTernaryBuiltinNode {
+    public abstract static class PowNode extends PythonTernaryBuiltinNode {
+        protected abstract int executeInt(int left, int right, PNone none) throws UnexpectedResultException;
+
+        protected abstract Object execute(int left, int right, PNone none);
+
+        public final int executeInt(int left, int right) throws UnexpectedResultException {
+            return executeInt(left, right, PNone.NO_VALUE);
+        }
+
+        public final Object execute(int left, int right) {
+            return execute(left, right, PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
+        static int doIIFast(int left, int right, @SuppressWarnings("unused") PNone none) {
+            int result = 1;
+            int exponent = right;
+            int base = left;
+            while (exponent != 0) {
+                if ((exponent & 1) != 0) {
+                    result = Math.multiplyExact(result, base);
+                }
+                exponent >>= 1;
+                if (exponent != 0) {    // prevent overflow in last iteration
+                    base = Math.multiplyExact(base, base);
+                }
+            }
+            return result;
+        }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
         static long doLLFast(long left, long right, @SuppressWarnings("unused") PNone none) {
@@ -1222,6 +1250,10 @@ public class IntBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.ArithmeticError, ErrorMessages.EXPONENT_TOO_LARGE);
             }
             return a.pow((int) b);
+        }
+
+        public static PowNode create() {
+            return IntBuiltinsFactory.PowNodeFactory.create();
         }
     }
 

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.compiler.OpCodes.ADD_TO_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_OP;
 import static com.oracle.graal.python.compiler.OpCodes.BINARY_SUBSCR;
 import static com.oracle.graal.python.compiler.OpCodes.BUILD_SLICE;
+import static com.oracle.graal.python.compiler.OpCodes.CALL_COMPREHENSION;
 import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION_KW;
 import static com.oracle.graal.python.compiler.OpCodes.CALL_FUNCTION_VARARGS;
@@ -296,9 +297,25 @@ public class Compiler implements SSTreeVisitor<Void> {
         int produced = insn.opcode.getNumberOfProducedStackItems(insn.arg, insn.followingArgs, false);
         byte canQuickenInputTypes = insn.opcode.canQuickenInputTypes();
         List<Instruction> inputs = null;
+        if (insn.opcode == STORE_SUBSCR) {
+            // Asymmetric, needs to be handled separately
+            Instruction index = popQuickeningStack();
+            popQuickeningStack(); // Ignore the collection, it's always object
+            Instruction value = popQuickeningStack();
+            if (index != null && (index.opcode.canQuickenOutputTypes() & QuickeningTypes.INT) != 0) {
+                index.quickenOutput = QuickeningTypes.INT;
+                if (value != null && (value.opcode.canQuickenOutputTypes() & canQuickenInputTypes) != 0) {
+                    value.quickenOutput = canQuickenInputTypes;
+                    insn.quickeningGeneralizeList = List.of(value, index);
+                } else {
+                    insn.quickeningGeneralizeList = List.of(index);
+                }
+            }
+            return;
+        }
         if (consumed > 0) {
             if (canQuickenInputTypes != 0) {
-                inputs = new ArrayList<>();
+                inputs = new ArrayList<>(consumed);
                 for (int i = 0; i < consumed; i++) {
                     Instruction input = popQuickeningStack();
                     if (input == null) {
@@ -1445,7 +1462,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             makeClosure(code, 0);
             generators[0].iter.accept(this);
             addOp(GET_ITER);
-            addOp(CALL_FUNCTION, 1);
+            addOp(CALL_COMPREHENSION);
             return null;
         } finally {
             setLocation(savedLocation);

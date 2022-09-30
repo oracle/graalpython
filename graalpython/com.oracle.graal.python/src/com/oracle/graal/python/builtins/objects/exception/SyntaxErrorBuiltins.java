@@ -202,10 +202,10 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
                 }
 
-                filename = getItemNode.execute(frame, storage, 0);
-                lineno = getItemNode.execute(frame, storage, 1);
-                offset = getItemNode.execute(frame, storage, 2);
-                text = getItemNode.execute(frame, storage, 3);
+                filename = getItemNode.execute(storage, 0);
+                lineno = getItemNode.execute(storage, 1);
+                offset = getItemNode.execute(storage, 2);
+                text = getItemNode.execute(storage, 3);
 
                 // Issue #21669: Custom error for 'print' & 'exec' as statements
                 // Only applies to SyntaxError instances, not to subclasses such

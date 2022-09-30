@@ -58,14 +58,14 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_DECODE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAMEREPLACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEPASS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF_UNDERSCORE_8;
-import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_XMLCHARREFREPLACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -1048,7 +1048,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, typeCheck, sizeNode))) {
                 throw raise(TypeError, S_MUST_RETURN_TUPLE, "encoder");
             }
-            return getResultItemNode.execute(frame, ((PTuple) result).getSequenceStorage(), 0);
+            return getResultItemNode.execute(((PTuple) result).getSequenceStorage(), 0);
         }
     }
 
@@ -1079,13 +1079,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, typeCheck, sizeNode))) {
                 throw raise(TypeError, S_MUST_RETURN_TUPLE, "decoder");
             }
-            return getResultItemNode.execute(frame, ((PTuple) result).getSequenceStorage(), 0);
+            return getResultItemNode.execute(((PTuple) result).getSequenceStorage(), 0);
         }
     }
 
     private static Object codec_getItem(VirtualFrame frame, TruffleString encoding, int index, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
         PTuple t = (PTuple) lookupNode.execute(frame, encoding);
-        return getItemNode.execute(frame, t.getSequenceStorage(), index);
+        return getItemNode.execute(t.getSequenceStorage(), index);
     }
 
     private static Object encoder(VirtualFrame frame, TruffleString encoding, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {

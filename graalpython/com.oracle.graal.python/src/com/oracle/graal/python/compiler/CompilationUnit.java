@@ -206,6 +206,7 @@ public final class CompilationUnit {
         HashMap<Block, List<Block>> handlerBlocks = new HashMap<>();
         while (b != null) {
             b.startBci = buf.size();
+            int quickenMetricWeight = b.computeLoopDepth() * 3 + 1;
             BlockInfo.AbstractExceptionHandler handler = b.findExceptionHandler();
             if (handler != null) {
                 handlerBlocks.computeIfAbsent(handler.exceptionHandler, (x) -> new ArrayList<>()).add(b);
@@ -235,7 +236,7 @@ public final class CompilationUnit {
                 if (i.opcode == OpCodes.STORE_FAST) {
                     variableStores.get(i.arg).add(i);
                 } else if (i.opcode == OpCodes.LOAD_FAST) {
-                    boxingMetric[i.arg] += i.quickenOutput != 0 ? 1 : -1;
+                    boxingMetric[i.arg] += i.quickenOutput != 0 ? quickenMetricWeight : -quickenMetricWeight;
                 }
                 i.bci = buf.size();
                 emitBytecode(i, buf, sourceMapBuilder);

@@ -448,7 +448,19 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ReportPolymorphism
-    abstract static class PowerNode extends PythonTernaryBuiltinNode {
+    public abstract static class PowNode extends PythonTernaryBuiltinNode {
+        protected abstract double executeDouble(VirtualFrame frame, double left, double right, PNone none) throws UnexpectedResultException;
+
+        protected abstract Object execute(VirtualFrame frame, double left, double right, PNone none);
+
+        public final double executeDouble(double left, double right) throws UnexpectedResultException {
+            return executeDouble(null, left, right, PNone.NO_VALUE);
+        }
+
+        public final Object execute(double left, double right) {
+            return execute(null, left, right, PNone.NO_VALUE);
+        }
+
         @Specialization
         double doDL(double left, long right, @SuppressWarnings("unused") PNone none,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
@@ -569,6 +581,10 @@ public final class FloatBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, callPow, negativeRaise);
+        }
+
+        public static PowNode create() {
+            return FloatBuiltinsFactory.PowNodeFactory.create();
         }
     }
 

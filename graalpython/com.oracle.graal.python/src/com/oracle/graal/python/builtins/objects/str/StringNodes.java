@@ -315,7 +315,7 @@ public abstract class StringNodes {
         // IMPORTANT: only do this if the sequence is exactly list or tuple (not subclassed); for
         // semantics, see CPython's 'abstract.c' function 'PySequence_Fast'
         @Specialization(guards = "isExactlyListOrTuple(getClassNode, sequence)", limit = "1")
-        static TruffleString doPSequence(VirtualFrame frame, TruffleString self, PSequence sequence,
+        static TruffleString doPSequence(TruffleString self, PSequence sequence,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -338,7 +338,7 @@ public abstract class StringNodes {
             int i = 0;
 
             // manually peel first iteration
-            Object item = getItemNode.execute(frame, storage, i);
+            Object item = getItemNode.execute(storage, i);
             try {
                 // shortcut
                 if (isSingleItemProfile.profile(len == 1)) {
@@ -349,7 +349,7 @@ public abstract class StringNodes {
 
                 for (i = 1; i < len; i++) {
                     appendStringNode.execute(sb, self);
-                    item = getItemNode.execute(frame, storage, i);
+                    item = getItemNode.execute(storage, i);
                     appendStringNode.execute(sb, castToStringNode.execute(item));
                 }
                 return toStringNode.execute(sb);

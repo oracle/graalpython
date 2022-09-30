@@ -507,8 +507,8 @@ public abstract class ObjectNodes {
                 }
 
                 SequenceStorage sequenceStorage = getSequenceStorageNode.execute(newargs);
-                Object args = getItemNode.execute(frame, sequenceStorage, 0);
-                Object kwargs = getItemNode.execute(frame, sequenceStorage, 1);
+                Object args = getItemNode.execute(sequenceStorage, 0);
+                Object kwargs = getItemNode.execute(sequenceStorage, 1);
 
                 if (!isTupleSubClassNode.execute(frame, args)) {
                     throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
