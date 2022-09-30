@@ -102,6 +102,7 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RepeatNode extends PythonBinaryClinicBuiltinNode {
 
+        @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return CDataTypeSequenceBuiltinsClinicProviders.RepeatNodeClinicProviderGen.INSTANCE;
         }
