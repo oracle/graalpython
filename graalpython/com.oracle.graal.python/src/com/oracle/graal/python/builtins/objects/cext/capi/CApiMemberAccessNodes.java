@@ -79,10 +79,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -131,8 +129,9 @@ public class CApiMemberAccessNodes {
             case T_STRING:
                 return NativeCAPISymbol.FUN_READ_STRING_MEMBER;
             case T_OBJECT:
-            case T_OBJECT_EX:
                 return NativeCAPISymbol.FUN_READ_OBJECT_MEMBER;
+            case T_OBJECT_EX:
+                return NativeCAPISymbol.FUN_READ_OBJECT_EX_MEMBER;
             case T_CHAR:
             case T_BYTE:
             case T_BOOL:
@@ -334,15 +333,16 @@ public class CApiMemberAccessNodes {
         @Child private ToSulongNode toSulongNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
         @Child private PForeignToPTypeNode fromForeign;
+        @Child private PRaiseNode raiseNode;
 
-        /** The name of the native getter function. */
-        private final NativeCAPISymbol accessor;
+        /** The specified member type. */
+        private final int type;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected ReadMemberNode(NativeCAPISymbol accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
-            this.accessor = accessor;
+        protected ReadMemberNode(int type, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+            this.type = type;
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
             if (asPythonObjectNode == null) {
@@ -354,12 +354,17 @@ public class CApiMemberAccessNodes {
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self) {
             Object pyObjectPtr = ensureToSulongNode().execute(self);
             Object nativeResult = PNone.NONE;
+            NativeCAPISymbol accessor = getReadAccessorName(type);
             if (accessor != null) {
                 // This will call pure C functions that won't ever access the Python stack nor the
                 // exception state. So, we don't need to setup an indirect call.
                 nativeResult = ensureCallHPyFunctionNode().call(accessor, pyObjectPtr, (long) offset);
                 if (asPythonObjectNode != null) {
-                    return asPythonObjectNode.execute(nativeResult);
+                    Object result = asPythonObjectNode.execute(nativeResult);
+                    if (type == T_OBJECT_EX && result == PNone.NO_VALUE) {
+                        throw ensureRaiseNode().raise(PythonBuiltinClassType.AttributeError);
+                    }
+                    return result;
                 }
             }
             // We still need to use 'PForeignToPTypeNode' to ensure that we do not introduce unknown
@@ -383,12 +388,19 @@ public class CApiMemberAccessNodes {
             return toSulongNode;
         }
 
+        private PRaiseNode ensureRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
-            NativeCAPISymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
             RootCallTarget callTarget = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true),
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
                             CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, flags, callTarget);
@@ -446,8 +458,6 @@ public class CApiMemberAccessNodes {
         @Child private PCallCapiFunction callHPyFunctionNode;
         @Child private CExtToNativeNode toNativeNode;
         @Child private ToSulongNode toSulongNode;
-
-        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
 
         /** The specified member type. */
         private final int type;

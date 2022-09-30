@@ -2769,6 +2769,7 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doCachedObj", "getByMember", "getByMemberAttachType", "doCachedMember"})
         static Object doGeneric(Object self, NativeMember memberName,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached TruffleString.ConcatNode concatNode,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached ToJavaNode toJavaNode,
@@ -2776,6 +2777,16 @@ public abstract class CExtNodes {
                         @Cached VoidPtrToJavaNode voidPtrToJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode,
                         @Cached TruffleString.EqualNode eqNode) {
+            if (self instanceof PythonAbstractNativeObject) {
+                PythonAbstractNativeObject nativeObject = (PythonAbstractNativeObject) self;
+                if (lib.hasMembers(nativeObject.getPtr())) {
+                    try {
+                        return getByMember(nativeObject, memberName, lib, null, getUncachedForMember(memberName));
+                    } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                        // fall through
+                    }
+                }
+            }
             Object value = callMemberGetterNode.call(getterFuncName(memberName, concatNode, eqNode), toSulong.execute(self));
             switch (memberName.getType()) {
                 case OBJECT:

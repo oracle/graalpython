@@ -735,7 +735,6 @@ unsigned long ReadULongMember(PyObject* object, Py_ssize_t offset) {
 PyObject* ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
-        PyErr_SetString(PyExc_ValueError, "member must not be NULL");
         return NULL;
     } else {
         Py_INCREF(member);
