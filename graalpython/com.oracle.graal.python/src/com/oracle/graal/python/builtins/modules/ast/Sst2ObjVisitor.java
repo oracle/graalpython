@@ -674,6 +674,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         }
     }
 
+    @Override
     public Object visitNonNull(CmpOpTy v) {
         switch (v) {
             case Eq:

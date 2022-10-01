@@ -1522,6 +1522,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CenterNode extends PythonTernaryClinicBuiltinNode {
 
+        @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.CenterNodeClinicProviderGen.INSTANCE;
         }
