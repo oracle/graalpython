@@ -104,7 +104,7 @@ public class SocketUtils {
                         SelectResult selectResult = posixLib.select(posixSupport, readfds, writefds, EMPTY_INT_ARRAY, selectTimeout);
                         boolean[] resultFds = writing ? selectResult.getWriteFds() : selectResult.getReadFds();
                         if (resultFds.length == 0 || !resultFds[0]) {
-                            throw constructAndRaiseNode.raiseSocketTimeoutError(frame, ErrorMessages.TIMED_OUT);
+                            throw constructAndRaiseNode.raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                         }
                     } finally {
                         gil.acquire();
@@ -161,7 +161,7 @@ public class SocketUtils {
             } else {
                 long remainingNs = initialTimeoutNs - (System.nanoTime() - startNano);
                 if (remainingNs <= 0) {
-                    throw constructAndRaiseNode.raiseSocketTimeoutError(frame, ErrorMessages.TIMED_OUT);
+                    throw constructAndRaiseNode.raiseTimeoutError(frame, ErrorMessages.TIMED_OUT);
                 }
                 return remainingNs;
             }

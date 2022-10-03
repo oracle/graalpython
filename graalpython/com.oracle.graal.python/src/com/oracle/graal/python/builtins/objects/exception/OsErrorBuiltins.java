@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECHILD;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECONNABORTED;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ECONNREFUSED;
@@ -212,8 +211,6 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 return ESRCH;
             case TimeoutError:
                 return ETIMEDOUT;
-            case SocketTimeout:
-                return EAGAIN;
             default:
                 return null;
         }

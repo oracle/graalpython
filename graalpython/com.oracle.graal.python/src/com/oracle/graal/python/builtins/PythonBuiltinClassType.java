@@ -331,7 +331,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnpicklingError("UnpicklingError", "_pickle", Flags.EXCEPTION),
     SocketGAIError("gaierror", J__SOCKET, Flags.EXCEPTION),
     SocketHError("herror", J__SOCKET, Flags.EXCEPTION),
-    SocketTimeout("timeout", J__SOCKET, Flags.EXCEPTION),
     BinasciiError("Error", "binascii", Flags.EXCEPTION),
     BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
     SSLError("SSLError", J__SSL, Flags.EXCEPTION),
@@ -633,7 +632,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         LZMAError.base = Exception;
         SocketGAIError.base = OSError;
         SocketHError.base = OSError;
-        SocketTimeout.base = OSError;
 
         SSLError.base = OSError;
         SSLZeroReturnError.base = SSLError;
