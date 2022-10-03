@@ -105,7 +105,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethodRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
@@ -4064,6 +4067,12 @@ public abstract class CExtNodes {
                 return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
             } else if (CExtContext.isMethVarargs(flags)) {
                 return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
+            } else if (CExtContext.isMethMethod(flags)) {
+                return new MethMethodRoot(language, name, isStatic, PExternalFunctionWrapper.METHOD);
+            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
+                return new MethFastcallWithKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL_WITH_KEYWORDS);
+            } else if (CExtContext.isMethFastcall(flags)) {
+                return new MethFastcallRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL);
             }
             throw new IllegalStateException("illegal method flags");
         }

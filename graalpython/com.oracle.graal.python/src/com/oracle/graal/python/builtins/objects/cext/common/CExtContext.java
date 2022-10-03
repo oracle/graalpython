@@ -107,6 +107,7 @@ public abstract class CExtContext {
     public static final int METH_CLASS = 0x0010;
     public static final int METH_STATIC = 0x0020;
     public static final int METH_FASTCALL = 0x0080;
+    public static final int METH_METHOD = 0x0200;
 
     private final PythonContext context;
 
@@ -153,13 +154,16 @@ public abstract class CExtContext {
         return (flags & METH_O) != 0;
     }
 
-    @SuppressWarnings("unused")
     public static boolean isMethFastcall(int flags) {
         return (flags & METH_FASTCALL) != 0 && !isMethFastcallWithKeywords(flags);
     }
 
     public static boolean isMethFastcallWithKeywords(int flags) {
         return (flags & METH_FASTCALL) != 0 && (flags & METH_KEYWORDS) != 0;
+    }
+
+    public static boolean isMethMethod(int flags) {
+        return (flags & METH_METHOD) != 0;
     }
 
     public static boolean isMethStatic(int flags) {
