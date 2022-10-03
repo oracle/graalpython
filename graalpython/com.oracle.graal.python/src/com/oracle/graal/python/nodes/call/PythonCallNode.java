@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -81,9 +84,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @NodeChild("calleeNode")
 public abstract class PythonCallNode extends ExpressionNode {
@@ -323,7 +323,6 @@ public abstract class PythonCallNode extends ExpressionNode {
             try {
                 result = keywordArguments.execute(frame);
             } catch (SameDictKeyException ex) {
-                keywordsError.enter();
                 if (castToStringNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castToStringNode = insert(StringNodes.CastToTruffleStringCheckedNode.create());

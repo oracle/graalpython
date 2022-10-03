@@ -913,7 +913,7 @@ public abstract class PosixSupportLibrary extends Library {
      * known, it may be included in the exception, otherwise it can be queried using
      * {@link #strerror(Object, int)}.
      */
-    public static class PosixException extends Exception {
+    public static final class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;
 

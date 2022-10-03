@@ -2487,7 +2487,7 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object arg);
 
-        @Specialization(guards = "lengthNode.execute(value, TS_ENCODING) == 1")
+        @Specialization(guards = "lengthNode.execute(value, TS_ENCODING) == 1", limit = "1")
         static long doString(TruffleString value,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode) {

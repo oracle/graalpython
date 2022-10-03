@@ -942,13 +942,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFrozenSet(cls);
         }
 
-        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(cls)")
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(cls)", limit = "1")
         public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
             return arg;
         }
 
-        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(cls)")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(cls)", limit = "1")
         public PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
             return factory().createFrozenSet(cls, arg.getDictStorage());
@@ -1903,7 +1903,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * CPython {@code unicodeobject.c} we have to first create a temporary string, then fill it
          * into a natively allocated subtype structure
          */
-        @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
+                        "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
                         @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
@@ -2239,7 +2240,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createPythonModule(self);
         }
 
-        @Specialization(guards = "isTypeNode.execute(self)")
+        @Specialization(guards = "isTypeNode.execute(self)", limit = "1")
         @SuppressWarnings("unused")
         Object doNative(PythonAbstractNativeObject self, Object[] varargs, PKeyword[] kwargs,
                         @Cached IsTypeNode isTypeNode) {

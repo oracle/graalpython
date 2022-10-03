@@ -94,7 +94,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -240,12 +239,10 @@ public abstract class StringNodes {
         @Specialization(guards = "!isTruffleString(self)")
         static String doConvert(Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached BranchProfile errorBranch,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return castToJavaStringNode.execute(self);
             } catch (CannotCastException e) {
-                errorBranch.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
@@ -271,12 +268,10 @@ public abstract class StringNodes {
         @Specialization(guards = "!isTruffleString(self)")
         static TruffleString doConvert(Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached BranchProfile errorBranch,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return castToTruffleStringNode.execute(self);
             } catch (CannotCastException e) {
-                errorBranch.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
@@ -441,12 +436,10 @@ public abstract class StringNodes {
         @Specialization
         static void doLong(TruffleStringBuilder sb, long translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Shared("overflow") @Cached BranchProfile ovf,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
                 doInt(sb, PInt.intValueExact(translated), raise, appendCodePointNode);
             } catch (OverflowException e) {
-                ovf.enter();
                 throw raiseError(raise);
             }
         }
@@ -454,12 +447,10 @@ public abstract class StringNodes {
         @Specialization
         static void doPInt(TruffleStringBuilder sb, PInt translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Shared("overflow") @Cached BranchProfile ovf,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             try {
                 doInt(sb, translated.intValueExact(), raise, appendCodePointNode);
             } catch (OverflowException e) {
-                ovf.enter();
                 throw raiseError(raise);
             }
         }

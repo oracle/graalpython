@@ -130,7 +130,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -992,8 +991,6 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ConditionProfile nNegativeProfile,
-                        @Cached BranchProfile notBytesProfile,
-                        @Cached BranchProfile notEnoughBytesProfile,
                         @Cached FromBytesNode fromBytesNode) {
             if (nNegativeProfile.profile(n < 0)) {
                 throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
@@ -1007,11 +1004,9 @@ public class ArrayBuiltins extends PythonBuiltins {
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
                 if (readLength != nbytes) {
-                    notEnoughBytesProfile.enter();
                     throw raise(EOFError, ErrorMessages.READ_DIDNT_RETURN_ENOUGH_BYTES);
                 }
             } else {
-                notBytesProfile.enter();
                 throw raise(TypeError, ErrorMessages.READ_DIDNT_RETURN_BYTES);
             }
             return PNone.NONE;

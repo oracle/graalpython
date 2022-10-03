@@ -88,6 +88,7 @@ import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -386,15 +387,15 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0", limit = "1")
         Object reprNoArgs(@SuppressWarnings("unused") VirtualFrame frame, PBaseException self,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CastToTruffleStringNode castStringNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @SuppressWarnings("unused") @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
+                        @Shared("castStr") @Cached CastToTruffleStringNode castStringNode,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
@@ -402,17 +403,17 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return toStringNode.execute(sb);
         }
 
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1", limit = "1")
         Object reprArgs1(VirtualFrame frame, PBaseException self,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetAttr getAttrNode,
+                        @SuppressWarnings("unused") @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Cached GetItemNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
-                        @Cached CastToTruffleStringNode castStringNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared("castStr") @Cached CastToTruffleStringNode castStringNode,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
@@ -422,16 +423,16 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return toStringNode.execute(sb);
         }
 
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) > 1")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) > 1", limit = "1")
         Object reprArgs(VirtualFrame frame, PBaseException self,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetAttr getAttrNode,
+                        @SuppressWarnings("unused") @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttrNode,
                         @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.ReprNode reprNode,
-                        @Cached CastToTruffleStringNode castStringNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Shared("castStr") @Cached CastToTruffleStringNode castStringNode,
+                        @Shared("appendStr") @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(self);
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, castStringNode.execute(getAttrNode.execute(frame, type, T___NAME__)));
@@ -448,26 +449,26 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0", limit = "1")
         Object strNoArgs(VirtualFrame frame, PBaseException self,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached ArgsNode argsNode) {
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("argsNode") @Cached ArgsNode argsNode) {
             return T_EMPTY_STRING;
         }
 
-        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1", limit = "1")
         Object strArgs1(VirtualFrame frame, PBaseException self,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @SuppressWarnings("unused") @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
                         @Cached GetItemNode getItemNode,
                         @Cached PyObjectStrAsObjectNode strNode) {
             return strNode.execute(frame, getItemNode.execute(frame, self.getArgs(), 0));
         }
 
-        @Specialization(guards = {"argsLen(frame, self, lenNode, argsNode) > 1"})
+        @Specialization(guards = {"argsLen(frame, self, lenNode, argsNode) > 1"}, limit = "1")
         Object strArgs(VirtualFrame frame, PBaseException self,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @SuppressWarnings("unused") @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Shared("argsNode") @Cached ArgsNode argsNode,
                         @Cached PyObjectStrAsObjectNode strNode) {
             return strNode.execute(frame, self.getArgs());
         }
