@@ -30,6 +30,8 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toLower;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toUpper;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DECODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVEPREFIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVESUFFIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_STARTSWITH;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_RETURNED_P_INSTEAD_OF_BYTES;
@@ -1877,6 +1879,11 @@ public class BytesBuiltins extends PythonBuiltins {
         public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue) {
             return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(defaultValue);
         }
+
+        @ClinicConverterFactory
+        public static ExpectByteLikeNode create() {
+            return null;
+        }
     }
 
     abstract static class AbstractSplitNode extends PythonTernaryClinicBuiltinNode {
@@ -2805,4 +2812,92 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J_REMOVEPREFIX, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RemovePrefixNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PBytesLike remove(VirtualFrame frame, PBytesLike self, PBytesLike prefix,
+                        @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.CreateBytesNode create,
+                        @Cached ConditionProfile profile) {
+
+            Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, this);
+            Object prefixBuffer = bufferAcquireLib.acquireReadonly(prefix, frame, this);
+            try {
+                int selfBsLen = bufferLib.getBufferLength(selfBuffer);
+                int prefixBsLen = bufferLib.getBufferLength(prefixBuffer);
+
+                byte[] selfBs = bufferLib.getInternalOrCopiedByteArray(selfBuffer);
+                if (profile.profile(selfBsLen >= prefixBsLen && prefixBsLen > 0)) {
+                    byte[] prefixBs = bufferLib.getInternalOrCopiedByteArray(prefixBuffer);
+                    byte[] result = new byte[selfBsLen - prefixBsLen];
+                    int j = 0;
+                    for (int i = 0; i < selfBsLen; i++) {
+                        if (i < prefixBsLen) {
+                            if (selfBs[i] != prefixBs[i]) {
+                                return create.execute(factory(), self, selfBs);
+                            }
+                        } else {
+                            result[j++] = selfBs[i];
+                        }
+                    }
+                    return create.execute(factory(), self, result);
+                }
+                return create.execute(factory(), self, selfBs);
+            } finally {
+                bufferLib.release(selfBuffer, frame, this);
+                bufferLib.release(prefixBuffer, frame, this);
+            }
+        }
+
+        @Specialization(guards = "!isBytes(prefix)")
+        Object remove(@SuppressWarnings("unused") PBytesLike self, Object prefix) {
+            return raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, prefix);
+        }
+    }
+
+    @Builtin(name = J_REMOVESUFFIX, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class RemoveSuffixNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PBytesLike remove(VirtualFrame frame, PBytesLike self, PBytesLike suffix,
+                        @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.CreateBytesNode create,
+                        @Cached ConditionProfile profile) {
+            Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, this);
+            Object suffixBuffer = bufferAcquireLib.acquireReadonly(suffix, frame, this);
+            try {
+                int selfBsLen = bufferLib.getBufferLength(selfBuffer);
+                int suffixBsLen = bufferLib.getBufferLength(suffixBuffer);
+
+                byte[] selfBs = bufferLib.getInternalOrCopiedByteArray(selfBuffer);
+                if (profile.profile(selfBsLen >= suffixBsLen && suffixBsLen > 0)) {
+                    byte[] suffixBs = bufferLib.getInternalOrCopiedByteArray(suffixBuffer);
+                    byte[] result = new byte[selfBsLen - suffixBsLen];
+                    int k = 1;
+                    for (int i = selfBsLen - 1, j = 1; i >= 0; i--, j++) {
+                        if (i >= selfBsLen - suffixBsLen) {
+                            if (selfBs[i] != suffixBs[suffixBsLen - j]) {
+                                return create.execute(factory(), self, selfBs);
+                            }
+                        } else {
+                            result[result.length - k++] = selfBs[i];
+                        }
+                    }
+                    return create.execute(factory(), self, result);
+                }
+                return create.execute(factory(), self, selfBs);
+            } finally {
+                bufferLib.release(selfBuffer, frame, this);
+                bufferLib.release(suffixBuffer, frame, this);
+            }
+        }
+
+        @Specialization(guards = "!isBytes(suffix)")
+        Object remove(@SuppressWarnings("unused") PBytesLike self, Object suffix) {
+            return raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, suffix);
+        }
+    }
 }
