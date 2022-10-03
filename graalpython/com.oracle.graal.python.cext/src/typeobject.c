@@ -1240,3 +1240,39 @@ _PyType_Name(PyTypeObject *type)
     }
     return s;
 }
+
+// taken from CPython
+PyObject *
+_PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
+{
+    assert(PyType_Check(type));
+
+    PyObject *mro = type->tp_mro;
+    // The type must be ready
+    assert(mro != NULL);
+    assert(PyTuple_Check(mro));
+    // mro_invoke() ensures that the type MRO cannot be empty, so we don't have
+    // to check i < PyTuple_GET_SIZE(mro) at the first loop iteration.
+    assert(PyTuple_GET_SIZE(mro) >= 1);
+
+    Py_ssize_t n = PyTuple_GET_SIZE(mro);
+    for (Py_ssize_t i = 0; i < n; i++) {
+        PyObject *super = PyTuple_GET_ITEM(mro, i);
+        if(!_PyType_HasFeature((PyTypeObject *)super, Py_TPFLAGS_HEAPTYPE)) {
+            // Static types in the MRO need to be skipped
+            continue;
+        }
+
+        PyHeapTypeObject *ht = (PyHeapTypeObject*)super;
+        PyObject *module = ht->ht_module;
+        if (module && _PyModule_GetDef(module) == def) {
+            return module;
+        }
+    }
+
+    PyErr_Format(
+        PyExc_TypeError,
+        "_PyType_GetModuleByDef: No superclass of '%s' has the given module",
+        type->tp_name);
+    return NULL;
+}
