@@ -265,6 +265,9 @@ public abstract class BuiltinNames {
 
     public static final TruffleString T_LOCALS = tsLiteral("locals");
 
+    public static final String J_REMOVEPREFIX = "removeprefix";
+    public static final String J_REMOVESUFFIX = "removesuffix";
+
     public static final String J_REPR = "repr";
     public static final TruffleString T_REPR = tsLiteral(J_REPR);
 
