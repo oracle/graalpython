@@ -1225,3 +1225,18 @@ UPCALL_TYPED_ID(PyType_Lookup, type_lookup_fun_t);
 PyObject * _PyType_Lookup(PyTypeObject *type, PyObject *name) {
     return _jls_PyType_Lookup(native_type_to_java(type), native_to_java(name));
 }
+
+// taken from CPython
+const char *
+_PyType_Name(PyTypeObject *type)
+{
+    assert(type->tp_name != NULL);
+    const char *s = strrchr(type->tp_name, '.');
+    if (s == NULL) {
+        s = type->tp_name;
+    }
+    else {
+        s++;
+    }
+    return s;
+}
