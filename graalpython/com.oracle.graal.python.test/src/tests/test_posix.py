@@ -233,6 +233,25 @@ class PosixTests(unittest.TestCase):
         self.assertRaises(ValueError, os.fsync, MyInt(-1)) # fileno should be ignored
         self.assertRaises(ValueError, os.fsync, MyObj())
 
+    @unittest.skipIf(not hasattr(os, 'waitstatus_to_exitcode') or __graalpython__.posix_module_backend() == 'java' or sys.platform == 'darwin', 'values are specific to linux')
+    def test_waitstatus_to_exitcode(self):
+        self.assertRaises(TypeError, os.waitstatus_to_exitcode, "0")
+        self.assertRaises(ValueError, os.waitstatus_to_exitcode, -1)
+        self.assertEqual(0, os.waitstatus_to_exitcode(0x0000))
+        self.assertEqual(1, os.waitstatus_to_exitcode(0x0100))
+        self.assertEqual(255, os.waitstatus_to_exitcode(0xFF00))
+        self.assertEqual(0, os.waitstatus_to_exitcode(0x10000))
+        self.assertEqual(-1, os.waitstatus_to_exitcode(0x0001))
+        self.assertEqual(-1, os.waitstatus_to_exitcode(0x4201))
+        self.assertEqual(-126, os.waitstatus_to_exitcode(0x007E))
+        self.assertRaisesRegex(ValueError, r"process stopped by delivery of signal 0", os.waitstatus_to_exitcode, 0x007f)
+        self.assertRaisesRegex(ValueError, r"process stopped by delivery of signal 1", os.waitstatus_to_exitcode, 0x017f)
+        self.assertRaisesRegex(ValueError, r"process stopped by delivery of signal 255", os.waitstatus_to_exitcode, 0xff7f)
+        self.assertRaisesRegex(ValueError, r"process stopped by delivery of signal 0", os.waitstatus_to_exitcode, 0x1007f)
+        self.assertEqual(42, os.waitstatus_to_exitcode(0x2A80))
+        self.assertEqual(-12, os.waitstatus_to_exitcode(0x428C))
+        self.assertRaises(ValueError, os.waitstatus_to_exitcode, 0xFF)
+
 
 class WithCurdirFdTests(unittest.TestCase):
 

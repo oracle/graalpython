@@ -418,6 +418,9 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_USE_OF_W_FORMAT_CHAR = tsLiteral("invalid use of 'w' format character");
     public static final TruffleString INVALID_BUFFER_ACCESS = tsLiteral("invalid buffer access");
     public static final TruffleString INVALID_FORMAT_STRING_PIPE_SPECIFIED_TWICE = tsLiteral("Invalid format string (| specified twice)");
+    public static final TruffleString INVALID_WAIT_STATUS = tsLiteral("invalid wait status: %d");
+    public static final TruffleString INVALID_WEXITSTATUS = tsLiteral("invalid WEXITSTATUS: %d");
+    public static final TruffleString INVALID_WTERMSIG = tsLiteral("invalid WTERMSIG: %d");
     public static final TruffleString ISLICE_WRONG_ARGS = tsLiteral("islice(seq, stop) or islice(seq, start, stop[, step])");
     public static final TruffleString IS_EMPTY = tsLiteral("%s is empty");
     public static final TruffleString IS_NOT_A = tsLiteral("%s is not a %s");
@@ -610,6 +613,7 @@ public abstract class ErrorMessages {
     public static final TruffleString POP_INDEX_OUT_OF_RANGE = tsLiteral("pop index out of range");
     public static final TruffleString PORT_PROTO_NOT_FOUND = tsLiteral("port/proto not found");
     public static final TruffleString PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED = tsLiteral("private identifier too large to be mangled");
+    public static final TruffleString PROCESS_STOPPED_BY_DELIVERY_OF_SIGNAL = tsLiteral("process stopped by delivery of signal %d");
     public static final TruffleString PROVIDED_OBJ_NOT_ARRAY = tsLiteral("provided object is not an array");
     public static final TruffleString PYTHON_INT_TOO_LARGE_TO_CONV_TO = tsLiteral("Python int too large to convert to %s");
     public static final TruffleString PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = tsLiteral("Python int too large to convert to %s-byte C type");

@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -1850,6 +1851,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
+        }
+    }
+
+    @Builtin(name = "waitstatus_to_exitcode", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @GenerateNodeFactory
+    abstract static class WaitstatusToExitcodeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int waitstatusToExitcode(VirtualFrame frame, Object statusObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyLongAsIntNode longAsInt) {
+            int status = longAsInt.execute(frame, statusObj);
+            if (posixLib.wifexited(getPosixSupport(), status)) {
+                int exitcode = posixLib.wexitstatus(getPosixSupport(), status);
+                if (exitcode < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WEXITSTATUS, exitcode);
+                }
+                return exitcode;
+            }
+            if (posixLib.wifsignaled(getPosixSupport(), status)) {
+                int signum = posixLib.wtermsig(getPosixSupport(), status);
+                if (signum <= 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WTERMSIG, signum);
+                }
+                return -signum;
+            }
+            if (posixLib.wifstopped(getPosixSupport(), status)) {
+                int signum = posixLib.wstopsig(getPosixSupport(), status);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.PROCESS_STOPPED_BY_DELIVERY_OF_SIGNAL, signum);
+            }
+            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WAIT_STATUS, status);
         }
     }
 
