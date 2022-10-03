@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 
 CURRENT_YEAR = datetime.datetime.now().year
 LICENSE = f"""/*
- * Copyright (c) 2021, {f'{CURRENT_YEAR},' if CURRENT_YEAR > 2021 else ''} Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, {CURRENT_YEAR}, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
