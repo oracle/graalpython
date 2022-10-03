@@ -27,20 +27,20 @@ Module[0, 207]
     Assign[126, 142]
         LHS: Name[126, 127] Value: "c" Store
         RHS: 
-            Attribute[130, 133] 
+            Attribute[130, 142] 
                 Receiver: Name[130, 133] Value: "fnc"
                 Attr: __code__
     Call[144, 175]
         Target: Name[144, 149] Value: "print"
         Args:
             RAW[150, 159] Value: "free > "
-            Attribute[161, 162] 
+            Attribute[161, 174] 
                 Receiver: Name[161, 162] Value: "c"
                 Attr: co_freevars
     Call[176, 207]
         Target: Name[176, 181] Value: "print"
         Args:
             RAW[182, 191] Value: "cell > "
-            Attribute[193, 194] 
+            Attribute[193, 206] 
                 Receiver: Name[193, 194] Value: "c"
                 Attr: co_cellvars

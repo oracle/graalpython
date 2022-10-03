@@ -5,7 +5,7 @@ Module[0, 63]
         ---- Function body of fn ----
         ClassDef[12, 63] DerivedClassName
             Bases:
-                Attribute[35, 42] 
+                Attribute[35, 56] 
                     Receiver: Name[35, 42] Value: "modname"
                     Attr: BaseClassName
             ---- Class body of DerivedClassName ----

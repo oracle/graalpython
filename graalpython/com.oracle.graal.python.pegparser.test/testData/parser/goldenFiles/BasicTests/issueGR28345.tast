@@ -5,7 +5,7 @@ Module[0, 120]
         ---- Function body of test_isidentifier ----
         Call[39, 120]
             Target: 
-                Attribute[39, 43] 
+                Attribute[39, 54] 
                     Receiver: Name[39, 43] Value: "self"
                     Attr: checkequal
             Args:

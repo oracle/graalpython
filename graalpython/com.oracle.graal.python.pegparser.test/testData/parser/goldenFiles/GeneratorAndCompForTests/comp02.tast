@@ -29,13 +29,13 @@ Module[0, 203]
                                         ComprehensionTy[86, 108]
                                             Target: Name[90, 91] Value: "b" Store
                                             Iterator: 
-                                                Attribute[95, 98] 
+                                                Attribute[95, 108] 
                                                     Receiver: Name[95, 98] Value: "cls"
                                                     Attr: __bases__
                     Then:
                         Call[123, 150]
                             Target: 
-                                Attribute[123, 137] 
+                                Attribute[123, 144] 
                                     Receiver: Name[123, 137] Value: "abstract_bases"
                                     Attr: append
                             Args:

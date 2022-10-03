@@ -1,5 +1,5 @@
 Module[0, 6]
-    Subscript[0, 1]
+    Subscript[0, 6]
         Slice: 
             Slice[2, 5]
                 Start: 

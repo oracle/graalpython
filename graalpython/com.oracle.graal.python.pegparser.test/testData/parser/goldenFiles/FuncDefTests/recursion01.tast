@@ -14,7 +14,7 @@ Module[0, 67]
                 Target: Name[42, 46] Value: "test"
                 Args:
                     Name[47, 50] Value: "msg"
-                    Attribute[52, 56] 
+                    Attribute[52, 63] 
                         Receiver: Name[52, 56] Value: "self"
                         Attr: string
                     LONG[65, 66] Value: 1

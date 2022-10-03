@@ -1,5 +1,5 @@
 Module[0, 68]
-    Try[0, 3]
+    Try[0, 68]
         Body:
             Raise[8, 31]
                 Exc: Name[14, 31] Value: "KeyboardInterrupt"

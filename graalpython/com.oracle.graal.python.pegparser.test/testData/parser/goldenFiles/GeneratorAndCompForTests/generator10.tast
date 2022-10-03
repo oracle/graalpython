@@ -24,7 +24,7 @@ Module[0, 155]
                             RHS: 
                                 Call[95, 107]
                                     Target: 
-                                        Attribute[95, 99] 
+                                        Attribute[95, 105] 
                                             Receiver: Name[95, 99] Value: "line"
                                             Attr: strip
                         If[120, 155]

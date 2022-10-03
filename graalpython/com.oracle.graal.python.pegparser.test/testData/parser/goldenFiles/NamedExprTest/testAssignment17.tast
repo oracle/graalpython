@@ -2,7 +2,7 @@ Module[0, 17]
     Assign[0, 17]
         LHS: Name[0, 7] Value: "element" Store
         RHS: 
-            Subscript[10, 11]
+            Subscript[10, 17]
                 Slice: 
                     NamedExpr[12, 16]
                         Target: Name[12, 13] Value: "b" Store

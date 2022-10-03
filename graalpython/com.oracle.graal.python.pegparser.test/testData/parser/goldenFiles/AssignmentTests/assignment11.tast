@@ -5,11 +5,11 @@ Module[0, 26]
         ---- Function body of fn ----
         Assign[12, 26]
             LHS: 
-                Attribute[12, 13] 
+                Attribute[12, 19] 
                     Receiver: 
-                        Attribute[12, 13] 
+                        Attribute[12, 17] 
                             Receiver: 
-                                Attribute[12, 13] 
+                                Attribute[12, 15] 
                                     Receiver: Name[12, 13] Value: "a"
                                     Attr: b
                             Attr: c

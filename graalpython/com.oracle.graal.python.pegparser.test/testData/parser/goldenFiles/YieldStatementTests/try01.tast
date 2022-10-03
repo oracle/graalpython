@@ -5,11 +5,11 @@ Module[0, 60]
             Args:
                 ArgTy[8, 9] x
         ---- Function body of gen ----
-        Try[14, 17]
+        Try[14, 60]
             Body:
                 Pass[23, 27]
             Except:
-                ExceptHandler[30, 36]
+                ExceptHandler[30, 60]
                     Type: Name[37, 47] Value: "ValueError"
                     Body:
                         Yield[53, 60]

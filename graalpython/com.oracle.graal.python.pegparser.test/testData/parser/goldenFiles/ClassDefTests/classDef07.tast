@@ -9,7 +9,7 @@ Module[0, 106]
                 Args:
                     ArgTy[37, 49] dict_setitem
                 Defaults:
-                    Attribute[52, 56] 
+                    Attribute[52, 68] 
                         Receiver: Name[52, 56] Value: "dict"
                         Attr: __setitem__
             ---- Function body of setup ----
@@ -17,7 +17,7 @@ Module[0, 106]
                 Target: Name[75, 87] Value: "dict_setitem"
             Call[94, 106]
                 Target: 
-                    Attribute[94, 98] 
+                    Attribute[94, 104] 
                         Receiver: Name[94, 98] Value: "dict"
                         Attr: clear
             ---- End of setup function ----

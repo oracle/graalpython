@@ -2,11 +2,11 @@ Module[0, 38]
     FunctionDef[24, 38]
         Name:fn
         Decorators:
-        Attribute[1, 5] 
+        Attribute[1, 23] 
             Receiver: 
-                Attribute[1, 5] 
+                Attribute[1, 13] 
                     Receiver: 
-                        Attribute[1, 5] 
+                        Attribute[1, 10] 
                             Receiver: Name[1, 5] Value: "some"
                             Attr: path
                     Attr: to

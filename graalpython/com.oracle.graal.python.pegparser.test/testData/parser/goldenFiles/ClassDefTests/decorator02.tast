@@ -1,5 +1,5 @@
 Module[0, 40]
-    ClassDef[0, 40] foo
+    ClassDef[24, 40] foo
         Decorators:
             Name[1, 11] Value: "decorator1"
             Name[13, 23] Value: "decorator1"

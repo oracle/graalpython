@@ -11,13 +11,13 @@ Module[0, 95]
             ---- Function body of __init__ ----
             Assign[58, 75]
                 LHS: 
-                    Attribute[58, 62] 
+                    Attribute[58, 64] 
                         Receiver: Name[58, 62] Value: "self"
                         Attr: r
                 RHS: Name[67, 75] Value: "realpart"
             Assign[78, 95]
                 LHS: 
-                    Attribute[78, 82] 
+                    Attribute[78, 84] 
                         Receiver: Name[78, 82] Value: "self"
                         Attr: i
                 RHS: Name[87, 95] Value: "imagpart"

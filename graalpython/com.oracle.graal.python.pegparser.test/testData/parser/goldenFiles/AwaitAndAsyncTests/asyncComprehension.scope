@@ -3,7 +3,7 @@ ScopeEnvironment
     Symbols:
       foo: [Use, GlobalImplicit]
     Scope listcomp Function
-        Flags: [IsComprehension]
+        Flags: [IsCoroutine, IsComprehension]
         Varnames: .0
         Symbols:
             .0: [DefParam, Local]

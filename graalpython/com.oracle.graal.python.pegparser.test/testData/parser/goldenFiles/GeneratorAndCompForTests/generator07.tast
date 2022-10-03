@@ -28,7 +28,7 @@ Module[0, 121]
                                         Name[82, 86] Value: "next" Store
                                 Name[89, 90] Value: "s" Store
                             RHS: 
-                                Subscript[93, 94]
+                                Subscript[93, 97]
                                     Slice: LONG[95, 96] Value: 0
                                     Value: Name[93, 94] Value: "h"
                         Yield[110, 121]

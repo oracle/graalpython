@@ -5,7 +5,7 @@ Module[0, 33]
         ---- Function body of fn ----
         Call[10, 33]
             Target: 
-                Attribute[10, 14] 
+                Attribute[10, 21] 
                     Receiver: RAW[10, 14] Value: "in"
                     Attr: format
             KWArgs:

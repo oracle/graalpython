@@ -8,7 +8,7 @@ Module[0, 72]
             ArgumentsTy[0, 0]
                 Args:
                     ArgTy[41, 45] self
-                    ArgTy[47, 53] string
+                    ArgTy[47, 57] string
             ---- Function body of method ----
             Pass[68, 72]
             ---- End of method function ----

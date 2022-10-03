@@ -132,8 +132,8 @@ public class NodeFactory {
         return new StmtTy.Break(sourceRange);
     }
 
-    public StmtTy createExpression(ExprTy expr) {
-        return new StmtTy.Expr(expr, expr.getSourceRange());
+    public StmtTy createExpression(ExprTy expr, SourceRange sourceRange) {
+        return new StmtTy.Expr(expr, sourceRange);
     }
 
     public ExprTy createCall(ExprTy target, ExprTy[] args, KeywordTy[] kwargs, SourceRange sourceRange) {
@@ -450,9 +450,9 @@ public class NodeFactory {
                         body, null, sourceRange);
     }
 
-    public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, SourceRange sourceRange) {
+    public StmtTy createClassDef(StmtTy proto, ExprTy[] decorators, @SuppressWarnings("unused") SourceRange sourceRange) {
         StmtTy.ClassDef classdef = (StmtTy.ClassDef) proto;
-        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, sourceRange);
+        return new StmtTy.ClassDef(classdef.name, classdef.bases, classdef.keywords, classdef.body, decorators, classdef.getSourceRange());
     }
 
     public StmtTy createNonLocal(String[] names, SourceRange sourceRange) {

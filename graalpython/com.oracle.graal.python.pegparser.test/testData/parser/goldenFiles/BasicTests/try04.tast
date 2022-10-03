@@ -1,9 +1,9 @@
 Module[0, 63]
-    Try[0, 3]
+    Try[0, 63]
         Body:
             Pass[7, 11]
         Except:
-            ExceptHandler[12, 18]
+            ExceptHandler[12, 63]
                 Type: 
                     Tuple[19, 55]
                         Values:

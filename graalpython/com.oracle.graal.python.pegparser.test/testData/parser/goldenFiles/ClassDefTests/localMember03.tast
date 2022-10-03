@@ -25,7 +25,7 @@ Module[0, 210]
                     ---- End of method01 function ----
                 ---- End of C class ----
             Return[190, 210] 
-                Attribute[197, 198] 
+                Attribute[197, 210] 
                     Receiver: Name[197, 198] Value: "C"
                     Attr: a_local_var
             ---- End of f function ----

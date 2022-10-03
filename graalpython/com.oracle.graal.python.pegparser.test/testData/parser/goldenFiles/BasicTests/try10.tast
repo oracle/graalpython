@@ -6,7 +6,7 @@ Module[0, 214]
                 ArgTy[11, 12] x
                 ArgTy[14, 15] y
         ---- Function body of divide ----
-        Try[22, 25]
+        Try[22, 214]
             Body:
                 Assign[35, 49]
                     LHS: Name[35, 41] Value: "result" Store
@@ -16,7 +16,7 @@ Module[0, 214]
                             LHS: Name[44, 45] Value: "x"
                             RHS: Name[48, 49] Value: "y"
             Except:
-                ExceptHandler[54, 60]
+                ExceptHandler[54, 114]
                     Type: Name[61, 78] Value: "ZeroDivisionError"
                     Body:
                         Call[88, 114]

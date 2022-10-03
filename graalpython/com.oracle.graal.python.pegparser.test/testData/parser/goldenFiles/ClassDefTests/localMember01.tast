@@ -19,7 +19,7 @@ Module[0, 148]
                     RHS: Name[107, 118] Value: "a_local_var"
                 ---- End of C class ----
             Return[128, 148] 
-                Attribute[135, 136] 
+                Attribute[135, 148] 
                     Receiver: Name[135, 136] Value: "C"
                     Attr: a_local_var
             ---- End of f function ----

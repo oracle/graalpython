@@ -2,7 +2,7 @@ Module[0, 23]
     Assign[0, 23]
         LHS: Name[0, 7] Value: "element" Store
         RHS: 
-            Subscript[10, 11]
+            Subscript[10, 23]
                 Slice: 
                     Tuple[12, 22]
                         Values:

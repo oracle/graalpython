@@ -12,13 +12,13 @@ Module[0, 192]
             Assign[61, 79]
                 LHS: Name[61, 65] Value: "root" Store
                 RHS: 
-                    Attribute[68, 72] 
+                    Attribute[68, 79] 
                         Receiver: Name[68, 72] Value: "self"
                         Attr: __root
             Assign[88, 104]
                 LHS: Name[88, 92] Value: "curr" Store
                 RHS: 
-                    Attribute[95, 99] 
+                    Attribute[95, 104] 
                         Receiver: Name[95, 99] Value: "root"
                         Attr: prev
             While[113, 192]
@@ -29,13 +29,13 @@ Module[0, 192]
                         RHS: Name[131, 135] Value: "root"
                 Body:
                     Yield[149, 163]
-                        Attribute[155, 159] 
+                        Attribute[155, 163] 
                             Receiver: Name[155, 159] Value: "curr"
                             Attr: key
                     Assign[176, 192]
                         LHS: Name[176, 180] Value: "curr" Store
                         RHS: 
-                            Attribute[183, 187] 
+                            Attribute[183, 192] 
                                 Receiver: Name[183, 187] Value: "curr"
                                 Attr: prev
             ---- End of __reversed__ function ----

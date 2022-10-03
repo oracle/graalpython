@@ -1,7 +1,7 @@
 Module[0, 9]
     Assign[0, 9]
         LHS: 
-            Attribute[0, 1] 
+            Attribute[0, 5] 
                 Receiver: 
                     Call[0, 3]
                         Target: Name[0, 1] Value: "f"

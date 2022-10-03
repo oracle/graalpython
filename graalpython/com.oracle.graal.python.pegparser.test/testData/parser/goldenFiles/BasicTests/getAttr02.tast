@@ -1,5 +1,5 @@
 Module[0, 5]
-    Attribute[0, 1] 
+    Attribute[0, 5] 
         Receiver: 
             Call[0, 3]
                 Target: Name[0, 1] Value: "a"

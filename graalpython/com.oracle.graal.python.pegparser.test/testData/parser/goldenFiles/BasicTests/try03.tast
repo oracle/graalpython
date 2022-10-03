@@ -3,11 +3,11 @@ Module[0, 61]
         Name:fn
         ArgumentsTy[0, 0]
         ---- Function body of fn ----
-        Try[12, 15]
+        Try[12, 61]
             Body:
                 Pass[21, 25]
             Except:
-                ExceptHandler[28, 34]
+                ExceptHandler[28, 61]
                     Type: Name[35, 45] Value: "ValueError"
                     Var: va
                     Body:

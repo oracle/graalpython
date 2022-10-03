@@ -23,7 +23,7 @@ Module[0, 208]
                             Iterator: 
                                 Call[98, 110]
                                     Target: 
-                                        Attribute[98, 102] 
+                                        Attribute[98, 108] 
                                             Receiver: Name[98, 102] Value: "self"
                                             Attr: items
                             Ifs:
@@ -39,7 +39,7 @@ Module[0, 208]
                 Body:
                     Delete[174, 188]
                         Targets:
-                            Subscript[178, 182] Context: Del
+                            Subscript[178, 188] Context: Del
                                 Slice: Name[183, 187] Value: "elem"
                                 Value: Name[178, 182] Value: "self"
             Return[197, 208] Name[204, 208] Value: "self"
