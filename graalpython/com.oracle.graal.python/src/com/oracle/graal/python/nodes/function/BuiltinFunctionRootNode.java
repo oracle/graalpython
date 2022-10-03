@@ -92,7 +92,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final PythonBuiltinClassType constructsClass;
 
     public BuiltinFunctionRootNode(PythonLanguage language, Signature signature, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
-                                   PythonBuiltinClassType constructsClass) {
+                    PythonBuiltinClassType constructsClass) {
         super(language);
         CompilerAsserts.neverPartOfCompilation();
         this.signature = signature;

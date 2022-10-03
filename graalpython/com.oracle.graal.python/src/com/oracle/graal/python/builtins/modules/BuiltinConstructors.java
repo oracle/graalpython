@@ -1904,7 +1904,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * into a natively allocated subtype structure
          */
         @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfString(frame, isSubtype, cls)", //
-                "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+                        "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
                         @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
