@@ -49,6 +49,8 @@ UPCALL_ID(_PyModule_GetAndIncMaxModuleNumber);
 PyObject*
 PyModuleDef_Init(struct PyModuleDef* def)
 {
+    if (PyType_Ready(&PyModuleDef_Type) < 0)
+         return NULL;
     if (def->m_base.m_index == 0) {
         Py_SET_REFCNT(def, 1);
         Py_SET_TYPE(def, &PyModuleDef_Type);
