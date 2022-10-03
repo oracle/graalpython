@@ -178,4 +178,9 @@ public class AtomsTests extends ParserTestBase {
     public void atomEllipsis() throws Exception {
         checkTreeResult("...");
     }
+
+    @Test
+    public void atomUnicodeStringPrefix() throws Exception {
+        checkTreeResult("(u'abc', u'abc' 'def', 'abc' u'def', f'{u\"abc\"}' 'def')");
+    }
 }

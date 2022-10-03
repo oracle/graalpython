@@ -1,0 +1,12 @@
+Module[0, 55]
+    Tuple[0, 55]
+        Values:
+            RAW[1, 7] Value: "abc" Kind: "u"
+            RAW[9, 21] Value: "abcdef" Kind: "u"
+            RAW[23, 35] Value: "abcdef"
+            JoinedStr[37, 54]
+                 Values:
+                    FormattedValue[40, 46]
+                        Value: RAW[1, 7] Value: "abc" Kind: "u"
+                        Conversion: -1
+                    RAW[49, 54] Value: "def"

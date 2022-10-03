@@ -254,6 +254,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         sb.append(", ").append(node.getSourceRange().endOffset).append("]");
         sb.append(" Value: ");
         appendConstantValue(sb, node.value);
+        if (node.kind != null) {
+            sb.append(" Kind: ");
+            appendEscapedString(sb, node.kind);
+        }
         return sb.toString();
     }
 
