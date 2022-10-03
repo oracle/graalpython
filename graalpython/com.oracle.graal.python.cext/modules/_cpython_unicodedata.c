@@ -1541,7 +1541,7 @@ static struct PyModuleDef unicodedata_module = {
 };
 
 PyMODINIT_FUNC
-PyInit_unicodedata(void)
+PyInit_cpython_unicodedata(void)
 {
     return PyModuleDef_Init(&unicodedata_module);
 }
