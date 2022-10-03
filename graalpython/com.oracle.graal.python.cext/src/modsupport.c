@@ -512,15 +512,53 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     return result;
 }
 
+UPCALL_ID(PyModule_AddObjectRef);
+int PyModule_AddObjectRef(PyObject *mod, const char *name, PyObject *value) {
+    return UPCALL_CEXT_I(_jls_PyModule_AddObjectRef, native_to_java(mod), polyglot_from_string(name, SRC_CS), native_to_java(value));
+}
+
+// taken from CPython "Python/modsupport.c"
+int PyModule_AddObject(PyObject *mod, const char *name, PyObject *value) {
+    int res = PyModule_AddObjectRef(mod, name, value);
+    if (res == 0) {
+        Py_DECREF(value);
+    }
+    return res;
+}
+
+// taken from CPython "Python/modsupport.c"
+int PyModule_AddIntConstant(PyObject *m, const char *name, long value) {
+    PyObject *obj = PyLong_FromLong(value);
+    if (!obj) {
+        return -1;
+    }
+    int res = PyModule_AddObjectRef(m, name, obj);
+    Py_DECREF(obj);
+    return res;
+}
+
 // taken from CPython "Python/modsupport.c"
 int PyModule_AddStringConstant(PyObject *m, const char *name, const char *value) {
-    PyObject *o = PyUnicode_FromString(value);
-    if (!o)
+    PyObject *obj = PyUnicode_FromString(value);
+    if (!obj) {
         return -1;
-    if (PyModule_AddObject(m, name, o) == 0)
-        return 0;
-    Py_DECREF(o);
-    return -1;
+    }
+    int res = PyModule_AddObjectRef(m, name, obj);
+    Py_DECREF(obj);
+    return res;
+}
+
+// taken from CPython "Python/modsupport.c"
+int PyModule_AddType(PyObject *module, PyTypeObject *type)
+{
+    if (PyType_Ready(type) < 0) {
+        return -1;
+    }
+
+    const char *name = _PyType_Name(type);
+    assert(name != NULL);
+
+    return PyModule_AddObjectRef(module, name, (PyObject *)type);
 }
 
 // partially taken from CPython 3.6.4 "Python/getargs.c"

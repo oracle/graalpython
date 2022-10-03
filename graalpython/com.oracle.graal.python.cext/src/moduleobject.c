@@ -125,15 +125,6 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
     return (PyObject*) mod;
 }
 
-UPCALL_ID(PyModule_AddObject);
-int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
-    return UPCALL_CEXT_I(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
-}
-
-int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
-    return UPCALL_CEXT_I(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
-}
-
 PyObject* PyModule_Create2(PyModuleDef* moduledef, int apiversion) {
     return _PyModule_CreateInitialized(moduledef, apiversion);
 }
