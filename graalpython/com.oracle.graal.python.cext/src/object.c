@@ -236,10 +236,16 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args), IS_SINGLE_ARG(fmt));
 }
 
-typedef PyObject *(*fast_call_dict_fun_t)(PyObject *, void *, PyObject *);
-UPCALL_TYPED_ID(PyObject_FastCallDict, fast_call_dict_fun_t);
-PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t nargs, PyObject *kwargs) {
-	return _jls_PyObject_FastCallDict(native_to_java(func), polyglot_from_PyObjectPtr_array(args, nargs), native_to_java(kwargs));
+typedef PyObject *(*make_tp_call_func)(PyObject *, void *, PyObject *, void *);
+UPCALL_TYPED_ID(_PyObject_MakeTpCall, make_tp_call_func);
+PyObject* _PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
+                     PyObject *const *args, Py_ssize_t nargs,
+                     PyObject *keywords) {
+    void* kwvalues = NULL;
+    if (keywords != NULL && PyTuple_Check(keywords)) {
+        kwvalues = polyglot_from_PyObjectPtr_array(args + nargs, PyTuple_GET_SIZE(keywords));
+    }
+    return _jls__PyObject_MakeTpCall(native_to_java(callable), polyglot_from_PyObjectPtr_array(args, nargs), native_to_java(keywords), kwvalues);
 }
 
 PyObject* PyObject_Type(PyObject* obj) {

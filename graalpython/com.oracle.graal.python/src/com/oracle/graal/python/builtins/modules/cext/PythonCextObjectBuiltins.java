@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 
+import java.io.PrintWriter;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -69,17 +70,19 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectBaseNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFactory.ResolveNativeReferenceNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -102,9 +105,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -122,7 +127,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import java.io.PrintWriter;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -305,48 +309,58 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyObject_FastCallDict", parameterNames = {"callable", "argsArray", "kwargs"})
+    @Builtin(name = "_PyObject_MakeTpCall", parameterNames = {"callable", "args", "kwargs", "kwvalues"})
     @GenerateNodeFactory
-    abstract static class PyObjectFastCallDictNode extends PythonTernaryBuiltinNode {
+    abstract static class PyObjectMakeTpCallNode extends PythonQuaternaryBuiltinNode {
 
-        @Specialization(limit = "1")
-        static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsArray, Object kwargsObj,
-                        @CachedLibrary("argsArray") InteropLibrary argsArrayLib,
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsArray, Object kwargsObj, Object kwvalues,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CastKwargsNode castKwargsNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
                         @Cached ToNewRefNode toNewRefNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            if (argsArrayLib.hasArrayElements(argsArray)) {
-                try {
-                    try {
-                        // consume all arguments of the va_list
-                        long arraySize = argsArrayLib.getArraySize(argsArray);
-                        Object[] args = new Object[PInt.intValueExact(arraySize)];
-                        for (int i = 0; i < args.length; i++) {
-                            try {
-                                args[i] = toJavaNode.execute(argsArrayLib.readArrayElement(argsArray, i));
-                            } catch (InvalidArrayIndexException e) {
-                                throw CompilerDirectives.shouldNotReachHere();
-                            }
-                        }
-                        Object callable = asPythonObjectNode.execute(callableObj);
-                        PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
-                        return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
-                    } catch (UnsupportedMessageException | OverflowException e) {
-                        // I think we can just assume that there won't be more than
-                        // Integer.MAX_VALUE arguments.
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } catch (PException e) {
-                    // transformExceptionToNativeNode acts as a branch profile
-                    transformExceptionToNativeNode.execute(frame, e);
-                    return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
+            Object callable = asPythonObjectNode.execute(callableObj);
+            try {
+                long arraySize = lib.getArraySize(argsArray);
+                Object[] args = new Object[PInt.intValueExact(arraySize)];
+                for (int i = 0; i < args.length; i++) {
+                    args[i] = toJavaNode.execute(lib.readArrayElement(argsArray, i));
                 }
+                PKeyword[] keywords = PKeyword.EMPTY_KEYWORDS;
+                if (!lib.isNull(kwargsObj)) {
+                    if (lib.isNull(kwvalues)) {
+                        // It's a dict
+                        keywords = castKwargsNode.execute(kwargsObj);
+                    } else {
+                        // We have a tuple with kw names and an array with kw values
+                        PTuple kwTuple = (PTuple) toJavaNode.execute(kwargsObj);
+                        SequenceStorage storage = kwTuple.getSequenceStorage();
+                        int kwcount = lenNode.execute(storage);
+                        keywords = new PKeyword[kwcount];
+                        for (int i = 0; i < kwcount; i++) {
+                            TruffleString name = castToTruffleStringNode.execute(getItemScalarNode.execute(storage, i));
+                            Object value = lib.readArrayElement(kwvalues, i);
+                            keywords[i] = new PKeyword(name, value);
+                        }
+                    }
+                }
+                return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
+            } catch (PException e) {
+                // transformExceptionToNativeNode acts as a branch profile
+                transformExceptionToNativeNode.execute(frame, e);
+                return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | CannotCastException | OverflowException e) {
+                // I think we can just assume that there won't be more than
+                // Integer.MAX_VALUE arguments.
+                throw CompilerDirectives.shouldNotReachHere();
             }
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
