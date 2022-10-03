@@ -3906,7 +3906,7 @@ public abstract class CExtNodes {
                      * similar. We ignore that for now since the size will usually be very small
                      * and/or we could also use a Truffle buffer object.
                      */
-                    Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWMALLOC, mSize);
+                    Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWCALLOC, 1, mSize);
                     writeNativeMemberNode.execute(module, moduleWrapper, MD_STATE.getMemberNameJavaString(), moduleStatePtr);
                 }
 

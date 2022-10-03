@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -159,7 +159,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_NATIVE_UNICODE_AS_STRING("native_unicode_as_string"),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength"),
     FUN_GET_UINT32_ARRAY_TYPE_ID("get_uint32_array_typeid"),
-    FUN_PYMEM_RAWMALLOC("PyMem_RawMalloc"),
+    FUN_PYMEM_RAWCALLOC("PyMem_RawCalloc"),
     FUN_PY_TRUFFLE_FREE("PyTruffle_Free"),
     FUN_INCREF("Py_IncRef"),
     FUN_DECREF("Py_DecRef"),
