@@ -253,3 +253,26 @@ UPCALL_ID(PyDict_Values);
 PyObject * PyDict_Values(PyObject *dict) {
     return UPCALL_CEXT_O(_jls_PyDict_Values, native_to_java(dict));
 }
+
+
+/* Taken from CPython */
+int
+_PyDict_ContainsId(PyObject *op, struct _Py_Identifier *key)
+{
+    PyObject *kv = _PyUnicode_FromId(key); /* borrowed */
+    if (kv == NULL) {
+        return -1;
+    }
+    return PyDict_Contains(op, kv);
+}
+
+/* Taken from CPython */
+int
+_PyDict_SetItemId(PyObject *v, struct _Py_Identifier *key, PyObject *item)
+{
+    PyObject *kv;
+    kv = _PyUnicode_FromId(key); /* borrowed */
+    if (kv == NULL)
+        return -1;
+    return PyDict_SetItem(v, kv, item);
+}
