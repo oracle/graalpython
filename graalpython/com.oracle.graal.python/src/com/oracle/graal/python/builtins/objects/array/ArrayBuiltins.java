@@ -106,6 +106,7 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -1244,19 +1245,35 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "index", minNumOfPositionalArgs = 2)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class IndexNode extends PythonBinaryBuiltinNode {
+    abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
-        int index(VirtualFrame frame, PArray self, Object value,
+        int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
-            for (int i = 0; i < self.getLength(); i++) {
+            if (start < 0) {
+                start += self.getLength();
+                if (start < 0) {
+                    start = 0;
+                }
+            }
+            if (stop < 0) {
+                stop += self.getLength();
+            }
+            for (int i = start; i < stop && i < self.getLength(); i++) {
                 if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
                     return i;
                 }
             }
             throw raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.IndexNodeClinicProviderGen.INSTANCE;
         }
     }
 
