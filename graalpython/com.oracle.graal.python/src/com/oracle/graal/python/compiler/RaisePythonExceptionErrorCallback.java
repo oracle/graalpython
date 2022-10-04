@@ -159,6 +159,8 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = sourceRange.startLine;
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = sourceRange.startColumn + 1;
+        excAttrs[SyntaxErrorBuiltins.IDX_END_LINENO] = sourceRange.endLine;
+        excAttrs[SyntaxErrorBuiltins.IDX_END_OFFSET] = sourceRange.endColumn + 1;
         // Not very nice. This counts on the implementation in traceback.py where if the value of
         // text attribute is NONE, then the line is not printed
         Object text = PNone.NONE;

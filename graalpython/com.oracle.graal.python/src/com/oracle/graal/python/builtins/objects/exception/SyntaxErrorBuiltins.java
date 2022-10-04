@@ -86,7 +86,9 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public static final int IDX_LINENO = 2;
     public static final int IDX_OFFSET = 3;
     public static final int IDX_TEXT = 4;
-    public static final int IDX_PRINT_FILE_AND_LINE = 5;
+    public static final int IDX_END_LINENO = 5;
+    public static final int IDX_END_OFFSET = 6;
+    public static final int IDX_PRINT_FILE_AND_LINE = 7;
     public static final int SYNTAX_ERR_NUM_ATTRS = IDX_PRINT_FILE_AND_LINE + 1;
 
     public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args, factory) -> new Object[SYNTAX_ERR_NUM_ATTRS];
@@ -266,6 +268,26 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_TEXT, SYNTAX_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "end_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end lineno")
+    @GenerateNodeFactory
+    public abstract static class SyntaxErrorEndLineNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_END_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "end_offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end offset")
+    @GenerateNodeFactory
+    public abstract static class SyntaxErrorEndColumnNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_END_OFFSET, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 
