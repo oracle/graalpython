@@ -54,6 +54,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -74,6 +76,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1068,11 +1071,51 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gcd", minNumOfPositionalArgs = 2)
+    @Builtin(name = "gcd", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class GcdNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
+        public Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached Gcd2Node gdcNode,
+                        @Cached LoopConditionProfile profile) {
+            Object res = args[0];
+            profile.profileCounted(args.length);
+            for (int i = 1; profile.inject(i < args.length); i++) {
+                res = gdcNode.execute(frame, res, args[i]);
+            }
+            return res;
+        }
+
+        @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
+        public Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached BuiltinFunctions.AbsNode absNode) {
+            return indexNode.execute(frame, absNode.execute(frame, args[0]));
+        }
+
+        @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
+        @SuppressWarnings("unused")
+        public int gcdEmpty(Object self, Object[] args, PKeyword[] keywords) {
+            return 0;
+        }
+
+        @Specialization(guards = "keywords.length != 0")
+        @SuppressWarnings("unused")
+        public int gcdKeywords(Object self, Object[] args, PKeyword[] keywords) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "gcd()");
+        }
+    }
+
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
-    public abstract static class GcdNode extends PythonBinaryBuiltinNode {
+    public abstract static class Gcd2Node extends PythonBinaryBuiltinNode {
 
         private long count(long a, long b) {
             if (b == 0) {
@@ -1134,14 +1177,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
         static Object gcd(VirtualFrame frame, Object x, Object y,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached GcdNode recursiveNode) {
+                        @Cached Gcd2Node recursiveNode) {
             Object xValue = indexNode.execute(frame, x);
             Object yValue = indexNode.execute(frame, y);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 
-        public static GcdNode create() {
-            return MathModuleBuiltinsFactory.GcdNodeFactory.create();
+        public static Gcd2Node create() {
+            return MathModuleBuiltinsFactory.Gcd2NodeFactory.create();
         }
     }
 
