@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -113,7 +114,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -1098,15 +1098,20 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        static Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+        Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
+                        @Cached GetTypeFlagsNode getTpFlags,
                         @Cached GetTypeMemberNode getTpNameNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            Object module = readAttr.execute(cls, T___MODULE__);
-            if (module != PNone.NO_VALUE) {
+            // see function 'typeobject.c: type_module'
+            if ((getTpFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
+                Object module = readAttr.execute(cls, T___MODULE__);
+                if (module == PNone.NO_VALUE) {
+                    throw raise(AttributeError);
+                }
                 return module;
             } else {
                 // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
