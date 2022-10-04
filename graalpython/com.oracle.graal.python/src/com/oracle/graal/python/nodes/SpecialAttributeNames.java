@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.truffle.api.strings.TruffleString;
-
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SpecialAttributeNames {
     public static final TruffleString T___ = tsLiteral("_");
@@ -154,6 +154,12 @@ public abstract class SpecialAttributeNames {
     public static final TruffleString T___ABSTRACTMETHODS__ = tsLiteral(J___ABSTRACTMETHODS__);
 
     public static final TruffleString T___ORIG_BASES__ = tsLiteral("__orig_bases__");
+
+    public static final String J___ORIGIN__ = "__origin__";
+    public static final TruffleString T___ORIGIN__ = tsLiteral(J___ORIGIN__);
+
+    public static final String J___ARGS__ = "__args__";
+    public static final TruffleString T___ARGS__ = tsLiteral(J___ARGS__);
 
     // specific to super
     public static final String J___THISCLASS__ = "__thisclass__";
