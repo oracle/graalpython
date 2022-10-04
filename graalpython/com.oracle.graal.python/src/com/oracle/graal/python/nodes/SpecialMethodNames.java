@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.strings.TruffleString;
-
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SpecialMethodNames {
 
@@ -62,6 +62,9 @@ public abstract class SpecialMethodNames {
 
     public static final String J___COPY__ = "__copy__";
     public static final TruffleString T___COPY__ = tsLiteral(J___COPY__);
+
+    public static final String J___DEEPCOPY__ = "__deepcopy__";
+    public static final TruffleString T___DEEPCOPY__ = tsLiteral(J___DEEPCOPY__);
 
     public static final String J___DEALLOC__ = "__dealloc__";
     public static final TruffleString T___DEALLOC__ = tsLiteral(J___DEALLOC__);

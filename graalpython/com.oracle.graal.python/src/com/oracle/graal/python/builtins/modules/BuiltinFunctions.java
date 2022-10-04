@@ -161,6 +161,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -776,16 +777,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(object)")
         Object dir(VirtualFrame frame, Object object,
-                        @Cached ListBuiltins.ListSortNode sortNode,
-                        @Cached ListNodes.ConstructListNode constructListNode,
-                        @Cached("create(T___DIR__)") LookupAndCallUnaryNode callDir) {
-            Object result = callDir.executeObject(frame, object);
-            if (result == NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
-            }
-            PList list = constructListNode.execute(frame, result);
-            sortNode.execute(frame, list);
-            return list;
+                        @Cached PyObjectDir dir) {
+            return dir.execute(frame, object);
         }
     }
 

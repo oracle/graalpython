@@ -164,6 +164,9 @@ public abstract class SpecialAttributeNames {
     public static final String J___PARAMETERS__ = "__parameters__";
     public static final TruffleString T___PARAMETERS__ = tsLiteral(J___PARAMETERS__);
 
+    public static final String J___ORIG_CLASS__ = "__orig_class__";
+    public static final TruffleString T___ORIG_CLASS__ = tsLiteral(J___ORIG_CLASS__);
+
     // specific to super
     public static final String J___THISCLASS__ = "__thisclass__";
     public static final String J___SELF_CLASS__ = "__self_class__";
