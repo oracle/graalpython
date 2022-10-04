@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -58,6 +59,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -119,11 +122,17 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
         Object doGeneric(VirtualFrame frame, Object type, Object key,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupClassGetItem,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached PythonObjectFactory factory,
                         @Cached CallNode callClassGetItem) {
             if (isTypeNode.execute(type)) {
                 Object classGetitem = lookupClassGetItem.execute(frame, type, T___CLASS_GETITEM__);
                 if (classGetitem != PNone.NO_VALUE) {
                     return callClassGetItem.execute(frame, classGetitem, key);
+                }
+                if (isBuiltinClassProfile.profileClass(type, PythonBuiltinClassType.PythonClass)) {
+                    // Special case type[int], but disallow other types so str[int] fails
+                    return factory.createGenericAlias(type, key);
                 }
             }
             return PNone.NO_VALUE;
