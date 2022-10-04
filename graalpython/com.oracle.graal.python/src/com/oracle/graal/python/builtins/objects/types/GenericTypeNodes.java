@@ -85,7 +85,7 @@ public abstract class GenericTypeNodes {
         }
 
         protected static boolean isUnionable(PyObjectTypeCheck typeCheck, Object obj) {
-            return typeCheck.execute(obj, PythonBuiltinClassType.PythonClass) || typeCheck.execute(obj, PythonBuiltinClassType.PGenericAlias) ||
+            return obj == PNone.NONE || typeCheck.execute(obj, PythonBuiltinClassType.PythonClass) || typeCheck.execute(obj, PythonBuiltinClassType.PGenericAlias) ||
                             typeCheck.execute(obj, PythonBuiltinClassType.PUnionType);
         }
     }

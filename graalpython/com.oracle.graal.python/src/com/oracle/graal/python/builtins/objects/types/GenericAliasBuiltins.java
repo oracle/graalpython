@@ -213,7 +213,7 @@ public class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object hash(VirtualFrame frame, PGenericAlias self,
+        long hash(VirtualFrame frame, PGenericAlias self,
                         @Cached PyObjectHashNode hashOrigin,
                         @Cached PyObjectHashNode hashArgs) {
             long h0 = hashOrigin.execute(frame, self.getOrigin());
