@@ -248,6 +248,9 @@ public abstract class BuiltinNames {
 
     public static final String J_TYPES = "types";
 
+    public static final String J_TYPING = "typing";
+    public static final TruffleString T_TYPING = tsLiteral(J_TYPING);
+
     public static final String J_CHR = "chr";
 
     public static final String J_FROZENSET = "frozenset";
@@ -385,6 +388,9 @@ public abstract class BuiltinNames {
 
     public static final String J_NOT_IMPLEMENTED = "NotImplemented";
     public static final TruffleString T_NOT_IMPLEMENTED = tsLiteral(J_NOT_IMPLEMENTED);
+
+    public static final String J_TYPE_VAR = "TypeVar";
+    public static final TruffleString T_TYPE_VAR = tsLiteral(J_TYPE_VAR);
 
     // function names
     public static final String J_ADD = "add";

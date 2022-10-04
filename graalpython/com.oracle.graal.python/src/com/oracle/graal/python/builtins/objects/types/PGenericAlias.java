@@ -7,6 +7,7 @@ import com.oracle.truffle.api.object.Shape;
 public class PGenericAlias extends PythonBuiltinObject {
     private Object origin;
     private PTuple args;
+    private PTuple parameters;
 
     public PGenericAlias(Object cls, Shape instanceShape, Object origin, PTuple args) {
         super(cls, instanceShape);
@@ -20,5 +21,13 @@ public class PGenericAlias extends PythonBuiltinObject {
 
     public PTuple getArgs() {
         return args;
+    }
+
+    public PTuple getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(PTuple parameters) {
+        this.parameters = parameters;
     }
 }
