@@ -949,6 +949,21 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "unregister", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class UnRegisterNode extends PythonBuiltinNode {
+        @Specialization
+        Object unregister(Object searchFunction) {
+            remove(PythonContext.get(this), searchFunction);
+            return null;
+        }
+
+        @TruffleBoundary
+        private static void remove(PythonContext context, Object searchFunction) {
+            context.getCodecSearchPath().remove(searchFunction);
+        }
+    }
+
     @Builtin(name = "_forget_codec", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ForgetCodecNode extends PythonBuiltinNode {
