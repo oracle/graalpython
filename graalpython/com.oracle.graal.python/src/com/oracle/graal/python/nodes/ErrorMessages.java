@@ -1190,6 +1190,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CAN_ONLY_EXTEND_ARRAY_WITH_ARRAY = tsLiteral("can only extend array (not \"%p\") with array");
     public static final TruffleString THERE_ARE_NO_TYPE_VARIABLES_LEFT_IN_S = tsLiteral("There are no type variables left in %s");
     public static final TruffleString TOO_S_ARGUMENTS_FOR_S = tsLiteral("Too %s arguments for %s");
+    public static final TruffleString ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC = tsLiteral("isinstance() argument 2 cannot be a parameterized generic");
+    public static final TruffleString ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC = tsLiteral("issubclass() argument 2 cannot be a parameterized generic");
 
     // ctypes
     public static final TruffleString S_SYMBOL_IS_MISSING = tsLiteral("%s symbol is missing");
