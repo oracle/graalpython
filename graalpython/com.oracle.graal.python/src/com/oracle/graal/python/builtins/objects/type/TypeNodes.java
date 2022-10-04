@@ -1922,9 +1922,10 @@ public abstract class TypeNodes {
             boolean hasItemSize = getItemSize.execute(base) != 0;
             boolean mayAddWeakRef = getWeakRefAttrNode.execute(base) == PNone.NO_VALUE && !hasItemSize;
 
+            PythonAbstractClass[] mro = getMro(pythonClass);
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDictIfNative(frame, pythonClass, getItemSize, writeItemSize);
+                addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize);
                 addDictDescrAttribute(basesArray, pythonClass, factory);
                 addWeakrefDescrAttribute(pythonClass, factory);
             } else {
@@ -1965,7 +1966,7 @@ public abstract class TypeNodes {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
                     if (equalNode.execute(slotName, T___DICT__, TS_ENCODING)) {
-                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, getItemSize, writeItemSize)) {
+                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize)) {
                             throw raise.raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
@@ -2004,7 +2005,7 @@ public abstract class TypeNodes {
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
-                        addNativeSlots(frame, language, pythonClass, newSlots);
+                        addNativeSlots(frame, language, pythonClass, mro, newSlots);
                     }
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
@@ -2014,6 +2015,7 @@ public abstract class TypeNodes {
                     pythonClass.setHasSlotsButNoDictFlag();
                 }
             }
+            ensureBasicsize(frame, pythonClass, mro);
 
             return pythonClass;
         }
@@ -2110,17 +2112,16 @@ public abstract class TypeNodes {
          * <li>We need to install a member descriptor for each dynamic slot.</li>
          * </ol>
          */
-        private void addNativeSlots(VirtualFrame frame, PythonLanguage language, PythonManagedClass pythonClass, PTuple slots) {
+        private void addNativeSlots(VirtualFrame frame, PythonLanguage language, PythonManagedClass pythonClass, PythonAbstractClass[] mro, PTuple slots) {
             SequenceStorage slotsStorage = slots.getSequenceStorage();
             if (slotsStorage.length() != 0) {
                 // __basicsize__ may not have been inherited yet. Therefore, iterate over the MRO
                 // and/ look for the first native class.
-                int slotOffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__));
+                int slotOffset = getBasicsize(frame, pythonClass);
                 if (slotOffset == 0) {
-                    for (Object cls : getMro(pythonClass)) {
+                    for (PythonAbstractClass cls : mro) {
                         if (PGuards.isNativeClass(cls)) {
-                            // Use GetAnyAttributeNode since these are get-set-descriptors
-                            slotOffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
+                            slotOffset = getBasicsize(frame, cls);
                             break;
                         }
                     }
@@ -2317,14 +2318,14 @@ public abstract class TypeNodes {
         /**
          * check that the native base does not already have tp_dictoffset
          */
-        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass, PythonAbstractClass[] mro, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
-                for (Object cls : getMro(pythonClass)) {
+                for (PythonAbstractClass cls : mro) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
                         long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
+                        long basicsize = getBasicsize(frame, cls);
                         long itemsize = ensureCastToIntNode().execute(getItemSize.execute(cls));
                         if (dictoffset == 0) {
                             addedNewDict = true;
@@ -2345,6 +2346,31 @@ public abstract class TypeNodes {
             }
             return addedNewDict;
         }
+
+        /**
+         * check that the native base does not already have tp_dictoffset
+         */
+        private void ensureBasicsize(VirtualFrame frame, PythonManagedClass pythonClass, PythonAbstractClass[] mro) {
+            if (pythonClass.needsNativeAllocation() && getBasicsize(frame, pythonClass) == 0) {
+                long basicsize = 0;
+                for (PythonAbstractClass cls : mro) {
+                    if (PGuards.isNativeClass(cls)) {
+                        basicsize = getBasicsize(frame, cls);
+                        break;
+                    }
+                }
+                if (basicsize <= 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere(String.format("class %s needs native allocation but has basicsize <= 0", pythonClass.getName()));
+                }
+                ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__, basicsize);
+            }
+        }
+
+        private int getBasicsize(VirtualFrame frame, PythonAbstractClass cls) {
+            return ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
+        }
+
     }
 
     @GenerateUncached
