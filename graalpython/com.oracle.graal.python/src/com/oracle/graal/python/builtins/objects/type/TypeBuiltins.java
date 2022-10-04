@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1444,11 +1445,11 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class TypeUnionNode extends PythonBinaryBuiltinNode {
+    abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object union(Object self, Object other) {
-            // TODO
-            return self;
+        Object union(Object self, Object other,
+                        @Cached GenericTypeNodes.UnionTypeOrNode orNode) {
+            return orNode.execute(self, other);
         }
     }
 }
