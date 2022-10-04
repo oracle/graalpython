@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION;
@@ -127,17 +126,6 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                 pySequenceSetItem.executeWith(frame, self, i, args[i]);
             }
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    protected abstract static class ClassGetitemNode extends PythonBinaryBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object Py_GenericAlias(CDataObject self, Object o) {
-            throw raise(NotImplementedError); // TODO:
         }
     }
 
