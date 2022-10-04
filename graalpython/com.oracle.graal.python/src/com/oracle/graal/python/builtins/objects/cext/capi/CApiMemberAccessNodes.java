@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -458,6 +460,8 @@ public class CApiMemberAccessNodes {
         @Child private PCallCapiFunction callHPyFunctionNode;
         @Child private CExtToNativeNode toNativeNode;
         @Child private ToSulongNode toSulongNode;
+        @Child private GetClassNode getClassNode;
+        @Child private IsSameTypeNode isSameTypeNode;
 
         /** The specified member type. */
         private final int type;
@@ -490,6 +494,10 @@ public class CApiMemberAccessNodes {
                 newValue = PNone.NO_VALUE;
             } else {
                 newValue = value;
+            }
+
+            if (type == T_BOOL && !ensureIsSameTypeNode().execute(PythonBuiltinClassType.Boolean, ensureGetClassNode().execute(newValue))) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
             }
 
             NativeCAPISymbol accessor = getWriteAccessorName(type);
@@ -536,6 +544,22 @@ public class CApiMemberAccessNodes {
                 toSulongNode = insert(ToSulongNode.create());
             }
             return toSulongNode;
+        }
+
+        private GetClassNode ensureGetClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
+        }
+
+        private IsSameTypeNode ensureIsSameTypeNode() {
+            if (isSameTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameTypeNode = insert(IsSameTypeNode.create());
+            }
+            return isSameTypeNode;
         }
 
         @TruffleBoundary

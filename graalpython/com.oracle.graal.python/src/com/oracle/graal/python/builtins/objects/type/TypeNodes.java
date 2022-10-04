@@ -1261,33 +1261,33 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object left, Object right);
 
         @Specialization
-        boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
+        static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
             return left == right;
         }
 
         @Specialization
-        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
+        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
             return left == right;
         }
 
         @Specialization
-        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
+        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
             return left == right.getType();
         }
 
         @Specialization
-        boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
+        static boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
             return left.getType() == right;
         }
 
         @Specialization
-        boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+        static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return lib.isIdentical(left, right, lib);
         }
 
         @Fallback
-        boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
+        static boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
         }
 
