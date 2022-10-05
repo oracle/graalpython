@@ -1,11 +1,17 @@
 package com.oracle.graal.python.builtins.objects.types;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ARGS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUBCLASSCHECK__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -15,13 +21,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -31,6 +44,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -51,6 +65,18 @@ public class UnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object args(PUnionType self) {
             return self.getArgs();
+        }
+    }
+
+    @Builtin(name = J___PARAMETERS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    static abstract class ParametersNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object parameters(PUnionType self) {
+            if (self.getParameters() == null) {
+                self.setParameters(factory().createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+            }
+            return self.getParameters();
         }
     }
 
@@ -127,6 +153,94 @@ public class UnionTypeBuiltins extends PythonBuiltins {
                 return getAttr.execute(frame, getClassNode.execute(self), name);
             }
             return genericGetAttribute.execute(frame, self, nameObj);
+        }
+    }
+
+    @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class InstanceCheckNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean check(VirtualFrame frame, PUnionType self, Object other,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode) {
+            SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
+            boolean result = false;
+            for (int i = 0; i < argsStorage.length(); i++) {
+                Object arg = getItem.execute(argsStorage, i);
+                if (arg instanceof PGenericAlias) {
+                    throw raise(TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                }
+                if (!result) {
+                    result = isInstanceNode.executeWith(frame, other, arg);
+                    // Cannot break here, the check for GenericAlias needs to check all args
+                }
+            }
+            return result;
+        }
+    }
+
+    @Builtin(name = J___SUBCLASSCHECK__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class SubclassCheckNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean check(VirtualFrame frame, PUnionType self, Object other,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode) {
+            if (!isTypeNode.execute(other)) {
+                throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
+            }
+            SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
+            boolean result = false;
+            for (int i = 0; i < argsStorage.length(); i++) {
+                Object arg = getItem.execute(argsStorage, i);
+                if (arg instanceof PGenericAlias) {
+                    throw raise(TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
+                }
+                if (!result) {
+                    result = isSubClassNode.executeWith(frame, other, arg);
+                    // Cannot break here, the check for GenericAlias needs to check all args
+                }
+            }
+            return result;
+        }
+    }
+
+    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean eq(VirtualFrame frame, PUnionType self, PUnionType other,
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            PFrozenSet argSet1 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, self.getArgs()));
+            PFrozenSet argSet2 = factory().createFrozenSet(getHashingStorageNode.doNoValue(frame, other.getArgs()));
+            return eqNode.execute(frame, argSet1, argSet2);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object eq(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = J___GETITEM__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+        @Child BinaryOpNode orNode = BinaryArithmetic.Or.create();
+
+        @Specialization
+        Object getitem(VirtualFrame frame, PUnionType self, Object item) {
+            if (self.getParameters() == null) {
+                self.setParameters(factory().createTuple(GenericTypeNodes.makeParameters(self.getArgs())));
+            }
+            Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
+            Object result = newargs[0];
+            for (int i = 1; i < newargs.length; i++) {
+                result = orNode.executeObject(frame, result, newargs[i]);
+            }
+            return result;
         }
     }
 }

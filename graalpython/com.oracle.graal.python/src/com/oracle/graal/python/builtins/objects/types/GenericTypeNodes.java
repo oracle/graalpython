@@ -1,15 +1,25 @@
 package com.oracle.graal.python.builtins.objects.types;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPE_VAR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TYPING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -17,7 +27,10 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -25,6 +38,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 public abstract class GenericTypeNodes {
@@ -61,6 +76,118 @@ public abstract class GenericTypeNodes {
             }
         }
         sb.appendStringUncached(repr.execute(null, obj));
+    }
+
+    // Equivalent of _Py_make_parameters
+    @TruffleBoundary
+    static Object[] makeParameters(PTuple args) {
+        PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
+        SequenceStorage storage = args.getSequenceStorage();
+        int nargs = storage.length();
+        List<Object> parameters = new ArrayList<>(nargs);
+        for (int iarg = 0; iarg < nargs; iarg++) {
+            Object t = storage.getItemNormalized(iarg);
+            if (isTypeVar(t)) {
+                addUnique(parameters, t);
+            }
+            Object subparams = lookup.execute(null, t, T___PARAMETERS__);
+            if (subparams instanceof PTuple) {
+                SequenceStorage storage2 = ((PTuple) subparams).getSequenceStorage();
+                for (int j = 0; j < storage2.length(); j++) {
+                    addUnique(parameters, storage2.getItemNormalized(j));
+                }
+            }
+        }
+        return parameters.toArray();
+    }
+
+    // Equivalent of is_typevar
+    @TruffleBoundary
+    static boolean isTypeVar(Object obj) {
+        // isinstance(obj, TypeVar) without importing typing.py.
+        Object type = GetClassNode.getUncached().execute(obj);
+        TruffleString typeName = TypeNodes.GetNameNode.getUncached().execute(type);
+        if (T_TYPE_VAR.equalsUncached(typeName, TS_ENCODING)) {
+            Object module = PyObjectLookupAttr.getUncached().execute(null, type, T___MODULE__);
+            return PyUnicodeCheckNode.getUncached().execute(module) && PyObjectRichCompareBool.EqNode.getUncached().execute(null, module, T_TYPING);
+        }
+        return false;
+    }
+
+    // Rough equivalent of tuple_add
+    @TruffleBoundary
+    private static void addUnique(List<Object> list, Object obj) {
+        if (indexOf(list, obj) < 0) {
+            list.add(obj);
+        }
+    }
+
+    @TruffleBoundary
+    private static int indexOf(List<Object> list, Object obj) {
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i) == obj) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Equivalent of _Py_subs_parameters
+    @TruffleBoundary
+    static Object[] subsParameters(Node node, Object self, PTuple args, PTuple parameters, Object item) {
+        PyObjectReprAsTruffleStringNode repr = PyObjectReprAsTruffleStringNode.getUncached();
+        SequenceStorage paramsStorage = parameters.getSequenceStorage();
+        int nparams = paramsStorage.length();
+        if (nparams == 0) {
+            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.THERE_ARE_NO_TYPE_VARIABLES_LEFT_IN_S, repr.execute(null, self));
+        }
+        Object[] argitems = item instanceof PTuple ? ((PTuple) item).getSequenceStorage().getCopyOfInternalArray() : new Object[]{item};
+        if (argitems.length != nparams) {
+            throw PRaiseNode.raiseUncached(node, TypeError, ErrorMessages.TOO_S_ARGUMENTS_FOR_S, argitems.length > nparams ? "many" : "few", repr.execute(null, self));
+        }
+        SequenceStorage argsStorage = args.getSequenceStorage();
+        Object[] newargs = new Object[argsStorage.length()];
+        for (int iarg = 0; iarg < argsStorage.length(); iarg++) {
+            Object arg = argsStorage.getItemNormalized(iarg);
+            if (isTypeVar(arg)) {
+                for (int iparam = 0; iparam < nparams; iparam++) {
+                    if (paramsStorage.getItemNormalized(iparam) == arg) {
+                        arg = argitems[iparam];
+                        break;
+                    }
+                }
+            } else {
+                arg = subsTvars(arg, paramsStorage, argitems);
+            }
+            newargs[iarg] = arg;
+        }
+        return newargs;
+    }
+
+    private static Object subsTvars(Object obj, SequenceStorage parameters, Object[] argitems) {
+        PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
+        Object subparams = lookup.execute(null, obj, T___PARAMETERS__);
+        if (subparams instanceof PTuple) {
+            SequenceStorage subparamsStorage = ((PTuple) subparams).getSequenceStorage();
+            int nparams = parameters.length();
+            int nsubargs = subparamsStorage.length();
+            if (nsubargs > 0) {
+                Object[] subargs = new Object[nsubargs];
+                for (int i = 0; i < nsubargs; i++) {
+                    Object arg = subparamsStorage.getItemNormalized(i);
+                    for (int iparam = 0; iparam < nparams; iparam++) {
+                        if (parameters.getItemNormalized(iparam) == arg) {
+                            arg = argitems[iparam];
+                            subargs[i] = arg;
+                            break;
+                        }
+                    }
+                }
+                PTuple subargsTuple = PythonObjectFactory.getUncached().createTuple(subargs);
+                obj = PyObjectGetItem.getUncached().execute(null, obj, subargsTuple);
+            }
+        }
+        return obj;
     }
 
     public static abstract class UnionTypeOrNode extends PNodeWithContext {

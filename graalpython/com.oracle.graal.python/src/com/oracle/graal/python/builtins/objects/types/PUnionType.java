@@ -6,6 +6,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public class PUnionType extends PythonBuiltinObject {
     private PTuple args;
+    private PTuple parameters;
 
     public PUnionType(Object cls, Shape instanceShape, PTuple args) {
         super(cls, instanceShape);
@@ -14,5 +15,13 @@ public class PUnionType extends PythonBuiltinObject {
 
     public PTuple getArgs() {
         return args;
+    }
+
+    public PTuple getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(PTuple parameters) {
+        this.parameters = parameters;
     }
 }
