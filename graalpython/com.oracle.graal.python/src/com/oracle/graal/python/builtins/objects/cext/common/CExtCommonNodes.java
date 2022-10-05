@@ -1064,7 +1064,6 @@ public abstract class CExtCommonNodes {
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Cached GetClassNode getClassNode,
                         @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
-                        @Cached(parameters = "Int") LookupSpecialMethodSlotNode lookupInt,
                         @Cached CallUnaryMethodNode call,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
@@ -1075,12 +1074,7 @@ public abstract class CExtCommonNodes {
             if (indexDescr != PNone.NO_VALUE) {
                 result = call.executeObject(null, indexDescr, obj);
             } else {
-                Object intDescr = lookupInt.execute(null, type, obj);
-                if (intDescr != PNone.NO_VALUE) {
-                    result = call.executeObject(null, intDescr, obj);
-                } else {
-                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
-                }
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
             }
 
             /*

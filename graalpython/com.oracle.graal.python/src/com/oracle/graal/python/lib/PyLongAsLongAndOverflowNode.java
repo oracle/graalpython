@@ -40,22 +40,9 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -63,7 +50,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyLong_AsLongAndOverflow}. Converts an object into a Java long
@@ -100,43 +86,8 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
     // __index__
     @Specialization(guards = "!canBeInteger(object)")
     long doObject(VirtualFrame frame, Object object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
-                    @Cached(parameters = "Int") LookupSpecialMethodSlotNode lookupInt,
-                    @Cached CallUnaryMethodNode call,
-                    @Cached PyLongCheckNode resultSubtype,
-                    @Cached PyLongCheckExactNode resultIsInt,
-                    @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                    @Cached PRaiseNode raiseNode,
+                    @Cached PyNumberIndexNode indexNode,
                     @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
-        Object type = getClassNode.execute(object);
-        Object indexDescr = lookupIndex.execute(frame, type, object);
-        Object result = null;
-        if (indexDescr != PNone.NO_VALUE) {
-            result = call.executeObject(frame, indexDescr, object);
-            checkResult(frame, object, result, resultSubtype, resultIsInt, raiseNode, warnNode, T___INDEX__);
-        }
-        Object intDescr = lookupInt.execute(frame, type, object);
-        if (intDescr != PNone.NO_VALUE) {
-            result = call.executeObject(frame, intDescr, object);
-            checkResult(frame, object, result, resultSubtype, resultIsInt, raiseNode, warnNode, T___INT__);
-            warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                            ErrorMessages.WARN_INT_CONVERSION_DEPRECATED, object);
-        }
-        if (result == null) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
-        }
-        return recursive.execute(frame, result);
-    }
-
-    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, PyLongCheckNode isSubtype, PyLongCheckExactNode isInt, PRaiseNode raiseNode,
-                    WarningsModuleBuiltins.WarnNode warnNode, TruffleString methodName) {
-        if (!isInt.execute(result)) {
-            if (!isSubtype.execute(result)) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INT, methodName, result);
-            }
-            warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                            ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, methodName, "int", result, "int");
-        }
+        return recursive.execute(frame, indexNode.execute(frame, object));
     }
 }

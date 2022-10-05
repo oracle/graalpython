@@ -1347,9 +1347,6 @@ public abstract class ErrorMessages {
     public static final TruffleString WARN_P_RETURNED_NON_P = tsLiteral("%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.");
-    public static final TruffleString WARN_INT_CONVERSION_DEPRECATED = tsLiteral("an integer is required (got type %p).  " +
-                    "Implicit conversion to integers using __int__ is deprecated, " +
-                    "and may be removed in a future version of Python.");
     public static final TruffleString WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = tsLiteral("Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"");
     public static final TruffleString WARN_DEPRECTATED_SYS_CHECKINTERVAL = tsLiteral("sys.getcheckinterval() and sys.setcheckinterval() " +
                     "are deprecated.  Use sys.getswitchinterval() instead.");
