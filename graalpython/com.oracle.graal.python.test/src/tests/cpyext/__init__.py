@@ -545,6 +545,11 @@ def CPyExtType(name, code, **kwargs):
         {{NULL, NULL, 0, NULL}}
     }};
 
+    static struct PyMemberDef {name}_members[] = {{
+        {tp_members},
+        {{NULL, 0, 0, 0, NULL}}
+    }};
+
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
         "{name}.{name}",
@@ -574,7 +579,7 @@ def CPyExtType(name, code, **kwargs):
         {tp_iter},                  /* tp_iter */
         {tp_iternext},              /* tp_iternext */
         {name}_methods,             /* tp_methods */
-        NULL,                       /* tp_members */
+        {name}_members,             /* tp_members */
         0,                          /* tp_getset */
         {tp_base},                  /* tp_base */
         {tp_dict},                  /* tp_dict */
