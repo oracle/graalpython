@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_COPY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_GET;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_ITEMS;
@@ -34,9 +35,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_COPY;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
@@ -58,6 +62,9 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -228,6 +235,33 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         Object classGetItem(Object cls, Object key) {
             return factory().createGenericAlias(cls, key);
+        }
+    }
+
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @GenerateNodeFactory
+    abstract static class OrNode extends PythonBinaryBuiltinNode {
+        @Child BinaryOpNode orNode = BinaryArithmetic.Or.create();
+
+        @Specialization
+        Object or(VirtualFrame frame, Object self, Object other) {
+            if (self instanceof PMappingproxy) {
+                self = ((PMappingproxy) self).getMapping();
+            }
+            if (other instanceof PMappingproxy) {
+                other = ((PMappingproxy) other).getMapping();
+            }
+            return orNode.executeObject(frame, self, other);
+        }
+    }
+
+    @Builtin(name = J___IOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IOrNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object or(Object self, @SuppressWarnings("unused") Object other) {
+            throw raise(TypeError, ErrorMessages.IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD, self);
         }
     }
 }
