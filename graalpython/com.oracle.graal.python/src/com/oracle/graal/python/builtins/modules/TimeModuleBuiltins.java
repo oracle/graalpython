@@ -305,6 +305,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TzSetNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object tzset() {
             String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
             if (tzEnv == null) {
