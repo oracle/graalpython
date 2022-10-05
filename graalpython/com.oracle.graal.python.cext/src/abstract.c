@@ -197,6 +197,11 @@ PyObject* PyNumber_InPlaceOr(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, OR);
 }
 
+UPCALL_ID(PyIndex_Check)
+int PyIndex_Check(PyObject *obj) {
+    return UPCALL_CEXT_I(_jls_PyIndex_Check, native_to_java(obj));
+}
+
 UPCALL_ID(PyNumber_Index);
 PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
