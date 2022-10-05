@@ -359,8 +359,28 @@ class GraalPyVm(mx_benchmark.GuestVm):
             xmxArg = "--vm.Xmx8G"
             mx.log(f"Setting Xmx as {xmxArg}")
             args.insert(0, xmxArg)
-
-        return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
+        try:
+            old_gp_arg = os.environ.get("GRAAL_PYTHON_ARGS")
+            if old_gp_arg:
+                os.environ["GRAAL_PYTHON_ARGS"] = old_gp_arg + " " + xmxArg
+            else:
+                os.environ["GRAAL_PYTHON_ARGS"] = xmxArg
+            old_java_opts = os.environ.get("JAVA_OPTS")
+            if old_java_opts:
+                os.environ["JAVA_OPTS"] = old_java_opts + " " + xmxArg.replace("--vm", "-")
+            else:
+                os.environ["JAVA_OPTS"] = xmxArg.replace("--vm", "-")
+            mx.log("Running with `JAVA_OPTS={JAVA_OPTS}` and `GRAAL_PYTHON_ARGS={GRAAL_PYTHON_ARGS}`".format(**os.environ))
+            return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
+        finally:
+            if old_java_opts:
+                os.environ["JAVA_OPTS"] = old_java_opts
+            else:
+                del os.environ["JAVA_OPTS"]
+            if old_gp_arg:
+                os.environ["GRAAL_PYTHON_ARGS"] = old_gp_arg
+            else:
+                del os.environ["GRAAL_PYTHON_ARGS"]
 
 
 class PyPyVm(mx_benchmark.Vm):
@@ -514,7 +534,7 @@ class PyPerformanceSuite(PySuite):
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS",
+                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
                 "-o",
                 json_file,
                 *bms,
