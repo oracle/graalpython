@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -54,17 +55,16 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -76,7 +76,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1185,6 +1184,58 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public static Gcd2Node create() {
             return MathModuleBuiltinsFactory.Gcd2NodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "lcm", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class LcmNode extends PythonVarargsBuiltinNode {
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
+        public Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached LoopConditionProfile profile,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached GcdNode gcdNode,
+                        @Cached IntBuiltins.FloorDivNode floorDivNode,
+                        @Cached IntBuiltins.MulNode mulNode,
+                        @Cached BinaryComparisonNode.EqNode eqNode,
+                        @Cached BuiltinFunctions.AbsNode absNode) {
+            Object a = indexNode.execute(frame, args[0]);
+            profile.profileCounted(args.length);
+            for (int i = 1; profile.inject(i < args.length); i++) {
+                Object b = indexNode.execute(frame, args[i]);
+                if ((boolean) eqNode.executeObject(frame, a, 0)) {
+                    continue;
+                }
+                Object g = gcdNode.execute(frame, self, new Object[]{a, b}, PKeyword.EMPTY_KEYWORDS);
+                Object f = floorDivNode.execute(frame, a, g);
+                Object m = mulNode.execute(frame, f, b);
+                a = absNode.execute(frame, m);
+            }
+            return a;
+        }
+
+        @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
+        public Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached BuiltinFunctions.AbsNode absNode) {
+            return indexNode.execute(frame, absNode.execute(frame, args[0]));
+        }
+
+        @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
+        @SuppressWarnings("unused")
+        public int gcdEmpty(Object self, Object[] args, PKeyword[] keywords) {
+            return 1;
+        }
+
+        @Specialization(guards = "keywords.length != 0")
+        @SuppressWarnings("unused")
+        public int gcdKeywords(Object self, Object[] args, PKeyword[] keywords) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "gcd()");
         }
     }
 
