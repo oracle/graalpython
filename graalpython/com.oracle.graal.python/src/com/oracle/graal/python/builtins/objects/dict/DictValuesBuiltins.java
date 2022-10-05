@@ -62,6 +62,15 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         return DictValuesBuiltinsFactory.getFactories();
     }
 
+    @Builtin(name = "mapping", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class MappingNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object mapping(PDictView self) {
+            return factory().createMappingproxy(self.getWrappedDict());
+        }
+    }
+
     @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
