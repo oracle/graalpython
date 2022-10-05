@@ -1276,3 +1276,28 @@ _PyType_GetModuleByDef(PyTypeObject *type, struct PyModuleDef *def)
         type->tp_name);
     return NULL;
 }
+
+// Taken from CPython
+PyObject *
+PyType_GetModule(PyTypeObject *type)
+{
+    assert(PyType_Check(type));
+    if (!_PyType_HasFeature(type, Py_TPFLAGS_HEAPTYPE)) {
+        PyErr_Format(
+            PyExc_TypeError,
+            "PyType_GetModule: Type '%s' is not a heap type",
+            type->tp_name);
+        return NULL;
+    }
+
+    PyHeapTypeObject* et = (PyHeapTypeObject*)type;
+    if (!et->ht_module) {
+        PyErr_Format(
+            PyExc_TypeError,
+            "PyType_GetModule: Type '%s' has no associated module",
+            type->tp_name);
+        return NULL;
+    }
+    return et->ht_module;
+
+}
