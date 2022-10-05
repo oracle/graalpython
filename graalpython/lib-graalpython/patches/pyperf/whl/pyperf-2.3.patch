@@ -1,0 +1,13 @@
+diff --git a/pyperf/_utils.py b/pyperf/_utils.py
+index 6ada604..f2ba741 100644
+--- a/pyperf/_utils.py
++++ b/pyperf/_utils.py
+@@ -205,7 +205,7 @@ def python_has_jit():
+     implementation_name = python_implementation()
+     if implementation_name == 'pypy':
+         return sys.pypy_translation_info["translation.jit"]
+-    elif implementation_name == 'graalpython':
++    elif implementation_name in ['graalpython', 'graalpy']:
+         return True
+     elif hasattr(sys, "pyston_version_info") or "pyston_lite" in sys.modules:
+         return True
