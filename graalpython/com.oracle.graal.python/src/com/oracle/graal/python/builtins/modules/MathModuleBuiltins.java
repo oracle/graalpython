@@ -1239,6 +1239,25 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nextafter", minNumOfPositionalArgs = 2, parameterNames = {"start", "direction"})
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.Double)
+    @ArgumentClinic(name = "direction", conversion = ArgumentClinic.ClinicConversion.Double)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class NextAfterNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MathModuleBuiltinsClinicProviders.NextAfterNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static double nextAfter(double start, double direction) {
+            return Math.nextAfter(start, direction);
+        }
+    }
+
     @Builtin(name = "acos", minNumOfPositionalArgs = 1, doc = "Return the arc cosine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AcosNode extends MathDoubleUnaryBuiltinNode {
