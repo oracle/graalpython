@@ -40,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_COPY;
@@ -47,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 
 import java.util.List;
 
@@ -262,6 +264,16 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         Object or(Object self, @SuppressWarnings("unused") Object other) {
             throw raise(TypeError, ErrorMessages.IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD, self);
+        }
+    }
+
+    @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReversedNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object reversed(VirtualFrame frame, PMappingproxy self,
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), T___REVERSED__);
         }
     }
 }
