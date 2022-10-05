@@ -1080,7 +1080,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
-        public Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached Gcd2Node gdcNode,
                         @Cached LoopConditionProfile profile) {
             Object res = args[0];
@@ -1092,7 +1092,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
-        public Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached BuiltinFunctions.AbsNode absNode) {
             return indexNode.execute(frame, absNode.execute(frame, args[0]));
@@ -1100,7 +1100,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
         @SuppressWarnings("unused")
-        public int gcdEmpty(Object self, Object[] args, PKeyword[] keywords) {
+        public static int gcdEmpty(Object self, Object[] args, PKeyword[] keywords) {
             return 0;
         }
 
@@ -1196,7 +1196,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length > 1", "keywords.length == 0"})
-        public Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached LoopConditionProfile profile,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached GcdNode gcdNode,
@@ -1220,7 +1220,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
-        public Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
+        public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached BuiltinFunctions.AbsNode absNode) {
             return indexNode.execute(frame, absNode.execute(frame, args[0]));
@@ -1228,7 +1228,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 0", "keywords.length == 0"})
         @SuppressWarnings("unused")
-        public int gcdEmpty(Object self, Object[] args, PKeyword[] keywords) {
+        public static int gcdEmpty(Object self, Object[] args, PKeyword[] keywords) {
             return 1;
         }
 
