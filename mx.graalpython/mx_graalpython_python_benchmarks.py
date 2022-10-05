@@ -108,7 +108,7 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "sqlalchemy_declarative",
     # "sqlalchemy_imperative",
     # "sqlite_synth",
-    "sympy",
+    # "sympy",
     "telco",
     "tornado_http",
     "unpack_sequence",
