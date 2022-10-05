@@ -1258,6 +1258,36 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "ulp", minNumOfPositionalArgs = 1, parameterNames = {"x"})
+    @ArgumentClinic(name = "x", conversion = ArgumentClinic.ClinicConversion.Double)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class UlpNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MathModuleBuiltinsClinicProviders.UlpNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static double ulp(double x) {
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            x = Math.abs(x);
+            if (Double.isInfinite(x)) {
+                return x;
+            }
+            double x2 = Math.nextAfter(x, Double.POSITIVE_INFINITY);
+            if (Double.isInfinite(x2)) {
+                x2 = Math.nextAfter(x, Double.NEGATIVE_INFINITY);
+                return x - x2;
+            }
+            return x2 - x;
+        }
+    }
+
     @Builtin(name = "acos", minNumOfPositionalArgs = 1, doc = "Return the arc cosine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AcosNode extends MathDoubleUnaryBuiltinNode {
