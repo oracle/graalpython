@@ -1,26 +1,36 @@
-Module[0, 49]
-    Assign[0, 5]
-        LHS: Name[0, 1] Value: "c" Store
-        RHS: LONG[4, 5] Value: 2
-    FunctionDef[6, 40]
+Input:
+------
+c = 2
+def foo(a, b): 
+  return a + b + c
+foo(1,2)
+
+
+Output:
+-------
+Module[1:0-4:8]
+    Assign[1:0-1:5]
+        LHS: Name[1:0-1:1] Value: "c" Store
+        RHS: LONG[1:4-1:5] Value: 2
+    FunctionDef[2:0-3:18]
         Name:foo
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[14, 15] a
-                ArgTy[17, 18] b
+                ArgTy[2:8-2:9] a
+                ArgTy[2:11-2:12] b
         ---- Function body of foo ----
-        Return[24, 40] 
-            BinOp[31, 40]
+        Return[3:2-3:18] 
+            BinOp[3:9-3:18]
                 Op: Add
                 LHS: 
-                    BinOp[31, 36]
+                    BinOp[3:9-3:14]
                         Op: Add
-                        LHS: Name[31, 32] Value: "a"
-                        RHS: Name[35, 36] Value: "b"
-                RHS: Name[39, 40] Value: "c"
+                        LHS: Name[3:9-3:10] Value: "a"
+                        RHS: Name[3:13-3:14] Value: "b"
+                RHS: Name[3:17-3:18] Value: "c"
         ---- End of foo function ----
-    Call[41, 49]
-        Target: Name[41, 44] Value: "foo"
+    Call[4:0-4:8]
+        Target: Name[4:0-4:3] Value: "foo"
         Args:
-            LONG[45, 46] Value: 1
-            LONG[47, 48] Value: 2
+            LONG[4:4-4:5] Value: 1
+            LONG[4:6-4:7] Value: 2

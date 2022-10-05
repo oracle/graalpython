@@ -1,2 +1,9 @@
-Module[7, 11]
-    Pass[7, 11]
+Input:
+------
+ # foo
+pass
+
+Output:
+-------
+Module[2:0-2:4]
+    Pass[2:0-2:4]

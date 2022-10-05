@@ -1,17 +1,24 @@
-Module[0, 38]
-    FunctionDef[24, 38]
+Input:
+------
+@some.path.to.decorator
+def fn(): pass
+
+Output:
+-------
+Module[1:0-2:14]
+    FunctionDef[2:0-2:14]
         Name:fn
         Decorators:
-        Attribute[1, 23] 
+        Attribute[1:1-1:23] 
             Receiver: 
-                Attribute[1, 13] 
+                Attribute[1:1-1:13] 
                     Receiver: 
-                        Attribute[1, 10] 
-                            Receiver: Name[1, 5] Value: "some"
+                        Attribute[1:1-1:10] 
+                            Receiver: Name[1:1-1:5] Value: "some"
                             Attr: path
                     Attr: to
             Attr: decorator
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Pass[34, 38]
+        Pass[2:10-2:14]
         ---- End of fn function ----

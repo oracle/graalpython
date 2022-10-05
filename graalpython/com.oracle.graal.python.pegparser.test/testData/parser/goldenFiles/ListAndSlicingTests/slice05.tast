@@ -1,16 +1,22 @@
-Module[0, 16]
-    Subscript[0, 16]
+Input:
+------
+a()[b():c():d()]
+
+Output:
+-------
+Module[1:0-1:16]
+    Subscript[1:0-1:16]
         Slice: 
-            Slice[4, 15]
+            Slice[1:4-1:15]
                 Start: 
-                    Call[4, 7]
-                        Target: Name[4, 5] Value: "b"
+                    Call[1:4-1:7]
+                        Target: Name[1:4-1:5] Value: "b"
                 Stop: 
-                    Call[8, 11]
-                        Target: Name[8, 9] Value: "c"
+                    Call[1:8-1:11]
+                        Target: Name[1:8-1:9] Value: "c"
                 Step: 
-                    Call[12, 15]
-                        Target: Name[12, 13] Value: "d"
+                    Call[1:12-1:15]
+                        Target: Name[1:12-1:13] Value: "d"
         Value: 
-            Call[0, 3]
-                Target: Name[0, 1] Value: "a"
+            Call[1:0-1:3]
+                Target: Name[1:0-1:1] Value: "a"

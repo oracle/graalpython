@@ -1,13 +1,20 @@
-Module[0, 29]
-    FunctionDef[0, 29]
+Input:
+------
+def fn():
+  a = b = c = d = e
+
+Output:
+-------
+Module[1:0-2:19]
+    FunctionDef[1:0-2:19]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Assign[12, 29]
+        Assign[2:2-2:19]
             LHS: 
-                Name[12, 13] Value: "a" Store
-                Name[16, 17] Value: "b" Store
-                Name[20, 21] Value: "c" Store
-                Name[24, 25] Value: "d" Store
-            RHS: Name[28, 29] Value: "e"
+                Name[2:2-2:3] Value: "a" Store
+                Name[2:6-2:7] Value: "b" Store
+                Name[2:10-2:11] Value: "c" Store
+                Name[2:14-2:15] Value: "d" Store
+            RHS: Name[2:18-2:19] Value: "e"
         ---- End of fn function ----

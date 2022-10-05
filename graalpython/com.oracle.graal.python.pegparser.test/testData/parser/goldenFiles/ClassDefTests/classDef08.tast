@@ -1,33 +1,44 @@
-Module[0, 128]
-    ClassDef[0, 128] Test
+Input:
+------
+class Test():
+    def fn1(format):
+        return (format % args)
+    def fn2(*args, **kwds):
+        return self(*args, **kwds)
+
+
+Output:
+-------
+Module[1:0-5:34]
+    ClassDef[1:0-5:34] Test
         ---- Class body of Test ----
-        FunctionDef[18, 65]
+        FunctionDef[2:4-3:30]
             Name:fn1
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[26, 32] format
+                    ArgTy[2:12-2:18] format
             ---- Function body of fn1 ----
-            Return[43, 65] 
-                BinOp[51, 64]
+            Return[3:8-3:30] 
+                BinOp[3:16-3:29]
                     Op: Mod
-                    LHS: Name[51, 57] Value: "format"
-                    RHS: Name[60, 64] Value: "args"
+                    LHS: Name[3:16-3:22] Value: "format"
+                    RHS: Name[3:25-3:29] Value: "args"
             ---- End of fn1 function ----
-        FunctionDef[70, 128]
+        FunctionDef[4:4-5:34]
             Name:fn2
-            ArgumentsTy[0, 0]
-                VarArg: ArgTy[79, 83] args
-                Kwarg: ArgTy[87, 91] kwds
+            ArgumentsTy[0:0-0:0]
+                VarArg: ArgTy[4:13-4:17] args
+                Kwarg: ArgTy[4:21-4:25] kwds
             ---- Function body of fn2 ----
-            Return[102, 128] 
-                Call[109, 128]
-                    Target: Name[109, 113] Value: "self"
+            Return[5:8-5:34] 
+                Call[5:15-5:34]
+                    Target: Name[5:15-5:19] Value: "self"
                     Args:
-                        Starred[114, 119]
+                        Starred[5:20-5:25]
                              Context: Load
-                             Expr: Name[115, 119] Value: "args"
+                             Expr: Name[5:21-5:25] Value: "args"
                     KWArgs:
-                        KeywordTy[121, 127]
-                            null: Name[123, 127] Value: "kwds"
+                        KeywordTy[5:27-5:33]
+                            null: Name[5:29-5:33] Value: "kwds"
             ---- End of fn2 function ----
         ---- End of Test class ----

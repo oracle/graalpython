@@ -1,9 +1,15 @@
-Module[0, 26]
-    While[0, 26]
+Input:
+------
+while tb is not None: pass
+
+Output:
+-------
+Module[1:0-1:26]
+    While[1:0-1:26]
         Condition: 
-            Compare[6, 20]
-                LHS: Name[6, 8] Value: "tb"
+            Compare[1:6-1:20]
+                LHS: Name[1:6-1:8] Value: "tb"
                 Op: IsNot
-                RHS: NONE[16, 20] Value: null
+                RHS: NONE[1:16-1:20] Value: null
         Body:
-            Pass[22, 26]
+            Pass[1:22-1:26]

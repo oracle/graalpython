@@ -1,34 +1,49 @@
-Module[0, 140]
-    FunctionDef[0, 76]
+Input:
+------
+def mydecorator(fn):
+    def wrap():
+        return fn() + 1
+    return wrap
+
+@mydecorator
+def getNumber():
+    return 1
+
+print(getNumber())
+
+Output:
+-------
+Module[1:0-10:18]
+    FunctionDef[1:0-4:15]
         Name:mydecorator
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[16, 18] fn
+                ArgTy[1:16-1:18] fn
         ---- Function body of mydecorator ----
-        FunctionDef[25, 60]
+        FunctionDef[2:4-3:23]
             Name:wrap
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
             ---- Function body of wrap ----
-            Return[45, 60] 
-                BinOp[52, 60]
+            Return[3:8-3:23] 
+                BinOp[3:15-3:23]
                     Op: Add
                     LHS: 
-                        Call[52, 56]
-                            Target: Name[52, 54] Value: "fn"
-                    RHS: LONG[59, 60] Value: 1
+                        Call[3:15-3:19]
+                            Target: Name[3:15-3:17] Value: "fn"
+                    RHS: LONG[3:22-3:23] Value: 1
             ---- End of wrap function ----
-        Return[65, 76] Name[72, 76] Value: "wrap"
+        Return[4:4-4:15] Name[4:11-4:15] Value: "wrap"
         ---- End of mydecorator function ----
-    FunctionDef[91, 120]
+    FunctionDef[7:0-8:12]
         Name:getNumber
         Decorators:
-        Name[79, 90] Value: "mydecorator"
-        ArgumentsTy[0, 0]
+        Name[6:1-6:12] Value: "mydecorator"
+        ArgumentsTy[0:0-0:0]
         ---- Function body of getNumber ----
-        Return[112, 120] LONG[119, 120] Value: 1
+        Return[8:4-8:12] LONG[8:11-8:12] Value: 1
         ---- End of getNumber function ----
-    Call[122, 140]
-        Target: Name[122, 127] Value: "print"
+    Call[10:0-10:18]
+        Target: Name[10:0-10:5] Value: "print"
         Args:
-            Call[128, 139]
-                Target: Name[128, 137] Value: "getNumber"
+            Call[10:6-10:17]
+                Target: Name[10:6-10:15] Value: "getNumber"

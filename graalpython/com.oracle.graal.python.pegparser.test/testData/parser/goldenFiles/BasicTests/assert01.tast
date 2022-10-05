@@ -1,3 +1,9 @@
-Module[0, 11]
-    Assert[0, 11]
-        Test: BOOLEAN[7, 11] Value: true
+Input:
+------
+assert True
+
+Output:
+-------
+Module[1:0-1:11]
+    Assert[1:0-1:11]
+        Test: BOOLEAN[1:7-1:11] Value: true

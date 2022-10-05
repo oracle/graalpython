@@ -1,14 +1,21 @@
-Module[0, 34]
-    FunctionDef[0, 34]
+Input:
+------
+def fn():
+  lambda foo=bar, **z: 0
+
+Output:
+-------
+Module[1:0-2:24]
+    FunctionDef[1:0-2:24]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Lambda[12, 34]
-            ArgumentsTy[0, 0]
+        Lambda[2:2-2:24]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[19, 22] foo
-                Kwarg: ArgTy[30, 31] z
+                    ArgTy[2:9-2:12] foo
+                Kwarg: ArgTy[2:20-2:21] z
                 Defaults:
-                    Name[23, 26] Value: "bar"
-            Body: LONG[33, 34] Value: 0
+                    Name[2:13-2:16] Value: "bar"
+            Body: LONG[2:23-2:24] Value: 0
         ---- End of fn function ----

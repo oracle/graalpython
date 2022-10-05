@@ -1,4 +1,10 @@
-Module[0, 16]
-    Assign[0, 16]
-        LHS: Name[0, 1] Value: "t" Store
-        RHS: RAW[5, 15] Value: "strange,"
+Input:
+------
+t = ('strange,')
+
+Output:
+-------
+Module[1:0-1:16]
+    Assign[1:0-1:16]
+        LHS: Name[1:0-1:1] Value: "t" Store
+        RHS: RAW[1:5-1:15] Value: "strange,"

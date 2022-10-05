@@ -1,3 +1,9 @@
-Module[0, 24]
-    ImportFrom[0, 24] Level 4 pkg
+Input:
+------
+from ....pkg import name
+
+Output:
+-------
+Module[1:0-1:24]
+    ImportFrom[1:0-1:24] Level 4 pkg
         name

@@ -1,2 +1,8 @@
-Module[0, 5]
-    Raise[0, 5]
+Input:
+------
+raise
+
+Output:
+-------
+Module[1:0-1:5]
+    Raise[1:0-1:5]

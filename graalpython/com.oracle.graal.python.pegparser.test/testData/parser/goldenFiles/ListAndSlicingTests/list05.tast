@@ -1,16 +1,22 @@
-Module[0, 15]
-    List[0, 15]
+Input:
+------
+[*{2}, 3, *[4]]
+
+Output:
+-------
+Module[1:0-1:15]
+    List[1:0-1:15]
         Values:
-            Starred[1, 5]
+            Starred[1:1-1:5]
                  Context: Load
                  Expr: 
-                    Set[2, 5]
+                    Set[1:2-1:5]
                         Values:
-                            LONG[3, 4] Value: 2
-            LONG[7, 8] Value: 3
-            Starred[10, 14]
+                            LONG[1:3-1:4] Value: 2
+            LONG[1:7-1:8] Value: 3
+            Starred[1:10-1:14]
                  Context: Load
                  Expr: 
-                    List[11, 14]
+                    List[1:11-1:14]
                         Values:
-                            LONG[12, 13] Value: 4
+                            LONG[1:12-1:13] Value: 4

@@ -1,31 +1,42 @@
-Module[0, 94]
-    For[0, 94]
-        Target: Name[4, 5] Value: "i" Store
+Input:
+------
+for i in range(1, 10):
+    if call01(i)==0:
+        break
+    print(i)
+else:
+    print("test")
+
+Output:
+-------
+Module[1:0-6:17]
+    For[1:0-6:17]
+        Target: Name[1:4-1:5] Value: "i" Store
         Iter: 
-            Call[9, 21]
-                Target: Name[9, 14] Value: "range"
+            Call[1:9-1:21]
+                Target: Name[1:9-1:14] Value: "range"
                 Args:
-                    LONG[15, 16] Value: 1
-                    LONG[18, 20] Value: 10
+                    LONG[1:15-1:16] Value: 1
+                    LONG[1:18-1:20] Value: 10
         Body:
-            If[27, 57]
+            If[2:4-3:13]
                 Test: 
-                    Compare[30, 42]
+                    Compare[2:7-2:19]
                         LHS: 
-                            Call[30, 39]
-                                Target: Name[30, 36] Value: "call01"
+                            Call[2:7-2:16]
+                                Target: Name[2:7-2:13] Value: "call01"
                                 Args:
-                                    Name[37, 38] Value: "i"
+                                    Name[2:14-2:15] Value: "i"
                         Op: Eq
-                        RHS: LONG[41, 42] Value: 0
+                        RHS: LONG[2:18-2:19] Value: 0
                 Then:
-                    Break[52, 57]
-            Call[62, 70]
-                Target: Name[62, 67] Value: "print"
+                    Break[3:8-3:13]
+            Call[4:4-4:12]
+                Target: Name[4:4-4:9] Value: "print"
                 Args:
-                    Name[68, 69] Value: "i"
+                    Name[4:10-4:11] Value: "i"
         Else:
-            Call[81, 94]
-                Target: Name[81, 86] Value: "print"
+            Call[6:4-6:17]
+                Target: Name[6:4-6:9] Value: "print"
                 Args:
-                    RAW[87, 93] Value: "test"
+                    RAW[6:10-6:16] Value: "test"

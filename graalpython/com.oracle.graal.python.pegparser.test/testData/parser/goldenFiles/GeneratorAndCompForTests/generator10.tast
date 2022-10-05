@@ -1,35 +1,46 @@
-Module[0, 155]
-    FunctionDef[0, 155]
+Input:
+------
+def non_empty_lines(path):
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                yield line
+
+Output:
+-------
+Module[1:0-6:26]
+    FunctionDef[1:0-6:26]
         Name:non_empty_lines
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[20, 24] path
+                ArgTy[1:20-1:24] path
         ---- Function body of non_empty_lines ----
-        With[31, 155]
+        With[2:4-6:26]
             Items:
-                WithItemTy[36, 51]
+                WithItemTy[2:9-2:24]
                     ContextExpr: 
-                        Call[36, 46]
-                            Target: Name[36, 40] Value: "open"
+                        Call[2:9-2:19]
+                            Target: Name[2:9-2:13] Value: "open"
                             Args:
-                                Name[41, 45] Value: "path"
-                    OptionalVars: Name[50, 51] Value: "f" Store
+                                Name[2:14-2:18] Value: "path"
+                    OptionalVars: Name[2:23-2:24] Value: "f" Store
             Body:
-                For[61, 155]
-                    Target: Name[65, 69] Value: "line" Store
-                    Iter: Name[73, 74] Value: "f"
+                For[3:8-6:26]
+                    Target: Name[3:12-3:16] Value: "line" Store
+                    Iter: Name[3:20-3:21] Value: "f"
                     Body:
-                        Assign[88, 107]
-                            LHS: Name[88, 92] Value: "line" Store
+                        Assign[4:12-4:31]
+                            LHS: Name[4:12-4:16] Value: "line" Store
                             RHS: 
-                                Call[95, 107]
+                                Call[4:19-4:31]
                                     Target: 
-                                        Attribute[95, 105] 
-                                            Receiver: Name[95, 99] Value: "line"
+                                        Attribute[4:19-4:29] 
+                                            Receiver: Name[4:19-4:23] Value: "line"
                                             Attr: strip
-                        If[120, 155]
-                            Test: Name[123, 127] Value: "line"
+                        If[5:12-6:26]
+                            Test: Name[5:15-5:19] Value: "line"
                             Then:
-                                Yield[145, 155]
-                                    Name[151, 155] Value: "line"
+                                Yield[6:16-6:26]
+                                    Name[6:22-6:26] Value: "line"
         ---- End of non_empty_lines function ----

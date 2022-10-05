@@ -1,5 +1,11 @@
-Module[0, 6]
-    Dict[0, 6]
+Input:
+------
+{a:b,}
+
+Output:
+-------
+Module[1:0-1:6]
+    Dict[1:0-1:6]
         Values:
-            Key: Name[1, 2] Value: "a"
-            Val: Name[3, 4] Value: "b"
+            Key: Name[1:1-1:2] Value: "a"
+            Val: Name[1:3-1:4] Value: "b"

@@ -2899,8 +2899,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
-                // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
-                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING, featureVersion).parse();
+                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false, sourceRange), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING, featureVersion).parse();
             }
         };
         return new Parser(new ParserTokenizer(errorCb, src, inputType, interactiveTerminal), nodeFactory, fexpParser, stringFactory, errorCb, inputType, featureVersion);

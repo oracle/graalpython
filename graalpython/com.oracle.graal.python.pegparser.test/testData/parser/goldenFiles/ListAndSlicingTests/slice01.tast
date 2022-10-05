@@ -1,8 +1,14 @@
-Module[0, 5]
-    Subscript[0, 5]
+Input:
+------
+a[::]
+
+Output:
+-------
+Module[1:0-1:5]
+    Subscript[1:0-1:5]
         Slice: 
-            Slice[2, 4]
+            Slice[1:2-1:4]
                 Start: 
                 Stop: 
                 Step: 
-        Value: Name[0, 1] Value: "a"
+        Value: Name[1:0-1:1] Value: "a"

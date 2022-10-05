@@ -1,18 +1,28 @@
-Module[0, 79]
-    FunctionDef[0, 79]
+Input:
+------
+def fn():
+    try:
+        pass
+    except Exception as err:
+        print(err)
+
+Output:
+-------
+Module[1:0-5:18]
+    FunctionDef[1:0-5:18]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Try[14, 79]
+        Try[2:4-5:18]
             Body:
-                Pass[27, 31]
+                Pass[3:8-3:12]
             Except:
-                ExceptHandler[36, 79]
-                    Type: Name[43, 52] Value: "Exception"
+                ExceptHandler[4:4-5:18]
+                    Type: Name[4:11-4:20] Value: "Exception"
                     Var: err
                     Body:
-                        Call[69, 79]
-                            Target: Name[69, 74] Value: "print"
+                        Call[5:8-5:18]
+                            Target: Name[5:8-5:13] Value: "print"
                             Args:
-                                Name[75, 78] Value: "err"
+                                Name[5:14-5:17] Value: "err"
         ---- End of fn function ----

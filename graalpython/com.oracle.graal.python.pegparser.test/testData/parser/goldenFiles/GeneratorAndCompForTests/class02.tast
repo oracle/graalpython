@@ -1,47 +1,58 @@
-Module[0, 208]
-    ClassDef[0, 208] Counter
+Input:
+------
+class Counter(dict):
+    def _keep_positive(self):
+        nonpositive = [elem for elem, count in self.items() if not count > 0]
+        for elem in nonpositive:
+            del self[elem]
+        return self
+
+Output:
+-------
+Module[1:0-6:19]
+    ClassDef[1:0-6:19] Counter
         Bases:
-            Name[14, 18] Value: "dict"
+            Name[1:14-1:18] Value: "dict"
         ---- Class body of Counter ----
-        FunctionDef[25, 208]
+        FunctionDef[2:4-6:19]
             Name:_keep_positive
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[44, 48] self
+                    ArgTy[2:23-2:27] self
             ---- Function body of _keep_positive ----
-            Assign[59, 128]
-                LHS: Name[59, 70] Value: "nonpositive" Store
+            Assign[3:8-3:77]
+                LHS: Name[3:8-3:19] Value: "nonpositive" Store
                 RHS: 
-                    ListComp[73, 128]
-                        Element: Name[74, 78] Value: "elem"
-                        ComprehensionTy[79, 127]
+                    ListComp[3:22-3:77]
+                        Element: Name[3:23-3:27] Value: "elem"
+                        ComprehensionTy[3:28-3:76]
                             Target: 
-                                Tuple[83, 94] Context: Store
+                                Tuple[3:32-3:43] Context: Store
                                     Values:
-                                        Name[83, 87] Value: "elem" Store
-                                        Name[89, 94] Value: "count" Store
+                                        Name[3:32-3:36] Value: "elem" Store
+                                        Name[3:38-3:43] Value: "count" Store
                             Iterator: 
-                                Call[98, 110]
+                                Call[3:47-3:59]
                                     Target: 
-                                        Attribute[98, 108] 
-                                            Receiver: Name[98, 102] Value: "self"
+                                        Attribute[3:47-3:57] 
+                                            Receiver: Name[3:47-3:51] Value: "self"
                                             Attr: items
                             Ifs:
-                                UnaryOp[114, 127]
+                                UnaryOp[3:63-3:76]
                                     Op: Not
-                                    Value: Compare[118, 127]
-                                        LHS: Name[118, 123] Value: "count"
+                                    Value: Compare[3:67-3:76]
+                                        LHS: Name[3:67-3:72] Value: "count"
                                         Op: Gt
-                                        RHS: LONG[126, 127] Value: 0
-            For[137, 188]
-                Target: Name[141, 145] Value: "elem" Store
-                Iter: Name[149, 160] Value: "nonpositive"
+                                        RHS: LONG[3:75-3:76] Value: 0
+            For[4:8-5:26]
+                Target: Name[4:12-4:16] Value: "elem" Store
+                Iter: Name[4:20-4:31] Value: "nonpositive"
                 Body:
-                    Delete[174, 188]
+                    Delete[5:12-5:26]
                         Targets:
-                            Subscript[178, 188] Context: Del
-                                Slice: Name[183, 187] Value: "elem"
-                                Value: Name[178, 182] Value: "self"
-            Return[197, 208] Name[204, 208] Value: "self"
+                            Subscript[5:16-5:26] Context: Del
+                                Slice: Name[5:21-5:25] Value: "elem"
+                                Value: Name[5:16-5:20] Value: "self"
+            Return[6:8-6:19] Name[6:15-6:19] Value: "self"
             ---- End of _keep_positive function ----
         ---- End of Counter class ----

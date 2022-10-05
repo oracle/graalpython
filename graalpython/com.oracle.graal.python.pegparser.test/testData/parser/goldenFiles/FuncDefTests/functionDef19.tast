@@ -1,16 +1,22 @@
-Module[0, 71]
-    FunctionDef[0, 71]
+Input:
+------
+def __build_class__(func, name, *bases, metaclass=None, **kwargs): pass
+
+Output:
+-------
+Module[1:0-1:71]
+    FunctionDef[1:0-1:71]
         Name:__build_class__
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[20, 24] func
-                ArgTy[26, 30] name
-            VarArg: ArgTy[33, 38] bases
+                ArgTy[1:20-1:24] func
+                ArgTy[1:26-1:30] name
+            VarArg: ArgTy[1:33-1:38] bases
             KwOnlyArgs:
-                ArgTy[40, 49] metaclass
-            Kwarg: ArgTy[58, 64] kwargs
+                ArgTy[1:40-1:49] metaclass
+            Kwarg: ArgTy[1:58-1:64] kwargs
             KwDefaults:
-                NONE[50, 54] Value: null
+                NONE[1:50-1:54] Value: null
         ---- Function body of __build_class__ ----
-        Pass[67, 71]
+        Pass[1:67-1:71]
         ---- End of __build_class__ function ----

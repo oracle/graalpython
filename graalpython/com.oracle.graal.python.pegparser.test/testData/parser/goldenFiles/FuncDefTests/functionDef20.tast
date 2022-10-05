@@ -1,16 +1,22 @@
-Module[0, 64]
-    FunctionDef[0, 64]
+Input:
+------
+def __init__(self, max_size=0, *, ctx, pending_work_items): pass
+
+Output:
+-------
+Module[1:0-1:64]
+    FunctionDef[1:0-1:64]
         Name:__init__
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[13, 17] self
-                ArgTy[19, 27] max_size
+                ArgTy[1:13-1:17] self
+                ArgTy[1:19-1:27] max_size
             KwOnlyArgs:
-                ArgTy[34, 37] ctx
-                ArgTy[39, 57] pending_work_items
+                ArgTy[1:34-1:37] ctx
+                ArgTy[1:39-1:57] pending_work_items
             Defaults:
-                LONG[28, 29] Value: 0
+                LONG[1:28-1:29] Value: 0
             KwDefaults:
         ---- Function body of __init__ ----
-        Pass[60, 64]
+        Pass[1:60-1:64]
         ---- End of __init__ function ----

@@ -1,5 +1,13 @@
-Interactive[0, 15]
-    ClassDef[0, 15] A
+Input:
+------
+class A:
+  pass
+
+
+Output:
+-------
+Interactive[1:0-2:6]
+    ClassDef[1:0-2:6] A
         ---- Class body of A ----
-        Pass[11, 15]
+        Pass[2:2-2:6]
         ---- End of A class ----

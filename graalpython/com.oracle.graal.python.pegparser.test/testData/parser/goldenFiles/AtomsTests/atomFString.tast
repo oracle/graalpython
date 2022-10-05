@@ -1,7 +1,13 @@
-Module[0, 9]
-    JoinedStr[0, 9]
+Input:
+------
+f'a{b!r}'
+
+Output:
+-------
+Module[1:0-1:9]
+    JoinedStr[1:0-1:9]
          Values:
-            RAW[2, 3] Value: "a"
-            FormattedValue[4, 7]
-                Value: Name[1, 2] Value: "b"
+            RAW[1:2-1:3] Value: "a"
+            FormattedValue[1:4-1:7]
+                Value: Name[1:4-1:5] Value: "b"
                 Conversion: 114

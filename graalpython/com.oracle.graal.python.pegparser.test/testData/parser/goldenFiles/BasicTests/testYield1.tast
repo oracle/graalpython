@@ -1,2 +1,8 @@
-Module[0, 5]
-    Yield[0, 5]
+Input:
+------
+yield
+
+Output:
+-------
+Module[1:0-1:5]
+    Yield[1:0-1:5]

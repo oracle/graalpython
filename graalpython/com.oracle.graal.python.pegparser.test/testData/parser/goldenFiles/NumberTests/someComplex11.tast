@@ -1,2 +1,8 @@
-Module[0, 3]
-    COMPLEX[0, 3] Value: 0.00000+12.0000j
+Input:
+------
+12J
+
+Output:
+-------
+Module[1:0-1:3]
+    COMPLEX[1:0-1:3] Value: 0.00000+12.0000j

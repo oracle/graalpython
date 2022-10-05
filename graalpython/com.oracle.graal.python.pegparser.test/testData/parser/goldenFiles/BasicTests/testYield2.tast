@@ -1,3 +1,9 @@
-Module[0, 8]
-    Yield[0, 8]
-        LONG[6, 8] Value: 12
+Input:
+------
+yield 12
+
+Output:
+-------
+Module[1:0-1:8]
+    Yield[1:0-1:8]
+        LONG[1:6-1:8] Value: 12

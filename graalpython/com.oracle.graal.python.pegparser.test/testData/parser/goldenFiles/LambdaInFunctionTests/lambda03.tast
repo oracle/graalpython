@@ -1,10 +1,17 @@
-Module[0, 24]
-    FunctionDef[0, 24]
+Input:
+------
+def fn():
+  lambda *y: 0
+
+Output:
+-------
+Module[1:0-2:14]
+    FunctionDef[1:0-2:14]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Lambda[12, 24]
-            ArgumentsTy[0, 0]
-                VarArg: ArgTy[20, 21] y
-            Body: LONG[23, 24] Value: 0
+        Lambda[2:2-2:14]
+            ArgumentsTy[0:0-0:0]
+                VarArg: ArgTy[2:10-2:11] y
+            Body: LONG[2:13-2:14] Value: 0
         ---- End of fn function ----

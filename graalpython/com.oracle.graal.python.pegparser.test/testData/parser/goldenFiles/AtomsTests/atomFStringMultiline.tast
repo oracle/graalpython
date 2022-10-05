@@ -1,12 +1,22 @@
-Module[0, 45]
-    JoinedStr[0, 45]
+Input:
+------
+f"""First line.{
+   v1
++
+v2}
+Another line."""
+
+Output:
+-------
+Module[1:0-5:16]
+    JoinedStr[1:0-5:16]
          Values:
-            RAW[4, 15] Value: "First line."
-            FormattedValue[16, 27]
+            RAW[1:4-1:15] Value: "First line."
+            FormattedValue[1:16-4:2]
                 Value: 
-                    BinOp[5, 12]
+                    BinOp[2:3-4:2]
                         Op: Add
-                        LHS: Name[5, 7] Value: "v1"
-                        RHS: Name[10, 12] Value: "v2"
+                        LHS: Name[2:3-2:5] Value: "v1"
+                        RHS: Name[4:0-4:2] Value: "v2"
                 Conversion: -1
-            RAW[28, 42] Value: "\nAnother line."
+            RAW[4:3-5:13] Value: "\nAnother line."

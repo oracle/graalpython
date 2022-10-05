@@ -1,13 +1,19 @@
-Module[0, 16]
-    Compare[0, 16]
+Input:
+------
+x() < y() <= z()
+
+Output:
+-------
+Module[1:0-1:16]
+    Compare[1:0-1:16]
         LHS: 
-            Call[0, 3]
-                Target: Name[0, 1] Value: "x"
+            Call[1:0-1:3]
+                Target: Name[1:0-1:1] Value: "x"
         Op: Lt
         RHS: 
-            Call[6, 9]
-                Target: Name[6, 7] Value: "y"
+            Call[1:6-1:9]
+                Target: Name[1:6-1:7] Value: "y"
         Op: LtE
         RHS: 
-            Call[13, 16]
-                Target: Name[13, 14] Value: "z"
+            Call[1:13-1:16]
+                Target: Name[1:13-1:14] Value: "z"

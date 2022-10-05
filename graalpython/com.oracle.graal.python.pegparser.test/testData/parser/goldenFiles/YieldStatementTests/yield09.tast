@@ -1,12 +1,18 @@
-Module[0, 20]
-    FunctionDef[0, 20]
+Input:
+------
+def f(): (yield 1)*2
+
+Output:
+-------
+Module[1:0-1:20]
+    FunctionDef[1:0-1:20]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of f ----
-        BinOp[9, 20]
+        BinOp[1:9-1:20]
             Op: Mult
             LHS: 
-                Yield[10, 17]
-                    LONG[16, 17] Value: 1
-            RHS: LONG[19, 20] Value: 2
+                Yield[1:10-1:17]
+                    LONG[1:16-1:17] Value: 1
+            RHS: LONG[1:19-1:20] Value: 2
         ---- End of f function ----

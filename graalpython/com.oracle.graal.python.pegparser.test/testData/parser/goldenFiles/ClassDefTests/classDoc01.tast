@@ -1,11 +1,20 @@
-Module[0, 76]
-    ClassDef[0, 76] Test
+Input:
+------
+class Test():
+    """Class doc"""
+    def method():
+        """Method doc"""
+
+Output:
+-------
+Module[1:0-4:24]
+    ClassDef[1:0-4:24] Test
         ---- Class body of Test ----
-        RAW[18, 33] Value: "Class doc"
-        FunctionDef[38, 76]
+        RAW[2:4-2:19] Value: "Class doc"
+        FunctionDef[3:4-4:24]
             Name:method
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
             ---- Function body of method ----
-            RAW[60, 76] Value: "Method doc"
+            RAW[4:8-4:24] Value: "Method doc"
             ---- End of method function ----
         ---- End of Test class ----

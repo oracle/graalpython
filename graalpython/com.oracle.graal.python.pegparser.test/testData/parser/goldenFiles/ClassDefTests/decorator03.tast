@@ -1,14 +1,23 @@
-Module[0, 59]
-    ClassDef[0, 59] C
+Input:
+------
+class C(object):
+    @staticmethod
+    def foo(): return 42
+
+
+Output:
+-------
+Module[1:0-3:24]
+    ClassDef[1:0-3:24] C
         Bases:
-            Name[8, 14] Value: "object"
+            Name[1:8-1:14] Value: "object"
         ---- Class body of C ----
-        FunctionDef[39, 59]
+        FunctionDef[3:4-3:24]
             Name:foo
             Decorators:
-            Name[22, 34] Value: "staticmethod"
-            ArgumentsTy[0, 0]
+            Name[2:5-2:17] Value: "staticmethod"
+            ArgumentsTy[0:0-0:0]
             ---- Function body of foo ----
-            Return[50, 59] LONG[57, 59] Value: 42
+            Return[3:15-3:24] LONG[3:22-3:24] Value: 42
             ---- End of foo function ----
         ---- End of C class ----

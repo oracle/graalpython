@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.pegparser.sst;
 
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+
 public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private static final String INDENTATION = "    ";
@@ -55,9 +57,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
 
     private static String addHeader(SSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(node.getClass().getSimpleName()).append("[").append(node.getSourceRange().startOffset);
-        sb.append(", ").append(node.getSourceRange().endOffset).append("]");
+        sb.append(node.getClass().getSimpleName());
+        appendSourceRange(sb, node.getSourceRange());
         return sb.toString();
+    }
+
+    private static void appendSourceRange(StringBuilder sb, SourceRange sourceRange) {
+        sb.append('[').append(sourceRange.startLine).append(':').append(sourceRange.startColumn);
+        sb.append('-').append(sourceRange.endLine).append(':').append(sourceRange.endColumn).append(']');
     }
 
     private StringBuilder appendNewLineIndented(StringBuilder sb, String str) {
@@ -250,8 +257,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
     @Override
     public String visit(ExprTy.Constant node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(node.value.kind).append("[").append(node.getSourceRange().startOffset);
-        sb.append(", ").append(node.getSourceRange().endOffset).append("]");
+        sb.append(node.value.kind);
+        appendSourceRange(sb, node.getSourceRange());
         sb.append(" Value: ");
         appendConstantValue(sb, node.value);
         if (node.kind != null) {

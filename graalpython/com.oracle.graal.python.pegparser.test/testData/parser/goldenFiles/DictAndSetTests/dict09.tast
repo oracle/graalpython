@@ -1,8 +1,14 @@
-Module[0, 11]
-    Dict[0, 11]
+Input:
+------
+{**{}, 3:4}
+
+Output:
+-------
+Module[1:0-1:11]
+    Dict[1:0-1:11]
         Values:
             Val: 
-                Dict[3, 5]
+                Dict[1:3-1:5]
                     Values:
-            Key: LONG[7, 8] Value: 3
-            Val: LONG[9, 10] Value: 4
+            Key: LONG[1:7-1:8] Value: 3
+            Val: LONG[1:9-1:10] Value: 4

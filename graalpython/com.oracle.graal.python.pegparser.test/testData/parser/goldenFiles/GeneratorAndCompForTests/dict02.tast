@@ -1,37 +1,44 @@
-Module[0, 98]
-    Assign[0, 48]
-        LHS: Name[0, 5] Value: "dict1" Store
+Input:
+------
+dict1 = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}
+double_dict1 = {k:v*2 for (k,v) in dict1.items()}
+
+Output:
+-------
+Module[1:0-2:49]
+    Assign[1:0-1:48]
+        LHS: Name[1:0-1:5] Value: "dict1" Store
         RHS: 
-            Dict[8, 48]
+            Dict[1:8-1:48]
                 Values:
-                    Key: RAW[9, 12] Value: "a"
-                    Val: LONG[14, 15] Value: 1
-                    Key: RAW[17, 20] Value: "b"
-                    Val: LONG[22, 23] Value: 2
-                    Key: RAW[25, 28] Value: "c"
-                    Val: LONG[30, 31] Value: 3
-                    Key: RAW[33, 36] Value: "d"
-                    Val: LONG[38, 39] Value: 4
-                    Key: RAW[41, 44] Value: "e"
-                    Val: LONG[46, 47] Value: 5
-    Assign[49, 98]
-        LHS: Name[49, 61] Value: "double_dict1" Store
+                    Key: RAW[1:9-1:12] Value: "a"
+                    Val: LONG[1:14-1:15] Value: 1
+                    Key: RAW[1:17-1:20] Value: "b"
+                    Val: LONG[1:22-1:23] Value: 2
+                    Key: RAW[1:25-1:28] Value: "c"
+                    Val: LONG[1:30-1:31] Value: 3
+                    Key: RAW[1:33-1:36] Value: "d"
+                    Val: LONG[1:38-1:39] Value: 4
+                    Key: RAW[1:41-1:44] Value: "e"
+                    Val: LONG[1:46-1:47] Value: 5
+    Assign[2:0-2:49]
+        LHS: Name[2:0-2:12] Value: "double_dict1" Store
         RHS: 
-            DictComp[64, 98]
-                Key: Name[65, 66] Value: "k"
-                Value: BinOp[67, 70]
+            DictComp[2:15-2:49]
+                Key: Name[2:16-2:17] Value: "k"
+                Value: BinOp[2:18-2:21]
                     Op: Mult
-                    LHS: Name[67, 68] Value: "v"
-                    RHS: LONG[69, 70] Value: 2
-                ComprehensionTy[71, 97]
+                    LHS: Name[2:18-2:19] Value: "v"
+                    RHS: LONG[2:20-2:21] Value: 2
+                ComprehensionTy[2:22-2:48]
                     Target: 
-                        Tuple[75, 80] Context: Store
+                        Tuple[2:26-2:31] Context: Store
                             Values:
-                                Name[76, 77] Value: "k" Store
-                                Name[78, 79] Value: "v" Store
+                                Name[2:27-2:28] Value: "k" Store
+                                Name[2:29-2:30] Value: "v" Store
                     Iterator: 
-                        Call[84, 97]
+                        Call[2:35-2:48]
                             Target: 
-                                Attribute[84, 95] 
-                                    Receiver: Name[84, 89] Value: "dict1"
+                                Attribute[2:35-2:46] 
+                                    Receiver: Name[2:35-2:40] Value: "dict1"
                                     Attr: items

@@ -1,18 +1,26 @@
-Module[0, 25]
-    Assign[0, 5]
-        LHS: Name[0, 1] Value: "a" Store
-        RHS: LONG[4, 5] Value: 0
-    Assign[6, 11]
-        LHS: Name[6, 7] Value: "b" Store
-        RHS: Name[10, 11] Value: "a"
-    Assign[12, 25]
-        LHS: Name[12, 13] Value: "c" Store
+Input:
+------
+a = 0
+b = a
+c = a + a + b
+
+Output:
+-------
+Module[1:0-3:13]
+    Assign[1:0-1:5]
+        LHS: Name[1:0-1:1] Value: "a" Store
+        RHS: LONG[1:4-1:5] Value: 0
+    Assign[2:0-2:5]
+        LHS: Name[2:0-2:1] Value: "b" Store
+        RHS: Name[2:4-2:5] Value: "a"
+    Assign[3:0-3:13]
+        LHS: Name[3:0-3:1] Value: "c" Store
         RHS: 
-            BinOp[16, 25]
+            BinOp[3:4-3:13]
                 Op: Add
                 LHS: 
-                    BinOp[16, 21]
+                    BinOp[3:4-3:9]
                         Op: Add
-                        LHS: Name[16, 17] Value: "a"
-                        RHS: Name[20, 21] Value: "a"
-                RHS: Name[24, 25] Value: "b"
+                        LHS: Name[3:4-3:5] Value: "a"
+                        RHS: Name[3:8-3:9] Value: "a"
+                RHS: Name[3:12-3:13] Value: "b"

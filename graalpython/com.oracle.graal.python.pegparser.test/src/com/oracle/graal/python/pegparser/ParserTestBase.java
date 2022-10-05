@@ -100,7 +100,7 @@ public class ParserTestBase {
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange sourceRange) {
-                ParserTokenizer tok = new ParserTokenizer(errorCallback, code, InputType.FSTRING, interactiveTerminal);
+                ParserTokenizer tok = new ParserTokenizer(errorCallback, code, InputType.FSTRING, interactiveTerminal, sourceRange);
                 return (ExprTy) new Parser(tok, factory, this, errorCallback, InputType.FSTRING, FEATURE_VERSION).parse();
             }
         };
@@ -185,7 +185,7 @@ public class ParserTestBase {
         assertTrue("The test files " + testFile.getAbsolutePath() + " was not found.", testFile.exists());
         String source = readFile(testFile);
         SSTNode resultNew = parse(source, "Test", InputType.FILE);
-        String tree = printTreeToString(resultNew);
+        String tree = printTreeToString(source, resultNew);
         File goldenFile = goldenFileNextToTestFile
                         ? new File(testFile.getParentFile(), getFileName(testFile) + GOLDEN_FILE_EXT)
                         : getGoldenFile(GOLDEN_FILE_EXT);
@@ -207,7 +207,7 @@ public class ParserTestBase {
 
     public void checkTreeResult(String source, InputType inputType/* , Frame frame */) throws Exception {
         SSTNode resultNew = parse(source, getFileName(), inputType/* , frame */);
-        String tree = printTreeToString(resultNew);
+        String tree = printTreeToString(source, resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
         writeGoldenFileIfMissing(goldenFile, tree);
         assertDescriptionMatches(tree, goldenFile);
@@ -236,7 +236,7 @@ public class ParserTestBase {
         FExprParser fexpParser = new FExprParser() {
             @Override
             public ExprTy parse(String code, SourceRange range) {
-                ParserTokenizer tok = new ParserTokenizer(errorCb, code, InputType.FSTRING, false);
+                ParserTokenizer tok = new ParserTokenizer(errorCb, code, InputType.FSTRING, false, range);
                 return (ExprTy) new Parser(tok, factory, this, errorCb, InputType.FSTRING, FEATURE_VERSION).parse();
             }
         };
@@ -271,9 +271,9 @@ public class ParserTestBase {
 // assertTrue(checker.getMessage(), result);
 // }
 
-    protected String printTreeToString(SSTNode node) {
+    protected String printTreeToString(String source, SSTNode node) {
         SSTTreePrinterVisitor visitor = new SSTTreePrinterVisitor();
-        return node.accept(visitor);
+        return String.format("Input:\n------\n%s\n\nOutput:\n-------\n%s", source, node.accept(visitor));
     }
 
     protected void assertDescriptionMatches(String actual, File goldenFile) throws Exception {

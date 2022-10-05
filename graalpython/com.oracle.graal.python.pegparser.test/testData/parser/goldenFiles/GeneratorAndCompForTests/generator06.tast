@@ -1,49 +1,64 @@
-Module[0, 302]
-    FunctionDef[0, 302]
+Input:
+------
+def format_exception_only(self):
+        if a():
+            yield "neco"
+            return
+        if badline is not None:
+            yield '\n'
+            if offset is not None:
+                caretspace = (c.isspace() for c in caretspace)
+                yield caretspace
+        yield "message"
+
+Output:
+-------
+Module[1:0-10:23]
+    FunctionDef[1:0-10:23]
         Name:format_exception_only
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[26, 30] self
+                ArgTy[1:26-1:30] self
         ---- Function body of format_exception_only ----
-        If[41, 92]
+        If[2:8-4:18]
             Test: 
-                Call[44, 47]
-                    Target: Name[44, 45] Value: "a"
+                Call[2:11-2:14]
+                    Target: Name[2:11-2:12] Value: "a"
             Then:
-                Yield[61, 73]
-                    RAW[67, 73] Value: "neco"
-                Return[86, 92]
-        If[101, 278]
+                Yield[3:12-3:24]
+                    RAW[3:18-3:24] Value: "neco"
+                Return[4:12-4:18]
+        If[5:8-9:32]
             Test: 
-                Compare[104, 123]
-                    LHS: Name[104, 111] Value: "badline"
+                Compare[5:11-5:30]
+                    LHS: Name[5:11-5:18] Value: "badline"
                     Op: IsNot
-                    RHS: NONE[119, 123] Value: null
+                    RHS: NONE[5:26-5:30] Value: null
             Then:
-                Yield[137, 147]
-                    RAW[143, 147] Value: "\n"
-                If[160, 278]
+                Yield[6:12-6:22]
+                    RAW[6:18-6:22] Value: "\n"
+                If[7:12-9:32]
                     Test: 
-                        Compare[163, 181]
-                            LHS: Name[163, 169] Value: "offset"
+                        Compare[7:15-7:33]
+                            LHS: Name[7:15-7:21] Value: "offset"
                             Op: IsNot
-                            RHS: NONE[177, 181] Value: null
+                            RHS: NONE[7:29-7:33] Value: null
                     Then:
-                        Assign[199, 245]
-                            LHS: Name[199, 209] Value: "caretspace" Store
+                        Assign[8:16-8:62]
+                            LHS: Name[8:16-8:26] Value: "caretspace" Store
                             RHS: 
-                                GeneratorExp[212, 245]
+                                GeneratorExp[8:29-8:62]
                                     Element: 
-                                        Call[213, 224]
+                                        Call[8:30-8:41]
                                             Target: 
-                                                Attribute[213, 222] 
-                                                    Receiver: Name[213, 214] Value: "c"
+                                                Attribute[8:30-8:39] 
+                                                    Receiver: Name[8:30-8:31] Value: "c"
                                                     Attr: isspace
-                                    ComprehensionTy[225, 244]
-                                        Target: Name[229, 230] Value: "c" Store
-                                        Iterator: Name[234, 244] Value: "caretspace"
-                        Yield[262, 278]
-                            Name[268, 278] Value: "caretspace"
-        Yield[287, 302]
-            RAW[293, 302] Value: "message"
+                                    ComprehensionTy[8:42-8:61]
+                                        Target: Name[8:46-8:47] Value: "c" Store
+                                        Iterator: Name[8:51-8:61] Value: "caretspace"
+                        Yield[9:16-9:32]
+                            Name[9:22-9:32] Value: "caretspace"
+        Yield[10:8-10:23]
+            RAW[10:14-10:23] Value: "message"
         ---- End of format_exception_only function ----

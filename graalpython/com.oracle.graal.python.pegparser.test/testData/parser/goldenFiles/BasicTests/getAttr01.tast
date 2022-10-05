@@ -1,4 +1,10 @@
-Module[0, 3]
-    Attribute[0, 3] 
-        Receiver: Name[0, 1] Value: "a"
+Input:
+------
+a.b
+
+Output:
+-------
+Module[1:0-1:3]
+    Attribute[1:0-1:3] 
+        Receiver: Name[1:0-1:1] Value: "a"
         Attr: b

@@ -1,9 +1,18 @@
-Module[0, 37]
-    Try[0, 37]
+Input:
+------
+try:
+  pass
+except ValueError:
+  pass
+
+Output:
+-------
+Module[1:0-4:6]
+    Try[1:0-4:6]
         Body:
-            Pass[7, 11]
+            Pass[2:2-2:6]
         Except:
-            ExceptHandler[12, 37]
-                Type: Name[19, 29] Value: "ValueError"
+            ExceptHandler[3:0-4:6]
+                Type: Name[3:7-3:17] Value: "ValueError"
                 Body:
-                    Pass[33, 37]
+                    Pass[4:2-4:6]

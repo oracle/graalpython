@@ -139,15 +139,24 @@ public class Tokenizer {
     private boolean readNewline = false;
     /** {@code tok_state->interactive_underflow} */
     public boolean reportIncompleteSourceIfInteractive = true;
-
+    private final int srcStartLine;
+    private final int srcStartColumn;
     // error_ret
 
-    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags) {
+    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags, SourceRange inputSourceRange) {
         this.errorCallback = errorCallback;
         this.codePointsInput = codePointsInput;
         this.execInput = flags.contains(Flag.EXEC_INPUT);
         this.interactive = flags.contains(Flag.INTERACTIVE);
         this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+        if (inputSourceRange != null) {
+            srcStartLine = inputSourceRange.startLine - 1;    // lines use 1-base indexing
+            srcStartColumn = inputSourceRange.startColumn - 1;    // account for extra '(' in the
+                                                                  // string
+        } else {
+            srcStartLine = 0;
+            srcStartColumn = 0;
+        }
     }
 
     /**
@@ -315,7 +324,7 @@ public class Tokenizer {
         int sourceStart = getSourceStart(code);
         Charset fileEncoding = detectEncoding(sourceStart, code);
         int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
-        return new Tokenizer(errorCallback, codePointsInput, flags);
+        return new Tokenizer(errorCallback, codePointsInput, flags, null);
     }
 
     private static int[] charsToCodePoints(char[] chars) {
@@ -342,11 +351,11 @@ public class Tokenizer {
      * Equivalent of {@code PyTokenizer_FromUTF8}. No charset decoding is performed, BOM or coding
      * spec comment are ignored,
      */
-    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags) {
+    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
         if (code.length() > 0 && code.charAt(0) == '\\') {
             System.out.println("Creating tokenizer for *" + code + "*");
         }
-        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags);
+        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags, inputSourceRange);
     }
 
     // PyTokenizer_FromFile
@@ -1320,6 +1329,14 @@ public class Tokenizer {
         int endLineno = currentLineNumber;
         int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
         int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
+        lineno += srcStartLine;
+        endLineno += srcStartLine;
+        if (lineno == 1) {
+            colOffset += srcStartColumn;
+        }
+        if (endLineno == 1) {
+            endColOffset += srcStartColumn;
+        }
         return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
     }
 

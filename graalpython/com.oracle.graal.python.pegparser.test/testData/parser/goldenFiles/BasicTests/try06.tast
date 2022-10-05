@@ -1,26 +1,40 @@
-Module[0, 124]
-    For[0, 124]
-        Target: Name[4, 7] Value: "cls" Store
+Input:
+------
+for cls in (B, C, D):
+    try:
+        pass
+    except D:
+        pass
+    except C:
+        pass
+    except B:
+        pass
+
+Output:
+-------
+Module[1:0-9:12]
+    For[1:0-9:12]
+        Target: Name[1:4-1:7] Value: "cls" Store
         Iter: 
-            Tuple[11, 20]
+            Tuple[1:11-1:20]
                 Values:
-                    Name[12, 13] Value: "B"
-                    Name[15, 16] Value: "C"
-                    Name[18, 19] Value: "D"
+                    Name[1:12-1:13] Value: "B"
+                    Name[1:15-1:16] Value: "C"
+                    Name[1:18-1:19] Value: "D"
         Body:
-            Try[26, 124]
+            Try[2:4-9:12]
                 Body:
-                    Pass[39, 43]
+                    Pass[3:8-3:12]
                 Except:
-                    ExceptHandler[48, 70]
-                        Type: Name[55, 56] Value: "D"
+                    ExceptHandler[4:4-5:12]
+                        Type: Name[4:11-4:12] Value: "D"
                         Body:
-                            Pass[66, 70]
-                    ExceptHandler[75, 97]
-                        Type: Name[82, 83] Value: "C"
+                            Pass[5:8-5:12]
+                    ExceptHandler[6:4-7:12]
+                        Type: Name[6:11-6:12] Value: "C"
                         Body:
-                            Pass[93, 97]
-                    ExceptHandler[102, 124]
-                        Type: Name[109, 110] Value: "B"
+                            Pass[7:8-7:12]
+                    ExceptHandler[8:4-9:12]
+                        Type: Name[8:11-8:12] Value: "B"
                         Body:
-                            Pass[120, 124]
+                            Pass[9:8-9:12]

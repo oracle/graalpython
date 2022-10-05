@@ -56,7 +56,13 @@ public class ParserTokenizer {
     public ParserTokenizer(ErrorCallback errorCallback, String code, InputType type, boolean interactiveTerminal) {
         this.pos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromString(errorCallback, code, getTokenizerFlags(type, interactiveTerminal));
+        this.tokenizer = Tokenizer.fromString(errorCallback, code, getTokenizerFlags(type, interactiveTerminal), null);
+    }
+
+    public ParserTokenizer(ErrorCallback errorCallback, String code, InputType type, boolean interactiveTerminal, SourceRange inputSourceRange) {
+        this.pos = 0;
+        this.tokens = new ArrayList<>();
+        this.tokenizer = Tokenizer.fromString(errorCallback, code, getTokenizerFlags(type, interactiveTerminal), inputSourceRange);
     }
 
     public ParserTokenizer(ErrorCallback errorCallback, byte[] code, InputType type, boolean interactiveTerminal) {

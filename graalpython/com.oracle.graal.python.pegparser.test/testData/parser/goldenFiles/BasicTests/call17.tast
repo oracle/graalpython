@@ -1,11 +1,17 @@
-Module[0, 22]
-    FunctionDef[0, 22]
+Input:
+------
+def fn(): foo(arg = 1)
+
+Output:
+-------
+Module[1:0-1:22]
+    FunctionDef[1:0-1:22]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Call[10, 22]
-            Target: Name[10, 13] Value: "foo"
+        Call[1:10-1:22]
+            Target: Name[1:10-1:13] Value: "foo"
             KWArgs:
-                KeywordTy[14, 21]
-                    arg: LONG[20, 21] Value: 1
+                KeywordTy[1:14-1:21]
+                    arg: LONG[1:20-1:21] Value: 1
         ---- End of fn function ----

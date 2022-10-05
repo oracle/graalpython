@@ -1,9 +1,15 @@
-Module[0, 8]
-    Subscript[0, 8]
+Input:
+------
+a[1,3,4]
+
+Output:
+-------
+Module[1:0-1:8]
+    Subscript[1:0-1:8]
         Slice: 
-            Tuple[2, 7]
+            Tuple[1:2-1:7]
                 Values:
-                    LONG[2, 3] Value: 1
-                    LONG[4, 5] Value: 3
-                    LONG[6, 7] Value: 4
-        Value: Name[0, 1] Value: "a"
+                    LONG[1:2-1:3] Value: 1
+                    LONG[1:4-1:5] Value: 3
+                    LONG[1:6-1:7] Value: 4
+        Value: Name[1:0-1:1] Value: "a"

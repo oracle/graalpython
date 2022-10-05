@@ -1,15 +1,26 @@
-Module[1, 47]
-    FunctionDef[1, 38]
+Input:
+------
+
+def outer ():
+    x = 10
+    print(x)
+
+outer()
+
+Output:
+-------
+Module[2:0-6:7]
+    FunctionDef[2:0-4:12]
         Name:outer
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of outer ----
-        Assign[19, 25]
-            LHS: Name[19, 20] Value: "x" Store
-            RHS: LONG[23, 25] Value: 10
-        Call[30, 38]
-            Target: Name[30, 35] Value: "print"
+        Assign[3:4-3:10]
+            LHS: Name[3:4-3:5] Value: "x" Store
+            RHS: LONG[3:8-3:10] Value: 10
+        Call[4:4-4:12]
+            Target: Name[4:4-4:9] Value: "print"
             Args:
-                Name[36, 37] Value: "x"
+                Name[4:10-4:11] Value: "x"
         ---- End of outer function ----
-    Call[40, 47]
-        Target: Name[40, 45] Value: "outer"
+    Call[6:0-6:7]
+        Target: Name[6:0-6:5] Value: "outer"

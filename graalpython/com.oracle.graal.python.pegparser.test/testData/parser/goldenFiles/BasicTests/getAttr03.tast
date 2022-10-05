@@ -1,21 +1,27 @@
-Module[0, 16]
-    Call[0, 16]
+Input:
+------
+a().b.c(x).d.f()
+
+Output:
+-------
+Module[1:0-1:16]
+    Call[1:0-1:16]
         Target: 
-            Attribute[0, 14] 
+            Attribute[1:0-1:14] 
                 Receiver: 
-                    Attribute[0, 12] 
+                    Attribute[1:0-1:12] 
                         Receiver: 
-                            Call[0, 10]
+                            Call[1:0-1:10]
                                 Target: 
-                                    Attribute[0, 7] 
+                                    Attribute[1:0-1:7] 
                                         Receiver: 
-                                            Attribute[0, 5] 
+                                            Attribute[1:0-1:5] 
                                                 Receiver: 
-                                                    Call[0, 3]
-                                                        Target: Name[0, 1] Value: "a"
+                                                    Call[1:0-1:3]
+                                                        Target: Name[1:0-1:1] Value: "a"
                                                 Attr: b
                                         Attr: c
                                 Args:
-                                    Name[8, 9] Value: "x"
+                                    Name[1:8-1:9] Value: "x"
                         Attr: d
                 Attr: f
