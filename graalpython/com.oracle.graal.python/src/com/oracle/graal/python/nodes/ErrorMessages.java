@@ -1182,6 +1182,9 @@ public abstract class ErrorMessages {
     public static final TruffleString TOO_S_ARGUMENTS_FOR_S = tsLiteral("Too %s arguments for %s");
     public static final TruffleString ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC = tsLiteral("isinstance() argument 2 cannot be a parameterized generic");
     public static final TruffleString ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC = tsLiteral("issubclass() argument 2 cannot be a parameterized generic");
+    public static final TruffleString ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC = tsLiteral("isinstance() argument 2 cannot contain a parameterized generic");
+    public static final TruffleString ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC = tsLiteral("issubclass() argument 2 cannot contain a parameterized generic");
+    public static final TruffleString ISSUBCLASS_ARG_1_MUST_BE_A_CLASS = tsLiteral("issubclass() arg 1 must be a class");
 
     // ctypes
     public static final TruffleString S_SYMBOL_IS_MISSING = tsLiteral("%s symbol is missing");
