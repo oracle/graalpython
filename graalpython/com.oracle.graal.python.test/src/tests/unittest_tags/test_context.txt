@@ -11,7 +11,6 @@
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_subclassing_1
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_threads_1
 *graalpython.lib-python.3.test.test_context.ContextTest.test_context_typerrors_1
-*graalpython.lib-python.3.test.test_context.ContextTest.test_contextvar_getitem
 *graalpython.lib-python.3.test.test_context.HamtTest.test_hamt_basics_1
 *graalpython.lib-python.3.test.test_context.HamtTest.test_hamt_basics_2
 *graalpython.lib-python.3.test.test_context.HamtTest.test_hamt_basics_3

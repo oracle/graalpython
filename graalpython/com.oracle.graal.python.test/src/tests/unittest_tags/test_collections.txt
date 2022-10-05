@@ -75,7 +75,5 @@
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_direct_subclassing
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_registration
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_dict_copy
-*graalpython.lib-python.3.test.test_collections.TestUserObjects.test_dict_protocol
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_list_copy
-*graalpython.lib-python.3.test.test_collections.TestUserObjects.test_list_protocol
 *graalpython.lib-python.3.test.test_collections.TestUserObjects.test_str_protocol
