@@ -76,8 +76,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -241,22 +243,22 @@ public class CApiMemberAccessNodes {
                 return AsNativeCharNodeGen.create();
             case T_BOOL:
                 return AsNativeBooleanNodeGen.create();
-            case T_SHORT:
-            case T_INT:
             case T_BYTE:
-                // TODO(fa): use appropriate native type sizes
-                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, true);
+            case T_UBYTE:
+            case T_SHORT:
+            case T_USHORT:
+            case T_INT:
             case T_LONG:
             case T_PYSSIZET:
                 // TODO(fa): use appropriate native type sizes
+                /*
+                 * Note: according to 'structmember.c: PyMember_SetOne', CPython always uses
+                 * 'PyLong_AsLong' and just casts to the appropriate C type. This cast may be lossy.
+                 */
                 return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, true);
             case T_FLOAT:
             case T_DOUBLE:
                 return AsNativeDoubleNodeGen.create();
-            case T_USHORT:
-            case T_UBYTE:
-                // TODO(fa): use appropriate native type sizes
-                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, false);
             case T_UINT:
                 /*
                  * CPython converts to a unsigned long and just truncates to an unsigned int. For
@@ -462,6 +464,7 @@ public class CApiMemberAccessNodes {
         @Child private ToSulongNode toSulongNode;
         @Child private GetClassNode getClassNode;
         @Child private IsSameTypeNode isSameTypeNode;
+        @Child private IsBuiltinClassProfile overflowProfile;
 
         /** The specified member type. */
         private final int type;
@@ -512,6 +515,20 @@ public class CApiMemberAccessNodes {
                     Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
                         nativeValue = toNativeNode.execute(cApiContext, newValue);
+                    } catch (PException e) {
+                        /*
+                         * Special case for T_LONG, T_ULONG, T_PYSSIZET: if conversion raises an
+                         * OverflowError, CPython still assigns the error indication value -1 to the
+                         * member. That looks rather like a bug but let's just do the same.
+                         */
+                        if (type == T_LONG || type == T_ULONG || type == T_PYSSIZET) {
+                            e.expectOverflowError(ensureOverflowProfile());
+                            ensureCallHPyFunctionNode().call(accessor, selfPtr, (long) offset, (long) -1);
+                        } else if (type == T_DOUBLE) {
+                            e.expectTypeError(ensureOverflowProfile());
+                            ensureCallHPyFunctionNode().call(accessor, selfPtr, (long) offset, (long) -1);
+                        }
+                        throw e;
                     } finally {
                         IndirectCallContext.exit(frame, getLanguage(), context, savedState);
                     }
@@ -560,6 +577,14 @@ public class CApiMemberAccessNodes {
                 isSameTypeNode = insert(IsSameTypeNode.create());
             }
             return isSameTypeNode;
+        }
+
+        private IsBuiltinClassProfile ensureOverflowProfile() {
+            if (overflowProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                overflowProfile = insert(IsBuiltinClassProfile.create());
+            }
+            return overflowProfile;
         }
 
         @TruffleBoundary
