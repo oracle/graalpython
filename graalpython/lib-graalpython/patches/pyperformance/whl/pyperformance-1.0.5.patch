@@ -11,3 +11,16 @@ index 977b336..0e61573 100644
          'stdlib_dir (sys)': getattr(sys, '_stdlib_dir', None),
          'stdlib_dir (sysconfig)': (sysconfig.get_path('stdlib')
                                     if 'stdlib' in sysconfig.get_path_names()
+diff --git a/pyperformance/_benchmark.py b/pyperformance/_benchmark.py
+index cd51dfe6..516fbbd1 100644
+--- a/pyperformance/_benchmark.py
++++ b/pyperformance/_benchmark.py
+@@ -252,7 +252,7 @@ def _resolve_restricted_opts(opts):
+         if opt.startswith(FLAG + '='):
+             idx = i + 1
+             resolved.append(FLAG)
+-            resolved.append(opt.partition('=')[-2])
++            resolved.append(opt.partition('=')[-1])
+             resolved.extend(opts[idx:])
+             break
+         elif opt == FLAG:
