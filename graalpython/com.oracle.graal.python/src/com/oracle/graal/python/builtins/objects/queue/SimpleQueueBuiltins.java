@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.queue;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Empty;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 
 import java.util.List;
 
@@ -279,7 +280,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization

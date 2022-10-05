@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CAN_ONLY_ASSIGN_SEQUEN
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEX;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
@@ -322,7 +323,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
