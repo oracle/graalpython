@@ -58,6 +58,8 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -121,9 +123,9 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
             EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
             Node outerNode = nodeRef.set(this);
             try {
-                checkResult(frame, object, e.getResult(), GetClassNode.getUncached(), IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.getUncached(),
-                                WarningsModuleBuiltins.WarnNode.getUncached());
-                throw e;
+                Object result = checkResult(frame, object, e.getResult(), GetClassNode.getUncached(), IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.getUncached(),
+                                WarningsModuleBuiltins.WarnNode.getUncached(), PythonObjectFactory.getUncached());
+                throw new UnexpectedResultException(result);
             } finally {
                 nodeRef.set(outerNode);
             }
@@ -140,7 +142,8 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                     @Cached GetClassNode resultClassNode,
                     @Cached IsSubtypeNode resultSubtype,
                     @Cached PyLongCheckExactNode isInt,
-                    @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                    @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                    @Cached PythonObjectFactory factory) {
         Object type = getClassNode.execute(object);
         if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
             return object;
@@ -150,18 +153,24 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
         }
         Object result = callIndex.executeObject(frame, indexDescr, object);
-        checkResult(frame, object, result, resultClassNode, resultSubtype, isInt, raiseNode, warnNode);
-        return result;
+        return checkResult(frame, object, result, resultClassNode, resultSubtype, isInt, raiseNode, warnNode, factory);
     }
 
-    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, PyLongCheckExactNode isInt, PRaiseNode raiseNode,
-                    WarningsModuleBuiltins.WarnNode warnNode) {
-        if (!isInt.execute(result)) {
-            if (!isSubtype.execute(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
-            }
-            warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                            ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, T___INDEX__, "int", result, "int");
+    private static Object checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, PyLongCheckExactNode isInt, PRaiseNode raiseNode,
+                    WarningsModuleBuiltins.WarnNode warnNode, PythonObjectFactory factory) {
+        if (isInt.execute(result)) {
+            return result;
+        }
+        if (!isSubtype.execute(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+        }
+        warnNode.warnFormat(frame, null, DeprecationWarning, 1,
+                        ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, T___INDEX__, "int", result, "int");
+        if (result instanceof PInt) {
+            return factory.createInt(((PInt) result).getValue());
+        } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
         }
     }
 }
