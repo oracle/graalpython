@@ -102,7 +102,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ARGS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class ArgsNode extends PythonUnaryBuiltinNode {
+    abstract static class ArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object args(PUnionType self) {
             return self.getArgs();
@@ -111,7 +111,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___PARAMETERS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class ParametersNode extends PythonUnaryBuiltinNode {
+    abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object parameters(PUnionType self) {
             if (self.getParameters() == null) {
@@ -134,7 +134,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         private static final TruffleString SEPARATOR = tsLiteral(" | ");
 
         @Specialization
@@ -164,7 +164,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class HashNode extends PythonUnaryBuiltinNode {
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         long hash(VirtualFrame frame, PUnionType self,
                         @Cached PyObjectHashNode hashNode,

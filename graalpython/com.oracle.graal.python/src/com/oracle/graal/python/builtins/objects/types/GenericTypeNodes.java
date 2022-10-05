@@ -230,7 +230,7 @@ public abstract class GenericTypeNodes {
         return obj;
     }
 
-    public static abstract class UnionTypeOrNode extends PNodeWithContext {
+    public abstract static class UnionTypeOrNode extends PNodeWithContext {
         public abstract Object execute(Object self, Object other);
 
         @Specialization(guards = {"isUnionable(typeCheck, self)", "isUnionable(typeCheck, other)"}, limit = "1")

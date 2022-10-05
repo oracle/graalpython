@@ -123,7 +123,7 @@ public class GenericAliasBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ORIGIN__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class OriginNode extends PythonUnaryBuiltinNode {
+    abstract static class OriginNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object origin(PGenericAlias self) {
             return self.getOrigin();
@@ -132,7 +132,7 @@ public class GenericAliasBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___ARGS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class ArgsNode extends PythonUnaryBuiltinNode {
+    abstract static class ArgsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object args(PGenericAlias self) {
             return self.getArgs();
@@ -141,7 +141,7 @@ public class GenericAliasBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___PARAMETERS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    static abstract class ParametersNode extends PythonUnaryBuiltinNode {
+    abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object parameters(PGenericAlias self) {
             if (self.getParameters() == null) {
@@ -164,7 +164,7 @@ public class GenericAliasBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         private static final TruffleString SEPARATOR = tsLiteral(", ");
 
         @Specialization
