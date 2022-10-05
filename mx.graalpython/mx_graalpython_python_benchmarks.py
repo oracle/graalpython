@@ -171,41 +171,56 @@ DEFAULT_PYPY_BENCHMARKS = [
 class PyPerfJsonRule(mx_benchmark.Rule):
     """Parses a JSON file produced by PyPerf and creates a measurement result."""
 
-    def __init__(self, filename: str, suiteName: str):
-        self.filename = filename
+    def __init__(self, filenames: str, suiteName: str):
+        self.filenames = filenames.split(",")
         self.suiteName = suiteName
 
-    def parse(self, text: str) -> dict:
+    def parse(self, text: str) -> list:
         r = []
-        with open(self._prepend_working_dir(self.filename)) as fp:
+        for filename in self.filenames:
+            self._parse_file(r, filename)
+        return r
+
+    def _parse_file(self, r: list, filename: str):
+        with open(self._prepend_working_dir(filename)) as fp:
             js = json.load(fp)
             benchmarks = js["benchmarks"]
             for benchmark in benchmarks:
                 name = benchmark.get("metadata", js["metadata"])["name"]
+                unit = benchmark.get("metadata", {}).get("unit") or js["metadata"]["unit"]
+                unit = {
+                    "second": "s",
+                    "byte": "B",
+                }[unit]
+                metric = {
+                    "s": "time",
+                    "B": "max-rss",
+                }[unit]
                 for run in benchmark["runs"]:
                     if values := run.get("values", None):
-                        warmups = run.get("warmups", [])
-                        for idx, warmup in enumerate(warmups):
-                            r.append(
-                                {
-                                    "bench-suite": self.suiteName,
-                                    "benchmark": name,
-                                    "metric.name": "warmup",
-                                    "metric.unit": "ms",
-                                    "metric.score-function": "id",
-                                    "metric.better": "lower",
-                                    "metric.type": "numeric",
-                                    "metric.iteration": idx,
-                                    "metric.value": warmup[1],  # 0 is inner_loop count
-                                }
-                            )
+                        if metric == "time":
+                            warmups = run.get("warmups", [])
+                            for idx, warmup in enumerate(warmups):
+                                r.append(
+                                    {
+                                        "bench-suite": self.suiteName,
+                                        "benchmark": name,
+                                        "metric.name": "warmup",
+                                        "metric.unit": unit,
+                                        "metric.score-function": "id",
+                                        "metric.better": "lower",
+                                        "metric.type": "numeric",
+                                        "metric.iteration": idx,
+                                        "metric.value": warmup[1],  # 0 is inner_loop count
+                                    }
+                                )
                         for value in values:
                             r.append(
                                 {
                                     "bench-suite": self.suiteName,
                                     "benchmark": name,
-                                    "metric.name": "time",
-                                    "metric.unit": "ms",
+                                    "metric.name": metric,
+                                    "metric.unit": unit,
                                     "metric.score-function": "id",
                                     "metric.better": "lower",
                                     "metric.type": "numeric",
@@ -213,22 +228,6 @@ class PyPerfJsonRule(mx_benchmark.Rule):
                                     "metric.value": value,
                                 }
                             )
-                        if maxrss := run["metadata"].get("mem_max_rss", 0):
-                            r.append(
-                                {
-                                    "bench-suite": self.suiteName,
-                                    "benchmark": name,
-                                    "metric.name": "max-rss",
-                                    "metric.unit": "B",
-                                    "metric.score-function": "id",
-                                    "metric.better": "lower",
-                                    "metric.type": "numeric",
-                                    "metric.iteration": 0,
-                                    "metric.value": maxrss,
-                                }
-                            )
-
-        return r
 
 
 class AsvJsonRule(mx_benchmark.Rule):
@@ -238,7 +237,7 @@ class AsvJsonRule(mx_benchmark.Rule):
         self.filename = filename
         self.suiteName = suiteName
 
-    def parse(self, text: str) -> dict:
+    def parse(self, text: str) -> list:
         import itertools
 
         r = []
@@ -300,7 +299,7 @@ class PyPyJsonRule(mx_benchmark.Rule, mx_benchmark.AveragingBenchmarkMixin):
         self.filename = filename
         self.suiteName = suiteName
 
-    def parse(self, text: str) -> dict:
+    def parse(self, text: str) -> list:
         r = []
         with open(self._prepend_working_dir(self.filename)) as fp:
             js = json.load(fp)
@@ -524,11 +523,11 @@ class PyPerformanceSuite(PySuite):
                 cwd=workdir,
             )
 
-        json_file = f"{vm_venv}.json"
         if benchmarks:
             bms = ["-b", ",".join(benchmarks)]
         else:
             bms = ["-b", ",".join(DEFAULT_PYPERFORMANCE_BENCHMARKS)]
+        json_file = f"{vm_venv}.json"
         retcode = mx.run(
             [
                 join(vm_venv, "bin", "pyperformance"),
@@ -542,9 +541,28 @@ class PyPerformanceSuite(PySuite):
             cwd=workdir,
             nonZeroIsFatal=False,
         )
-        shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
         mx.log(f"Return code of benchmark harness: {retcode}")
-        return 0, join(workdir, json_file)
+        # run again in single shot mode for memory measurements
+        json_file_memory = f"{vm_venv}_memory.json"
+        retcode = mx.run(
+            [
+                join(vm_venv, "bin", "pyperformance"),
+                "run",
+                "--debug-single-value",
+                "--track-memory",
+                "--inherit-environ",
+                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS,GRAAL_PYTHON_ARGS",
+                "-o",
+                json_file_memory,
+                *bms,
+            ],
+            cwd=workdir,
+            nonZeroIsFatal=False,
+        )
+        mx.log(f"Return code of benchmark harness: {retcode}")
+        shutil.copy(join(workdir, json_file), join(SUITE.dir, "raw_results.json"))
+        shutil.copy(join(workdir, json_file_memory), join(SUITE.dir, "raw_results_memory.json"))
+        return 0, ",".join([join(workdir, json_file), join(workdir, json_file_memory)])
 
 
 class PyPySuite(PySuite):
