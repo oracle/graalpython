@@ -203,11 +203,15 @@ int PyIndex_Check(PyObject *obj) {
 }
 
 UPCALL_ID(PyNumber_Index);
-PyObject * PyNumber_Index(PyObject *o) {
+PyObject* _PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
     }
     return UPCALL_CEXT_O(_jls_PyNumber_Index, native_to_java(o));
+}
+
+PyObject* PyNumber_Index(PyObject *o) {
+    return _PyNumber_Index(o);
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
