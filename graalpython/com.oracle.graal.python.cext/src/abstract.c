@@ -443,6 +443,12 @@ int PyTruffle_PyMapping_Check(PyObject *o) {
 }
 
 // taken from CPython "Objects/abstract.c"
+int PyObject_CheckBuffer(PyObject *obj) {
+    PyBufferProcs *tp_as_buffer = Py_TYPE(obj)->tp_as_buffer;
+    return (tp_as_buffer != NULL && tp_as_buffer->bf_getbuffer != NULL);
+}
+
+// taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
     obj = native_pointer_to_java(obj);
     PyBufferProcs *pb = Py_TYPE(obj)->tp_as_buffer;
