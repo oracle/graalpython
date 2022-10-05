@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.posix;
 
 import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.opaquePathToBytes;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
@@ -417,7 +418,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
