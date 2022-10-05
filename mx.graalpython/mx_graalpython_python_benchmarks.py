@@ -514,7 +514,7 @@ class PyPerformanceSuite(PySuite):
                 join(vm_venv, "bin", "pyperformance"),
                 "run",
                 "--inherit-environ",
-                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX",
+                "PIP_INDEX_URL,PIP_TRUSTED_HOST,PIP_TIMEOUT,PIP_RETRIES,LD_LIBRARY_PATH,LIBRARY_PATH,CPATH,PATH,PYPY_GC_MAX,JAVA_OPTS",
                 "-o",
                 json_file,
                 *bms,
