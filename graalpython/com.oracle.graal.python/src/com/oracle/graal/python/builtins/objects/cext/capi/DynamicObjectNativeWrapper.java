@@ -812,7 +812,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_EXPORTS, key)")
-        static int doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static long doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return object.getExports();
         }
 
@@ -1340,7 +1340,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
 
             @Specialization(guards = "eq(OB_EXPORTS, key)")
-            static void doObExports(PByteArray array, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, int value) {
+            static void doObExports(PByteArray array, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long value) {
                 array.setExports(value);
             }
 

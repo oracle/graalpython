@@ -54,7 +54,7 @@ import com.oracle.truffle.api.object.Shape;
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PByteArray extends PBytesLike {
 
-    private volatile int exports;
+    private volatile long exports;
 
     public PByteArray(Object cls, Shape instanceShape, byte[] bytes) {
         super(cls, instanceShape, bytes);
@@ -84,11 +84,11 @@ public final class PByteArray extends PBytesLike {
         store.reverse();
     }
 
-    public int getExports() {
+    public long getExports() {
         return exports;
     }
 
-    public void setExports(int exports) {
+    public void setExports(long exports) {
         this.exports = exports;
     }
 
