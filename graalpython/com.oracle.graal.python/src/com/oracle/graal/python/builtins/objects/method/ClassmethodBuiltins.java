@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -53,11 +56,13 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltinsFactory.MakeMethodNodeGen;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -71,6 +76,8 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PBuiltinClassMethod})
 public class ClassmethodBuiltins extends PythonBuiltins {
@@ -169,7 +176,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class CallNode extends PythonVarargsBuiltinNode {
+    abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
 
         @Specialization
@@ -182,6 +189,28 @@ public class ClassmethodBuiltins extends PythonBuiltins {
             Object[] argsWithoutSelf = new Object[arguments.length - 1];
             PythonUtils.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);
+        }
+    }
+
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        private static final TruffleString PREFIX = tsLiteral("<classmethod");
+        private static final int PREFIX_LEN = PREFIX.byteLength(TS_ENCODING);
+        private static final TruffleString SUFFIX = tsLiteral(">");
+        private static final int SUFFIX_LEN = SUFFIX.byteLength(TS_ENCODING);
+
+        @Specialization
+        Object repr(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectReprAsTruffleStringNode repr,
+                        @Cached TruffleStringBuilder.AppendStringNode append,
+                        @Cached TruffleStringBuilder.ToStringNode toString) {
+            TruffleString callableRepr = repr.execute(frame, self.getCallable());
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, PREFIX_LEN + callableRepr.byteLength(TS_ENCODING) + SUFFIX_LEN);
+            append.execute(sb, PREFIX);
+            append.execute(sb, callableRepr);
+            append.execute(sb, SUFFIX);
+            return toString.execute(sb);
         }
     }
 }
