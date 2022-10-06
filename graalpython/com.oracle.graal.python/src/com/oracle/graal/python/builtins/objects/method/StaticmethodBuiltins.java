@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 
 import java.util.List;
@@ -48,14 +49,18 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod})
@@ -89,6 +94,16 @@ public class StaticmethodBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
             }
             return callable;
+        }
+    }
+
+    @Builtin(name = J___CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class CallMethodNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        static Object call(VirtualFrame frame, PDecoratedMethod self, Object[] args, PKeyword[] kwargs,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, self.getCallable(), args, kwargs);
         }
     }
 }
