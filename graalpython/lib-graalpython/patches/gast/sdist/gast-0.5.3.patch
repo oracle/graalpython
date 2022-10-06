@@ -1,0 +1,12 @@
+diff -u -r a/gast/ast3.py b/gast/ast3.py
+--- a/gast/ast3.py	2022-10-05 14:52:16.000000000 +0200
++++ b/gast/ast3.py	2022-10-05 14:52:16.000000000 +0200
+@@ -233,7 +233,7 @@
+             )
+             return new_node
+ 
+-    if sys.version_info.minor < 9:
++    if sys.version_info.minor < 8:
+         def visit_Subscript(self, node):
+             def adjust_slice(s):
+                 if isinstance(s, ast.Slice):
