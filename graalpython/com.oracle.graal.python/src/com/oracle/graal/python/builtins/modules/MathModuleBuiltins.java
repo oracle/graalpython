@@ -44,12 +44,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -73,12 +74,13 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -296,9 +298,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "factorial", minNumOfPositionalArgs = 1)
-    @ImportStatic({Double.class, MathGuards.class})
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
+        public abstract Object execute(VirtualFrame frame, long value);
 
         @CompilationFinal(dimensions = 1) protected static final long[] SMALL_FACTORIALS = new long[]{
                         1, 1, 2, 6, 24, 120, 720, 5040, 40320,
@@ -321,14 +323,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return factorialPart(start, i).multiply(factorialPart(start + i, n - i));
         }
 
-        @Specialization
-        public int factorialBoolean(@SuppressWarnings("unused") boolean value) {
-            return 1;
-        }
-
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
+            throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -343,7 +340,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"value < 0"})
         public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
+            throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
         }
 
         @Specialization(guards = {"0 <= value", "value < SMALL_FACTORIALS.length"})
@@ -356,120 +353,20 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return factory().createInt(factorialPart(1, value));
         }
 
-        @Specialization(guards = "isNegative(value)")
-        public Object factorialPINegative(@SuppressWarnings("unused") PInt value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
-        }
-
-        @Specialization(guards = "isOvf(value)")
-        public Object factorialPIOvf(@SuppressWarnings("unused") PInt value) {
-            throw raise(PythonErrorType.OverflowError, ErrorMessages.ARG_SHOULD_NOT_EXCEED, "factorial()", Long.MAX_VALUE);
-        }
-
-        @Specialization(guards = {"!isOvf(value)", "!isNegative(value)"})
-        @TruffleBoundary
-        public Object factorial(PInt value) {
-            BigInteger biValue = value.getValue();
-            if (biValue.compareTo(BigInteger.valueOf(SMALL_FACTORIALS.length)) < 0) {
-                return SMALL_FACTORIALS[value.intValue()];
-            }
-            return factory().createInt(factorialPart(1, value.longValue()));
-        }
-
-        @Specialization(guards = {"isNaN(value)"})
-        public long factorialDoubleNaN(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float NaN", "integer");
-        }
-
-        @Specialization(guards = {"isInfinite(value)"})
-        public long factorialDoubleInfinite(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float infinity", "integer");
-        }
-
-        @Specialization(guards = "isNegative(value)")
-        public PInt factorialDoubleNegative(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
-        }
-
-        @Specialization(guards = "!isInteger(value)")
-        public PInt factorialDoubleNotInteger(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.ONLY_ACCEPTS_INTEGRAL_VALUES, "factorial()");
-        }
-
-        @Specialization(guards = "isOvf(value)")
-        public PInt factorialDoubleOvf(@SuppressWarnings("unused") double value) {
-            throw raise(PythonErrorType.OverflowError, ErrorMessages.ARG_SHOULD_NOT_EXCEED, "factorial()", Long.MAX_VALUE);
-        }
-
-        @Specialization(guards = {"!isNaN(value)", "!isInfinite(value)",
-                        "!isNegative(value)", "isInteger(value)", "!isOvf(value)"})
-        public Object factorialDouble(double value) {
-            if (value < SMALL_FACTORIALS.length) {
-                return SMALL_FACTORIALS[(int) value];
-            }
-            return factory().createInt(factorialPart(1, (long) value));
-        }
-
-        @Specialization(guards = {"isNaN(value.getValue())"})
-        public long factorialPFLNaN(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float NaN", "integer");
-        }
-
-        @Specialization(guards = {"isInfinite(value.getValue())"})
-        public long factorialPFLInfinite(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_TO, "float infinity", "integer");
-        }
-
-        @Specialization(guards = "isNegative(value.getValue())")
-        public PInt factorialPFLNegative(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
-        }
-
-        @Specialization(guards = "!isInteger(value.getValue())")
-        public PInt factorialPFLNotInteger(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.ONLY_ACCEPTS_INTEGRAL_VALUES, "factorial()");
-        }
-
-        @Specialization(guards = "isOvf(value.getValue())")
-        public PInt factorialPFLOvf(@SuppressWarnings("unused") PFloat value) {
-            throw raise(PythonErrorType.OverflowError, ErrorMessages.ARG_SHOULD_NOT_EXCEED, "factorial()", Long.MAX_VALUE);
-        }
-
-        @Specialization(guards = {"!isNaN(value.getValue())", "!isInfinite(value.getValue())",
-                        "!isNegative(value.getValue())", "isInteger(value.getValue())", "!isOvf(value.getValue())"})
-        public Object factorialPFL(PFloat value) {
-            double pfValue = value.getValue();
-            if (pfValue < SMALL_FACTORIALS.length) {
-                return SMALL_FACTORIALS[(int) pfValue];
-            }
-            return factory().createInt(factorialPart(1, (long) pfValue));
-        }
-
-        @Specialization(guards = "!isNumber(value)")
+        @Fallback
         public Object factorialObject(VirtualFrame frame, Object value,
-                        @Cached PyNumberIndexNode indexNode,
+                        @Cached PyLongAsLongAndOverflowNode convert,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached FactorialNode recursiveNode) {
-            return recursiveNode.execute(frame, indexNode.execute(frame, value));
-        }
-
-        protected boolean isInteger(double value) {
-            return Double.isFinite(value) && value == Math.floor(value);
-        }
-
-        protected boolean isNegative(PInt value) {
-            return value.isNegative();
-        }
-
-        protected boolean isNegative(double value) {
-            return value < 0;
-        }
-
-        protected boolean isOvf(double value) {
-            return value > Long.MAX_VALUE;
-        }
-
-        protected boolean isOvf(PInt value) {
-            return value.compareTo(Long.MAX_VALUE) > 0;
+            try {
+                return recursiveNode.execute(frame, convert.execute(frame, value));
+            } catch (OverflowException e) {
+                if (asSizeNode.executeLossy(frame, value) >= 0) {
+                    throw raise(OverflowError, ErrorMessages.FACTORIAL_ARGUMENT_SHOULD_NOT_EXCEED_D, Long.MAX_VALUE);
+                } else {
+                    throw raise(ValueError, ErrorMessages.FACTORIAL_NOT_DEFINED_FOR_NEGATIVE);
+                }
+            }
         }
 
         protected static FactorialNode create() {
@@ -689,7 +586,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         protected void raiseMathDomainError(boolean con) {
             if (con) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
+                throw raise(ValueError, ErrorMessages.MATH_DOMAIN_ERROR);
             }
         }
 

@@ -301,6 +301,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_INT_AS_R = tsLiteral("Expected int as r");
     public static final TruffleString EXPONENT_TOO_LARGE = tsLiteral("exponent too large");
     public static final TruffleString FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = tsLiteral("factorial() not defined for negative values");
+    public static final TruffleString FACTORIAL_ARGUMENT_SHOULD_NOT_EXCEED_D = tsLiteral("factorial() argument should not exceed %d");
     public static final TruffleString FD_IS_GREATER_THAN_MAXIMUM = tsLiteral("fd is greater than maximum");
     public static final TruffleString FD_IS_LESS_THAN_MINIMUM = tsLiteral("fd is less than minimum");
     public static final TruffleString FILE_NOT_OPENED_FOR_READING = tsLiteral("file not opened for reading");
