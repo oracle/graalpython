@@ -210,11 +210,9 @@ class TestMethod(object):
         # char, uchar, short, ushort, int, uint, long, ulong, Py_ssize_t
         sizes = obj.get_sizes()
         max_values = [0] * len(sizes)
-        overflow_val = [0] * len(sizes)
         for i, size in enumerate(sizes):
             if i % 2 == 0:
                 max_values[i] = (1 << (size * 8 - 1)) - 1
-                overflow_val[i] = -(max_values[i]+1)
             else:
                 max_values[i] = (1 << (size * 8)) - 1
 
@@ -226,12 +224,11 @@ class TestMethod(object):
             assert_raises(TypeError, delattr, obj, m)
             setattr(obj, m, max_values[i])
             assert getattr(obj, m) == max_values[i], "member %s; was: %r" % (m, getattr(obj, m))
-            # max_value + 1 will be truncated to -1
+            # max_value + 1 will be truncated but must not throw an error
             setattr(obj, m, max_values[i] + 1)
             val = getattr(obj, m)
             assert val != max_values[i], "was: %r" % getattr(obj, m)
             assert_raises(TypeError, setattr, obj, m, "hello")
-            assert getattr(obj, m) == overflow_val[i], "was: %r" % getattr(obj, m)
 
         # T_LONG, T_ULONG, T_PYSSIZET
         max_values = (0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF)
