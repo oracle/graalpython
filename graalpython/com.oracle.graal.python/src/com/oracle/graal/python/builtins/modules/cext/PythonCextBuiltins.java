@@ -54,10 +54,10 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -2183,15 +2183,14 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
-            return execute(frame, self, arguments, keywords);
+            return doWithPrimitives(self, arguments, keywords);
         }
 
+        @TruffleBoundary
         @Specialization
-        int doWithPrimitives(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        int doWithPrimitives(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) {
             try {
                 if (arguments.length != 7) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddMember", 7, arguments.length);
                 }
                 Object clazz = AsPythonObjectNodeGen.getUncached().execute(arguments[0]);
@@ -2202,7 +2201,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                                 PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
                 return 0;
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                TransformExceptionToNativeNodeGen.getUncached().execute(e);
                 return -1;
             }
         }
