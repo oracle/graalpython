@@ -1,0 +1,13 @@
+diff --git a/pyperf/_utils.py b/pyperf/_utils.py
+index 11ec16d..6149c81 100644
+--- a/pyperf/_utils.py
++++ b/pyperf/_utils.py
+@@ -204,6 +204,8 @@ def python_implementation():
+ def python_has_jit():
+     if python_implementation() == 'pypy':
+         return sys.pypy_translation_info["translation.jit"]
++    elif python_implementation() == 'graalpy':
++        return True
+
+     return False
+
