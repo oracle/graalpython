@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
@@ -43,6 +44,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1117,6 +1119,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     public abstract static class Gcd2Node extends PNodeWithRaise {
 
+        protected final boolean isRecursive;
+
+        public Gcd2Node(boolean isRecursive) {
+            this.isRecursive = isRecursive;
+        }
+
         abstract Object execute(VirtualFrame frame, Object a, Object b);
 
         private long count(long a, long b) {
@@ -1174,22 +1182,31 @@ public class MathModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
-        @Specialization
+        @Specialization(guards = "!isRecursive")
         int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y) {
             throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "float");
         }
 
-        @Specialization(guards = "!isNumber(x) || !isNumber(y)")
+        @Specialization(guards = {"!isRecursive", "!isNumber(x) || !isNumber(y)"})
         static Object gcd(VirtualFrame frame, Object x, Object y,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached Gcd2Node recursiveNode) {
+                        @Cached("create(true)") Gcd2Node recursiveNode) {
             Object xValue = indexNode.execute(frame, x);
             Object yValue = indexNode.execute(frame, y);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 
+        @Specialization
+        Object gcdNative(PythonAbstractNativeObject a, Object b) {
+            throw raise(SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
+        }
+
         public static Gcd2Node create() {
-            return MathModuleBuiltinsFactory.Gcd2NodeGen.create();
+            return MathModuleBuiltinsFactory.Gcd2NodeGen.create(false);
+        }
+
+        public static Gcd2Node create(boolean isRecursive) {
+            return MathModuleBuiltinsFactory.Gcd2NodeGen.create(isRecursive);
         }
     }
 
