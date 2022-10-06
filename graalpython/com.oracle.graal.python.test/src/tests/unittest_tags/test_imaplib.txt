@@ -80,3 +80,7 @@
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_issue5949
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_line_termination
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_linetoolong
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_login_cram_md5
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_search_disallows_charset_in_utf8_mode
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_simple_with_statement
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_valid_authentication
