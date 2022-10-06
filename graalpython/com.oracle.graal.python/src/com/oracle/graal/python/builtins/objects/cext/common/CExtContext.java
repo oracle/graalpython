@@ -109,6 +109,9 @@ public abstract class CExtContext {
     public static final int METH_FASTCALL = 0x0080;
     public static final int METH_METHOD = 0x0200;
 
+    // Filter out only the base convention, without orthogonal modifiers
+    private static final int CALL_CONVENTION_MASK = METH_VARARGS | METH_KEYWORDS | METH_NOARGS | METH_O | METH_FASTCALL | METH_METHOD;
+
     private final PythonContext context;
 
     /** The LLVM bitcode library object representing 'libpython.*.so' or similar. */
@@ -139,31 +142,31 @@ public abstract class CExtContext {
     }
 
     public static boolean isMethVarargs(int flags) {
-        return (flags & METH_VARARGS) != 0;
+        return (flags & CALL_CONVENTION_MASK) == METH_VARARGS;
     }
 
     public static boolean isMethKeywords(int flags) {
-        return (flags & METH_KEYWORDS) != 0;
+        return (flags & CALL_CONVENTION_MASK) == METH_KEYWORDS;
     }
 
     public static boolean isMethNoArgs(int flags) {
-        return (flags & METH_NOARGS) != 0;
+        return (flags & CALL_CONVENTION_MASK) == METH_NOARGS;
     }
 
     public static boolean isMethO(int flags) {
-        return (flags & METH_O) != 0;
+        return (flags & CALL_CONVENTION_MASK) == METH_O;
     }
 
     public static boolean isMethFastcall(int flags) {
-        return (flags & METH_FASTCALL) != 0 && !isMethFastcallWithKeywords(flags);
+        return (flags & CALL_CONVENTION_MASK) == METH_FASTCALL;
     }
 
     public static boolean isMethFastcallWithKeywords(int flags) {
-        return (flags & METH_FASTCALL) != 0 && (flags & METH_KEYWORDS) != 0;
+        return (flags & CALL_CONVENTION_MASK) == (METH_FASTCALL | METH_KEYWORDS);
     }
 
     public static boolean isMethMethod(int flags) {
-        return (flags & METH_METHOD) != 0;
+        return (flags & CALL_CONVENTION_MASK) == (METH_FASTCALL | METH_KEYWORDS | METH_METHOD);
     }
 
     public static boolean isMethStatic(int flags) {
