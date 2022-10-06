@@ -95,6 +95,7 @@ class Field(NamedTuple):
     type: Name
     is_optional: bool
     is_sequence: bool
+    doc: str
 
     @property
     def is_nullable(self):
@@ -114,6 +115,10 @@ class Enum(NamedTuple):
     name: Name
     members: Tuple[Name, ...]
 
+    @property
+    def doc(self):
+        return self.name.python + ' = ' + ' | '.join(m.python for m in self.members)
+
 
 class ConcreteClass(NamedTuple):
     name: Name
@@ -126,11 +131,23 @@ class ConcreteClass(NamedTuple):
     def full_name(self):
         return f'{self.outer_name.java}.{self.name.java}' if self.outer_name else self.name.java
 
+    @property
+    def doc(self):
+        fields = ', '.join(f.doc for f in self.fields)
+        if fields:
+            fields = f'({fields})'
+        return self.name.python + fields
+
 
 class AbstractClass(NamedTuple):
     name: Name
     inner_classes: Tuple[ConcreteClass, ...]
     attributes: Tuple[Field, ...]
+
+    @property
+    def doc(self):
+        sep = "\n{}| ".format(" " * (len(self.name.python) + 1))
+        return self.name.python + ' = ' + sep.join(t.doc for t in self.inner_classes)
 
 
 Type = Union[Enum, ConcreteClass, AbstractClass]
@@ -261,7 +278,7 @@ class AsdlToModelConvertor:
         assert node.name is not None, 'unnamed fields are not supported'
         name = Name(node.name, convert_field_name(node.name), 'F')
         typ = Name(node.type, get_java_type_for_field(node, name.java), '')
-        return Field(name, typ, node.opt, node.seq)
+        return Field(name, typ, node.opt, node.seq, str(node))
 
 
 class Visitor:
