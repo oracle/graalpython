@@ -168,9 +168,12 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                         ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, T___INDEX__, "int", result, "int");
         if (result instanceof PInt) {
             return factory.createInt(((PInt) result).getValue());
+        } else if (result instanceof Boolean) {
+            return (boolean) result ? 1 : 0;
+        } else if (result instanceof PythonAbstractNativeObject) {
+            throw CompilerDirectives.shouldNotReachHere("Cannot convert native result from __index__");
         } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
+            throw CompilerDirectives.shouldNotReachHere("Unexpected type returned from __index__");
         }
     }
 }
