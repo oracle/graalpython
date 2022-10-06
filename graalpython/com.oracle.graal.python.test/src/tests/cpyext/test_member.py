@@ -264,11 +264,22 @@ class TestMethod(object):
         # T_DOUBLE will be set to '(double) -1'
         assert obj.member_double == -1.0, "was: %r" % obj.member_double
 
+        # T_STRING
         assert obj.member_string is None
         assert_raises(TypeError, delattr, obj, "member_string")
         assert_raises(TypeError, setattr, obj, "member_string", "hello")
         obj.set_string("hello")
         assert type(obj.member_string) is str
         assert obj.member_string == "hello"
+
+        # T_CHAR
+        assert type(obj.member_char) is str
+        assert obj.member_char == "\x00", "was: %r" % obj.member_char
+        obj.member_char = "x"
+        assert obj.member_char == "x"
+        assert_raises(TypeError, delattr, obj, "member_char")
+        assert_raises(TypeError, setattr, obj, "member_char", 1)
+        assert_raises(TypeError, setattr, obj, "member_char", "xyz")
+        assert obj.member_char == "x"
 
         warnings.resetwarnings()
