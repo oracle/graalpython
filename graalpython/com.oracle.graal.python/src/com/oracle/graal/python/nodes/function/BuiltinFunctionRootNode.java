@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -90,11 +91,11 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Child private CalleeContext calleeContext = CalleeContext.create();
     private final PythonBuiltinClassType constructsClass;
 
-    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
+    public BuiltinFunctionRootNode(PythonLanguage language, Signature signature, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
                     PythonBuiltinClassType constructsClass) {
         super(language);
         CompilerAsserts.neverPartOfCompilation();
-        this.signature = createSignature(factory, builtin, declaresExplicitSelf, constructsClass != PythonBuiltinClassType.nil);
+        this.signature = signature;
         this.builtin = builtin;
         this.name = builtin.name();
         this.factory = factory;
@@ -103,6 +104,11 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
+    }
+
+    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
+                    PythonBuiltinClassType constructsClass) {
+        this(language, createSignature(factory, builtin, declaresExplicitSelf, constructsClass != PythonBuiltinClassType.nil), builtin, factory, declaresExplicitSelf, constructsClass);
     }
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
@@ -349,5 +355,15 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Override
     public boolean isPythonInternal() {
         return true;
+    }
+
+    @Override
+    protected boolean isCloneUninitializedSupported() {
+        return true;
+    }
+
+    @Override
+    protected RootNode cloneUninitialized() {
+        return new BuiltinFunctionRootNode(getLanguage(PythonLanguage.class), signature, builtin, factory, declaresExplicitSelf, constructsClass);
     }
 }

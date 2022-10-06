@@ -67,7 +67,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class UnpackExNode extends PNodeWithContext {
@@ -80,7 +79,6 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
-                    @Cached BranchProfile errorProfile,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(countBefore);
@@ -91,7 +89,6 @@ public abstract class UnpackExNode extends PNodeWithContext {
         int len = lenNode.execute(storage);
         int starLen = len - countBefore - countAfter;
         if (starLen < 0) {
-            errorProfile.enter();
             throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
         }
         stackTop = moveItemsToStack(frame, storage, stackTop, 0, countBefore, getItemNode);

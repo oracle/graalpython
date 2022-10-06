@@ -53,18 +53,20 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_GLOBAL;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_IF;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_IMPORT;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_IMPORTFROM;
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_MATCH;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_NONLOCAL;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_TRY;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_WHILE;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_WITH;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_BODY;
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_CASES;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_ITEMS;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_NAMES;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_TARGETS;
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_T_MATCH_CASE;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Del;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Load;
 import static com.oracle.graal.python.pegparser.sst.ExprContextTy.Store;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -74,16 +76,20 @@ import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy.UnaryOp;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -257,8 +263,12 @@ final class Validator implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(StmtTy.Match node) {
-        // TODO pattern matching
-        throw shouldNotReachHere("TODO StmtTy.Match validation");
+        validateExpr(node.subject, Load);
+        validateNonEmptySeq(node.cases, T_F_CASES, T_C_MATCH);
+        for (MatchCaseTy matchCase : node.cases) {
+            visit(matchCase);
+        }
+        return null;
     }
 
     @Override
@@ -634,51 +644,206 @@ final class Validator implements SSTreeVisitor<Void> {
     }
 
     //////////////////////////////
-    // TODO PatternTy validation
+    // PatternTy validation
     //////////////////////////////
+
+    boolean isStarPatternOk;
+
+    // Equivalent of validate_pattern
+    private void validatePattern(PatternTy pattern, boolean starOk) {
+        boolean prevStarOk = isStarPatternOk;
+        isStarPatternOk = starOk;
+        pattern.accept(this);
+        isStarPatternOk = prevStarOk;
+    }
+
+    // Equivalent of ensure_literal_number
+    private static boolean ensureLiteralNumber(ExprTy.Constant expr, boolean allowReal, boolean allowImaginary) {
+        return (allowReal && expr.value.kind == Kind.DOUBLE) || (allowReal && expr.value.kind == Kind.LONG) || (allowImaginary && expr.value.kind == Kind.COMPLEX);
+    }
+
+    // Equivalent of ensure_literal_negative
+    private static boolean ensureLiteralNegative(UnaryOp expr, boolean allowImaginary) {
+        if (expr.op != UnaryOpTy.USub) {
+            return false;
+        }
+        if (!(expr.operand instanceof ExprTy.Constant)) {
+            return false;
+        }
+        return ensureLiteralNumber((ExprTy.Constant) expr.operand, true, allowImaginary);
+    }
+
+    // Equivalent of ensure_literal_complex
+    private static boolean ensureLiteralComplex(ExprTy.BinOp expr) {
+        if (expr.op != OperatorTy.Add && expr.op != OperatorTy.Sub) {
+            return false;
+        }
+        if (expr.left instanceof ExprTy.Constant) {
+            if (!ensureLiteralNumber((ExprTy.Constant) expr.left, true, false)) {
+                return false;
+            }
+        } else if (expr.left instanceof ExprTy.UnaryOp) {
+            if (!ensureLiteralNegative((ExprTy.UnaryOp) expr.left, false)) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        if (expr.right instanceof ExprTy.Constant) {
+            return ensureLiteralNumber((ExprTy.Constant) expr.right, false, true);
+        } else {
+            return false;
+        }
+    }
+
+    // Equivalent of validate_pattern_match_value
+    private void validatePatternMatchValue(ExprTy expr) {
+        validateExpr(expr, Load);
+        if (expr instanceof ExprTy.Constant) {
+            ExprTy.Constant constantExpr = (ExprTy.Constant) expr;
+            switch (constantExpr.value.kind) {
+                case LONG:
+                case DOUBLE:
+                case BYTES:
+                case COMPLEX:
+                case RAW:
+                    return;
+            }
+            throw raiseValueError(ErrorMessages.UNEXPECTED_CONSTANT_INSIDE_OF_A_LITERAL_PATTERN);
+        }
+        if (expr instanceof ExprTy.Attribute) {
+            return;
+        }
+        if (expr instanceof ExprTy.UnaryOp) {
+            if (ensureLiteralNegative((ExprTy.UnaryOp) expr, true)) {
+                return;
+            }
+        }
+        if (expr instanceof ExprTy.BinOp) {
+            if (ensureLiteralComplex((ExprTy.BinOp) expr)) {
+                return;
+            }
+        }
+        if (expr instanceof ExprTy.JoinedStr) {
+            return;
+        }
+        throw raiseValueError(ErrorMessages.PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS);
+    }
+
+    private static void validateCapture(String name) {
+        if (name.equals("_")) {
+            throw raiseValueError(ErrorMessages.CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS);
+        }
+        validateName(name);
+    }
 
     @Override
     public Void visit(PatternTy.MatchValue node) {
+        validatePatternMatchValue(node.value);
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchSingleton node) {
+        if (node.value.kind != Kind.NONE && node.value.kind != Kind.BOOLEAN) {
+            throw raiseValueError(ErrorMessages.MATCH_SINGLETON_CAN_ONLY_CONTAIN_TRUE_FALSE_AND_NONE);
+        }
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchSequence node) {
+        validatePatterns(node.patterns, true);
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchMapping node) {
+        if (seqLen(node.keys) != seqLen(node.patterns)) {
+            throw raiseValueError(ErrorMessages.MATCH_MAPPING_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYS_AS_PATTERNS);
+        }
+        if (node.rest != null) {
+            validateCapture(node.rest);
+        }
+        if (node.keys != null) {
+            for (ExprTy key : node.keys) {
+                if (key instanceof ExprTy.Constant) {
+                    ConstantValue literal = ((ExprTy.Constant) key).value;
+                    if (literal.kind == Kind.NONE || literal.kind == Kind.BOOLEAN) {
+                        continue;
+                    }
+                }
+                validatePatternMatchValue(key);
+            }
+        }
+        validatePatterns(node.patterns, false);
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchClass node) {
+        if (seqLen(node.kwdAttrs) != seqLen(node.kwdPatterns)) {
+            throw raiseValueError(ErrorMessages.MATCH_CLASS_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYWORD_ATTRIBUTES_AS_PATTERNS);
+        }
+        validateExpr(node.cls, Load);
+        ExprTy cls = node.cls;
+        while (cls instanceof ExprTy.Attribute) {
+            cls = ((ExprTy.Attribute) cls).value;
+        }
+        if (!(cls instanceof ExprTy.Name)) {
+            throw raiseValueError(ErrorMessages.MATCH_CLASS_CLS_FIELD_CAN_ONLY_CONTAIN_NAME_OR_ATTRIBUTE_NODES);
+        }
+        if (node.kwdAttrs != null) {
+            for (String identifier : node.kwdAttrs) {
+                validateName(identifier);
+            }
+        }
+        validatePatterns(node.patterns, false);
+        validatePatterns(node.kwdPatterns, false);
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchStar node) {
+        if (!isStarPatternOk) {
+            throw raiseValueError(ErrorMessages.CANT_USE_MATCH_STAR_HERE);
+        }
+        if (node.name != null) {
+            validateCapture(node.name);
+        }
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchAs node) {
+        if (node.name != null) {
+            validateCapture(node.name);
+        }
+        if (node.pattern != null) {
+            if (node.name == null) {
+                throw raiseValueError(ErrorMessages.MATCH_AS_MUST_SPECIFY_A_TARGET_NAME_IF_A_PATTERN_IS_GIVEN);
+            }
+            validatePattern(node.pattern, false);
+        }
         return null;
     }
 
     @Override
     public Void visit(PatternTy.MatchOr node) {
+        if (seqLen(node.patterns) < 2) {
+            throw raiseValueError(ErrorMessages.MATCH_OR_REQUIRES_AT_LEAST_2_PATTERNS);
+        }
+        validatePatterns(node.patterns, false);
         return null;
     }
 
     @Override
     public Void visit(MatchCaseTy node) {
+        validatePattern(node.pattern, false);
+        if (node.guard != null) {
+            validateExpr(node.guard, Load);
+        }
+        validateBody(node.body, T_T_MATCH_CASE);
         return null;
     }
 
@@ -811,6 +976,16 @@ final class Validator implements SSTreeVisitor<Void> {
         }
     }
 
+    // Equivalent of validate_patterns
+    private void validatePatterns(PatternTy[] patterns, boolean starOk) {
+        if (patterns == null) {
+            return;
+        }
+        for (PatternTy pattern : patterns) {
+            validatePattern(pattern, starOk);
+        }
+    }
+
     // Equivalent of validate_body
     private void validateBody(StmtTy[] body, TruffleString owner) {
         validateNonEmptySeq(body, T_F_BODY, owner);
@@ -824,7 +999,7 @@ final class Validator implements SSTreeVisitor<Void> {
     }
 
     // Equivalent of _validate_nonempty_seq
-    private void validateNonEmptySeq(Object[] seq, TruffleString what, TruffleString owner) {
+    private static void validateNonEmptySeq(Object[] seq, TruffleString what, TruffleString owner) {
         if (seqLen(seq) == 0) {
             throw raiseValueError(ErrorMessages.EMPTY_S_ON_S, what, owner);
         }
@@ -850,7 +1025,7 @@ final class Validator implements SSTreeVisitor<Void> {
     }
 
     // Equivalent of validate_name
-    private void validateName(String id) {
+    private static void validateName(String id) {
         for (String f : FORBIDDEN_NAMES) {
             if (f.equals(id)) {
                 throw raiseValueError(ErrorMessages.IDENTIFIER_FIELD_CANT_REPRESENT_S_CONSTANT, f);
@@ -863,11 +1038,11 @@ final class Validator implements SSTreeVisitor<Void> {
         // TODO constant validation
     }
 
-    private PException raiseValueError(TruffleString format, Object... args) {
+    private static PException raiseValueError(TruffleString format, Object... args) {
         throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, format, args);
     }
 
-    private PException raiseTypeError(TruffleString format, Object... args) {
+    private static PException raiseTypeError(TruffleString format, Object... args) {
         throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, format, args);
     }
 }

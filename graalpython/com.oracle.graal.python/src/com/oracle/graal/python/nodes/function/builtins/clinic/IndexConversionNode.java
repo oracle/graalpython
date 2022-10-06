@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class IndexConversionNode extends IntConversionBaseNode {
     protected IndexConversionNode(int defaultValue, boolean useDefaultForNone) {
@@ -65,10 +64,8 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
     int doOthers(VirtualFrame frame, Object value,
                     @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached BranchProfile isFloatProfile,
                     @Cached PyNumberAsSizeNode asSizeNode) {
         if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
-            isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
         }
         return asSizeNode.executeExact(frame, value);

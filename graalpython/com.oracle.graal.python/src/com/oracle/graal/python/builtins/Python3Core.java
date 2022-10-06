@@ -113,7 +113,6 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TermiosModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
@@ -423,16 +422,9 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     private final PythonBuiltins[] builtins;
 
-    private static final boolean hasCoverageTool;
     private static final boolean hasProfilerTool;
     static {
         Class<?> c = null;
-        try {
-            c = Class.forName("com.oracle.truffle.tools.coverage.CoverageTracker");
-        } catch (LinkageError | ClassNotFoundException e) {
-        }
-        hasCoverageTool = c != null;
-        c = null;
         try {
             c = Class.forName("com.oracle.truffle.tools.profiler.CPUSampler");
         } catch (LinkageError | ClassNotFoundException e) {
@@ -735,9 +727,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         // _hpy_universal and _hpy_debug
                         new GraalHPyUniversalModuleBuiltins(),
                         new GraalHPyDebugModuleBuiltins()));
-        if (hasCoverageTool) {
-            builtins.add(new TraceModuleBuiltins());
-        }
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());

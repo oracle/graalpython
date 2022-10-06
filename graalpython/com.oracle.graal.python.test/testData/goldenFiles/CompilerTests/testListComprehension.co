@@ -4,8 +4,8 @@ Disassembly of <module>:
   1:29  -   1:38        6 LOAD_CONST_COLLECTION             3    ([4, 5, 6] type int into list)
   1:17  -   1:39        9 COLLECTION_FROM_STACK             2    (list)
   1:0   -   1:60       11 GET_ITER
-  1:0   -   1:60       12 CALL_FUNCTION                     1
-  1:0   -   1:60       14 RETURN_VALUE
+  1:0   -   1:60       12 CALL_COMPREHENSION
+  1:0   -   1:60       13 RETURN_VALUE
 
 Disassembly of <listcomp>:
   1:0   -   1:60        0 COLLECTION_FROM_STACK             0    (list)

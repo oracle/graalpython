@@ -137,7 +137,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     // TODO write a test for this
                     throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
-                Object o = getItemNode.execute(frame, argsStorage, i);
+                Object o = getItemNode.execute(argsStorage, i);
                 argsArray[i] = objectToOpaquePathNode.execute(frame, o, false);
             }
             return argsArray;
@@ -253,7 +253,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
             }
             Object[] processArgs = args;
-            int[] fdsToKeep = convertFdSequence(frame, (PTuple) fdsToKeepObj, lenNode, tupleGetItem, castToIntNode);
+            int[] fdsToKeep = convertFdSequence((PTuple) fdsToKeepObj, lenNode, tupleGetItem, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
@@ -301,14 +301,14 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
          * Checks that the tuple contains only valid fds (positive integers fitting into an int) in
          * ascending order.
          */
-        private int[] convertFdSequence(VirtualFrame frame, PTuple fdSequence, LenNode lenNode, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
+        private int[] convertFdSequence(PTuple fdSequence, LenNode lenNode, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
             SequenceStorage storage = fdSequence.getSequenceStorage();
             int len = lenNode.execute(storage);
             int[] fds = new int[len];
             int prevFd = -1;
             for (int i = 0; i < len; ++i) {
                 try {
-                    int fd = castToIntNode.execute(getItemNode.execute(frame, storage, i));
+                    int fd = castToIntNode.execute(getItemNode.execute(storage, i));
                     if (fd > prevFd) {
                         prevFd = fds[i] = fd;
                         continue;

@@ -563,7 +563,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 if (path != null) {
                     storage.putUncached(toTruffleStringUncached(path), factory().createTuple(tool.targets));
                 } else {
-                    LOGGER.info("Could not locate tool " + tool.name);
+                    LOGGER.fine("Could not locate tool " + tool.name);
                 }
             }
             return factory().createDict(storage);
@@ -600,29 +600,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return toTruffleStringUncached(toolPath.toString());
-        }
-    }
-
-    @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        protected Object getPaths(TruffleString key) {
-            Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(J_LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            List<TruffleFile> pathsList = toolchain.getPaths(key.toJavaStringUncached());
-            if (pathsList == null) {
-                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-            }
-            Object[] paths = new Object[pathsList.size()];
-            int i = 0;
-            for (TruffleFile f : pathsList) {
-                paths[i++] = toTruffleStringUncached(f.toString());
-            }
-            return factory().createTuple(paths);
         }
     }
 

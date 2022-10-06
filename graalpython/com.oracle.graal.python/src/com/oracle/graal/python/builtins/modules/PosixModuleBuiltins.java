@@ -1506,8 +1506,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw timesTupleError();
             }
             long[] timespec = new long[4];
-            convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 0), timespec, 0);
-            convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 1), timespec, 2);
+            convertToTimespecBaseNode.execute(frame, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);
+            convertToTimespecBaseNode.execute(frame, getItemNode.execute(times.getSequenceStorage(), 1), timespec, 2);
             return timespec;
         }
     }
@@ -1854,6 +1854,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "waitstatus_to_exitcode", minNumOfPositionalArgs = 1, parameterNames = {"status"})
+    @GenerateNodeFactory
+    abstract static class WaitstatusToExitcodeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int waitstatusToExitcode(VirtualFrame frame, Object statusObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyLongAsIntNode longAsInt) {
+            int status = longAsInt.execute(frame, statusObj);
+            if (posixLib.wifexited(getPosixSupport(), status)) {
+                int exitcode = posixLib.wexitstatus(getPosixSupport(), status);
+                if (exitcode < 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WEXITSTATUS, exitcode);
+                }
+                return exitcode;
+            }
+            if (posixLib.wifsignaled(getPosixSupport(), status)) {
+                int signum = posixLib.wtermsig(getPosixSupport(), status);
+                if (signum <= 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WTERMSIG, signum);
+                }
+                return -signum;
+            }
+            if (posixLib.wifstopped(getPosixSupport(), status)) {
+                int signum = posixLib.wstopsig(getPosixSupport(), status);
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.PROCESS_STOPPED_BY_DELIVERY_OF_SIGNAL, signum);
+            }
+            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_WAIT_STATUS, status);
+        }
+    }
+
     @Builtin(name = "WCOREDUMP", minNumOfPositionalArgs = 1, parameterNames = {"status"})
     @ArgumentClinic(name = "status", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
@@ -2150,17 +2180,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "waitstatus_to_exitcode", parameterNames = {"status"})
-    @GenerateNodeFactory
-    abstract static class WaitstatusToExitcode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object w2e(VirtualFrame frame, Object statusObject,
-                        @Cached PyLongAsIntNode convert) {
-            int status = convert.execute(frame, statusObject);
-            return status & 0xff00;
-        }
-    }
-
     // ------------------
     // Helpers
 
@@ -2362,8 +2381,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }
             SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
-            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 0));
-            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 1));
+            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(storage, 0));
+            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(storage, 1));
         }
     }
 

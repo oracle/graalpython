@@ -443,7 +443,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OSErrorReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reduce(VirtualFrame frame, PBaseException self,
+        Object reduce(PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictNode,
@@ -454,8 +454,8 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
             if (lenNode.execute(args.getSequenceStorage()) == 2 && filename != PNone.NONE) {
                 Object[] argData = new Object[filename2 != PNone.NONE ? 5 : 3];
-                argData[0] = getItemNode.execute(frame, args.getSequenceStorage(), 0);
-                argData[1] = getItemNode.execute(frame, args.getSequenceStorage(), 1);
+                argData[0] = getItemNode.execute(args.getSequenceStorage(), 0);
+                argData[1] = getItemNode.execute(args.getSequenceStorage(), 1);
                 argData[2] = filename;
                 if (filename2 != PNone.NONE) {
                     // This tuple is essentially used as OSError(*args). So, to recreate filename2,

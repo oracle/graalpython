@@ -197,6 +197,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = tsLiteral("Cannot specify both ',' and '_'.");
     public static final TruffleString CANNOT_SPECIFY_C_WITH_C = tsLiteral("Cannot specify '%c' with '%c'.");
     public static final TruffleString CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = tsLiteral("%s: cannot use fd and follow_symlinks together");
+    public static final TruffleString CANT_CAPTURE_NAME_UNDERSCORE_IN_PATTERNS = tsLiteral("can't capture name '_' in patterns");
     public static final TruffleString CANT_CONCAT_P_TO_S = tsLiteral("can't concat %p to %s");
     public static final TruffleString CANT_CONVERT_TO_FLOAT = tsLiteral("can't convert %s to float");
     public static final TruffleString CANT_CONVERT_TO_STR_IMPLICITLY = tsLiteral("Can't convert '%p' object to str implicitly");
@@ -216,6 +217,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANT_SUM_BYTES = tsLiteral("sum() can't sum bytes [use b''.join(seq) instead]");
     public static final TruffleString CANT_SUM_STRINGS = tsLiteral("sum() can't sum strings [use ''.join(seq) instead]");
     public static final TruffleString CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX = tsLiteral("can't take floor or mod of complex number.");
+    public static final TruffleString CANT_USE_MATCH_STAR_HERE = tsLiteral("can't use MatchStar here");
     public static final TruffleString CAPI_SYM_NOT_CALLABLE = tsLiteral("C API symbol %s is not callable");
     public static final TruffleString CATCHING_CLS_NOT_ALLOWED = tsLiteral("catching classes that do not inherit from BaseException is not allowed");
     public static final TruffleString CHARACTER_MAPPING_MUST_BE_IN_RANGE = tsLiteral("character mapping must be in range(0x%s)");
@@ -419,6 +421,9 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_USE_OF_W_FORMAT_CHAR = tsLiteral("invalid use of 'w' format character");
     public static final TruffleString INVALID_BUFFER_ACCESS = tsLiteral("invalid buffer access");
     public static final TruffleString INVALID_FORMAT_STRING_PIPE_SPECIFIED_TWICE = tsLiteral("Invalid format string (| specified twice)");
+    public static final TruffleString INVALID_WAIT_STATUS = tsLiteral("invalid wait status: %d");
+    public static final TruffleString INVALID_WEXITSTATUS = tsLiteral("invalid WEXITSTATUS: %d");
+    public static final TruffleString INVALID_WTERMSIG = tsLiteral("invalid WTERMSIG: %d");
     public static final TruffleString ISLICE_WRONG_ARGS = tsLiteral("islice(seq, stop) or islice(seq, start, stop[, step])");
     public static final TruffleString IS_EMPTY = tsLiteral("%s is empty");
     public static final TruffleString IS_NOT_A = tsLiteral("%s is not a %s");
@@ -468,6 +473,13 @@ public abstract class ErrorMessages {
     public static final TruffleString LOST_SYSSTDOUT = tsLiteral("lost sys.stdout");
     public static final TruffleString LENGTH_SHOULD_NOT_BE_NEG = tsLiteral("length should not be negative");
     public static final TruffleString MAKE_ENCODER_ARG_1_MUST_BE_DICT = tsLiteral("make_encoder() argument 1 must be dict or None, not %p");
+    public static final TruffleString MATCH_AS_MUST_SPECIFY_A_TARGET_NAME_IF_A_PATTERN_IS_GIVEN = tsLiteral("MatchAs must specify a target name if a pattern is given");
+    public static final TruffleString MATCH_CLASS_CLS_FIELD_CAN_ONLY_CONTAIN_NAME_OR_ATTRIBUTE_NODES = tsLiteral("MatchClass cls field can only contain Name or Attribute nodes.");
+    public static final TruffleString MATCH_CLASS_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYWORD_ATTRIBUTES_AS_PATTERNS = tsLiteral(
+                    "MatchClass doesn't have the same number of keyword attributes as patterns");
+    public static final TruffleString MATCH_MAPPING_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYS_AS_PATTERNS = tsLiteral("MatchMapping doesn't have the same number of keys as patterns");
+    public static final TruffleString MATCH_OR_REQUIRES_AT_LEAST_2_PATTERNS = tsLiteral("MatchOr requires at least 2 patterns");
+    public static final TruffleString MATCH_SINGLETON_CAN_ONLY_CONTAIN_TRUE_FALSE_AND_NONE = tsLiteral("MatchSingleton can only contain True, False and None");
     public static final TruffleString MATH_DOMAIN_ERROR = tsLiteral("math domain error");
     public static final TruffleString MATH_RANGE_ERROR = tsLiteral("math range error");
     public static final TruffleString MAX_MARSHAL_STACK_DEPTH = tsLiteral("Maximum marshal stack depth");
@@ -604,6 +616,7 @@ public abstract class ErrorMessages {
     public static final TruffleString PACKED_IP_WRONG_LENGTH = tsLiteral("packed IP wrong length for %s");
     public static final TruffleString PACKET_IP_WRONG_LENGTH_FOR = tsLiteral("packed IP wrong length for %s");
     public static final TruffleString PATCHED_DATETIME_CLASS = tsLiteral("patched datetime class: %r");
+    public static final TruffleString PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS = tsLiteral("patterns may only match literals and attribute lookups");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED = tsLiteral("polyglot access is not allowed");
     public static final TruffleString POLYGLOT_EVAL_MUST_PASS_STRINGS = tsLiteral("polyglot.eval must pass strings as either 'path' or a 'string' keyword");
     public static final TruffleString POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG = tsLiteral("polyglot.eval with a string argument must pass a language or mime-type");
@@ -611,6 +624,7 @@ public abstract class ErrorMessages {
     public static final TruffleString POP_INDEX_OUT_OF_RANGE = tsLiteral("pop index out of range");
     public static final TruffleString PORT_PROTO_NOT_FOUND = tsLiteral("port/proto not found");
     public static final TruffleString PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED = tsLiteral("private identifier too large to be mangled");
+    public static final TruffleString PROCESS_STOPPED_BY_DELIVERY_OF_SIGNAL = tsLiteral("process stopped by delivery of signal %d");
     public static final TruffleString PROVIDED_OBJ_NOT_ARRAY = tsLiteral("provided object is not an array");
     public static final TruffleString PYTHON_INT_TOO_LARGE_TO_CONV_TO = tsLiteral("Python int too large to convert to %s");
     public static final TruffleString PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = tsLiteral("Python int too large to convert to %s-byte C type");
@@ -647,7 +661,6 @@ public abstract class ErrorMessages {
     public static final TruffleString RETURNED_NULL_WO_SETTING_ERROR = tsLiteral("%s returned NULL without setting an error");
     public static final TruffleString RETURNED_RESULT_WITH_ERROR_SET = tsLiteral("%s returned a result with an error set");
     public static final TruffleString RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = tsLiteral("%s returned an unexpected return code; expected 'int' but was %s");
-    public static final TruffleString REGULAR_EXPRESSION_NOT_SUPPORTED = tsLiteral("regular expression not supported, no fallback engine present");
     public static final TruffleString EMBEDDED_NULL_CHARACTER = tsLiteral("embedded null character");
     public static final TruffleString S = tsLiteral("%s");
     public static final TruffleString APOSTROPHE_S = tsLiteral("'%s'");
@@ -754,6 +767,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNABLE_TO_GET_S = tsLiteral("unable to get %");
     public static final TruffleString UNAVAILABLE_ON_THIS_PLATFORM = tsLiteral("%s: %s unavailable on this platform");
     public static final TruffleString UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = tsLiteral("%s unavailable on this platform");
+    public static final TruffleString UNEXPECTED_CONSTANT_INSIDE_OF_A_LITERAL_PATTERN = tsLiteral("unexpected constant inside of a literal pattern");
     public static final TruffleString UNEXPECTED_KEYWORD_ARGS = tsLiteral("%s: unexpected keyword arguments");
     public static final TruffleString UNEXPECTED_S_IN_FIELD_NAME = tsLiteral("unexpected %s in field name");
     public static final TruffleString UNHASHABLE_TYPE_P = tsLiteral("unhashable type: '%p'");

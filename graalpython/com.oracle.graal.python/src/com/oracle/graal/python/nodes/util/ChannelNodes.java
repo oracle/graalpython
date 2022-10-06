@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,21 +61,16 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ChannelNodes {
-    public abstract static class ReadErrorHandler extends PNodeWithContext {
-        public abstract Object execute(Object channel, int nrequested, int nread);
-    }
 
     public abstract static class ReadByteErrorHandler extends PNodeWithContext {
         public abstract int execute(Object channel);
@@ -104,12 +99,11 @@ public abstract class ChannelNodes {
             return dst.array();
         }
 
-        protected static int readIntoBuffer(Object readableChannel, ByteBuffer dst, BranchProfile gotException, PRaiseNode raise) {
+        protected static int readIntoBuffer(Object readableChannel, ByteBuffer dst, Node raisingNode) {
             try {
                 return read(readableChannel, dst);
             } catch (IOException e) {
-                gotException.enter();
-                throw raise.raise(OSError, e);
+                throw PRaiseNode.raiseUncached(raisingNode, OSError, e);
             }
         }
 
@@ -126,12 +120,11 @@ public abstract class ChannelNodes {
             return dst.array();
         }
 
-        protected static int writeFromBuffer(Object writableChannel, ByteBuffer src, BranchProfile gotException, PRaiseNode raise) {
+        protected static int writeFromBuffer(Object writableChannel, ByteBuffer src, Node nodeForRaise) {
             try {
                 return write(writableChannel, src);
             } catch (IOException e) {
-                gotException.enter();
-                throw raise.raise(OSError, e);
+                throw PRaiseNode.raiseUncached(nodeForRaise, OSError, e);
             }
         }
 
@@ -151,40 +144,35 @@ public abstract class ChannelNodes {
 
         @Specialization
         @TruffleBoundary
-        public static ByteSequenceStorage read(Object channel, int size,
-                        @Cached BranchProfile gotException,
-                        @Cached PRaiseNode raiseNode) {
+        ByteSequenceStorage read(Object channel, int size) {
             if (channel instanceof SeekableByteChannel) {
-                return readSeekable(channel, size, gotException, raiseNode);
+                return readSeekable(channel, size);
             } else if (channel instanceof ReadableByteChannel) {
-                return readReadable(channel, size, gotException, raiseNode);
+                return readReadable(channel, size);
             }
-            throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
+            throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
         }
 
-        static ByteSequenceStorage readSeekable(Object channel, int size,
-                        BranchProfile gotException,
-                        PRaiseNode raiseNode) {
+        ByteSequenceStorage readSeekable(Object channel, int size) {
+            CompilerAsserts.neverPartOfCompilation();
             long availableSize;
             try {
                 availableSize = ChannelBaseNode.availableSize(channel);
             } catch (IOException e) {
-                gotException.enter();
-                throw raiseNode.raise(OSError, e);
+                throw PRaiseNode.raiseUncached(this, OSError, e);
             }
             if (availableSize > MAX_READ) {
                 availableSize = MAX_READ;
             }
             int sz = (int) Math.min(availableSize, size);
-            return readReadable(channel, sz, gotException, raiseNode);
+            return readReadable(channel, sz);
         }
 
-        static ByteSequenceStorage readReadable(Object channel, int size,
-                        BranchProfile gotException,
-                        PRaiseNode raiseNode) {
+        ByteSequenceStorage readReadable(Object channel, int size) {
+            CompilerAsserts.neverPartOfCompilation();
             int sz = Math.min(size, MAX_READ);
             ByteBuffer dst = allocateBuffer(sz);
-            int readSize = readIntoBuffer(channel, dst, gotException, raiseNode);
+            int readSize = readIntoBuffer(channel, dst, this);
             byte[] array;
             if (readSize <= 0) {
                 array = PythonUtils.EMPTY_BYTE_ARRAY;
@@ -217,14 +205,11 @@ public abstract class ChannelNodes {
 
         @Specialization
         @TruffleBoundary(allowInlining = true)
-        int readByte(Object channel,
-                        @Cached BranchProfile gotException,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile readProfile) {
+        int readByte(Object channel) {
             assert channel instanceof ReadableByteChannel;
             ByteBuffer buf = allocate(1);
-            int read = readIntoBuffer(channel, buf, gotException, raiseNode);
-            if (readProfile.profile(read != 1)) {
+            int read = readIntoBuffer(channel, buf, this);
+            if (read != 1) {
                 return handleError(channel);
             }
             return get(buf) & 0xFF;
@@ -264,15 +249,12 @@ public abstract class ChannelNodes {
 
         @Specialization
         @TruffleBoundary(allowInlining = true)
-        void readByte(Object channel, byte b,
-                        @Cached BranchProfile gotException,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached ConditionProfile readProfile) {
+        void readByte(Object channel, byte b) {
             assert channel instanceof WritableByteChannel;
             ByteBuffer buf = allocate(1);
             put(b, buf);
-            int read = writeFromBuffer(channel, buf, gotException, raiseNode);
-            if (readProfile.profile(read != 1)) {
+            int read = writeFromBuffer(channel, buf, this);
+            if (read != 1) {
                 handleError(channel, b);
             }
         }
@@ -306,48 +288,36 @@ public abstract class ChannelNodes {
 
         @Specialization
         @TruffleBoundary
-        int writeOp(Object channel, SequenceStorage s, int len,
-                        @Cached BranchProfile limitProfile,
-                        @Cached ConditionProfile maxSizeProfile,
-                        @Cached BranchProfile gotException,
-                        @Cached PRaiseNode raiseNode) {
+        int writeOp(Object channel, SequenceStorage s, int len) {
             if (channel instanceof SeekableByteChannel) {
-                return writeSeekable(channel, s, len, limitProfile, maxSizeProfile, gotException, raiseNode);
+                return writeSeekable(channel, s, len, this);
             } else if (channel instanceof WritableByteChannel) {
-                return writeWritable(channel, s, len, gotException, raiseNode, limitProfile);
+                return writeWritable(channel, s, len, this);
             }
-            throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
+            throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
         }
 
-        int writeSeekable(Object channel, SequenceStorage s, int len,
-                        BranchProfile limitProfile,
-                        ConditionProfile maxSizeProfile,
-                        BranchProfile gotException,
-                        PRaiseNode raiseNode) {
+        int writeSeekable(Object channel, SequenceStorage s, int len, Node nodeForRaise) {
             long availableSize;
             try {
                 availableSize = ChannelBaseNode.availableSize(channel);
             } catch (IOException e) {
-                gotException.enter();
-                throw raiseNode.raise(OSError, e);
+                throw PRaiseNode.raiseUncached(nodeForRaise, OSError, e);
             }
-            if (maxSizeProfile.profile(availableSize > MAX_WRITE)) {
+            if (availableSize > MAX_WRITE) {
                 availableSize = MAX_WRITE;
             }
             int sz = (int) Math.min(availableSize, len);
-            return writeWritable(channel, s, sz, gotException, raiseNode, limitProfile);
+            return writeWritable(channel, s, sz, nodeForRaise);
         }
 
-        int writeWritable(Object channel, SequenceStorage s, int len,
-                        BranchProfile gotException,
-                        PRaiseNode raiseNode,
-                        BranchProfile limitProfile) {
+        int writeWritable(Object channel, SequenceStorage s, int len, Node nodeForRaise) {
+            CompilerAsserts.neverPartOfCompilation();
             ByteBuffer src = allocateBuffer(getBytes(s));
             if (src.remaining() > len) {
-                limitProfile.enter();
                 src.limit(len);
             }
-            return writeFromBuffer(channel, src, gotException, raiseNode);
+            return writeFromBuffer(channel, src, nodeForRaise);
         }
 
         @TruffleBoundary(allowInlining = true)

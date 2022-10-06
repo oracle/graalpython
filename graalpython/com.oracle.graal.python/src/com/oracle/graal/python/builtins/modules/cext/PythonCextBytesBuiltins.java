@@ -47,7 +47,9 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_T
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITER__;
 
+import java.util.Arrays;
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -95,7 +97,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.strings.TruffleString;
-import java.util.Arrays;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -354,7 +355,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
-                smaller[i] = castToByteNode.execute(frame, getItemNode.execute(frame, storage, i));
+                smaller[i] = castToByteNode.execute(frame, getItemNode.execute(storage, i));
             }
             self.setSequenceStorage(new ByteSequenceStorage(smaller));
             return 0;

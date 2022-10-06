@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -121,7 +121,7 @@ public final class StarredExpressionNode extends LiteralNode {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, Object values, ThreadState state);
 
         @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
-        static HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
+        static HashingStorage doSetPSequence(HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -129,7 +129,7 @@ public final class StarredExpressionNode extends LiteralNode {
             SequenceStorage valuesStorage = values.getSequenceStorage();
             int n = lenNode.execute(valuesStorage);
             for (int i = 0; i < n; i++) {
-                Object element = getItemNode.execute(frame, valuesStorage, i);
+                Object element = getItemNode.execute(valuesStorage, i);
                 storage = storageLib.setItemWithState(storage, element, PNone.NONE, state);
             }
             return storage;

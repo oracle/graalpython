@@ -429,6 +429,8 @@ def update_unittest_tags(args):
         ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_capa'),
         ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_dele'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles'),
+        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead'),
+        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_object_dead'),
         # Disabled since code object comparison is not stable for us
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),
@@ -833,7 +835,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
             mx.abort("At least one HPy testing thread failed.")
 
 
-def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False):
+def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True):
     if env is None:
         env = os.environ
     sub_env = env.copy()
@@ -848,7 +850,8 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False):
         paths=["test_tagged_unittests.py"],
         env=sub_env,
         cwd=cwd,
-        javaAsserts=javaAsserts
+        javaAsserts=javaAsserts,
+        nonZeroIsFatal=nonZeroIsFatal,
     )
 
 
@@ -1839,7 +1842,7 @@ def python_coverage(args):
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
                 env['ENABLE_THREADED_GRAALPYTEST'] = "false"
                 if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env, javaAsserts=True)
+                    run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
                 else:
                     run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
 

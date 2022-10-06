@@ -580,13 +580,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         String executable = getContextOptionIfSetViaCommandLine("Executable");
         if (executable != null) {
-            contextBuilder.option("python.ExecutableList", executable);
+            contextBuilder.option("python.ExecutableList", toAbsolutePath(executable));
         } else {
             executable = getExecutable();
-            contextBuilder.option("python.Executable", executable);
+            contextBuilder.option("python.Executable", toAbsolutePath(executable));
             // The unlikely separator is used because options need to be
             // strings. See PythonOptions.getExecutableList()
-            contextBuilder.option("python.ExecutableList", String.join("🏆", getExecutableList()));
+            String[] executableList = getExecutableList();
+            executableList[0] = toAbsolutePath(executableList[0]);
+            contextBuilder.option("python.ExecutableList", String.join("🏆", executableList));
             // We try locating and loading options from pyvenv.cfg according to PEP405 as long as
             // the user did not explicitly pass some options that would be otherwise loaded from
             // pyvenv.cfg. Notable usage of this feature is GraalPython venvs which generate a
@@ -690,6 +692,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             consoleHandler.setContext(null);
         }
         System.exit(rc);
+    }
+
+    private static String toAbsolutePath(String executable) {
+        return Paths.get(executable).toAbsolutePath().toString();
     }
 
     private void findAndApplyVenvCfg(Builder contextBuilder, String executable) {

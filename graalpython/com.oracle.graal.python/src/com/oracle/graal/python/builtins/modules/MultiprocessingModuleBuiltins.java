@@ -179,7 +179,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
-        long spawn(VirtualFrame frame, int fd, int sentinel, PList keepFds,
+        long spawn(int fd, int sentinel, PList keepFds,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
@@ -187,7 +187,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             int length = lenNode.execute(storage);
             int[] keep = new int[length];
             for (int i = 0; i < length; i++) {
-                Object item = getItem.execute(frame, storage, i);
+                Object item = getItem.execute(storage, i);
                 keep[i] = castToJavaIntNode.execute(item);
             }
             PythonContext context = getContext();

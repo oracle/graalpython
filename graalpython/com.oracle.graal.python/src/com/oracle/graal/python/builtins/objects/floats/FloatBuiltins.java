@@ -125,7 +125,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -448,24 +447,34 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ReportPolymorphism
-    abstract static class PowerNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        double doDL(double left, long right, @SuppressWarnings("unused") PNone none,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doOperation(left, right, negativeRaise);
+    public abstract static class PowNode extends PythonTernaryBuiltinNode {
+        protected abstract double executeDouble(VirtualFrame frame, double left, double right, PNone none) throws UnexpectedResultException;
+
+        protected abstract Object execute(VirtualFrame frame, double left, double right, PNone none);
+
+        public final double executeDouble(double left, double right) throws UnexpectedResultException {
+            return executeDouble(null, left, right, PNone.NO_VALUE);
+        }
+
+        public final Object execute(double left, double right) {
+            return execute(null, left, right, PNone.NO_VALUE);
         }
 
         @Specialization
-        double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doOperation(left, right.doubleValueWithOverflow(getRaiseNode()), negativeRaise);
+        double doDL(double left, long right, @SuppressWarnings("unused") PNone none) {
+            return doOperation(left, right);
+        }
+
+        @Specialization
+        double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none) {
+            return doOperation(left, right.doubleValueWithOverflow(getRaiseNode()));
         }
 
         /**
          * The special cases we need to deal with always return 1, so 0 means no special case, not a
          * result.
          */
-        private double doSpecialCases(double left, double right, BranchProfile negativeRaise) {
+        private double doSpecialCases(double left, double right) {
             // see cpython://Objects/floatobject.c#float_pow for special cases
             if (Double.isNaN(right) && left == 1) {
                 // 1**nan = 1, unlike on Java
@@ -476,15 +485,14 @@ public final class FloatBuiltins extends PythonBuiltins {
                 return 1;
             }
             if (left == 0 && right < 0 && Double.isFinite(right)) {
-                negativeRaise.enter();
                 // 0**w is an error if w is finite and negative, unlike Java
                 throw raise(PythonBuiltinClassType.ZeroDivisionError, ErrorMessages.POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER);
             }
             return 0;
         }
 
-        private double doOperation(double left, double right, BranchProfile negativeRaise) {
-            if (doSpecialCases(left, right, negativeRaise) == 1) {
+        private double doOperation(double left, double right) {
+            if (doSpecialCases(left, right) == 1) {
                 return 1.0;
             }
             return Math.pow(left, right);
@@ -492,9 +500,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double doDD(VirtualFrame frame, double left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
-            if (doSpecialCases(left, right, negativeRaise) == 1) {
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) throws UnexpectedResultException {
+            if (doSpecialCases(left, right) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
@@ -507,9 +514,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doDD")
         Object doDDToComplex(VirtualFrame frame, double left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            if (doSpecialCases(left, right, negativeRaise) == 1) {
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
+            if (doSpecialCases(left, right) == 1) {
                 return 1.0;
             }
             if (left < 0 && Double.isFinite(left) && Double.isFinite(right) && (right % 1 != 0)) {
@@ -521,38 +527,33 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double doDL(VirtualFrame frame, long left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
-            return doDD(frame, left, right, none, callPow, negativeRaise);
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) throws UnexpectedResultException {
+            return doDD(frame, left, right, none, callPow);
         }
 
         @Specialization(replaces = "doDL")
         Object doDLComplex(VirtualFrame frame, long left, double right, PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doDDToComplex(frame, left, right, none, callPow, negativeRaise);
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
+            return doDDToComplex(frame, left, right, none, callPow);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double doDPi(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) throws UnexpectedResultException {
-            return doDD(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) throws UnexpectedResultException {
+            return doDD(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow);
         }
 
         @Specialization(replaces = "doDPi")
         Object doDPiToComplex(VirtualFrame frame, PInt left, double right, @SuppressWarnings("unused") PNone none,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
-            return doDDToComplex(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow, negativeRaise);
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
+            return doDDToComplex(frame, left.doubleValueWithOverflow(getRaiseNode()), right, none, callPow);
         }
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
                         @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow,
-                        @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
+                        @Shared("powCall") @Cached("create(Pow)") LookupAndCallTernaryNode callPow) {
             if (!(mod instanceof PNone)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.POW_3RD_ARG_NOT_ALLOWED_UNLESS_INTEGERS);
             }
@@ -568,7 +569,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, callPow, negativeRaise);
+            return doDDToComplex(frame, leftDouble, rightDouble, PNone.NONE, callPow);
+        }
+
+        public static PowNode create() {
+            return FloatBuiltinsFactory.PowNodeFactory.create();
         }
     }
 

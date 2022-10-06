@@ -60,7 +60,6 @@ import gc
 import dis
 import pickle
 from time import monotonic as _time
-import _trace
 
 import threading
 
@@ -436,8 +435,6 @@ class Trace:
             # Ahem -- do nothing?  Okay.
             self.donothing = 1
 
-        self._graal_start_args = (count, countfuncs, ignoremods, ignoredirs)
-
     def run(self, cmd):
         import __main__
         dict = __main__.__dict__
@@ -447,24 +444,24 @@ class Trace:
         if globals is None: globals = {}
         if locals is None: locals = {}
         if not self.donothing:
-            _trace.start(*self._graal_start_args)
+            threading.settrace(self.globaltrace)
+            sys.settrace(self.globaltrace)
         try:
             exec(cmd, globals, locals)
         finally:
             if not self.donothing:
-                _trace.stop()
-                self.counts, self._calledfuncs = _trace.results()
+                sys.settrace(None)
+                threading.settrace(None)
 
     def runfunc(self, func, /, *args, **kw):
         result = None
         if not self.donothing:
-            _trace.start(*self._graal_start_args())
+            sys.settrace(self.globaltrace)
         try:
             result = func(*args, **kw)
         finally:
             if not self.donothing:
-                _trace.stop()
-                self.counts, self._calledfuncs = _trace.results()
+                sys.settrace(None)
         return result
 
     def file_module_function_of(self, frame):
@@ -477,32 +474,33 @@ class Trace:
 
         funcname = code.co_name
         clsname = None
-        if code in self._caller_cache:
-            if self._caller_cache[code] is not None:
-                clsname = self._caller_cache[code]
-        else:
-            self._caller_cache[code] = None
-            ## use of gc.get_referrers() was suggested by Michael Hudson
-            # all functions which refer to this code object
-            funcs = [f for f in gc.get_referrers(code)
-                         if inspect.isfunction(f)]
-            # require len(func) == 1 to avoid ambiguity caused by calls to
-            # new.function(): "In the face of ambiguity, refuse the
-            # temptation to guess."
-            if len(funcs) == 1:
-                dicts = [d for d in gc.get_referrers(funcs[0])
-                             if isinstance(d, dict)]
-                if len(dicts) == 1:
-                    classes = [c for c in gc.get_referrers(dicts[0])
-                                   if hasattr(c, "__bases__")]
-                    if len(classes) == 1:
-                        # ditto for new.classobj()
-                        clsname = classes[0].__name__
-                        # cache the result - assumption is that new.* is
-                        # not called later to disturb this relationship
-                        # _caller_cache could be flushed if functions in
-                        # the new module get called.
-                        self._caller_cache[code] = clsname
+        # GraalVM change: we don't support gc.get_referrers()
+        # if code in self._caller_cache:
+        #     if self._caller_cache[code] is not None:
+        #         clsname = self._caller_cache[code]
+        # else:
+        #     self._caller_cache[code] = None
+        #     ## use of gc.get_referrers() was suggested by Michael Hudson
+        #     # all functions which refer to this code object
+        #     funcs = [f for f in gc.get_referrers(code)
+        #                  if inspect.isfunction(f)]
+        #     # require len(func) == 1 to avoid ambiguity caused by calls to
+        #     # new.function(): "In the face of ambiguity, refuse the
+        #     # temptation to guess."
+        #     if len(funcs) == 1:
+        #         dicts = [d for d in gc.get_referrers(funcs[0])
+        #                      if isinstance(d, dict)]
+        #         if len(dicts) == 1:
+        #             classes = [c for c in gc.get_referrers(dicts[0])
+        #                            if hasattr(c, "__bases__")]
+        #             if len(classes) == 1:
+        #                 # ditto for new.classobj()
+        #                 clsname = classes[0].__name__
+        #                 # cache the result - assumption is that new.* is
+        #                 # not called later to disturb this relationship
+        #                 # _caller_cache could be flushed if functions in
+        #                 # the new module get called.
+        #                 self._caller_cache[code] = clsname
         if clsname is not None:
             funcname = "%s.%s" % (clsname, funcname)
 

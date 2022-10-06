@@ -128,11 +128,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    protected static boolean writeToDynamicStorageNoTypeGuard(Object obj, Object key, BranchProfile isNotHidden, GetDictIfExistsNode getDict) {
+    protected static boolean writeToDynamicStorageNoTypeGuard(Object obj, Object key, GetDictIfExistsNode getDict) {
         if (isHiddenKey(key)) {
             return true;
         }
-        isNotHidden.enter();
         return getDict.execute(obj) == null && !PythonManagedClass.isInstance(obj);
     }
 
@@ -140,10 +139,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // WriteAttributeToDynamicObjectNode. Note that the fast-path for String keys and the inline
     // cache in WriteAttributeToDynamicObjectNode perform better in some configurations than if we
     // cast the key here and used DynamicObjectLibrary directly
-    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, isNotHidden, getDict)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, getDict)"}, limit = "1")
     static boolean writeToDynamicStorageNoType(PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @SuppressWarnings("unused") @Cached BranchProfile isNotHidden,
                     @Cached WriteAttributeToDynamicObjectNode writeNode) {
         // Objects w/o dict that are not classes do not have any special handling
         writeNode.execute(object, key, value);

@@ -471,12 +471,12 @@ public class StructSequence {
             if (fieldNames.length > 0) {
                 appendStringNode.execute(sb, fieldNames[0]);
                 appendStringNode.execute(sb, T_EQ);
-                appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, 0)));
+                appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(tupleStore, 0)));
                 for (int i = 1; i < fieldNames.length; i++) {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, fieldNames[i]);
                     appendStringNode.execute(sb, T_EQ);
-                    appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, i)));
+                    appendStringNode.execute(sb, reprNode.execute(frame, getItemNode.execute(tupleStore, i)));
                 }
             }
             appendStringNode.execute(sb, T_RPAREN);

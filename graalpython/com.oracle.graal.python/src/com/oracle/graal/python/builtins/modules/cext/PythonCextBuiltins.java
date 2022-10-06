@@ -246,6 +246,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -2161,7 +2162,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         return -1;
                     }
                 }
-            } catch (ClassCastException e) {
+            } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
             }
             return 0;

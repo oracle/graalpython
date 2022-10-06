@@ -255,6 +255,7 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
             return initialCapacity.estimate();
         }
 
+        @Override
         public SourceSection getSourceSection() {
             return null;
         }

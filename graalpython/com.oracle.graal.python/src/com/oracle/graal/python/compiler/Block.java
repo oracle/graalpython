@@ -76,4 +76,16 @@ final class Block {
         }
         return null;
     }
+
+    int computeLoopDepth() {
+        int loopDepth = 0;
+        BlockInfo b = info;
+        while (b != null) {
+            if (b instanceof BlockInfo.Loop) {
+                loopDepth++;
+            }
+            b = b.outer;
+        }
+        return loopDepth;
+    }
 }
