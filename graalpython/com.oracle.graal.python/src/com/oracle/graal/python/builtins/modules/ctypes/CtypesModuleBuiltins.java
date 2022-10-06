@@ -1733,14 +1733,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object cast(PythonNativeVoidPtr ptr, PythonNativeVoidPtr src, Object ctype,
-                           @Cached PyTypeCheck pyTypeCheck,
-                           @Cached CallNode callNode,
-                           @Cached PRaiseNode raiseNode,
-                           @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                           @Cached IsTypeNode isTypeNode,
-                           @Cached GetClassNode getClassNode,
-                           @Cached GetNameNode getNameNode,
-                           @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached PyTypeCheck pyTypeCheck,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
             CDataObject result = (CDataObject) callNode.execute(ctype);
             result.b_ptr = PtrValue.nativePointer(ptr.getPointerObject());
