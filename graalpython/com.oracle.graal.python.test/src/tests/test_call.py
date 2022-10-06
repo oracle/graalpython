@@ -388,7 +388,6 @@ def test_multiple_values_with_callable_name():
         return assert_get_message(exception, eval, call_expr)
 
     msg = assert_call_raises_get_message(TypeError, "fooo(a=1, **b)")
-    print(msg)
     assert msg == "tests.test_call.f26() argument after ** must be a mapping, not int"
     
     msg = assert_call_raises_get_message(TypeError, "fooo(**{'a' : 4}, **{'a': 3})")

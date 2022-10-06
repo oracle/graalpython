@@ -99,7 +99,6 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Children protected final ExpressionNode[] argumentNodes;
     @Child private PositionalArgumentsNode positionalArguments;
     @Child private KeywordArgumentsNode keywordArguments;
-    @Child private PyObjectFunctionStr pyObjectFunctionStr;
     @Child private StringNodes.CastToTruffleStringCheckedNode castToStringNode;
 
     protected final TruffleString calleeName;
@@ -327,24 +326,16 @@ public abstract class PythonCallNode extends ExpressionNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castToStringNode = insert(StringNodes.CastToTruffleStringCheckedNode.create());
                 }
-                TruffleString functionName = getFunctionName(frame, callable);
+                TruffleString functionName = PyObjectFunctionStr.execute(callable);
                 TruffleString keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
             } catch (NonMappingException ex) {
                 keywordsError.enter();
-                TruffleString functionName = getFunctionName(frame, callable);
+                TruffleString functionName = PyObjectFunctionStr.execute(callable);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, ex.getObject());
             }
         }
         return result;
-    }
-
-    private TruffleString getFunctionName(VirtualFrame frame, Object callable) {
-        if (pyObjectFunctionStr == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pyObjectFunctionStr = insert(PyObjectFunctionStr.create());
-        }
-        return pyObjectFunctionStr.execute(frame, callable);
     }
 
     @ImportStatic({PythonOptions.class})
