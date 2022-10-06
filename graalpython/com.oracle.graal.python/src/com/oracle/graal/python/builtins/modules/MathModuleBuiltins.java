@@ -1205,7 +1205,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public static Object gcd(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached LoopConditionProfile profile,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached GcdNode gcdNode,
+                        @Cached Gcd2Node gcdNode,
                         @Cached IntBuiltins.FloorDivNode floorDivNode,
                         @Cached IntBuiltins.MulNode mulNode,
                         @Cached BinaryComparisonNode.EqNode eqNode,
@@ -1217,7 +1217,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 if ((boolean) eqNode.executeObject(frame, a, 0)) {
                     continue;
                 }
-                Object g = gcdNode.execute(frame, self, new Object[]{a, b}, PKeyword.EMPTY_KEYWORDS);
+                Object g = gcdNode.execute(frame, a, b);
                 Object f = floorDivNode.execute(frame, a, g);
                 Object m = mulNode.execute(frame, f, b);
                 a = absNode.execute(frame, m);
