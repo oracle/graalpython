@@ -471,6 +471,8 @@ class UnseenFormatter(Formatter):
 def CPyExtType(name, code, **kwargs):
     template = """
     #include "Python.h"
+    /* structmember.h is not included by default in Python.h */
+    #include "structmember.h"
 
     #if !GRAALVM_PYTHON && (PY_VERSION_HEX < 0x03090000)
     #define Py_SET_REFCNT(ob, v) ((_PyObject_CAST(ob)->ob_refcnt = (v)))

@@ -98,9 +98,7 @@ class TestMethod(object):
     def test_member(self):
         TestMember = CPyExtType(
             "TestMember",
-            # structmember.h is not included by default in Python.h
             '''
-            #include "structmember.h"
             #include <string.h>
 
             PyObject* setString(PyObject *self, PyObject *arg) {
