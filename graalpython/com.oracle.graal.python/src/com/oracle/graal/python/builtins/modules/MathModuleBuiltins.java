@@ -54,6 +54,7 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1112,9 +1114,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
-    public abstract static class Gcd2Node extends PythonBinaryBuiltinNode {
+    public abstract static class Gcd2Node extends PNodeWithRaise {
+
+        abstract Object execute(VirtualFrame frame, Object a, Object b);
 
         private long count(long a, long b) {
             if (b == 0) {
@@ -1129,13 +1132,15 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt gcd(long x, PInt y) {
-            return factory().createInt(op(PInt.longToBigInteger(x), y.getValue()));
+        PInt gcd(long x, PInt y,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createInt(op(PInt.longToBigInteger(x), y.getValue()));
         }
 
         @Specialization
-        PInt gcd(PInt x, long y) {
-            return factory().createInt(op(x.getValue(), PInt.longToBigInteger(y)));
+        PInt gcd(PInt x, long y,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createInt(op(x.getValue(), PInt.longToBigInteger(y)));
         }
 
         @TruffleBoundary
@@ -1144,8 +1149,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt gcd(PInt x, PInt y) {
-            return factory().createInt(op(x.getValue(), y.getValue()));
+        PInt gcd(PInt x, PInt y,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createInt(op(x.getValue(), y.getValue()));
         }
 
         @Specialization
@@ -1183,7 +1189,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         public static Gcd2Node create() {
-            return MathModuleBuiltinsFactory.Gcd2NodeFactory.create();
+            return MathModuleBuiltinsFactory.Gcd2NodeGen.create();
         }
     }
 
