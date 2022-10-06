@@ -368,7 +368,7 @@ class GraalPyVm(mx_benchmark.GuestVm):
             if old_java_opts:
                 os.environ["JAVA_OPTS"] = old_java_opts + " " + xmxArg.replace("--vm", "-")
             else:
-                os.environ["JAVA_OPTS"] = xmxArg.replace("--vm", "-")
+                os.environ["JAVA_OPTS"] = xmxArg.replace("--vm.", "-")
             mx.log("Running with `JAVA_OPTS={JAVA_OPTS}` and `GRAAL_PYTHON_ARGS={GRAAL_PYTHON_ARGS}`".format(**os.environ))
             return self.host_vm().run_launcher("graalpy", self._options + args, cwd)
         finally:
