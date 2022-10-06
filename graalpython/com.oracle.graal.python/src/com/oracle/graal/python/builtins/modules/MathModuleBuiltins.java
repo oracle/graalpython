@@ -1141,13 +1141,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt gcd(long x, PInt y,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(PInt.longToBigInteger(x), y.getValue()));
         }
 
         @Specialization
         PInt gcd(PInt x, long y,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(x.getValue(), PInt.longToBigInteger(y)));
         }
 
@@ -1158,7 +1158,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt gcd(PInt x, PInt y,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(op(x.getValue(), y.getValue()));
         }
 
