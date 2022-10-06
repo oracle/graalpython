@@ -432,7 +432,10 @@ public abstract class ExternalFunctionNodes {
                         PythonLanguage language,
                         PythonObjectFactory factory,
                         boolean doArgAndResultConversion) {
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, flags > 0 && CExtContext.isMethStatic(flags));
+            if (flags < 0) {
+                flags = 0;
+            }
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, CExtContext.isMethStatic(flags));
             if (callTarget == null) {
                 return null;
             }
