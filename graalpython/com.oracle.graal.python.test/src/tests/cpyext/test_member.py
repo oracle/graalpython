@@ -101,7 +101,7 @@ class TestMethod(object):
             '''
             #include <string.h>
 
-            PyObject* setString(PyObject *self, PyObject *arg) {
+            PyObject* set_string(PyObject *self, PyObject *arg) {
                 TestMemberObject *tmo = (TestMemberObject *)self;
                 const char *utf8 = PyUnicode_AsUTF8(arg);
                 if (utf8 == NULL)
@@ -109,6 +109,20 @@ class TestMethod(object):
                 tmo->member_string = strdup(utf8);
                 Py_INCREF(Py_None);
                 return Py_None;
+            }
+            
+            PyObject* get_sizes(PyObject *self) {
+                PyObject *result = PyTuple_New(9);
+                PyTuple_SetItem(result, 0, PyLong_FromSize_t(sizeof(char)));
+                PyTuple_SetItem(result, 1, PyLong_FromSize_t(sizeof(unsigned char)));
+                PyTuple_SetItem(result, 2, PyLong_FromSize_t(sizeof(short)));
+                PyTuple_SetItem(result, 3, PyLong_FromSize_t(sizeof(unsigned short)));
+                PyTuple_SetItem(result, 4, PyLong_FromSize_t(sizeof(int)));
+                PyTuple_SetItem(result, 5, PyLong_FromSize_t(sizeof(unsigned int)));
+                PyTuple_SetItem(result, 6, PyLong_FromSize_t(sizeof(long)));
+                PyTuple_SetItem(result, 7, PyLong_FromSize_t(sizeof(unsigned long)));
+                PyTuple_SetItem(result, 8, PyLong_FromSize_t(sizeof(Py_ssize_t)));
+                return result;
             }
             ''',
             cmembers="""
@@ -152,7 +166,10 @@ class TestMethod(object):
             {"member_ulonglong", T_ULONGLONG, offsetof(TestMemberObject, member_ulonglong), 0, "ulonglong member"},
             {"member_pyssizet", T_PYSSIZET, offsetof(TestMemberObject, member_pyssizet), 0, "pyssizet member"}
             """,
-            tp_methods='{"setString", (PyCFunction)setString, METH_O, ""}',
+            tp_methods='''
+            {"set_string", (PyCFunction)set_string, METH_O, ""},
+            {"get_sizes", (PyCFunction)get_sizes, METH_NOARGS, ""}
+            ''',
         )
 
         obj = TestMember()
@@ -190,9 +207,18 @@ class TestMethod(object):
         import warnings
         warnings.simplefilter("ignore")
 
+        # char, uchar, short, ushort, int, uint, long, ulong, Py_ssize_t
+        sizes = obj.get_sizes()
+        max_values = [0] * len(sizes)
+        overflow_val = [0] * len(sizes)
+        for i, size in enumerate(sizes):
+            if i % 2 == 0:
+                max_values[i] = (1 << (size * 8 - 1)) - 1
+                overflow_val[i] = -(max_values[i]+1)
+            else:
+                max_values[i] = (1 << (size * 8)) - 1
+
         # all int-like members smaller than C long
-        max_values = (0x7F, 0xFF, 0x7FFF, 0xFFFF, 0x7FFFFFFF, 0xFFFFFFFF)
-        overflow_val = (-(0x7F+1), 0, -(0x7FFF+1), 0, -(0x7FFFFFFF+1), 0)
         for i, m in enumerate(("member_byte", "member_ubyte", "member_short", "member_ushort", "member_int",
                                "member_uint")):
             assert type(getattr(obj, m)) is int
@@ -202,7 +228,8 @@ class TestMethod(object):
             assert getattr(obj, m) == max_values[i], "member %s; was: %r" % (m, getattr(obj, m))
             # max_value + 1 will be truncated to -1
             setattr(obj, m, max_values[i] + 1)
-            assert getattr(obj, m) == overflow_val[i], "was: %r" % getattr(obj, m)
+            val = getattr(obj, m)
+            assert val != max_values[i], "was: %r" % getattr(obj, m)
             assert_raises(TypeError, setattr, obj, m, "hello")
             assert getattr(obj, m) == overflow_val[i], "was: %r" % getattr(obj, m)
 
@@ -240,24 +267,8 @@ class TestMethod(object):
         assert obj.member_string is None
         assert_raises(TypeError, delattr, obj, "member_string")
         assert_raises(TypeError, setattr, obj, "member_string", "hello")
-        obj.setString("hello")
+        obj.set_string("hello")
         assert type(obj.member_string) is str
         assert obj.member_string == "hello"
 
         warnings.resetwarnings()
-
-# class TestPyMethod(CPyExtTestCase):
-#     def compile_module(self, name):
-#         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-#         super().compile_module(name)
-#
-#     test_PyMethod_New = CPyExtFunction(
-#         lambda args: types.MethodType(*args),
-#         lambda: (
-#             (list.append, 6),
-#         ),
-#         resultspec="O",
-#         argspec='OO',
-#         arguments=["PyObject* func", "PyObject* self"],
-#         cmpfunc=unhandled_error_compare
-#     )
