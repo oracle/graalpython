@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION;
@@ -48,6 +47,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CAN_ONLY_ASSIGN_SEQUEN
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGERS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEX;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
@@ -127,17 +127,6 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                 pySequenceSetItem.executeWith(frame, self, i, args[i]);
             }
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    protected abstract static class ClassGetitemNode extends PythonBinaryBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object Py_GenericAlias(CDataObject self, Object o) {
-            throw raise(NotImplementedError); // TODO:
         }
     }
 
@@ -332,6 +321,14 @@ public class PyCArrayBuiltins extends PythonBuiltins {
         static int Array_length(CDataObject self) {
             return self.b_length;
         }
+    }
 
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object classGetItem(Object cls, Object key) {
+            return factory().createGenericAlias(cls, key);
+        }
     }
 }

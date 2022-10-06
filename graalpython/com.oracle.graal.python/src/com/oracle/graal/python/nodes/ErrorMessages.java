@@ -1008,6 +1008,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTING_COLON_DELIMITER = tsLiteral("Expecting ':' delimiter");
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
     public static final TruffleString EXPECTING_VALUE = tsLiteral("Expecting value");
+    public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
@@ -1192,6 +1193,13 @@ public abstract class ErrorMessages {
     public static final TruffleString KEYS_MUST_BE_STR_INT___NOT_P = tsLiteral("keys must be str, int, float, bool or None, not %p");
     public static final TruffleString CAN_ONLY_APPEND_ARRAY_TO_ARRAY = tsLiteral("can only append array (not \"%p\") to array");
     public static final TruffleString CAN_ONLY_EXTEND_ARRAY_WITH_ARRAY = tsLiteral("can only extend array (not \"%p\") with array");
+    public static final TruffleString THERE_ARE_NO_TYPE_VARIABLES_LEFT_IN_S = tsLiteral("There are no type variables left in %s");
+    public static final TruffleString TOO_S_ARGUMENTS_FOR_S = tsLiteral("Too %s arguments for %s");
+    public static final TruffleString ISINSTANCE_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC = tsLiteral("isinstance() argument 2 cannot be a parameterized generic");
+    public static final TruffleString ISSUBCLASS_ARG_2_CANNOT_BE_A_PARAMETERIZED_GENERIC = tsLiteral("issubclass() argument 2 cannot be a parameterized generic");
+    public static final TruffleString ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC = tsLiteral("isinstance() argument 2 cannot contain a parameterized generic");
+    public static final TruffleString ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC = tsLiteral("issubclass() argument 2 cannot contain a parameterized generic");
+    public static final TruffleString ISSUBCLASS_ARG_1_MUST_BE_A_CLASS = tsLiteral("issubclass() arg 1 must be a class");
 
     // ctypes
     public static final TruffleString S_SYMBOL_IS_MISSING = tsLiteral("%s symbol is missing");

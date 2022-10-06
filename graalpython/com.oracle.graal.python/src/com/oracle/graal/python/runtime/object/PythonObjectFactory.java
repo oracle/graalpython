@@ -78,8 +78,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
+import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsToken;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
@@ -191,6 +191,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
+import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
@@ -1458,5 +1460,23 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PContextVarsToken createContextVarsToken(PContextVar var, Object oldValue) {
         return trace(new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, getShape(PythonBuiltinClassType.ContextVarsToken)));
+    }
+
+    public final PGenericAlias createGenericAlias(Object cls, Object origin, Object arguments) {
+        PTuple argumentsTuple;
+        if (arguments instanceof PTuple) {
+            argumentsTuple = (PTuple) arguments;
+        } else {
+            argumentsTuple = createTuple(new Object[]{arguments});
+        }
+        return trace(new PGenericAlias(cls, getShape(cls), origin, argumentsTuple));
+    }
+
+    public final PGenericAlias createGenericAlias(Object origin, Object arguments) {
+        return createGenericAlias(PythonBuiltinClassType.PGenericAlias, origin, arguments);
+    }
+
+    public final PUnionType createUnionType(Object[] args) {
+        return trace(new PUnionType(PythonBuiltinClassType.PUnionType, getShape(PythonBuiltinClassType.PUnionType), createTuple(args)));
     }
 }

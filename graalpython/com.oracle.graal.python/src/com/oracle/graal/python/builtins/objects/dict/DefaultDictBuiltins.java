@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MISSING__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
 
 import java.util.List;
 
@@ -53,6 +56,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -70,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -160,7 +165,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
                 if (newDefault != PNone.NONE && !callableCheckNode.execute(newDefault)) {
-                    throw raise(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
+                    throw raise(TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             }
@@ -183,6 +188,34 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object get(PDefaultDict self, @SuppressWarnings("unused") PNone value) {
             return self.getDefaultFactory();
+        }
+    }
+
+    @Builtin(name = J___OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2, reverseOperation = true)
+    @GenerateNodeFactory
+    abstract static class OrNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object or(VirtualFrame frame, PDict self, PDict other,
+                        @Cached GetClassNode getClassNode,
+                        @Cached CallNode callNode,
+                        @Cached DictNodes.UpdateNode updateNode) {
+            PDefaultDict dd = (PDefaultDict) (self instanceof PDefaultDict ? self : other);
+            Object type = getClassNode.execute(dd);
+            Object result = callNode.execute(frame, type, dd.getDefaultFactory(), self);
+            if (result instanceof PDefaultDict) {
+                updateNode.execute(frame, (PDefaultDict) result, other);
+                return result;
+            } else {
+                /* Cpython doesn't check for this and ends up with SystemError */
+                throw raise(TypeError);
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object or(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

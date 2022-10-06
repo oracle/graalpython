@@ -333,6 +333,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -559,6 +560,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),
                         new TokenBuiltins(),
+                        new GenericAliasBuiltins(),
+                        new com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),

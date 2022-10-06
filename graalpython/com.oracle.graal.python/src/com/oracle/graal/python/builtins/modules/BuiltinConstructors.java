@@ -163,6 +163,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.CreateTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -2820,6 +2821,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         PSimpleNamespace doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createSimpleNamespace(self);
+        }
+    }
+
+    @Builtin(name = "GenericAlias", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PGenericAlias)
+    @GenerateNodeFactory
+    abstract static class GenericAliasNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        PGenericAlias doit(Object cls, Object origin, Object arguments) {
+            return factory().createGenericAlias(cls, origin, arguments);
         }
     }
 }

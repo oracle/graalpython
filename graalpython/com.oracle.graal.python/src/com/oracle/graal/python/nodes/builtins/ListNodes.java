@@ -306,7 +306,7 @@ public abstract class ListNodes {
         }
 
         @Specialization
-        public void appendObjectGeneric(PList list, Object value,
+        void appendObjectGeneric(PList list, Object value,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "getUpdateStoreProfile()", uncached = "getUpdateStoreProfileUncached()", dimensions = 1) BranchProfile[] updateStoreProfile) {
             if (updateStoreProfile[0] == null) {
