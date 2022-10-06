@@ -2072,10 +2072,10 @@ public abstract class CExtNodes {
                         @Cached ToBorrowedRefNode toSulongNode2,
                         @Cached ToBorrowedRefNode toSulongNode4) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
-            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset]);
-            dest[destOffset + 2] = args[argsOffset + 1];
-            dest[destOffset + 3] = args[argsOffset + 2];
-            dest[destOffset + 4] = toSulongNode4.execute(args[argsOffset + 3]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+            dest[destOffset + 3] = args[argsOffset + 3];
+            dest[destOffset + 4] = toSulongNode4.execute(args[argsOffset + 4]);
         }
 
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 5)"})

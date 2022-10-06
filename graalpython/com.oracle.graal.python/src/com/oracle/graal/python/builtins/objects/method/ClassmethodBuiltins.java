@@ -144,10 +144,16 @@ public class ClassmethodBuiltins extends PythonBuiltins {
             return factory.createMethod(self, func);
         }
 
-        @Specialization
+        @Specialization(guards = "!func.needsDeclaringType()")
         Object methodBuiltin(Object self, PBuiltinFunction func,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createBuiltinMethod(self, func);
+        }
+
+        @Specialization(guards = "func.needsDeclaringType()")
+        Object methodBuiltinWithDeclaringType(Object self, PBuiltinFunction func,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createBuiltinMethod(self, func, func.getEnclosingType());
         }
 
         @Specialization(guards = "!isFunction(func)")

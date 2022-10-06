@@ -142,6 +142,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return (flags & CExtContext.METH_STATIC) != 0;
     }
 
+    public boolean needsDeclaringType() {
+        return (flags & CExtContext.METH_METHOD) != 0;
+    }
+
     @TruffleBoundary
     public static int getFlags(Builtin builtin, RootCallTarget callTarget) {
         return getFlags(builtin, ((PRootNode) callTarget.getRootNode()).getSignature());

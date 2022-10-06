@@ -432,16 +432,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateBuiltinMethod", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class CreateBuiltinMethodNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object runWithoutCWrapper(PBuiltinFunction descriptor, Object self) {
-            return factory().createBuiltinMethod(self, descriptor);
-        }
-    }
-
     @Builtin(name = "import_c_func", minNumOfPositionalArgs = 2, parameterNames = {"name", "capi_library"})
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
@@ -1035,15 +1025,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
-        }
-    }
-
-    @Builtin(name = "PyTruffle_BuiltinMethod", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class BuiltinMethodNode extends PythonBuiltinNode {
-        @Specialization
-        Object call(Object self, PBuiltinFunction function) {
-            return factory().createBuiltinMethod(self, function);
         }
     }
 
