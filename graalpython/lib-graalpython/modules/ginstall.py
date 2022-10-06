@@ -86,7 +86,7 @@ def get_module_name(package_name):
 
 def get_path_env_var(var):
     env_var = os.environ.get(var, None)
-    if isinstance(env_var, str) and env_var.lower() is 'none':
+    if isinstance(env_var, str) and env_var.lower() == 'none':
         env_var = None
     if isinstance(env_var, str) and not os.path.exists(env_var):
         env_var = None
@@ -506,6 +506,10 @@ library_dirs = {lapack_lib}"""
     @pip_package()
     def cppy(**kwargs):
         install_from_pypi("cppy==1.1.0", **kwargs)
+
+    @pip_package()
+    def tox(**kwargs):
+        install_from_pypi("tox==3.24.5", **kwargs)
 
     @pip_package()
     def cassowary(**kwargs):
