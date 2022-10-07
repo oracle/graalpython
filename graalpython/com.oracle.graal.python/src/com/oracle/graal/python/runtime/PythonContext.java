@@ -673,6 +673,7 @@ public final class PythonContext extends Python3Core {
     private final ChildContextData childContextData;
     private final SharedMultiprocessingData sharedMultiprocessingData;
 
+    @CompilationFinal private boolean codecsInitialized;
     private final List<Object> codecSearchPath = new ArrayList<>();
     private final Map<TruffleString, PTuple> codecSearchCache = new HashMap<>();
     private final Map<TruffleString, Object> codecErrorRegistry = new HashMap<>();
@@ -692,6 +693,14 @@ public final class PythonContext extends Python3Core {
 
     public List<Object> getCodecSearchPath() {
         return codecSearchPath;
+    }
+
+    public boolean isCodecsInitialized() {
+        return codecsInitialized;
+    }
+
+    public void markCodecsInitialized() {
+        this.codecsInitialized = true;
     }
 
     public Map<TruffleString, PTuple> getCodecSearchCache() {

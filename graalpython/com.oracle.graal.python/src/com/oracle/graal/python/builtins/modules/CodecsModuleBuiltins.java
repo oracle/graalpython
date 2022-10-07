@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitVal
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ENCODINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
@@ -126,6 +127,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -879,6 +881,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
             PythonContext context = getContext();
+            ensureRegistryInitialized(context);
             PTuple result = getSearchPath(context, normalizedEncoding);
             if (hasSearchPathProfile.profile(result != null)) {
                 return result;
@@ -887,7 +890,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 PythonModule codecs = context.lookupBuiltinModule(T__CODECS_TRUFFLE);
                 result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, context.factory());
             } else {
-                for (Object func : getSearchPaths(context)) {
+                Object[] searchPaths = getSearchPaths(context);
+                for (Object func : searchPaths) {
                     Object obj = callNode.executeObject(func, normalizedEncoding);
                     if (obj != PNone.NONE) {
                         if (isTupleProfile.profile(!isTupleInstanceCheck(frame, obj, 4, typeCheck, sizeNode))) {
@@ -926,13 +930,23 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         return typeCheck.execute(result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, result) == len;
     }
 
+    private static void ensureRegistryInitialized(PythonContext context) {
+        if (!context.isCodecsInitialized()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            AbstractImportNode.importModule(T_ENCODINGS);
+            context.markCodecsInitialized();
+        }
+    }
+
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "callableCheckNode.execute(searchFunction)", limit = "1")
         Object lookup(Object searchFunction,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
-            add(PythonContext.get(this), searchFunction);
+            PythonContext context = PythonContext.get(this);
+            ensureRegistryInitialized(context);
+            add(context, searchFunction);
             return PNone.NONE;
         }
 

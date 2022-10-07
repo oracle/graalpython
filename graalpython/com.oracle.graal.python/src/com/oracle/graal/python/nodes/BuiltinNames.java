@@ -226,6 +226,9 @@ public abstract class BuiltinNames {
     public static final String J_ENCODE = "encode";
     public static final TruffleString T_ENCODE = tsLiteral(J_ENCODE);
 
+    public static final String J_ENCODINGS = "encodings";
+    public static final TruffleString T_ENCODINGS = tsLiteral(J_ENCODINGS);
+
     public static final String J_DECODE = "decode";
     public static final TruffleString T_DECODE = tsLiteral(J_DECODE);
 
