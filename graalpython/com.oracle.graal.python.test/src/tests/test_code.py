@@ -83,8 +83,6 @@ def test_firstlineno():
 
 
 def test_code_attributes():
-    import sys
-
     code = wrapper().__code__
     assert code.co_argcount == 3
     assert code.co_kwonlyargcount == 0
@@ -94,12 +92,10 @@ def test_code_attributes():
     assert not code.co_flags & (1 << 2)
     assert not code.co_flags & (1 << 3)
     assert {'set()', 'expected TypeError'}.issubset(code.co_consts)
-    # assert set(code.co_names) == {'set', 'TypeError', 'print'}
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
     assert code.co_filename.endswith("test_code.py")
     assert code.co_name == "my_func"
     assert code.co_firstlineno == 51
-    # assert code.co_lnotab == b'\x00\x01\x0c\x01\x0c\x01\x06\x02\x15\x03\x03\x01\x0e\x01\r\x01\x05\x02'
     assert set(code.co_freevars) == {'values'}
     assert set(code.co_cellvars) == {'kwarg_other', 'loc_2'}
 
@@ -145,7 +141,6 @@ def test_code_copy():
 
 
 def test_module_code():
-    import sys
     m = __import__('package.moduleA')
     with open(m.__file__, 'r') as MODULE:
         source = MODULE.read()
@@ -153,25 +148,13 @@ def test_module_code():
         assert code.co_argcount == 0
         assert code.co_kwonlyargcount == 0
         assert code.co_nlocals == 0
-        # assert code.co_stacksize == 0
-        # assert code.co_flags == 0
         assert {'PACKAGE DOC', 'after importing moduleY'}.issubset(set(code.co_consts))
-        # assert set(code.co_names) == set()
         assert set(code.co_varnames) == set()
         assert code.co_filename.endswith("__init__.py")
         assert code.co_name.startswith("<module")
         assert code.co_firstlineno == 1
         assert code.co_freevars == tuple()
         assert code.co_cellvars == tuple()
-
-
-# def test_codestring():
-#     def foo():
-#         pass
-#
-#     ct = type(foo.__code__)
-#     del foo
-#     ct(2, 0, 0, 128, 0, b"lambda a,b: a+b", tuple(), ("a", "b"), tuple(), "hello.py", "<lambda>", 0, b"", tuple(), tuple())
 
 
 def test_function_code_consts():

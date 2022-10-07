@@ -177,7 +177,7 @@ public final class PCode extends PythonBuiltinObject {
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
         this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, codeUnit.names,
-                        codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, codeUnit.startLine, codeUnit.srcOffsetTable);
+                        codeUnit.varnames, codeUnit.freevars, codeUnit.cellvars, null, codeUnit.name, -1, codeUnit.srcOffsetTable);
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names,
@@ -274,7 +274,11 @@ public final class PCode extends PythonBuiltinObject {
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         if (funcRootNode instanceof PBytecodeRootNode) {
-            return ((PBytecodeRootNode) funcRootNode).getCodeUnit().startLine;
+            CodeUnit co = ((PBytecodeRootNode) funcRootNode).getCodeUnit();
+            if ((co.flags & CO_GRAALPYHON_MODULE) != 0) {
+                return 1;
+            }
+            return co.startLine;
         }
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {

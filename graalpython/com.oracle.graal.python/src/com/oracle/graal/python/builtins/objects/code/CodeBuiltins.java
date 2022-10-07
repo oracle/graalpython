@@ -225,6 +225,7 @@ public class CodeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "co_lnotab", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_linetable", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLNoTabNode extends PythonUnaryBuiltinNode {
         @Specialization
