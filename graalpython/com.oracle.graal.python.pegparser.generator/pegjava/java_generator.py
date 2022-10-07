@@ -272,6 +272,7 @@ ACTION_MAPPINGS = {
     '_PyPegen_collect_call_seqs ( p , a , b , EXTRA )': (1, 'this.collectCallSequences(a, b, $RANGE)'),
     '_PyPegen_concatenate_strings ( p , a )': (1, 'this.concatenateStrings(a)'),
     '_PyPegen_function_def_decorators ( p , d , f )': (1, 'factory.createFunctionDefWithDecorators(f,d)'),
+    '_PyPegen_interactive_exit ( p )': (1, 'interactiveExit()'),
     '_PyPegen_join_names_with_dot ( p , a , b )': (1, 'this.joinNamesWithDot(a,b)'),
     '_PyPegen_join_sequences ( p , a , b )': (1, 'this.join(a,b)'),
     '_PyPegen_key_value_pair ( p , NULL , a )': (1, 'new KeyValuePair(null,a)'),
@@ -345,9 +346,6 @@ ACTION_MAPPINGS = {
     'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )': (1, 'raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns")'),
 
     # TODO
-    # Interactive mode:
-    '_PyPegen_interactive_exit ( p )': (1, '@_PyPegen_interactive_exit ( p )'),
-    #
     # compile(..., mode='func_type') - used by ast module only
     '_PyAST_FunctionType ( a , b , p -> arena )': (1, '@_PyAST_FunctionType ( a , b , p -> arena )'),
 }

@@ -1161,9 +1161,7 @@ public final class Parser extends AbstractParser {
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
             {
-                // TODO: node.action: _PyPegen_interactive_exit ( p )
-                ruleNotImplemented("_PyPegen_interactive_exit ( p )");
-                _res = null;
+                _res = interactiveExit();
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 return (StmtTy[])_res;
             }

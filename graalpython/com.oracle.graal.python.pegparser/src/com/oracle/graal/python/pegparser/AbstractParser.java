@@ -279,6 +279,9 @@ abstract class AbstractParser {
      */
     public Token getAndInitializeToken() {
         int pos = mark();
+        if (pos < tokenizer.getFill()) {
+            return tokenizer.peekToken(pos);
+        }
         Token token = tokenizer.getToken();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
@@ -1091,6 +1094,15 @@ abstract class AbstractParser {
         // TODO unknown source offsets
         raiseErrorKnownLocation(errorType, new SourceRange(0, 0, t.getCurrentLineNumber(),
                         colOffset >= 0 ? colOffset : 0, t.getCurrentLineNumber(), -1), msg);
+    }
+
+    // Equivalent of _PyPegen_interactive_exit
+    SSTNode interactiveExit() {
+        // This causes the corresponding rule to always fail. CPython also sets a variable to E_EOF
+        // which is later checked in PyRun_InteractiveOneObjectEx to end the REPL. Our REPL handles
+        // it differently - it won't call the parser with an empty string at all. We still need to
+        // fail here in case someone calls compile('', 'single'), but we don't need the error code.
+        return null;
     }
 
     void ruleNotImplemented(String s) {
