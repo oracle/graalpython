@@ -526,6 +526,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String[] args = context.getEnv().getApplicationArguments();
         final PythonObjectFactory factory = PythonObjectFactory.getUncached();
         sys.setAttribute(tsLiteral("argv"), factory.createList(convertToObjectArray(args)));
+        sys.setAttribute(tsLiteral("orig_argv"), factory.createList(convertToObjectArray(PythonOptions.getOrigArgv(core.getContext()))));
 
         TruffleString prefix = context.getSysPrefix();
         for (TruffleString name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
@@ -636,6 +637,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
             result[i] = toTruffleStringUncached(src[i]);
         }
         return result;
+    }
+
+    private static Object[] convertToObjectArray(TruffleString[] arr) {
+        if (arr.length == 0) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+        Object[] objectArr = new Object[arr.length];
+        System.arraycopy(arr, 0, objectArr, 0, arr.length);
+        return objectArr;
     }
 
     @Override

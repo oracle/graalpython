@@ -68,6 +68,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     public static final String SHORT_HELP = "usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
                     "Try `python -h' for more information.";
 
+    public static final String STRING_LIST_DELIMITER = "🏆";
+
     public static void main(String[] args) {
         GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
@@ -81,6 +83,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static long startupNanoTime = -1;
 
     private ArrayList<String> programArgs = null;
+    private ArrayList<String> origArgs = null;
     private String commandString = null;
     private String inputFile = null;
     private boolean isolateFlag = false;
@@ -125,9 +128,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
+        origArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
+            origArgs.add(arg);
             if (arg.startsWith("-")) {
                 if (arg.length() == 1) {
                     // Lone dash should just be skipped
@@ -321,7 +326,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
             if (inputFile != null || commandString != null) {
                 while (argumentIterator.hasNext()) {
-                    programArgs.add(argumentIterator.next());
+                    String a = argumentIterator.next();
+                    programArgs.add(a);
+                    origArgs.add(a);
                 }
                 break;
             }
@@ -353,14 +360,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private String getShortOptionParameter(Iterator<String> argumentIterator, String remainder, char option) {
+        String ret;
         if (remainder.isEmpty()) {
             if (!argumentIterator.hasNext()) {
                 throw abort(String.format("Argument expected for the -%c option\n", option) + SHORT_HELP, 2);
             }
-            return argumentIterator.next();
+            ret = argumentIterator.next();
         } else {
-            return remainder;
+            ret = remainder;
         }
+        origArgs.add(ret);
+        return ret;
     }
 
     @Override
@@ -584,7 +594,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             // strings. See PythonOptions.getExecutableList()
             String[] executableList = getExecutableList();
             executableList[0] = toAbsolutePath(executableList[0]);
-            contextBuilder.option("python.ExecutableList", String.join("🏆", executableList));
+            contextBuilder.option("python.ExecutableList", String.join(STRING_LIST_DELIMITER, executableList));
             // We try locating and loading options from pyvenv.cfg according to PEP405 as long as
             // the user did not explicitly pass some options that would be otherwise loaded from
             // pyvenv.cfg. Notable usage of this feature is GraalPython venvs which generate a
@@ -596,6 +606,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 findAndApplyVenvCfg(contextBuilder, executable);
             }
         }
+
+        Iterator<String> it = origArgs.iterator();
+        if (relaunchArgs != null) {
+            while (it.hasNext()) {
+                if (relaunchArgs.contains(it.next())) {
+                    it.remove();
+                }
+            }
+        }
+        origArgs.add(0, toAbsolutePath(executable));
+        contextBuilder.option("python.OrigArgv", String.join(STRING_LIST_DELIMITER, origArgs));
 
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
