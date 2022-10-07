@@ -40,13 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.complex;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
@@ -54,14 +51,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
@@ -407,18 +402,6 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Fallback
         static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___RDIVMOD__, minNumOfPositionalArgs = 2, reverseOperation = true)
-    @Builtin(name = J___DIVMOD__, minNumOfPositionalArgs = 2)
-    abstract static class DivModNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        @SuppressWarnings("unused")
-        PComplex doComplexDouble(Object right, Object left) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 
@@ -821,28 +804,6 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         PComplex hash(PComplex self) {
             return factory().createComplex(self.getReal(), -self.getImag());
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___FLOORDIV__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FloorDivNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object floorDiv(Object arg) {
-            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
-        }
-    }
-
-    @GenerateNodeFactory
-    @Builtin(name = J___MOD__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class ModNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object mod(Object arg) {
-            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 }

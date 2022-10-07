@@ -216,7 +216,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CANT_SUM_BYTEARRAY = tsLiteral("sum() can't sum bytearray [use b''.join(seq) instead]");
     public static final TruffleString CANT_SUM_BYTES = tsLiteral("sum() can't sum bytes [use b''.join(seq) instead]");
     public static final TruffleString CANT_SUM_STRINGS = tsLiteral("sum() can't sum strings [use ''.join(seq) instead]");
-    public static final TruffleString CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX = tsLiteral("can't take floor or mod of complex number.");
     public static final TruffleString CANT_USE_MATCH_STAR_HERE = tsLiteral("can't use MatchStar here");
     public static final TruffleString CAPI_SYM_NOT_CALLABLE = tsLiteral("C API symbol %s is not callable");
     public static final TruffleString CATCHING_CLS_NOT_ALLOWED = tsLiteral("catching classes that do not inherit from BaseException is not allowed");
@@ -858,8 +857,6 @@ public abstract class ErrorMessages {
     public static final TruffleString FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = tsLiteral("float too large to pack with %s format");
     public static final TruffleString CANNOT_UNPACK_NON_ITERABLE = tsLiteral("cannot unpack non-iterable %p object");
     public static final TruffleString NTOH_PYTHON_STRING_TOO_LARGE_TO_CONVERT = tsLiteral("ntohs: Python int too large to convert to 16-bit unsigned integer (The silent truncation is deprecated)");
-    public static final TruffleString FROM_STRING_IS_DEPRECATED = tsLiteral("fromstring() is deprecated. Use frombytes() instead.");
-    public static final TruffleString TO_STRING_IS_DEPRECATED = tsLiteral("tostring() is deprecated. Use frombytes() instead.");
     public static final TruffleString ARG_1_MUST_BE_UNICODE_NOT_P = tsLiteral("array() argument 1 must be a unicode character, not %p");
     public static final TruffleString UNICODE_ERROR = tsLiteral("(unicode error) %s");
     public static final TruffleString LINE_BUFFERING_ISNT_SUPPORTED = tsLiteral("line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used");
