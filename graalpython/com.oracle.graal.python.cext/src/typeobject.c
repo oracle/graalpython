@@ -1301,3 +1301,14 @@ PyType_GetModule(PyTypeObject *type)
     return et->ht_module;
 
 }
+
+// Taken from CPython
+void *
+PyType_GetModuleState(PyTypeObject *type)
+{
+    PyObject *m = PyType_GetModule(type);
+    if (m == NULL) {
+        return NULL;
+    }
+    return _PyModule_GetState(m);
+}
