@@ -248,6 +248,9 @@ public final class CompilationUnit {
         int flags = 0;
         flags |= takesVarArgs ? PCode.CO_VARARGS : 0;
         flags |= takesVarKeywordArgs ? PCode.CO_VARKEYWORDS : 0;
+        if (scope.isModule()) {
+            flags |= PCode.CO_GRAALPYHON_MODULE;
+        }
         if (scope.isGenerator() && scope.isCoroutine()) {
             flags |= PCode.CO_ASYNC_GENERATOR;
         } else if (scope.isGenerator()) {
