@@ -24,3 +24,16 @@ index cd51dfe6..516fbbd1 100644
              resolved.extend(opts[idx:])
              break
          elif opt == FLAG:
+diff --git a/pyperformance/venv.py b/pyperformance/venv.py
+index 5a70302..1b67c42 100644
+--- a/pyperformance/venv.py
++++ b/pyperformance/venv.py
+@@ -7,7 +7,7 @@ from . import _utils, _pip, _venv
+ 
+ 
+ REQUIREMENTS_FILE = os.path.join(pyperformance.DATA_DIR, 'requirements.txt')
+-PYPERF_OPTIONAL = ['psutil']
++PYPERF_OPTIONAL = []
+ 
+ 
+ class Requirements(object):
