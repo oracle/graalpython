@@ -2180,34 +2180,35 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     // directly called without landing function
     @Builtin(name = "AddMember", takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class AddMemberNode extends PythonVarargsBuiltinNode {
+    public abstract static class AddMemberNode extends PythonVarargsBuiltinNode {
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
-            return execute(frame, self, arguments, keywords);
+            return doWithPrimitives(self, arguments, keywords);
         }
 
+        @TruffleBoundary
         @Specialization
-        int doWithPrimitives(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        int doWithPrimitives(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) {
             try {
                 if (arguments.length != 7) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddMember", 7, arguments.length);
                 }
-                addMember(getLanguage(), arguments[0], arguments[1], arguments[2], castInt(arguments[3]), castInt(arguments[4]), castInt(arguments[5]), arguments[6],
-                                AsPythonObjectNodeGen.getUncached(), CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                Object clazz = AsPythonObjectNodeGen.getUncached().execute(arguments[0]);
+                Object tpDict = AsPythonObjectNodeGen.getUncached().execute(arguments[1]);
+                Object nameObj = AsPythonObjectNodeGen.getUncached().execute(arguments[2]);
+                addMember(getLanguage(), clazz, tpDict, nameObj, castInt(arguments[3]), castInt(arguments[4]), castInt(arguments[5]), arguments[6],
+                                CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
                                 PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
                 return 0;
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
+                TransformExceptionToNativeNodeGen.getUncached().execute(e);
                 return -1;
             }
         }
 
         @TruffleBoundary
-        private static void addMember(PythonLanguage language, Object clsPtr, Object tpDictPtr, Object namePtr, int memberType, int offset, int canSet, Object docPtr,
-                        AsPythonObjectNode asPythonObjectNode,
+        public static void addMember(PythonLanguage language, Object clazz, Object tpDictObj, Object nameObj, int memberType, int offset, int canSet, Object docPtr,
                         CastToTruffleStringNode castToTruffleStringNode,
                         FromCharPointerNode fromCharPointerNode,
                         InteropLibrary docPtrLib,
@@ -2215,11 +2216,10 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         WriteAttributeToDynamicObjectNode writeDocNode,
                         HashingStorageLibrary dictStorageLib) {
 
-            Object clazz = asPythonObjectNode.execute(clsPtr);
-            PDict tpDict = castPDict(asPythonObjectNode.execute(tpDictPtr));
+            PDict tpDict = castPDict(tpDictObj);
             TruffleString memberName;
             try {
-                memberName = castToTruffleStringNode.execute(asPythonObjectNode.execute(namePtr));
+                memberName = castToTruffleStringNode.execute(nameObj);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
             }
