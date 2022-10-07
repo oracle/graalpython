@@ -335,7 +335,7 @@ class SysModuleTest(unittest.TestCase):
         )
 
     # sys._current_frames() is a CPython-only gimmick.
-    @support.impl_detail("sys._current_frames", graalvm=False)
+    @support.impl_detail("sys._current_frames", graalpy=False)
     @threading_helper.reap_threads
     def test_current_frames(self):
         import threading
@@ -879,7 +879,7 @@ class SysModuleTest(unittest.TestCase):
         c = sys.getallocatedblocks()
         self.assertIn(c, range(b - 50, b + 50))
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_is_finalizing(self):
         self.assertIs(sys.is_finalizing(), False)
         # Don't use the atexit module because _Py_Finalizing is only set
@@ -901,7 +901,7 @@ class SysModuleTest(unittest.TestCase):
         rc, stdout, stderr = assert_python_ok('-c', code)
         self.assertEqual(stdout.rstrip(), b'True')
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_issue20602(self):
         # sys.flags and sys.float_info were wiped during shutdown.
         code = """if 1:

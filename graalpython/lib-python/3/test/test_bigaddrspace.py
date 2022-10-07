@@ -57,7 +57,7 @@ class StrTest(unittest.TestCase):
 
     unicodesize = 4
 
-    @support.impl_detail("depends on unicode storage size", graalvm=False)
+    @support.impl_detail("depends on unicode storage size", graalpy=False)
     @bigaddrspacetest
     def test_concat(self):
         try:
@@ -69,7 +69,7 @@ class StrTest(unittest.TestCase):
         finally:
             x = None
 
-    @support.impl_detail("depends on unicode storage size", graalvm=False)
+    @support.impl_detail("depends on unicode storage size", graalpy=False)
     @bigaddrspacetest
     def test_optimized_concat(self):
         try:
@@ -85,7 +85,7 @@ class StrTest(unittest.TestCase):
         finally:
             x = None
 
-    @support.impl_detail("depends on unicode storage size", graalvm=False)
+    @support.impl_detail("depends on unicode storage size", graalpy=False)
     @bigaddrspacetest
     def test_repeat(self):
         try:

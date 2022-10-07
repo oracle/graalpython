@@ -1095,7 +1095,7 @@ class BaseTest:
         self.assertEqual(m.tobytes(), expected)
 
     # The test passes, but it's flaky and no amount of gc.collect calls seems to be enough to make it really reliable
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_weakref(self):
         s = array.array(self.typecode, self.example)
         p = weakref.proxy(s)
@@ -1156,7 +1156,7 @@ class BaseTest:
         a = array.array('B', b"")
         self.assertRaises(BufferError, getbuffer_with_null_view, a)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, array.array,
                                            (self.typecode,))

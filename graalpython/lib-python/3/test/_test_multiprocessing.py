@@ -562,7 +562,7 @@ class _TestProcess(BaseTestCase):
             q.get()
         sys.exit(rc)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_close(self):
         if self.TYPE == "threads":
             self.skipTest('test not appropriate for {}'.format(self.TYPE))
@@ -630,7 +630,7 @@ class _TestProcess(BaseTestCase):
             for p in procs:
                 self.assertIn(p.exitcode, exitcodes)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_lose_target_ref(self):
         c = DummyCallable()
         wr = weakref.ref(c)
@@ -1618,7 +1618,7 @@ class _TestCondition(BaseTestCase):
         if pid is not None:
             os.kill(pid, signal.SIGINT)
 
-    @support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalvm=False)
+    @support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalpy=False)
     def test_wait_result(self):
         if isinstance(self, ProcessesMixin) and sys.platform != 'win32':
             pid = os.getpid()
@@ -2718,7 +2718,7 @@ class _TestPool(BaseTestCase):
         # check that we indeed waited for all jobs
         self.assertGreater(time.monotonic() - t_start, 0.9)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_release_task_refs(self):
         # Issue #29861: task arguments and results should not be kept
         # alive after we are done with them.
@@ -2750,7 +2750,7 @@ class _TestPool(BaseTestCase):
                 pass
         pool.join()
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_resource_warning(self):
         if self.TYPE == 'manager':
             self.skipTest("test not applicable to manager")
@@ -3035,7 +3035,7 @@ class _TestRemoteManager(BaseTestCase):
         # Make queue finalizer run before the server is stopped
         del queue
 
-@support.impl_detail("multiprocessing manager not supported", graalvm=False)
+@support.impl_detail("multiprocessing manager not supported", graalpy=False)
 @hashlib_helper.requires_hashdigest('md5')
 class _TestManagerRestart(BaseTestCase):
 
@@ -3671,7 +3671,7 @@ class _TestHeap(BaseTestCase):
         multiprocessing.heap.BufferWrapper._heap = self.old_heap
         super().tearDown()
 
-    @support.impl_detail("heap/shared memory not supported", graalvm=False)
+    @support.impl_detail("heap/shared memory not supported", graalpy=False)
     def test_heap(self):
         iterations = 5000
         maxblocks = 50
@@ -3736,7 +3736,7 @@ class _TestHeap(BaseTestCase):
         self.assertEqual(len(heap._allocated_blocks), 0, heap._allocated_blocks)
         self.assertEqual(len(heap._len_to_seq), 0)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_free_from_gc(self):
         # Check that freeing of blocks by the garbage collector doesn't deadlock
         # (issue #12352).
@@ -4399,7 +4399,7 @@ class _TestFinalize(BaseTestCase):
         conn.close()
         os._exit(0)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_finalize(self):
         conn, child_conn = self.Pipe()
 
@@ -4411,7 +4411,7 @@ class _TestFinalize(BaseTestCase):
         result = [obj for obj in iter(conn.recv, 'STOP')]
         self.assertEqual(result, ['a', 'b', 'd10', 'd03', 'd02', 'd01', 'e'])
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_thread_safety(self):
         # bpo-24484: _run_finalizers() should be thread-safe
         def cb():
@@ -4583,7 +4583,7 @@ class _TestLogging(BaseTestCase):
 # Check that Process.join() retries if os.waitpid() fails with EINTR
 #
 
-@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalvm=False)
+@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalpy=False)
 class _TestPollEintr(BaseTestCase):
 
     ALLOWED_TYPES = ('processes',)
@@ -4677,7 +4677,7 @@ class OtherTest(unittest.TestCase):
 def initializer(ns):
     ns.test += 1
 
-@support.impl_detail("multiprocessing manager not supported", graalvm=False)
+@support.impl_detail("multiprocessing manager not supported", graalpy=False)
 @hashlib_helper.requires_hashdigest('md5')
 class TestInitializers(unittest.TestCase):
     def setUp(self):
@@ -4895,7 +4895,7 @@ class TestWait(unittest.TestCase):
         sem.release()
         time.sleep(period)
 
-    @support.impl_detail("timing", graalvm=False)
+    @support.impl_detail("timing", graalpy=False)
     def test_wait_integer(self):
         from multiprocessing.connection import wait
 
@@ -4988,7 +4988,7 @@ class TestFlags(unittest.TestCase):
         flags = (tuple(sys.flags), grandchild_flags)
         print(json.dumps(flags))
 
-    @support.impl_detail("Can't pickle <class 'sys.flags'>: it's not the same object as sys.flags", graalvm=False)
+    @support.impl_detail("Can't pickle <class 'sys.flags'>: it's not the same object as sys.flags", graalpy=False)
     def test_flags(self):
         import json
         # start child process using unusual flags
@@ -5151,7 +5151,7 @@ class TestCloseFds(unittest.TestCase):
 # Issue #17097: EINTR should be ignored by recv(), send(), accept() etc
 #
 
-@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalvm=False)
+@support.impl_detail("graalpython fakes multiprocessing processes => os.kill(pid, sig) won't work", graalpy=False)
 class TestIgnoreEINTR(unittest.TestCase):
 
     # Sending CONN_MAX_SIZE bytes into a multiprocessing pipe must block
@@ -5298,7 +5298,7 @@ class TestStartMethod(unittest.TestCase):
             self.fail("failed spawning forkserver or grandchild")
 
 
-@support.impl_detail("resource tracker not supported", graalvm=False)
+@support.impl_detail("resource tracker not supported", graalpy=False)
 @unittest.skipIf(sys.platform == "win32",
                  "test semantics don't make sense on Windows")
 class TestResourceTracker(unittest.TestCase):
@@ -5546,7 +5546,7 @@ class TestPoolNotLeakOnFailure(unittest.TestCase):
         self.assertFalse(
             any(process.is_alive() for process in forked_processes))
 
-@support.impl_detail("multiprocessing manager not supported", graalvm=False)
+@support.impl_detail("multiprocessing manager not supported", graalpy=False)
 @hashlib_helper.requires_hashdigest('md5')
 class TestSyncManagerTypes(unittest.TestCase):
     """Test all the types which can be shared between a parent and a

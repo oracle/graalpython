@@ -107,7 +107,7 @@ class TestSpecifics(unittest.TestCase):
         self.assertEqual(d['z'], 12)
 
     # The code is too long for our parser to process, it results in a stack overflow
-    @support.impl_detail('parser recursion', graalvm=False)
+    @support.impl_detail('parser recursion', graalpy=False)
     def test_extended_arg(self):
         longexpr = 'x = x or ' + '-x' * 2500
         g = {}
@@ -438,7 +438,7 @@ if 1:
         self.assertIn("_A__mangled_mod", A.f.__code__.co_varnames)
         self.assertIn("__package__", A.f.__code__.co_varnames)
 
-    @impl_detail("ast module", graalvm=False)
+    @impl_detail("ast module", graalpy=False)
     def test_compile_ast(self):
         fname = __file__
         if fname.lower().endswith('pyc'):

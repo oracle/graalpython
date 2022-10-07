@@ -30,7 +30,7 @@ class AutoFileTests:
             self.f.close()
         os.remove(TESTFN)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def testWeakRefs(self):
         # verify weak references
         p = proxy(self.f)
@@ -180,7 +180,7 @@ class AutoFileTests:
         finally:
             os.close(fd)
 
-    @support.impl_detail("can cause crashing StackOverflow", graalvm=False)
+    @support.impl_detail("can cause crashing StackOverflow", graalpy=False)
     def testRecursiveRepr(self):
         # Issue #25455
         with swap_attr(self.f, 'name', self.f):

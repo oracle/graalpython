@@ -1029,7 +1029,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(next(it), 0)
         self.assertEqual(next(it), 1)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_free_after_iterating(self):
         check_free_after_iterating(self, iter, SequenceClass, (0,))
 

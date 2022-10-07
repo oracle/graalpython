@@ -364,7 +364,7 @@ class CompressorDecompressorTestCase(unittest.TestCase):
 
     # Pickling raises an exception; there's no way to serialize an lzma_stream.
 
-    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalpy=False)
     def test_pickle(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             with self.assertRaises(TypeError):

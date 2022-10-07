@@ -45,7 +45,7 @@ class TestWeakSet(unittest.TestCase):
     def test_new_or_init(self):
         self.assertRaises(TypeError, WeakSet, [], 2)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_len(self):
         self.assertEqual(len(self.s), len(self.d))
         self.assertEqual(len(self.fs), 1)
@@ -53,7 +53,7 @@ class TestWeakSet(unittest.TestCase):
         support.gc_collect()  # For PyPy or other GCs.
         self.assertEqual(len(self.fs), 0)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_contains(self):
         for c in self.letters:
             self.assertEqual(c in self.s, c in self.d)
@@ -64,7 +64,7 @@ class TestWeakSet(unittest.TestCase):
         support.gc_collect()  # For PyPy or other GCs.
         self.assertNotIn(ustr('F'), self.fs)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_union(self):
         u = self.s.union(self.items2)
         for c in self.letters:
@@ -87,7 +87,7 @@ class TestWeakSet(unittest.TestCase):
         self.assertEqual(self.s | set(self.items2), i)
         self.assertEqual(self.s | frozenset(self.items2), i)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_intersection(self):
         s = WeakSet(self.letters)
         i = s.intersection(self.items2)
@@ -125,7 +125,7 @@ class TestWeakSet(unittest.TestCase):
         self.assertEqual(self.s - set(self.items2), i)
         self.assertEqual(self.s - frozenset(self.items2), i)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_symmetric_difference(self):
         i = self.s.symmetric_difference(self.items2)
         for c in self.letters:
@@ -214,7 +214,7 @@ class TestWeakSet(unittest.TestCase):
         self.assertEqual(self.s, dup)
         self.assertNotEqual(id(self.s), id(dup))
 
-    @support.impl_detail("refcounting", graalvm=False)
+    @support.impl_detail("refcounting", graalpy=False)
     def test_add(self):
         x = ustr('Q')
         self.s.add(x)
@@ -349,7 +349,7 @@ class TestWeakSet(unittest.TestCase):
         s2 = WeakSet()
         self.assertFalse(s1 != s2)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_weak_destroy_while_iterating(self):
         # Issue #7105: iterators shouldn't crash when a key is implicitly removed
         # Create new items to be sure no-one else holds a reference
@@ -366,7 +366,7 @@ class TestWeakSet(unittest.TestCase):
         # The removal has been committed
         self.assertEqual(len(s), len(items))
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_weak_destroy_and_mutate_while_iterating(self):
         # Issue #7105: iterators shouldn't crash when a key is implicitly removed
         items = [ustr(c) for c in string.ascii_letters]
@@ -404,7 +404,7 @@ class TestWeakSet(unittest.TestCase):
             s.clear()
         self.assertEqual(len(s), 0)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_len_cycles(self):
         N = 20
         items = [RefCycle() for i in range(N)]
@@ -425,7 +425,7 @@ class TestWeakSet(unittest.TestCase):
         self.assertIn(n1, (0, 1))
         self.assertEqual(n2, 0)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_len_race(self):
         # Extended sanity checks for len() in the face of cyclic collection
         self.addCleanup(gc.set_threshold, *gc.get_threshold())

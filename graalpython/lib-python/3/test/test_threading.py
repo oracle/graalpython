@@ -229,7 +229,7 @@ class ThreadTests(BaseTestCase):
 
     # PyThreadState_SetAsyncExc() is a CPython-only gimmick, not (currently)
     # exposed at the Python level.  This test relies on ctypes to get at it.
-    @support.impl_detail("ctypes.pythonapi", graalvm=False)
+    @support.impl_detail("ctypes.pythonapi", graalpy=False)
     def test_PyThreadState_SetAsyncExc(self):
         ctypes = import_module("ctypes")
 
@@ -333,7 +333,7 @@ class ThreadTests(BaseTestCase):
         finally:
             threading._start_new_thread = _start_new_thread
 
-    @support.impl_detail("ctypes.pythonapi", graalvm=False)
+    @support.impl_detail("ctypes.pythonapi", graalpy=False)
     def test_finalize_running_thread(self):
         # Issue 1402: the PyGILState_Ensure / _Release functions may be called
         # very late on python exit: on deallocation of a running thread for
@@ -429,7 +429,7 @@ class ThreadTests(BaseTestCase):
         finally:
             sys.setswitchinterval(old_interval)
 
-    @support.impl_detail("refcnt", graalvm=False)
+    @support.impl_detail("refcnt", graalpy=False)
     def test_no_refcycle_through_target(self):
         class RunSelfFunction(object):
             def __init__(self, should_raise):
@@ -648,7 +648,7 @@ class ThreadTests(BaseTestCase):
         self.assertEqual(err, b"")
         self.assertEqual(data, "Thread-1 (func)\nTrue\nTrue\n")
 
-    @support.impl_detail("refcnt", graalvm=False)
+    @support.impl_detail("refcnt", graalpy=False)
     def test_main_thread_during_shutdown(self):
         # bpo-31516: current_thread() should still point to the main thread
         # at shutdown

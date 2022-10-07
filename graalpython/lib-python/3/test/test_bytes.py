@@ -934,7 +934,7 @@ class BaseBytesTest:
         self.assertRaisesRegex(TypeError, r'\bendswith\b', b.endswith,
                                 x, None, None, None)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_free_after_iterating(self):
         test.support.check_free_after_iterating(self, iter, self.type2test)
         test.support.check_free_after_iterating(self, reversed, self.type2test)
@@ -1027,7 +1027,7 @@ class BytesTest(BaseBytesTest, unittest.TestCase):
         self.assertIs(type(BytesSubclass(A())), BytesSubclass)
 
     # Test PyBytes_FromFormat()
-    @test.support.impl_detail("ctypes", graalvm=False)
+    @test.support.impl_detail("ctypes", graalpy=False)
     def test_from_format(self):
         ctypes = import_helper.import_module('ctypes')
         _testcapi = import_helper.import_module('_testcapi')
@@ -1607,7 +1607,7 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         self.assertEqual(b, b"")
         self.assertEqual(c, b"")
 
-    @support.impl_detail("buffer locking", graalvm=False)
+    @support.impl_detail("buffer locking", graalpy=False)
     def test_resize_forbidden(self):
         # #4509: can't resize a bytearray when there are buffer exports, even
         # if it wouldn't reallocate the underlying buffer.
@@ -1645,7 +1645,7 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         from _testcapi import getbuffer_with_null_view
         self.assertRaises(BufferError, getbuffer_with_null_view, bytearray())
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_iterator_pickling2(self):
         orig = bytearray(b'abc')
         data = list(b'qwerty')

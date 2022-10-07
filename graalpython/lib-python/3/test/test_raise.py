@@ -453,7 +453,7 @@ class TestContext(unittest.TestCase):
 
         f()
 
-    @support.impl_detail("relies on reference counting", graalvm=False)
+    @support.impl_detail("relies on reference counting", graalpy=False)
     def test_3611(self):
         import gc
         # A re-raised exception in a __del__ caused the __context__

@@ -137,7 +137,7 @@ class ThreadRunningTests(BasicThreadTest):
                 support.gc_collect()  # For PyPy or other GCs.
             self.assertEqual(thread._count(), orig)
 
-    @support.impl_detail("[GR-30386] skip until implemented", graalvm=False)
+    @support.impl_detail("[GR-30386] skip until implemented", graalpy=False)
     def test_unraisable_exception(self):
         def task():
             started.release()

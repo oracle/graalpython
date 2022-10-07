@@ -54,7 +54,7 @@ class ReTests(unittest.TestCase):
             if pos is not None:
                 self.assertEqual(err.pos, pos)
 
-    @impl_detail("buffer locking", graalvm=False)
+    @impl_detail("buffer locking", graalpy=False)
     def test_keep_buffer(self):
         # See bug 14212
         b = bytearray(b'x')

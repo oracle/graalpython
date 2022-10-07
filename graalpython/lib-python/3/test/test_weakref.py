@@ -851,7 +851,7 @@ class ReferencesTestCase(TestBase):
         # No exception should be raised here
         gc.collect()
 
-    @support.impl_detail("weakref nondeterministic", graalvm=False)
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_classes(self):
         # Check that classes are weakrefable.
         class A(object):
@@ -1122,7 +1122,7 @@ class WeakMethodTestCase(unittest.TestCase):
         gc.collect()
         self.assertIs(r(), None)
 
-    @support.impl_detail("weakref nondeterministic", graalvm=False)
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_callback_when_object_dead(self):
         # Test callback behaviour when object dies first.
         C = self._subclass()
@@ -1207,7 +1207,7 @@ class WeakMethodTestCase(unittest.TestCase):
                 self.assertEqual(q == r, q is r)
                 self.assertEqual(q != r, q is not r)
 
-    @support.impl_detail("weakref nondeterministic", graalvm=False)
+    @support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_hashing(self):
         # Alive WeakMethods are hashable if the underlying object is
         # hashable.
@@ -1947,7 +1947,7 @@ class MappingTestCase(TestBase):
         # copying should not result in a crash.
         self.check_threaded_weak_dict_copy(weakref.WeakKeyDictionary, False)
 
-    @support.impl_detail("refcounting", graalvm=False)
+    @support.impl_detail("refcounting", graalpy=False)
     def test_threaded_weak_key_dict_deepcopy(self):
         # Issue #35615: Weakref keys or values getting GC'ed during dict
         # copying should not result in a crash.

@@ -324,7 +324,7 @@ class CodeConstsTest(unittest.TestCase):
 
 class CodeWeakRefTest(unittest.TestCase):
 
-    @impl_detail("refcounting", graalvm=False)
+    @impl_detail("refcounting", graalpy=False)
     def test_basic(self):
         # Create a code object in a clean environment so that we know we have
         # the only reference to it left.

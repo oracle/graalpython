@@ -250,7 +250,7 @@ class ProcessTestCase(BaseTestCase):
         self.assertIn('stdin', c.exception.args[0])
         self.assertIn('input', c.exception.args[0])
 
-    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalvm=False)
+    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
     def test_check_output_timeout(self):
         # check_output() function with timeout arg
         with self.assertRaises(subprocess.TimeoutExpired) as c:
@@ -1213,7 +1213,7 @@ class ProcessTestCase(BaseTestCase):
         # Subsequent invocations should just return the returncode
         self.assertEqual(p.wait(), 0)
 
-    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalvm=False)
+    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
     def test_wait_timeout(self):
         p = subprocess.Popen([sys.executable,
                               "-c", "import time; time.sleep(0.3)"])
@@ -1606,7 +1606,7 @@ class RunFuncTestCase(BaseTestCase):
         self.assertIn('stdin', c.exception.args[0])
         self.assertIn('input', c.exception.args[0])
 
-    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalvm=False)
+    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalpy=False)
     def test_check_output_timeout(self):
         with self.assertRaises(subprocess.TimeoutExpired) as c:
             cp = self.run_python((
@@ -2109,7 +2109,7 @@ class POSIXProcessTestCase(BaseTestCase):
         error_string = str(err)
         self.assertIn("non-zero exit status 2.", error_string)
 
-    @support.impl_detail("preexec support missing", graalvm=False)
+    @support.impl_detail("preexec support missing", graalpy=False)
     def test_preexec(self):
         # DISCLAIMER: Setting environment variables is *not* a good use
         # of a preexec_fn.  This is merely a test.
@@ -2121,7 +2121,7 @@ class POSIXProcessTestCase(BaseTestCase):
         with p:
             self.assertEqual(p.stdout.read(), b"apple")
 
-    @support.impl_detail("preexec support missing", graalvm=False)
+    @support.impl_detail("preexec support missing", graalpy=False)
     def test_preexec_exception(self):
         def raise_it():
             raise ValueError("What if two swallows carried a coconut?")
@@ -2164,7 +2164,7 @@ class POSIXProcessTestCase(BaseTestCase):
                         os.close(fd)
 
     @unittest.skipIf(not os.path.exists("/dev/zero"), "/dev/zero required.")
-    @support.impl_detail("preexec support missing", graalvm=False)
+    @support.impl_detail("preexec support missing", graalpy=False)
     def test_preexec_errpipe_does_not_double_close_pipes(self):
         """Issue16140: Don't double close pipes on preexec error."""
 
@@ -2178,7 +2178,7 @@ class POSIXProcessTestCase(BaseTestCase):
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE, preexec_fn=raise_it)
 
-    @support.impl_detail("preexec support missing", graalvm=False)
+    @support.impl_detail("preexec support missing", graalpy=False)
     def test_preexec_gc_module_failure(self):
         # This tests the code that disables garbage collection if the child
         # process will execute any Python.
@@ -2610,7 +2610,7 @@ class POSIXProcessTestCase(BaseTestCase):
             for to_fds in itertools.permutations(range(3), 2):
                 self._check_swap_std_fds_with_one_closed(from_fds, to_fds)
 
-    @support.impl_detail("preexec support missing", graalvm=False)
+    @support.impl_detail("preexec support missing", graalpy=False)
     def test_surrogates_error_message(self):
         def prepare():
             raise ValueError("surrogate:\uDCff")
@@ -2686,7 +2686,7 @@ class POSIXProcessTestCase(BaseTestCase):
         exitcode = subprocess.call([program]+args, env=envb)
         self.assertEqual(exitcode, 0)
 
-    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalvm=False)
+    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     def test_pipe_cloexec(self):
         sleeper = support.findfile("input_reader.py", subdir="subprocessdata")
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
@@ -2710,7 +2710,7 @@ class POSIXProcessTestCase(BaseTestCase):
                          "found %r" %
                               (unwanted_fds, result_fds & unwanted_fds))
 
-    @support.impl_detail("[GR-30189] sometimes hangs on graalpython", graalvm=False)
+    @support.impl_detail("[GR-30189] sometimes hangs on graalpython", graalpy=False)
     def test_pipe_cloexec_real_tools(self):
         qcat = support.findfile("qcat.py", subdir="subprocessdata")
         qgrep = support.findfile("qgrep.py", subdir="subprocessdata")
@@ -2752,7 +2752,7 @@ class POSIXProcessTestCase(BaseTestCase):
         p1.stdout.close()
         p2.stdout.close()
 
-    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalvm=False)
+    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     def test_close_fds(self):
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
 
@@ -2801,7 +2801,7 @@ class POSIXProcessTestCase(BaseTestCase):
         self.assertIn(1, remaining_fds, "Subprocess failed")
 
 
-    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalvm=False)
+    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     @unittest.skipIf(sys.platform.startswith("freebsd") and
                      os.stat("/dev").st_dev == os.stat("/dev/fd").st_dev,
                      "Requires fdescfs mounted on /dev/fd on FreeBSD.")
@@ -2885,7 +2885,7 @@ class POSIXProcessTestCase(BaseTestCase):
     # descriptor of a pipe closed in the parent process is valid in the
     # child process according to fstat(), but the mode of the file
     # descriptor is invalid, and read or write raise an error.
-    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalvm=False)
+    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     @support.requires_mac_ver(10, 5)
     def test_pass_fds(self):
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
@@ -2920,7 +2920,7 @@ class POSIXProcessTestCase(BaseTestCase):
                         close_fds=False, pass_fds=(fd, )))
             self.assertIn('overriding close_fds', str(context.warning))
 
-    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalvm=False)
+    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     def test_pass_fds_inheritable(self):
         script = support.findfile("fd_status.py", subdir="subprocessdata")
 
@@ -2951,7 +2951,7 @@ class POSIXProcessTestCase(BaseTestCase):
     # bpo-32270: Ensure that descriptors specified in pass_fds
     # are inherited even if they are used in redirections.
     # Contributed by @izbyshev.
-    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalvm=False)
+    @support.impl_detail("[GR-30188] can fail on JVM due to JVM<->OS interactions happening concurrently", graalpy=False)
     def test_pass_fds_redirected(self):
         """Regression test for https://bugs.python.org/issue32270."""
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
@@ -3024,7 +3024,7 @@ class POSIXProcessTestCase(BaseTestCase):
         finally:
             p.wait()
 
-    @support.impl_detail("relies on GC", graalvm=False)
+    @support.impl_detail("relies on GC", graalpy=False)
     def test_zombie_fast_process_del(self):
         # Issue #12650: on Unix, if Popen.__del__() was called before the
         # process exited, it wouldn't be added to subprocess._active, and would
@@ -3049,7 +3049,7 @@ class POSIXProcessTestCase(BaseTestCase):
             # check that p is in the active processes list
             self.assertIn(ident, [id(o) for o in subprocess._active])
 
-    @support.impl_detail("relies on GC", graalvm=False)
+    @support.impl_detail("relies on GC", graalpy=False)
     def test_leak_fast_process_del_killed(self):
         # Issue #12650: on Unix, if Popen.__del__() was called before the
         # process exited, and the process got killed by a signal, it would never
@@ -3093,7 +3093,7 @@ class POSIXProcessTestCase(BaseTestCase):
         else:
             self.assertNotIn(ident, [id(o) for o in subprocess._active])
 
-    @support.impl_detail("preexec support missing", graalvm=False)
+    @support.impl_detail("preexec support missing", graalpy=False)
     def test_close_fds_after_preexec(self):
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
 

@@ -454,7 +454,7 @@ class BZ2FileTest(BaseTest):
             bz2f.close()
         self.assertRaises(ValueError, bz2f.writable)
 
-    @support.impl_detail("FileIO finalizers", graalvm=False)
+    @support.impl_detail("FileIO finalizers", graalpy=False)
     def testOpenDel(self):
         self.createTempFile()
         for i in range(10000):
@@ -676,7 +676,7 @@ class BZ2CompressorTest(BaseTest):
         finally:
             data = None
 
-    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalpy=False)
     def testPickle(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             with self.assertRaises(TypeError):
@@ -735,7 +735,7 @@ class BZ2DecompressorTest(BaseTest):
             compressed = None
             decompressed = None
 
-    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalvm=False)
+    @support.impl_detail("GR-27707: basicsize for native objects not yet supported", graalpy=False)
     def testPickle(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             with self.assertRaises(TypeError):

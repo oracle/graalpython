@@ -204,7 +204,7 @@ class ImportTests(unittest.TestCase):
         self.assertRaises(SyntaxError,
                           imp.find_module, "badsyntax_pep3120", [path])
 
-    @support.impl_detail("frozen modules backported to 3.8.5 makes this test fail", graalvm=False)
+    @support.impl_detail("frozen modules backported to 3.8.5 makes this test fail", graalpy=False)
     def test_load_from_source(self):
         # Verify that the imp module can correctly load and find .py files
         # XXX (ncoghlan): It would be nice to use import_helper.CleanImport
@@ -446,7 +446,7 @@ class PEP3147Tests(unittest.TestCase):
 
 
 class NullImporterTests(unittest.TestCase):
-    @support.impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
+    @support.impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     @unittest.skipIf(os_helper.TESTFN_UNENCODABLE is None,
                      "Need an undecodeable filename")
     def test_unencodeable(self):

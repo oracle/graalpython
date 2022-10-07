@@ -590,7 +590,7 @@ class TypesTests(unittest.TestCase):
         for code in 'xXobns':
             self.assertRaises(ValueError, format, 0, ',' + code)
 
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_internal_sizes(self):
         self.assertGreater(object.__basicsize__, 0)
         self.assertGreater(tuple.__itemsize__, 0)
@@ -613,7 +613,7 @@ class TypesTests(unittest.TestCase):
         self.assertIsInstance(object().__lt__, types.MethodWrapperType)
         self.assertIsInstance((42).__lt__, types.MethodWrapperType)
 
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_method_descriptor_types(self):
         self.assertIsInstance(str.join, types.MethodDescriptorType)
         self.assertIsInstance(list.append, types.MethodDescriptorType)
@@ -1826,7 +1826,7 @@ class CoroutineTests(unittest.TestCase):
         foo = types.coroutine(foo)
         self.assertIs(aw, foo())
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_async_def(self):
         # Test that types.coroutine passes 'async def' coroutines
         # without modification
@@ -1878,7 +1878,7 @@ class CoroutineTests(unittest.TestCase):
         self.assertIs(foo(), coro)
         self.assertIs(foo().__await__(), coro)
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_duck_gen(self):
         class GenLike:
             def send(self): pass
@@ -1984,7 +1984,7 @@ class CoroutineTests(unittest.TestCase):
         ref = weakref.ref(wrapper)
         self.assertIs(ref(), wrapper)
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_duck_functional_gen(self):
         class Generator:
             """Emulates the following generator (very clumsy):
@@ -2036,7 +2036,7 @@ class CoroutineTests(unittest.TestCase):
         else:
             self.fail('StopIteration was expected')
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_gen(self):
         def gen_func():
             yield 1
@@ -2069,7 +2069,7 @@ class CoroutineTests(unittest.TestCase):
         foo = types.coroutine(foo)
         self.assertIs(foo().__await__(), gen)
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_returning_itercoro(self):
         @types.coroutine
         def gen():
@@ -2087,7 +2087,7 @@ class CoroutineTests(unittest.TestCase):
         foo = types.coroutine(foo)
         self.assertIs(foo(), gencoro)
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_genfunc(self):
         def gen(): yield
         self.assertIs(types.coroutine(gen), gen)

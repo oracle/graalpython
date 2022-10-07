@@ -4449,7 +4449,7 @@ class TestScandir(unittest.TestCase):
         with self.check_no_resource_warning():
             del iterator
 
-    @support.impl_detail("relies on GC", graalvm=False)
+    @support.impl_detail("relies on GC", graalpy=False)
     def test_resource_warning(self):
         self.create_file("file.txt")
         self.create_file("file2.txt")

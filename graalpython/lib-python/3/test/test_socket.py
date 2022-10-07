@@ -863,7 +863,7 @@ class GeneralModuleTests(unittest.TestCase):
                     % (s.family, s.type, s.proto))
         self.assertEqual(repr(s), expected)
 
-    @support.impl_detail("refcounting", graalvm=False)
+    @support.impl_detail("refcounting", graalpy=False)
     def test_weakref(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             p = proxy(s)
@@ -1638,7 +1638,7 @@ class GeneralModuleTests(unittest.TestCase):
     def test_sendall_interrupted_with_timeout(self):
         self.check_sendall_interrupted(True)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_dealloc_warn(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         r = repr(sock)
@@ -4991,7 +4991,7 @@ class UnbufferedFileObjectClassTestCase(FileObjectClassTestCase):
         self.write_file.write(self.write_msg)
         self.write_file.flush()
 
-    @support.impl_detail("refcounting", graalvm=False)
+    @support.impl_detail("refcounting", graalpy=False)
     def testMakefileCloseSocketDestroy(self):
         refcount_before = sys.getrefcount(self.cli_conn)
         self.read_file.close()

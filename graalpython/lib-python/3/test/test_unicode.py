@@ -207,7 +207,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(0, '\u0102' * 10, 'count', '\u0102\U00100304')
 
 
-    @support.impl_detail('GR-26305: string indexing', graalvm=False)
+    @support.impl_detail('GR-26305: string indexing', graalpy=False)
     def test_find(self):
         string_tests.CommonTest.test_find(self)
         # test implementation details of the memchr fast path
@@ -267,7 +267,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(-1, 'a' * 100, 'rfind', '\U00100304a')
         self.checkequal(-1, '\u0102' * 100, 'rfind', '\U00100304\u0102')
 
-    @support.impl_detail('GR-26305: string indexing', graalvm=False)
+    @support.impl_detail('GR-26305: string indexing', graalpy=False)
     def test_index(self):
         string_tests.CommonTest.test_index(self)
         self.checkequalnofix(0, 'abcdefghiabc', 'index',  '')
@@ -479,7 +479,7 @@ class UnicodeTest(string_tests.CommonTest,
         'needs too much memory on a 64-bit platform')
     # CPython creates an intermediate list, so it raises OverflowError on the size
     # We have an optimized implementation that doesn't, so we raise MemoryError
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_join_overflow(self):
         size = int(sys.maxsize**0.5) + 1
         seq = ('A' * size,) * size
@@ -1971,7 +1971,7 @@ class UnicodeTest(string_tests.CommonTest,
                                            'invalid continuation byte')
 
     # Java UTF-8 Charset reports the whole sequence as invalid
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_invalid_cb_for_3bytes_seq(self):
         """
         Test that an 'invalid continuation byte' error is raised when the
@@ -2202,7 +2202,7 @@ class UnicodeTest(string_tests.CommonTest,
             self.assertEqual(str(u.encode(encoding),encoding), u)
 
     # Java charsets sometimes produce a bit different results
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_codecs_charmap(self):
         # 0-127
         s = bytes(range(128))
@@ -2340,7 +2340,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertIs(s.expandtabs(), s)
 
     # Makes assumptions about memory consumption of strings
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_raiseMemError(self):
         if struct.calcsize('P') == 8:
             # 64 bits pointers
@@ -2491,7 +2491,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertTrue(astral >= bmp2)
         self.assertFalse(astral >= astral2)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, str)
         support.check_free_after_iterating(self, reversed, str)
@@ -2560,7 +2560,7 @@ class UnicodeTest(string_tests.CommonTest,
 class CAPITest(unittest.TestCase):
 
     # Test PyUnicode_FromFormat()
-    @support.impl_detail("ctypes", graalvm=False)
+    @support.impl_detail("ctypes", graalpy=False)
     def test_from_format(self):
         import_helper.import_module('ctypes')
         from ctypes import (

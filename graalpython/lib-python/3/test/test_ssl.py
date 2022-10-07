@@ -523,7 +523,7 @@ class BasicSocketTests(unittest.TestCase):
             self.fail("DER-to-PEM didn't include correct footer:\n%r\n" % p2)
 
     # We're not OpenSSL
-    @impl_detail("OpenSSL version", graalvm=False)
+    @impl_detail("OpenSSL version", graalpy=False)
     def test_openssl_version(self):
         n = ssl.OPENSSL_VERSION_NUMBER
         t = ssl.OPENSSL_VERSION_INFO
@@ -1591,7 +1591,7 @@ class ContextTests(unittest.TestCase):
         self.assertRaises(ValueError, ctx.set_ecdh_curve, "foo")
         self.assertRaises(ValueError, ctx.set_ecdh_curve, b"foo")
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     def test_sni_callback(self):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 
@@ -1606,7 +1606,7 @@ class ContextTests(unittest.TestCase):
         ctx.set_servername_callback(None)
         ctx.set_servername_callback(dummycallback)
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     def test_sni_callback_refcycle(self):
         # Reference cycles through the servername callback are detected
         # and cleared.
@@ -1839,7 +1839,7 @@ class ContextTests(unittest.TestCase):
         obj = ctx.wrap_bio(ssl.MemoryBIO(), ssl.MemoryBIO(), server_side=True)
         self.assertIsInstance(obj, MySSLObject)
 
-    @support.impl_detail("not implemented", graalvm=False)
+    @support.impl_detail("not implemented", graalpy=False)
     def test_num_tickest(self):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.assertEqual(ctx.num_tickets, 2)
@@ -2263,7 +2263,7 @@ class SimpleBackgroundTests(unittest.TestCase):
                                     cert_reqs=ssl.CERT_NONE, ciphers="^$:,;?*'dorothyx")
                 s.connect(self.server_addr)
 
-    @support.impl_detail("graalpython loads immediately", graalvm=False)
+    @support.impl_detail("graalpython loads immediately", graalpy=False)
     def test_get_ca_certs_capath(self):
         # capath certs are loaded on request
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -4128,7 +4128,7 @@ class ThreadedTests(unittest.TestCase):
                                    sni_name=hostname)
         self.assertIs(stats['compression'], None)
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     @unittest.skipIf(Py_DEBUG_WIN32, "Avoid mixing debug/release CRT on Windows")
     def test_dh_params(self):
         # Check we can get a connection with ephemeral Diffie-Hellman
@@ -4244,7 +4244,7 @@ class ThreadedTests(unittest.TestCase):
         cert = stats['peercert']
         self.assertIn((('commonName', name),), cert['subject'])
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     def test_sni_callback(self):
         calls = []
         server_context, other_context, client_context = self.sni_contexts()
@@ -4285,7 +4285,7 @@ class ThreadedTests(unittest.TestCase):
         self.check_common_name(stats, SIGNED_CERTFILE_HOSTNAME)
         self.assertEqual(calls, [])
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     def test_sni_callback_alert(self):
         # Returning a TLS alert is reflected to the connecting client
         server_context, other_context, client_context = self.sni_contexts()
@@ -4299,7 +4299,7 @@ class ThreadedTests(unittest.TestCase):
                                        sni_name='supermessage')
         self.assertEqual(cm.exception.reason, 'TLSV1_ALERT_ACCESS_DENIED')
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     def test_sni_callback_raising(self):
         # Raising fails the connection with a TLS handshake failure alert.
         server_context, other_context, client_context = self.sni_contexts()
@@ -4318,7 +4318,7 @@ class ThreadedTests(unittest.TestCase):
                              'SSLV3_ALERT_HANDSHAKE_FAILURE')
             self.assertEqual(catch.unraisable.exc_type, ZeroDivisionError)
 
-    @support.impl_detail("not supported", graalvm=False)
+    @support.impl_detail("not supported", graalpy=False)
     def test_sni_callback_wrong_return_type(self):
         # Returning the wrong return type terminates the TLS connection
         # with an internal error alert.
@@ -4492,7 +4492,7 @@ class ThreadedTests(unittest.TestCase):
                                  'Session refers to a different SSLContext.')
 
 
-@impl_detail("post-handshake auth is not supported on JDK", graalvm=False)
+@impl_detail("post-handshake auth is not supported on JDK", graalpy=False)
 @unittest.skipUnless(has_tls_version('TLSv1_3'), "Test needs TLS 1.3")
 class TestPostHandshakeAuth(unittest.TestCase):
     def test_pha_setter(self):
@@ -4858,7 +4858,7 @@ class TestSSLDebug(unittest.TestCase):
             ctx = ssl._create_stdlib_context()
             self.assertEqual(ctx.keylog_filename, os_helper.TESTFN)
 
-    @support.impl_detail("not supported private debugging interface", graalvm=False)
+    @support.impl_detail("not supported private debugging interface", graalpy=False)
     def test_msg_callback(self):
         client_context, server_context, hostname = testing_context()
 
@@ -4871,7 +4871,7 @@ class TestSSLDebug(unittest.TestCase):
         with self.assertRaises(TypeError):
             client_context._msg_callback = object()
 
-    @support.impl_detail("not supported private debugging interface", graalvm=False)
+    @support.impl_detail("not supported private debugging interface", graalpy=False)
     def test_msg_callback_tls12(self):
         client_context, server_context, hostname = testing_context()
         client_context.maximum_version = ssl.TLSVersion.TLSv1_2

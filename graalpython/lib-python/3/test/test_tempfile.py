@@ -1626,7 +1626,7 @@ class TestTemporaryDirectory(BaseTestCase):
             self.assertNotIn("Exception ", err)
             self.assertIn("ResourceWarning: Implicitly cleaning up", err)
 
-    @impl_detail("finalization", graalvm=False)
+    @impl_detail("finalization", graalpy=False)
     def test_warnings_on_cleanup(self):
         # ResourceWarning will be triggered by __del__
         with self.do_create() as dir:

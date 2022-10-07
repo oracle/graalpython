@@ -411,7 +411,7 @@ class TimeTestCase(unittest.TestCase):
         time.ctime()
         time.ctime(None)
 
-    @support.impl_detail("racy test", graalvm=False)
+    @support.impl_detail("racy test", graalpy=False)
     def test_gmtime_without_arg(self):
         gt0 = time.gmtime()
         gt1 = time.gmtime(None)
@@ -419,7 +419,7 @@ class TimeTestCase(unittest.TestCase):
         t1 = time.mktime(gt1)
         self.assertAlmostEqual(t1, t0, delta=0.2)
 
-    @support.impl_detail("racy test", graalvm=False)
+    @support.impl_detail("racy test", graalpy=False)
     def test_localtime_without_arg(self):
         lt0 = time.localtime()
         lt1 = time.localtime(None)
@@ -743,7 +743,7 @@ class TestPytime(unittest.TestCase):
         self.assertIs(lt.tm_zone, None)
 
 
-@support.impl_detail("internal implementation test: _PyTime_t", graalvm=False)
+@support.impl_detail("internal implementation test: _PyTime_t", graalpy=False)
 @unittest.skipIf(_testcapi is None, 'need the _testcapi module')
 class CPyTimeTestCase:
     """

@@ -120,13 +120,13 @@ class TestUnicodeFiles(unittest.TestCase):
 
     # The 'test' functions are unittest entry points, and simply call our
     # _test functions with each of the filename combinations we wish to test
-    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     def test_single_files(self):
         self._test_single(TESTFN_UNICODE)
         if TESTFN_UNENCODABLE is not None:
             self._test_single(TESTFN_UNENCODABLE)
 
-    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     def test_directories(self):
         # For all 'equivalent' combinations:
         #  Make dir with encoded, chdir with unicode, checkdir with encoded

@@ -83,7 +83,7 @@ f'{a * x()}'"""
         # Make sure x was called.
         self.assertTrue(x.called)
 
-    @impl_detail("ast module", graalvm=False)
+    @impl_detail("ast module", graalpy=False)
     def test_ast_line_numbers(self):
         expr = """
 a = 10
@@ -115,7 +115,7 @@ f'{a * x()}'"""
         self.assertEqual(binop.left.col_offset, 3)
         self.assertEqual(binop.right.col_offset, 7)
 
-    @impl_detail("ast module", graalvm=False)
+    @impl_detail("ast module", graalpy=False)
     def test_ast_line_numbers_multiple_formattedvalues(self):
         expr = """
 f'no formatted values'
@@ -168,7 +168,7 @@ f'eggs {a * x()} spam {b + y()}'"""
         self.assertEqual(binop2.left.col_offset, 23)
         self.assertEqual(binop2.right.col_offset, 27)
 
-    @impl_detail("ast module", graalvm=False)
+    @impl_detail("ast module", graalpy=False)
     def test_ast_line_numbers_nested(self):
         expr = """
 a = 10
@@ -214,7 +214,7 @@ f'{a * f"-{x()}-"}'"""
         self.assertEqual(call.lineno, 3)
         self.assertEqual(call.col_offset, 11)
 
-    @impl_detail("ast module", graalvm=False)
+    @impl_detail("ast module", graalpy=False)
     def test_ast_line_numbers_duplicate_expression(self):
         expr = """
 a = 10
@@ -304,7 +304,7 @@ f'{a * x()} {a * x()} {a * x()}'
         self.assertEqual(name.col_offset, 22)
         self.assertEqual(name.end_col_offset, 25)
 
-    @impl_detail("ast module", graalvm=False)
+    @impl_detail("ast module", graalpy=False)
     def test_ast_line_numbers_multiline_fstring(self):
         # See bpo-30465 for details.
         expr = """

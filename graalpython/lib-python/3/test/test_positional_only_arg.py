@@ -377,7 +377,7 @@ class PositionalOnlyTestCase(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, expected):
             unpickled_defaults(a=1,b=2)
 
-    @support.impl_detail("async support", graalvm=False)
+    @support.impl_detail("async support", graalpy=False)
     def test_async(self):
 
         async def f(a=1, /, b=2):
@@ -430,7 +430,7 @@ class PositionalOnlyTestCase(unittest.TestCase):
 
         self.assertEqual(C().method(), sentinel)
 
-    @support.impl_detail("bytecode, compiler instructions", graalvm=False)
+    @support.impl_detail("bytecode, compiler instructions", graalpy=False)
     def test_annotations_constant_fold(self):
         def g():
             def f(x: not (int is int), /): ...

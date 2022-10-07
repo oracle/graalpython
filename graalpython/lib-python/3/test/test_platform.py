@@ -345,7 +345,7 @@ class PlatformTest(unittest.TestCase):
             else:
                 self.assertEqual(res[2], 'PowerPC')
 
-    @support.impl_detail("fork", graalvm=False)
+    @support.impl_detail("fork", graalpy=False)
     @unittest.skipUnless(sys.platform == 'darwin', "OSX only test")
     def test_mac_ver_with_fork(self):
         # Issue7895: platform.mac_ver() crashes when using fork without exec

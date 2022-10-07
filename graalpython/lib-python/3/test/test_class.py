@@ -445,7 +445,7 @@ class ClassTests(unittest.TestCase):
         del testme.cardinal
         self.assertCallStack([('__delattr__', (testme, "cardinal"))])
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def testDel(self):
         x = []
 

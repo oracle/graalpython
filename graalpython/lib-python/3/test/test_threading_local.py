@@ -28,7 +28,7 @@ class BaseLocalTest:
         self._local_refs(50)
         self._local_refs(100)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def _local_refs(self, n):
         local = self._local()
         weaklist = []
@@ -182,7 +182,7 @@ class BaseLocalTest:
             """To test that subclasses behave properly."""
         self._test_dict_attribute(LocalSubclass)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_cycle_collection(self):
         class X:
             pass

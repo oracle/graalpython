@@ -225,7 +225,7 @@ class AbstractMemoryTests:
             m = None
             # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
-    @test.support.impl_detail("weakref nondeterministic", graalvm=False)
+    @test.support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_gc(self):
         for tp in self._types:
             if not isinstance(tp, type):
@@ -358,7 +358,7 @@ class AbstractMemoryTests:
         self.assertRaises(ValueError, hash, m)
 
     # Even with added GC calls, the test sometimes transiently fails
-    @test.support.impl_detail("weakref nondeterministic", graalvm=False)
+    @test.support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_weakref(self):
         # Check memoryviews are weakrefable
         for tp in self._types:
@@ -466,7 +466,7 @@ class BaseMemorySliceTests:
     def _check_contents(self, tp, obj, contents):
         self.assertEqual(obj[1:7], tp(contents))
 
-    @test.support.impl_detail("refcounting", graalvm=False)
+    @test.support.impl_detail("refcounting", graalpy=False)
     def test_refs(self):
         for tp in self._types:
             m = memoryview(tp(self._source))
@@ -530,7 +530,7 @@ class ArrayMemorySliceSliceTest(unittest.TestCase,
 
 
 class OtherTest(unittest.TestCase):
-    @test.support.impl_detail("ctypes", graalvm=False)
+    @test.support.impl_detail("ctypes", graalpy=False)
     def test_ctypes_cast(self):
         # Issue 15944: Allow all source formats when casting to bytes.
         ctypes = import_helper.import_module("ctypes")

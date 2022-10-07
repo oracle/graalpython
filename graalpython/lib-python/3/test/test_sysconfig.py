@@ -364,7 +364,7 @@ class TestSysConfig(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(my_platform, test_platform)
 
-    @impl_detail("no srcdir", graalvm=False)
+    @impl_detail("no srcdir", graalpy=False)
     def test_srcdir(self):
         # See Issues #15322, #15364.
         srcdir = sysconfig.get_config_var('srcdir')
@@ -415,7 +415,7 @@ class TestSysConfig(unittest.TestCase):
         self.assertEqual(vars['EXT_SUFFIX'], _imp.extension_suffixes()[0])
 
     # We intentionally have a different suffix to avoid clashes with CPython
-    @impl_detail("different suffix", graalvm=False)
+    @impl_detail("different suffix", graalpy=False)
     @unittest.skipUnless(sys.platform == 'linux' and
                          hasattr(sys.implementation, '_multiarch'),
                          'multiarch-specific test')
@@ -434,7 +434,7 @@ class TestSysConfig(unittest.TestCase):
             else: # 8 byte pointer size
                 self.assertTrue(suffix.endswith('x86_64-linux-gnu.so'), suffix)
 
-    @impl_detail("different suffix", graalvm=False)
+    @impl_detail("different suffix", graalpy=False)
     @unittest.skipUnless(sys.platform == 'darwin', 'OS X-specific test')
     def test_osx_ext_suffix(self):
         suffix = sysconfig.get_config_var('EXT_SUFFIX')
@@ -442,7 +442,7 @@ class TestSysConfig(unittest.TestCase):
 
 class MakefileTests(unittest.TestCase):
 
-    @impl_detail("no Makefile", graalvm=False)
+    @impl_detail("no Makefile", graalpy=False)
     @unittest.skipIf(sys.platform.startswith('win'),
                      'Test is not Windows compatible')
     def test_get_makefile_filename(self):

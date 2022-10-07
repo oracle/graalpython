@@ -673,7 +673,7 @@ func_filename = func.__code__.co_filename
         self.assertEqual(mod.code_filename, target)
         self.assertEqual(mod.func_filename, target)
 
-    @impl_detail("GR-26007: code changes do not yet permeate to the AST", graalvm=False)
+    @impl_detail("GR-26007: code changes do not yet permeate to the AST", graalpy=False)
     def test_foreign_code(self):
         py_compile.compile(self.file_name)
         with open(self.compiled_name, "rb") as f:
@@ -1149,7 +1149,7 @@ class ImportTracebackTests(unittest.TestCase):
             self.fail("ImportError should have been raised")
         self.assert_traceback(tb, [__file__])
 
-    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalvm=False)
+    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalpy=False)
     def test_nonexistent_module_nested(self):
         self.create_module("foo", "import nonexistent_xyzzy")
         try:
@@ -1170,7 +1170,7 @@ class ImportTracebackTests(unittest.TestCase):
             self.fail("ZeroDivisionError should have been raised")
         self.assert_traceback(tb, [__file__, 'foo.py'])
 
-    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalvm=False)
+    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalpy=False)
     def test_exec_failure_nested(self):
         self.create_module("foo", "import bar")
         self.create_module("bar", "1/0")
@@ -1275,7 +1275,7 @@ class ImportTracebackTests(unittest.TestCase):
             else:
                 importlib.SourceLoader.exec_module = old_exec_module
 
-    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     @unittest.skipUnless(TESTFN_UNENCODABLE, 'need TESTFN_UNENCODABLE')
     def test_unencodable_filename(self):
         # Issue #11619: The Python parser and the import machinery must not

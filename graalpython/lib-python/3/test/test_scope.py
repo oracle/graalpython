@@ -404,7 +404,7 @@ class ScopeTests(unittest.TestCase):
             self.assertEqual(g.get(), 13)
             """)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def testLeaks(self):
 
         class Foo:

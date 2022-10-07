@@ -372,7 +372,7 @@ class BuiltinTest(unittest.TestCase):
                 rv = ns['f']()
                 self.assertEqual(rv, tuple(expected))
 
-    @impl_detail("async support", graalvm=False)
+    @impl_detail("async support", graalpy=False)
     def test_compile_top_level_await_no_coro(self):
         """Make sure top level non-await codes get the correct coroutine flags"""
         modes = ('single', 'exec')
@@ -393,7 +393,7 @@ class BuiltinTest(unittest.TestCase):
             self.assertNotEqual(co.co_flags & CO_COROUTINE, CO_COROUTINE,
                                 msg=f"source={source} mode={mode}")
 
-    @impl_detail("async support", graalvm=False)
+    @impl_detail("async support", graalpy=False)
     def test_compile_top_level_await(self):
         """Test whether code some top level await can be compiled.
 
@@ -452,7 +452,7 @@ class BuiltinTest(unittest.TestCase):
         finally:
             asyncio.set_event_loop_policy(policy)
 
-    @impl_detail("async support", graalvm=False)
+    @impl_detail("async support", graalpy=False)
     def test_compile_top_level_await_invalid_cases(self):
          # helper function just to check we can run top=level async-for
         async def arange(n):
@@ -490,7 +490,7 @@ class BuiltinTest(unittest.TestCase):
         finally:
             asyncio.set_event_loop_policy(policy)
 
-    @impl_detail("async support", graalvm=False)
+    @impl_detail("async support", graalpy=False)
     def test_compile_async_generator(self):
         """
         With the PyCF_ALLOW_TOP_LEVEL_AWAIT flag added in 3.8, we want to
@@ -2173,7 +2173,7 @@ class TestSorted(unittest.TestCase):
 
 class ShutdownTest(unittest.TestCase):
 
-    @impl_detail("finalization", graalvm=False)
+    @impl_detail("finalization", graalpy=False)
     def test_cleanup(self):
         # Issue #19255: builtins are still available at shutdown
         code = """if 1:

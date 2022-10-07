@@ -46,7 +46,7 @@ class SignalAndYieldFromTest(unittest.TestCase):
 
 class FinalizationTest(unittest.TestCase):
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_frame_resurrect(self):
         # A generator frame can be resurrected by a generator's finalization.
         def gen():
@@ -66,7 +66,7 @@ class FinalizationTest(unittest.TestCase):
         del frame
         support.gc_collect()
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_refcycle(self):
         # A generator caught in a refcycle gets finalized anyway.
         old_garbage = gc.garbage[:]
@@ -965,7 +965,7 @@ Subject: Re: PEP 255: Simple Generators
 
 
 # XXX Truffle change: our random generator generates different numbers
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> while 1: # doctest: +SKIP
 ...     for s in sets:
 ...         print(" %s->%s" % (s, s.find()), end='')
@@ -2208,7 +2208,7 @@ And finalization:
 
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> del g # doctest: +SKIP
 exiting
 
@@ -2227,7 +2227,7 @@ GeneratorExit is not caught by except Exception:
 
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> del g # doctest: +SKIP
 finally
 
@@ -2250,7 +2250,7 @@ RuntimeError: generator ignored GeneratorExit
 Our ill-behaved code should be invoked during GC:
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     g = f()
 ...     next(g)
@@ -2369,7 +2369,7 @@ to test.
 
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     l = Leaker()
 ...     del l

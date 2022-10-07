@@ -162,7 +162,7 @@ class TestPartial:
         self.assertRaises(ZeroDivisionError, self.partial(f), 1, 0)
         self.assertRaises(ZeroDivisionError, self.partial(f, y=0), 1)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_weakref(self):
         f = self.partial(int, base=16)
         p = proxy(f)
