@@ -817,9 +817,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value,
-                        @Cached GetNameNode getName) {
-            throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, getName.execute(cls));
+        Object setBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___BASES__, cls);
         }
 
     }
@@ -1379,7 +1378,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 self.setAbstractClass(isTrueNode.execute(frame, value));
                 return PNone.NONE;
             }
-            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
+            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1394,13 +1393,13 @@ public class TypeBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
+            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         Object set(Object self, Object value) {
-            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
+            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, J___ABSTRACTMETHODS__, self);
         }
     }
 

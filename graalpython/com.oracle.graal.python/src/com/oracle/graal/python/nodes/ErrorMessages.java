@@ -210,7 +210,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CANT_MULTIPLY_SEQ_BY_NON_INT = tsLiteral("can't multiply sequence by non-int of type '%p'");
     public static final TruffleString CANT_SET_N_S = tsLiteral("can't set %N.%s");
     public static final TruffleString CANT_SET_ATTRIBUTES_OF_TYPE = tsLiteral("can't set attributes of %s");
-    public static final TruffleString CANT_SET_ATTRIBUTES_OF_TYPE_S = tsLiteral("can't set attributes of built-in/extension type '%s'");
+    public static final TruffleString CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N = tsLiteral("cannot set %s attribute of immutable type '%N'");
+    public static final TruffleString CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N = tsLiteral("cannot set '%s' attribute of immutable type '%N'");
     public static final TruffleString CANT_SPECIFY_DIRFD_WITHOUT_PATH = tsLiteral("%s: can't specify dir_fd without matching path");
     public static final TruffleString CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = tsLiteral("can't specify a timeout for a non-blocking call");
     public static final TruffleString CANT_SUM_BYTEARRAY = tsLiteral("sum() can't sum bytearray [use b''.join(seq) instead]");
