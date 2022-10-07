@@ -692,7 +692,7 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 
 def install_with_pip(package, msg="", failOnError=False, **kwargs):
-    run_cmd(["pip", "install", package], msg=msg, failOnError=failOnError, **kwargs)
+    run_cmd([sys.executable, "-m", "pip", "install", package], msg=msg, failOnError=failOnError, **kwargs)
 
 
 def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
