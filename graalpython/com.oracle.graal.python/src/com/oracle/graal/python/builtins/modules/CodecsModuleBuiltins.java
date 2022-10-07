@@ -117,13 +117,13 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -831,7 +831,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__truffle_lookup__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class CodecsLookupNode extends PythonBuiltinNode {
+    abstract static class CodecsLookupNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object lookup(TruffleString encoding,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
@@ -928,12 +928,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class RegisterNode extends PythonBuiltinNode {
+    abstract static class RegisterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "callableCheckNode.execute(searchFunction)", limit = "1")
         Object lookup(Object searchFunction,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
             add(PythonContext.get(this), searchFunction);
-            return null;
+            return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
@@ -949,9 +949,25 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "unregister", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object unregister(Object serachFunction) {
+            PythonContext context = PythonContext.get(this);
+            remove(context, serachFunction);
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static void remove(PythonContext context, Object searchFunction) {
+            context.getCodecSearchPath().remove(searchFunction);
+        }
+    }
+
     @Builtin(name = "_forget_codec", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ForgetCodecNode extends PythonBuiltinNode {
+    abstract static class ForgetCodecNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object forget(VirtualFrame frame, PBytesLike encoding,
                         @Cached AsciiDecodeNode asciiDecodeNode) {
@@ -1468,7 +1484,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class CharmapBuildNode extends PythonBuiltinNode {
+    abstract static class CharmapBuildNode extends PythonUnaryBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(TruffleString chars,
