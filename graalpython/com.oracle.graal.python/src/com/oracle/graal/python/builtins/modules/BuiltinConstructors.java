@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ZIP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GETSET_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_WRAPPER_DESCRIPTOR;
@@ -87,7 +88,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -2013,7 +2013,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     "closure"}, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
-        private static final TruffleString T_LAMBDA = tsLiteral("<lambda>");
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs,
@@ -2025,14 +2024,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(T_LAMBDA, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
                         @SuppressWarnings("unused") @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(T_LAMBDA, code, globals, null);
+            return factory().createFunction(T_LAMBDA_NAME, code, globals, null);
         }
 
         @Specialization

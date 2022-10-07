@@ -47,6 +47,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class BuiltinNames {
     // special strings
     public static final String J_LAMBDA_NAME = "<lambda>";
+    public static final TruffleString T_LAMBDA_NAME = tsLiteral(J_LAMBDA_NAME);
 
     // special arg names
     public static final TruffleString T_SELF = tsLiteral("self");

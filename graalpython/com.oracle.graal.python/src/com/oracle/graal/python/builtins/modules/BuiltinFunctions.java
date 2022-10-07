@@ -79,6 +79,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -164,6 +165,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -187,7 +189,6 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -2372,8 +2373,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         PTuple update(PTuple bases, Object[] arguments, int nargs,
                         @Cached PythonObjectFactory factory,
-                        @Cached GetClassNode getMroClass,
-                        @Cached("create(T___MRO_ENTRIES__)") LookupAttributeInMRONode getMroEntries,
+                        @Cached PyObjectGetMethod getMroEntries,
                         @Cached CallBinaryMethodNode callMroEntries) {
             CompilerAsserts.neverPartOfCompilation();
             ArrayList<Object> newBases = null;
@@ -2388,7 +2388,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     continue;
                 }
 
-                Object meth = getMroEntries.execute(getMroClass.execute(base));
+                Object meth = getMroEntries.execute(null, base, T___MRO_ENTRIES__);
                 if (PGuards.isNoValue(meth)) {
                     if (newBases != null) {
                         newBases.add(base);
