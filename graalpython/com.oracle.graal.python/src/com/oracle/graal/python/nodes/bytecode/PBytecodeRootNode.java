@@ -4475,6 +4475,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (!virtualFrame.isObject(stackTop) || !virtualFrame.isObject(stackTop - 2)) {
             generalizeInputs(bci);
             generalizeFrameSlot(virtualFrame, stackTop);
+            generalizeFrameSlot(virtualFrame, stackTop - 2);
         }
         bytecode[bci] = OpCodesConstants.STORE_SUBSCR_OOO;
         return bytecodeStoreSubscrOOO(virtualFrame, stackTop, bci, localNodes, useCachedNodes, bciSlot);
