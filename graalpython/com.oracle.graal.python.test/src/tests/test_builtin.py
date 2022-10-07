@@ -51,6 +51,18 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(ascii(1), "1")
         self.assertEqual(ascii("錦蛇 \t \0 a \x03"), "'\\u9326\\u86c7 \\t \\x00 a \\x03'")
 
+    def test_input(self):
+        import sys
+        class AlwaysLine:
+            def readline(self):
+                return 'line\n'
+        stdin = sys.stdin
+        try:
+            sys.stdin = AlwaysLine()
+            self.assertEqual(input(), 'line')
+        finally:
+            sys.stdin = stdin
+
     def test_chr(self):
         self.assertEqual(chr(32), ' ')
         self.assertEqual(chr(97), 'a')
