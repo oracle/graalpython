@@ -65,18 +65,11 @@ def input(module, prompt=None):
     if prompt is not None:
         print(prompt, end="", flush=hasattr(sys.stdout, "flush"))
 
-    result = []
-    while True:
-        ch = sys.stdin.read(1)
-        if ch:
-            if ch == "\n":
-                break
-            result.append(ch)
-        else:
-            if(len(result) == 0):
-                raise EOFError('EOF when reading a line')
-            break
-    return "".join(result)
+    result = sys.stdin.readline()
+    if result == '':
+        raise EOFError('EOF when reading a line')
+    else:
+        return result if not result.endswith('\n') else result[:-1]
 
 
 class filter(object):
