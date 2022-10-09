@@ -11,6 +11,20 @@ index 977b336..0e61573 100644
          'stdlib_dir (sys)': getattr(sys, '_stdlib_dir', None),
          'stdlib_dir (sysconfig)': (sysconfig.get_path('stdlib')
                                     if 'stdlib' in sysconfig.get_path_names()
+diff --git a/pyperformance/_utils.py b/pyperformance/_utils.py
+index 5126307..5686033 100644
+--- a/pyperformance/_utils.py
++++ b/pyperformance/_utils.py
+@@ -131,7 +131,8 @@ def run_cmd(argv, *, env=None, capture=None, verbose=True):
+ 
+     # XXX Use a logger.
+     if verbose:
+-        print('#', cmdstr)
++        import datetime
++        print(datetime.datetime.now().strftime("[%H:%M:%S]"), '#', cmdstr)
+ 
+     # Explicitly flush standard streams, required if streams are buffered
+     # (not TTY) to write lines in the expected order
 diff --git a/pyperformance/_benchmark.py b/pyperformance/_benchmark.py
 index cd51dfe6..516fbbd1 100644
 --- a/pyperformance/_benchmark.py
