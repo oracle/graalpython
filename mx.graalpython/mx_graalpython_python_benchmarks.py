@@ -110,12 +110,12 @@ DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "sqlite_synth",
     # "sympy",
     "telco",
-    "tornado_http",
+    # "tornado_http",
     "unpack_sequence",
     "unpickle",
     "unpickle_list",
-    "unpickle_pure_python",
-    "xml_etree",
+    # "unpickle_pure_python",
+    # "xml_etree",
 ]
 
 DEFAULT_PYPY_BENCHMARKS = [
