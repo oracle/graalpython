@@ -607,8 +607,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
-        Iterator<String> it = origArgs.iterator();
         if (relaunchArgs != null) {
+            Iterator<String> it = origArgs.iterator();
             while (it.hasNext()) {
                 if (relaunchArgs.contains(it.next())) {
                     it.remove();
