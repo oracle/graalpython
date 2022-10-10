@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-abstract class GraalHPyNativeContext {
+#include "hpy_jni.h"
+#include "com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNITrampolines.h"
+
+#define TRAMPOLINE(name) Java_com_oracle_graal_python_builtins_objects_cext_hpy_jni_GraalHPyJNITrampolines_ ## name
+
+
+/*******************************************************************
+ *                        MANUAL TRAMPOLINES                       *
+ *******************************************************************/
+
+JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugGetbufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_getbufferproc f = (HPyFunc_getbufferproc) target;
+    DHPy_buffer dbuffer;
+    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+    jint result = f(dctx, dh_arg1, &dbuffer, (int) arg3);
+    DHPy_close_and_check(dctx, dh_arg1);
+    _buffer_d2u(dctx, &dbuffer, (UHPy_buffer *) arg2);
+    DHPy_close(dctx, dbuffer.obj);
+    return result;
 }
+
+JNIEXPORT void JNICALL TRAMPOLINE(executeDebugReleasebufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
+    HPyContext *dctx = (HPyContext *) ctx;
+    HPyFunc_releasebufferproc f = (HPyFunc_releasebufferproc) target;
+    DHPy_buffer dbuf;
+    _buffer_u2d(dctx, (UHPy_buffer *) arg2, &dbuf);
+    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+    f(dctx, dh_arg1, &dbuf);
+    DHPy_close_and_check(dctx, dh_arg1);
+    // TODO(fa): should we use DHPy_close_and_check ?
+    DHPy_close(dctx, dbuf.obj);
+}
+
+JNIEXPORT void JNICALL TRAMPOLINE(executeDestroyfunc)(JNIEnv *env, jclass clazz, jlong target, jlong dataptr)
+{
+    HPyFunc_destroyfunc f = (HPyFunc_destroyfunc)target;
+    f((void *)dataptr);
+}
+
+#undef TRAMPOLINE

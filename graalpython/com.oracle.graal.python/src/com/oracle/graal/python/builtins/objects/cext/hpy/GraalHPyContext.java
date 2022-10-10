@@ -80,6 +80,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.jni.GraalHPyJNITrampolines;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1470,6 +1471,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 loadJNIBackend();
+//                GraalHPyUniversalContextJNI.
                 if (initJNI(this, nativePointer) != 0) {
                     throw new RuntimeException("Could not initialize HPy JNI backend.");
                 }
@@ -1544,121 +1546,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @TruffleBoundary
     public static native int strcmp(long s1, long s2);
 
-    /* HPy universal mode: JNI trampoline declarations */
-
-    @TruffleBoundary
-    public static native long executePrimitive1(long target, long arg1);
-
-    @TruffleBoundary
-    public static native long executePrimitive2(long target, long arg1, long arg2);
-
-    @TruffleBoundary
-    public static native long executePrimitive3(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native long executePrimitive4(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native long executePrimitive5(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
-
-    @TruffleBoundary
-    public static native int executeInquiry(long target, long arg1, long arg2);
-
-    @TruffleBoundary
-    public static native int executeSsizeobjargproc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native int executeSsizesizeobjargproc(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
-
-    @TruffleBoundary
-    public static native int executeObjobjproc(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native int executeObjobjargproc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native int executeInitproc(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
-
-    @TruffleBoundary
-    public static native void executeFreefunc(long target, long arg1, long arg2);
-
-    @TruffleBoundary
-    public static native int executeGetbufferproc(long target, long arg1, long arg2, long arg3, int arg4);
-
-    @TruffleBoundary
-    public static native void executeReleasebufferproc(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native long executeRichcomparefunc(long target, long arg1, long arg2, long arg3, int arg4);
-
-    @TruffleBoundary
-    public static native void executeDestructor(long target, long arg1, long arg2);
-
-    /* HPy debug mode: JNI trampoline declarations */
-
-    @TruffleBoundary
-    public static native long executeDebugModuleInit(long target, long arg1);
-
-    @TruffleBoundary
-    public static native long executeDebugUnaryFunc(long target, long arg1, long arg2);
-
-    @TruffleBoundary
-    public static native long executeDebugLenFunc(long target, long arg1, long arg2);
-
-    @TruffleBoundary
-    public static native long executeDebugBinaryFunc(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native long executeDebugGetattrFunc(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native long executeDebugVarargs(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native long executeDebugTernaryFunc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native long executeDebugSsizeSsizeArgFunc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native long executeDebugKeywords(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
-
-    @TruffleBoundary
-    public static native int executeDebugInquiry(long target, long arg1, long arg2);
-
-    @TruffleBoundary
-    public static native int executeDebugSsizeobjargproc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native int executeDebugSsizesizeobjargproc(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
-
-    @TruffleBoundary
-    public static native int executeDebugSetter(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native int executeDebugObjobjproc(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native int executeDebugObjobjargproc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native int executeDebugSetattrFunc(long target, long arg1, long arg2, long arg3, long arg4);
-
-    @TruffleBoundary
-    public static native int executeDebugInitproc(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
-
-    @TruffleBoundary
-    public static native int executeDebugGetbufferproc(long target, long arg1, long arg2, long arg3, int arg4);
-
-    @TruffleBoundary
-    public static native void executeDebugReleasebufferproc(long target, long arg1, long arg2, long arg3);
-
-    @TruffleBoundary
-    public static native long executeDebugRichcomparefunc(long target, long arg1, long arg2, long arg3, int arg4);
-
-    @TruffleBoundary
-    public static native void executeDebugDestructor(long target, long arg1, long arg2);
-
     /* HPY internal JNI trampoline declarations */
 
     @TruffleBoundary
@@ -1672,9 +1559,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     private static native long initJNIDebugModule(long uctxPointer);
-
-    @TruffleBoundary
-    static native void hpyCallDestroyFunc(long nativeSpace, long destroyFunc);
 
     public enum Counter {
         UpcallCast,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,13 +39,21 @@
  * SOFTWARE.
  */
 
+#ifndef SRC_HPY_JNI_H_
+#define SRC_HPY_JNI_H_
+
 #include <hpy.h>
 #include <jni.h>
 #include <stdint.h>
 
+#if defined(_MSC_VER)
+# include <malloc.h>   /* for alloca() */
+#endif
+
 #include "debug_internal.h"
 #include "hpy_native_fast_paths.h"
 
+#define DO_UPCALL_HPY_NOARGS(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
 #define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_HPY0(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
 #define DO_UPCALL_TRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
@@ -98,6 +106,21 @@ static inline jlong from_dh(HPyContext *dctx, DHPy dh_result)
     return result;
 }
 
+#define _ARR_JLONG2DH(DCTX, DST, ARGS, NARGS) \
+    DHPy *DST = (DHPy *)alloca((NARGS) * sizeof(DHPy)); \
+    for (HPy_ssize_t i = 0; i < (NARGS); i++) { \
+        DST[i] = _jlong2dh(DCTX, ((jlong *)(ARGS))[i]); \
+    } \
+
+#define _ARR_DH_CLOSE(DCTX, DH_ARR, NARGS) \
+    for (HPy_ssize_t i = 0; i < (NARGS); i++) { \
+        DHPy_close_and_check((DCTX), (DH_ARR)[i]); \
+    } \
+
+/* just for better readability */
+typedef HPy_buffer DHPy_buffer;
+typedef HPy_buffer UHPy_buffer;
+
 /* Copies everything from 'src' to 'dest' and unwraps the 'obj' debug handle. */
 static inline void
 _buffer_d2u(HPyContext *dctx, const DHPy_buffer *src, UHPy_buffer *dest)
@@ -132,10 +155,6 @@ _buffer_u2d(HPyContext *dctx, const UHPy_buffer *src, DHPy_buffer *dest)
     dest->internal = src->internal;
 }
 
-/* just for better readability */
-typedef HPy_buffer DHPy_buffer;
-typedef HPy_buffer UHPy_buffer;
-
 #define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
 
 _HPy_HIDDEN extern JNIEnv* jniEnv;
@@ -147,3 +166,5 @@ _HPy_HIDDEN void upcallBulkClose(HPyContext *ctx, HPy *items, HPy_ssize_t nitems
 _HPy_HIDDEN int hpy_debug_ctx_init(HPyContext *dctx, HPyContext *uctx);
 
 _HPy_HIDDEN void hpy_debug_ctx_free(HPyContext *dctx);
+
+#endif /* SRC_HPY_JNI_H_ */
