@@ -400,9 +400,10 @@ library_dirs = {lapack_lib}"""
                           pre_install_hook=make_site_cfg, **kwargs)
 
         # print numpy configuration
-        info("----------------------------[ numpy configuration ]----------------------------")
-        run_cmd([sys.executable, "-c", 'import numpy as np; print(np.__version__); print(np.show_config())'])
-        info("-------------------------------------------------------------------------------")
+        if sys.implementation.name != 'graalpy' or __graalpython__.platform_id != 'managed':
+            info("----------------------------[ numpy configuration ]----------------------------")
+            run_cmd([sys.executable, "-c", 'import numpy as np; print(np.__version__); print(np.show_config())'])
+            info("-------------------------------------------------------------------------------")
 
     @pip_package()
     def dateutil(**kwargs):
