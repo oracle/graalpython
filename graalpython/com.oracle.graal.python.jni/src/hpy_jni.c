@@ -58,7 +58,7 @@
 /* definitions for HPyTracker */
 #include "hpy/runtime/ctx_funcs.h"
 
-static JNIEnv* jniEnv;
+_HPy_HIDDEN JNIEnv* jniEnv;
 
 #define ALL_FIELDS \
     FIELD(hpyHandleTable, CLASS_HPYCONTEXT, SIG_JOBJECTARRAY) \
@@ -116,26 +116,6 @@ ALL_UPCALLS
 
 static jmethodID jniMethod_hpy_debug_get_context;
 
-#define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
-#define DO_UPCALL_HPY_NOARGS(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
-#define DO_UPCALL_TRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
-#define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_PTR_NOARGS(jni_ctx, name) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)
-#define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_INT(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_LONG(jni_ctx, name, ...) (long) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_VOID(jni_ctx, name, ...) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
-
-#define HPY_UP(_h) ((jlong)((_h)._i))
-#define PTR_UP jlong
-#define INT_UP jint
-#define LONG_UP jlong
-#define DOUBLE_UP jdouble
-#define SIZE_T_UP jlong
-#define TRACKER_UP(_h) ((jlong)((_h)._i))
-
-#define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
 
 #define MAX_UNCLOSED_HANDLES 32
 static int32_t unclosedHandleTop = 0;
@@ -709,308 +689,244 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
 // HPy debug mode JNI trampolines
 
-#define TRAMPOLINE(name) Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_ ## name
-
-static inline HPy _jlong2h(jlong obj) {
-    return (HPy){(HPy_ssize_t)obj};
-}
-
-static inline jlong _h2jlong(HPy h) {
-    return (jlong)(h._i);
-}
-
-static inline DHPy _jlong2dh(HPyContext *dctx, jlong obj)
-{
-    return DHPy_open(dctx, _jlong2h(obj));
-}
-
-static inline jlong _dh2jlong(HPyContext *dctx, DHPy dh)
-{
-    return _h2jlong(DHPy_unwrap(dctx, dh));
-}
-
-static inline jlong from_dh(HPyContext *dctx, DHPy dh_result)
-{
-    jlong result = _dh2jlong(dctx, dh_result);
-    DHPy_close(dctx, dh_result);
-    return result;
-}
-
-/* just for better readability */
-typedef HPy_buffer DHPy_buffer;
-typedef HPy_buffer UHPy_buffer;
-
-/* Copies everything from 'src' to 'dest' and unwraps the 'obj' debug handle. */
-static inline void
-_buffer_d2u(HPyContext *dctx, const DHPy_buffer *src, UHPy_buffer *dest)
-{
-    dest->buf = src->buf;
-    dest->obj = DHPy_unwrap(dctx, src->obj);
-    dest->len = src->len;
-    dest->itemsize = src->itemsize;
-    dest->readonly = src->readonly;
-    dest->ndim = src->ndim;
-    dest->format = src->format;
-    dest->shape = src->shape;
-    dest->strides = src->strides;
-    dest->suboffsets = src->suboffsets;
-    dest->internal = src->internal;
-}
-
-/* Copies everything from 'src' to 'dest' and opens a debug handle for 'obj'. */
-static inline void
-_buffer_u2d(HPyContext *dctx, const UHPy_buffer *src, DHPy_buffer *dest)
-{
-    dest->buf = src->buf;
-    dest->obj = DHPy_open(dctx, src->obj);
-    dest->len = src->len;
-    dest->itemsize = src->itemsize;
-    dest->readonly = src->readonly;
-    dest->ndim = src->ndim;
-    dest->format = src->format;
-    dest->shape = src->shape;
-    dest->strides = src->strides;
-    dest->suboffsets = src->suboffsets;
-    dest->internal = src->internal;
-}
-
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    return from_dh(dctx, ((DHPy (*)(HPyContext *)) target)(dctx));
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugUnaryFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_unaryfunc f = (HPyFunc_unaryfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_result = f(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg1);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugLenFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_lenfunc f = (HPyFunc_lenfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    jlong result = (jlong) f(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg1);
-    return result;
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugBinaryFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_binaryfunc f = (HPyFunc_binaryfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
-    DHPy dh_result = f(dctx, dh_arg1, dh_arg2);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg2);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugGetattrFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_getattrfunc f = (HPyFunc_getattrfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_result = f(dctx, dh_arg1, (char *) arg2);
-    DHPy_close_and_check(dctx, dh_arg1);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugVarargs)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_varargs f = (HPyFunc_varargs) target;
-    jlong *uh_args = (jlong *) args;
-    DHPy dh_self = _jlong2dh(dctx, self);
-    DHPy *dh_args = (DHPy *)alloca(nargs * sizeof(DHPy));
-    for (jlong i = 0; i < nargs; i++) {
-        dh_args[i] = _jlong2dh(dctx, uh_args[i]);
-    }
-    DHPy dh_result = f(dctx, dh_self, dh_args, (HPy_ssize_t) nargs);
-    DHPy_close_and_check(dctx, dh_self);
-    for (jlong i = 0; i < nargs; i++) {
-        DHPy_close_and_check(dctx, dh_args[i]);
-    }
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugTernaryFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_ternaryfunc f = (HPyFunc_ternaryfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
-    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
-    DHPy dh_result = f(dctx, dh_arg1, dh_arg2, dh_arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg2);
-    DHPy_close_and_check(dctx, dh_arg3);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugSsizeSsizeArgFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_ssizessizeargfunc f = (HPyFunc_ssizessizeargfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_result = f(dctx, dh_arg1, (HPy_ssize_t) arg2, (HPy_ssize_t) arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_keywords f = (HPyFunc_keywords) target;
-    jlong *uh_args = (jlong *) args;
-    DHPy dh_self = _jlong2dh(dctx, self);
-    DHPy *dh_args = (DHPy *)alloca(nargs * sizeof(DHPy));
-    for (jlong i = 0; i < nargs; i++) {
-        dh_args[i] = _jlong2dh(dctx, uh_args[i]);
-    }
-    DHPy dh_kw = _jlong2dh(dctx, kw);
-    DHPy dh_result = f(dctx, dh_self, dh_args, (HPy_ssize_t) nargs, dh_kw);
-    DHPy_close_and_check(dctx, dh_self);
-    for (jlong i = 0; i < nargs; i++) {
-        DHPy_close_and_check(dctx, dh_args[i]);
-    }
-    DHPy_close_and_check(dctx, dh_kw);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInquiry)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_inquiry f = (HPyFunc_inquiry) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    jint result = f(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg1);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSsizeobjargproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_ssizeobjargproc f = (HPyFunc_ssizeobjargproc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
-    jint result = f(dctx, dh_arg1, (HPy_ssize_t) arg2, dh_arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg3);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSsizesizeobjargproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3, jlong arg4) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_ssizessizeobjargproc f = (HPyFunc_ssizessizeobjargproc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg4 = _jlong2dh(dctx, arg4);
-    jint result = f(dctx, dh_arg1, (HPy_ssize_t) arg2, (HPy_ssize_t) arg3, dh_arg4);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg4);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSetter)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_setter f = (HPyFunc_setter) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
-    jint result = f(dctx, dh_arg1, dh_arg2, (char *)arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg2);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugObjobjproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_objobjproc f = (HPyFunc_objobjproc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
-    jint result = f(dctx, dh_arg1, dh_arg2);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg2);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugObjobjargproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_objobjargproc f = (HPyFunc_objobjargproc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
-    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
-    jint result = f(dctx, dh_arg1, dh_arg2, dh_arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg2);
-    DHPy_close_and_check(dctx, dh_arg3);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSetattrFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_setattrfunc f = (HPyFunc_setattrfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
-    jint result = f(dctx, dh_arg1, (char *)arg2, dh_arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg3);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInitproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_initproc f = (HPyFunc_initproc) target;
-    jlong *uh_args = (jlong *) args;
-    DHPy dh_self = _jlong2dh(dctx, self);
-    DHPy *dh_args = (DHPy *)alloca(nargs * sizeof(DHPy));
-    for (jlong i = 0; i < nargs; i++) {
-        dh_args[i] = _jlong2dh(dctx, uh_args[i]);
-    }
-    DHPy dh_kw = _jlong2dh(dctx, kw);
-    jint result = f(dctx, dh_self, dh_args, (HPy_ssize_t) nargs, dh_kw);
-    DHPy_close_and_check(dctx, dh_self);
-    for (jlong i = 0; i < nargs; i++) {
-        DHPy_close_and_check(dctx, dh_args[i]);
-    }
-    DHPy_close_and_check(dctx, dh_kw);
-    return result;
-}
-
-JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugGetbufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_getbufferproc f = (HPyFunc_getbufferproc) target;
-    DHPy_buffer dbuffer;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    jint result = f(dctx, dh_arg1, &dbuffer, (int) arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    _buffer_d2u(dctx, &dbuffer, (UHPy_buffer *) arg2);
-    DHPy_close(dctx, dbuffer.obj);
-    return result;
-}
-
-JNIEXPORT void JNICALL TRAMPOLINE(executeDebugReleasebufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_releasebufferproc f = (HPyFunc_releasebufferproc) target;
-    DHPy_buffer dbuf;
-    _buffer_u2d(dctx, (UHPy_buffer *) arg2, &dbuf);
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    f(dctx, dh_arg1, &dbuf);
-    DHPy_close_and_check(dctx, dh_arg1);
-    // TODO(fa): should we use DHPy_close_and_check ?
-    DHPy_close(dctx, dbuf.obj);
-}
-
-JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugRichcomparefunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_richcmpfunc f = (HPyFunc_richcmpfunc) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
-    DHPy dh_result = f(dctx, dh_arg1, dh_arg2, (int) arg3);
-    DHPy_close_and_check(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg2);
-    return from_dh(dctx, dh_result);
-}
-
-JNIEXPORT void JNICALL TRAMPOLINE(executeDebugDestructor)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
-    HPyContext *dctx = (HPyContext *) ctx;
-    HPyFunc_destructor f = (HPyFunc_destructor) target;
-    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
-    f(dctx, dh_arg1);
-    DHPy_close_and_check(dctx, dh_arg1);
-}
+//#define TRAMPOLINE(name) Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_ ## name
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugModuleInit)(JNIEnv *env, jclass clazz, jlong target, jlong ctx) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    return from_dh(dctx, ((DHPy (*)(HPyContext *)) target)(dctx));
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugUnaryFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_unaryfunc f = (HPyFunc_unaryfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_result = f(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugLenFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_lenfunc f = (HPyFunc_lenfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    jlong result = (jlong) f(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    return result;
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugBinaryFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_binaryfunc f = (HPyFunc_binaryfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
+//    DHPy dh_result = f(dctx, dh_arg1, dh_arg2);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg2);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugGetattrFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_getattrfunc f = (HPyFunc_getattrfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_result = f(dctx, dh_arg1, (char *) arg2);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugVarargs)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_varargs f = (HPyFunc_varargs) target;
+//    jlong *uh_args = (jlong *) args;
+//    DHPy dh_self = _jlong2dh(dctx, self);
+//    DHPy *dh_args = (DHPy *)alloca(nargs * sizeof(DHPy));
+//    for (jlong i = 0; i < nargs; i++) {
+//        dh_args[i] = _jlong2dh(dctx, uh_args[i]);
+//    }
+//    DHPy dh_result = f(dctx, dh_self, dh_args, (HPy_ssize_t) nargs);
+//    DHPy_close_and_check(dctx, dh_self);
+//    for (jlong i = 0; i < nargs; i++) {
+//        DHPy_close_and_check(dctx, dh_args[i]);
+//    }
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugTernaryFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_ternaryfunc f = (HPyFunc_ternaryfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
+//    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
+//    DHPy dh_result = f(dctx, dh_arg1, dh_arg2, dh_arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg2);
+//    DHPy_close_and_check(dctx, dh_arg3);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugSsizeSsizeArgFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_ssizessizeargfunc f = (HPyFunc_ssizessizeargfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_result = f(dctx, dh_arg1, (HPy_ssize_t) arg2, (HPy_ssize_t) arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugKeywords)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_keywords f = (HPyFunc_keywords) target;
+//    jlong *uh_args = (jlong *) args;
+//    DHPy dh_self = _jlong2dh(dctx, self);
+//    DHPy *dh_args = (DHPy *)alloca(nargs * sizeof(DHPy));
+//    for (jlong i = 0; i < nargs; i++) {
+//        dh_args[i] = _jlong2dh(dctx, uh_args[i]);
+//    }
+//    DHPy dh_kw = _jlong2dh(dctx, kw);
+//    DHPy dh_result = f(dctx, dh_self, dh_args, (HPy_ssize_t) nargs, dh_kw);
+//    DHPy_close_and_check(dctx, dh_self);
+//    for (jlong i = 0; i < nargs; i++) {
+//        DHPy_close_and_check(dctx, dh_args[i]);
+//    }
+//    DHPy_close_and_check(dctx, dh_kw);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInquiry)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_inquiry f = (HPyFunc_inquiry) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    jint result = f(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSsizeobjargproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_ssizeobjargproc f = (HPyFunc_ssizeobjargproc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
+//    jint result = f(dctx, dh_arg1, (HPy_ssize_t) arg2, dh_arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg3);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSsizesizeobjargproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3, jlong arg4) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_ssizessizeobjargproc f = (HPyFunc_ssizessizeobjargproc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg4 = _jlong2dh(dctx, arg4);
+//    jint result = f(dctx, dh_arg1, (HPy_ssize_t) arg2, (HPy_ssize_t) arg3, dh_arg4);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg4);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSetter)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_setter f = (HPyFunc_setter) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
+//    jint result = f(dctx, dh_arg1, dh_arg2, (char *)arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg2);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugObjobjproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_objobjproc f = (HPyFunc_objobjproc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
+//    jint result = f(dctx, dh_arg1, dh_arg2);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg2);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugObjobjargproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_objobjargproc f = (HPyFunc_objobjargproc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
+//    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
+//    jint result = f(dctx, dh_arg1, dh_arg2, dh_arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg2);
+//    DHPy_close_and_check(dctx, dh_arg3);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugSetattrFunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jlong arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_setattrfunc f = (HPyFunc_setattrfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg3 = _jlong2dh(dctx, arg3);
+//    jint result = f(dctx, dh_arg1, (char *)arg2, dh_arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg3);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugInitproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong self, jlong args, jlong nargs, jlong kw) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_initproc f = (HPyFunc_initproc) target;
+//    jlong *uh_args = (jlong *) args;
+//    DHPy dh_self = _jlong2dh(dctx, self);
+//    DHPy *dh_args = (DHPy *)alloca(nargs * sizeof(DHPy));
+//    for (jlong i = 0; i < nargs; i++) {
+//        dh_args[i] = _jlong2dh(dctx, uh_args[i]);
+//    }
+//    DHPy dh_kw = _jlong2dh(dctx, kw);
+//    jint result = f(dctx, dh_self, dh_args, (HPy_ssize_t) nargs, dh_kw);
+//    DHPy_close_and_check(dctx, dh_self);
+//    for (jlong i = 0; i < nargs; i++) {
+//        DHPy_close_and_check(dctx, dh_args[i]);
+//    }
+//    DHPy_close_and_check(dctx, dh_kw);
+//    return result;
+//}
+//
+//JNIEXPORT jint JNICALL TRAMPOLINE(executeDebugGetbufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_getbufferproc f = (HPyFunc_getbufferproc) target;
+//    DHPy_buffer dbuffer;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    jint result = f(dctx, dh_arg1, &dbuffer, (int) arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    _buffer_d2u(dctx, &dbuffer, (UHPy_buffer *) arg2);
+//    DHPy_close(dctx, dbuffer.obj);
+//    return result;
+//}
+//
+//JNIEXPORT void JNICALL TRAMPOLINE(executeDebugReleasebufferproc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_releasebufferproc f = (HPyFunc_releasebufferproc) target;
+//    DHPy_buffer dbuf;
+//    _buffer_u2d(dctx, (UHPy_buffer *) arg2, &dbuf);
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    f(dctx, dh_arg1, &dbuf);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    // TODO(fa): should we use DHPy_close_and_check ?
+//    DHPy_close(dctx, dbuf.obj);
+//}
+//
+//JNIEXPORT jlong JNICALL TRAMPOLINE(executeDebugRichcomparefunc)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1, jlong arg2, jint arg3) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_richcmpfunc f = (HPyFunc_richcmpfunc) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    DHPy dh_arg2 = _jlong2dh(dctx, arg2);
+//    DHPy dh_result = f(dctx, dh_arg1, dh_arg2, (int) arg3);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg2);
+//    return from_dh(dctx, dh_result);
+//}
+//
+//JNIEXPORT void JNICALL TRAMPOLINE(executeDebugDestructor)(JNIEnv *env, jclass clazz, jlong target, jlong ctx, jlong arg1) {
+//    HPyContext *dctx = (HPyContext *) ctx;
+//    HPyFunc_destructor f = (HPyFunc_destructor) target;
+//    DHPy dh_arg1 = _jlong2dh(dctx, arg1);
+//    f(dctx, dh_arg1);
+//    DHPy_close_and_check(dctx, dh_arg1);
+//}
