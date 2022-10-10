@@ -409,6 +409,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "Exception type", "Exception value", "Exception traceback",
                                     "Error message", "Object causing the exception"});
 
+    // see stdlib_modules_names.h
     private static final String[] STDLIB_MODULE_NAMES = new String[]{"__future__", "_abc", "_aix_support", "_ast", "_asyncio", "_bisect", "_blake2", "_bootsubprocess", "_bz2", "_codecs", "_codecs_cn",
                     "_codecs_hk", "_codecs_iso2022", "_codecs_jp", "_codecs_kr", "_codecs_tw", "_collections", "_collections_abc", "_compat_pickle", "_compression", "_contextvars", "_crypt", "_csv",
                     "_ctypes", "_curses", "_curses_panel", "_datetime", "_dbm", "_decimal", "_elementtree", "_frozen_importlib", "_frozen_importlib_external", "_functools", "_gdbm", "_hashlib",
