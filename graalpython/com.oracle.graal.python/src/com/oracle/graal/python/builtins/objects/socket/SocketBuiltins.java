@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
@@ -195,9 +194,6 @@ public class SocketBuiltins extends PythonBuiltins {
             // sic! CPython really has __new__ there, even though it's in __init__
             auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
 
-            if (fileno instanceof Double || fileno instanceof PFloat) {
-                throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
-            }
             int fd = asIntNode.execute(frame, fileno);
             if (fd < 0) {
                 throw raise(ValueError, ErrorMessages.NEG_FILE_DESC);
