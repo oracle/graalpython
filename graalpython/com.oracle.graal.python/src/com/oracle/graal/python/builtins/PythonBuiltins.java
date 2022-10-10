@@ -38,6 +38,7 @@ import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -88,6 +89,8 @@ public abstract class PythonBuiltins {
                 assert annotation.extendClasses().length == 0;
                 // for module functions, explicit self is false by default
                 declaresExplicitSelf = builtin.declaresExplicitSelf();
+            } else if (builtin.constructsClass() != PythonBuiltinClassType.nil) {
+                declaresExplicitSelf = false;
             } else {
                 declaresExplicitSelf = true;
             }
@@ -101,8 +104,9 @@ public abstract class PythonBuiltins {
                 // we explicitly do not make these "staticmethods" here, since CPython also doesn't
                 // for builtin types
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(T___NEW__, constructsClass, numDefaults(builtin), flags, callTarget);
+                PBuiltinMethod newMethod = core.factory().createBuiltinMethod(constructsClass, newFunc);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
-                builtinClass.setAttributeUnsafe(T___NEW__, newFunc);
+                builtinClass.setAttributeUnsafe(T___NEW__, newMethod);
                 final Object currentBuiltinDoc = builtinClass.getAttribute(T___DOC__);
                 if (PGuards.isPNone(currentBuiltinDoc)) {
                     builtinClass.setAttribute(T___DOC__, builtinDoc);
