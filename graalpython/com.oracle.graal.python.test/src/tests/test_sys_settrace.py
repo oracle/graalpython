@@ -72,7 +72,7 @@ more_complex.events = [((True,), [(0, 'more_complex', 'call', None),
                                    (4, 'more_complex', 'return', None)])]
 
 
-# there are 5 line events on line 3, since there is the first check of the loop flag, then 4 backward jumps, last one ending the loop
+# there are 4 line events on line 3, since there is the first check of the loop flag, then 4 backward jumps, last one ending the loop
 
 def oneline_loop():
     items = range(0, 3)

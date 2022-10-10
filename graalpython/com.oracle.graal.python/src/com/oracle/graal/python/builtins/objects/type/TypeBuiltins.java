@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASICSIZE__;
@@ -41,6 +42,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
@@ -1451,6 +1453,53 @@ public class TypeBuiltins extends PythonBuiltins {
         Object union(Object self, Object other,
                         @Cached GenericTypeNodes.UnionTypeOrNode orNode) {
             return orNode.execute(self, other);
+        }
+    }
+
+    @Builtin(name = J___ANNOTATIONS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
+    @GenerateNodeFactory
+    abstract static class AnnotationsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        Object get(Object self, @SuppressWarnings("unused") Object value,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode read,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+            Object annotations = read.execute(self, T___ANNOTATIONS__);
+            if (annotations == PNone.NO_VALUE) {
+                annotations = factory().createDict();
+                try {
+                    write.execute(self, T___ANNOTATIONS__, annotations);
+                } catch (PException e) {
+                    throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, T___ANNOTATIONS__);
+                }
+            }
+            return annotations;
+        }
+
+        @Specialization(guards = "isDeleteMarker(value)")
+        Object delete(Object self, @SuppressWarnings("unused") Object value,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode read,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+            Object annotations = read.execute(self, T___ANNOTATIONS__);
+            try {
+                write.execute(self, T___ANNOTATIONS__, PNone.NO_VALUE);
+            } catch (PException e) {
+                throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
+            }
+            if (annotations == PNone.NO_VALUE) {
+                throw raise(AttributeError, new Object[]{T___ANNOTATIONS__});
+            }
+            return PNone.NONE;
+        }
+
+        @Fallback
+        Object set(Object self, Object value,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+            try {
+                write.execute(self, T___ANNOTATIONS__, value);
+            } catch (PException e) {
+                throw raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___ANNOTATIONS__, self);
+            }
+            return PNone.NONE;
         }
     }
 }
