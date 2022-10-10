@@ -28,6 +28,8 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_isupper
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_ljust
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_lower
+*graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_removeprefix
+*graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_removesuffix
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_replace
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_replace_overflow
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_rfind
@@ -169,6 +171,8 @@
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_isupper
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_ljust
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_lower
+*graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_removeprefix
+*graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_removesuffix
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_replace
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_replace_overflow
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_rfind
