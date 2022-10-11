@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_long.LongTest.test__format__
 *graalpython.lib-python.3.test.test_long.LongTest.test_access_to_nonexistent_digit_0
 *graalpython.lib-python.3.test.test_long.LongTest.test_as_integer_ratio
+*graalpython.lib-python.3.test.test_long.LongTest.test_bit_count
 *graalpython.lib-python.3.test.test_long.LongTest.test_bit_length
 *graalpython.lib-python.3.test.test_long.LongTest.test_bitop_identities
 *graalpython.lib-python.3.test.test_long.LongTest.test_conversion
