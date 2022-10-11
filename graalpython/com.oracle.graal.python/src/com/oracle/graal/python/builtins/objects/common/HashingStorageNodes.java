@@ -116,4 +116,24 @@ public class HashingStorageNodes {
             return getNode.execute(frame, self, key);
         }
     }
+
+    @GenerateUncached
+    public static abstract class HashingStorageDelItem extends Node {
+// public static HashingStorage executeUncached(HashingStorage storage, Object key) {
+// return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key);
+// }
+
+        public final HashingStorage execute(HashingStorage self, TruffleString key) {
+            // Shortcut for frequent usage with TruffleString. We do not need a frame in such case,
+            // because the string's __hash__ does not need it. Some fast-paths avoid even invoking
+            // __hash__ for string keys
+            return execute(null, self, key);
+        }
+
+        /**
+         * TODO: check if we really need the result for anything else but updating the PDict, PSet
+         * storage. If not, provide an ecapsulation of that.
+         */
+        public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key);
+    }
 }

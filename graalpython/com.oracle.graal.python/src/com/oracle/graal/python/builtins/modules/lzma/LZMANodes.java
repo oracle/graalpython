@@ -227,11 +227,9 @@ public class LZMANodes {
 
         @Specialization
         HashingStorage fast(VirtualFrame frame, PDict dict,
-                        @Shared("id") @Cached ConditionProfile idErrorProfile,
-                        @Shared("k") @Cached ConditionProfile hasKeyErrorProfile,
-                        @Shared("h") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             HashingStorage storage = dict.getDictStorage();
-            if (idErrorProfile.profile(!hlib.hasKeyWithFrame(storage, T_ID, hasKeyErrorProfile, frame))) {
+            if (!getItem.hasKey(frame, storage, T_ID)) {
                 throw raise(ValueError, FILTER_SPECIFIER_MUST_HAVE);
             }
             return storage;
@@ -239,15 +237,13 @@ public class LZMANodes {
 
         @Specialization(guards = "!isDict(object)")
         HashingStorage slow(VirtualFrame frame, Object object,
-                        @Shared("id") @Cached ConditionProfile idErrorProfile,
-                        @Shared("k") @Cached ConditionProfile hasKeyErrorProfile,
-                        @Shared("h") @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem,
                         @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(object);
             if (dict == null) {
                 throw raise(TypeError, FILTER_SPEC_MUST_BE_DICT);
             }
-            return fast(frame, dict, idErrorProfile, hasKeyErrorProfile, hlib);
+            return fast(frame, dict, getItem);
         }
     }
 
