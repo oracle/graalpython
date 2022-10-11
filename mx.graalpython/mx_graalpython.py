@@ -85,6 +85,9 @@ GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
 SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java']
 
+# Allows disabling rebuild for some mx commands such as graalpytest
+DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
+
 
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
@@ -639,7 +642,8 @@ def graalpytest(args):
     args, unknown_args = parser.parse_known_args(args)
 
     # ensure that the test distribution is up-to-date
-    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+    if not DISABLE_REBUILD:
+        mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
     testfiles = _list_graalpython_unittests(args.test)
     cmd_args = []

@@ -397,9 +397,10 @@ public class LZMANodes {
                         @Cached ForEachOption getOptions,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached GetOptionsDict getOptionsDict,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             HashingStorage dict = getOptionsDict.execute(frame, spec);
-            Object idObj = hlib.getItem(dict, T_ID);
+            Object idObj = getItem.execute(frame, dict, T_ID);
             long id = toLong.execute(idObj);
             long[] options;
             OptionsState state;

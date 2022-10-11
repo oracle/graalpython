@@ -30,7 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
@@ -59,7 +59,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -190,8 +189,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals,
                     @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
-                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib) {
-        Object result = hlib.getItem(cachedStorage, attributeId);
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        Object result = getItem.execute(cachedStorage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
@@ -200,8 +199,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
                     "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
     protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @CachedLibrary(value = "cachedGlobals.getDictStorage()") HashingStorageLibrary hlib) {
-        Object result = hlib.getItem(cachedGlobals.getDictStorage(), attributeId);
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        Object result = getItem.execute(cachedGlobals.getDictStorage(), attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
@@ -209,8 +208,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
     protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals,
                     @Bind("globals.getDictStorage()") HashingStorage storage,
-                    @CachedLibrary("storage") HashingStorageLibrary hlib) {
-        Object result = hlib.getItem(storage, attributeId);
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        Object result = getItem.execute(storage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 

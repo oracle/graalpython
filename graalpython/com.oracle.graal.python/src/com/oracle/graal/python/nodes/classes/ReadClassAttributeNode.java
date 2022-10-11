@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.classes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -138,9 +137,9 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
 
     @Specialization(guards = {"hasLocalsDict(frame)", "cellSlot != null"})
     protected Object loadClassDerefFast(VirtualFrame frame,
-                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                    @Shared("dictGetItem") @Cached HashingStorageGetItem getItem,
                     @Shared("readCell") @Cached("create(cellSlot, isFreeVar)") ReadLocalCellNode readCell) {
-        Object result = hlib.getItem(getLocalsStorage(frame), identifier);
+        Object result = getItem.execute(frame, getLocalsStorage(frame), identifier);
         if (result == null) {
             return readCell.execute(frame);
         } else {
@@ -150,9 +149,9 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
 
     @Specialization(guards = {"hasLocalsDict(frame)", "cellSlot == null"})
     protected Object loadNameFast(VirtualFrame frame,
-                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                    @Shared("dictGetItem") @Cached HashingStorageGetItem getItem,
                     @Shared("readGlobal") @Cached("create(identifier)") ReadGlobalOrBuiltinNode readGlobal) {
-        Object result = hlib.getItem(getLocalsStorage(frame), identifier);
+        Object result = getItem.execute(frame, getLocalsStorage(frame), identifier);
         if (result == null) {
             return readGlobal.execute(frame);
         } else {

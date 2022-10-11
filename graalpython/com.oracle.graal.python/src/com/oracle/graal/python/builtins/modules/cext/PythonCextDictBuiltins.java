@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
@@ -339,13 +340,13 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_GetItemWithError", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyDictGetItemWithErrorNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public Object getItem(PDict dict, Object key,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached BranchProfile noResultProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object res = lib.getItem(dict.getDictStorage(), key);
+                Object res = getItem.execute(null, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter();
                     return getContext().getNativeNull();

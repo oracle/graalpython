@@ -48,6 +48,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public class HashingStorageNodes {
 
@@ -59,6 +60,13 @@ public class HashingStorageNodes {
     public static abstract class HashingStorageGetItem extends Node {
         public static Object executeUncached(HashingStorage storage, Object key) {
             return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key);
+        }
+
+        public final Object execute(HashingStorage self, TruffleString key) {
+            // Shortcut for frequent usage with TruffleString. We do not need a frame in such case,
+            // because the string's __hash__ does not need it. Some fast-paths avoid even invoking
+            // __hash__ for string keys
+            return execute(null, self, key);
         }
 
         public abstract Object execute(Frame frame, HashingStorage self, Object key);
