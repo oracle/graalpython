@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -92,6 +93,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -235,8 +237,8 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                             @Cached CastToTruffleStringNode castStrKey,
                             @Cached CastToTruffleStringNode castStrValue,
                             @Cached PRaiseNode raiseNode,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                return doStringKey(castStrKey.execute(key), state, valueReprNode, castStrValue, raiseNode, lib);
+                            @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+                return doStringKey(castStrKey.execute(key), state, valueReprNode, castStrValue, raiseNode, getItem);
             }
 
             @Specialization
@@ -244,8 +246,8 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                TruffleString valueReprString = getReprString(lib.getItem(state.dictStorage, key), valueReprNode, castStr, raiseNode);
+                            @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+                TruffleString valueReprString = getReprString(getItem.execute(state.dictStorage, key), valueReprNode, castStr, raiseNode);
                 appendItem(state, key, valueReprString);
                 return state;
             }

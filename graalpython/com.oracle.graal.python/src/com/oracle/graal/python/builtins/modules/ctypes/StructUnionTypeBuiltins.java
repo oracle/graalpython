@@ -47,6 +47,8 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins._ctypes_alloc_format_string_with_shape;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
+import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_IS_FINAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS;
@@ -61,8 +63,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_B;
-import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins.T_UPPER_T_LEFTBRACE;
 
 import java.util.List;
 
@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.MakeAnonF
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.CheckIsSequenceNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -143,6 +144,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -179,7 +181,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
             boolean hasFields = hlib.hasKey(dict.getDictStorage(), T__fields_);
             if (hasFields) {
-                setFieldsAttributeNode.executeVoid(frame, result, hlib.getItem(dict.getDictStorage(), T__fields_));
+                setFieldsAttributeNode.executeVoid(frame, result, getItem.execute(dict.getDictStorage(), T__fields_));
             } else {
                 StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(result));
                 if (basedict == null) {

@@ -88,7 +88,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -581,7 +581,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object set(VirtualFrame frame, PSSLContext self,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached("createEnvironLookup()") GetAttributeNode getAttribute,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary environLib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached("createCertFileKey()") PBytes certFileKey,
                         @Cached("createCertDirKey()") PBytes certDirKey,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
@@ -590,8 +590,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
             PDict environ = (PDict) getAttribute.executeObject(frame, posix);
             HashingStorage storage = environ.getDictStorage();
 
-            TruffleFile file = toTruffleFile(frame, asPath, environLib.getItem(storage, certFileKey), toJavaStringNode);
-            TruffleFile path = toTruffleFile(frame, asPath, environLib.getItem(storage, certDirKey), toJavaStringNode);
+            TruffleFile file = toTruffleFile(frame, asPath, getItem.execute(frame, storage, certFileKey), toJavaStringNode);
+            TruffleFile path = toTruffleFile(frame, asPath, getItem.execute(frame, storage, certDirKey), toJavaStringNode);
             if (file != null || path != null) {
                 LOGGER.fine(() -> String.format("set_default_verify_paths file: %s. path: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                 try {
