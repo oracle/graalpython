@@ -25,6 +25,10 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -64,10 +68,6 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 /**
  * CPython wraps built-in types' slots so the C can take the direct arguments. The slot wrappers for
  * binary and ternay functions (wrap_unaryfunc, wrap_binaryfunc_r, wrap_ternaryfunc,
@@ -79,6 +79,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
  * execute method we want and cares about swapping arguments back if needed.
  */
 public final class BuiltinFunctionRootNode extends PRootNode {
+    public static final TruffleString T_DOLLAR_DECL_TYPE = tsLiteral("$decl_type");
     private static final TruffleString T_DOLLAR_CLS = tsLiteral("$cls");
     private static final TruffleString T_DOLLAR_SELF = tsLiteral("$self");
 
@@ -168,13 +169,14 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                             " vs " + builtin.maxNumOfPositionalArgs() + " - " + factory.toString();
         }
 
-        if (!declaresExplicitSelf) {
-            // if we don't take the explicit self, we still need to accept it by signature
-            maxNumPosArgs++;
-        } else if (constructsClass && maxNumPosArgs == 0) {
+        if (constructsClass && maxNumPosArgs == 0) {
             // we have this convention to always declare the cls argument without setting the num
             // args
             maxNumPosArgs = 1;
+        }
+        if (!declaresExplicitSelf) {
+            // if we don't take the explicit self, we still need to accept it by signature
+            maxNumPosArgs++;
         }
 
         if (maxNumPosArgs > 0) {
@@ -182,8 +184,16 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
                 // " + factory);
                 parameterNames = new TruffleString[maxNumPosArgs];
-                parameterNames[0] = constructsClass ? T_DOLLAR_CLS : T_DOLLAR_SELF;
-                for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
+                int i = 0;
+                if (constructsClass) {
+                    if (!declaresExplicitSelf) {
+                        parameterNames[i++] = T_DOLLAR_DECL_TYPE;
+                    }
+                    parameterNames[i++] = T_DOLLAR_CLS;
+                } else {
+                    parameterNames[i++] = T_DOLLAR_SELF;
+                }
+                for (int p = 'a'; i < parameterNames.length; i++, p++) {
                     parameterNames[i] = TruffleString.fromCodePointUncached(p, TS_ENCODING);
                 }
             } else {
@@ -194,7 +204,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
                     parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
                     PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
-                    parameterNames[0] = constructsClass ? T_DOLLAR_CLS : T_DOLLAR_SELF;
+                    parameterNames[0] = constructsClass ? T_DOLLAR_DECL_TYPE : T_DOLLAR_SELF;
                 }
             }
         }

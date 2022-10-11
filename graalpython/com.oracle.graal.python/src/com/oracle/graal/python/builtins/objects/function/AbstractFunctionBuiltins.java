@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
+import static com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.T_DOLLAR_DECL_TYPE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -289,8 +290,8 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonBinaryBuiltinNode {
 
-        private static final TruffleString ARGS = tsLiteral(", *args");
-        private static final TruffleString KWARGS = tsLiteral(", **kwargs");
+        private static final TruffleString ARGS = tsLiteral("*args");
+        private static final TruffleString KWARGS = tsLiteral("**kwargs");
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
@@ -311,6 +312,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         protected static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
@@ -320,44 +322,50 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
 
             TruffleString[] parameterNames = signature.getParameterIds();
-            int paramIdx = 0;
 
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            char argName = 'a';
             appendStringNode.execute(sb, T_LPAREN);
+            boolean first = true;
             for (int i = 0; i < parameterNames.length; i++) {
-                if (paramIdx >= parameterNames.length) {
-                    appendStringNode.execute(sb, T_COMMA_SPACE);
-                    appendCodePointNode.execute(sb, argName++, 1, true);
-                } else {
-                    appendStringNode.execute(sb, T_COMMA_SPACE);
-                    appendStringNode.execute(sb, parameterNames[paramIdx++]);
+                if (i == 0 && equalNode.execute(T_DOLLAR_DECL_TYPE, parameterNames[i], TS_ENCODING)) {
+                    continue;
                 }
+                first = appendCommaIfNeeded(appendStringNode, sb, first);
+                appendStringNode.execute(sb, parameterNames[i++]);
             }
             if (parameterNames.length > 0) {
-                appendStringNode.execute(sb, T_COMMA_SPACE);
+                first = appendCommaIfNeeded(appendStringNode, sb, first);
                 appendCodePointNode.execute(sb, '/', 1, true);
             }
             if (takesVarArgs) {
+                first = appendCommaIfNeeded(appendStringNode, sb, first);
                 appendStringNode.execute(sb, ARGS);
             }
             if (keywordNames.length > 0) {
                 if (!takesVarArgs) {
-                    appendStringNode.execute(sb, T_COMMA_SPACE);
+                    first = appendCommaIfNeeded(appendStringNode, sb, first);
                     appendCodePointNode.execute(sb, '*', 1, true);
                 }
                 for (TruffleString keywordName : keywordNames) {
-                    appendStringNode.execute(sb, T_COMMA_SPACE);
+                    first = appendCommaIfNeeded(appendStringNode, sb, first);
                     appendStringNode.execute(sb, keywordName);
                     appendStringNode.execute(sb, T_EQ);
                     appendCodePointNode.execute(sb, '?', 1, true);
                 }
             }
             if (takesVarKeywordArgs) {
+                appendCommaIfNeeded(appendStringNode, sb, first);
                 appendStringNode.execute(sb, KWARGS);
             }
             appendStringNode.execute(sb, T_RPAREN);
             return toStringNode.execute(sb);
+        }
+
+        private static boolean appendCommaIfNeeded(TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder sb, boolean first) {
+            if (!first) {
+                appendStringNode.execute(sb, T_COMMA_SPACE);
+            }
+            return false;
         }
 
         @Specialization(guards = "!isNoValue(value)")
