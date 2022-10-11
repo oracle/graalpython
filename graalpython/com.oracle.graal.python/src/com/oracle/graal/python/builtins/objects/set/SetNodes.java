@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -165,12 +166,13 @@ public abstract class SetNodes {
                         @Cached BranchProfile updatedStorage,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
                         @Cached ConditionProfile hasFrame,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
             Object checkedKey = conv.execute(key);
-            boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
+            boolean hasKey = getItem.hasKey(frame, storage, checkedKey);
             if (hasKey) {
                 newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
             }

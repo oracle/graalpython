@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -86,7 +88,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -128,30 +129,28 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     @Builtin(name = "PySet_Contains", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PySetContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public static int contains(VirtualFrame frame, PSet anyset, Object item,
-                        @Cached ConditionProfile hasFrameProfile,
-                        @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 HashingStorage storage = anyset.getDictStorage();
                 // TODO: FIXME: this might call __hash__ twice
-                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
+                return PInt.intValue(getItem.hasKey(frame, storage, item));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
             }
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         public static int contains(VirtualFrame frame, PFrozenSet anyset, Object item,
-                        @CachedLibrary("anyset.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 HashingStorage storage = anyset.getDictStorage();
                 // TODO: FIXME: this might call __hash__ twice
-                return PInt.intValue(lib.hasKeyWithFrame(storage, item, hasFrameProfile, frame));
+                return PInt.intValue(getItem.hasKey(frame, storage, item));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;

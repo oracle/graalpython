@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -735,12 +736,13 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached BranchProfile updatedStorage,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
                         @Cached ConditionProfile hasFrame,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
             Object checkedKey = conv.execute(key);
-            boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
+            boolean hasKey = getItem.hasKey(frame, storage, checkedKey);
             if (hasKey) {
                 newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
             }
@@ -773,11 +775,11 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class PopNode extends PythonUnaryBuiltinNode {
 
         protected static void removeItem(VirtualFrame frame, PSet self, Object key,
-                        HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
+                        HashingStorageGetItem getItem, HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
-            boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+            boolean hasKey = getItem.hasKey(frame, storage, key);
             if (hasKey) {
                 newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
             }
@@ -794,9 +796,10 @@ public final class SetBuiltins extends PythonBuiltins {
         Object remove(VirtualFrame frame, PSet self,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             for (Object next : lib.keys(self.getDictStorage())) {
-                removeItem(frame, self, next, lib, hasFrame, updatedStorage);
+                removeItem(frame, self, next, getItem, lib, hasFrame, updatedStorage);
                 return next;
             }
             throw raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);

@@ -499,13 +499,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_Contains", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyDictContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public static int contains(VirtualFrame frame, PDict dict, Object key,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return PInt.intValue(lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame));
+                return PInt.intValue(getItem.hasKey(frame, dict.getDictStorage(), key));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
