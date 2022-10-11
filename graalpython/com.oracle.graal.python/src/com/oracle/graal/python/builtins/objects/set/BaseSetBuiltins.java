@@ -237,7 +237,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class BaseContainsNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         static boolean contains(VirtualFrame frame, PBaseSet self, Object key,
                         @Cached ConvertKeyNode conv,
                         @Cached HashingStorageGetItem getItem) {

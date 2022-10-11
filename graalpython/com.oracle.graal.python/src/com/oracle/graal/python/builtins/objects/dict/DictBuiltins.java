@@ -253,7 +253,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public static Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
                         @Cached HashingStorageGetItem getItem) {
             final Object value = getItem.execute(frame, self.getDictStorage(), key);
@@ -266,7 +266,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Child private DispatchMissingNode missing;
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         Object getItem(VirtualFrame frame, PDict self, Object key,
                         @Cached HashingStorageGetItem getItem) {
             final Object result = getItem.execute(frame, self.getDictStorage(), key);
@@ -399,7 +399,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static boolean run(VirtualFrame frame, PDict self, Object key,
                         @Cached HashingStorageGetItem getItem) {
             return getItem.hasKey(frame, self.getDictStorage(), key);

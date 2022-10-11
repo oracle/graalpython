@@ -205,7 +205,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 
     @InliningCutoff
-    @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
+    @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"})
     protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals,
                     @Bind("globals.getDictStorage()") HashingStorage storage,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {

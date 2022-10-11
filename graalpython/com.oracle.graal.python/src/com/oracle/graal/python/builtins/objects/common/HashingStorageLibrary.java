@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -145,11 +147,17 @@ public abstract class HashingStorageLibrary extends Library {
         return ensureGetItem().execute(null, self, key);
     }
 
-    /**
-     * @see #getItemWithState(HashingStorage, Object, ThreadState)
-     */
-    public final Object getItemWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        return ensureGetItem().execute(frame, self, key);
+    @Child HashingStorageSetItem setItem;
+
+    private HashingStorageSetItem ensureSetItem() {
+        if (!isAdoptable()) {
+            return HashingStorageSetItemNodeGen.getUncached();
+        }
+        if (setItem == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setItem = insert(HashingStorageSetItemNodeGen.create());
+        }
+        return setItem;
     }
 
     /**
@@ -161,29 +169,22 @@ public abstract class HashingStorageLibrary extends Library {
      * @return the new store to use from now on, {@code self} has become invalid.
      */
     public HashingStorage setItemWithState(HashingStorage self, Object key, Object value, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.setItemWithState");
-        }
-        return setItem(self, key, value);
+        VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
+        return ensureSetItem().execute(frame, self, key, value);
     }
 
     /**
      * @see #setItemWithState(HashingStorage, Object, Object, ThreadState)
      */
     public final HashingStorage setItem(HashingStorage self, Object key, Object value) {
-        return setItemWithState(self, key, value, null);
+        return ensureSetItem().execute(null, self, key, value);
     }
 
     /**
      * @see #setItemWithState(HashingStorage, Object, Object, ThreadState)
      */
     public final HashingStorage setItemWithFrame(HashingStorage self, Object key, Object value, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return setItemWithState(self, key, value, PArguments.getThreadState(frame));
-        } else {
-            return setItem(self, key, value);
-        }
+        return ensureSetItem().execute(frame, self, key, value);
     }
 
     /**

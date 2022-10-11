@@ -525,19 +525,19 @@ public final class ObjectHashMap {
 
     @GenerateUncached
     public abstract static class PutNode extends Node {
-        public final void put(ThreadState state, ObjectHashMap map, DictKey key, Object value) {
-            execute(state, map, key.getValue(), key.getPythonHash(), value);
+        public final void put(Frame frame, ObjectHashMap map, DictKey key, Object value) {
+            execute(frame, map, key.getValue(), key.getPythonHash(), value);
         }
 
-        public final void put(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value) {
-            execute(state, map, key, keyHash, value);
+        public final void put(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value) {
+            execute(frame, map, key, keyHash, value);
         }
 
-        abstract void execute(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value);
+        abstract void execute(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value);
 
         // "public" for testing...
         @Specialization
-        public static void doPutWithRestart(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value,
+        public static void doPutWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value,
                         @Cached BranchProfile lookupRestart,
                         @Cached("createCountingProfile()") ConditionProfile foundNullKey,
                         @Cached("createCountingProfile()") ConditionProfile foundEqKey,
@@ -545,13 +545,12 @@ public final class ObjectHashMap {
                         @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
                         @Cached BranchProfile rehash1Profile,
                         @Cached BranchProfile rehash2Profile,
-                        @Cached ConditionProfile hasState,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    doPut(state, map, key, keyHash, value, foundNullKey, foundEqKey,
+                    doPut(frame, map, key, keyHash, value, foundNullKey, foundEqKey,
                                     collisionFoundNoValue, collisionFoundEqKey, rehash1Profile, rehash2Profile,
-                                    hasState, eqNode);
+                                    eqNode);
                     return;
                 } catch (RestartLookupException ignore) {
                     lookupRestart.enter();
@@ -559,14 +558,13 @@ public final class ObjectHashMap {
             }
         }
 
-        static void doPut(ThreadState state, ObjectHashMap map, Object key, long keyHash, Object value,
+        static void doPut(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value,
                         ConditionProfile foundNullKey,
                         ConditionProfile foundEqKey,
                         ConditionProfile collisionFoundNoValue,
                         ConditionProfile collisionFoundEqKey,
                         BranchProfile rehash1Profile,
                         BranchProfile rehash2Profile,
-                        ConditionProfile hasState,
                         PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             int[] indices = map.indices;
@@ -579,7 +577,7 @@ public final class ObjectHashMap {
                 return;
             }
 
-            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, state, unwrapIndex(index), key, keyHash, eqNode, hasState))) {
+            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
                 // we found the key, override the value, Python does not override the key though
                 map.setValue(unwrapIndex(index), value);
                 return;
@@ -603,7 +601,7 @@ public final class ObjectHashMap {
                         map.putInNewSlot(indices, rehash2Profile, key, keyHash, value, compactIndex);
                         return;
                     }
-                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, state, unwrapIndex(index), key, keyHash, eqNode, hasState))) {
+                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrapIndex(index), key, keyHash, eqNode))) {
                         // we found the key, override the value, Python does not override the key
                         // though
                         map.setValue(unwrapIndex(index), value);

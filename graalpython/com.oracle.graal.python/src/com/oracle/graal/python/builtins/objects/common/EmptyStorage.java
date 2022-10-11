@@ -47,14 +47,12 @@ import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -86,19 +84,6 @@ public class EmptyStorage extends HashingStorage {
             hashNode.execute(frame, key);
         }
         return null;
-    }
-
-    @ExportMessage
-    public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = PDict.createNewStorage(1);
-        if (gotState.profile(state != null)) {
-            lib.setItemWithState(newStore, key, value, state);
-        } else {
-            lib.setItem(newStore, key, value);
-        }
-        return newStore;
     }
 
     @ExportMessage

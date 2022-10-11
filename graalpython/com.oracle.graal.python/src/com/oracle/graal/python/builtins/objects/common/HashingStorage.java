@@ -248,13 +248,6 @@ public abstract class HashingStorage {
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
-    HashingStorage setItemWithState(Object key, Object value, ThreadState state) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.setItemWithState");
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.delItemWithState");

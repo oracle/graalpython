@@ -47,6 +47,7 @@ import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -193,21 +194,9 @@ public class KeywordsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, false, length() + 1);
-        if (gotState.profile(state != null)) {
-            return lib.setItemWithState(newStore, key, value, state);
-        } else {
-            return lib.setItem(newStore, key, value);
-        }
-    }
-
-    @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
+                    @Cached ConditionProfile gotState) {
         HashingStorage newStore = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(newStore, key, state);
@@ -220,6 +209,13 @@ public class KeywordsStorage extends HashingStorage {
         HashingStorage newStore = PDict.createNewStorage(isStringKey, expectedLength);
         newStore = lib.addAllToOther(this, newStore);
         return newStore;
+    }
+
+    void addAllTo(HashingStorage storage, SpecializedSetStringKey putNode) {
+        for (int i = 0; i < keywords.length; i++) {
+            PKeyword entry = keywords[i];
+            putNode.execute(storage, entry.getName(), entry.getValue());
+        }
     }
 
     @ExportMessage

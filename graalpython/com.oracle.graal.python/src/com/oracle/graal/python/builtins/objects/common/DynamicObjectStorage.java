@@ -52,6 +52,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -278,61 +279,25 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    @SuppressWarnings("unused")
-    @ExportMessage
-    @ImportStatic(PGuards.class)
-    static class SetItemWithState {
+    void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib, BranchProfile invalidateMroProfile) {
+        dylib.put(store, key, assertNoJavaString(value));
+        invalidateAttributeInMROFinalAssumptions(mro, key, invalidateMroProfile);
+    }
 
-        protected static boolean shouldTransition(DynamicObjectStorage self) {
-            // For now we do not use SIZE_THRESHOLD condition to transition storages that wrap
-            // dictionaries retrieved via object's __dict__
-            boolean notDunderDict = self.store instanceof Store;
-            int propertyCount = self.store.getShape().getPropertyCount();
-            return notDunderDict && propertyCount > SIZE_THRESHOLD;
-        }
-
-        @Specialization(guards = "!shouldTransition(self)")
-        static HashingStorage string(DynamicObjectStorage self, TruffleString key, Object value, ThreadState state,
-                        @Shared("hasMroprofile") @Cached BranchProfile profile,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode) {
-            writeNode.execute(self.store, key, assertNoJavaString(value));
-            invalidateAttributeInMROFinalAssumptions(self.mro, key, profile);
-            return self;
-        }
-
-        @Specialization(guards = {"!shouldTransition(self)", "isBuiltinString(key, profile)"}, limit = "1")
-        static HashingStorage pstring(DynamicObjectStorage self, PString key, Object value, ThreadState state,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Shared("hasMroprofile") @Cached BranchProfile hasMro,
-                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
-            return string(self, castStr.execute(key), value, state, hasMro, writeNode);
-        }
-
-        // n.b: do not replace the other two specializations here, because that would make the
-        // uncached version pretty useless
-        @Specialization(guards = {"shouldTransition(self) || !isBuiltinString(key, profile)"}, limit = "1")
-        static HashingStorage generalize(DynamicObjectStorage self, Object key, Object value, ThreadState state,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary("self") HashingStorageLibrary lib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
-            HashingStorage newStore = EconomicMapStorage.create(lib.length(self));
-            newStore = lib.addAllToOther(self, newStore);
-            if (gotState.profile(state != null)) {
-                return newLib.setItemWithState(newStore, key, value, state);
-            } else {
-                return newLib.setItem(newStore, key, value);
-            }
-        }
+    boolean shouldTransitionOnPut() {
+        // For now we do not use SIZE_THRESHOLD condition to transition storages that wrap
+        // dictionaries retrieved via object's __dict__
+        boolean notDunderDict = store instanceof Store;
+        int propertyCount = store.getShape().getPropertyCount();
+        return notDunderDict && propertyCount > SIZE_THRESHOLD;
     }
 
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary lib,
-                    @Shared("hasMroprofile") @Cached BranchProfile hasMro,
-                    @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
+                    @Cached BranchProfile hasMro,
+                    @Cached WriteAttributeToDynamicObjectNode writeNode,
+                    @Cached ConditionProfile gotState) {
         // __hash__ call is done through hasKey, if necessary
         boolean hasKey;
         if (gotState.profile(state != null)) {
@@ -621,6 +586,16 @@ public final class DynamicObjectStorage extends HashingStorage {
             } else {
                 throw new NoSuchElementException();
             }
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
+        @Specialization
+        static void doIt(HashingStorage self, TruffleString key, Object value,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached BranchProfile invalidateMro) {
+            ((DynamicObjectStorage) self).setStringKey(key, value, dylib, invalidateMro);
         }
     }
 }

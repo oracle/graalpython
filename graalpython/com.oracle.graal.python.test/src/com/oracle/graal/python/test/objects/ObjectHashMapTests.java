@@ -331,6 +331,6 @@ public class ObjectHashMapTests {
         ObjectHashMap.PutNode.doPutWithRestart(null, map, key, hash, value,
                         BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
-                        ConditionProfile.getUncached(), new EqNodeStub());
+                        new EqNodeStub());
     }
 }

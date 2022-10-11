@@ -49,6 +49,7 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -82,7 +83,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class LocalsStorage extends HashingStorage {
     /* This won't be the real (materialized) frame but a clone of it. */
     protected final MaterializedFrame frame;
-    private int len = -1;
+    int len = -1;
 
     public LocalsStorage(FrameDescriptor fd) {
         this.frame = Truffle.getRuntime().createMaterializedFrame(PythonUtils.EMPTY_OBJECT_ARRAY, fd);
@@ -132,6 +133,10 @@ public final class LocalsStorage extends HashingStorage {
             }
         }
         this.len = size;
+    }
+
+    public int lengthHint() {
+        return len != -1 ? len : frame.getFrameDescriptor().getNumberOfSlots();
     }
 
     @ImportStatic(PGuards.class)
@@ -196,21 +201,9 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage result = generalize(lib, key instanceof TruffleString, length() + 1);
-        if (gotState.profile(state != null)) {
-            return lib.setItemWithState(result, key, value, state);
-        } else {
-            return lib.setItem(result, key, value);
-        }
-    }
-
-    @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
-                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Cached ConditionProfile gotState) {
         HashingStorage result = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(result, key, state);
@@ -223,6 +216,19 @@ public final class LocalsStorage extends HashingStorage {
         HashingStorage newStore = PDict.createNewStorage(isStringKey, expectedLength);
         newStore = lib.addAllToOther(this, newStore);
         return newStore;
+    }
+
+    void addAllTo(HashingStorage storage, SpecializedSetStringKey putNode) {
+        FrameDescriptor fd = this.frame.getFrameDescriptor();
+        for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
+            Object identifier = fd.getSlotName(slot);
+            if (isUserFrameSlot(identifier)) {
+                Object value = getValue(slot);
+                if (value != null) {
+                    putNode.execute(storage, (TruffleString) identifier, value);
+                }
+            }
+        }
     }
 
     @ExportMessage
