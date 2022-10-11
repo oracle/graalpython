@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -59,11 +61,17 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class DictConcatNode extends ExpressionNode {
 
     @Children final ExpressionNode[] mappables;
+    @Children final HashingStorageGetItem[] getDictItemNodes;
 
     @Child private PRaiseNode raiseNode;
 
     protected DictConcatNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
+        if (mappablesNodes.length > 0) {
+            this.getDictItemNodes = new HashingStorageGetItem[mappablesNodes.length - 1];
+        } else {
+            this.getDictItemNodes = null;
+        }
     }
 
     @ExplodeLoop
@@ -74,23 +82,28 @@ public abstract class DictConcatNode extends ExpressionNode {
         // TODO support mappings in general
         PDict first = null;
         PDict other;
-        for (ExpressionNode n : mappables) {
+        for (int i = 0; i < mappables.length; i++) {
+            ExpressionNode n = mappables[i];
             if (first == null) {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                addAllToDict(frame, first, other, hasFrame, hlib);
+                if (getDictItemNodes[i] == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getDictItemNodes[i] = insert(HashingStorageGetItemNodeGen.create());
+                }
+                addAllToDict(frame, first, other, hasFrame, getDictItemNodes[i], hlib);
             }
         }
         return first;
     }
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
-                    HashingStorageLibrary hlib) {
+                    HashingStorageGetItem getItem, HashingStorageLibrary hlib) {
         HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage otherStorage = other.getDictStorage();
         for (Object key : hlib.keys(otherStorage)) {
-            Object value = hlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
+            Object value = getItem.execute(frame, otherStorage, key);
             dictStorage = hlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
         }
         dict.setDictStorage(dictStorage);
