@@ -239,6 +239,10 @@ def known_packages():
         install_from_pypi("pybind11==2.10.0", **kwargs)
 
     @pip_package()
+    def pythran(**kwargs):
+        install_from_pypi("pythran==0.12.0", **kwargs)
+
+    @pip_package()
     def setuptools(**kwargs):
         six(**kwargs)
         install_from_pypi("setuptools==41.0.1", **kwargs)
@@ -451,7 +455,6 @@ library_dirs = {lapack_lib}"""
         dateutil(**kwargs)
         numpy(**kwargs)
 
-        # download pandas-0.25.0
         install_from_pypi("pandas==1.4.3", **kwargs)
 
     @pip_package()
@@ -476,6 +479,7 @@ library_dirs = {lapack_lib}"""
         # install dependencies
         numpy(**kwargs)
         pybind11(**kwargs)
+        pythran(**kwargs)
 
         install_from_pypi("scipy==1.8.1", env=scipy_build_env, **kwargs)
 
