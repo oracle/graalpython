@@ -67,7 +67,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
@@ -161,26 +161,26 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached PyObjectLookupAttr lookup,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+                        @Cached HashingStorageGetItem getItem) {
             Object dict = lookup.execute(frame, self, T___DICT__);
             if (isDict(dict, isDictProfile)) {
                 HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
-                Object dirFunc = hashLib.getItem(dictStorage, T___DIR__);
+                Object dirFunc = getItem.execute(frame, dictStorage, T___DIR__);
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {
                     return constructListNode.execute(frame, dict);
                 }
             } else {
-                TruffleString name = getName(self, getDict, hashLib, castToStringNode);
+                TruffleString name = getName(frame, self, getDict, getItem, castToStringNode);
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, name);
             }
         }
 
-        private TruffleString getName(PythonModule self, GetDictIfExistsNode getDict, HashingStorageLibrary hashLib, CastToTruffleStringNode castToStringNode) {
+        private TruffleString getName(VirtualFrame frame, PythonModule self, GetDictIfExistsNode getDict, HashingStorageGetItem getItem, CastToTruffleStringNode castToStringNode) {
             PDict dict = getDict.execute(self);
             if (dict != null) {
-                Object name = hashLib.getItem(dict.getDictStorage(), T___NAME__);
+                Object name = getItem.execute(frame, dict.getDictStorage(), T___NAME__);
                 if (name != null) {
                     return castToStringNode.execute(name);
                 }

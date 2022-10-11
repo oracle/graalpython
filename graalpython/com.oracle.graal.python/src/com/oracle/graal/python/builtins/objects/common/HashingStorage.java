@@ -49,12 +49,13 @@ import java.util.Iterator;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -247,13 +248,6 @@ public abstract class HashingStorage {
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
-    Object getItemWithState(Object key, ThreadState state) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.getItem");
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.setItemWithState");
@@ -304,10 +298,12 @@ public abstract class HashingStorage {
     protected abstract static class AddToOtherInjectNode extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
-            HashingStorage newOther = lib.setItem(other, key, lib.getItem(self, key));
+            // TODO: channel the frame through the InjectIntoNode node
+            HashingStorage newOther = lib.setItem(other, key, getItem.execute(null, self, key));
             if (CompilerDirectives.inInterpreter() && other == newOther) {
                 // Avoid the allocation in interpreter if possible
                 return accumulator;
@@ -383,14 +379,16 @@ public abstract class HashingStorage {
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
                         @Cached PRaiseNode raise,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Cached HashingStorageGetItem getItemOther,
+                        @Cached HashingStorageGetItem getItemSelf) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
-            Object otherValue = lib.getItem(other, key);
+            // TODO: channel the frame through the InjectIntoNode node
+            Object otherValue = getItemOther.execute(null, other, key);
             if (otherValue == null) {
                 throw AbortIteration.INSTANCE;
             }
-            Object selfValue = lib.getItem(self, key);
+            Object selfValue = getItemSelf.execute(null, self, key);
             if (selfValue == null) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.DICT_CHANGED_DURING_COMPARISON);
             }
@@ -430,10 +428,12 @@ public abstract class HashingStorage {
     protected abstract static class IntersectInjectionNode extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage other = accumulator[0];
             HashingStorage output = accumulator[1];
-            Object value = lib.getItem(other, key);
+            // TODO: channel the frame through the InjectIntoNode node
+            Object value = getItem.execute(null, other, key);
             if (value != null) {
                 output = lib.setItem(output, key, value);
             }
@@ -504,12 +504,14 @@ public abstract class HashingStorage {
     protected abstract static class DiffInjectNode extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
             HashingStorage output = accumulator[2];
             if (!lib.hasKey(other, key)) {
-                output = lib.setItem(output, key, lib.getItem(self, key));
+                // TODO: channel the frame through the InjectIntoNode node
+                output = lib.setItem(output, key, getItem.execute(null, self, key));
             }
             if (CompilerDirectives.inInterpreter() && output == accumulator[2]) {
                 // Avoid the allocation in interpreter if possible
@@ -549,20 +551,20 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), lib));
+    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), getItem));
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> reverseValues(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new HashingStorageIterable<>(new ValuesIterator(this, lib.reverseKeys(this).iterator(), lib));
+    public HashingStorageIterable<Object> reverseValues(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return new HashingStorageIterable<>(new ValuesIterator(this, lib.reverseKeys(this).iterator(), getItem));
     }
 
     protected static final class ValuesIterator implements Iterator<Object> {
         private final Iterator<DictEntry> entriesIterator;
 
-        ValuesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageLibrary lib) {
-            this.entriesIterator = new EntriesIterator(self, keysIterator, lib);
+        ValuesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageGetItem getItem) {
+            this.entriesIterator = new EntriesIterator(self, keysIterator, getItem);
         }
 
         protected Iterator<DictEntry> getIterator() {
@@ -581,23 +583,23 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new HashingStorageIterable<>(new EntriesIterator(this, lib.keys(this).iterator(), lib));
+    public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return new HashingStorageIterable<>(new EntriesIterator(this, lib.keys(this).iterator(), getItem));
     }
 
     @ExportMessage
-    public final HashingStorageIterable<DictEntry> reverseEntries(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new HashingStorageIterable<>(new EntriesIterator(this, lib.reverseKeys(this).iterator(), lib));
+    public final HashingStorageIterable<DictEntry> reverseEntries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return new HashingStorageIterable<>(new EntriesIterator(this, lib.reverseKeys(this).iterator(), getItem));
     }
 
     protected static final class EntriesIterator implements Iterator<DictEntry> {
         private final HashingStorageIterator<Object> keysIterator;
         private final HashingStorage self;
-        private final HashingStorageLibrary lib;
+        private final HashingStorageGetItem getItem;
 
-        EntriesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageLibrary lib) {
+        EntriesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageGetItem getItem) {
             this.self = self;
-            this.lib = lib;
+            this.getItem = getItem;
             this.keysIterator = keysIterator;
         }
 
@@ -613,7 +615,7 @@ public abstract class HashingStorage {
         @Override
         public DictEntry next() {
             Object key = keysIterator.next();
-            Object value = lib.getItem(self, key);
+            Object value = getItem.execute(null, self, key);
             return new DictEntry(key, value);
         }
     }

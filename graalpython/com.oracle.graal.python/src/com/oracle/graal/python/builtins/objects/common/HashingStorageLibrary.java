@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
 
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -111,6 +113,19 @@ public abstract class HashingStorageLibrary extends Library {
         }
     }
 
+    @Child HashingStorageGetItem getItem;
+
+    private HashingStorageGetItem ensureGetItem() {
+        if (!isAdoptable()) {
+            return HashingStorageGetItemNodeGen.getUncached();
+        }
+        if (getItem == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItem = insert(HashingStorageGetItemNodeGen.create());
+        }
+        return getItem;
+    }
+
     /**
      * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
      * with Python semantics.
@@ -119,29 +134,22 @@ public abstract class HashingStorageLibrary extends Library {
      *         store.
      */
     public Object getItemWithState(HashingStorage self, Object key, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.getItemWithState");
-        }
-        return getItem(self, key);
+        VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
+        return ensureGetItem().execute(frame, self, key);
     }
 
     /**
      * @see #getItemWithState(HashingStorage, Object, ThreadState)
      */
     public Object getItem(HashingStorage self, Object key) {
-        return getItemWithState(self, key, null);
+        return ensureGetItem().execute(null, self, key);
     }
 
     /**
      * @see #getItemWithState(HashingStorage, Object, ThreadState)
      */
     public final Object getItemWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return getItemWithState(self, key, PArguments.getThreadState(frame));
-        } else {
-            return getItem(self, key);
-        }
+        return ensureGetItem().execute(frame, self, key);
     }
 
     /**

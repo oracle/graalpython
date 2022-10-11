@@ -56,6 +56,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -428,44 +429,42 @@ public final class ObjectHashMap {
 
     @GenerateUncached
     public abstract static class GetNode extends Node {
-        public final Object get(ThreadState state, ObjectHashMap map, DictKey key) {
-            return execute(state, map, key.getValue(), key.getPythonHash());
+        public final Object get(Frame frame, ObjectHashMap map, DictKey key) {
+            return execute(frame, map, key.getValue(), key.getPythonHash());
         }
 
-        public final Object get(ThreadState state, ObjectHashMap map, Object key, long keyHash) {
-            return execute(state, map, key, keyHash);
+        public final Object get(Frame frame, ObjectHashMap map, Object key, long keyHash) {
+            return execute(frame, map, key, keyHash);
         }
 
-        abstract Object execute(ThreadState state, ObjectHashMap map, Object key, long keyHash);
+        abstract Object execute(Frame frame, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...
         @Specialization
-        public static Object doGetWithRestart(ThreadState state, ObjectHashMap map, Object key, long keyHash,
+        public static Object doGetWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
                         @Cached BranchProfile lookupRestart,
                         @Cached("createCountingProfile()") ConditionProfile foundNullKey,
                         @Cached("createCountingProfile()") ConditionProfile foundSameHashKey,
                         @Cached("createCountingProfile()") ConditionProfile foundEqKey,
                         @Cached("createCountingProfile()") ConditionProfile collisionFoundNoValue,
                         @Cached("createCountingProfile()") ConditionProfile collisionFoundEqKey,
-                        @Cached ConditionProfile hasState,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    return doGet(state, map, key, keyHash, foundNullKey, foundSameHashKey,
-                                    foundEqKey, collisionFoundNoValue, collisionFoundEqKey, hasState, eqNode);
+                    return doGet(frame, map, key, keyHash, foundNullKey, foundSameHashKey,
+                                    foundEqKey, collisionFoundNoValue, collisionFoundEqKey, eqNode);
                 } catch (RestartLookupException ignore) {
                     lookupRestart.enter();
                 }
             }
         }
 
-        static Object doGet(ThreadState state, ObjectHashMap map, Object key, long keyHash,
+        static Object doGet(Frame frame, ObjectHashMap map, Object key, long keyHash,
                         ConditionProfile foundNullKey,
                         ConditionProfile foundSameHashKey,
                         ConditionProfile foundEqKey,
                         ConditionProfile collisionFoundNoValue,
                         ConditionProfile collisionFoundEqKey,
-                        ConditionProfile hasState,
                         PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
             assert map.checkInternalState();
             int[] indices = map.indices;
@@ -478,7 +477,7 @@ public final class ObjectHashMap {
             }
             if (foundSameHashKey.profile(index != DUMMY_INDEX)) {
                 int unwrappedIndex = unwrapIndex(index);
-                if (foundEqKey.profile(map.keysEqual(indices, state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                if (foundEqKey.profile(map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                     return map.getValue(unwrappedIndex);
                 } else if (!isCollision(indices[compactIndex])) {
                     // ^ note: we need to re-read indices[compactIndex],
@@ -505,7 +504,7 @@ public final class ObjectHashMap {
                     }
                     if (index != DUMMY_INDEX) {
                         int unwrappedIndex = unwrapIndex(index);
-                        if (collisionFoundEqKey.profile(map.keysEqual(indices, state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                        if (collisionFoundEqKey.profile(map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                             return map.getValue(unwrappedIndex);
                         } else if (!isCollision(indices[compactIndex])) {
                             // ^ note: we need to re-read indices[compactIndex],
@@ -809,6 +808,33 @@ public final class ObjectHashMap {
             return true;
         }
         VirtualFrame frame = hasState.profile(state == null) ? null : PArguments.frameForCall(state);
+        boolean result = eqNode.execute(frame, originalKey, key);
+        if (getKey(index) != originalKey || indices != originalIndices) {
+            // Either someone overridden the slot we are just examining, or rehasing reallocated the
+            // indices array. We need to restart the lookup. Other situations are OK:
+            //
+            // New entry was added: if its key is different to what we look for we don't care, if
+            // its key collides with what we look for, it will be put at the end of the collision
+            // chain, and we'll find it.
+            //
+            // Entry was removed: if it was not the entry we're looking at right now, we don't care.
+            // Removal could have triggered a compaction, which shuffles things around in the arrays
+            // (hashes, keysAndValues), but does not reallocate the arrays or changes collision
+            // sequences.
+            throw RestartLookupException.INSTANCE;
+        }
+        return result;
+    }
+
+    private boolean keysEqual(int[] originalIndices, Frame frame, int index, Object key, long keyHash,
+                    PyObjectRichCompareBool.EqNode eqNode) throws RestartLookupException {
+        if (hashes[index] != keyHash) {
+            return false;
+        }
+        Object originalKey = getKey(index);
+        if (originalKey == key) {
+            return true;
+        }
         boolean result = eqNode.execute(frame, originalKey, key);
         if (getKey(index) != originalKey || indices != originalIndices) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the

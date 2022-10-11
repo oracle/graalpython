@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -70,14 +69,16 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
@@ -187,11 +188,13 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @SuppressWarnings("unused")
-    @ExportMessage
-    @ImportStatic(PGuards.class)
-    static class GetItemWithState {
+    @ImportStatic({PGuards.class, DynamicObjectStorage.class})
+    @GenerateUncached
+    static abstract class GetItemNode extends Node {
+        public abstract Object execute(Frame frame, DynamicObjectStorage self, Object key);
+
         @Specialization
-        static Object string(DynamicObjectStorage self, TruffleString key, ThreadState state,
+        static Object string(DynamicObjectStorage self, TruffleString key,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             Object result = readKey.execute(self.store, key);
@@ -199,17 +202,17 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static Object pstring(DynamicObjectStorage self, PString key, ThreadState state,
-                        @Shared("castStr") @Cached CastToTruffleStringNode castStr,
+        static Object pstring(DynamicObjectStorage self, PString key,
+                        @Cached CastToTruffleStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
-            return string(self, castStr.execute(key), state, readKey, noValueProfile);
+            return string(self, castStr.execute(key), readKey, noValueProfile);
         }
 
         @Specialization(guards = {"cachedShape == self.store.getShape()", "keyList.length < EXPLODE_LOOP_SIZE_LIMIT", "!isBuiltinString(key, profile)"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        static Object notString(DynamicObjectStorage self, Object key, ThreadState state,
+        static Object notString(Frame frame, DynamicObjectStorage self, Object key,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                         @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
@@ -218,19 +221,12 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             for (Object currentKey : keyList) {
                 if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, (TruffleString) currentKey, state, readKey, noValueProfile);
-                    }
-                }
-                if (isJavaString(currentKey)) {
-                    long keyHash = hashNode.execute(frame, currentKey);
-                    if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, toTruffleStringUncached((String) currentKey), state, readKey, noValueProfile);
+                        return string(self, (TruffleString) currentKey, readKey, noValueProfile);
                     }
                 }
             }
@@ -238,14 +234,13 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", replaces = "notString", limit = "1")
-        static Object notStringLoop(DynamicObjectStorage self, Object key, ThreadState state,
+        static Object notStringLoop(Frame frame, DynamicObjectStorage self, Object key,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             Iterator<Object> keys = getKeysIterator(self.store.getShape());
             while (hasNext(keys)) {
@@ -253,7 +248,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                 if (currentKey instanceof TruffleString) {
                     long keyHash = hashNode.execute(frame, currentKey);
                     if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
-                        return string(self, (TruffleString) currentKey, state, readKey, noValueProfile);
+                        return string(self, (TruffleString) currentKey, readKey, noValueProfile);
                     }
                 }
             }
@@ -307,7 +302,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = {"!shouldTransition(self)", "isBuiltinString(key, profile)"}, limit = "1")
         static HashingStorage pstring(DynamicObjectStorage self, PString key, Object value, ThreadState state,
-                        @Shared("castStr") @Cached CastToTruffleStringNode castStr,
+                        @Cached CastToTruffleStringNode castStr,
                         @Shared("hasMroprofile") @Cached BranchProfile hasMro,
                         @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {

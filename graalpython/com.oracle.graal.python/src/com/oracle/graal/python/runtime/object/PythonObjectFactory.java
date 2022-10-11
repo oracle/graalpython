@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
@@ -755,8 +755,8 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     @SuppressWarnings("unchecked")
-    public final PDict createDictFromMap(LinkedHashMap<?, ?> map) {
-        return createDict(new HashMapStorage((LinkedHashMap<Object, Object>) map));
+    public final PDict createDictFromMap(LinkedHashMap<String, Object> map) {
+        return createDict(EconomicMapStorage.create(map));
     }
 
     public final PDict createDictLocals(MaterializedFrame frame) {

@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -65,15 +64,17 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -133,20 +134,21 @@ public final class LocalsStorage extends HashingStorage {
         this.len = size;
     }
 
-    @SuppressWarnings("unused")
-    @ExportMessage
     @ImportStatic(PGuards.class)
-    static class GetItemWithState {
+    @GenerateUncached
+    static abstract class GetItemNode extends Node {
+        public abstract Object execute(Frame frame, LocalsStorage self, Object key);
+
         @Specialization(guards = {"key == cachedKey", "desc == self.frame.getFrameDescriptor()"}, limit = "3")
-        static Object getItemCached(LocalsStorage self, TruffleString key, ThreadState state,
-                        @Cached("key") TruffleString cachedKey,
-                        @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
+        static Object getItemCached(LocalsStorage self, TruffleString key,
+                        @SuppressWarnings("unused") @Cached("key") TruffleString cachedKey,
+                        @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
                         @Cached("findSlot(desc, key)") int slot) {
             return self.getValue(slot);
         }
 
         @Specialization(replaces = "getItemCached")
-        static Object string(LocalsStorage self, TruffleString key, ThreadState state) {
+        static Object string(LocalsStorage self, TruffleString key) {
             if (!isUserFrameSlot(key)) {
                 return null;
             }
@@ -155,20 +157,18 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static Object pstring(LocalsStorage self, PString key, ThreadState state,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+        static Object pstring(LocalsStorage self, PString key,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached CastToTruffleStringNode castToStringNode) {
-            return string(self, castToStringNode.execute(key), state);
+            return string(self, castToStringNode.execute(key));
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static Object notString(LocalsStorage self, Object key, ThreadState state,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+        static Object notString(Frame frame, LocalsStorage self, Object key,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached PyObjectHashNode hashNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
+                        @Cached PyObjectHashNode hashNode) {
             CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             FrameDescriptor descriptor = self.frame.getFrameDescriptor();
             for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {

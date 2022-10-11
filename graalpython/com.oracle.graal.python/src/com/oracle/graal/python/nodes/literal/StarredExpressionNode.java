@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -65,6 +67,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class StarredExpressionNode extends LiteralNode {
     @Child private ExpressionNode childNode;
@@ -141,6 +144,8 @@ public final class StarredExpressionNode extends LiteralNode {
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyObjectGetIter getIter) {
+            TruffleString[] a = new TruffleString[0];
+            final Object[] objects = Arrays.copyOf(a, a.length, Object[].class);
             Object iterator = getIter.execute(frame, values);
             HashingStorage storage = storageIn;
             while (true) {

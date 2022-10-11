@@ -40,18 +40,15 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -64,25 +61,22 @@ public abstract class PyDictGetItem extends Node {
     public abstract Object execute(Frame frame, PDict dict, Object item);
 
     // We never need a frame for reading string keys
-    @Specialization(limit = "3")
-    static Object getString(@SuppressWarnings("unused") PDict dict, TruffleString item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-        return lib.getItem(dictStorage, item);
+    @Specialization
+    static Object getString(PDict dict, TruffleString item,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return getItem.execute(null, dict.getDictStorage(), item);
     }
 
-    @Specialization(replaces = "getString", limit = "3")
-    static Object getItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @Cached ConditionProfile frameCondition,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-        return lib.getItemWithFrame(dictStorage, item, frameCondition, frame);
+    @Specialization(replaces = "getString")
+    static Object getItemCached(VirtualFrame frame, PDict dict, Object item,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return getItem.execute(frame, dict.getDictStorage(), item);
     }
 
     @Specialization(replaces = "getItemCached")
     static Object getItem(PDict dict, Object item,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-        return lib.getItem(dict.getDictStorage(), item);
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        return getItem.execute(null, dict.getDictStorage(), item);
     }
 
     public static PyDictGetItem create() {

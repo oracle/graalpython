@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -502,6 +503,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object POINTER(VirtualFrame frame, Object cls,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached IsTypeNode isTypeNode,
                         @Cached CallNode callNode,
@@ -509,7 +511,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached SimpleTruffleStringFormatNode formatNode) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object result = hlib.getItem(ctypes.ptrtype_cache, cls);
+            Object result = getItem.execute(frame, ctypes.ptrtype_cache, cls);
             if (result != null) {
                 return result;
             }
@@ -540,12 +542,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object pointer(VirtualFrame frame, Object arg,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PointerTypeNode callPOINTER,
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object typ = hlib.getItem(ctypes.ptrtype_cache, getClassNode.execute(arg));
+            Object typ = getItem.execute(frame, ctypes.ptrtype_cache, getClassNode.execute(arg));
             if (typ != null) {
                 return callNode.execute(frame, typ, arg);
             }
@@ -1415,13 +1417,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-
+        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-
+        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;

@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -111,13 +112,14 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
         @Specialization(guards = "length >= 0")
         Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached CallNode callNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetNameNode getNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleFormatNode) {
             Object key = factory().createTuple(new Object[]{itemtype, length});
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object result = hlib.getItem(ctypes.cache, key);
+            Object result = getItem.execute(frame, ctypes.cache, key);
             if (result != null) {
                 return result;
             }

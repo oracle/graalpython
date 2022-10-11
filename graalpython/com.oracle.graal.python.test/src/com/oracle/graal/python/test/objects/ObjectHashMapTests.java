@@ -316,7 +316,7 @@ public class ObjectHashMapTests {
     private static Object get(ObjectHashMap map, Object key, long hash) {
         return ObjectHashMap.GetNode.doGetWithRestart(null, map, key, hash,
                         BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
-                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         new EqNodeStub());
     }
 

@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -782,7 +783,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 nativeMemberStore = nativeWrapper.createNativeMemberStore(PythonLanguage.get(null));
             }
             HashingStorageLibrary uncached = HashingStorageLibrary.getFactory().getUncached(nativeMemberStore);
-            Object item = uncached.getItem(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString());
+            Object item = HashingStorageGetItem.executeUncached(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString());
             long value = 1;
             if (item != null) {
                 value = (long) item;
@@ -1270,7 +1271,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Fallback
         static Object doGeneric(@SuppressWarnings("unused") Object object, PythonNativeWrapper nativeWrapper, String key,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
             if (nativeWrapper instanceof DynamicObjectNativeWrapper) {
@@ -1284,7 +1285,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     DynamicObjectStorage nativeMemberStore = dynamicWrapper.getNativeMemberStore();
                     if (nativeMemberStore != null) {
                         TruffleString tKey = fromJavaStringNode.execute(key, TS_ENCODING);
-                        return lib.getItem(nativeMemberStore, tKey);
+                        return getItem.execute(null, nativeMemberStore, tKey);
                     }
                     return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
                 }
@@ -1405,12 +1406,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @ValueType
             private static final class SubclassAddState {
                 private final HashingStorage storage;
-                private final HashingStorageLibrary lib;
+                private final HashingStorageGetItem getItemNode;
                 private final Set<PythonAbstractClass> subclasses;
 
-                private SubclassAddState(HashingStorage storage, HashingStorageLibrary lib, Set<PythonAbstractClass> subclasses) {
+                private SubclassAddState(HashingStorage storage, HashingStorageGetItem getItemNode, Set<PythonAbstractClass> subclasses) {
                     this.storage = storage;
-                    this.lib = lib;
+                    this.getItemNode = getItemNode;
                     this.subclasses = subclasses;
                 }
             }
@@ -1450,7 +1451,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
                 @Override
                 public SubclassAddState execute(Object key, SubclassAddState s) {
-                    setAdd(s.subclasses, (PythonClass) s.lib.getItem(s.storage, key));
+                    setAdd(s.subclasses, (PythonClass) s.getItemNode.execute(null, s.storage, key));
                     return s;
                 }
 
@@ -1473,11 +1474,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @Cached GetSubclassesNode getSubclassesNode,
                             @Cached EachSubclassAdd eachNode,
                             @CachedLibrary("value") PythonNativeWrapperLibrary lib,
-                            @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+                            @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
+                            @Cached HashingStorageGetItem getItem) {
                 PDict dict = (PDict) lib.getDelegate(value);
                 HashingStorage storage = dict.getDictStorage();
                 Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
-                hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
+                hashLib.forEach(storage, eachNode, new SubclassAddState(storage, getItem, subclasses));
             }
 
             @Specialization(guards = "eq(MD_DEF, key)")

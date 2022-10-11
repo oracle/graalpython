@@ -68,11 +68,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
@@ -356,13 +356,12 @@ public class StructSequence {
                         @Cached IsBuiltinClassProfile notASequenceProfile,
                         @Cached BranchProfile wrongLenProfile,
                         @Cached BranchProfile needsReallocProfile,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary dictLib) {
+                        @Cached HashingStorageGetItem getItem) {
             Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
-            ThreadState threadState = PArguments.getThreadState(frame);
             for (int i = src.length; i < dst.length; ++i) {
-                Object o = dictLib.getItemWithState(hs, fieldNames[i], threadState);
+                Object o = getItem.execute(frame, hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
             return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));

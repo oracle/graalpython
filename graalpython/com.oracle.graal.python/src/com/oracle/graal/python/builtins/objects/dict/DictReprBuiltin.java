@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
@@ -182,10 +183,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
                             @Cached ConditionProfile lengthCheck,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib,
+                            @Cached HashingStorageGetItem getItem,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
                 appendSeparator(s, lengthCheck, appendStringNode);
-                appendStringNode.execute(s.result, getReprString(lib.getItem(s.dictStorage, key), s, reprNode, castStr, raiseNode));
+                // TODO: channel the frame through the for each node
+                appendStringNode.execute(s.result, getReprString(getItem.execute(null, s.dictStorage, key), s, reprNode, castStr, raiseNode));
                 return s;
             }
         }
@@ -202,13 +204,14 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
                             @Cached ConditionProfile lengthCheck,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib,
+                            @Cached HashingStorageGetItem getItem,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
                 appendSeparator(s, lengthCheck, appendStringNode);
                 appendStringNode.execute(s.result, T_LPAREN);
                 appendStringNode.execute(s.result, getReprString(key, null, keyReprNode, castStr, raiseNode));
                 appendStringNode.execute(s.result, T_COMMA_SPACE);
-                appendStringNode.execute(s.result, getReprString(lib.getItem(s.dictStorage, key), s, valueReprNode, castStr, raiseNode));
+                // TODO: channel the frame through the for each node
+                appendStringNode.execute(s.result, getReprString(getItem.execute(null, s.dictStorage, key), s, valueReprNode, castStr, raiseNode));
                 appendStringNode.execute(s.result, T_RPAREN);
                 return s;
             }
@@ -226,10 +229,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached CastToTruffleStringNode castStr,
                             @Cached PRaiseNode raiseNode,
                             @Cached ConditionProfile lengthCheck,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib,
+                            @Cached HashingStorageGetItem getItem,
                             @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
+                // TODO: channel the frame through the for each node
                 TruffleString keyReprString = getReprString(key, null, keyReprNode, castStr, raiseNode);
-                TruffleString valueReprString = getReprString(lib.getItem(s.dictStorage, key), s, valueReprNode, castStr, raiseNode);
+                TruffleString valueReprString = getReprString(getItem.execute(null, s.dictStorage, key), s, valueReprNode, castStr, raiseNode);
                 appendSeparator(s, lengthCheck, appendStringNode);
                 appendStringNode.execute(s.result, keyReprString);
                 appendStringNode.execute(s.result, T_COLONSPACE);

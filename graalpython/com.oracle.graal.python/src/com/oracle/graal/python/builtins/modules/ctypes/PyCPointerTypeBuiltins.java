@@ -50,8 +50,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CDATA_INSTANC
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_BE_A_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.nodes.StringLiterals.T_AMPERSAND;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectS
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -113,6 +114,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
@@ -135,7 +137,8 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             stgdict.flags |= TYPEFLAG_ISPOINTER;
 
             PDict typedict = (PDict) args[2];
-            Object proto = hlib.getItem(typedict.getDictStorage(), T__TYPE_); /* Borrowed ref */
+            // Borrowed ref:
+            Object proto = getItem.execute(frame, typedict.getDictStorage(), T__TYPE_);
             if (proto != null) {
                 PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);

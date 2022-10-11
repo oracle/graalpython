@@ -49,10 +49,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FILTERS;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.INITIAL_BUFFER_SIZE;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_FILTERS_MAX;
-import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_TELL_ANY_CHECK;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_TELL_NO_CHECK;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.PRESET_DEFAULT;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.T_LZMA_JAVA_ERROR;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMADecompressor
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -268,12 +269,12 @@ public class LZMANodes {
             return executeOptionState(key, s);
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         OptionsState doit(Object key, OptionsState s,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached ConditionProfile errProfile,
-                        @CachedLibrary("s.dictStorage") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PRaiseNode raise,
                         @Cached TruffleString.EqualNode equalNode) {
             TruffleString skey = strNode.execute(null, key);
@@ -281,7 +282,8 @@ public class LZMANodes {
             if (errProfile.profile(idx == -1)) {
                 throw raise.raise(ValueError, ErrorMessages.INVALID_FILTER_SPECIFIED_FOR_FILTER, s.filterType);
             }
-            long l = toLong.execute(hlib.getItem(s.dictStorage, skey));
+            // TODO: channel the frame through the for each node
+            long l = toLong.execute(getItem.execute(null, s.dictStorage, skey));
             if (errProfile.profile(l < 0)) {
                 throw raise.raise(OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
             }

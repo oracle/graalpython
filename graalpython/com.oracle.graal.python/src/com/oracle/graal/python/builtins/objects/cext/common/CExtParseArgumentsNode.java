@@ -46,10 +46,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CONVERTBUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_R;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1204,7 +1204,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PCallCExtFunction callCStringToString,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
@@ -1224,7 +1224,7 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof TruffleString) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = lib.getItem(((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
+                    out = getItem.execute(null, ((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
                 }
             }
             if (out == null && !state.restOptional) {

@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -553,8 +554,8 @@ public abstract class ObjectNodes {
         @Specialization
         Object dispatchDict(VirtualFrame frame, Object cls, PDict clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
-                        @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
-            Object slotNames = storageLib.getItem(clsDict.getDictStorage(), T__SLOTNAMES);
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+            Object slotNames = getItem.execute(frame, clsDict.getDictStorage(), T__SLOTNAMES);
             slotNames = slotNames == null ? PNone.NO_VALUE : slotNames;
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }
@@ -564,9 +565,9 @@ public abstract class ObjectNodes {
         Object dispatchMappingProxy(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PMappingproxy clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Bind("clsDict.getMapping()") Object mapping,
-                        @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             PDict mappingDict = (PDict) mapping;
-            return dispatchDict(frame, cls, mappingDict, copyReg, getSlotNamesInternalNode, storageLib);
+            return dispatchDict(frame, cls, mappingDict, copyReg, getSlotNamesInternalNode, getItem);
         }
 
         @Specialization(guards = "isNoValue(noValue)")

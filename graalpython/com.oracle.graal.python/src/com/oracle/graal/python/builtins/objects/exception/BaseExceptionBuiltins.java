@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -494,16 +495,6 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @ImportStatic(PGuards.class)
         abstract static class ForEachKW extends HashingStorageLibrary.ForEachNode<ExcState> {
-            private final int limit;
-
-            protected ForEachKW(int limit) {
-                this.limit = limit;
-            }
-
-            protected final int getLimit() {
-                return limit;
-            }
-
             @Override
             public final ExcState execute(Object key, ExcState state) {
                 return execute(null, key, state);
@@ -514,8 +505,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             @Specialization
             public static ExcState doIt(VirtualFrame frame, TruffleString key, ExcState state,
                             @Cached PyObjectSetAttr setAttr,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                final Object value = lib.getItem(state.dictStorage, key);
+                            @Cached HashingStorageGetItem getItem) {
+                final Object value = getItem.execute(frame, state.dictStorage, key);
                 setAttr.execute(frame, state.exception, key, value);
                 return state;
             }
@@ -523,7 +514,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setDict(PBaseException self, PDict state,
-                        @Cached("create(3)") ForEachKW forEachKW,
+                        @Cached ForEachKW forEachKW,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             final HashingStorage dictStorage = state.getDictStorage();
             lib.forEach(dictStorage, forEachKW, new ExcState(dictStorage, self));

@@ -48,7 +48,6 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -60,14 +59,16 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -132,7 +133,7 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Shared("castToTS") @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             return string(self, castToTruffleStringNode.execute(key), state, equalNode);
@@ -146,11 +147,13 @@ public class KeywordsStorage extends HashingStorage {
         }
     }
 
-    @ExportMessage(limit = "1")
     @ImportStatic(PGuards.class)
-    public static class GetItemWithState {
+    @GenerateUncached
+    public abstract static class GetItemNode extends Node {
+        public abstract Object execute(Frame frame, KeywordsStorage self, Object key);
+
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") ThreadState state,
+        static Object cached(KeywordsStorage self, TruffleString key,
                         @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
@@ -158,27 +161,25 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
-        static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") ThreadState state,
+        static Object string(KeywordsStorage self, TruffleString key,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findStringKey(key, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Shared("castToTS") @Cached CastToTruffleStringNode castToTruffleStringNode,
+        static Object pstring(KeywordsStorage self, PString key,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return string(self, castToTruffleStringNode.execute(key), state, equalNode);
+            return string(self, castToTruffleStringNode.execute(key), equalNode);
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static Object notString(KeywordsStorage self, Object key, ThreadState state,
+        static Object notString(Frame frame, KeywordsStorage self, Object key,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long hash = hashNode.execute(frame, key);
             for (int i = 0; i < self.keywords.length; i++) {
                 TruffleString currentKey = self.keywords[i].getName();

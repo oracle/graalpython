@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
@@ -748,7 +749,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached HPyRaiseNode raiseNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
@@ -761,7 +762,7 @@ public abstract class GraalHPyContextFunctions {
             PDict dict = (PDict) left;
             Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
             try {
-                Object item = hashingStorageLibrary.getItem(dict.getDictStorage(), key);
+                Object item = getItem.execute(null, dict.getDictStorage(), key);
                 if (item != null) {
                     return asHandleNode.execute(context, item);
                 }

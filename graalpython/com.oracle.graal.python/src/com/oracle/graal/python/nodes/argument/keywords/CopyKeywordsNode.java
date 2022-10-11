@@ -41,10 +41,10 @@
 package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -100,22 +101,22 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
             return executeWithState(key, state);
         }
 
-        @Specialization(rewriteOn = CannotCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(rewriteOn = CannotCastException.class)
         public CopyKeywordsState add(Object key, CopyKeywordsState state,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
-            Object value = lib.getItem(state.hashingStorage, key);
+                        @Shared("cast") @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+            Object value = getItem.execute(null, state.hashingStorage, key);
             state.addKeyword(castToTruffleStringNode.execute(key), value);
             return state;
         }
 
-        @Specialization(replaces = J_ADD, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(replaces = "add")
         public CopyKeywordsState addExc(Object key, CopyKeywordsState state,
                         @Cached PRaiseNode raiseNode,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
+                        @Shared("cast") @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             try {
-                Object value = lib.getItem(state.hashingStorage, key);
+                Object value = getItem.execute(null, state.hashingStorage, key);
                 state.addKeyword(castToTruffleStringNode.execute(key), value);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");

@@ -94,7 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -358,7 +358,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
         int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached ExecModuleNode execModuleNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
@@ -372,7 +372,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
              */
             DynamicObjectNativeWrapper nativeWrapper = extensionModule.getNativeWrapper();
             if (nativeWrapper != null && nativeWrapper.getNativeMemberStore() != null) {
-                Object item = lib.getItem(nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberNameTruffleString());
+                Object item = getItem.execute(frame, nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberNameTruffleString());
                 if (item != PNone.NO_VALUE) {
                     return 0;
                 }

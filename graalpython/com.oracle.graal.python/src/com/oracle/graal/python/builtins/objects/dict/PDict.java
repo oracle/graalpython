@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -86,7 +87,7 @@ public class PDict extends PHashingCollection {
     }
 
     public Object getItem(Object key) {
-        return HashingStorageLibrary.getUncached().getItem(storage, key);
+        return HashingStorageGetItem.executeUncached(storage, key);
     }
 
     public void setItem(Object key, Object value) {
@@ -154,15 +155,15 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static Object readHashValue(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         Object value = null;
         boolean mustRelease = gil.acquire();
         try {
-            value = lib.getItem(self.getDictStorage(), convertNode.executeConvert(key));
+            value = getItem.execute(null, self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }

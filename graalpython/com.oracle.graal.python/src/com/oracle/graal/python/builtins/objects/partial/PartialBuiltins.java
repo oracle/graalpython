@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -105,6 +106,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPartial)
 public class PartialBuiltins extends PythonBuiltins {
@@ -345,12 +347,12 @@ public class PartialBuiltins extends PythonBuiltins {
         }
 
         private static void reprKwArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, PyObjectStrAsTruffleStringNode strNode,
-                        HashingStorageLibrary lib, TruffleStringBuilder.AppendStringNode appendStringNode) {
+                        HashingStorageLibrary lib, HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
             final PDict kwDict = partial.getKw();
             if (kwDict != null) {
                 final HashingStorage storage = kwDict.getDictStorage();
                 for (Object key : lib.keys(storage)) {
-                    final Object value = lib.getItem(storage, key);
+                    final Object value = getItem.execute(frame, storage, key);
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, strNode.execute(frame, key));
                     appendStringNode.execute(sb, T_EQ);
@@ -367,6 +369,7 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetNameNode nameNode,
                         @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             final Object cls = classNode.execute(partial);
@@ -381,7 +384,7 @@ public class PartialBuiltins extends PythonBuiltins {
                 appendStringNode.execute(sb, T_LPAREN);
                 appendStringNode.execute(sb, reprNode.execute(frame, partial.getFn()));
                 reprArgs(frame, partial, sb, reprNode, appendStringNode);
-                reprKwArgs(frame, partial, sb, reprNode, strNode, lib, appendStringNode);
+                reprKwArgs(frame, partial, sb, reprNode, strNode, lib, getItem, appendStringNode);
                 appendStringNode.execute(sb, T_RPAREN);
                 return toStringNode.execute(sb);
             } finally {
