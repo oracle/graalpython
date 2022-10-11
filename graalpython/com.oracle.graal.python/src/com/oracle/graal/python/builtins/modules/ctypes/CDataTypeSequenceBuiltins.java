@@ -62,8 +62,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -80,7 +80,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {
@@ -111,7 +110,7 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
         Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageGetItem getItem,
                         @Cached CallNode callNode,
                         @Cached IsTypeNode isTypeNode,
@@ -131,7 +130,7 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
             PDict dict = factory().createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
             PTuple tuple = factory().createTuple(new Object[]{PyCArray});
             result = callNode.execute(frame, PyCArrayType, name, tuple, dict);
-            hlib.setItem(ctypes.cache, key, result);
+            setItem.execute(frame, ctypes.cache, key, result);
             return result;
         }
 
