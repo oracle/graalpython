@@ -635,6 +635,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         public SourceSection getSourceSection() {
             return innerRootNode.getSourceSection();
         }
+
+        @Override
+        public String getName() {
+            return innerRootNode.getName();
+        }
     }
 
     private ExecutableNode parseForBytecodeInterpreter(InlineParsingRequest request) {
