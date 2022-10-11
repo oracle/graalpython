@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1702,6 +1703,7 @@ public abstract class TypeNodes {
         @Specialization
         protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
                         @Cached HashingStorage.InitNode initNode,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
@@ -1741,7 +1743,7 @@ public abstract class TypeNodes {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame != null ? callerFrame.getGlobals() : null;
                     if (globals != null) {
-                        TruffleString moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
+                        TruffleString moduleName = getModuleNameFromGlobals(globals, getItem);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, SpecialAttributeNames.T___MODULE__, moduleName);
                         }
@@ -1758,7 +1760,7 @@ public abstract class TypeNodes {
                 }
 
                 // set __class__ cell contents
-                Object classcell = hashingStoragelib.getItem(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
+                Object classcell = getItem.execute(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
@@ -1788,12 +1790,12 @@ public abstract class TypeNodes {
             }
         }
 
-        private TruffleString getModuleNameFromGlobals(PythonObject globals, HashingStorageLibrary hlib) {
+        private TruffleString getModuleNameFromGlobals(PythonObject globals, HashingStorageGetItem getItem) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, SpecialAttributeNames.T___NAME__);
             } else if (globals instanceof PDict) {
-                nameAttr = hlib.getItem(((PDict) globals).getDictStorage(), SpecialAttributeNames.T___NAME__);
+                nameAttr = getItem.execute(((PDict) globals).getDictStorage(), SpecialAttributeNames.T___NAME__);
             } else {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid globals object");
@@ -1838,6 +1840,7 @@ public abstract class TypeNodes {
 
         @Specialization
         protected PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStorageLib,
                         @Cached("create(T___DICT__)") LookupAttributeInMRONode getDictAttrNode,
                         @Cached("create(T___WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
@@ -1906,9 +1909,10 @@ public abstract class TypeNodes {
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
-            Object hashMethod = hashingStorageLib.getItem(namespace.getDictStorage(), SpecialMethodNames.T___HASH__);
+            HashingStorage namespaceStorage = namespace.getDictStorage();
+            Object hashMethod = getItem.execute(frame, namespaceStorage, SpecialMethodNames.T___HASH__);
             if (hashMethod == null) {
-                Object eqMethod = hashingStorageLib.getItem(namespace.getDictStorage(), SpecialMethodNames.T___EQ__);
+                Object eqMethod = getItem.execute(frame, namespaceStorage, SpecialMethodNames.T___EQ__);
                 if (eqMethod != null) {
                     pythonClass.setAttribute(SpecialMethodNames.T___HASH__, PNone.NONE);
                 }
@@ -2001,7 +2005,7 @@ public abstract class TypeNodes {
                     }
 
                     // checks for some name errors too
-                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, hashingStorageLib, factory, raise);
+                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, context.factory());
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
@@ -2277,9 +2281,10 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         private PTuple copySlots(TruffleString className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace,
-                        HashingStorageLibrary nslib, PythonObjectFactory factory, PRaiseNode raise) {
+                        PythonObjectFactory factory) {
             SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
             int j = 0;
+            HashingStorageLibrary nslib = HashingStorageLibrary.getUncached();
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop
                 // n.b.: passing the null frame here is fine, since the storage and index are known
@@ -2292,7 +2297,7 @@ public abstract class TypeNodes {
                 try {
                     slotName = PythonSSTNodeFactory.mangleName(className, slotName);
                 } catch (OverflowException e) {
-                    throw raise.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                 }
                 if (slotName == null) {
                     return null;
@@ -2303,7 +2308,7 @@ public abstract class TypeNodes {
                 // state to the context.
                 if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) && nslib.hasKey(namespace.getDictStorage(), slotName)) {
                     // __qualname__ and __classcell__ will be deleted later
-                    throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
+                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
                 j++;
             }
