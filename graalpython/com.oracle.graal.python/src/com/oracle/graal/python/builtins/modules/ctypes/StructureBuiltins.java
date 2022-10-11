@@ -54,23 +54,27 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltinsFactory.PyTypeStgDictNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.Structure, PythonBuiltinClassType.Union})
@@ -97,6 +101,7 @@ public class StructureBuiltins extends PythonBuiltins {
     @Builtin(name = J___INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class InitNode extends PythonBuiltinNode {
+        private static final int RECURSION_LIMIT = 5;
 
         @Specialization
         Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
@@ -104,13 +109,13 @@ public class StructureBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetItemNode getItemNode,
                         @Cached CastToTruffleStringNode toString,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached TruffleString.EqualNode equalNode) {
             if (args.length > 0) {
                 int res = _init_pos_args(frame, self, getClassNode.execute(self), args, kwds, 0,
-                                setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode, equalNode);
+                                setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode, RECURSION_LIMIT);
                 if (res < args.length) {
                     throw raise(TypeError, TOO_MANY_INITIALIZERS);
                 }
@@ -139,21 +144,32 @@ public class StructureBuiltins extends PythonBuiltins {
                         SetAttributeNode.Dynamic setAttr,
                         GetItemNode getItemNode,
                         CastToTruffleStringNode toString,
-                        HashingStorageLibrary hlib,
+                        HashingStorageGetItem getItem,
                         PyTypeStgDictNode pyTypeStgDictNode,
                         GetBaseClassNode getBaseClassNode,
-                        TruffleString.EqualNode equalNode) {
+                        TruffleString.EqualNode equalNode,
+                        int recursionLimit) {
             Object fields;
             int index = idx;
 
             Object base = getBaseClassNode.execute(type);
             if (pyTypeStgDictNode.execute(base) != null) {
-                index = _init_pos_args(frame, self, base, args, kwds, index,
-                                setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode, equalNode);
+                if (recursionLimit > 0) {
+                    index = _init_pos_args(frame, self, base, args, kwds, index,
+                                    setAttr, getItemNode, toString, getItem, pyTypeStgDictNode, getBaseClassNode, equalNode,
+                                    recursionLimit - 1);
+                } else {
+                    Object savedState = IndirectCallContext.enter(frame, this);
+                    try {
+                        index = _init_pos_args_boundary(self, base, args, kwds, index, setAttr, getItemNode);
+                    } finally {
+                        IndirectCallContext.exit(frame, this, savedState);
+                    }
+                }
             }
 
             StgDictObject dict = pyTypeStgDictNode.execute(type);
-            fields = hlib.getItem(dict.getDictStorage(), T__fields_);
+            fields = getItem.execute(dict.getDictStorage(), T__fields_);
             if (fields == null) {
                 return index;
             }
@@ -171,6 +187,16 @@ public class StructureBuiltins extends PythonBuiltins {
                 setAttr.execute(frame, self, name, val);
             }
             return index + dict.length;
+        }
+
+        @TruffleBoundary
+        int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
+                        SetAttributeNode.Dynamic setAttr,
+                        GetItemNode getItemNode) {
+            return _init_pos_args(null, self, type, args, kwds, idx, setAttr,
+                            getItemNode, CastToTruffleStringNode.getUncached(),
+                            HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),
+                            GetBaseClassNodeGen.getUncached(), TruffleString.EqualNode.getUncached(), 0);
         }
     }
 
