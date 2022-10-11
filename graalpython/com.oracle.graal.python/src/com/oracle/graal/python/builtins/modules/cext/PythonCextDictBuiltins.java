@@ -305,13 +305,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyDictGetItemNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public Object getItem(VirtualFrame frame, PDict dict, Object key,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached BranchProfile noResultProfile) {
             try {
-                Object res = lib.getItemWithFrame(dict.getDictStorage(), key, hasFrameProfile, frame);
+                Object res = getItem.execute(frame, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter();
                     return getContext().getNativeNull();

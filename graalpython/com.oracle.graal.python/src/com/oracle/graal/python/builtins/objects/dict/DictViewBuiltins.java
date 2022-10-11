@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
@@ -187,11 +188,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return lib.hasKeyWithFrame(self.getWrappedDict().getDictStorage(), key, hasFrame, frame);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached ConditionProfile hasFrame,
                         @Cached ConditionProfile tupleLenProfile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
@@ -200,7 +200,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                 return false;
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
-            Object value = hlib.getItemWithFrame(dictStorage, getTupleItemNode.execute(tupleStorage, 0), hasFrame, frame);
+            Object value = getItem.execute(frame, dictStorage, getTupleItemNode.execute(tupleStorage, 0));
             if (value != null) {
                 return eqNode.execute(frame, value, getTupleItemNode.execute(tupleStorage, 1));
             } else {
