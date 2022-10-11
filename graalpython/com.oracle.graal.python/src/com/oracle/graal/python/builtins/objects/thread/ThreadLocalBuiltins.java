@@ -56,6 +56,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -118,7 +120,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private LookupCallableSlotInMRONode lookupSetNode;
         @Child private LookupCallableSlotInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
-        @Child private HashingStorageLibrary hlib;
+        @Child private HashingStorageGetItem getDictStorageItem;
         @Child private GetClassNode getDescClassNode;
 
         @Specialization
@@ -155,7 +157,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            Object value = readAttribute(localDict, key);
+            Object value = readAttribute(frame, localDict, key);
             if (value != null) {
                 return value;
             }
@@ -170,12 +172,12 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
             throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
-        private Object readAttribute(PDict object, Object key) {
-            if (hlib == null) {
+        private Object readAttribute(VirtualFrame frame, PDict object, Object key) {
+            if (getDictStorageItem == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                hlib = insert(HashingStorageLibrary.getFactory().createDispatched(3));
+                getDictStorageItem = insert(HashingStorageGetItemNodeGen.create());
             }
-            return hlib.getItem(object.getDictStorage(), key);
+            return getDictStorageItem.execute(frame, object.getDictStorage(), key);
         }
 
         private Object dispatch(VirtualFrame frame, Object object, Object type, Object descr, Object get) {
@@ -313,6 +315,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached("create(T___DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached CallBinaryMethodNode callDelete,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             // Note: getting thread local dict has potential side-effects, don't move
@@ -333,7 +336,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            Object currentValue = hlib.getItem(localDict.getDictStorage(), key);
+            Object currentValue = getItem.execute(localDict.getDictStorage(), key);
             if (currentValue != null) {
                 HashingStorage storage = hlib.delItem(localDict.getDictStorage(), key);
                 localDict.setDictStorage(storage);
