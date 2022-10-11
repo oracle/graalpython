@@ -65,6 +65,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_GETSET_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_WRAPPER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
@@ -79,6 +80,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUNC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -86,6 +88,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -1993,18 +1996,45 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // zip(*iterables)
-    @Builtin(name = J_ZIP, minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PZip)
+    @Builtin(name = J_ZIP, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PZip)
     @GenerateNodeFactory
     public abstract static class ZipNode extends PythonBuiltinNode {
         @Specialization
-        PZip zip(VirtualFrame frame, Object cls, Object[] args,
+        PZip zip(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") PNone kw,
                         @Cached PyObjectGetIter getIter) {
+            return zip(frame, cls, args, false, getIter);
+        }
+
+        @Specialization(guards = "kw.length == 0")
+        PZip zip(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kw,
+                        @Cached PyObjectGetIter getIter) {
+            return zip(frame, cls, args, false, getIter);
+        }
+
+        @Specialization(guards = "kw.length == 1")
+        PZip zip(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kw,
+                        @Cached TruffleString.EqualNode eqNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached ConditionProfile profile) {
+            if (profile.profile(eqNode.execute(kw[0].getName(), T_STRICT, TS_ENCODING))) {
+                return zip(frame, cls, args, isTrueNode.execute(frame, kw[0].getValue()), getIter);
+            }
+            throw raise(TypeError, ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S, kw[0].getName(), T_ZIP);
+        }
+
+        @Specialization(guards = "kw.length != 1")
+        Object zip(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object[] args, PKeyword[] kw) {
+            throw raise(TypeError, ErrorMessages.S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN, T_ZIP, kw.length);
+        }
+
+        private PZip zip(VirtualFrame frame, Object cls, Object[] args, boolean strict, PyObjectGetIter getIter) {
             Object[] iterables = new Object[args.length];
             for (int i = 0; i < args.length; i++) {
                 Object item = args[i];
                 iterables[i] = getIter.execute(frame, item);
             }
-            return factory().createZip(cls, iterables);
+            return factory().createZip(cls, iterables, strict);
         }
     }
 
