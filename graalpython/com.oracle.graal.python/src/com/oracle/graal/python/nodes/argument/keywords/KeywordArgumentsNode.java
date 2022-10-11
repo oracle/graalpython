@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.argument.keywords;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.EmptyNode;
@@ -39,7 +39,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -62,12 +61,12 @@ public abstract class KeywordArgumentsNode extends Node {
     PKeyword[] doDictCached(PKeyword[] arguments, PDict starargs,
                     @Cached ExpandKeywordStarargsNode executeStarArgsNode,
                     @Cached KeywordArgumentsInternalNode internalNode,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                    @Cached HashingStorageGetItem getItem,
                     @Cached("arguments.length") int cachedLenArguments,
                     @Cached BranchProfile sameKeyProfile) {
         HashingStorage dictStorage = starargs.getDictStorage();
         for (int i = 0; i < cachedLenArguments; i++) {
-            if (lib.hasKey(dictStorage, arguments[i].getName())) {
+            if (getItem.hasKey(dictStorage, arguments[i].getName())) {
                 sameKeyProfile.enter();
                 throw new SameDictKeyException(arguments[i].getName());
             }
@@ -80,11 +79,11 @@ public abstract class KeywordArgumentsNode extends Node {
     PKeyword[] doDict(PKeyword[] arguments, PDict starargs,
                     @Cached ExpandKeywordStarargsNode executeStarArgsNode,
                     @Cached KeywordArgumentsInternalNode internalNode,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                    @Cached HashingStorageGetItem getItem,
                     @Cached BranchProfile sameKeyProfile) {
         HashingStorage dictStorage = starargs.getDictStorage();
         for (int i = 0; i < arguments.length; i++) {
-            if (lib.hasKey(dictStorage, arguments[i].getName())) {
+            if (getItem.hasKey(dictStorage, arguments[i].getName())) {
                 sameKeyProfile.enter();
                 throw new SameDictKeyException(arguments[i].getName());
             }

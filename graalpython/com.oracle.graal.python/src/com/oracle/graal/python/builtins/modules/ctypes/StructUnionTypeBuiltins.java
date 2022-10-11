@@ -144,7 +144,8 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageGetItem getItemResDict,
+                        @Cached HashingStorageGetItem getItemStgDict,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -161,7 +162,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             /* keep this for bw compatibility */
-            if (hlib.hasKey(resDict.getDictStorage(), T__abstract_)) {
+            if (getItemResDict.hasKey(resDict.getDictStorage(), T__abstract_)) {
                 return result;
             }
 
@@ -179,9 +180,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;
 
-            boolean hasFields = hlib.hasKey(dict.getDictStorage(), T__fields_);
-            if (hasFields) {
-                setFieldsAttributeNode.executeVoid(frame, result, getItem.execute(dict.getDictStorage(), T__fields_));
+            Object fieldsValue = getItemStgDict.execute(dict.getDictStorage(), T__fields_);
+            if (fieldsValue != null) {
+                setFieldsAttributeNode.executeVoid(frame, result, fieldsValue);
             } else {
                 StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(result));
                 if (basedict == null) {

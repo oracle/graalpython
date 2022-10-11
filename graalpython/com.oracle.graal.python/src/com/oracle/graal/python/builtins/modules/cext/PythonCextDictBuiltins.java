@@ -629,6 +629,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "override == 0", limit = "3")
         public static Object merge(VirtualFrame frame, PDict a, PDict b, @SuppressWarnings("unused") int override,
+                        @Cached HashingStorageGetItem getItemA,
                         @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
                         @CachedLibrary("b.getDictStorage()") HashingStorageLibrary libB,
                         @Cached ConditionProfile hasFrameProfile,
@@ -639,7 +640,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                 HashingStorage aStorage = a.getDictStorage();
                 while (loopProfile.profile(it.hasNext())) {
                     DictEntry e = it.next();
-                    if (!libA.hasKey(aStorage, e.key)) {
+                    if (!getItemA.hasKey(frame, aStorage, e.key)) {
                         libA.setItemWithFrame(aStorage, e.key, e.value, hasFrameProfile, frame);
                     }
                 }
@@ -658,6 +659,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @Cached ConstructListNode listNode,
                         @Cached GetItemNode getKeyNode,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getValueNode,
+                        @Cached HashingStorageGetItem getItemA,
                         @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached LoopConditionProfile loopProfile,
@@ -673,7 +675,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                 loopProfile.profileCounted(size);
                 for (int i = 0; loopProfile.inject(i < size); i++) {
                     Object key = getKeyNode.execute(keysStorage, i);
-                    if (!libA.hasKey(aStorage, key)) {
+                    if (!getItemA.hasKey(frame, aStorage, key)) {
                         noKeyProfile.enter();
                         Object value = getValueNode.execute(frame, b, key);
                         aStorage = libA.setItemWithFrame(aStorage, key, value, hasFrameProfile, frame);

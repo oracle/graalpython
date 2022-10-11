@@ -140,16 +140,16 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "2")
-    @ExportMessage(name = "isHashEntryModifiable", limit = "2")
-    @ExportMessage(name = "isHashEntryRemovable", limit = "2")
+    @ExportMessage
+    @ExportMessage(name = "isHashEntryModifiable")
+    @ExportMessage(name = "isHashEntryRemovable")
     static boolean isHashEntryReadable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return lib.hasKey(self.getDictStorage(), convertNode.executeConvert(key));
+            return getItem.hasKey(null, self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
@@ -158,7 +158,7 @@ public class PDict extends PHashingCollection {
     @ExportMessage
     static Object readHashValue(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @Cached HashingStorageGetItem getItem,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         Object value = null;
         boolean mustRelease = gil.acquire();
@@ -174,16 +174,16 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "3")
+    @ExportMessage
     static boolean isHashEntryInsertable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
                     @Cached PyObjectHashNode hashNode,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            if (lib.hasKey(self.getDictStorage(), pKey)) {
+            if (getItem.hasKey(null, self.getDictStorage(), pKey)) {
                 return false;
             } else {
                 // we can only insert hashable types
@@ -221,12 +221,13 @@ public class PDict extends PHashingCollection {
     @ExportMessage(limit = "2")
     static void removeHashEntry(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
+                    @Exclusive @Cached HashingStorageGetItem getItem,
                     @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            if (!lib.hasKey(self.getDictStorage(), pKey)) {
+            if (!getItem.hasKey(null, self.getDictStorage(), pKey)) {
                 throw UnknownKeyException.create(key);
             }
             lib.delItem(self.getDictStorage(), pKey);

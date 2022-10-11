@@ -120,15 +120,16 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageGetItem otherGetItem,
+                        @Cached HashingStorageGetItem resultGetItem,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Shared("hasFrame") @Cached ConditionProfile hasFrame,
                         @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
             HashingStorage result = dest;
             HashingStorage otherStorage = other.getDictStorage();
             for (Object key : hlib.keys(otherStorage)) {
-                Object value = getItem.execute(frame, otherStorage, key);
-                if (hlib.hasKey(result, key)) {
+                Object value = otherGetItem.execute(frame, otherStorage, key);
+                if (resultGetItem.hasKey(frame, result, key)) {
                     sameKeyProfile.enter();
                     throw new SameDictKeyException(key);
                 }
@@ -145,6 +146,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                         @Cached PyObjectCallMethodObjArgs callKeys,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ListNodes.FastConstructListNode asList,
+                        @Cached HashingStorageGetItem resultGetItem,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
@@ -156,7 +158,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                 int keysLen = lenNode.execute(keysStorage);
                 for (int i = 0; i < keysLen; i++) {
                     Object key = sequenceGetItem.execute(keysStorage, i);
-                    if (hlib.hasKey(result, key)) {
+                    if (resultGetItem.hasKey(frame, result, key)) {
                         sameKeyProfile.enter();
                         throw new SameDictKeyException(key);
                     }

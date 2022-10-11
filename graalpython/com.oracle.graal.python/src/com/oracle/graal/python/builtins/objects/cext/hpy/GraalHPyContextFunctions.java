@@ -2691,6 +2691,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codepointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
+                        @Cached HashingStorageGetItem getHashingStorageItem,
                         @CachedLibrary(limit = "3") HashingStorageLibrary storageLibrary,
                         @Cached CallNode callTypeConstructorNode,
                         @Cached PRaiseNode raiseNode,
@@ -2739,7 +2740,7 @@ public abstract class GraalHPyContextFunctions {
                     dictStorage = dict.getDictStorage();
                 }
 
-                if (!storageLibrary.hasKey(dictStorage, SpecialAttributeNames.T___MODULE__)) {
+                if (!getHashingStorageItem.hasKey(dictStorage, SpecialAttributeNames.T___MODULE__)) {
                     dictStorage = storageLibrary.setItem(dictStorage, SpecialAttributeNames.T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
                 }
 

@@ -633,7 +633,7 @@ public abstract class TypeNodes {
 
                 @Override
                 public boolean contains(Object o) {
-                    return HashingStorageLibrary.getUncached().hasKey(dict.getDictStorage(), o);
+                    return HashingStorageGetItem.hasKeyUncached(dict.getDictStorage(), o);
                 }
 
                 @Override
@@ -1703,7 +1703,8 @@ public abstract class TypeNodes {
         @Specialization
         protected PythonClass makeType(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds,
                         @Cached HashingStorage.InitNode initNode,
-                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageGetItem getItemGlobals,
+                        @Cached HashingStorageGetItem getItemNamespace,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
@@ -1743,7 +1744,7 @@ public abstract class TypeNodes {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame != null ? callerFrame.getGlobals() : null;
                     if (globals != null) {
-                        TruffleString moduleName = getModuleNameFromGlobals(globals, getItem);
+                        TruffleString moduleName = getModuleNameFromGlobals(globals, getItemGlobals);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, SpecialAttributeNames.T___MODULE__, moduleName);
                         }
@@ -1751,7 +1752,7 @@ public abstract class TypeNodes {
                 }
 
                 // delete __qualname__ from namespace
-                if (hashingStoragelib.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__)) {
+                if (getItemNamespace.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__)) {
                     HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__);
                     if (newStore != namespace.getDictStorage()) {
                         updatedStorage.enter();
@@ -1760,14 +1761,14 @@ public abstract class TypeNodes {
                 }
 
                 // set __class__ cell contents
-                Object classcell = getItem.execute(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
+                Object classcell = getItemNamespace.execute(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    if (hashingStoragelib.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__)) {
+                    if (getItemNamespace.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__)) {
                         HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
                         if (newStore != namespace.getDictStorage()) {
                             updatedStorage.enter();
@@ -2284,7 +2285,6 @@ public abstract class TypeNodes {
                         PythonObjectFactory factory) {
             SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
             int j = 0;
-            HashingStorageLibrary nslib = HashingStorageLibrary.getUncached();
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop
                 // n.b.: passing the null frame here is fine, since the storage and index are known
@@ -2306,7 +2306,8 @@ public abstract class TypeNodes {
                 setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) && nslib.hasKey(namespace.getDictStorage(), slotName)) {
+                if (!T___CLASSCELL__.equalsUncached(slotName, TS_ENCODING) && !T___QUALNAME__.equalsUncached(slotName, TS_ENCODING) &&
+                                HashingStorageGetItem.hasKeyUncached(namespace.getDictStorage(), slotName)) {
                     // __qualname__ and __classcell__ will be deleted later
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }

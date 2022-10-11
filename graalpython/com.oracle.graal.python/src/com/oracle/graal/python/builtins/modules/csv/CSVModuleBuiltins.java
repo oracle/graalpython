@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -96,7 +96,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = CSVModuleBuiltins.J__CSV)
@@ -190,12 +189,12 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
         PNone unregister(VirtualFrame frame, PythonModule module, Object nameObj,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyDictDelItem delItem,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hashingStorage) {
+                        @Cached HashingStorageGetItem getItem) {
 
             // TODO GR-38165: unchecked cast to PDict
             PDict dialects = (PDict) readNode.execute(module, T__DIALECTS);
 
-            if (hashingStorage.hasKey((dialects).getDictStorage(), nameObj)) {
+            if (getItem.hasKey(frame, (dialects).getDictStorage(), nameObj)) {
                 delItem.execute(frame, dialects, nameObj);
             } else {
                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNKNOWN_DIALECT);

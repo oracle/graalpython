@@ -58,6 +58,18 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     public static abstract class HashingStorageGetItem extends Node {
+        public static boolean hasKeyUncached(HashingStorage storage, Object key) {
+            return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key) != null;
+        }
+
+        public final boolean hasKey(HashingStorage self, TruffleString key) {
+            return execute(null, self, key) != null;
+        }
+
+        public final boolean hasKey(Frame frame, HashingStorage self, Object key) {
+            return execute(frame, self, key) != null;
+        }
+
         public static Object executeUncached(HashingStorage storage, Object key) {
             return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key);
         }
