@@ -27,10 +27,7 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SELF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -48,12 +45,6 @@ public final class Signature {
     @CompilationFinal(dimensions = 1) private final TruffleString[] keywordOnlyNames;
 
     private final TruffleString raiseErrorName;
-
-    public Signature(Builtin builtin,
-                    TruffleString[] parameterIds) {
-        this(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterIds.length : -1,
-                        builtin.varArgsMarker(), parameterIds, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
-    }
 
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     TruffleString[] parameterIds, TruffleString[] keywordNames) {

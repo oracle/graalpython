@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.function;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
@@ -174,9 +175,13 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             // args
             maxNumPosArgs = 1;
         }
+        int posOnlyArgs = builtin.numOfPositionalOnlyArgs();
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by signature
             maxNumPosArgs++;
+            if (posOnlyArgs > 0) {
+                posOnlyArgs++;
+            }
         }
 
         if (maxNumPosArgs > 0) {
@@ -210,7 +215,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
-        return new Signature(builtin, parameterNames);
+        return new Signature(posOnlyArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
+                        builtin.varArgsMarker(), parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
     }
 
     // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)
