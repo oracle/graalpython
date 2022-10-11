@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -85,7 +86,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -159,8 +159,9 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame)", limit = "3")
         public static Object setDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
                         @SuppressWarnings("unused") @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.getItemWithFrame(dict.getDictStorage(), key, hasFrame, frame);
+                        @Cached HashingStorageGetItem getItem,
+                        @SuppressWarnings("unused") @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
+            return getItem.execute(frame, dict.getDictStorage(), key);
         }
 
         @Specialization(guards = "!lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame)", limit = "3")
@@ -206,9 +207,10 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasKey,
                         @Cached ConditionProfile hasDefault,
                         @Cached ConditionProfile hasFrame,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage dictStorage = dict.getDictStorage();
-            Object retVal = lib.getItemWithFrame(dictStorage, key, hasFrame, frame);
+            Object retVal = getItem.execute(frame, dictStorage, key);
             if (hasKey.profile(retVal != null)) {
                 removeItem(frame, dict, key, dictStorage, lib, hasFrame, updatedStorage);
                 return retVal;
@@ -266,9 +268,8 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public static Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
-                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                        @Cached ConditionProfile profile) {
-            final Object value = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
+                        @Cached HashingStorageGetItem getItem) {
+            final Object value = getItem.execute(frame, self.getDictStorage(), key);
             return value != null ? value : (defaultValue == PNone.NO_VALUE ? PNone.NONE : defaultValue);
         }
     }
@@ -280,9 +281,8 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getItem(VirtualFrame frame, PDict self, Object key,
-                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                        @Exclusive @Cached ConditionProfile profile) {
-            final Object result = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
+                        @Cached HashingStorageGetItem getItem) {
+            final Object result = getItem.execute(frame, self.getDictStorage(), key);
             if (result == null) {
                 if (missing == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
