@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -238,10 +239,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static boolean contains(VirtualFrame frame, PBaseSet self, Object key,
-                        @Cached ConditionProfile hasFrame,
                         @Cached ConvertKeyNode conv,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.hasKeyWithFrame(self.getDictStorage(), conv.execute(key), hasFrame, frame);
+                        @Cached HashingStorageGetItem getItem) {
+            return getItem.hasKey(frame, self.getDictStorage(), conv.execute(key));
         }
     }
 

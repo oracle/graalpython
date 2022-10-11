@@ -184,23 +184,6 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
 
-        protected static void removeItem(VirtualFrame frame, PDict dict, Object key, HashingStorage storage,
-                        HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
-            HashingStorage newStore = null;
-            // TODO: FIXME: this might call __hash__ twice
-            boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
-            if (hasKey) {
-                newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
-            }
-
-            if (hasKey) {
-                if (newStore != storage) {
-                    updatedStorage.enter();
-                    dict.setDictStorage(newStore);
-                }
-            }
-        }
-
         @Specialization(limit = "3")
         public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Cached BranchProfile updatedStorage,
@@ -212,7 +195,11 @@ public final class DictBuiltins extends PythonBuiltins {
             HashingStorage dictStorage = dict.getDictStorage();
             Object retVal = getItem.execute(frame, dictStorage, key);
             if (hasKey.profile(retVal != null)) {
-                removeItem(frame, dict, key, dictStorage, lib, hasFrame, updatedStorage);
+                HashingStorage newStore = lib.delItemWithFrame(dictStorage, key, hasFrame, frame);
+                if (newStore != dictStorage) {
+                    updatedStorage.enter();
+                    dict.setDictStorage(newStore);
+                }
                 return retVal;
             } else if (hasDefault.profile(defaultValue != PNone.NO_VALUE)) {
                 return defaultValue;
@@ -343,11 +330,12 @@ public final class DictBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, PDict self, Object key,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
+                        @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
-            boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
+            boolean hasKey = getItem.hasKey(frame, storage, key);
             if (hasKey) {
                 newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
             }
@@ -413,9 +401,8 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean run(VirtualFrame frame, PDict self, Object key,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.hasKeyWithFrame(self.getDictStorage(), key, hasFrame, frame);
+                        @Cached HashingStorageGetItem getItem) {
+            return getItem.hasKey(frame, self.getDictStorage(), key);
         }
     }
 

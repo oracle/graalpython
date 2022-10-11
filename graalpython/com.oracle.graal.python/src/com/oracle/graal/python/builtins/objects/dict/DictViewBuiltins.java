@@ -183,9 +183,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return lib.hasKeyWithFrame(self.getWrappedDict().getDictStorage(), key, hasFrame, frame);
+                        @Cached HashingStorageGetItem getItem) {
+            return getItem.hasKey(frame, self.getWrappedDict().getDictStorage(), key);
         }
 
         @Specialization

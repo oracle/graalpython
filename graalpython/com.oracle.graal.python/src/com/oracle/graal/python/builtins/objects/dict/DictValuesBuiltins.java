@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -52,7 +53,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesView)
 public final class DictValuesBuiltins extends PythonBuiltins {
@@ -109,14 +109,12 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         static boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
-                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary libSelf,
-                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary libOther) {
+                        @Cached HashingStorageGetItem getItemOther) {
 
             final HashingStorage storage = other.getWrappedDict().getDictStorage();
             for (Object selfKey : libSelf.keys(self.getWrappedDict().getDictStorage())) {
-                final boolean hasKey = libOther.hasKeyWithFrame(storage, selfKey, hasFrame, frame);
-                if (!hasKey) {
+                if (!getItemOther.hasKey(frame, storage, selfKey)) {
                     return false;
                 }
             }
