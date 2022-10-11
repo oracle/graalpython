@@ -99,7 +99,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -1472,7 +1472,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(TruffleString chars,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
@@ -1482,7 +1482,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             TruffleStringIterator it = createCodePointIteratorNode.execute(chars, TS_ENCODING);
             while (it.hasNext()) {
                 int charid = nextNode.execute(it);
-                store = lib.setItem(store, charid, num);
+                store = setItem.execute(null, store, charid, num);
                 num++;
             }
             dict.setDictStorage(store);
