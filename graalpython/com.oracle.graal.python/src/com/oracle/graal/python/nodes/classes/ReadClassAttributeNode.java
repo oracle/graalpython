@@ -139,7 +139,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
     protected Object loadClassDerefFast(VirtualFrame frame,
                     @Shared("dictGetItem") @Cached HashingStorageGetItem getItem,
                     @Shared("readCell") @Cached("create(cellSlot, isFreeVar)") ReadLocalCellNode readCell) {
-        Object result = getItem.execute(frame, getLocalsStorage(frame), identifier);
+        Object result = getItem.execute(getLocalsStorage(frame), identifier);
         if (result == null) {
             return readCell.execute(frame);
         } else {
@@ -151,7 +151,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
     protected Object loadNameFast(VirtualFrame frame,
                     @Shared("dictGetItem") @Cached HashingStorageGetItem getItem,
                     @Shared("readGlobal") @Cached("create(identifier)") ReadGlobalOrBuiltinNode readGlobal) {
-        Object result = getItem.execute(frame, getLocalsStorage(frame), identifier);
+        Object result = getItem.execute(getLocalsStorage(frame), identifier);
         if (result == null) {
             return readGlobal.execute(frame);
         } else {

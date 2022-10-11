@@ -1285,7 +1285,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     DynamicObjectStorage nativeMemberStore = dynamicWrapper.getNativeMemberStore();
                     if (nativeMemberStore != null) {
                         TruffleString tKey = fromJavaStringNode.execute(key, TS_ENCODING);
-                        return getItem.execute(null, nativeMemberStore, tKey);
+                        return getItem.execute(nativeMemberStore, tKey);
                     }
                     return toSulongNode.execute(PythonContext.get(toSulongNode).getNativeNull());
                 }

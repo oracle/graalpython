@@ -152,14 +152,14 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             stgdict.setfunc = FieldSet.nil;
             stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
-            Object ob = getItem.execute(frame, stgdict.getDictStorage(), T_FLAGS_);
+            Object ob = getItem.execute(stgdict.getDictStorage(), T_FLAGS_);
             if (!PGuards.isInteger(ob)) {
                 throw raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
             stgdict.flags = asNumber.execute(ob) | TYPEFLAG_ISPOINTER;
 
             /* _argtypes_ is optional... */
-            ob = getItem.execute(frame, stgdict.getDictStorage(), T_ARGTYPES_);
+            ob = getItem.execute(stgdict.getDictStorage(), T_ARGTYPES_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
                     throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
@@ -170,7 +170,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 stgdict.converters = converters;
             }
 
-            ob = getItem.execute(frame, stgdict.getDictStorage(), T_RESTYPE_);
+            ob = getItem.execute(stgdict.getDictStorage(), T_RESTYPE_);
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(ob);
                 if (dict == null && !callableCheck.execute(ob)) {

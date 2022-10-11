@@ -1224,7 +1224,7 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof TruffleString) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = getItem.execute(null, ((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
+                    out = getItem.execute(((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
                 }
             }
             if (out == null && !state.restOptional) {

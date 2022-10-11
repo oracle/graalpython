@@ -138,7 +138,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
             PDict typedict = (PDict) args[2];
             // Borrowed ref:
-            Object proto = getItem.execute(frame, typedict.getDictStorage(), T__TYPE_);
+            Object proto = getItem.execute(typedict.getDictStorage(), T__TYPE_);
             if (proto != null) {
                 PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);

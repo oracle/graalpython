@@ -361,7 +361,7 @@ public class StructSequence {
             Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
             for (int i = src.length; i < dst.length; ++i) {
-                Object o = getItem.execute(frame, hs, fieldNames[i]);
+                Object o = getItem.execute(hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
             return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));

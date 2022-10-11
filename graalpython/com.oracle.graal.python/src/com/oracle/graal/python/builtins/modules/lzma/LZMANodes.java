@@ -283,7 +283,7 @@ public class LZMANodes {
                 throw raise.raise(ValueError, ErrorMessages.INVALID_FILTER_SPECIFIED_FOR_FILTER, s.filterType);
             }
             // TODO: channel the frame through the for each node
-            long l = toLong.execute(getItem.execute(null, s.dictStorage, skey));
+            long l = toLong.execute(getItem.execute(s.dictStorage, skey));
             if (errProfile.profile(l < 0)) {
                 throw raise.raise(OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
             }
@@ -400,7 +400,7 @@ public class LZMANodes {
                         @Cached HashingStorageGetItem getItem,
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             HashingStorage dict = getOptionsDict.execute(frame, spec);
-            Object idObj = getItem.execute(frame, dict, T_ID);
+            Object idObj = getItem.execute(dict, T_ID);
             long id = toLong.execute(idObj);
             long[] options;
             OptionsState state;

@@ -128,7 +128,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
     @Ignore
     private Object readMember(String member, HashingStorageGetItem getItem, TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
-        return localDict == null ? null : getItem.execute(null, localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING));
+        return localDict == null ? null : getItem.execute(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING));
     }
 
     @ExportMessage
@@ -157,7 +157,7 @@ public final class PThreadLocal extends PythonBuiltinObject {
                     @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
-        return localDict != null && PGuards.isCallable(getItem.execute(null, localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING)));
+        return localDict != null && PGuards.isCallable(getItem.execute(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING)));
     }
 
     @ExportMessage

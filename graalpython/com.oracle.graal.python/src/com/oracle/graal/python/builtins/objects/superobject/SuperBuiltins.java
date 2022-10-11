@@ -312,16 +312,16 @@ public final class SuperBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
 
-            Object cls = getClassFromTarget(frame, target, getItem);
+            Object cls = getClassFromTarget(target, getItem);
             return init(frame, self, cls, obj);
         }
 
-        private Object getClassFromTarget(VirtualFrame frame, PFrame target, HashingStorageGetItem getItem) {
+        private Object getClassFromTarget(PFrame target, HashingStorageGetItem getItem) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
             PDict locals = (PDict) target.getLocalsDict();
-            Object cls = getItem.execute(frame, locals.getDictStorage(), SpecialAttributeNames.T___CLASS__);
+            Object cls = getItem.execute(locals.getDictStorage(), SpecialAttributeNames.T___CLASS__);
             if (cls == null) {
                 // the cell is empty
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);

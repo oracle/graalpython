@@ -555,7 +555,7 @@ public abstract class ObjectNodes {
         Object dispatchDict(VirtualFrame frame, Object cls, PDict clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-            Object slotNames = getItem.execute(frame, clsDict.getDictStorage(), T__SLOTNAMES);
+            Object slotNames = getItem.execute(clsDict.getDictStorage(), T__SLOTNAMES);
             slotNames = slotNames == null ? PNone.NO_VALUE : slotNames;
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }

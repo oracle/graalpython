@@ -165,22 +165,22 @@ public class ModuleBuiltins extends PythonBuiltins {
             Object dict = lookup.execute(frame, self, T___DICT__);
             if (isDict(dict, isDictProfile)) {
                 HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
-                Object dirFunc = getItem.execute(frame, dictStorage, T___DIR__);
+                Object dirFunc = getItem.execute(dictStorage, T___DIR__);
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {
                     return constructListNode.execute(frame, dict);
                 }
             } else {
-                TruffleString name = getName(frame, self, getDict, getItem, castToStringNode);
+                TruffleString name = getName(self, getDict, getItem, castToStringNode);
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, name);
             }
         }
 
-        private TruffleString getName(VirtualFrame frame, PythonModule self, GetDictIfExistsNode getDict, HashingStorageGetItem getItem, CastToTruffleStringNode castToStringNode) {
+        private TruffleString getName(PythonModule self, GetDictIfExistsNode getDict, HashingStorageGetItem getItem, CastToTruffleStringNode castToStringNode) {
             PDict dict = getDict.execute(self);
             if (dict != null) {
-                Object name = getItem.execute(frame, dict.getDictStorage(), T___NAME__);
+                Object name = getItem.execute(dict.getDictStorage(), T___NAME__);
                 if (name != null) {
                     return castToStringNode.execute(name);
                 }

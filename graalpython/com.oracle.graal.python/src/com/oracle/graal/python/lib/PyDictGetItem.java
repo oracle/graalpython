@@ -64,7 +64,7 @@ public abstract class PyDictGetItem extends Node {
     @Specialization
     static Object getString(PDict dict, TruffleString item,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return getItem.execute(null, dict.getDictStorage(), item);
+        return getItem.execute(dict.getDictStorage(), item);
     }
 
     @Specialization(replaces = "getString")

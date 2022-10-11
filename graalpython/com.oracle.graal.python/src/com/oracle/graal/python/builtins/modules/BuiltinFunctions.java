@@ -2125,7 +2125,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = getItem.execute(frame, sysModules.getDictStorage(), T_SYS);
+                Object sysModule = getItem.execute(sysModules.getDictStorage(), T_SYS);
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, T_BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOST_SYSBREAKPOINTHOOK);

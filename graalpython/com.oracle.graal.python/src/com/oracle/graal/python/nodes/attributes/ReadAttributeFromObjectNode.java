@@ -134,7 +134,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
         // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItem.execute(null, cachedStorage, key);
+        Object value = getItem.execute(cachedStorage, key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {

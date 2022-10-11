@@ -372,7 +372,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
              */
             DynamicObjectNativeWrapper nativeWrapper = extensionModule.getNativeWrapper();
             if (nativeWrapper != null && nativeWrapper.getNativeMemberStore() != null) {
-                Object item = getItem.execute(frame, nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberNameTruffleString());
+                Object item = getItem.execute(nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberNameTruffleString());
                 if (item != PNone.NO_VALUE) {
                     return 0;
                 }

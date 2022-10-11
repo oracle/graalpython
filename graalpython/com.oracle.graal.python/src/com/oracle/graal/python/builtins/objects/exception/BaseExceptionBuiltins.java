@@ -506,7 +506,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             public static ExcState doIt(VirtualFrame frame, TruffleString key, ExcState state,
                             @Cached PyObjectSetAttr setAttr,
                             @Cached HashingStorageGetItem getItem) {
-                final Object value = getItem.execute(frame, state.dictStorage, key);
+                final Object value = getItem.execute(state.dictStorage, key);
                 setAttr.execute(frame, state.exception, key, value);
                 return state;
             }
