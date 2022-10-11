@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -79,6 +80,11 @@ public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
     @Specialization
     static Object doBuiltin(PBuiltinFunction descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
         return descriptor;
+    }
+
+    @Specialization
+    static Object doBuiltin(PBuiltinMethod descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
+        return new BoundDescriptor(descriptor);
     }
 
     @Specialization
