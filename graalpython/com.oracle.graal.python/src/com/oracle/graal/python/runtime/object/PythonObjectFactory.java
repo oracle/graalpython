@@ -30,9 +30,6 @@ import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Semaphore;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -170,10 +167,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
-import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
-import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
-import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
-import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
@@ -1397,26 +1390,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public final StgDictObject createStgDictObject(Object clazz) {
         return trace(new StgDictObject(clazz, getShape(clazz)));
-    }
-
-    public final PSSLContext createSSLContext(Object clazz, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
-        return trace(new PSSLContext(clazz, getShape(clazz), method, verifyFlags, checkHostname, verifyMode, context));
-    }
-
-    public final PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PSocket socket) {
-        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, socket, createMemoryBIO(), createMemoryBIO(), createMemoryBIO()));
-    }
-
-    public final PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PMemoryBIO inbound, PMemoryBIO outbound) {
-        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, null, inbound, outbound, createMemoryBIO()));
-    }
-
-    public final PMemoryBIO createMemoryBIO(Object clazz) {
-        return trace(new PMemoryBIO(clazz, getShape(clazz)));
-    }
-
-    public final PMemoryBIO createMemoryBIO() {
-        return trace(new PMemoryBIO(PythonBuiltinClassType.PMemoryBIO, getShape(PythonBuiltinClassType.PMemoryBIO)));
     }
 
     public final PProperty createProperty() {

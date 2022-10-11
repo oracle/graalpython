@@ -357,6 +357,31 @@ suite = {
                 "truffle:ICU4J",
                 "truffle:ICU4J-CHARSET",
                 "regex:TREGEX",
+            ],
+            "requires": [
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+                "jdk.security.auth",
+            ],
+            "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
+            "jacoco": "include",
+            "javaCompliance": "11+",
+            "checkstyleVersion": "8.36.1",
+            "annotationProcessors": [
+                "GRAALPYTHON_PROCESSOR",
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated": True,
+        },
+
+        # SSL
+        "com.oracle.graal.python.ssl": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "com.oracle.graal.python",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
             ],
@@ -623,8 +648,6 @@ suite = {
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
             "exclude": [
-                "BOUNCYCASTLE-PROVIDER",
-                "BOUNCYCASTLE-PKIX",
                 "XZ-1.8",
                 "truffle:ICU4J",
                 # TODO this fails native image build for some reason
@@ -634,6 +657,20 @@ suite = {
                 "python.jni.library": "<lib:pythonjni>"
             },
             "description": "GraalPython engine",
+        },
+
+        "GRAALPYTHON_SSL": {
+            "dependencies": [
+                "com.oracle.graal.python.ssl",
+            ],
+            "distDependencies": [
+                "GRAALPYTHON",
+            ],
+            "exclude": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+            ],
+            "description": "GraalPython ssl module",
         },
 
         "GRAALPYTHON_PROCESSOR": {
