@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.AbstractSetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -165,6 +166,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -385,9 +387,13 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @ReportPolymorphism
     public abstract static class BindNew extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Object descriptor, Object type);
+
+        @Specialization
+        static Object doBuiltinMethod(PBuiltinMethod descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor;
+        }
 
         @Specialization
         static Object doBuiltin(PBuiltinFunction descriptor, @SuppressWarnings("unused") Object type) {
@@ -405,6 +411,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Fallback
+        @Megamorphic
         static Object doBind(VirtualFrame frame, Object descriptor, Object type,
                         @Cached GetClassNode getClassNode,
                         @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
