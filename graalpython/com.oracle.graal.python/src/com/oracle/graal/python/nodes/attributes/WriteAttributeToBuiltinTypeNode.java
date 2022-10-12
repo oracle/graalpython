@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -85,8 +85,8 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
                     @Cached BranchProfile updateStorage,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        WriteAttributeToObjectNode.writeToDict(dict, key, value, updateStorage, hlib);
+                    @Cached HashingStorageSetItem setHashingStorageItem) {
+        WriteAttributeToObjectNode.writeToDict(dict, key, value, updateStorage, setHashingStorageItem);
     }
 
     @Specialization
