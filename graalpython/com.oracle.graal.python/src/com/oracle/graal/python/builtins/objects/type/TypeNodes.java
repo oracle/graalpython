@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -214,6 +215,9 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
+import com.oracle.truffle.api.strings.TruffleString.EqualNode;
+import com.oracle.truffle.api.strings.TruffleString.IsValidNode;
 
 public abstract class TypeNodes {
 
@@ -1841,7 +1845,9 @@ public abstract class TypeNodes {
 
         @Specialization
         protected PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
-                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageGetItem getHashingStorageItem,
+                        @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStorageLib,
                         @Cached("create(T___DICT__)") LookupAttributeInMRONode getDictAttrNode,
                         @Cached("create(T___WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
@@ -1900,7 +1906,8 @@ public abstract class TypeNodes {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(frame, pythonClass, namespace, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode, factory, raise, isValidNode, equalNode, codePointLengthNode);
+            copyDictSlots(frame, pythonClass, namespace, setHashingStorageItem, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode, factory, raise, isValidNode, equalNode,
+                            codePointLengthNode, getOrCreateDictNode);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -1911,9 +1918,9 @@ public abstract class TypeNodes {
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
             HashingStorage namespaceStorage = namespace.getDictStorage();
-            Object hashMethod = getItem.execute(frame, namespaceStorage, SpecialMethodNames.T___HASH__);
+            Object hashMethod = getHashingStorageItem.execute(frame, namespaceStorage, SpecialMethodNames.T___HASH__);
             if (hashMethod == null) {
-                Object eqMethod = getItem.execute(frame, namespaceStorage, SpecialMethodNames.T___EQ__);
+                Object eqMethod = getHashingStorageItem.execute(frame, namespaceStorage, SpecialMethodNames.T___EQ__);
                 if (eqMethod != null) {
                     pythonClass.setAttribute(SpecialMethodNames.T___HASH__, PNone.NONE);
                 }
@@ -2201,9 +2208,9 @@ public abstract class TypeNodes {
             return castToStringNode;
         }
 
-        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet,
-                        PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, TruffleString.IsValidNode isValidNode, TruffleString.EqualNode equalNode,
-                        TruffleString.CodePointLengthNode codePointLengthNode) {
+        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageSetItem setHashingStorageItem, HashingStorageLibrary hashingStorageLib, Object[] slots,
+                        boolean[] qualnameSet, PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
+                        EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2273,9 +2280,9 @@ public abstract class TypeNodes {
                     }
                 }
                 // Creates DynamicObjectStorage which ignores non-string keys
-                typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+                typeDict = getOrCreateDictNode.execute(pythonClass);
                 // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
-                HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), keyObj, value);
+                HashingStorage updatedStore = setHashingStorageItem.execute(frame, typeDict.getDictStorage(), keyObj, value);
                 typeDict.setDictStorage(updatedStore);
             }
         }
