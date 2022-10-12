@@ -47,6 +47,7 @@ import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -195,7 +196,7 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Cached ConditionProfile gotState) {
         HashingStorage newStore = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
@@ -212,8 +213,7 @@ public class KeywordsStorage extends HashingStorage {
     }
 
     void addAllTo(HashingStorage storage, SpecializedSetStringKey putNode) {
-        for (int i = 0; i < keywords.length; i++) {
-            PKeyword entry = keywords[i];
+        for (PKeyword entry : keywords) {
             putNode.execute(storage, entry.getName(), entry.getValue());
         }
     }
@@ -249,22 +249,22 @@ public class KeywordsStorage extends HashingStorage {
         @ExplodeLoop
         static HashingStorage cached(KeywordsStorage self, HashingStorage other,
                         @Exclusive @Cached("self.length()") int cachedLen,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Exclusive @Cached HashingStorageSetItem setItem) {
             HashingStorage result = other;
             for (int i = 0; i < cachedLen; i++) {
                 PKeyword entry = self.keywords[i];
-                result = lib.setItem(result, entry.getName(), entry.getValue());
+                result = setItem.execute(null, result, entry.getName(), entry.getValue());
             }
             return result;
         }
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(KeywordsStorage self, HashingStorage other,
-                        @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Exclusive @Cached HashingStorageSetItem setItem) {
             HashingStorage result = other;
             for (int i = 0; i < self.length(); i++) {
                 PKeyword entry = self.keywords[i];
-                result = lib.setItem(result, entry.getName(), entry.getValue());
+                result = setItem.execute(null, result, entry.getName(), entry.getValue());
             }
             return result;
         }

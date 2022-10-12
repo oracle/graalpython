@@ -84,8 +84,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -144,7 +144,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -658,7 +657,7 @@ public abstract class ObjectNodes {
                             @Cached GetClassNode getClassNode,
                             @Cached PyObjectSizeNode sizeNode,
                             @Cached PyObjectLookupAttr lookupAttr,
-                            @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                            @Cached HashingStorageSetItem setHashingStorageItem) {
                 Object state;
                 Object type = getClassNode.execute(obj);
                 if (required && getItemsizeNode.execute(type) != 0) {
@@ -687,7 +686,7 @@ public abstract class ObjectNodes {
                                 TruffleString name = toStringNode.execute(o);
                                 Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
-                                    hlib.setItem(slotsStorage, name, value);
+                                    setHashingStorageItem.execute(frame, slotsStorage, name, value);
                                     haveSlots = true;
                                 }
                             } catch (CannotCastException cce) {

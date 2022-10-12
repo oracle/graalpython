@@ -49,6 +49,7 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -255,7 +256,7 @@ public final class LocalsStorage extends HashingStorage {
         @Specialization(guards = {"desc == self.frame.getFrameDescriptor()"}, limit = "1")
         @ExplodeLoop
         static HashingStorage cached(LocalsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                        @Exclusive @Cached HashingStorageSetItem setItem,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
             HashingStorage result = other;
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
@@ -263,7 +264,7 @@ public final class LocalsStorage extends HashingStorage {
                 if (isUserFrameSlot(identifier)) {
                     Object value = self.getValue(slot);
                     if (value != null) {
-                        result = lib.setItem(result, desc.getSlotName(slot), value);
+                        result = setItem.execute(null, result, desc.getSlotName(slot), value);
                     }
                 }
             }
@@ -273,8 +274,8 @@ public final class LocalsStorage extends HashingStorage {
         @Specialization(replaces = "cached")
         @TruffleBoundary
         static HashingStorage generic(LocalsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            return cached(self, other, lib, self.frame.getFrameDescriptor());
+                        @Exclusive @Cached HashingStorageSetItem setItem) {
+            return cached(self, other, setItem, self.frame.getFrameDescriptor());
         }
     }
 

@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -91,7 +92,7 @@ public class PDict extends PHashingCollection {
     }
 
     public void setItem(Object key, Object value) {
-        storage = HashingStorageLibrary.getUncached().setItem(storage, key, value);
+        storage = HashingStorageSetItem.executeUncached(storage, key, value);
     }
 
     public void delItem(Object key) {
@@ -199,17 +200,17 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static void writeHashEntry(PDict self, Object key, Object value,
                     @Exclusive @Cached GilNode gil,
                     @Cached IsBuiltinClassProfile errorProfile,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Cached HashingStorageSetItem setItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNodeKey,
                     @Exclusive @Cached PForeignToPTypeNode convertNodeValue) throws UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         Object pKey = convertNodeKey.executeConvert(key);
         try {
-            lib.setItem(self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
+            setItem.execute(null, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
             throw UnsupportedTypeException.create(new Object[]{pKey}, "keys for Python arrays must be hashable");

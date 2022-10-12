@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStg
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -239,12 +240,12 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCPointerType_set_type(Object self, TruffleString type,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(self, getRaiseNode());
             PyCPointerType_SetProto(dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
-            hlib.setItem(dict.getDictStorage(), T__TYPE_, type);
+            setItem.execute(dict.getDictStorage(), T__TYPE_, type);
             return PNone.NONE;
         }
 
