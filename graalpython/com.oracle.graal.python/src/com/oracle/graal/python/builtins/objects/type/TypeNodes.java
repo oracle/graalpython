@@ -2147,7 +2147,7 @@ public abstract class TypeNodes {
                 Object slotName = SequenceStorageNodes.GetItemScalarNode.getUncached().execute(slotsStorage, i);
                 AddMemberNode.addMember(language, pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE,
                                 CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
-                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached());
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             return slotOffset;

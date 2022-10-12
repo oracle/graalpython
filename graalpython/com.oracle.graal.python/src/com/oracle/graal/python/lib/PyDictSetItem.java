@@ -60,6 +60,10 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 public abstract class PyDictSetItem extends Node {
+    public static void executeUncached(PDict dict, Object key, Object item) {
+        getUncached().execute(null, dict, key, item);
+    }
+
     public abstract void execute(Frame frame, PDict dict, Object key, Object item);
 
     // We never need a frame for setting string keys
