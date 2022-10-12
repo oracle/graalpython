@@ -140,6 +140,10 @@ public class HashingStorageNodes {
     public static abstract class HashingStorageSetItem extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
+        public static HashingStorageSetItem create() {
+            return HashingStorageSetItemNodeGen.create();
+        }
+
         public static HashingStorage executeUncached(HashingStorage storage, Object key, Object value) {
             return HashingStorageSetItemNodeGen.getUncached().execute(null, storage, key, value);
         }
