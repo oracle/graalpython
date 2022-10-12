@@ -552,8 +552,8 @@ public abstract class StringNodes {
             }
             if (old.isEmpty()) {
                 if (self.isEmpty() && maxCountArg >= 0) {
-                    // corner case: "".replace("","x", <m>) returns "" for m >=0
-                    return self;
+                    // corner case: "".replace("","x", <m>) returns "x" for m >=0
+                    return with;
                 }
                 int selfLen = self.byteLength(TS_ENCODING);
                 int selfCpLen = codePointLengthNode.execute(self, TS_ENCODING);
