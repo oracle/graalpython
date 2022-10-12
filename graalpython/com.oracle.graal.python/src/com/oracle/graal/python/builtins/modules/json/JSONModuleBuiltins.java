@@ -26,7 +26,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
@@ -91,11 +90,10 @@ public class JSONModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object call(Object string, int end, boolean strict,
                         @Cached CastToJavaStringCheckedNode castString,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PythonObjectFactory factory) {
             IntRef nextIdx = new IntRef();
             TruffleString result = JSONScannerBuiltins.scanStringUnicode(castString.cast(string, ErrorMessages.FIRST_ARG_MUST_BE_STRING_NOT_P, string), end, strict, nextIdx,
-                            raiseNode);
+                            this);
             return factory.createTuple(new Object[]{result, nextIdx.value});
         }
     }
