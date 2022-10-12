@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -84,8 +85,8 @@ public abstract class DictNodes {
         }
 
         @Specialization(guards = "isDictEconomicMap(other)")
-        static void updateDict(PDict self, Object other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary libSelf,
+        static void updateDict(VirtualFrame frame, PDict self, Object other,
+                        @Cached HashingStorageSetItem setItemSelf,
                         @CachedLibrary(limit = "1") HashingStorageLibrary libOther,
                         @Cached PRaiseNode raiseNode) {
             HashingStorage selfStorage = self.getDictStorage();
@@ -94,7 +95,7 @@ public abstract class DictNodes {
             int initialSize = libOther.length(otherStorage);
             while (itOther.hasNext()) {
                 HashingStorage.DictEntry next = itOther.next();
-                selfStorage = libSelf.setItem(selfStorage, next.key, next.value);
+                selfStorage = setItemSelf.execute(frame, selfStorage, next.key, next.value);
                 if (initialSize != libOther.length(otherStorage)) {
                     throw raiseNode.raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }

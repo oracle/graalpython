@@ -130,8 +130,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
@@ -713,7 +713,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStorageLibrary,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached("createCountingProfile()") ConditionProfile updateStorageProfile,
                         @Cached HPyRaiseNode raiseNode,
@@ -729,7 +729,7 @@ public abstract class GraalHPyContextFunctions {
             Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
             try {
                 HashingStorage dictStorage = dict.getDictStorage();
-                HashingStorage updatedStorage = hashingStorageLibrary.setItem(dictStorage, key, value);
+                HashingStorage updatedStorage = setItem.execute(null, dictStorage, key, value);
                 if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
                     dict.setDictStorage(updatedStorage);
                 }
@@ -2692,7 +2692,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached TruffleString.CodePointLengthNode codepointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached HashingStorageGetItem getHashingStorageItem,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary storageLibrary,
+                        @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached CallNode callTypeConstructorNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -2741,12 +2741,12 @@ public abstract class GraalHPyContextFunctions {
                 }
 
                 if (!getHashingStorageItem.hasKey(dictStorage, SpecialAttributeNames.T___MODULE__)) {
-                    dictStorage = storageLibrary.setItem(dictStorage, SpecialAttributeNames.T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
+                    dictStorage = setHashingStorageItem.execute(dictStorage, SpecialAttributeNames.T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
                 }
 
                 if (withDoc) {
                     assert doc != null;
-                    dictStorage = storageLibrary.setItem(dictStorage, SpecialAttributeNames.T___DOC__, doc);
+                    dictStorage = setHashingStorageItem.execute(dictStorage, SpecialAttributeNames.T___DOC__, doc);
                 }
 
                 dict.setDictStorage(dictStorage);

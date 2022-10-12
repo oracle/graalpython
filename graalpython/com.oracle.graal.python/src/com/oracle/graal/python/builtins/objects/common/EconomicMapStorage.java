@@ -47,6 +47,7 @@ import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
@@ -59,6 +60,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -178,7 +180,7 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
                         @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Exclusive @Cached HashingStorageSetItem setItem) {
             HashingStorage result = other;
             MapCursor cursor = self.map.getEntries();
             // get/put may throw, but we ignore that small inaccuracy
@@ -186,7 +188,7 @@ public class EconomicMapStorage extends HashingStorage {
             loopProfile.profileCounted(size);
             LoopNode.reportLoopCount(thisLib, size);
             while (loopProfile.inject(advance(cursor))) {
-                result = lib.setItem(result, getKey(cursor), getValue(cursor));
+                result = setItem.execute(null, result, getKey(cursor), getValue(cursor));
             }
             return result;
         }

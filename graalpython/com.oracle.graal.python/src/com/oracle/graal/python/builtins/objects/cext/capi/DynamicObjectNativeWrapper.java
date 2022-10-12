@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -782,13 +783,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (nativeMemberStore == null) {
                 nativeMemberStore = nativeWrapper.createNativeMemberStore(PythonLanguage.get(null));
             }
-            HashingStorageLibrary uncached = HashingStorageLibrary.getFactory().getUncached(nativeMemberStore);
             Object item = HashingStorageGetItem.executeUncached(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString());
             long value = 1;
             if (item != null) {
                 value = (long) item;
             }
-            uncached.setItem(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString(), value + 1);
+            HashingStorageSetItem.executeUncached(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString(), value + 1);
             return value;
         }
 
@@ -1576,7 +1576,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static void doGeneric(Object object, PythonNativeWrapper nativeWrapper, String key, Object value,
                         @Cached WriteKnownNativeMemberNode writeKnownNativeMemberNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib)
+                        @Cached HashingStorageSetItem setItem)
                         throws UnknownIdentifierException, UnsupportedTypeException, UnsupportedMessageException {
             try {
                 writeKnownNativeMemberNode.execute(object, nativeWrapper, key, value);
@@ -1589,7 +1589,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
                         logGeneric(key);
                         TruffleString tKey = fromJavaStringNode.execute(key, TS_ENCODING);
-                        lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(writeKnownNativeMemberNode)), tKey, value);
+                        setItem.execute(null, ((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(writeKnownNativeMemberNode)), tKey, value);
                     } else {
                         throw UnknownIdentifierException.create(key);
                     }

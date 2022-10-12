@@ -215,7 +215,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -2031,7 +2031,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                     }
                     // fall through to generic case
                 }
-                dict.setDictStorage(HashingStorageLibrary.getUncached().setItem(dictStorage, key, value));
+                dict.setDictStorage(HashingStorageSetItem.executeUncached(dictStorage, key, value));
                 return 0;
             } else if (clazz == PythonBuiltinClassType.PList && PGuards.isInteger(key) && ctxListSetItem(receiver, ((Number) key).longValue(), hValue)) {
                 return 0;
