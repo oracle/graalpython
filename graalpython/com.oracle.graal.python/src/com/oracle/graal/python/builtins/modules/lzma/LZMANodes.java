@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -1246,8 +1247,7 @@ public class LZMANodes {
         @Specialization(guards = "useNativeContext()")
         void decodeNative(VirtualFrame frame, long id, byte[] encoded, PDict dict,
                         @Cached NativeLibrary.InvokeNativeFunction decodeFilter,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached ConditionProfile errProfile) {
             PythonContext ctxt = PythonContext.get(this);
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
@@ -1262,7 +1262,7 @@ public class LZMANodes {
                 }
                 errorHandling(lzret, getRaiseNode());
             }
-            buildFilterSpec(frame, hasFrameProfile, opts, dict, lib);
+            buildFilterSpec(frame, opts, dict, setItem);
         }
 
         @SuppressWarnings("unused")
@@ -1271,21 +1271,21 @@ public class LZMANodes {
             throw raise(SystemError, T_LZMA_JAVA_ERROR);
         }
 
-        void buildFilterSpec(VirtualFrame frame, ConditionProfile hasFrameProfile, long[] opts, PDict dict, HashingStorageLibrary lib) {
+        void buildFilterSpec(VirtualFrame frame, long[] opts, PDict dict, HashingStorageSetItem setItem) {
             long id = opts[LZMAOption.id.ordinal()];
-            addField(frame, lib, hasFrameProfile, dict, LZMAOption.id.OptName(), id);
+            addField(frame, setItem, dict, LZMAOption.id.OptName(), id);
             switch (LZMAFilter.from(id)) {
                 case LZMA_FILTER_LZMA1:
-                    addField(frame, lib, hasFrameProfile, dict, LZMAOption.lc.OptName(), opts[LZMAOption.lc.ordinal()]);
-                    addField(frame, lib, hasFrameProfile, dict, LZMAOption.lp.OptName(), opts[LZMAOption.lp.ordinal()]);
-                    addField(frame, lib, hasFrameProfile, dict, LZMAOption.pb.OptName(), opts[LZMAOption.pb.ordinal()]);
-                    addField(frame, lib, hasFrameProfile, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
+                    addField(frame, setItem, dict, LZMAOption.lc.OptName(), opts[LZMAOption.lc.ordinal()]);
+                    addField(frame, setItem, dict, LZMAOption.lp.OptName(), opts[LZMAOption.lp.ordinal()]);
+                    addField(frame, setItem, dict, LZMAOption.pb.OptName(), opts[LZMAOption.pb.ordinal()]);
+                    addField(frame, setItem, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
                     break;
                 case LZMA_FILTER_LZMA2:
-                    addField(frame, lib, hasFrameProfile, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
+                    addField(frame, setItem, dict, LZMAOption.dict_size.OptName(), opts[LZMAOption.dict_size.ordinal()]);
                     break;
                 case LZMA_FILTER_DELTA:
-                    addField(frame, lib, hasFrameProfile, dict, DeltaOption.dist.OptName(), opts[DeltaOption.dist.ordinal()]);
+                    addField(frame, setItem, dict, DeltaOption.dist.OptName(), opts[DeltaOption.dist.ordinal()]);
                     break;
                 case LZMA_FILTER_X86:
                 case LZMA_FILTER_POWERPC:
@@ -1293,13 +1293,13 @@ public class LZMANodes {
                 case LZMA_FILTER_ARM:
                 case LZMA_FILTER_ARMTHUMB:
                 case LZMA_FILTER_SPARC:
-                    addField(frame, lib, hasFrameProfile, dict, BCJOption.start_offset.OptName(), opts[BCJOption.start_offset.ordinal()]);
+                    addField(frame, setItem, dict, BCJOption.start_offset.OptName(), opts[BCJOption.start_offset.ordinal()]);
                     break;
             }
         }
 
-        void addField(VirtualFrame frame, HashingStorageLibrary lib, ConditionProfile hasFrameProfile, PDict dict, TruffleString key, long val) {
-            dict.setDictStorage(lib.setItemWithFrame(dict.getDictStorage(), key, val, hasFrameProfile, frame));
+        void addField(VirtualFrame frame, HashingStorageSetItem setItem, PDict dict, TruffleString key, long val) {
+            dict.setDictStorage(setItem.execute(frame, dict.getDictStorage(), key, val));
         }
     }
 

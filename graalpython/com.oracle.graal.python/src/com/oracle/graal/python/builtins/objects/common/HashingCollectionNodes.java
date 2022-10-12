@@ -98,12 +98,11 @@ public abstract class HashingCollectionNodes {
     public abstract static class SetItemNode extends PNodeWithContext {
         public abstract void execute(Frame frame, PHashingCollection c, Object key, Object value);
 
-        @Specialization(limit = "4")
+        @Specialization
         static void doSetItem(Frame frame, PHashingCollection c, Object key, Object value,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
+                        @Cached HashingStorageSetItem setItem) {
             HashingStorage storage = c.getDictStorage();
-            storage = lib.setItemWithFrame(storage, key, value, hasFrame, (VirtualFrame) frame);
+            storage = setItem.execute(frame, storage, key, value);
             c.setDictStorage(storage);
         }
 
@@ -132,12 +131,12 @@ public abstract class HashingCollectionNodes {
 
         @Specialization(guards = "!isEconomicMapStorage(map)")
         static HashingStorage doGeneric(VirtualFrame frame, HashingStorage map, Object value,
-                        @Cached ConditionProfile hasFrame,
+                        @Cached HashingStorageSetItem setItem,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorageLibrary.HashingStorageIterable<Object> iter = lib.keys(map);
             HashingStorage storage = map;
             for (Object key : iter) {
-                storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
+                storage = setItem.execute(frame, storage, key, value);
             }
             return storage;
         }
