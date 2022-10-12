@@ -46,9 +46,11 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.*;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 @SuppressWarnings({"all", "cast"})
@@ -613,12 +615,12 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_276_ID = 1496;
     private static final int _TMP_277_ID = 1497;
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule, int featureVersion) {
-        super(tokenizer, factory, fexprParser, errorCb, startRule, featureVersion);
+    public Parser(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);
     }
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int featureVersion) {
-        super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, featureVersion);
+    public Parser(String source, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);
     }
 
     // file: statements? $

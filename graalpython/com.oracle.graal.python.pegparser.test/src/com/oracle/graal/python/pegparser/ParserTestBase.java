@@ -58,8 +58,8 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import com.oracle.graal.python.pegparser.AbstractParser.Flags;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
-import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
@@ -96,16 +96,11 @@ public class ParserTestBase {
     @SuppressWarnings("unused")
     public ModTy parse(String src, String moduleName, InputType inputType, boolean interactiveTerminal) {
         errorCallback = new TestErrorCallbackImpl();
-        NodeFactory factory = new NodeFactory();
-        FExprParser fexpParser = new FExprParser() {
-            @Override
-            public ExprTy parse(String code, SourceRange sourceRange) {
-                ParserTokenizer tok = new ParserTokenizer(errorCallback, code, InputType.FSTRING, interactiveTerminal, sourceRange);
-                return (ExprTy) new Parser(tok, factory, this, errorCallback, InputType.FSTRING, FEATURE_VERSION).parse();
-            }
-        };
-        ParserTokenizer tokenizer = new ParserTokenizer(errorCallback, src, inputType, interactiveTerminal);
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCallback, inputType, FEATURE_VERSION);
+        EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
+        if (interactiveTerminal) {
+            flags.add(Flags.INTERACTIVE_TERMINAL);
+        }
+        Parser parser = new Parser(src, new DefaultStringFactoryImpl(), errorCallback, inputType, flags, FEATURE_VERSION);
         return (ModTy) parser.parse();
     }
 
@@ -214,7 +209,6 @@ public class ParserTestBase {
     }
 
     public void checkError(String source, String... expectedErrors) {
-        NodeFactory factory = new NodeFactory();
         ArrayList<String> errors = new ArrayList<>();
         ErrorCallback errorCb = new ErrorCallback() {
             @Override
@@ -232,15 +226,7 @@ public class ParserTestBase {
                 fail("Unexpected call to reportIncompleteSource");
             }
         };
-        ParserTokenizer tokenizer = new ParserTokenizer(errorCb, source, InputType.FILE, false);
-        FExprParser fexpParser = new FExprParser() {
-            @Override
-            public ExprTy parse(String code, SourceRange range) {
-                ParserTokenizer tok = new ParserTokenizer(errorCb, code, InputType.FSTRING, false, range);
-                return (ExprTy) new Parser(tok, factory, this, errorCb, InputType.FSTRING, FEATURE_VERSION).parse();
-            }
-        };
-        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb, InputType.FILE, FEATURE_VERSION);
+        Parser parser = new Parser(source, new DefaultStringFactoryImpl(), errorCb, InputType.FILE, EnumSet.noneOf(AbstractParser.Flags.class), FEATURE_VERSION);
         parser.parse();
         assertEquals(Arrays.asList(expectedErrors), errors);
     }

@@ -53,32 +53,10 @@ public class ParserTokenizer {
 
     private final Tokenizer tokenizer;
 
-    public ParserTokenizer(ErrorCallback errorCallback, String code, InputType type, boolean interactiveTerminal) {
+    public ParserTokenizer(ErrorCallback errorCallback, String code, EnumSet<Tokenizer.Flag> flags, SourceRange inputSourceRange) {
         this.pos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromString(errorCallback, code, getTokenizerFlags(type, interactiveTerminal), null);
-    }
-
-    public ParserTokenizer(ErrorCallback errorCallback, String code, InputType type, boolean interactiveTerminal, SourceRange inputSourceRange) {
-        this.pos = 0;
-        this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromString(errorCallback, code, getTokenizerFlags(type, interactiveTerminal), inputSourceRange);
-    }
-
-    public ParserTokenizer(ErrorCallback errorCallback, byte[] code, InputType type, boolean interactiveTerminal) {
-        this.pos = 0;
-        this.tokens = new ArrayList<>();
-        this.tokenizer = Tokenizer.fromBytes(errorCallback, code, getTokenizerFlags(type, interactiveTerminal));
-    }
-
-    private static EnumSet<Tokenizer.Flag> getTokenizerFlags(InputType type, boolean interactiveTerminal) {
-        EnumSet<Tokenizer.Flag> flags = EnumSet.noneOf(Tokenizer.Flag.class);
-        if (type == InputType.FILE) {
-            flags.add(Tokenizer.Flag.EXEC_INPUT);
-        } else if (type == InputType.SINGLE && interactiveTerminal) {
-            flags.add(Tokenizer.Flag.INTERACTIVE);
-        }
-        return flags;
+        this.tokenizer = Tokenizer.fromString(errorCallback, code, flags, inputSourceRange);
     }
 
     public int mark() {

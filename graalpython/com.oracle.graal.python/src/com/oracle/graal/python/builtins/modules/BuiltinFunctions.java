@@ -99,6 +99,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import com.oracle.graal.python.PythonFileDetector;
@@ -231,6 +232,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -1114,7 +1116,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                 RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, false, featureVersion >= 0 ? featureVersion : PythonLanguage.MINOR);
+
+                EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
+                if ((kwFlags & PyCF_TYPE_COMMENTS) != 0) {
+                    flags.add(AbstractParser.Flags.TYPE_COMMENTS);
+                }
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, flags, featureVersion >= 0 ? featureVersion : PythonLanguage.MINOR);
                 ModTy mod = (ModTy) parser.parse();
                 errorCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);

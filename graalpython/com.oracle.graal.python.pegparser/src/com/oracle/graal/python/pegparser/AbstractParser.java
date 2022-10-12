@@ -47,6 +47,7 @@ import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.INDENT;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.Flag;
 
 /**
  * From this class is extended the generated parser. It allow access to the tokenizer. The methods
@@ -71,7 +73,7 @@ import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
  * allows us to keep the actions and parser generator very similar to CPython for easier updating in
  * the future.
  */
-abstract class AbstractParser {
+public abstract class AbstractParser {
     static final ExprTy[] EMPTY_EXPR_ARRAY = new ExprTy[0];
     static final KeywordTy[] EMPTY_KEYWORD_ARRAY = new KeywordTy[0];
     static final ArgTy[] EMPTY_ARG_ARRAY = new ArgTy[0];
@@ -85,21 +87,31 @@ abstract class AbstractParser {
         FOR_TARGETS
     }
 
-    /**
-     * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used instead != .
-     */
-    protected static final int PARSE_BARRY_AS_BDFL = 0x0020;
+    public enum Flags {
+        /**
+         * Corresponds to PyPARSE_BARRY_AS_BDFL, check whether <> should be used instead != .
+         */
+        BARRY_AS_BDFL,
+        /**
+         * Corresponds to PyPARSE_TYPE_COMMENTS.
+         */
+        TYPE_COMMENTS,
+
+        /**
+         * Corresponds to fp_interactive and prompt != NULL in struct tok_state.
+         */
+        INTERACTIVE_TERMINAL
+    }
 
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
 
     private final ParserTokenizer tokenizer;
     private final ErrorCallback errorCb;
-    private final FExprParser fexprParser;
     protected final NodeFactory factory;
     private final PythonStringFactory<?> stringFactory;
     private final InputType startRule;
 
-    private final int flags;
+    private final EnumSet<Flags> flags;
     private final int featureVersion;
 
     protected int level = 0;
@@ -126,20 +138,9 @@ abstract class AbstractParser {
 
     protected abstract SSTNode runParser(InputType inputType);
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule, int featureVersion) {
-        this(tokenizer, factory, fexprParser, new DefaultStringFactoryImpl(), errorCb, startRule, 0, featureVersion);
-    }
-
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule,
-                    int featureVersion) {
-        this(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, 0, featureVersion);
-    }
-
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int flags,
-                    int featureVersion) {
-        this.tokenizer = tokenizer;
-        this.factory = factory;
-        this.fexprParser = fexprParser;
+    AbstractParser(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        this.tokenizer = new ParserTokenizer(errorCb, source, getTokenizerFlags(startRule, flags), sourceRange);
+        this.factory = new NodeFactory();
         this.errorCb = errorCb;
         this.stringFactory = stringFactory;
         this.reservedKeywords = getReservedKeywords();
@@ -147,6 +148,19 @@ abstract class AbstractParser {
         this.startRule = startRule;
         this.flags = flags;
         this.featureVersion = featureVersion;
+    }
+
+    private static EnumSet<Flag> getTokenizerFlags(InputType type, EnumSet<Flags> parserFlags) {
+        EnumSet<Tokenizer.Flag> flags = EnumSet.noneOf(Tokenizer.Flag.class);
+        if (type == InputType.FILE) {
+            flags.add(Tokenizer.Flag.EXEC_INPUT);
+        } else if (type == InputType.SINGLE && parserFlags.contains(Flags.INTERACTIVE_TERMINAL)) {
+            flags.add(Tokenizer.Flag.INTERACTIVE);
+        }
+        if (parserFlags.contains(Flags.TYPE_COMMENTS)) {
+            flags.add(Tokenizer.Flag.TYPE_COMMENT);
+        }
+        return flags;
     }
 
     public SSTNode parse() {
@@ -336,14 +350,6 @@ abstract class AbstractParser {
     }
 
     /**
-     *
-     * @return flags that influence parsing.
-     */
-    public int getFlags() {
-        return flags;
-    }
-
-    /**
      * _PyPegen_seq_count_dots
      */
     public int countDots(Token[] tokens) {
@@ -505,6 +511,7 @@ abstract class AbstractParser {
             values[i] = getText(t);
             sourceRanges[i] = t.sourceRange;
         }
+        FExprParser fexprParser = (code, sourceRange) -> (ExprTy) new Parser(code, sourceRange, stringFactory, errorCb, InputType.FSTRING, flags, featureVersion).parse();
         return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory, featureVersion);
     }
 
@@ -512,8 +519,13 @@ abstract class AbstractParser {
      * _PyPegen_check_barry_as_flufl
      */
     public boolean checkBarryAsFlufl(Token token) {
-        if ((flags & PARSE_BARRY_AS_BDFL) != 0 && !getText(token).equals("<>")) {
+        if (flags.contains(Flags.BARRY_AS_BDFL) && !getText(token).equals("<>")) {
             errorCb.onError(token.sourceRange, BARRY_AS_BDFL);
+            return true;
+        }
+        if (!flags.contains(Flags.BARRY_AS_BDFL) && !getText(token).equals("!=")) {
+            // no explicit error message here, the parser will just fail to match the input
+            // producing the generic 'invalid syntax' error
             return true;
         }
         return false;

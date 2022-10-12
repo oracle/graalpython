@@ -420,9 +420,11 @@ LICENSE = '''/*
 
 IMPORTS = '''
 import com.oracle.graal.python.pegparser.sst.*;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 '''
 
@@ -917,14 +919,14 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule, int featureVersion) {" % className)
+        self.print("public %s(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory, fexprParser, errorCb, startRule, featureVersion);")
+            self.print("super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         self.print()
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, int featureVersion) {" % className)
+        self.print("public %s(String source, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule, featureVersion);")
+            self.print("super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         while self.todo:

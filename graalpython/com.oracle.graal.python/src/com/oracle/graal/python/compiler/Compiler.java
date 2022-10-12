@@ -142,14 +142,12 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
-import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -2890,18 +2888,14 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
-        return createParser(src, errorCb, inputType, interactiveTerminal, PythonLanguage.MINOR);
+        EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
+        if (interactiveTerminal) {
+            flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
+        }
+        return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
     }
 
-    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal, int featureVersion) {
-        NodeFactory nodeFactory = new NodeFactory();
-        PythonStringFactoryImpl stringFactory = new PythonStringFactoryImpl();
-        FExprParser fexpParser = new FExprParser() {
-            @Override
-            public ExprTy parse(String code, SourceRange sourceRange) {
-                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false, sourceRange), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING, featureVersion).parse();
-            }
-        };
-        return new Parser(new ParserTokenizer(errorCb, src, inputType, interactiveTerminal), nodeFactory, fexpParser, stringFactory, errorCb, inputType, featureVersion);
+    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {
+        return new Parser(src, new PythonStringFactoryImpl(), errorCb, inputType, flags, featureVersion);
     }
 }
