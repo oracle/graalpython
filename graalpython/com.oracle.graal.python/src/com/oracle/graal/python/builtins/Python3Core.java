@@ -251,8 +251,10 @@ import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
+import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.WrapperDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CoroutineBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
@@ -490,6 +492,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new AbstractFunctionBuiltins(),
                         new FunctionBuiltins(),
                         new BuiltinFunctionBuiltins(),
+                        new MethodDescriptorBuiltins(),
+                        new WrapperDescriptorBuiltins(),
                         new AbstractMethodBuiltins(),
                         new MethodBuiltins(),
                         new BuiltinMethodBuiltins(),

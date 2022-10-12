@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunction)
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.WrapperDescriptor})
 public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
     @Override

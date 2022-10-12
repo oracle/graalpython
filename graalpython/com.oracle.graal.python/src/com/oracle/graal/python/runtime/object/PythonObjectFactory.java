@@ -610,24 +610,38 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, int numDefaults, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, 0, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, flags, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, 0, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type, defaults, kw, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, flags, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
+                        callTarget));
+    }
+
+    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
     }
 
     public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
                         callTarget));
+    }
+
+    public final PBuiltinFunction createBuiltinFunction(PBuiltinFunction function, Object klass) {
+        PythonBuiltinClassType type = (PythonBuiltinClassType) function.getInitialPythonClass();
+        return trace(new PBuiltinFunction(type, type.getInstanceShape(getLanguage()), function.getName(), klass,
+                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget()));
     }
 
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, TruffleString name, Object type) {

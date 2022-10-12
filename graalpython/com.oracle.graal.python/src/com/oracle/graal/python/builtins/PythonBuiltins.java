@@ -26,6 +26,85 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ANEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___AWAIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ILSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INVERT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RDIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RLSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___RXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___XOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.ensureNoJavaString;
@@ -35,6 +114,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -112,7 +192,12 @@ public abstract class PythonBuiltins {
                     builtinClass.setAttribute(T___DOC__, builtinDoc);
                 }
             } else {
-                PBuiltinFunction function = core.factory().createBuiltinFunction(tsName, null, numDefaults(builtin), flags, callTarget);
+                PBuiltinFunction function;
+                if (isSlotMethod(builtin)) {
+                    function = core.factory().createWrapperDescriptor(tsName, null, numDefaults(builtin), flags, callTarget);
+                } else {
+                    function = core.factory().createBuiltinFunction(tsName, null, numDefaults(builtin), flags, callTarget);
+                }
                 function.setAttribute(T___DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
@@ -129,6 +214,19 @@ public abstract class PythonBuiltins {
                 builtinFunctions.put(toTruffleStringUncached(builtin.name()), callable);
             }
         });
+    }
+
+    // All methods that are really slots in CPython
+    private static final Set<String> SLOTS = Set.of(J___ABS__, J___ADD__, J___AITER__, J___AND__, J___ANEXT__, J___AWAIT__, J___BOOL__, J___CALL__, J___CONTAINS__, J___DELATTR__, J___DELETE__,
+                    J___DELITEM__, J___DEL__, J___DIVMOD__, J___EQ__, J___FLOAT__, J___FLOORDIV__, J___GETATTRIBUTE__, J___GETATTR__, J___GETITEM__, J___GET__, J___GE__, J___GT__, J___HASH__,
+                    J___IADD__, J___IAND__, J___IFLOORDIV__, J___ILSHIFT__, J___IMATMUL__, J___IMOD__, J___IMUL__, J___INDEX__, J___INIT__, J___INT__, J___INVERT__, J___IOR__, J___IPOW__,
+                    J___IRSHIFT__, J___ISUB__, J___ITER__, J___ITRUEDIV__, J___IXOR__, J___LEN__, J___LE__, J___LSHIFT__, J___LT__, J___MATMUL__, J___MOD__, J___MUL__, J___NEG__, J___NEW__,
+                    J___NEXT__, J___NE__, J___OR__, J___POS__, J___POW__, J___RADD__, J___RAND__, J___RDIVMOD__, J___REPR__, J___RFLOORDIV__, J___RLSHIFT__, J___RMATMUL__, J___RMOD__, J___RMUL__,
+                    J___ROR__, J___RPOW__, J___RRSHIFT__, J___RSHIFT__, J___RSUB__, J___RTRUEDIV__, J___RXOR__, J___SETATTR__, J___SETITEM__, J___SET__, J___STR__, J___SUB__, J___TRUEDIV__,
+                    J___XOR__);
+
+    private static boolean isSlotMethod(Builtin builtin) {
+        return builtin.name().startsWith("__") && SLOTS.contains(builtin.name());
     }
 
     /**
