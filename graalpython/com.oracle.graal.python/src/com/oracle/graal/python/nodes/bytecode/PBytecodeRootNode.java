@@ -2922,10 +2922,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private boolean bytecodePopCondition(VirtualFrame virtualFrame, int stackTop, Node[] localNodes, int bci, boolean useCachedNodes) {
         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, bci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
         Object cond;
-        try {
+        if (virtualFrame.isObject(stackTop)) {
             cond = virtualFrame.getObject(stackTop);
-        } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context mode
+        } else {
+            // Can happen when multiple code paths produce different types
             cond = generalizePopCondition(virtualFrame, stackTop, bci);
         }
         virtualFrame.setObject(stackTop, null);
