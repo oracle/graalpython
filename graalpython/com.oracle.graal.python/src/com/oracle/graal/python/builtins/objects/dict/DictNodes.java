@@ -106,6 +106,7 @@ public abstract class DictNodes {
         @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
@@ -113,12 +114,13 @@ public abstract class DictNodes {
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
-                            callKeysNode, getItem, getIter, nextNode, errorProfile, lib);
+                            callKeysNode, getItem, getIter, nextNode, errorProfile, setHasihngStorageItem, lib);
             self.setDictStorage(storage);
         }
 
         @Specialization(guards = {"!isDict(other)", "!hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")
         static void updateSequence(VirtualFrame frame, PDict self, Object other,
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
@@ -132,7 +134,8 @@ public abstract class DictNodes {
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
             HashingStorage.StorageSupplier storageSupplier = (boolean isStringKey, int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
-                            getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile, errorProfile, lib);
+                            getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile,
+                            errorProfile, setHasihngStorageItem, lib);
             self.setDictStorage(storage);
         }
 
