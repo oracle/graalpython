@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -70,7 +69,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -182,44 +180,6 @@ public class SSLErrorBuiltins extends PythonBuiltins {
             }
             return strNode.execute(frame, self.getArgs());
         }
-    }
-
-    public static final PException raiseSSLError(Frame frame, TruffleString message) {
-        return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
-    }
-
-    private static final PException raiseSSLError(Frame frame, TruffleString message, Object... formatArgs) {
-        return PConstructAndRaiseNode.getUncached().executeWithFmtMessageAndArgs(frame, PythonBuiltinClassType.SSLError, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
-    }
-
-    public static PException raiseSSLError(Frame frame, SSLErrorCode errorCode, Exception ex) {
-        return raiseSSLError(frame, errorCode, PConstructAndRaiseNode.getMessage(ex));
-    }
-
-    public static PException raiseSSLError(Frame frame, SSLErrorCode errorCode, TruffleString format, Object... formatArgs) {
-        TruffleString message = PConstructAndRaiseNode.getFormattedMessage(format, formatArgs);
-        try {
-            return PConstructAndRaiseNode.getUncached().executeWithFmtMessageAndArgs(null, errorCode.getType(), null, null, new Object[]{errorCode.getErrno(), message});
-        } catch (PException pException) {
-            setSSLErrorAttributes(pException, errorCode, message);
-            return pException;
-        }
-    }
-
-    public static PException raiseUncachedSSLError(TruffleString message) {
-        return raiseSSLError(null, message);
-    }
-
-    public static PException raiseUncachedSSLError(TruffleString message, Object... formatArgs) {
-        return raiseSSLError(null, message, formatArgs);
-    }
-
-    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, Exception ex) {
-        return raiseSSLError(null, errorCode, ex);
-    }
-
-    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, TruffleString format, Object... formatArgs) {
-        return raiseSSLError(null, errorCode, format, formatArgs);
     }
 
 }

@@ -78,7 +78,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class MemoryBIONode extends PythonUnaryBuiltinNode {
         @Specialization
         PMemoryBIO create(Object type) {
-            return factory().trace(new PMemoryBIO(type, factory().getShape(type)));
+            return factory().createMemoryBIO(type);
         }
     }
 
@@ -122,10 +122,11 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 if (self.didWriteEOF()) {
-                    throw SSLErrorBuiltins.raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
+                    throw constructAndRaiseNode.raiseSSLError(frame, SSL_CANNOT_WRITE_AFTER_EOF);
                 }
                 try {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);

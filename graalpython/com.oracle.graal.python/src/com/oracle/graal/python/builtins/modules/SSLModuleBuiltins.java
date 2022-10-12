@@ -80,13 +80,13 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
-import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
 import com.oracle.graal.python.builtins.objects.ssl.SSLProtocol;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -395,17 +395,17 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             try (BufferedReader r = file.newBufferedReader()) {
                 List<Object> certs = CertUtils.getCertificates(r);
                 if (certs.isEmpty()) {
-                    throw SSLErrorBuiltins.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE);
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE);
                 }
                 Object cert = certs.get(0);
                 if (!(cert instanceof X509Certificate)) {
-                    throw SSLErrorBuiltins.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
                 return CertUtils.decodeCertificate(getContext().factory(), (X509Certificate) certs.get(0));
             } catch (IOException | DecoderException ex) {
-                throw SSLErrorBuiltins.raiseUncachedSSLError(SSL_CANT_OPEN_FILE_S, ex.toString());
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {
-                throw SSLErrorBuiltins.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, ex.toString());
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, ex.toString());
             }
         }
 

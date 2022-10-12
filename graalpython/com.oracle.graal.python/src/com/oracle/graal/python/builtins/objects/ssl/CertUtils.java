@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -201,7 +202,7 @@ public final class CertUtils {
             storage = setItem(hlib, storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
             storage = setItem(hlib, storage, T_JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
-            throw SSLErrorBuiltins.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
         }
         dict.setDictStorage(storage);
         return dict;
@@ -665,10 +666,10 @@ public final class CertUtils {
                 break;
             }
         } catch (IOException | DecoderException | OperatorCreationException | PKCSException e) {
-            throw SSLErrorBuiltins.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         if (privateKey == null) {
-            throw SSLErrorBuiltins.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         PublicKey publicKey = cert.getPublicKey();
         checkPrivateKey(context, privateKey, publicKey);
@@ -698,11 +699,11 @@ public final class CertUtils {
                 return;
             }
         } catch (NoSuchAlgorithmException e) {
-            throw SSLErrorBuiltins.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, e);
+            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, e);
         } catch (SignatureException | InvalidKeyException e) {
             // fallthrough
         }
-        throw SSLErrorBuiltins.raiseUncachedSSLError(SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
     }
 
     @TruffleBoundary

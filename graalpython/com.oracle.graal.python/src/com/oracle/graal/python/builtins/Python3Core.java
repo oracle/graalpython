@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
@@ -315,6 +316,10 @@ import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
@@ -616,6 +621,11 @@ public abstract class Python3Core {
                         new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
+                        new SSLModuleBuiltins(),
+                        new SSLContextBuiltins(),
+                        new SSLErrorBuiltins(),
+                        new SSLSocketBuiltins(),
+                        new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),

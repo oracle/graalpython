@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins.errorType2errno;
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins.setSSLErrorAttributes;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -85,7 +87,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     public abstract PException execute(Frame frame, PythonBuiltinClassType type, PBaseException cause, TruffleString format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
 
     @CompilerDirectives.TruffleBoundary
-    public static TruffleString getFormattedMessage(TruffleString format, Object[] formatArgs) {
+    private static TruffleString getFormattedMessage(TruffleString format, Object[] formatArgs) {
         return toTruffleStringUncached(FORMATTER.format(format, formatArgs));
     }
 
@@ -157,7 +159,7 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     // OSError helpers
     @CompilerDirectives.TruffleBoundary
-    public static TruffleString getMessage(Exception exception) {
+    private static TruffleString getMessage(Exception exception) {
         return toTruffleStringUncached(exception.getMessage());
     }
 
@@ -204,6 +206,44 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSError(Frame frame, int errno, TruffleString message, Object filename, Object filename2) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
+    }
+
+    public final PException raiseSSLError(Frame frame, TruffleString message) {
+        return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    private final PException raiseSSLError(Frame frame, TruffleString message, Object... formatArgs) {
+        return raise(frame, PythonBuiltinClassType.SSLError, message, formatArgs);
+    }
+
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, Exception ex) {
+        return raiseSSLError(frame, errorCode, getMessage(ex));
+    }
+
+    public PException raiseSSLError(Frame frame, SSLErrorCode errorCode, TruffleString format, Object... formatArgs) {
+        TruffleString message = getFormattedMessage(format, formatArgs);
+        try {
+            return executeWithFmtMessageAndArgs(frame, errorCode.getType(), null, null, new Object[]{errorCode.getErrno(), message});
+        } catch (PException pException) {
+            setSSLErrorAttributes(pException, errorCode, message);
+            return pException;
+        }
+    }
+
+    public static PException raiseUncachedSSLError(TruffleString message) {
+        return getUncached().raiseSSLError(null, message);
+    }
+
+    public static PException raiseUncachedSSLError(TruffleString message, Object... formatArgs) {
+        return getUncached().raiseSSLError(null, message, formatArgs);
+    }
+
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, Exception ex) {
+        return getUncached().raiseSSLError(null, errorCode, ex);
+    }
+
+    public static PException raiseUncachedSSLError(SSLErrorCode errorCode, TruffleString format, Object... formatArgs) {
+        return getUncached().raiseSSLError(null, errorCode, format, formatArgs);
     }
 
     private final PException raiseOSErrorSubType(Frame frame, PythonBuiltinClassType osErrorSubtype, TruffleString format, Object... fmtArgs) {

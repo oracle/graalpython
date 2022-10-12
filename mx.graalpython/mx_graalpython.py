@@ -177,7 +177,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         x = [x for x in SUITE.dists if x.name == "GRAALPYTHON"][0]
         dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
     else:
-        dists = ['GRAALPYTHON', 'GRAALPYTHON_SSL']
+        dists = ['GRAALPYTHON']
     dists += ['TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
@@ -1743,7 +1743,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     },
     truffle_jars=[
         'graalpython:GRAALPYTHON',
-        'graalpython:GRAALPYTHON_SSL',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:XZ-1.8',

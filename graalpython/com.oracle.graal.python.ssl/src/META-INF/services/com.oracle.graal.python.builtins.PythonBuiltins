@@ -1,5 +1,0 @@
-com.oracle.graal.python.builtins.modules.SSLModuleBuiltins
-com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins
-com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins
-com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins
-com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins
