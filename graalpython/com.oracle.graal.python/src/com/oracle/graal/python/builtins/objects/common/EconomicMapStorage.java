@@ -200,7 +200,7 @@ public class EconomicMapStorage extends HashingStorage {
                     @Cached PyObjectHashNode hashNode,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
         VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-        removeNode.remove(state, map, key, hashNode.execute(frame, key));
+        removeNode.remove(frame, map, key, hashNode.execute(frame, key));
         return this;
     }
 

@@ -44,12 +44,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -197,7 +199,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(key, profile)"}, limit = "1")
-        static HashingStorage domTransition(DynamicObjectStorage self, Object key, Object value,
+        static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, Object value,
                         @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
@@ -215,7 +217,7 @@ public class HashingStorageNodes {
                     }
                 }
             }
-            putNode.put(null, resultMap, key, hashNode.execute(null, key), value);
+            putNode.put(frame, resultMap, key, hashNode.execute(frame, key), value);
             return result;
         }
 
@@ -255,22 +257,99 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
+    @ImportStatic({PGuards.class})
     public static abstract class HashingStorageDelItem extends Node {
-// public static HashingStorage executeUncached(HashingStorage storage, Object key) {
-// return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key);
-// }
+        public static HashingStorage executeUncached(HashingStorage self, Object key) {
+            return HashingStorageDelItemNodeGen.getUncached().executeImpl(null, self, key, null);
+        }
 
         public final HashingStorage execute(HashingStorage self, TruffleString key) {
             // Shortcut for frequent usage with TruffleString. We do not need a frame in such case,
             // because the string's __hash__ does not need it. Some fast-paths avoid even invoking
             // __hash__ for string keys
-            return execute(null, self, key);
+            return execute(null, self, key, null);
         }
 
-        /**
-         * TODO: check if we really need the result for anything else but updating the PDict, PSet
-         * storage. If not, provide an ecapsulation of that.
-         */
-        public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key);
+        public final HashingStorage execute(Frame frame, HashingStorage self, Object key) {
+            return execute(frame, self, key, null);
+        }
+
+        public final HashingStorage execute(Frame frame, HashingStorage self, Object key, boolean[] found) {
+            CompilerAsserts.partialEvaluationConstant(found);
+            assert found == null || found.length == 1;
+            return executeImpl(frame, self, key, found);
+        }
+
+        abstract HashingStorage executeImpl(Frame frame, HashingStorage self, Object key, boolean[] found);
+
+        @Specialization
+        static HashingStorage economicMap(Frame frame, EconomicMapStorage self, Object key, boolean[] found,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode,
+                        @Shared("economicRemove") @Cached ObjectHashMap.RemoveNode removeNode) {
+            setFound(found, removeNode.execute(frame, self.map, key, hashNode.execute(frame, key)));
+            return self;
+        }
+
+        @Specialization
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, boolean[] found,
+                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            setFound(found, dylib.putIfPresent(self.store, key, PNone.NO_VALUE));
+            self.invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+            return self;
+        }
+
+        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, boolean[] found,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            return domStringKey(self, castStr.execute(key), found, invalidateMroProfile, dylib);
+        }
+
+        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
+        static HashingStorage domOther(Frame frame, DynamicObjectStorage self, Object key, boolean[] found,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            hashNode.execute(frame, key); // Just for the potential side effects
+            setFound(found, false);
+            return self;
+        }
+
+        @Specialization
+        static HashingStorage empty(Frame frame, @SuppressWarnings("unused") EmptyStorage self, Object key, boolean[] found,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            // We must not omit the potentially side-effecting call to __hash__
+            hashNode.execute(frame, key);
+            setFound(found, false);
+            return self;
+        }
+
+        @Specialization
+        static HashingStorage keywords(Frame frame, KeywordsStorage self, Object key, boolean[] found,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode,
+                        @Shared("economicRemove") @Cached ObjectHashMap.RemoveNode removeNode,
+                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+            EconomicMapStorage result = EconomicMapStorage.create(self.length());
+            self.addAllTo(result, specializedPutNode);
+            return economicMap(frame, result, key, found, hashNode, removeNode);
+        }
+
+        @Specialization
+        static HashingStorage locals(Frame frame, LocalsStorage self, Object key, boolean[] found,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode,
+                        @Shared("economicRemove") @Cached ObjectHashMap.RemoveNode removeNode,
+                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+            EconomicMapStorage result = EconomicMapStorage.create(self.lengthHint());
+            self.addAllTo(result, specializedPutNode);
+            return economicMap(frame, result, key, found, hashNode, removeNode);
+        }
+
+        private static void setFound(boolean[] foundArg, boolean foundResult) {
+            if (foundArg != null) {
+                foundArg[0] = foundResult;
+            }
+        }
     }
 }

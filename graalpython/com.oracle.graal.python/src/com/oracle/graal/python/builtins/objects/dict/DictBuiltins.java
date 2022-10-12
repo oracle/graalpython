@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -215,12 +216,13 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "3")
-        public Object popItem(PDict dict,
+        public Object popItem(VirtualFrame frame, PDict dict,
+                        @Cached HashingStorageDelItem delItem,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = dict.getDictStorage();
             for (DictEntry entry : lib.reverseEntries(storage)) {
                 PTuple result = factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
-                lib.delItem(storage, entry.getKey());
+                delItem.execute(frame, storage, entry.getKey());
                 return result;
             }
             throw raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");

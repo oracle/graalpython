@@ -649,7 +649,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"override == 0", "!isDict(b)"}, limit = "3")
+        @Specialization(guards = {"override == 0", "!isDict(b)"})
         public static Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Cached LenNode lenNode,
                         @Cached PyObjectGetAttr getAttrNode,

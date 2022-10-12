@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
@@ -96,7 +97,7 @@ public class PDict extends PHashingCollection {
     }
 
     public void delItem(Object key) {
-        storage = HashingStorageLibrary.getUncached().delItem(storage, key);
+        storage = HashingStorageDelItem.executeUncached(storage, key);
     }
 
     public static HashingStorage createNewStorage(int expectedSize) {

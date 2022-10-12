@@ -680,19 +680,19 @@ public final class ObjectHashMap {
 
     @GenerateUncached
     public abstract static class RemoveNode extends Node {
-        public final void remove(ThreadState state, ObjectHashMap map, DictKey key) {
-            execute(state, map, key.getValue(), key.getPythonHash());
+        public final boolean remove(Frame frame, ObjectHashMap map, DictKey key) {
+            return execute(frame, map, key.getValue(), key.getPythonHash());
         }
 
-        public final void remove(ThreadState state, ObjectHashMap map, Object key, long keyHash) {
-            execute(state, map, key, keyHash);
+        public final boolean remove(Frame frame, ObjectHashMap map, Object key, long keyHash) {
+            return execute(frame, map, key, keyHash);
         }
 
-        abstract void execute(ThreadState state, ObjectHashMap map, Object key, long keyHash);
+        abstract boolean execute(Frame frame, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...
         @Specialization
-        public static void doRemoveWithRestart(ThreadState state, ObjectHashMap map, Object key, long keyHash,
+        public static boolean doRemoveWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
                         @Cached BranchProfile lookupRestart,
                         @Cached("createCountingProfile()") ConditionProfile foundNullKey,
                         @Cached("createCountingProfile()") ConditionProfile foundEqKey,
@@ -703,17 +703,16 @@ public final class ObjectHashMap {
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             while (true) {
                 try {
-                    doRemove(state, map, key, keyHash, foundNullKey, foundEqKey,
+                    return doRemove(frame, map, key, keyHash, foundNullKey, foundEqKey,
                                     collisionFoundNoValue, collisionFoundEqKey, compactProfile,
                                     hasState, eqNode);
-                    return;
                 } catch (RestartLookupException ignore) {
                     lookupRestart.enter();
                 }
             }
         }
 
-        static void doRemove(ThreadState state, ObjectHashMap map, Object key, long keyHash,
+        static boolean doRemove(Frame frame, ObjectHashMap map, Object key, long keyHash,
                         ConditionProfile foundNullKey,
                         ConditionProfile foundEqKey,
                         ConditionProfile collisionFoundNoValue,
@@ -735,16 +734,16 @@ public final class ObjectHashMap {
             int compactIndex = map.getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
             if (foundNullKey.profile(index == EMPTY_INDEX)) {
-                return; // not found
+                return false; // not found
             }
 
             int unwrappedIndex = unwrapIndex(index);
-            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+            if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                 indices[compactIndex] = DUMMY_INDEX;
                 map.setValue(unwrappedIndex, null);
                 map.setKey(unwrappedIndex, null);
                 map.size--;
-                return;
+                return true;
             }
 
             // collision: intentionally counted loop
@@ -761,15 +760,15 @@ public final class ObjectHashMap {
                     compactIndex = map.nextIndex(indicesLen, compactIndex, perturb);
                     index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                        return; // not found
+                        return false; // not found
                     }
                     unwrappedIndex = unwrapIndex(index);
-                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, state, unwrappedIndex, key, keyHash, eqNode, hasState))) {
+                    if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
                         indices[compactIndex] = DUMMY_INDEX;
                         map.setValue(unwrappedIndex, null);
                         map.setKey(unwrappedIndex, null);
                         map.size--;
-                        return;
+                        return true;
                     }
                 }
             } finally {

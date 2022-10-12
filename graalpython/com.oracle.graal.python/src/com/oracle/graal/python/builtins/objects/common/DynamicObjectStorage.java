@@ -281,6 +281,10 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib, BranchProfile invalidateMroProfile) {
         dylib.put(store, key, assertNoJavaString(value));
+        invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+    }
+
+    void invalidateAttributeInMROFinalAssumption(TruffleString key, BranchProfile invalidateMroProfile) {
         invalidateAttributeInMROFinalAssumptions(mro, key, invalidateMroProfile);
     }
 

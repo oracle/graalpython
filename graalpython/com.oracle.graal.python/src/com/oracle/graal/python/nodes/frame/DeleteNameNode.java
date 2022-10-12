@@ -42,8 +42,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -54,7 +53,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -88,20 +86,13 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
     @Specialization(guards = "hasLocalsDict(frame)")
     protected void readFromLocalsDict(VirtualFrame frame,
                     @Cached BranchProfile updatedStorage,
-                    @Cached ConditionProfile hasFrame,
-                    @Cached HashingStorageGetItem getItem,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                    @Cached HashingStorageDelItem delStorageItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
         HashingStorage storage = frameLocals.getDictStorage();
-        Object key = attributeId;
-        HashingStorage newStore = null;
-        // TODO: FIXME: this might call __hash__ twice
-        boolean hasKey = getItem.hasKey(frame, storage, key);
-        if (hasKey) {
-            newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
-        }
+        boolean[] hasKey = new boolean[1];
+        HashingStorage newStore = delStorageItem.execute(frame, storage, attributeId, hasKey);
 
-        if (hasKey) {
+        if (hasKey[0]) {
             if (newStore != storage) {
                 updatedStorage.enter();
                 frameLocals.setDictStorage(newStore);
