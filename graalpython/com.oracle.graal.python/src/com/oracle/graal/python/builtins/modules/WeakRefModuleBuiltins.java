@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
+
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
@@ -61,6 +65,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -78,10 +84,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.HiddenKey;
-
-import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
-import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
 public class WeakRefModuleBuiltins extends PythonBuiltins {
@@ -172,7 +174,8 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsBuiltinClassProfile profile) {
+                        @Cached IsBuiltinClassProfile profile,
+                        @Cached GetMroNode getMroNode) {
             Object actualCallback = callback instanceof PNone ? null : callback;
             Object clazz = getClassNode.execute(pythonObject);
 
@@ -182,14 +185,18 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             }
 
             // if the object's type is a native type, we need to consider 'tp_weaklistoffset'
-            if (PGuards.isNativeClass(clazz)) {
-                if (getTpWeaklistoffsetNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
-                }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMember.TP_WEAKLISTOFFSET);
-                if (tpWeaklistoffset != PNone.NO_VALUE) {
-                    return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
+            if (PGuards.isNativeClass(clazz) || clazz instanceof PythonClass && ((PythonClass) clazz).needsNativeAllocation()) {
+                for (Object base : getMroNode.execute(clazz)) {
+                    if (PGuards.isNativeClass(base)) {
+                        if (getTpWeaklistoffsetNode == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
+                        }
+                        Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(base, NativeMember.TP_WEAKLISTOFFSET);
+                        if (tpWeaklistoffset != PNone.NO_VALUE) {
+                            return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
+                        }
+                    }
                 }
             }
             return refType(cls, pythonObject, actualCallback);

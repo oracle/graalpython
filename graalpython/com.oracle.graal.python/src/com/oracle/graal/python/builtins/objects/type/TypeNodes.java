@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
@@ -89,15 +88,18 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.AddMemberNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
@@ -155,6 +157,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttribute
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -1259,33 +1262,33 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object left, Object right);
 
         @Specialization
-        boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
+        static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
             return left == right;
         }
 
         @Specialization
-        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
+        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
             return left == right;
         }
 
         @Specialization
-        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
+        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
             return left == right.getType();
         }
 
         @Specialization
-        boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
+        static boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
             return left.getType() == right;
         }
 
         @Specialization
-        boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+        static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return lib.isIdentical(left, right, lib);
         }
 
         @Fallback
-        boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
+        static boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
         }
 
@@ -1815,8 +1818,6 @@ public abstract class TypeNodes {
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
-        @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
-        @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private GetMroNode getMroNode;
         @Child private PyObjectSetAttr writeAttrNode;
         @Child private CastToTruffleStringNode castToStringNode;
@@ -1922,9 +1923,10 @@ public abstract class TypeNodes {
             boolean hasItemSize = getItemSize.execute(base) != 0;
             boolean mayAddWeakRef = getWeakRefAttrNode.execute(base) == PNone.NO_VALUE && !hasItemSize;
 
+            PythonAbstractClass[] mro = getMro(pythonClass);
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDictIfNative(frame, pythonClass, getItemSize, writeItemSize);
+                addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize);
                 addDictDescrAttribute(basesArray, pythonClass, factory);
                 addWeakrefDescrAttribute(pythonClass, factory);
             } else {
@@ -1965,7 +1967,7 @@ public abstract class TypeNodes {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
                     if (equalNode.execute(slotName, T___DICT__, TS_ENCODING)) {
-                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, getItemSize, writeItemSize)) {
+                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize)) {
                             throw raise.raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
@@ -2004,7 +2006,7 @@ public abstract class TypeNodes {
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
-                        addNativeSlots(pythonClass, newSlots);
+                        addNativeSlots(frame, language, pythonClass, mro, newSlots);
                     }
                 } finally {
                     IndirectCallContext.exit(frame, language, context, state);
@@ -2014,6 +2016,7 @@ public abstract class TypeNodes {
                     pythonClass.setHasSlotsButNoDictFlag();
                 }
             }
+            ensureBasicsize(frame, pythonClass, mro);
 
             return pythonClass;
         }
@@ -2099,13 +2102,51 @@ public abstract class TypeNodes {
             return slotLenNode;
         }
 
-        private void addNativeSlots(PythonManagedClass pythonClass, PTuple slots) {
-            if (callAddNativeSlotsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create());
-                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+        /**
+         * If a managed type inherits from a native type (which means that the object will be
+         * allocated in native) and if the type has {@code __slots__}, we need to do following:
+         *
+         * <ol>
+         * <li>We need to increase the basicsize by {@code sizeof(PyObject *)} for each name in
+         * {@code __slots__} since each dynamic slot automatically becomes a
+         * {@link CApiMemberAccessNodes#T_OBJECT_EX} member.</li>
+         * <li>We need to install a member descriptor for each dynamic slot.</li>
+         * </ol>
+         */
+        private void addNativeSlots(VirtualFrame frame, PythonLanguage language, PythonManagedClass pythonClass, PythonAbstractClass[] mro, PTuple slots) {
+            SequenceStorage slotsStorage = slots.getSequenceStorage();
+            if (slotsStorage.length() != 0) {
+                // __basicsize__ may not have been inherited yet. Therefore, iterate over the MRO
+                // and/ look for the first native class.
+                int slotOffset = getBasicsize(frame, pythonClass);
+                if (slotOffset == 0) {
+                    for (PythonAbstractClass cls : mro) {
+                        if (PGuards.isNativeClass(cls)) {
+                            slotOffset = getBasicsize(frame, cls);
+                            break;
+                        }
+                    }
+                }
+                if (slotOffset == 0) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                slotOffset = installMemberDescriptors(language, pythonClass, slotsStorage, slotOffset);
+                // commit new basicSize
+                ensureWriteAttrNode().execute(null, pythonClass, SpecialAttributeNames.T___BASICSIZE__, slotOffset);
             }
-            callAddNativeSlotsNode.call(FUN_ADD_NATIVE_SLOTS, toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
+        }
+
+        @TruffleBoundary
+        private static int installMemberDescriptors(PythonLanguage language, PythonManagedClass pythonClass, SequenceStorage slotsStorage, int slotOffset) {
+            Object typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+            for (int i = 0; i < slotsStorage.length(); i++) {
+                Object slotName = SequenceStorageNodes.GetItemScalarNode.getUncached().execute(slotsStorage, i);
+                AddMemberNode.addMember(language, pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE,
+                                CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                slotOffset += SIZEOF_PY_OBJECT_PTR;
+            }
+            return slotOffset;
         }
 
         private CastToListNode getCastToListNode() {
@@ -2278,14 +2319,14 @@ public abstract class TypeNodes {
         /**
          * check that the native base does not already have tp_dictoffset
          */
-        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass, PythonAbstractClass[] mro, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
-                for (Object cls : getMro(pythonClass)) {
+                for (PythonAbstractClass cls : mro) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
                         long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
+                        long basicsize = getBasicsize(frame, cls);
                         long itemsize = ensureCastToIntNode().execute(getItemSize.execute(cls));
                         if (dictoffset == 0) {
                             addedNewDict = true;
@@ -2306,6 +2347,31 @@ public abstract class TypeNodes {
             }
             return addedNewDict;
         }
+
+        /**
+         * check that the native base does not already have tp_dictoffset
+         */
+        private void ensureBasicsize(VirtualFrame frame, PythonManagedClass pythonClass, PythonAbstractClass[] mro) {
+            if (pythonClass.needsNativeAllocation() && getBasicsize(frame, pythonClass) == 0) {
+                long basicsize = 0;
+                for (PythonAbstractClass cls : mro) {
+                    if (PGuards.isNativeClass(cls)) {
+                        basicsize = getBasicsize(frame, cls);
+                        break;
+                    }
+                }
+                if (basicsize <= 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere(String.format("class %s needs native allocation but has basicsize <= 0", pythonClass.getName()));
+                }
+                ensureWriteAttrNode().execute(frame, pythonClass, SpecialAttributeNames.T___BASICSIZE__, basicsize);
+            }
+        }
+
+        private int getBasicsize(VirtualFrame frame, PythonAbstractClass cls) {
+            return ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, SpecialAttributeNames.T___BASICSIZE__));
+        }
+
     }
 
     @GenerateUncached

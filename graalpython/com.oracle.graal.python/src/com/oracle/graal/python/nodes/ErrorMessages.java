@@ -335,6 +335,7 @@ public abstract class ErrorMessages {
     public static final TruffleString FUNC_TAKES_EXACTLY_D_ARGS = tsLiteral("function takes exaclty %d arguments (%d given)");
     public static final TruffleString FUNC_S_MUST_BE_S_NOT_P = tsLiteral("%s() %s must be %s, not %p");
     public static final TruffleString GENERATOR_EXPR_MUST_BE_PARENTHESIZED = tsLiteral("Generator expression must be parenthesized");
+    public static final TruffleString GCD_FOR_NATIVE_NOT_SUPPORTED = tsLiteral("gcd for native objects is not yet supported on GraalPy");
     public static final TruffleString GENERATOR_IGNORED_EXIT = tsLiteral("generator ignored GeneratorExit");
     public static final TruffleString GENERATOR_RAISED_STOPITER = tsLiteral("generator raised StopIteration");
     public static final TruffleString GENERATOR_ALREADY_EXECUTING = tsLiteral("generator already executing");
@@ -1455,6 +1456,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_CONVERSION_SPECIFICATION = tsLiteral("Invalid conversion specification");
     public static final TruffleString INTERNAL_EXCEPTION_OCCURED = tsLiteral("internal exception occurred");
     public static final TruffleString P_OBJECT_IS_NOT_SUBSCRIPTABLE = tsLiteral("'%p' object is not subscriptable");
+    public static final TruffleString ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL = tsLiteral("attribute type value must be bool");
 
     public static final TruffleString INVALID_SEQ_ITEM = tsLiteral("sequence item %d: expected str instance, %p found");
     public static final TruffleString NEW_X_ISNT_TYPE_OBJ = tsLiteral("%s.__new__(X): X is not a type object (%p)");

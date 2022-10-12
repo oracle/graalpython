@@ -71,6 +71,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_READ_STRING_MEMBER("ReadStringMember"),
     FUN_READ_STRING_IN_PLACE_MEMBER("ReadStringInPlaceMember"),
     FUN_READ_OBJECT_MEMBER("ReadObjectMember"),
+    FUN_READ_OBJECT_EX_MEMBER("ReadObjectExMember"),
     FUN_READ_CHAR_MEMBER("ReadCharMember"),
     FUN_READ_UBYTE_MEMBER("ReadUByteMember"),
     FUN_READ_USHORT_MEMBER("ReadUShortMember"),

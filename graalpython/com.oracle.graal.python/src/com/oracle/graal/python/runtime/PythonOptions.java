@@ -70,8 +70,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
-    private static final String J_EXECUTABLE_LIST_SEPARATOR = "🏆";
-    private static final TruffleString T_EXECUTABLE_LIST_SEPARATOR = tsLiteral(J_EXECUTABLE_LIST_SEPARATOR);
+    private static final String J_STRING_LIST_SEPARATOR = "🏆";
+    private static final TruffleString T_STRING_LIST_SEPARATOR = tsLiteral(J_STRING_LIST_SEPARATOR);
 
     public enum HPyBackendMode {
         NFI,
@@ -274,7 +274,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<path>", help = "The sys.executable path. Set by the launcher, but can may need to be overridden in certain special situations.", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> Executable = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "<cmdPart>[" + J_EXECUTABLE_LIST_SEPARATOR +
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "<cmdPart>[" + J_STRING_LIST_SEPARATOR +
                     "<cmdPart>]", help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
     public static final OptionKey<TruffleString> ExecutableList = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
@@ -322,6 +322,9 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.EXPERT, help = "Makes bytecode instrumentation node materialization eager instead of lazy.") //
     public static final OptionKey<Boolean> EagerlyMaterializeInstrumentationNodes = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.INTERNAL, help = "The list of the original command line arguments passed to the Python executable.") //
+    public static final OptionKey<TruffleString> OrigArgv = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
@@ -457,14 +460,20 @@ public final class PythonOptions {
 
     @TruffleBoundary
     public static TruffleString[] getExecutableList(PythonContext context) {
-        TruffleString option = context.getOption(ExecutableList);
-        if (option.isEmpty()) {
+        TruffleString execListOption = context.getOption(ExecutableList);
+        if (execListOption.isEmpty()) {
             return StringUtils.split(context.getOption(Executable), T_SPACE, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
                             TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
         } else {
-            return StringUtils.split(context.getOption(ExecutableList), T_EXECUTABLE_LIST_SEPARATOR, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
+            return StringUtils.split(execListOption, T_STRING_LIST_SEPARATOR, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
                             TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
         }
+    }
+
+    @TruffleBoundary
+    public static TruffleString[] getOrigArgv(PythonContext context) {
+        return StringUtils.split(context.getOption(OrigArgv), T_STRING_LIST_SEPARATOR, TruffleString.CodePointLengthNode.getUncached(), TruffleString.IndexOfStringNode.getUncached(),
+                        TruffleString.SubstringNode.getUncached(), TruffleString.EqualNode.getUncached());
     }
 
     /**

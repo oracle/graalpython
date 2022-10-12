@@ -132,11 +132,14 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -406,6 +409,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "Exception type", "Exception value", "Exception traceback",
                                     "Error message", "Object causing the exception"});
 
+    // see stdlib_modules_names.h
+    private static final String[] STDLIB_MODULE_NAMES = new String[]{"__future__", "_abc", "_aix_support", "_ast", "_asyncio", "_bisect", "_blake2", "_bootsubprocess", "_bz2", "_codecs", "_codecs_cn",
+                    "_codecs_hk", "_codecs_iso2022", "_codecs_jp", "_codecs_kr", "_codecs_tw", "_collections", "_collections_abc", "_compat_pickle", "_compression", "_contextvars", "_crypt", "_csv",
+                    "_ctypes", "_curses", "_curses_panel", "_datetime", "_dbm", "_decimal", "_elementtree", "_frozen_importlib", "_frozen_importlib_external", "_functools", "_gdbm", "_hashlib",
+                    "_heapq", "_imp", "_io", "_json", "_locale", "_lsprof", "_lzma", "_markupbase", "_md5", "_msi", "_multibytecodec", "_multiprocessing", "_opcode", "_operator", "_osx_support",
+                    "_overlapped", "_pickle", "_posixshmem", "_posixsubprocess", "_py_abc", "_pydecimal", "_pyio", "_queue", "_random", "_scproxy", "_sha1", "_sha256", "_sha3", "_sha512", "_signal",
+                    "_sitebuiltins", "_socket", "_sqlite3", "_sre", "_ssl", "_stat", "_statistics", "_string", "_strptime", "_struct", "_symtable", "_thread", "_threading_local", "_tkinter",
+                    "_tracemalloc", "_uuid", "_warnings", "_weakref", "_weakrefset", "_winapi", "_zoneinfo", "abc", "aifc", "antigravity", "argparse", "array", "ast", "asynchat", "asyncio",
+                    "asyncore", "atexit", "audioop", "base64", "bdb", "binascii", "binhex", "bisect", "builtins", "bz2", "cProfile", "calendar", "cgi", "cgitb", "chunk", "cmath", "cmd", "code",
+                    "codecs", "codeop", "collections", "colorsys", "compileall", "concurrent", "configparser", "contextlib", "contextvars", "copy", "copyreg", "crypt", "csv", "ctypes", "curses",
+                    "dataclasses", "datetime", "dbm", "decimal", "difflib", "dis", "distutils", "doctest", "email", "encodings", "ensurepip", "enum", "errno", "faulthandler", "fcntl", "filecmp",
+                    "fileinput", "fnmatch", "fractions", "ftplib", "functools", "gc", "genericpath", "getopt", "getpass", "gettext", "glob", "graphlib", "grp", "gzip", "hashlib", "heapq", "hmac",
+                    "html", "http", "idlelib", "imaplib", "imghdr", "imp", "importlib", "inspect", "io", "ipaddress", "itertools", "json", "keyword", "lib2to3", "linecache", "locale", "logging",
+                    "lzma", "mailbox", "mailcap", "marshal", "math", "mimetypes", "mmap", "modulefinder", "msilib", "msvcrt", "multiprocessing", "netrc", "nis", "nntplib", "nt", "ntpath",
+                    "nturl2path", "numbers", "opcode", "operator", "optparse", "os", "ossaudiodev", "pathlib", "pdb", "pickle", "pickletools", "pipes", "pkgutil", "platform", "plistlib", "poplib",
+                    "posix", "posixpath", "pprint", "profile", "pstats", "pty", "pwd", "py_compile", "pyclbr", "pydoc", "pydoc_data", "pyexpat", "queue", "quopri", "random", "re", "readline",
+                    "reprlib", "resource", "rlcompleter", "runpy", "sched", "secrets", "select", "selectors", "shelve", "shlex", "shutil", "signal", "site", "smtpd", "smtplib", "sndhdr", "socket",
+                    "socketserver", "spwd", "sqlite3", "sre_compile", "sre_constants", "sre_parse", "ssl", "stat", "statistics", "string", "stringprep", "struct", "subprocess", "sunau", "symtable",
+                    "sys", "sysconfig", "syslog", "tabnanny", "tarfile", "telnetlib", "tempfile", "termios", "textwrap", "this", "threading", "time", "timeit", "tkinter", "token", "tokenize", "trace",
+                    "traceback", "tracemalloc", "tty", "turtle", "turtledemo", "types", "typing", "unicodedata", "unittest", "urllib", "uu", "uuid", "venv", "warnings", "wave", "weakref",
+                    "webbrowser", "winreg", "winsound", "wsgiref", "xdrlib", "xml", "xmlrpc", "zipapp", "zipfile", "zipimport", "zlib", "zoneinfo"};
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SysModuleBuiltinsFactory.getFactories();
@@ -526,6 +551,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String[] args = context.getEnv().getApplicationArguments();
         final PythonObjectFactory factory = PythonObjectFactory.getUncached();
         sys.setAttribute(tsLiteral("argv"), factory.createList(convertToObjectArray(args)));
+        sys.setAttribute(tsLiteral("orig_argv"), factory.createList(convertToObjectArray(PythonOptions.getOrigArgv(core.getContext()))));
+
+        sys.setAttribute(tsLiteral("stdlib_module_names"), createStdLibModulesSet(factory));
 
         TruffleString prefix = context.getSysPrefix();
         for (TruffleString name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
@@ -622,6 +650,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute(T___BREAKPOINTHOOK__, sys.getAttribute(T_BREAKPOINTHOOK));
     }
 
+    private static PFrozenSet createStdLibModulesSet(PythonObjectFactory factory) {
+        EconomicMapStorage storage = EconomicMapStorage.create(STDLIB_MODULE_NAMES.length);
+        for (String s : STDLIB_MODULE_NAMES) {
+            TruffleString ts = toTruffleStringUncached(s);
+            storage.putUncached(ts, PNone.NONE);
+        }
+        return factory.createFrozenSet(storage);
+    }
+
     /**
      * Like {@link PythonUtils#toTruffleStringArrayUncached(String[])}, but creates an array of
      * {@link Object}'s. The intended use of this method is in slow-path in calls to methods like
@@ -639,6 +676,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
             result[i] = toTruffleStringUncached(src[i]);
         }
         return result;
+    }
+
+    private static Object[] convertToObjectArray(TruffleString[] arr) {
+        if (arr.length == 0) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+        return Arrays.copyOf(arr, arr.length, Object[].class);
     }
 
     @Override

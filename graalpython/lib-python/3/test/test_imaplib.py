@@ -56,6 +56,7 @@ class TestImaplib(unittest.TestCase):
                                        timezone(timedelta(0, 2 * 60 * 60))),
                 '"18-May-2033 05:33:20 +0200"']
 
+    @support.impl_detail("time.tzset support", graalvm=False)
     @run_with_locale('LC_ALL', 'de_DE', 'fr_FR')
     # DST rules included to work around quirk where the Gnu C library may not
     # otherwise restore the previous time zone

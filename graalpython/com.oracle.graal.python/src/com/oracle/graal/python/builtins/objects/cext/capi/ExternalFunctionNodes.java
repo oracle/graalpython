@@ -292,6 +292,13 @@ public abstract class ExternalFunctionNodes {
                 case INITPROC:
                 case KEYWORDS:
                 case NEW:
+                    /*
+                     * If no conversion is requested, this means we directly call a managed function
+                     * (without argument conversion). Null indicates this
+                     */
+                    if (!doArgAndResultConversion) {
+                        return null;
+                    }
                     nodeKlass = MethKeywordsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, isStatic, sig) : l -> new MethKeywordsRoot(l, name, isStatic);
                     break;

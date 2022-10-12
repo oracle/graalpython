@@ -138,6 +138,13 @@ generator_example.events = [((), [(0, 'generator_example', 'call', None),
                                   (4, 'generator_example', 'line', None),
                                   (4, 'generator_example', 'return', False)])]
 
+def f_trace_delete():
+    del sys._getframe().f_trace
+    return 1
+
+f_trace_delete.events = [((), [(0, 'f_trace_delete', 'call', None),
+                               (1, 'f_trace_delete', 'line', None)])]
+
 def make_test_method(fun, name):
     def test_case(self):
         for args, events in fun.events:
@@ -216,3 +223,5 @@ class TraceTests(unittest.TestCase):
         # handler.called is not checked, since it could cause a transient
         for name in self.events:
             self.assertEqual(name, 'helper')
+
+    test_08_frame_f_trace_deletable = make_test_method(f_trace_delete, 'test_08_frame_f_trace_deletable')

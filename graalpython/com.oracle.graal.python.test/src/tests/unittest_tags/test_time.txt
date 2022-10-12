@@ -49,4 +49,3 @@
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_thread_time
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_time
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_time_ns_type
-*graalpython.lib-python.3.test.test_time.TimeTestCase.test_tzset

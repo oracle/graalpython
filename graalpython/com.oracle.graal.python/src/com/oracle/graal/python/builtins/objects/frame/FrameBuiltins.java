@@ -158,7 +158,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "f_trace", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(v)")
@@ -167,9 +167,15 @@ public final class FrameBuiltins extends PythonBuiltins {
             return traceFun == null ? PNone.NONE : traceFun;
         }
 
-        @Specialization(guards = "!isNoValue(v)")
+        @Specialization(guards = {"!isNoValue(v)", "!isDeleteMarker(v)"})
         static Object doSet(PFrame self, Object v) {
             self.setLocalTraceFun(v == PNone.NONE ? null : v);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(v)", "isDeleteMarker(v)"})
+        static Object doDel(PFrame self, Object v) {
+            self.setLocalTraceFun(null);
             return PNone.NONE;
         }
     }

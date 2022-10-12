@@ -536,14 +536,14 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySliceNew sliceNode,
                         @Cached CallNode callNode,
-                        @Cached StartsWithNode endsWith,
+                        @Cached StartsWithNode startsWith,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object getItemCallable = lookupAttrNode.execute(frame, string, T___GETITEM__);
                 Object slice = callNode.execute(getItemCallable, sliceNode.execute(start, end, PNone.NONE));
-                return (boolean) endsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
+                return (boolean) startsWith.execute(frame, slice, substring, start, end) ? 1 : 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;

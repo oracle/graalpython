@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -74,15 +75,16 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -131,8 +133,9 @@ public class CApiMemberAccessNodes {
             case T_STRING:
                 return NativeCAPISymbol.FUN_READ_STRING_MEMBER;
             case T_OBJECT:
-            case T_OBJECT_EX:
                 return NativeCAPISymbol.FUN_READ_OBJECT_MEMBER;
+            case T_OBJECT_EX:
+                return NativeCAPISymbol.FUN_READ_OBJECT_EX_MEMBER;
             case T_CHAR:
             case T_BYTE:
             case T_BOOL:
@@ -240,22 +243,22 @@ public class CApiMemberAccessNodes {
                 return AsNativeCharNodeGen.create();
             case T_BOOL:
                 return AsNativeBooleanNodeGen.create();
-            case T_SHORT:
-            case T_INT:
             case T_BYTE:
-                // TODO(fa): use appropriate native type sizes
-                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, true);
+            case T_UBYTE:
+            case T_SHORT:
+            case T_USHORT:
+            case T_INT:
             case T_LONG:
             case T_PYSSIZET:
                 // TODO(fa): use appropriate native type sizes
+                /*
+                 * Note: according to 'structmember.c: PyMember_SetOne', CPython always uses
+                 * 'PyLong_AsLong' and just casts to the appropriate C type. This cast may be lossy.
+                 */
                 return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, true);
             case T_FLOAT:
             case T_DOUBLE:
                 return AsNativeDoubleNodeGen.create();
-            case T_USHORT:
-            case T_UBYTE:
-                // TODO(fa): use appropriate native type sizes
-                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, false);
             case T_UINT:
                 /*
                  * CPython converts to a unsigned long and just truncates to an unsigned int. For
@@ -334,15 +337,16 @@ public class CApiMemberAccessNodes {
         @Child private ToSulongNode toSulongNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
         @Child private PForeignToPTypeNode fromForeign;
+        @Child private PRaiseNode raiseNode;
 
-        /** The name of the native getter function. */
-        private final NativeCAPISymbol accessor;
+        /** The specified member type. */
+        private final int type;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected ReadMemberNode(NativeCAPISymbol accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
-            this.accessor = accessor;
+        protected ReadMemberNode(int type, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+            this.type = type;
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
             if (asPythonObjectNode == null) {
@@ -354,12 +358,17 @@ public class CApiMemberAccessNodes {
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self) {
             Object pyObjectPtr = ensureToSulongNode().execute(self);
             Object nativeResult = PNone.NONE;
+            NativeCAPISymbol accessor = getReadAccessorName(type);
             if (accessor != null) {
                 // This will call pure C functions that won't ever access the Python stack nor the
                 // exception state. So, we don't need to setup an indirect call.
                 nativeResult = ensureCallHPyFunctionNode().call(accessor, pyObjectPtr, (long) offset);
                 if (asPythonObjectNode != null) {
-                    return asPythonObjectNode.execute(nativeResult);
+                    Object result = asPythonObjectNode.execute(nativeResult);
+                    if (type == T_OBJECT_EX && result == PNone.NO_VALUE) {
+                        throw ensureRaiseNode().raise(PythonBuiltinClassType.AttributeError);
+                    }
+                    return result;
                 }
             }
             // We still need to use 'PForeignToPTypeNode' to ensure that we do not introduce unknown
@@ -383,12 +392,19 @@ public class CApiMemberAccessNodes {
             return toSulongNode;
         }
 
+        private PRaiseNode ensureRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
-            NativeCAPISymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
             RootCallTarget callTarget = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true),
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
                             CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, flags, callTarget);
@@ -446,8 +462,9 @@ public class CApiMemberAccessNodes {
         @Child private PCallCapiFunction callHPyFunctionNode;
         @Child private CExtToNativeNode toNativeNode;
         @Child private ToSulongNode toSulongNode;
-
-        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
+        @Child private GetClassNode getClassNode;
+        @Child private IsSameTypeNode isSameTypeNode;
+        @Child private IsBuiltinClassProfile overflowProfile;
 
         /** The specified member type. */
         private final int type;
@@ -482,6 +499,10 @@ public class CApiMemberAccessNodes {
                 newValue = value;
             }
 
+            if (type == T_BOOL && !ensureIsSameTypeNode().execute(PythonBuiltinClassType.Boolean, ensureGetClassNode().execute(newValue))) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_TYPE_VALUE_MUST_BE_BOOL);
+            }
+
             NativeCAPISymbol accessor = getWriteAccessorName(type);
             if (accessor != null) {
                 // convert value if needed
@@ -494,6 +515,20 @@ public class CApiMemberAccessNodes {
                     Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
                         nativeValue = toNativeNode.execute(cApiContext, newValue);
+                    } catch (PException e) {
+                        /*
+                         * Special case for T_LONG, T_ULONG, T_PYSSIZET: if conversion raises an
+                         * OverflowError, CPython still assigns the error indication value -1 to the
+                         * member. That looks rather like a bug but let's just do the same.
+                         */
+                        if (type == T_LONG || type == T_ULONG || type == T_PYSSIZET) {
+                            e.expectOverflowError(ensureOverflowProfile());
+                            ensureCallHPyFunctionNode().call(accessor, selfPtr, (long) offset, (long) -1);
+                        } else if (type == T_DOUBLE) {
+                            e.expectTypeError(ensureOverflowProfile());
+                            ensureCallHPyFunctionNode().call(accessor, selfPtr, (long) offset, (long) -1);
+                        }
+                        throw e;
                     } finally {
                         IndirectCallContext.exit(frame, getLanguage(), context, savedState);
                     }
@@ -526,6 +561,30 @@ public class CApiMemberAccessNodes {
                 toSulongNode = insert(ToSulongNode.create());
             }
             return toSulongNode;
+        }
+
+        private GetClassNode ensureGetClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
+        }
+
+        private IsSameTypeNode ensureIsSameTypeNode() {
+            if (isSameTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameTypeNode = insert(IsSameTypeNode.create());
+            }
+            return isSameTypeNode;
+        }
+
+        private IsBuiltinClassProfile ensureOverflowProfile() {
+            if (overflowProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                overflowProfile = insert(IsBuiltinClassProfile.create());
+            }
+            return overflowProfile;
         }
 
         @TruffleBoundary
