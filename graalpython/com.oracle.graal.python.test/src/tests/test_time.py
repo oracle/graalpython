@@ -131,7 +131,7 @@ class StrftimeTests(unittest.TestCase):
 
     def test_weekOfDay(self):
         self.check_weekDay("%A", calendar.day_name)
-    
+
     def test_monthShortName(self):
         self.check_month("%b", calendar.month_abbr)
 
@@ -222,7 +222,7 @@ class StrftimeTests(unittest.TestCase):
         self.check_format("%w", (2018, 11, 24, 23, 20, 61, 7, 1, 0), '1')
         self.check_format("%w", (2018, 11, 24, 23, 20, 61, 999, 1, 0), '6')
         self.assertRaises(ValueError, time.strftime, "%w", time.struct_time((2018, 8, 2, 10, 20, 30, -2, 1, 0)))
-    
+
     def test_YearY(self):
         self.check_format("%Y", (2018, 11, 28, 10, 0, 0, -1, 1, 0), '2018')
         self.check_format("%Y", (18, 11, 28, 10, 0, 0, 0, 1, 0), '18')
@@ -243,3 +243,40 @@ class StrftimeTests(unittest.TestCase):
         self.assertRaises(TypeError, time.strftime, "%w", 10)
         self.assertRaises(TypeError, time.strftime, "%w", (2018, 11, 29))
 
+    def test_padding(self):
+        self.check_format("%d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '08')
+        self.check_format("%-d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '8')
+        self.check_format("%Y-%b-%-d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '2018-Aug-8')
+        self.check_format("%Y-%b-%-d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '2018-Aug-8')
+
+        self.check_format("%m", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '08')
+        self.check_format("%-m", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '8')
+        self.check_format("%Y-%m-%-d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '2018-08-8')
+        self.check_format("%Y-%-m-%-d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '2018-8-8')
+
+        self.check_format("%H", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '05')
+        self.check_format("%-H", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '5')
+        self.check_format("%Y-%b-%-d-%H", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '2018-Aug-8-05')
+        self.check_format("%Y-%b-%-d-%-H", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '2018-Aug-8-5')
+
+        self.check_format("%M", (2018, 8, 8, 5, 4, 10, 3, 1, 0), '04')
+        self.check_format("%-M", (2018, 8, 8, 5, 4, 10, 3, 1, 0), '4')
+        self.check_format("%Y-%b-%-d-%M", (2018, 8, 8, 5, 4, 10, 3, 1, 0), '2018-Aug-8-04')
+        self.check_format("%Y-%b-%-d-%-M", (2018, 8, 8, 5, 4, 10, 3, 1, 0), '2018-Aug-8-4')
+
+        self.check_format("%S", (2018, 8, 8, 5, 4, 2, 3, 1, 0), '02')
+        self.check_format("%-S", (2018, 8, 8, 5, 4, 2, 3, 1, 0), '2')
+        self.check_format("%Y-%b-%-d-%S", (2018, 8, 8, 5, 4, 2, 3, 1, 0), '2018-Aug-8-02')
+        self.check_format("%Y-%b-%-d-%-S", (2018, 8, 8, 5, 4, 2, 3, 1, 0), '2018-Aug-8-2')
+
+        self.check_format("%I", (2018, 8, 8, 15, 24, 10, 3, 1, 0), '03')
+        self.check_format("%-I", (2018, 8, 8, 15, 24, 10, 3, 1, 0), '3')
+        self.check_format("%Y-%b-%-d-%I", (2018, 8, 8, 15, 24, 10, 3, 1, 0), '2018-Aug-8-03')
+        self.check_format("%Y-%b-%-d-%-I", (2018, 8, 8, 15, 24, 10, 3, 1, 0), '2018-Aug-8-3')
+
+        self.check_format("%j", (2018, 8, 8, 15, 24, 10, 3, 5, 0), '005')
+        self.check_format("%j", (2018, 8, 8, 15, 24, 10, 3, 55, 0), '055')
+        self.check_format("%Y-%b-%-d-%j", (2018, 8, 8, 15, 24, 10, 3, 5, 0), '2018-Aug-8-005')
+        self.check_format("%Y-%b-%d-%j", (2018, 8, 8, 15, 24, 10, 3, 55, 0), '2018-Aug-08-055')
+        self.check_format("%Y-%b-%-d-%-j", (2018, 8, 8, 15, 24, 10, 3, 5, 0), '2018-Aug-8-5')
+        self.check_format("%Y-%b-%-d-%-j", (2018, 8, 8, 15, 24, 10, 3, 55, 0), '2018-Aug-8-55')
