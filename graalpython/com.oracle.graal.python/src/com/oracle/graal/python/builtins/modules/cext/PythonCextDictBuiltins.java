@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
@@ -101,7 +102,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -629,9 +629,8 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         @Specialization(guards = "override == 0", limit = "3")
         public static Object merge(VirtualFrame frame, PDict a, PDict b, @SuppressWarnings("unused") int override,
                         @Cached HashingStorageGetItem getItemA,
-                        @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
+                        @Cached HashingStorageSetItem setItemA,
                         @CachedLibrary("b.getDictStorage()") HashingStorageLibrary libB,
-                        @Cached ConditionProfile hasFrameProfile,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -640,7 +639,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                 while (loopProfile.profile(it.hasNext())) {
                     DictEntry e = it.next();
                     if (!getItemA.hasKey(frame, aStorage, e.key)) {
-                        libA.setItemWithFrame(aStorage, e.key, e.value, hasFrameProfile, frame);
+                        setItemA.execute(frame, aStorage, e.key, e.value);
                     }
                 }
                 return 0;
@@ -659,8 +658,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getKeyNode,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getValueNode,
                         @Cached HashingStorageGetItem getItemA,
-                        @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageSetItem setItemA,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached BranchProfile noKeyProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -677,7 +675,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                     if (!getItemA.hasKey(frame, aStorage, key)) {
                         noKeyProfile.enter();
                         Object value = getValueNode.execute(frame, b, key);
-                        aStorage = libA.setItemWithFrame(aStorage, key, value, hasFrameProfile, frame);
+                        aStorage = setItemA.execute(frame, aStorage, key, value);
                     }
                 }
                 a.setDictStorage(aStorage);

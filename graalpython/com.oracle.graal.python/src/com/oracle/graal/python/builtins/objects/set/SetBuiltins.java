@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Ge
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -266,14 +267,13 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Cached HashingStorageSetItem setStorageItem) {
             SequenceStorage sequenceStorage = getSequenceStorageNode.execute(other);
             int length = lenNode.execute(sequenceStorage);
             HashingStorage curStorage = storage;
             for (int i = 0; i < length; i++) {
                 Object key = getItemScalarNode.execute(sequenceStorage, i);
-                curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
+                curStorage = setStorageItem.execute(frame, curStorage, key, PNone.NONE);
             }
             return curStorage;
         }
@@ -284,8 +284,7 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Cached HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = storage;
             Object iterator = getIter.execute(frame, other);
             while (true) {
@@ -296,7 +295,7 @@ public final class SetBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     return curStorage;
                 }
-                curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
+                curStorage = setStorageItem.execute(frame, curStorage, key, PNone.NONE);
             }
         }
 
