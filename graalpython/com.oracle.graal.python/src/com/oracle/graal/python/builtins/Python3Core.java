@@ -60,6 +60,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -651,6 +652,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new GroupByBuiltins(),
                         new GrouperBuiltins(),
                         new IsliceBuiltins(),
+                        new PairwiseBuiltins(),
                         new PermutationsBuiltins(),
                         new ProductBuiltins(),
                         new RepeatBuiltins(),
