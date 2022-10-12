@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -60,7 +61,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -153,8 +153,6 @@ public abstract class HashingCollectionNodes {
      */
     @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
-        @Child private PRaiseNode raise;
-
         public abstract HashingStorage execute(VirtualFrame frame, Object iterator, Object value);
 
         public final HashingStorage doNoValue(VirtualFrame frame, Object iterator) {
@@ -191,8 +189,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doString(VirtualFrame frame, TruffleString str, Object value,
-                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
@@ -204,21 +201,20 @@ public abstract class HashingCollectionNodes {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
                 int codePoint = nextNode.execute(it);
                 TruffleString key = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
-                storage = lib.setItemWithFrame(storage, key, val, hasFrame, frame);
+                storage = setStorageItem.execute(frame, storage, key, val);
             }
             return storage;
         }
 
         @Specialization
         static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
-                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return doString(frame, castToStringNode.execute(pstr), value, hasFrame, lib, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
+            return doString(frame, castToStringNode.execute(pstr), value, setStorageItem, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})
@@ -226,8 +222,7 @@ public abstract class HashingCollectionNodes {
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem) {
             HashingStorage curStorage = EmptyStorage.INSTANCE;
             Object iterator = getIter.execute(frame, other);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
@@ -239,16 +234,13 @@ public abstract class HashingCollectionNodes {
                     e.expectStopIteration(errorProfile);
                     return curStorage;
                 }
-                curStorage = lib.setItemWithFrame(curStorage, key, val, hasFrame, frame);
+                curStorage = setStorageItem.execute(frame, curStorage, key, val);
             }
         }
 
         @Fallback
-        HashingStorage fail(Object other, @SuppressWarnings("unused") Object value) {
-            if (raise == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raise = insert(PRaiseNode.create());
-            }
+        HashingStorage fail(Object other, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }

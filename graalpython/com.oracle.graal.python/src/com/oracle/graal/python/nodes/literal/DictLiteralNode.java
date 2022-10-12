@@ -27,16 +27,14 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory.DynamicDictLiteralNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class DictLiteralNode {
 
@@ -45,32 +43,31 @@ public abstract class DictLiteralNode {
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
         @Children private final ExpressionNode[] keys;
         @Children private final ExpressionNode[] values;
-        @Children private final HashingStorageLibrary[] libs;
+        @Children private final HashingStorageSetItem[] setHashingStorageItemNodes;
 
         protected DynamicDictLiteralNode(ExpressionNode[] keys, ExpressionNode[] values) {
             this.keys = keys;
             this.values = values;
-            this.libs = new HashingStorageLibrary[keys.length];
-            for (int i = 0; i < this.libs.length; i++) {
-                this.libs[i] = HashingStorageLibrary.getFactory().createDispatched(2);
+            this.setHashingStorageItemNodes = new HashingStorageSetItem[keys.length];
+            for (int i = 0; i < this.setHashingStorageItemNodes.length; i++) {
+                this.setHashingStorageItemNodes[i] = HashingStorageSetItem.create();
             }
         }
 
         @ExplodeLoop
-        private HashingStorage eval(VirtualFrame frame, ConditionProfile hasFrame) {
+        private HashingStorage eval(VirtualFrame frame) {
             HashingStorage storage = PDict.createNewStorage(false, values.length);
             for (int i = 0; i < values.length; i++) {
                 Object key = keys[i].execute(frame);
                 Object value = values[i].execute(frame);
-                storage = libs[i].setItemWithFrame(storage, key, value, hasFrame, frame);
+                storage = setHashingStorageItemNodes[i].execute(frame, storage, key, value);
             }
             return storage;
         }
 
         @Specialization
-        public PDict create(VirtualFrame frame,
-                        @Cached ConditionProfile hasFrame) {
-            HashingStorage dictStorage = eval(frame, hasFrame);
+        public PDict create(VirtualFrame frame) {
+            HashingStorage dictStorage = eval(frame);
             return factory.createDict(dictStorage);
         }
     }

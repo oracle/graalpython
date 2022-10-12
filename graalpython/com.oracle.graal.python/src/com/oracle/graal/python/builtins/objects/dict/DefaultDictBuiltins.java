@@ -57,13 +57,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -80,7 +80,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDefaultDict)
@@ -141,14 +140,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.KeyError, new Object[]{key});
         }
 
-        @Specialization(guards = "!isNone(self.getDefaultFactory())", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isNone(self.getDefaultFactory())")
         Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
                         @Cached CallNode callNode,
-                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                        @Cached.Exclusive @Cached ConditionProfile profile) {
+                        @Cached PyDictSetItem setItem) {
             final Object value = callNode.execute(frame, self.getDefaultFactory());
-            final HashingStorage storage = hlib.setItemWithFrame(self.getDictStorage(), key, value, profile, frame);
-            self.setDictStorage(storage);
+            setItem.execute(frame, self, key, value);
             return value;
         }
     }

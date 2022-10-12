@@ -44,11 +44,10 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -95,8 +94,8 @@ public final class StarredExpressionNode extends LiteralNode {
         return childNode.execute(frame);
     }
 
-    public HashingStorage appendToSet(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, ThreadState state, Object values) {
-        return ensureAppendToSetNode().execute(frame, storage, storageLib, values, state);
+    public HashingStorage appendToSet(VirtualFrame frame, HashingStorage storage, Object values) {
+        return ensureAppendToSetNode().execute(frame, storage, values);
     }
 
     public SequenceStorage appendToStorage(VirtualFrame frame, SequenceStorage storage, Object values) {
@@ -121,29 +120,31 @@ public final class StarredExpressionNode extends LiteralNode {
 
     @ImportStatic(PGuards.class)
     public abstract static class AppendToSetNode extends Node {
-        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, Object values, ThreadState state);
+        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, Object values);
 
         @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
-        static HashingStorage doSetPSequence(HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
+        static HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, PSequence values,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached HashingStorageSetItem setHashingStorageItem) {
             HashingStorage storage = storageIn;
             SequenceStorage valuesStorage = values.getSequenceStorage();
             int n = lenNode.execute(valuesStorage);
             for (int i = 0; i < n; i++) {
                 Object element = getItemNode.execute(valuesStorage, i);
-                storage = storageLib.setItemWithState(storage, element, PNone.NONE, state);
+                storage = setHashingStorageItem.execute(frame, storage, element, PNone.NONE);
             }
             return storage;
         }
 
         @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(values, getClassNode)", limit = "1")
-        static HashingStorage doSetIterable(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, Object values, ThreadState state,
+        static HashingStorage doSetIterable(VirtualFrame frame, HashingStorage storageIn, Object values,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached PyObjectGetIter getIter) {
+                        @Cached PyObjectGetIter getIter,
+                        @Cached HashingStorageSetItem setHashingStorageItem) {
             TruffleString[] a = new TruffleString[0];
             final Object[] objects = Arrays.copyOf(a, a.length, Object[].class);
             Object iterator = getIter.execute(frame, values);
@@ -151,7 +152,7 @@ public final class StarredExpressionNode extends LiteralNode {
             while (true) {
                 try {
                     Object nextValue = next.execute(frame, iterator);
-                    storage = storageLib.setItemWithState(storage, nextValue, PNone.NONE, state);
+                    storage = setHashingStorageItem.execute(frame, storage, nextValue, PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;

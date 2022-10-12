@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -73,7 +74,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ConcatKeywordsNode extends ExpressionNode {
 
@@ -122,8 +122,8 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Cached HashingStorageGetItem otherGetItem,
                         @Cached HashingStorageGetItem resultGetItem,
+                        @Cached HashingStorageSetItem resultSetItem,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
-                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
                         @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
             HashingStorage result = dest;
             HashingStorage otherStorage = other.getDictStorage();
@@ -133,20 +133,19 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                     sameKeyProfile.enter();
                     throw new SameDictKeyException(key);
                 }
-                result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+                result = resultSetItem.execute(frame, result, key, value);
             }
             return result;
         }
 
         @Fallback
         static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
-                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
                         @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
                         @Cached PyObjectCallMethodObjArgs callKeys,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ListNodes.FastConstructListNode asList,
                         @Cached HashingStorageGetItem resultGetItem,
+                        @Cached HashingStorageSetItem resultSetItem,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
@@ -163,7 +162,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                         throw new SameDictKeyException(key);
                     }
                     Object value = getItem.execute(frame, other, key);
-                    result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+                    result = resultSetItem.execute(frame, result, key, value);
                 }
                 return result;
             } catch (PException e) {
