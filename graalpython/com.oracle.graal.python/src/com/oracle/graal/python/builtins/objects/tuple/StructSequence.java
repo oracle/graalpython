@@ -67,8 +67,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -109,7 +109,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -424,7 +423,7 @@ public class StructSequence {
 
         @Specialization
         public PTuple reduce(PTuple self,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached GetClassNode getClass) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
             Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
@@ -437,7 +436,7 @@ public class StructSequence {
             } else {
                 HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
-                    storage = hlib.setItem(storage, fieldNames[i], data[i]);
+                    storage = setHashingStorageItem.execute(storage, fieldNames[i], data[i]);
                 }
                 seq = factory().createTuple(Arrays.copyOf(data, inSequence));
                 dict = factory().createDict(storage);

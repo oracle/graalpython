@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -232,7 +233,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private GetClassNode getDescClassNode;
         @Child private LookupCallableSlotInMRONode lookupSetNode;
         @Child private CallTernaryMethodNode callSetNode;
-        @Child private HashingStorageLibrary hlib;
+        @Child private HashingStorageSetItem setHashingStorageItem;
         @CompilationFinal private boolean changedStorage;
 
         @Specialization
@@ -259,7 +260,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            writeAttribute(localDict, key, value);
+            writeAttribute(frame, localDict, key, value);
             return PNone.NONE;
         }
 
@@ -287,12 +288,12 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
             return callSetNode;
         }
 
-        private void writeAttribute(PDict dict, Object key, Object value) {
-            if (hlib == null) {
-                hlib = insert(HashingStorageLibrary.getFactory().createDispatched(3));
+        private void writeAttribute(VirtualFrame frame, PDict dict, Object key, Object value) {
+            if (setHashingStorageItem == null) {
+                setHashingStorageItem = insert(HashingStorageSetItem.create());
             }
             HashingStorage storage = dict.getDictStorage();
-            HashingStorage newStorage = hlib.setItem(storage, key, value);
+            HashingStorage newStorage = setHashingStorageItem.execute(frame, storage, key, value);
             if (storage != newStorage) {
                 if (!changedStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
