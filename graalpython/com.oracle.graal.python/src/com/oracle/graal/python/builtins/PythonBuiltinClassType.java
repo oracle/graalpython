@@ -85,7 +85,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
     PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinFunction("method_descriptor", Flags.PRIVATE_DERIVED_WODICT),
-    PBuiltinMethod("builtin_function_or_method", Flags.PRIVATE_DERIVED_WODICT),
+    PBuiltinFunctionOrMethod("builtin_function_or_method", Flags.PRIVATE_DERIVED_WODICT),
     WrapperDescriptor(J_WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     MethodWrapper("method-wrapper", Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinClassMethod("classmethod_descriptor", Flags.PRIVATE_DERIVED_WODICT),

@@ -38,9 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.function;
+package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
@@ -49,69 +50,65 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunction)
-public class MethodDescriptorBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.MethodWrapper)
+public class MethodWrapperBuiltins extends PythonBuiltins {
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return MethodDescriptorBuiltinsFactory.getFactories();
+        return MethodWrapperBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = J___OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = {"!isPNone(instance)"})
-        protected PMethod doMethod(PFunction self, Object instance, Object klass) {
-            return factory().createMethod(instance, self);
-        }
-
+    public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected static Object doFunction(PFunction self, PNone instance, Object klass) {
-            return self;
-        }
-
-        @Specialization(guards = {"!isPNone(instance)"})
-        protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
-            return factory().createBuiltinMethod(instance, self);
-        }
-
-        @Specialization
-        protected static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
-            return self;
+        Object objclass(PBuiltinMethod self) {
+            return self.getFunction().getEnclosingType();
         }
     }
 
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getEnclosingType() == null")
-        static TruffleString reprModuleFunction(PBuiltinFunction self,
-                        @Cached.Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            // (tfel): these really shouldn't be accessible, I think
-            return simpleTruffleStringFormatNode.format("<built-in function %s>", self.getName());
+        @Specialization
+        static TruffleString reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Cached GetNameNode getTypeNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return simpleTruffleStringFormatNode.format("<method-wrapper '%s' of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+                            PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
-        @Specialization(guards = "self.getEnclosingType() != null")
-        static TruffleString reprClassFunction(PBuiltinFunction self,
-                        @Cached.Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
+        @Specialization
+        static TruffleString reprBuiltinMethod(VirtualFrame frame, PMethod self,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Cached GetNameNode getTypeNameNode,
+                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            TruffleString typeName = getTypeNameNode.execute(getClassNode.execute(self.getSelf()));
+            return simpleTruffleStringFormatNode.format("<method-wrapper '%s' of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+                            PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
+        }
+
+        protected static GetAttributeNode createGetAttributeNode() {
+            return GetAttributeNode.create(T___NAME__, null);
         }
     }
 }

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -51,11 +52,18 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.WrapperDescriptor)
 public class WrapperDescriptorBuiltins extends PythonBuiltins {
@@ -86,6 +94,17 @@ public class WrapperDescriptorBuiltins extends PythonBuiltins {
         @Specialization
         protected static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
             return self;
+        }
+    }
+
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static TruffleString reprClassFunction(PBuiltinFunction self,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<slot wrapper '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }
 }

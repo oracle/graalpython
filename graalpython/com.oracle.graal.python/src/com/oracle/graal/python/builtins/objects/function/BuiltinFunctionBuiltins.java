@@ -29,7 +29,6 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
@@ -38,8 +37,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -48,7 +45,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,24 +58,6 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinFunctionBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getEnclosingType() == null")
-        static TruffleString reprModuleFunction(PBuiltinFunction self,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            // (tfel): these really shouldn't be accessible, I think
-            return simpleTruffleStringFormatNode.format("<built-in function %s>", self.getName());
-        }
-
-        @Specialization(guards = "self.getEnclosingType() != null")
-        static TruffleString reprClassFunction(PBuiltinFunction self,
-                        @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
-        }
     }
 
     @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)

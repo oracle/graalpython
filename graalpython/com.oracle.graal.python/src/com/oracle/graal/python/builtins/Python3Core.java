@@ -291,13 +291,15 @@ import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
+import com.oracle.graal.python.builtins.objects.method.AbstractBuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
-import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinFunctionOrMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.InstancemethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.MethodWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
@@ -496,7 +498,9 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WrapperDescriptorBuiltins(),
                         new AbstractMethodBuiltins(),
                         new MethodBuiltins(),
-                        new BuiltinMethodBuiltins(),
+                        new AbstractBuiltinMethodBuiltins(),
+                        new BuiltinFunctionOrMethodBuiltins(),
+                        new MethodWrapperBuiltins(),
                         new BuiltinClassmethodBuiltins(),
                         new CodeBuiltins(),
                         new FrameBuiltins(),
