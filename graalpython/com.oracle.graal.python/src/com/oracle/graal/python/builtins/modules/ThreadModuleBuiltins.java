@@ -150,6 +150,16 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_native_id", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetNativeIdNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public static long getId() {
+            return Thread.currentThread().getId();
+        }
+    }
+
     @Builtin(name = "_count", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetThreadCountNode extends PythonUnaryBuiltinNode {
