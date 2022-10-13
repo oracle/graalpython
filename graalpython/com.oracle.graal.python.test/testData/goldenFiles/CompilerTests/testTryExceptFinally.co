@@ -10,9 +10,9 @@ Disassembly of <module>:
   3:2   -   3:14       14 JUMP_FORWARD                      82   (to 96)
   3:2   -   3:14       16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
   4:7   -   4:16       17 LOAD_NAME                         1    (TypeError)
-  4:0   -   4:6        19 MATCH_EXC_OR_JUMP                 31   (to 50)
-  4:0   -   4:6        23 UNWRAP_EXC
-  4:0   -   4:6        24 STORE_NAME                        2    (e)
+  4:0   -   5:18       19 MATCH_EXC_OR_JUMP                 31   (to 50)
+  4:0   -   5:18       23 UNWRAP_EXC
+  4:0   -   5:18       24 STORE_NAME                        2    (e)
   5:2   -   5:7        26 LOAD_NAME                         0    (print)
   5:8   -   5:17       28 LOAD_STRING                       2    ('except1')
   5:2   -   5:18       30 CALL_FUNCTION                     1
@@ -29,9 +29,9 @@ Disassembly of <module>:
   5:2   -   5:18       47 POP_EXCEPT
   5:2   -   5:18       48 JUMP_FORWARD                      39   (to 87)
   6:7   -   6:17  >>   50 LOAD_NAME                         3    (ValueError)
-  6:0   -   6:6        52 MATCH_EXC_OR_JUMP                 36   (to 88)
-  6:0   -   6:6        56 UNWRAP_EXC
-  6:0   -   6:6        57 STORE_NAME                        2    (e)
+  6:0   -   7:18       52 MATCH_EXC_OR_JUMP                 36   (to 88)
+  6:0   -   7:18       56 UNWRAP_EXC
+  6:0   -   7:18       57 STORE_NAME                        2    (e)
   7:2   -   7:7        59 LOAD_NAME                         0    (print)
   7:8   -   7:17       61 LOAD_STRING                       3    ('except2')
   7:2   -   7:18       63 CALL_FUNCTION                     1
