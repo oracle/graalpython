@@ -62,7 +62,7 @@ import _frozen_importlib
 import sys
 
 
-NAME_VER_PATTERN = "([^-]+)-(\\d+)(.\\d+)?(.\\d+)?"
+NAME_VER_PATTERN = "(.+)-(\\d+)(.\\d+)?(.\\d+)?"
 WARNED = False
 
 class PipLoader:
@@ -179,7 +179,7 @@ class PipUnpackLoader(PipLoader):
             # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
             # some packages may have only major.minor or just major version
             archive_name = os.path.basename(filename)
-            name_ver_match = re.search("^{0}.*\\.(tar\\.gz|whl|zip)$".format(NAME_VER_PATTERN), archive_name)
+            name_ver_match = re.search("^{0}.*\\.(tar\\.gz|tar|whl|zip)$".format(NAME_VER_PATTERN), archive_name)
             if not name_ver_match:
                 print("Warning: could not parse package name, version, or format from '{}'.\n"
                       "Could not determine if any GraalPy specific patches need to be applied.".format(archive_name))
