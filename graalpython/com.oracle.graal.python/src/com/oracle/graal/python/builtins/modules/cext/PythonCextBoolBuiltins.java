@@ -69,7 +69,7 @@ public final class PythonCextBoolBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyTrueNode extends PythonBuiltinNode {
         @Specialization
-        static Object run() {
+        static boolean run() {
             return true;
         }
     }
@@ -78,7 +78,7 @@ public final class PythonCextBoolBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyFalseNode extends PythonBuiltinNode {
         @Specialization
-        static Object run() {
+        static boolean run() {
             return false;
         }
     }
