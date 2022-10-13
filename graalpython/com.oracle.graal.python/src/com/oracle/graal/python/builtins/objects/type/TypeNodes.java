@@ -239,6 +239,7 @@ public abstract class TypeNodes {
                 case Structure:
                 case Union:
                 case SimpleCData:
+                case PArray:
                     result = DEFAULT | BASETYPE;
                     break;
                 case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
@@ -293,6 +294,7 @@ public abstract class TypeNodes {
                 case PDequeRevIter:
                 case CField:
                 case CThunkObject:
+                case PArrayIterator:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PDict:

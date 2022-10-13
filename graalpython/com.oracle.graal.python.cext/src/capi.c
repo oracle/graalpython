@@ -40,6 +40,27 @@
  */
 #include "capi.h"
 
+
+typedef struct arrayobject {
+    PyObject_VAR_HEAD
+    char *ob_item;
+    Py_ssize_t allocated;
+    const struct arraydescr *ob_descr;
+    PyObject *weakreflist; /* List of weak references */
+    int ob_exports;  /* Number of exported buffers */
+} arrayobject;
+
+PyTypeObject Arraytype = PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(arrayobject));
+
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t index;
+    arrayobject *ao;
+    PyObject* (*getitem)(struct arrayobject *, Py_ssize_t);
+} arrayiterobject;
+
+PyTypeObject PyArrayIter_Type = PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
+
 void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
 void *PY_SYS;
@@ -175,6 +196,8 @@ declare_type(PyBytes_Type, bytes, PyBytesObject);
 declare_type(PyDict_Type, dict, PyDictObject);
 declare_type(PyTuple_Type, tuple, PyTupleObject);
 declare_type(PyList_Type, list, PyListObject);
+declare_type(Arraytype, array, arrayobject);
+declare_type(PyArrayIter_Type, arrayiterator, arrayiterobject);
 declare_type(PyComplex_Type, complex, PyComplexObject);
 declare_type(PyModule_Type, module, PyModuleObject);
 declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
@@ -313,8 +336,8 @@ static void initialize_globals() {
     _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
 
     // long zero, long one
-    _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
-    _PyLong_One = (PyObject *)&_Py_TrueStruct;
+    _PyLong_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_Zero", SRC_CS));
+    _PyLong_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_One", SRC_CS));
 }
 
 static void initialize_bufferprocs() {
