@@ -162,7 +162,7 @@ public class ArgumentsTests {
 
     @Test
     public void kwargsDuplicate() {
-        assertLastLineErrorContains("TypeError: foo() got multiple values for keyword argument 'd'", "\n" +
+        assertLastLineErrorContains("TypeError: __main__.foo() got multiple values for keyword argument 'd'", "\n" +
                         "def foo(**kwargs):\n" +
                         "  print(kwargs)\n" +
                         "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'d': 5})\n");
