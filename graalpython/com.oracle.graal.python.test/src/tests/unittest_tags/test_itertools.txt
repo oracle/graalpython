@@ -35,6 +35,7 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_groupby
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_islice
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_map
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_pairwise
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_permutations
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_permutations_overflow
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_permutations_tuple_reuse
@@ -95,6 +96,7 @@
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_islice
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_issue2246
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_map
+*graalpython.lib-python.3.test.test_itertools.TestGC.test_pairwise
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_permutations
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_product
 *graalpython.lib-python.3.test.test_itertools.TestGC.test_repeat
@@ -114,6 +116,7 @@
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_groupby
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_islice
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_map
+*graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_pairwise
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_product
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_starmap
 *graalpython.lib-python.3.test.test_itertools.TestVariousIteratorArgs.test_takewhile

@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
 import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
+import com.oracle.graal.python.builtins.objects.itertools.PPairwise;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
@@ -1238,6 +1239,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PIslice createIslice(Object cls) {
         return trace(new PIslice(cls, getShape(cls)));
+    }
+
+    public final PPairwise createPairwise(Object cls) {
+        return trace(new PPairwise(cls, getShape(cls)));
     }
 
     public final PPermutations createPermutations(Object cls) {
