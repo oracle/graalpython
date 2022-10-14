@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -176,18 +177,19 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
         Object doBaseSet(PBaseSet self,
+                        @Cached HashingStorageLen lenNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()).iterator(), lib.length(self.getDictStorage()));
+            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()).iterator(), lenNode.execute(self.getDictStorage()));
         }
     }
 
     @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     protected abstract static class BaseLenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public static int len(PBaseSet self,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(self.getDictStorage());
+                        @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(self.getDictStorage());
         }
     }
 
@@ -290,10 +292,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class BaseIsDisjointNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "self == other", limit = "3")
+        @Specialization(guards = "self == other")
         static boolean isDisjointSameObject(PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(self.getDictStorage()) == 0;
+                        @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(self.getDictStorage()) == 0;
         }
 
         @Specialization(guards = {"self != other", "cannotBeOverridden(other, getClassNode)"}, limit = "3")
@@ -381,11 +383,13 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean isLessThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached HashingStorageLen lenSelfNode,
+                        @Cached HashingStorageLen lenOtherNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached ConditionProfile sizeProfile) {
-            final int len1 = hlib.length(self.getDictStorage());
-            final int len2 = hlib.length(other.getDictStorage());
+            final int len1 = lenSelfNode.execute(self.getDictStorage());
+            final int len2 = lenOtherNode.execute(other.getDictStorage());
             if (sizeProfile.profile(len1 >= len2)) {
                 return false;
             }
@@ -405,11 +409,13 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean isGreaterThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached HashingStorageLen aLenNode,
+                        @Cached HashingStorageLen bLenNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached ConditionProfile sizeProfile) {
-            final int len1 = hlib.length(self.getDictStorage());
-            final int len2 = hlib.length(other.getDictStorage());
+            final int len1 = aLenNode.execute(self.getDictStorage());
+            final int len2 = bLenNode.execute(other.getDictStorage());
             if (sizeProfile.profile(len1 <= len2)) {
                 return false;
             }
