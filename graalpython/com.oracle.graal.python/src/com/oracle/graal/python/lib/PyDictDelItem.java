@@ -60,6 +60,12 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 public abstract class PyDictDelItem extends Node {
+    public final void execute(PDict dict, TruffleString key) {
+        execute(null, dict, key);
+    }
+
+    public abstract void execute(Frame frame, PDict dict, TruffleString key);
+
     public abstract void execute(Frame frame, PDict dict, Object key);
 
     // We never need a frame for reading string keys

@@ -144,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclas
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1709,12 +1710,12 @@ public abstract class TypeNodes {
                         @Cached HashingStorage.InitNode initNode,
                         @Cached HashingStorageGetItem getItemGlobals,
                         @Cached HashingStorageGetItem getItemNamespace,
+                        @Cached PyDictDelItem delItemNamespace,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached BranchProfile updatedStorage,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raise,
@@ -1756,13 +1757,7 @@ public abstract class TypeNodes {
                 }
 
                 // delete __qualname__ from namespace
-                if (getItemNamespace.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__)) {
-                    HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.T___QUALNAME__);
-                    if (newStore != namespace.getDictStorage()) {
-                        updatedStorage.enter();
-                        namespace.setDictStorage(newStore);
-                    }
-                }
+                delItemNamespace.execute(namespace, T___QUALNAME__);
 
                 // set __class__ cell contents
                 Object classcell = getItemNamespace.execute(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
@@ -1772,13 +1767,7 @@ public abstract class TypeNodes {
                     } else {
                         throw raise.raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    if (getItemNamespace.hasKey(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__)) {
-                        HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), SpecialAttributeNames.T___CLASSCELL__);
-                        if (newStore != namespace.getDictStorage()) {
-                            updatedStorage.enter();
-                            namespace.setDictStorage(newStore);
-                        }
-                    }
+                    delItemNamespace.execute(namespace, SpecialAttributeNames.T___CLASSCELL__);
                 }
 
                 if (newType.getAttribute(SpecialAttributeNames.T___DOC__) == PNone.NO_VALUE) {
