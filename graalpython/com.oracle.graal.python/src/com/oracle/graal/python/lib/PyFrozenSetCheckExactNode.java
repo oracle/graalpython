@@ -59,4 +59,8 @@ public abstract class PyFrozenSetCheckExactNode extends Node {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PFrozenSet);
     }
+
+    public static PyFrozenSetCheckExactNode getUncached() {
+        return PyFrozenSetCheckExactNodeGen.getUncached();
+    }
 }

@@ -59,4 +59,8 @@ public abstract class PyBytesCheckExactNode extends Node {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PBytes);
     }
+
+    public static PyBytesCheckExactNode getUncached() {
+        return PyBytesCheckExactNodeGen.getUncached();
+    }
 }

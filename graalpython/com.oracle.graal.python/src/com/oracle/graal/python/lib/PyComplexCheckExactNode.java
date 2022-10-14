@@ -59,4 +59,8 @@ public abstract class PyComplexCheckExactNode extends Node {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PComplex);
     }
+
+    public static PyComplexCheckExactNode getUncached() {
+        return PyComplexCheckExactNodeGen.getUncached();
+    }
 }

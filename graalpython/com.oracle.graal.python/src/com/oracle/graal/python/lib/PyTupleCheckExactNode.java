@@ -59,4 +59,8 @@ public abstract class PyTupleCheckExactNode extends Node {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PTuple);
     }
+
+    public static PyTupleCheckExactNode getUncached() {
+        return PyTupleCheckExactNodeGen.getUncached();
+    }
 }

@@ -1035,7 +1035,7 @@ final class Validator implements SSTreeVisitor<Void> {
 
     // Equivalent of validate_constant
     private void validateConstant(ConstantValue value) {
-        // TODO constant validation
+        // Already done in Obj2SstBase#obj2ConstantValue()
     }
 
     private static PException raiseValueError(TruffleString format, Object... args) {
