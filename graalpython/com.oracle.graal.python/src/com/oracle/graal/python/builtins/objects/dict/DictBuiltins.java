@@ -222,7 +222,7 @@ public final class DictBuiltins extends PythonBuiltins {
             HashingStorage storage = dict.getDictStorage();
             for (DictEntry entry : lib.reverseEntries(storage)) {
                 PTuple result = factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
-                delItem.execute(frame, storage, entry.getKey());
+                delItem.execute(frame, storage, entry.getKey(), dict);
                 return result;
             }
             throw raise(KeyError, ErrorMessages.IS_EMPTY, "popitem(): dictionary");

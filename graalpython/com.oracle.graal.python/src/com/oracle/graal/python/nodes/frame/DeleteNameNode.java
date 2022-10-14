@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -53,8 +52,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class DeleteNameNode extends StatementNode implements AccessNameNode {
@@ -85,19 +82,10 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
 
     @Specialization(guards = "hasLocalsDict(frame)")
     protected void readFromLocalsDict(VirtualFrame frame,
-                    @Cached BranchProfile updatedStorage,
                     @Cached HashingStorageDelItem delStorageItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        HashingStorage storage = frameLocals.getDictStorage();
-        boolean[] hasKey = new boolean[1];
-        HashingStorage newStore = delStorageItem.execute(frame, storage, attributeId, hasKey);
-
-        if (hasKey[0]) {
-            if (newStore != storage) {
-                updatedStorage.enter();
-                frameLocals.setDictStorage(newStore);
-            }
-        } else {
+        Object found = delStorageItem.executePop(frame, frameLocals.getDictStorage(), attributeId, frameLocals);
+        if (found == null) {
             getDeleteGlobalNode().executeVoid(frame);
         }
     }

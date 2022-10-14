@@ -72,7 +72,7 @@ public class PDictTest {
     }
 
     static void delItem(PDict dict, Object key) {
-        dict.setDictStorage(HashingStorageDelItem.executeUncached(dict.getDictStorage(), key));
+        HashingStorageDelItem.executeUncached(dict.getDictStorage(), key, dict);
     }
 
     static int length(PDict dict) {

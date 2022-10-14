@@ -335,10 +335,8 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            boolean[] found = new boolean[1];
-            HashingStorage newStorage = delHashingStorageItem.execute(localDict.getDictStorage(), key, found);
-            if (found[0]) {
-                localDict.setDictStorage(newStorage);
+            Object found = delHashingStorageItem.executePop(localDict.getDictStorage(), key, localDict);
+            if (found != null) {
                 return PNone.NONE;
             }
             if (descr != PNone.NO_VALUE) {

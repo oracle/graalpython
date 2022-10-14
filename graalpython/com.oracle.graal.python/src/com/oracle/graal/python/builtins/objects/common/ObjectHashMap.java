@@ -680,19 +680,19 @@ public final class ObjectHashMap {
 
     @GenerateUncached
     public abstract static class RemoveNode extends Node {
-        public final boolean remove(Frame frame, ObjectHashMap map, DictKey key) {
+        public final Object remove(Frame frame, ObjectHashMap map, DictKey key) {
             return execute(frame, map, key.getValue(), key.getPythonHash());
         }
 
-        public final boolean remove(Frame frame, ObjectHashMap map, Object key, long keyHash) {
+        public final Object remove(Frame frame, ObjectHashMap map, Object key, long keyHash) {
             return execute(frame, map, key, keyHash);
         }
 
-        abstract boolean execute(Frame frame, ObjectHashMap map, Object key, long keyHash);
+        abstract Object execute(Frame frame, ObjectHashMap map, Object key, long keyHash);
 
         // "public" for testing...
         @Specialization
-        public static boolean doRemoveWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
+        public static Object doRemoveWithRestart(Frame frame, ObjectHashMap map, Object key, long keyHash,
                         @Cached BranchProfile lookupRestart,
                         @Cached("createCountingProfile()") ConditionProfile foundNullKey,
                         @Cached("createCountingProfile()") ConditionProfile foundEqKey,
@@ -712,7 +712,7 @@ public final class ObjectHashMap {
             }
         }
 
-        static boolean doRemove(Frame frame, ObjectHashMap map, Object key, long keyHash,
+        static Object doRemove(Frame frame, ObjectHashMap map, Object key, long keyHash,
                         ConditionProfile foundNullKey,
                         ConditionProfile foundEqKey,
                         ConditionProfile collisionFoundNoValue,
@@ -734,16 +734,17 @@ public final class ObjectHashMap {
             int compactIndex = map.getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
             if (foundNullKey.profile(index == EMPTY_INDEX)) {
-                return false; // not found
+                return null; // not found
             }
 
             int unwrappedIndex = unwrapIndex(index);
             if (foundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                Object result = map.getValue(unwrappedIndex);
                 indices[compactIndex] = DUMMY_INDEX;
                 map.setValue(unwrappedIndex, null);
                 map.setKey(unwrappedIndex, null);
                 map.size--;
-                return true;
+                return result;
             }
 
             // collision: intentionally counted loop
@@ -760,15 +761,16 @@ public final class ObjectHashMap {
                     compactIndex = map.nextIndex(indicesLen, compactIndex, perturb);
                     index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
-                        return false; // not found
+                        return null; // not found
                     }
                     unwrappedIndex = unwrapIndex(index);
                     if (collisionFoundEqKey.profile(index != DUMMY_INDEX && map.keysEqual(indices, frame, unwrappedIndex, key, keyHash, eqNode))) {
+                        Object result = map.getValue(unwrappedIndex);
                         indices[compactIndex] = DUMMY_INDEX;
                         map.setValue(unwrappedIndex, null);
                         map.setKey(unwrappedIndex, null);
                         map.size--;
-                        return true;
+                        return result;
                     }
                 }
             } finally {
