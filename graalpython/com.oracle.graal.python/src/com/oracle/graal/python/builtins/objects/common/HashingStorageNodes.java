@@ -304,20 +304,21 @@ public class HashingStorageNodes {
                         @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             DynamicObject store = self.store;
-            Object result = null;
             if (isPop) {
                 Object val = dylib.getOrDefault(store, key, PNone.NO_VALUE);
                 if (val == PNone.NO_VALUE) {
-                    result = null;
+                    return null;
                 } else {
                     dylib.put(store, key, PNone.NO_VALUE);
-                    result = val;
+                    self.invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+                    return val;
                 }
             } else {
-                dylib.putIfPresent(self.store, key, PNone.NO_VALUE);
+                if (dylib.putIfPresent(store, key, PNone.NO_VALUE)) {
+                    self.invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
+                }
+                return null;
             }
-            self.invalidateAttributeInMROFinalAssumption(key, invalidateMroProfile);
-            return result;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
