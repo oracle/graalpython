@@ -220,19 +220,19 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static void removeHashEntry(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @Exclusive @Cached HashingStorageGetItem getItem,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Cached HashingStorageDelItem delItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            if (!getItem.hasKey(null, self.getDictStorage(), pKey)) {
+            boolean[] found = new boolean[1];
+            delItem.execute(null, self.getDictStorage(), pKey, found);
+            if (!found[0]) {
                 throw UnknownKeyException.create(key);
             }
-            lib.delItem(self.getDictStorage(), pKey);
         } finally {
             gil.release(mustRelease);
         }

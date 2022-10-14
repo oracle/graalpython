@@ -50,6 +50,7 @@ import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -71,7 +72,7 @@ public class PDictTest {
     }
 
     static void delItem(PDict dict, Object key) {
-        dict.setDictStorage(HashingStorageLibrary.getUncached().delItem(dict.getDictStorage(), key));
+        dict.setDictStorage(HashingStorageDelItem.executeUncached(dict.getDictStorage(), key));
     }
 
     static int length(PDict dict) {
