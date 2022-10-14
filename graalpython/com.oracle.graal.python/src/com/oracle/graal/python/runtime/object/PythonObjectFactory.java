@@ -1084,8 +1084,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMap(cls, getShape(cls)));
     }
 
-    public final PZip createZip(Object cls, Object[] iterables) {
-        return trace(new PZip(cls, getShape(cls), iterables));
+    public final PZip createZip(Object cls, Object[] iterables, boolean strict) {
+        return trace(new PZip(cls, getShape(cls), iterables, strict));
     }
 
     public final PForeignArrayIterator createForeignArrayIterator(Object iterable) {
