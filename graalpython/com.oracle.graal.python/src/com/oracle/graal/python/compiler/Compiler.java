@@ -1217,31 +1217,50 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Constant node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            switch (node.value.kind) {
-                case NONE:
-                    return addOp(LOAD_NONE);
-                case ELLIPSIS:
-                    return addOp(LOAD_ELLIPSIS);
-                case BOOLEAN:
-                    return addOp(node.value.getBoolean() ? LOAD_TRUE : LOAD_FALSE);
-                case LONG:
-                    return addLoadNumber(node.value.getLong());
-                case DOUBLE:
-                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits(node.value.getDouble())));
-                case COMPLEX:
-                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value.getComplex()));
-                case BIGINTEGER:
-                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value.getBigInteger()));
-                case RAW:
-                    return addOp(LOAD_STRING, addObject(unit.constants, node.value.getRaw(TruffleString.class)));
-                case BYTES:
-                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value.getBytes()));
-                default:
-                    throw new IllegalStateException("Unknown constant kind " + node.value.kind);
-            }
+            return addConstant(node.value);
         } finally {
             setLocation(savedLocation);
         }
+    }
+
+    private Void addConstant(ConstantValue value) {
+        switch (value.kind) {
+            case NONE:
+                return addOp(LOAD_NONE);
+            case ELLIPSIS:
+                return addOp(LOAD_ELLIPSIS);
+            case BOOLEAN:
+                return addOp(value.getBoolean() ? LOAD_TRUE : LOAD_FALSE);
+            case LONG:
+                return addLoadNumber(value.getLong());
+            case DOUBLE:
+                return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits(value.getDouble())));
+            case COMPLEX:
+                return addOp(LOAD_COMPLEX, addObject(unit.constants, value.getComplex()));
+            case BIGINTEGER:
+                return addOp(LOAD_BIGINT, addObject(unit.constants, value.getBigInteger()));
+            case RAW:
+                return addOp(LOAD_STRING, addObject(unit.constants, value.getRaw(TruffleString.class)));
+            case BYTES:
+                return addOp(LOAD_BYTES, addObject(unit.constants, value.getBytes()));
+            case TUPLE:
+                addConstantList(value.getTupleElements());
+                return addOp(TUPLE_FROM_LIST);
+            case FROZENSET:
+                addConstantList(value.getFrozensetElements());
+                return addOp(TUPLE_FROM_LIST);
+            default:
+                throw new IllegalStateException("Unknown constant kind " + value.kind);
+        }
+    }
+
+    private void addConstantList(ConstantValue[] values) {
+        Collector collector = new Collector(CollectionBits.KIND_LIST, 0);
+        for (ConstantValue v : values) {
+            addConstant(v);
+            collector.appendItem();
+        }
+        collector.finishCollection();
     }
 
     private Void addLoadNumber(long value) {
