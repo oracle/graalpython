@@ -1,8 +1,17 @@
-Module[1, 65]
-    FunctionDef[1, 65]
+Input:
+------
+
+def test ():
+    "this should be documentation"
+    return "bla"
+
+Output:
+-------
+Module[2:0-4:16]
+    FunctionDef[2:0-4:16]
         Name:test
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of test ----
-        RAW[18, 48] Value: "this should be documentation"
-        Return[53, 65] RAW[60, 65] Value: "bla"
+        RAW[3:4-3:34] Value: "this should be documentation"
+        Return[4:4-4:16] RAW[4:11-4:16] Value: "bla"
         ---- End of test function ----

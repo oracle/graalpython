@@ -1,13 +1,13 @@
 Disassembly of <module>:
   1:0   -   1:1         0 LOAD_NAME                         0    (a)
-  1:0   -   1:1         2 DUP_TOP
+  1:0   -   1:4         2 DUP_TOP
   1:2   -   1:3         3 LOAD_NAME                         1    (b)
-  1:0   -   1:1         5 DUP_TOP
-  1:0   -   1:1         6 ROT_THREE
-  1:0   -   1:1         7 BINARY_SUBSCR                                                            can quicken
+  1:0   -   1:4         5 DUP_TOP
+  1:0   -   1:4         6 ROT_THREE
+  1:0   -   1:4         7 BINARY_SUBSCR                                                            can quicken
   1:8   -   1:12        8 LOAD_DOUBLE_D                     0    (12.0)                            can quicken
   1:0   -   1:12       10 BINARY_OP                         1    (INPLACE_ADD)                     generalizes: 8, 7
-  1:0   -   1:1        12 ROT_THREE
-  1:0   -   1:1        13 STORE_SUBSCR
+  1:0   -   1:4        12 ROT_THREE
+  1:0   -   1:4        13 STORE_SUBSCR
   1:0   -   1:12       14 LOAD_NONE
   1:0   -   1:12       15 RETURN_VALUE

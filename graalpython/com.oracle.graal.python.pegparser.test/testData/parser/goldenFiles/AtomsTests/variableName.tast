@@ -1,2 +1,8 @@
-Module[0, 3]
-    Name[0, 3] Value: "foo"
+Input:
+------
+foo
+
+Output:
+-------
+Module[1:0-1:3]
+    Name[1:0-1:3] Value: "foo"

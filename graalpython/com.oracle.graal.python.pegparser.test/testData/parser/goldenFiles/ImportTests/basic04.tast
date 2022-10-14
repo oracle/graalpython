@@ -1,4 +1,10 @@
-Module[0, 26]
-    Import[0, 26]
+Input:
+------
+import sys as system, math
+
+Output:
+-------
+Module[1:0-1:26]
+    Import[1:0-1:26]
         sys as system
         math

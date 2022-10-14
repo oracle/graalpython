@@ -1,50 +1,66 @@
-Module[0, 244]
-    FunctionDef[0, 244]
+Input:
+------
+def fn():
+    class MyIter:
+        def __iter__(self):
+            return self
+        def __next__(self):
+            raise StopIteration(42)
+    def gen():
+        nonlocal ret
+        ret = yield from MyIter()
+    ret = None
+    list(gen())
+
+Output:
+-------
+Module[1:0-11:15]
+    FunctionDef[1:0-11:15]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        ClassDef[14, 143] MyIter
+        ClassDef[2:4-6:35] MyIter
             ---- Class body of MyIter ----
-            FunctionDef[36, 79]
+            FunctionDef[3:8-4:23]
                 Name:__iter__
-                ArgumentsTy[0, 0]
+                ArgumentsTy[0:0-0:0]
                     Args:
-                        ArgTy[49, 53] self
+                        ArgTy[3:21-3:25] self
                 ---- Function body of __iter__ ----
-                Return[68, 79] Name[75, 79] Value: "self"
+                Return[4:12-4:23] Name[4:19-4:23] Value: "self"
                 ---- End of __iter__ function ----
-            FunctionDef[88, 143]
+            FunctionDef[5:8-6:35]
                 Name:__next__
-                ArgumentsTy[0, 0]
+                ArgumentsTy[0:0-0:0]
                     Args:
-                        ArgTy[101, 105] self
+                        ArgTy[5:21-5:25] self
                 ---- Function body of __next__ ----
-                Raise[120, 143]
+                Raise[6:12-6:35]
                     Exc: 
-                        Call[126, 143]
-                            Target: Name[126, 139] Value: "StopIteration"
+                        Call[6:18-6:35]
+                            Target: Name[6:18-6:31] Value: "StopIteration"
                             Args:
-                                LONG[140, 142] Value: 42
+                                LONG[6:32-6:34] Value: 42
                 ---- End of __next__ function ----
             ---- End of MyIter class ----
-        FunctionDef[148, 213]
+        FunctionDef[7:4-9:33]
             Name:gen
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
             ---- Function body of gen ----
-            Nonlocal[167, 179]: ret 
-            Assign[188, 213]
-                LHS: Name[188, 191] Value: "ret" Store
+            Nonlocal[8:8-8:20]: ret 
+            Assign[9:8-9:33]
+                LHS: Name[9:8-9:11] Value: "ret" Store
                 RHS: 
-                    YieldFrom[194, 213]
-                        Call[205, 213]
-                            Target: Name[205, 211] Value: "MyIter"
+                    YieldFrom[9:14-9:33]
+                        Call[9:25-9:33]
+                            Target: Name[9:25-9:31] Value: "MyIter"
             ---- End of gen function ----
-        Assign[218, 228]
-            LHS: Name[218, 221] Value: "ret" Store
-            RHS: NONE[224, 228] Value: null
-        Call[233, 244]
-            Target: Name[233, 237] Value: "list"
+        Assign[10:4-10:14]
+            LHS: Name[10:4-10:7] Value: "ret" Store
+            RHS: NONE[10:10-10:14] Value: null
+        Call[11:4-11:15]
+            Target: Name[11:4-11:8] Value: "list"
             Args:
-                Call[238, 243]
-                    Target: Name[238, 241] Value: "gen"
+                Call[11:9-11:14]
+                    Target: Name[11:9-11:12] Value: "gen"
         ---- End of fn function ----

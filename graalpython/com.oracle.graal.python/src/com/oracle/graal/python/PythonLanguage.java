@@ -604,7 +604,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
          * We cannot use a return in a module, but we piggy-back on the fact that we return the last
          * expression in a module (see Compiler)
          */
-        StmtTy astGetFunction = nodeFactory.createExpression(nodeFactory.createVariable(fnName, SourceRange.ARTIFICIAL_RANGE));
+        StmtTy astGetFunction = nodeFactory.createExpression(nodeFactory.createVariable(fnName, SourceRange.ARTIFICIAL_RANGE), SourceRange.ARTIFICIAL_RANGE);
         return nodeFactory.createModule(new StmtTy[]{astFunction, astGetFunction}, SourceRange.ARTIFICIAL_RANGE);
     }
 

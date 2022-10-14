@@ -1,31 +1,47 @@
-Module[1, 146]
-    FunctionDef[1, 137]
+Input:
+------
+
+def outer ():
+    x = 10
+    def inner():
+        x = 5
+        print("Inner, local x:", x)
+
+    inner()
+    print("Outer, local x:", x)
+
+outer()
+
+Output:
+-------
+Module[2:0-11:7]
+    FunctionDef[2:0-9:31]
         Name:outer
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of outer ----
-        Assign[19, 25]
-            LHS: Name[19, 20] Value: "x" Store
-            RHS: LONG[23, 25] Value: 10
-        FunctionDef[30, 92]
+        Assign[3:4-3:10]
+            LHS: Name[3:4-3:5] Value: "x" Store
+            RHS: LONG[3:8-3:10] Value: 10
+        FunctionDef[4:4-6:35]
             Name:inner
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
             ---- Function body of inner ----
-            Assign[51, 56]
-                LHS: Name[51, 52] Value: "x" Store
-                RHS: LONG[55, 56] Value: 5
-            Call[65, 92]
-                Target: Name[65, 70] Value: "print"
+            Assign[5:8-5:13]
+                LHS: Name[5:8-5:9] Value: "x" Store
+                RHS: LONG[5:12-5:13] Value: 5
+            Call[6:8-6:35]
+                Target: Name[6:8-6:13] Value: "print"
                 Args:
-                    RAW[71, 88] Value: "Inner, local x:"
-                    Name[90, 91] Value: "x"
+                    RAW[6:14-6:31] Value: "Inner, local x:"
+                    Name[6:33-6:34] Value: "x"
             ---- End of inner function ----
-        Call[98, 105]
-            Target: Name[98, 103] Value: "inner"
-        Call[110, 137]
-            Target: Name[110, 115] Value: "print"
+        Call[8:4-8:11]
+            Target: Name[8:4-8:9] Value: "inner"
+        Call[9:4-9:31]
+            Target: Name[9:4-9:9] Value: "print"
             Args:
-                RAW[116, 133] Value: "Outer, local x:"
-                Name[135, 136] Value: "x"
+                RAW[9:10-9:27] Value: "Outer, local x:"
+                Name[9:29-9:30] Value: "x"
         ---- End of outer function ----
-    Call[139, 146]
-        Target: Name[139, 144] Value: "outer"
+    Call[11:0-11:7]
+        Target: Name[11:0-11:5] Value: "outer"

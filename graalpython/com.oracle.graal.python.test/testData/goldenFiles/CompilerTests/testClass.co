@@ -23,6 +23,6 @@ Disassembly of Foo:
 Disassembly of Foo.__init__:
   4:19  -   4:22        0 LOAD_FAST                         1    (arg)
   4:8   -   4:12        2 LOAD_FAST                         0    (self)
-  4:8   -   4:12        4 STORE_ATTR                        0    (var)
+  4:8   -   4:16        4 STORE_ATTR                        0    (var)
   4:8   -   4:22        6 LOAD_NONE
   4:8   -   4:22        7 RETURN_VALUE

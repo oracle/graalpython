@@ -1,13 +1,19 @@
-Module[0, 24]
-    FunctionDef[0, 24]
+Input:
+------
+def f(): x = y = yield 1
+
+Output:
+-------
+Module[1:0-1:24]
+    FunctionDef[1:0-1:24]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of f ----
-        Assign[9, 24]
+        Assign[1:9-1:24]
             LHS: 
-                Name[9, 10] Value: "x" Store
-                Name[13, 14] Value: "y" Store
+                Name[1:9-1:10] Value: "x" Store
+                Name[1:13-1:14] Value: "y" Store
             RHS: 
-                Yield[17, 24]
-                    LONG[23, 24] Value: 1
+                Yield[1:17-1:24]
+                    LONG[1:23-1:24] Value: 1
         ---- End of f function ----

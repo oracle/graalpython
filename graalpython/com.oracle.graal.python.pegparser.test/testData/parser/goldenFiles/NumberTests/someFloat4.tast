@@ -1,2 +1,8 @@
-Module[0, 6]
-    DOUBLE[0, 6] Value: 120.0
+Input:
+------
+12.0e1
+
+Output:
+-------
+Module[1:0-1:6]
+    DOUBLE[1:0-1:6] Value: 120.0

@@ -1,6 +1,12 @@
-Module[0, 12]
-    Call[0, 12]
-        Target: Name[0, 3] Value: "foo"
+Input:
+------
+foo(arg = 1)
+
+Output:
+-------
+Module[1:0-1:12]
+    Call[1:0-1:12]
+        Target: Name[1:0-1:3] Value: "foo"
         KWArgs:
-            KeywordTy[4, 11]
-                arg: LONG[10, 11] Value: 1
+            KeywordTy[1:4-1:11]
+                arg: LONG[1:10-1:11] Value: 1

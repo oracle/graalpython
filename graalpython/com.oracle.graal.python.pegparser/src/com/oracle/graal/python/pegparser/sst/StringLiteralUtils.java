@@ -79,7 +79,8 @@ public abstract class StringLiteralUtils {
         }
     }
 
-    public static <T> ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCallback, PythonStringFactory<T> stringFactory) {
+    public static <T> ExprTy createStringLiteral(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCallback, PythonStringFactory<T> stringFactory,
+                    int featureVersion) {
         assert values.length == sourceRanges.length && values.length > 0;
         PythonStringFactory.PythonStringBuilder<T> sb = null;
         BytesBuilder bb = null;
@@ -87,6 +88,7 @@ public abstract class StringLiteralUtils {
         ArrayList<ExprTy> formatStringParts = null;
         SourceRange sourceRange = sourceRanges[0].withEnd(sourceRanges[sourceRanges.length - 1]);
         SourceRange sbSourceRange = null;
+        boolean hasUPrefix = false;
         for (int index = 0; index < values.length; ++index) {
             String text = values[index];
             boolean isRaw = false;
@@ -104,6 +106,7 @@ public abstract class StringLiteralUtils {
                         break;
                     // unicode case (default)
                     case 'u':
+                        hasUPrefix = index == 0;
                         break;
                     case 'b':
                         isBytes = true;
@@ -135,7 +138,7 @@ public abstract class StringLiteralUtils {
                 if (sb != null || isFormatString) {
                     errorCallback.onError(sourceRange, CANNOT_MIX_MESSAGE);
                     if (sb != null) {
-                        return new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), null, sourceRange);
+                        return new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), hasUPrefix ? "u" : null, sourceRange);
                     } else if (bb != null) {
                         return new ExprTy.Constant(ConstantValue.ofBytes(bb.build()), null, sourceRange);
                     } else {
@@ -161,11 +164,11 @@ public abstract class StringLiteralUtils {
                         formatStringParts = new ArrayList<>();
                     }
                     if (sb != null && !sb.isEmpty()) {
-                        formatStringParts.add(new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), null, sbSourceRange));
+                        formatStringParts.add(new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), hasUPrefix ? "u" : null, sbSourceRange));
                         sb = null;
                     }
 
-                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback, stringFactory);
+                    FormatStringParser.parse(formatStringParts, text, sourceRanges[index].shiftStartRight(strStartIndex), isRaw, exprParser, errorCallback, stringFactory, featureVersion, hasUPrefix);
                 } else {
                     if (sb == null) {
                         sb = stringFactory.createBuilder(text.length());
@@ -186,12 +189,12 @@ public abstract class StringLiteralUtils {
         } else if (isFormatString) {
             assert formatStringParts != null; // guaranteed due to how isFormatString is set
             if (sb != null && !sb.isEmpty()) {
-                formatStringParts.add(new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), null, sbSourceRange));
+                formatStringParts.add(new ExprTy.Constant(ConstantValue.ofRaw(sb.build()), hasUPrefix ? "u" : null, sbSourceRange));
             }
             ExprTy[] formatParts = formatStringParts.toArray(EMPTY_SST_ARRAY);
             return new ExprTy.JoinedStr(formatParts, sourceRange);
         }
-        return new ExprTy.Constant(ConstantValue.ofRaw(sb == null ? stringFactory.emptyString() : sb.build()), null, sourceRange);
+        return new ExprTy.Constant(ConstantValue.ofRaw(sb == null ? stringFactory.emptyString() : sb.build()), hasUPrefix ? "u" : null, sourceRange);
     }
 
     private static final class FormatStringParser {
@@ -207,6 +210,7 @@ public abstract class StringLiteralUtils {
         public static final String ERROR_MESSAGE_UNMATCHED_PAR = "f-string: unmatched '%c'";
         public static final String ERROR_MESSAGE_TOO_MANY_NESTED_PARS = "f-string: too many nested parenthesis";
         public static final String ERROR_MESSAGE_EXPECTING_CLOSING_BRACE = "f-string: expecting '}'";
+        public static final String ERROR_MESSAGE_SELF_DOCUMENTING_EXPRESSION = "f-string: self documenting expressions are only supported in Python 3.8 and greater";
 
         // token types and Token data holder (public for testing purposes)
         public static final byte TOKEN_TYPE_STRING = 1;
@@ -270,7 +274,7 @@ public abstract class StringLiteralUtils {
         }
 
         private static ExprTy createFormatStringLiteralSSTNodeFromToken(ArrayList<Token> tokens, int tokenIndex, String text, SourceRange textSourceRange, boolean isRawString,
-                        ErrorCallback errorCallback, FExprParser exprParser, PythonStringFactory<?> stringFactory) {
+                        ErrorCallback errorCallback, FExprParser exprParser, PythonStringFactory<?> stringFactory, boolean hasUPrefix) {
             Token token = tokens.get(tokenIndex);
             String code = text.substring(token.startIndex, token.endIndex);
             if (token.type == TOKEN_TYPE_STRING) {
@@ -280,7 +284,7 @@ public abstract class StringLiteralUtils {
                 } else {
                     o = stringFactory.fromJavaString(code);
                 }
-                return new ExprTy.Constant(ConstantValue.ofRaw(o), null, token.getSourceRange(text, textSourceRange));
+                return new ExprTy.Constant(ConstantValue.ofRaw(o), hasUPrefix ? "u" : null, token.getSourceRange(text, textSourceRange));
             }
             int specTokensCount = token.formatTokensCount;
             // the expression has to be wrapped in ()
@@ -305,7 +309,7 @@ public abstract class StringLiteralUtils {
                 for (i = 0; i < specTokensCount; i++) {
                     specToken = tokens.get(specifierTokenStartIndex + i);
                     specifierParts[realCount++] = createFormatStringLiteralSSTNodeFromToken(tokens, specifierTokenStartIndex + i, text, textSourceRange, isRawString, errorCallback, exprParser,
-                                    stringFactory);
+                                    stringFactory, hasUPrefix);
                     i = i + specToken.formatTokensCount;
                 }
 
@@ -345,7 +349,7 @@ public abstract class StringLiteralUtils {
          * {@link ExprTy.Constant} or {@link ExprTy.FormattedValue}.
          */
         public static void parse(ArrayList<ExprTy> formatStringParts, String text, SourceRange textSourceRange, boolean isRawString, FExprParser exprParser, ErrorCallback errorCallback,
-                        PythonStringFactory<?> stringFactory) {
+                        PythonStringFactory<?> stringFactory, int featureVersion, boolean hasUPrefix) {
             int estimatedTokensCount = 1;
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
@@ -360,7 +364,7 @@ public abstract class StringLiteralUtils {
 
             // create tokens
             ArrayList<Token> tokens = new ArrayList<>(estimatedTokensCount);
-            if (createTokens(tokens, errorCallback, 0, text, textSourceRange, isRawString, 0) < 0) {
+            if (createTokens(tokens, errorCallback, 0, text, textSourceRange, isRawString, 0, featureVersion) < 0) {
                 return;
             }
 
@@ -370,7 +374,7 @@ public abstract class StringLiteralUtils {
 
             while (tokenIndex < tokens.size()) {
                 token = tokens.get(tokenIndex);
-                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, textSourceRange, isRawString, errorCallback, exprParser, stringFactory);
+                ExprTy part = createFormatStringLiteralSSTNodeFromToken(tokens, tokenIndex, text, textSourceRange, isRawString, errorCallback, exprParser, stringFactory, hasUPrefix);
                 formatStringParts.add(part);
                 tokenIndex = tokenIndex + 1 + token.formatTokensCount;
             }
@@ -402,7 +406,8 @@ public abstract class StringLiteralUtils {
          *            apply differently.
          * @return the index of the last processed character or {@code -1} on error
          */
-        public static int createTokens(ArrayList<Token> tokens, ErrorCallback errorCallback, int startIndex, String text, SourceRange textSourceRange, boolean isRawString, int recursionLevel) {
+        public static int createTokens(ArrayList<Token> tokens, ErrorCallback errorCallback, int startIndex, String text, SourceRange textSourceRange, boolean isRawString, int recursionLevel,
+                        int featureVersion) {
             int state = STATE_TEXT;
 
             int braceLevel = 0;
@@ -567,6 +572,10 @@ public abstract class StringLiteralUtils {
                                 break;
                             case '=':
                                 if (braceLevelInExpression == 0) {
+                                    if (featureVersion < 8) {
+                                        errorCallback.onError(textSourceRange, ERROR_MESSAGE_SELF_DOCUMENTING_EXPRESSION);
+                                        return -1;
+                                    }
                                     // The "=" mode, e.g., f'{1+1=}' produces "1+1=2"
                                     // Python allows '=' to be followed by whitespace, but nothing
                                     // else
@@ -691,7 +700,7 @@ public abstract class StringLiteralUtils {
                     case STATE_AFTER_COLON:
                         assert currentExpression != null;
                         int tokensSizeBefore = tokens.size();
-                        index = createTokens(tokens, errorCallback, index, text, textSourceRange, isRawString, recursionLevel + 1);
+                        index = createTokens(tokens, errorCallback, index, text, textSourceRange, isRawString, recursionLevel + 1, featureVersion);
                         if (index < 0) {
                             return -1;
                         }

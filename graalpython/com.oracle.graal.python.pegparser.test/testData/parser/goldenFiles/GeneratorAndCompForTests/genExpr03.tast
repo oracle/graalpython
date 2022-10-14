@@ -1,24 +1,30 @@
-Module[0, 37]
-    GeneratorExp[0, 37]
+Input:
+------
+(e+1 for e in (i*2 for i in (1,2,3)))
+
+Output:
+-------
+Module[1:0-1:37]
+    GeneratorExp[1:0-1:37]
         Element: 
-            BinOp[1, 4]
+            BinOp[1:1-1:4]
                 Op: Add
-                LHS: Name[1, 2] Value: "e"
-                RHS: LONG[3, 4] Value: 1
-        ComprehensionTy[5, 36]
-            Target: Name[9, 10] Value: "e" Store
+                LHS: Name[1:1-1:2] Value: "e"
+                RHS: LONG[1:3-1:4] Value: 1
+        ComprehensionTy[1:5-1:36]
+            Target: Name[1:9-1:10] Value: "e" Store
             Iterator: 
-                GeneratorExp[14, 36]
+                GeneratorExp[1:14-1:36]
                     Element: 
-                        BinOp[15, 18]
+                        BinOp[1:15-1:18]
                             Op: Mult
-                            LHS: Name[15, 16] Value: "i"
-                            RHS: LONG[17, 18] Value: 2
-                    ComprehensionTy[19, 35]
-                        Target: Name[23, 24] Value: "i" Store
+                            LHS: Name[1:15-1:16] Value: "i"
+                            RHS: LONG[1:17-1:18] Value: 2
+                    ComprehensionTy[1:19-1:35]
+                        Target: Name[1:23-1:24] Value: "i" Store
                         Iterator: 
-                            Tuple[28, 35]
+                            Tuple[1:28-1:35]
                                 Values:
-                                    LONG[29, 30] Value: 1
-                                    LONG[31, 32] Value: 2
-                                    LONG[33, 34] Value: 3
+                                    LONG[1:29-1:30] Value: 1
+                                    LONG[1:31-1:32] Value: 2
+                                    LONG[1:33-1:34] Value: 3

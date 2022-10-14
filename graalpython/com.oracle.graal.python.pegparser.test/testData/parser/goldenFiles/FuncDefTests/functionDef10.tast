@@ -1,11 +1,18 @@
-Module[0, 30]
-    FunctionDef[0, 30]
+Input:
+------
+def foo(*args): 
+  print(args)
+
+Output:
+-------
+Module[1:0-2:13]
+    FunctionDef[1:0-2:13]
         Name:foo
-        ArgumentsTy[0, 0]
-            VarArg: ArgTy[9, 13] args
+        ArgumentsTy[0:0-0:0]
+            VarArg: ArgTy[1:9-1:13] args
         ---- Function body of foo ----
-        Call[19, 30]
-            Target: Name[19, 24] Value: "print"
+        Call[2:2-2:13]
+            Target: Name[2:2-2:7] Value: "print"
             Args:
-                Name[25, 29] Value: "args"
+                Name[2:8-2:12] Value: "args"
         ---- End of foo function ----

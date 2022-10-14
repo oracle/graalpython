@@ -1,8 +1,17 @@
-Module[0, 34]
-    ClassDef[0, 34] A
+Input:
+------
+class A:
+    class B:
+        pass
+
+
+Output:
+-------
+Module[1:0-3:12]
+    ClassDef[1:0-3:12] A
         ---- Class body of A ----
-        ClassDef[13, 34] B
+        ClassDef[2:4-3:12] B
             ---- Class body of B ----
-            Pass[30, 34]
+            Pass[3:8-3:12]
             ---- End of B class ----
         ---- End of A class ----

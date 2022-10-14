@@ -1,10 +1,16 @@
-Module[0, 32]
-    If[0, 32]
+Input:
+------
+if True and (spam := True): pass
+
+Output:
+-------
+Module[1:0-1:32]
+    If[1:0-1:32]
         Test: 
-            BoolOp[3, 26]: And
-                BOOLEAN[3, 7] Value: true
-                NamedExpr[13, 25]
-                    Target: Name[13, 17] Value: "spam" Store
-                    Value: BOOLEAN[21, 25] Value: true
+            BoolOp[1:3-1:26]: And
+                BOOLEAN[1:3-1:7] Value: true
+                NamedExpr[1:13-1:25]
+                    Target: Name[1:13-1:17] Value: "spam" Store
+                    Value: BOOLEAN[1:21-1:25] Value: true
         Then:
-            Pass[28, 32]
+            Pass[1:28-1:32]

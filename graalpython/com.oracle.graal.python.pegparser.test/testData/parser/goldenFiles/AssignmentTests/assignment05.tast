@@ -1,14 +1,20 @@
-Module[0, 17]
-    Assign[0, 17]
+Input:
+------
+a, b, c = 1, 2, 3
+
+Output:
+-------
+Module[1:0-1:17]
+    Assign[1:0-1:17]
         LHS: 
-            Tuple[0, 7] Context: Store
+            Tuple[1:0-1:7] Context: Store
                 Values:
-                    Name[0, 1] Value: "a" Store
-                    Name[3, 4] Value: "b" Store
-                    Name[6, 7] Value: "c" Store
+                    Name[1:0-1:1] Value: "a" Store
+                    Name[1:3-1:4] Value: "b" Store
+                    Name[1:6-1:7] Value: "c" Store
         RHS: 
-            Tuple[10, 17]
+            Tuple[1:10-1:17]
                 Values:
-                    LONG[10, 11] Value: 1
-                    LONG[13, 14] Value: 2
-                    LONG[16, 17] Value: 3
+                    LONG[1:10-1:11] Value: 1
+                    LONG[1:13-1:14] Value: 2
+                    LONG[1:16-1:17] Value: 3

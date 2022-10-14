@@ -1,13 +1,19 @@
-Module[0, 14]
-    Assign[0, 14]
+Input:
+------
+*a, = range(5)
+
+Output:
+-------
+Module[1:0-1:14]
+    Assign[1:0-1:14]
         LHS: 
-            Tuple[0, 3] Context: Store
+            Tuple[1:0-1:3] Context: Store
                 Values:
-                    Starred[0, 2]
+                    Starred[1:0-1:2]
                          Context: Store
-                         Expr: Name[1, 2] Value: "a" Store
+                         Expr: Name[1:1-1:2] Value: "a" Store
         RHS: 
-            Call[6, 14]
-                Target: Name[6, 11] Value: "range"
+            Call[1:6-1:14]
+                Target: Name[1:6-1:11] Value: "range"
                 Args:
-                    LONG[12, 13] Value: 5
+                    LONG[1:12-1:13] Value: 5

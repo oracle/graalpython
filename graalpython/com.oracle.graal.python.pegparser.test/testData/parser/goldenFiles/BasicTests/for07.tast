@@ -1,25 +1,34 @@
-Module[0, 68]
-    For[0, 68]
-        Target: Name[4, 5] Value: "x" Store
+Input:
+------
+for x in range(10):
+    if x % 2 == 0:
+        continue
+    print(x)
+
+Output:
+-------
+Module[1:0-4:12]
+    For[1:0-4:12]
+        Target: Name[1:4-1:5] Value: "x" Store
         Iter: 
-            Call[9, 18]
-                Target: Name[9, 14] Value: "range"
+            Call[1:9-1:18]
+                Target: Name[1:9-1:14] Value: "range"
                 Args:
-                    LONG[15, 17] Value: 10
+                    LONG[1:15-1:17] Value: 10
         Body:
-            If[24, 55]
+            If[2:4-3:16]
                 Test: 
-                    Compare[27, 37]
+                    Compare[2:7-2:17]
                         LHS: 
-                            BinOp[27, 32]
+                            BinOp[2:7-2:12]
                                 Op: Mod
-                                LHS: Name[27, 28] Value: "x"
-                                RHS: LONG[31, 32] Value: 2
+                                LHS: Name[2:7-2:8] Value: "x"
+                                RHS: LONG[2:11-2:12] Value: 2
                         Op: Eq
-                        RHS: LONG[36, 37] Value: 0
+                        RHS: LONG[2:16-2:17] Value: 0
                 Then:
-                    Continue[47, 55]
-            Call[60, 68]
-                Target: Name[60, 65] Value: "print"
+                    Continue[3:8-3:16]
+            Call[4:4-4:12]
+                Target: Name[4:4-4:9] Value: "print"
                 Args:
-                    Name[66, 67] Value: "x"
+                    Name[4:10-4:11] Value: "x"

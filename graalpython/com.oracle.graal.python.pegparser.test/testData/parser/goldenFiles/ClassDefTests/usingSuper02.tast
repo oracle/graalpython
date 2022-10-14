@@ -1,13 +1,22 @@
-Module[0, 43]
-    ClassDef[0, 43] X
+Input:
+------
+class X:
+    def run(self):
+        super()
+
+
+Output:
+-------
+Module[1:0-3:15]
+    ClassDef[1:0-3:15] X
         ---- Class body of X ----
-        FunctionDef[13, 43]
+        FunctionDef[2:4-3:15]
             Name:run
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[21, 25] self
+                    ArgTy[2:12-2:16] self
             ---- Function body of run ----
-            Call[36, 43]
-                Target: Name[36, 41] Value: "super"
+            Call[3:8-3:15]
+                Target: Name[3:8-3:13] Value: "super"
             ---- End of run function ----
         ---- End of X class ----

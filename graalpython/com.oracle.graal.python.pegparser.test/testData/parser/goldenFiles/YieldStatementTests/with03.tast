@@ -1,17 +1,26 @@
-Module[0, 47]
-    FunctionDef[0, 47]
+Input:
+------
+def gen(a):
+  with a:
+    yield 12
+    yield 13
+
+Output:
+-------
+Module[1:0-4:12]
+    FunctionDef[1:0-4:12]
         Name:gen
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[8, 9] a
+                ArgTy[1:8-1:9] a
         ---- Function body of gen ----
-        With[14, 47]
+        With[2:2-4:12]
             Items:
-                WithItemTy[19, 20]
-                    ContextExpr: Name[19, 20] Value: "a"
+                WithItemTy[2:7-2:8]
+                    ContextExpr: Name[2:7-2:8] Value: "a"
             Body:
-                Yield[26, 34]
-                    LONG[32, 34] Value: 12
-                Yield[39, 47]
-                    LONG[45, 47] Value: 13
+                Yield[3:4-3:12]
+                    LONG[3:10-3:12] Value: 12
+                Yield[4:4-4:12]
+                    LONG[4:10-4:12] Value: 13
         ---- End of gen function ----

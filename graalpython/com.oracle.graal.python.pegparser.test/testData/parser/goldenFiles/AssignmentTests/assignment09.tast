@@ -1,9 +1,15 @@
-Module[0, 9]
-    Assign[0, 9]
+Input:
+------
+f().b = 1
+
+Output:
+-------
+Module[1:0-1:9]
+    Assign[1:0-1:9]
         LHS: 
-            Attribute[0, 1] 
+            Attribute[1:0-1:5] 
                 Receiver: 
-                    Call[0, 3]
-                        Target: Name[0, 1] Value: "f"
+                    Call[1:0-1:3]
+                        Target: Name[1:0-1:1] Value: "f"
                 Attr: b
-        RHS: LONG[8, 9] Value: 1
+        RHS: LONG[1:8-1:9] Value: 1

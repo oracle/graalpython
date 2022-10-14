@@ -1,4 +1,10 @@
-Module[0, 5]
-    UnaryOp[0, 5]
+Input:
+------
+not a
+
+Output:
+-------
+Module[1:0-1:5]
+    UnaryOp[1:0-1:5]
         Op: Not
-        Value: Name[4, 5] Value: "a"
+        Value: Name[1:4-1:5] Value: "a"

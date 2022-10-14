@@ -1,5 +1,11 @@
-Module[0, 6]
-    Compare[0, 6]
-        LHS: LONG[0, 1] Value: 3
+Input:
+------
+3 < 10
+
+Output:
+-------
+Module[1:0-1:6]
+    Compare[1:0-1:6]
+        LHS: LONG[1:0-1:1] Value: 3
         Op: Lt
-        RHS: LONG[4, 6] Value: 10
+        RHS: LONG[1:4-1:6] Value: 10

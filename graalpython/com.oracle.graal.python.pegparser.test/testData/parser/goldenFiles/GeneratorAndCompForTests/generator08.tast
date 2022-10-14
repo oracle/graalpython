@@ -1,36 +1,46 @@
-Module[0, 104]
-    FunctionDef[0, 104]
+Input:
+------
+def merge(h):
+    for order, it in b():
+        value = next()
+    while len(h) > 1:
+        yield value
+
+Output:
+-------
+Module[1:0-5:19]
+    FunctionDef[1:0-5:19]
         Name:merge
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[10, 11] h
+                ArgTy[1:10-1:11] h
         ---- Function body of merge ----
-        For[18, 62]
+        For[2:4-3:22]
             Target: 
-                Tuple[22, 31] Context: Store
+                Tuple[2:8-2:17] Context: Store
                     Values:
-                        Name[22, 27] Value: "order" Store
-                        Name[29, 31] Value: "it" Store
+                        Name[2:8-2:13] Value: "order" Store
+                        Name[2:15-2:17] Value: "it" Store
             Iter: 
-                Call[35, 38]
-                    Target: Name[35, 36] Value: "b"
+                Call[2:21-2:24]
+                    Target: Name[2:21-2:22] Value: "b"
             Body:
-                Assign[48, 62]
-                    LHS: Name[48, 53] Value: "value" Store
+                Assign[3:8-3:22]
+                    LHS: Name[3:8-3:13] Value: "value" Store
                     RHS: 
-                        Call[56, 62]
-                            Target: Name[56, 60] Value: "next"
-        While[67, 104]
+                        Call[3:16-3:22]
+                            Target: Name[3:16-3:20] Value: "next"
+        While[4:4-5:19]
             Condition: 
-                Compare[73, 83]
+                Compare[4:10-4:20]
                     LHS: 
-                        Call[73, 79]
-                            Target: Name[73, 76] Value: "len"
+                        Call[4:10-4:16]
+                            Target: Name[4:10-4:13] Value: "len"
                             Args:
-                                Name[77, 78] Value: "h"
+                                Name[4:14-4:15] Value: "h"
                     Op: Gt
-                    RHS: LONG[82, 83] Value: 1
+                    RHS: LONG[4:19-4:20] Value: 1
             Body:
-                Yield[93, 104]
-                    Name[99, 104] Value: "value"
+                Yield[5:8-5:19]
+                    Name[5:14-5:19] Value: "value"
         ---- End of merge function ----

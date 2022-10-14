@@ -554,7 +554,7 @@ public class TokenizerTest {
                 fail("Unexpected call to onError");
             }
         };
-        return Tokenizer.fromString(errorCallback, code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT));
+        return Tokenizer.fromString(errorCallback, code, EnumSet.of(interactive ? Tokenizer.Flag.INTERACTIVE : Tokenizer.Flag.EXEC_INPUT, Tokenizer.Flag.TYPE_COMMENT), null);
     }
 
     private static Tokenizer createTokenizer(String code) {

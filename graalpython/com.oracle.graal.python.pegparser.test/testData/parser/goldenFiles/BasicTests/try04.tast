@@ -1,14 +1,23 @@
-Module[0, 63]
-    Try[0, 3]
+Input:
+------
+try:
+  pass
+except (RuntimeError, TypeError, NameError):
+  pass
+
+Output:
+-------
+Module[1:0-4:6]
+    Try[1:0-4:6]
         Body:
-            Pass[7, 11]
+            Pass[2:2-2:6]
         Except:
-            ExceptHandler[12, 18]
+            ExceptHandler[3:0-4:6]
                 Type: 
-                    Tuple[19, 55]
+                    Tuple[3:7-3:43]
                         Values:
-                            Name[20, 32] Value: "RuntimeError"
-                            Name[34, 43] Value: "TypeError"
-                            Name[45, 54] Value: "NameError"
+                            Name[3:8-3:20] Value: "RuntimeError"
+                            Name[3:22-3:31] Value: "TypeError"
+                            Name[3:33-3:42] Value: "NameError"
                 Body:
-                    Pass[59, 63]
+                    Pass[4:2-4:6]

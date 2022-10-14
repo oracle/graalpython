@@ -1,23 +1,30 @@
-Module[0, 112]
-    FunctionDef[0, 112]
+Input:
+------
+def __new__(_cls, hits, misses, maxsize, currsize):
+  return _tuple_new(_cls, (hits, misses, maxsize, currsize))
+
+Output:
+-------
+Module[1:0-2:60]
+    FunctionDef[1:0-2:60]
         Name:__new__
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[12, 16] _cls
-                ArgTy[18, 22] hits
-                ArgTy[24, 30] misses
-                ArgTy[32, 39] maxsize
-                ArgTy[41, 49] currsize
+                ArgTy[1:12-1:16] _cls
+                ArgTy[1:18-1:22] hits
+                ArgTy[1:24-1:30] misses
+                ArgTy[1:32-1:39] maxsize
+                ArgTy[1:41-1:49] currsize
         ---- Function body of __new__ ----
-        Return[54, 112] 
-            Call[61, 112]
-                Target: Name[61, 71] Value: "_tuple_new"
+        Return[2:2-2:60] 
+            Call[2:9-2:60]
+                Target: Name[2:9-2:19] Value: "_tuple_new"
                 Args:
-                    Name[72, 76] Value: "_cls"
-                    Tuple[78, 111]
+                    Name[2:20-2:24] Value: "_cls"
+                    Tuple[2:26-2:59]
                         Values:
-                            Name[79, 83] Value: "hits"
-                            Name[85, 91] Value: "misses"
-                            Name[93, 100] Value: "maxsize"
-                            Name[102, 110] Value: "currsize"
+                            Name[2:27-2:31] Value: "hits"
+                            Name[2:33-2:39] Value: "misses"
+                            Name[2:41-2:48] Value: "maxsize"
+                            Name[2:50-2:58] Value: "currsize"
         ---- End of __new__ function ----

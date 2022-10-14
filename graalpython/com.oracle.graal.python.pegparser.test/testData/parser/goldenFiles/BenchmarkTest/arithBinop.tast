@@ -1,110 +1,135 @@
-Module[0, 357]
-    FunctionDef[0, 201]
+Input:
+------
+def docompute(num):
+    for i in range(num):
+        sum_ = 0.0
+        j = 0
+        while j < num:
+            sum_ += 1.0 / (((i + j) * (i + j + 1) >> 1) + i + 1)
+            j += 1
+
+    return sum_
+
+
+def measure(num):
+    for run in range(num):
+        sum_ = docompute(10000)  # 10000
+    print('sum', sum_)
+
+
+def __benchmark__(num=5):
+    measure(num)
+
+
+Output:
+-------
+Module[1:0-19:16]
+    FunctionDef[1:0-9:15]
         Name:docompute
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[14, 17] num
+                ArgTy[1:14-1:17] num
         ---- Function body of docompute ----
-        For[24, 184]
-            Target: Name[28, 29] Value: "i" Store
+        For[2:4-7:18]
+            Target: Name[2:8-2:9] Value: "i" Store
             Iter: 
-                Call[33, 43]
-                    Target: Name[33, 38] Value: "range"
+                Call[2:13-2:23]
+                    Target: Name[2:13-2:18] Value: "range"
                     Args:
-                        Name[39, 42] Value: "num"
+                        Name[2:19-2:22] Value: "num"
             Body:
-                Assign[53, 63]
-                    LHS: Name[53, 57] Value: "sum_" Store
-                    RHS: DOUBLE[60, 63] Value: 0.0
-                Assign[72, 77]
-                    LHS: Name[72, 73] Value: "j" Store
-                    RHS: LONG[76, 77] Value: 0
-                While[86, 184]
+                Assign[3:8-3:18]
+                    LHS: Name[3:8-3:12] Value: "sum_" Store
+                    RHS: DOUBLE[3:15-3:18] Value: 0.0
+                Assign[4:8-4:13]
+                    LHS: Name[4:8-4:9] Value: "j" Store
+                    RHS: LONG[4:12-4:13] Value: 0
+                While[5:8-7:18]
                     Condition: 
-                        Compare[92, 99]
-                            LHS: Name[92, 93] Value: "j"
+                        Compare[5:14-5:21]
+                            LHS: Name[5:14-5:15] Value: "j"
                             Op: Lt
-                            RHS: Name[96, 99] Value: "num"
+                            RHS: Name[5:18-5:21] Value: "num"
                     Body:
-                        AugAssign[113, 165]
+                        AugAssign[6:12-6:64]
                             Op: Add
-                            LHS: Name[113, 117] Value: "sum_" Store
+                            LHS: Name[6:12-6:16] Value: "sum_" Store
                             RHS: 
-                                BinOp[121, 165]
+                                BinOp[6:20-6:64]
                                     Op: Div
-                                    LHS: DOUBLE[121, 124] Value: 1.0
+                                    LHS: DOUBLE[6:20-6:23] Value: 1.0
                                     RHS: 
-                                        BinOp[128, 164]
+                                        BinOp[6:27-6:63]
                                             Op: Add
                                             LHS: 
-                                                BinOp[128, 160]
+                                                BinOp[6:27-6:59]
                                                     Op: Add
                                                     LHS: 
-                                                        BinOp[129, 155]
+                                                        BinOp[6:28-6:54]
                                                             Op: RShift
                                                             LHS: 
-                                                                BinOp[129, 150]
+                                                                BinOp[6:28-6:49]
                                                                     Op: Mult
                                                                     LHS: 
-                                                                        BinOp[130, 135]
+                                                                        BinOp[6:29-6:34]
                                                                             Op: Add
-                                                                            LHS: Name[130, 131] Value: "i"
-                                                                            RHS: Name[134, 135] Value: "j"
+                                                                            LHS: Name[6:29-6:30] Value: "i"
+                                                                            RHS: Name[6:33-6:34] Value: "j"
                                                                     RHS: 
-                                                                        BinOp[140, 149]
+                                                                        BinOp[6:39-6:48]
                                                                             Op: Add
                                                                             LHS: 
-                                                                                BinOp[140, 145]
+                                                                                BinOp[6:39-6:44]
                                                                                     Op: Add
-                                                                                    LHS: Name[140, 141] Value: "i"
-                                                                                    RHS: Name[144, 145] Value: "j"
-                                                                            RHS: LONG[148, 149] Value: 1
-                                                            RHS: LONG[154, 155] Value: 1
-                                                    RHS: Name[159, 160] Value: "i"
-                                            RHS: LONG[163, 164] Value: 1
-                        AugAssign[178, 184]
+                                                                                    LHS: Name[6:39-6:40] Value: "i"
+                                                                                    RHS: Name[6:43-6:44] Value: "j"
+                                                                            RHS: LONG[6:47-6:48] Value: 1
+                                                            RHS: LONG[6:53-6:54] Value: 1
+                                                    RHS: Name[6:58-6:59] Value: "i"
+                                            RHS: LONG[6:62-6:63] Value: 1
+                        AugAssign[7:12-7:18]
                             Op: Add
-                            LHS: Name[178, 179] Value: "j" Store
-                            RHS: LONG[183, 184] Value: 1
-        Return[190, 201] Name[197, 201] Value: "sum_"
+                            LHS: Name[7:12-7:13] Value: "j" Store
+                            RHS: LONG[7:17-7:18] Value: 1
+        Return[9:4-9:15] Name[9:11-9:15] Value: "sum_"
         ---- End of docompute function ----
-    FunctionDef[204, 312]
+    FunctionDef[12:0-15:22]
         Name:measure
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[216, 219] num
+                ArgTy[12:12-12:15] num
         ---- Function body of measure ----
-        For[226, 280]
-            Target: Name[230, 233] Value: "run" Store
+        For[13:4-14:31]
+            Target: Name[13:8-13:11] Value: "run" Store
             Iter: 
-                Call[237, 247]
-                    Target: Name[237, 242] Value: "range"
+                Call[13:15-13:25]
+                    Target: Name[13:15-13:20] Value: "range"
                     Args:
-                        Name[243, 246] Value: "num"
+                        Name[13:21-13:24] Value: "num"
             Body:
-                Assign[257, 280]
-                    LHS: Name[257, 261] Value: "sum_" Store
+                Assign[14:8-14:31]
+                    LHS: Name[14:8-14:12] Value: "sum_" Store
                     RHS: 
-                        Call[264, 280]
-                            Target: Name[264, 273] Value: "docompute"
+                        Call[14:15-14:31]
+                            Target: Name[14:15-14:24] Value: "docompute"
                             Args:
-                                LONG[274, 279] Value: 10000
-        Call[294, 312]
-            Target: Name[294, 299] Value: "print"
+                                LONG[14:25-14:30] Value: 10000
+        Call[15:4-15:22]
+            Target: Name[15:4-15:9] Value: "print"
             Args:
-                RAW[300, 305] Value: "sum"
-                Name[307, 311] Value: "sum_"
+                RAW[15:10-15:15] Value: "sum"
+                Name[15:17-15:21] Value: "sum_"
         ---- End of measure function ----
-    FunctionDef[315, 357]
+    FunctionDef[18:0-19:16]
         Name:__benchmark__
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[333, 336] num
+                ArgTy[18:18-18:21] num
             Defaults:
-                LONG[337, 338] Value: 5
+                LONG[18:22-18:23] Value: 5
         ---- Function body of __benchmark__ ----
-        Call[345, 357]
-            Target: Name[345, 352] Value: "measure"
+        Call[19:4-19:16]
+            Target: Name[19:4-19:11] Value: "measure"
             Args:
-                Name[353, 356] Value: "num"
+                Name[19:12-19:15] Value: "num"
         ---- End of __benchmark__ function ----

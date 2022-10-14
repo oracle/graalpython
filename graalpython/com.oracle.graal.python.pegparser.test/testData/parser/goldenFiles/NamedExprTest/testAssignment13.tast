@@ -1,14 +1,20 @@
-Module[0, 29]
-    Assign[0, 29]
-        LHS: Name[0, 6] Value: "length" Store
+Input:
+------
+length = len(lines := [1, 2])
+
+Output:
+-------
+Module[1:0-1:29]
+    Assign[1:0-1:29]
+        LHS: Name[1:0-1:6] Value: "length" Store
         RHS: 
-            Call[9, 29]
-                Target: Name[9, 12] Value: "len"
+            Call[1:9-1:29]
+                Target: Name[1:9-1:12] Value: "len"
                 Args:
-                    NamedExpr[13, 28]
-                        Target: Name[13, 18] Value: "lines" Store
+                    NamedExpr[1:13-1:28]
+                        Target: Name[1:13-1:18] Value: "lines" Store
                         Value: 
-                            List[22, 28]
+                            List[1:22-1:28]
                                 Values:
-                                    LONG[23, 24] Value: 1
-                                    LONG[26, 27] Value: 2
+                                    LONG[1:23-1:24] Value: 1
+                                    LONG[1:26-1:27] Value: 2

@@ -1,11 +1,20 @@
-Module[0, 40]
-    FunctionDef[0, 40]
+Input:
+------
+def f():
+    if (yield):
+        yield x
+
+
+Output:
+-------
+Module[1:0-3:15]
+    FunctionDef[1:0-3:15]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of f ----
-        If[13, 40]
-            Test: Yield[17, 22]
+        If[2:4-3:15]
+            Test: Yield[2:8-2:13]
             Then:
-                Yield[33, 40]
-                    Name[39, 40] Value: "x"
+                Yield[3:8-3:15]
+                    Name[3:14-3:15] Value: "x"
         ---- End of f function ----

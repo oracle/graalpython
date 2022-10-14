@@ -1,2 +1,8 @@
-Module[0, 4]
-    BYTES[0, 4] Value: <unprintable value>
+Input:
+------
+b"a"
+
+Output:
+-------
+Module[1:0-1:4]
+    BYTES[1:0-1:4] Value: <unprintable value>

@@ -1,10 +1,16 @@
-Module[0, 10]
-    AugAssign[0, 10]
+Input:
+------
+a += 1,2,3
+
+Output:
+-------
+Module[1:0-1:10]
+    AugAssign[1:0-1:10]
         Op: Add
-        LHS: Name[0, 1] Value: "a" Store
+        LHS: Name[1:0-1:1] Value: "a" Store
         RHS: 
-            Tuple[5, 10]
+            Tuple[1:5-1:10]
                 Values:
-                    LONG[5, 6] Value: 1
-                    LONG[7, 8] Value: 2
-                    LONG[9, 10] Value: 3
+                    LONG[1:5-1:6] Value: 1
+                    LONG[1:7-1:8] Value: 2
+                    LONG[1:9-1:10] Value: 3

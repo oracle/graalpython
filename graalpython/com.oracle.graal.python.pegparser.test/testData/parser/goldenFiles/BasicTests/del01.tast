@@ -1,4 +1,10 @@
-Module[0, 5]
-    Delete[0, 5]
+Input:
+------
+del x
+
+Output:
+-------
+Module[1:0-1:5]
+    Delete[1:0-1:5]
         Targets:
-            Name[4, 5] Value: "x" Del
+            Name[1:4-1:5] Value: "x" Del

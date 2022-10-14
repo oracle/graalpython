@@ -1,8 +1,15 @@
-Module[0, 23]
-    If[0, 23]
+Input:
+------
+if spam := "eggs": pass
+
+
+Output:
+-------
+Module[1:0-1:23]
+    If[1:0-1:23]
         Test: 
-            NamedExpr[3, 17]
-                Target: Name[3, 7] Value: "spam" Store
-                Value: RAW[11, 17] Value: "eggs"
+            NamedExpr[1:3-1:17]
+                Target: Name[1:3-1:7] Value: "spam" Store
+                Value: RAW[1:11-1:17] Value: "eggs"
         Then:
-            Pass[19, 23]
+            Pass[1:19-1:23]

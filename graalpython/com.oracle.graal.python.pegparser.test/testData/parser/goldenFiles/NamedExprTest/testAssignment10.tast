@@ -1,12 +1,18 @@
-Module[0, 28]
-    If[0, 28]
+Input:
+------
+if (match := 10) == 10: pass
+
+Output:
+-------
+Module[1:0-1:28]
+    If[1:0-1:28]
         Test: 
-            Compare[3, 22]
+            Compare[1:3-1:22]
                 LHS: 
-                    NamedExpr[4, 15]
-                        Target: Name[4, 9] Value: "match" Store
-                        Value: LONG[13, 15] Value: 10
+                    NamedExpr[1:4-1:15]
+                        Target: Name[1:4-1:9] Value: "match" Store
+                        Value: LONG[1:13-1:15] Value: 10
                 Op: Eq
-                RHS: LONG[20, 22] Value: 10
+                RHS: LONG[1:20-1:22] Value: 10
         Then:
-            Pass[24, 28]
+            Pass[1:24-1:28]

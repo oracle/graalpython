@@ -1,17 +1,30 @@
-Module[0, 91]
-    Try[0, 3]
+Input:
+------
+try:
+    pass
+except OSError as err:
+    pass
+except ValueError:
+    pass
+except:
+    raise
+
+Output:
+-------
+Module[1:0-8:9]
+    Try[1:0-8:9]
         Body:
-            Pass[9, 13]
+            Pass[2:4-2:8]
         Except:
-            ExceptHandler[14, 20]
-                Type: Name[21, 28] Value: "OSError"
+            ExceptHandler[3:0-4:8]
+                Type: Name[3:7-3:14] Value: "OSError"
                 Var: err
                 Body:
-                    Pass[41, 45]
-            ExceptHandler[46, 52]
-                Type: Name[53, 63] Value: "ValueError"
+                    Pass[4:4-4:8]
+            ExceptHandler[5:0-6:8]
+                Type: Name[5:7-5:17] Value: "ValueError"
                 Body:
-                    Pass[69, 73]
-            ExceptHandler[74, 80]
+                    Pass[6:4-6:8]
+            ExceptHandler[7:0-8:9]
                 Body:
-                    Raise[86, 91]
+                    Raise[8:4-8:9]

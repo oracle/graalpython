@@ -1,11 +1,18 @@
-Module[0, 34]
-    FunctionDef[0, 34]
+Input:
+------
+def foo(par1 = 10): 
+  return par1
+
+Output:
+-------
+Module[1:0-2:13]
+    FunctionDef[1:0-2:13]
         Name:foo
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[8, 12] par1
+                ArgTy[1:8-1:12] par1
             Defaults:
-                LONG[15, 17] Value: 10
+                LONG[1:15-1:17] Value: 10
         ---- Function body of foo ----
-        Return[23, 34] Name[30, 34] Value: "par1"
+        Return[2:2-2:13] Name[2:9-2:13] Value: "par1"
         ---- End of foo function ----

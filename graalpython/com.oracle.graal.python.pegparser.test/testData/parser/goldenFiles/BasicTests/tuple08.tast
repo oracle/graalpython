@@ -1,4 +1,10 @@
-Module[0, 2]
-    Tuple[0, 2]
+Input:
+------
+1,
+
+Output:
+-------
+Module[1:0-1:2]
+    Tuple[1:0-1:2]
         Values:
-            LONG[0, 1] Value: 1
+            LONG[1:0-1:1] Value: 1

@@ -1,22 +1,28 @@
-Module[0, 36]
-    ListComp[0, 36]
-        Element: BinOp[1, 5]
+Input:
+------
+[x**y for x in range(20) if x*y % 3]
+
+Output:
+-------
+Module[1:0-1:36]
+    ListComp[1:0-1:36]
+        Element: BinOp[1:1-1:5]
             Op: Pow
-            LHS: Name[1, 2] Value: "x"
-            RHS: Name[4, 5] Value: "y"
-        ComprehensionTy[6, 35]
-            Target: Name[10, 11] Value: "x" Store
+            LHS: Name[1:1-1:2] Value: "x"
+            RHS: Name[1:4-1:5] Value: "y"
+        ComprehensionTy[1:6-1:35]
+            Target: Name[1:10-1:11] Value: "x" Store
             Iterator: 
-                Call[15, 24]
-                    Target: Name[15, 20] Value: "range"
+                Call[1:15-1:24]
+                    Target: Name[1:15-1:20] Value: "range"
                     Args:
-                        LONG[21, 23] Value: 20
+                        LONG[1:21-1:23] Value: 20
             Ifs:
-                BinOp[28, 35]
+                BinOp[1:28-1:35]
                     Op: Mod
                     LHS: 
-                        BinOp[28, 31]
+                        BinOp[1:28-1:31]
                             Op: Mult
-                            LHS: Name[28, 29] Value: "x"
-                            RHS: Name[30, 31] Value: "y"
-                    RHS: LONG[34, 35] Value: 3
+                            LHS: Name[1:28-1:29] Value: "x"
+                            RHS: Name[1:30-1:31] Value: "y"
+                    RHS: LONG[1:34-1:35] Value: 3

@@ -1,7 +1,14 @@
-Module[0, 33]
-    ClassDef[0, 33] foo
+Input:
+------
+@class_decorator
+class foo():pass
+
+Output:
+-------
+Module[1:0-2:16]
+    ClassDef[2:0-2:16] foo
         Decorators:
-            Name[1, 16] Value: "class_decorator"
+            Name[1:1-1:16] Value: "class_decorator"
         ---- Class body of foo ----
-        Pass[29, 33]
+        Pass[2:12-2:16]
         ---- End of foo class ----

@@ -1,7 +1,13 @@
-Module[0, 22]
-    ClassDef[0, 22] foo
+Input:
+------
+class foo(object):pass
+
+Output:
+-------
+Module[1:0-1:22]
+    ClassDef[1:0-1:22] foo
         Bases:
-            Name[10, 16] Value: "object"
+            Name[1:10-1:16] Value: "object"
         ---- Class body of foo ----
-        Pass[18, 22]
+        Pass[1:18-1:22]
         ---- End of foo class ----

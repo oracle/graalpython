@@ -1,9 +1,18 @@
-Module[0, 43]
-    While[0, 43]
-        Condition: BOOLEAN[6, 10] Value: true
+Input:
+------
+while True:
+  if False:
+    continue
+  pass
+
+Output:
+-------
+Module[1:0-4:6]
+    While[1:0-4:6]
+        Condition: BOOLEAN[1:6-1:10] Value: true
         Body:
-            If[14, 36]
-                Test: BOOLEAN[17, 22] Value: false
+            If[2:2-3:12]
+                Test: BOOLEAN[2:5-2:10] Value: false
                 Then:
-                    Continue[28, 36]
-            Pass[39, 43]
+                    Continue[3:4-3:12]
+            Pass[4:2-4:6]

@@ -1,12 +1,18 @@
-Module[0, 11]
-    Call[0, 11]
+Input:
+------
+a.b.c.foo()
+
+Output:
+-------
+Module[1:0-1:11]
+    Call[1:0-1:11]
         Target: 
-            Attribute[0, 1] 
+            Attribute[1:0-1:9] 
                 Receiver: 
-                    Attribute[0, 1] 
+                    Attribute[1:0-1:5] 
                         Receiver: 
-                            Attribute[0, 1] 
-                                Receiver: Name[0, 1] Value: "a"
+                            Attribute[1:0-1:3] 
+                                Receiver: Name[1:0-1:1] Value: "a"
                                 Attr: b
                         Attr: c
                 Attr: foo

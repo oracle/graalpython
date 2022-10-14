@@ -1,11 +1,17 @@
-Module[0, 34]
-    ListComp[0, 34]
-        Element: Name[2, 3] Value: "b"
-        ComprehensionTy[4, 21]
-            Target: Name[8, 9] Value: "a" Store
-            Iterator: Name[13, 15] Value: "d1"
+Input:
+------
+[ b for a in d1 if d1 for b in d2]
+
+Output:
+-------
+Module[1:0-1:34]
+    ListComp[1:0-1:34]
+        Element: Name[1:2-1:3] Value: "b"
+        ComprehensionTy[1:4-1:21]
+            Target: Name[1:8-1:9] Value: "a" Store
+            Iterator: Name[1:13-1:15] Value: "d1"
             Ifs:
-                Name[19, 21] Value: "d1"
-        ComprehensionTy[22, 33]
-            Target: Name[26, 27] Value: "b" Store
-            Iterator: Name[31, 33] Value: "d2"
+                Name[1:19-1:21] Value: "d1"
+        ComprehensionTy[1:22-1:33]
+            Target: Name[1:26-1:27] Value: "b" Store
+            Iterator: Name[1:31-1:33] Value: "d2"

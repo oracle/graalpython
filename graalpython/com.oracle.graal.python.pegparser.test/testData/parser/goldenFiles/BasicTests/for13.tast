@@ -1,42 +1,55 @@
-Module[0, 186]
-    FunctionDef[0, 186]
+Input:
+------
+def format(self):
+    for frame in self:
+        count += 1
+        if count >= 3:
+            continue
+        if count == 4:
+            for name, value in a:
+                count = 1
+
+Output:
+-------
+Module[1:0-8:25]
+    FunctionDef[1:0-8:25]
         Name:format
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[11, 15] self
+                ArgTy[1:11-1:15] self
         ---- Function body of format ----
-        For[22, 186]
-            Target: Name[26, 31] Value: "frame" Store
-            Iter: Name[35, 39] Value: "self"
+        For[2:4-8:25]
+            Target: Name[2:8-2:13] Value: "frame" Store
+            Iter: Name[2:17-2:21] Value: "self"
             Body:
-                AugAssign[49, 59]
+                AugAssign[3:8-3:18]
                     Op: Add
-                    LHS: Name[49, 54] Value: "count" Store
-                    RHS: LONG[58, 59] Value: 1
-                If[68, 103]
+                    LHS: Name[3:8-3:13] Value: "count" Store
+                    RHS: LONG[3:17-3:18] Value: 1
+                If[4:8-5:20]
                     Test: 
-                        Compare[71, 81]
-                            LHS: Name[71, 76] Value: "count"
+                        Compare[4:11-4:21]
+                            LHS: Name[4:11-4:16] Value: "count"
                             Op: GtE
-                            RHS: LONG[80, 81] Value: 3
+                            RHS: LONG[4:20-4:21] Value: 3
                     Then:
-                        Continue[95, 103]
-                If[112, 186]
+                        Continue[5:12-5:20]
+                If[6:8-8:25]
                     Test: 
-                        Compare[115, 125]
-                            LHS: Name[115, 120] Value: "count"
+                        Compare[6:11-6:21]
+                            LHS: Name[6:11-6:16] Value: "count"
                             Op: Eq
-                            RHS: LONG[124, 125] Value: 4
+                            RHS: LONG[6:20-6:21] Value: 4
                     Then:
-                        For[139, 186]
+                        For[7:12-8:25]
                             Target: 
-                                Tuple[143, 154] Context: Store
+                                Tuple[7:16-7:27] Context: Store
                                     Values:
-                                        Name[143, 147] Value: "name" Store
-                                        Name[149, 154] Value: "value" Store
-                            Iter: Name[158, 159] Value: "a"
+                                        Name[7:16-7:20] Value: "name" Store
+                                        Name[7:22-7:27] Value: "value" Store
+                            Iter: Name[7:31-7:32] Value: "a"
                             Body:
-                                Assign[177, 186]
-                                    LHS: Name[177, 182] Value: "count" Store
-                                    RHS: LONG[185, 186] Value: 1
+                                Assign[8:16-8:25]
+                                    LHS: Name[8:16-8:21] Value: "count" Store
+                                    RHS: LONG[8:24-8:25] Value: 1
         ---- End of format function ----

@@ -16,7 +16,7 @@ Disassembly of Foo:
   1:0   -   2:14        8 SETUP_ANNOTATIONS
   2:8   -   2:9         9 LOAD_NAME                         3    (a)
   2:10  -   2:13       11 LOAD_NAME                         4    (str)
-  2:8   -   2:9        13 BINARY_SUBSCR
+  2:8   -   2:14       13 BINARY_SUBSCR
   2:2   -   2:14       14 LOAD_NAME                         5    (__annotations__)
   2:2   -   2:14       16 LOAD_STRING                       1    ('attr')
   2:2   -   2:14       18 STORE_SUBSCR

@@ -1,38 +1,53 @@
-Module[0, 262]
-    ClassDef[0, 262] X
+Input:
+------
+class X:
+            def createY(this):
+                class Y:
+                    z = __class__
+                    def methodY(this):
+                        y = __class__
+                return Y
+            def methodX(this):
+                yy = __class__
+
+
+Output:
+-------
+Module[1:0-9:30]
+    ClassDef[1:0-9:30] X
         ---- Class body of X ----
-        FunctionDef[21, 200]
+        FunctionDef[2:12-7:24]
             Name:createY
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[33, 37] this
+                    ArgTy[2:24-2:28] this
             ---- Function body of createY ----
-            ClassDef[56, 175] Y
+            ClassDef[3:16-6:37] Y
                 ---- Class body of Y ----
-                Assign[85, 98]
-                    LHS: Name[85, 86] Value: "z" Store
-                    RHS: Name[89, 98] Value: "__class__"
-                FunctionDef[119, 175]
+                Assign[4:20-4:33]
+                    LHS: Name[4:20-4:21] Value: "z" Store
+                    RHS: Name[4:24-4:33] Value: "__class__"
+                FunctionDef[5:20-6:37]
                     Name:methodY
-                    ArgumentsTy[0, 0]
+                    ArgumentsTy[0:0-0:0]
                         Args:
-                            ArgTy[131, 135] this
+                            ArgTy[5:32-5:36] this
                     ---- Function body of methodY ----
-                    Assign[162, 175]
-                        LHS: Name[162, 163] Value: "y" Store
-                        RHS: Name[166, 175] Value: "__class__"
+                    Assign[6:24-6:37]
+                        LHS: Name[6:24-6:25] Value: "y" Store
+                        RHS: Name[6:28-6:37] Value: "__class__"
                     ---- End of methodY function ----
                 ---- End of Y class ----
-            Return[192, 200] Name[199, 200] Value: "Y"
+            Return[7:16-7:24] Name[7:23-7:24] Value: "Y"
             ---- End of createY function ----
-        FunctionDef[213, 262]
+        FunctionDef[8:12-9:30]
             Name:methodX
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[225, 229] this
+                    ArgTy[8:24-8:28] this
             ---- Function body of methodX ----
-            Assign[248, 262]
-                LHS: Name[248, 250] Value: "yy" Store
-                RHS: Name[253, 262] Value: "__class__"
+            Assign[9:16-9:30]
+                LHS: Name[9:16-9:18] Value: "yy" Store
+                RHS: Name[9:21-9:30] Value: "__class__"
             ---- End of methodX function ----
         ---- End of X class ----

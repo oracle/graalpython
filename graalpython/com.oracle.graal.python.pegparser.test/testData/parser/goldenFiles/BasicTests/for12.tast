@@ -1,28 +1,36 @@
-Module[0, 52]
-    FunctionDef[0, 52]
+Input:
+------
+def fn():
+  for a, b in ((1,2), (3,4)):
+    print(a)
+
+Output:
+-------
+Module[1:0-3:12]
+    FunctionDef[1:0-3:12]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        For[12, 52]
+        For[2:2-3:12]
             Target: 
-                Tuple[16, 20] Context: Store
+                Tuple[2:6-2:10] Context: Store
                     Values:
-                        Name[16, 17] Value: "a" Store
-                        Name[19, 20] Value: "b" Store
+                        Name[2:6-2:7] Value: "a" Store
+                        Name[2:9-2:10] Value: "b" Store
             Iter: 
-                Tuple[24, 38]
+                Tuple[2:14-2:28]
                     Values:
-                        Tuple[25, 30]
+                        Tuple[2:15-2:20]
                             Values:
-                                LONG[26, 27] Value: 1
-                                LONG[28, 29] Value: 2
-                        Tuple[32, 37]
+                                LONG[2:16-2:17] Value: 1
+                                LONG[2:18-2:19] Value: 2
+                        Tuple[2:22-2:27]
                             Values:
-                                LONG[33, 34] Value: 3
-                                LONG[35, 36] Value: 4
+                                LONG[2:23-2:24] Value: 3
+                                LONG[2:25-2:26] Value: 4
             Body:
-                Call[44, 52]
-                    Target: Name[44, 49] Value: "print"
+                Call[3:4-3:12]
+                    Target: Name[3:4-3:9] Value: "print"
                     Args:
-                        Name[50, 51] Value: "a"
+                        Name[3:10-3:11] Value: "a"
         ---- End of fn function ----
