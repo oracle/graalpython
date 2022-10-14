@@ -116,14 +116,16 @@ def get_all_cipher_strings():
         return cipher_strings
 
 
-def get_cipher_strings_mapping():
+def get_cipher_strings_mapping(all_ciphers):
     cipher_string_mapping = []
     for cipher_string in get_all_cipher_strings():
         # The ciphersuites argument disables implicit adding of TLSv1.3 ciphersuites to everything
         cmd = ['openssl', 'ciphers', '-stdname', '-ciphersuites', '', cipher_string]
         ciphers = []
         for line in subprocess.run(cmd, capture_output=True, text=True).stdout.splitlines():
-            ciphers.append(line.split()[0])
+            cipher = line.split()[0]
+            if any(c['java_name'] == cipher for c in all_ciphers):
+                ciphers.append(cipher)
         cipher_string_mapping.append((cipher_string, ciphers))
     return cipher_string_mapping
 
@@ -290,11 +292,12 @@ SSL_CODE_DIR = os.path.join(REPO,
                             'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/ssl/')
 SSL_CIPHER_PATH = os.path.join(SSL_CODE_DIR, 'SSLCipher.java')
 SSL_CIPHER_STRING_MAPPING_PATH = os.path.join(SSL_CODE_DIR, 'SSLCipherStringMapping.java')
+all_ciphers = get_all_ciphers()
 env.from_string(SSL_CIPHER_TEMPLATE) \
-    .stream(ciphers=get_all_ciphers(), vars=CIPHER_KEYS, **common) \
+    .stream(ciphers=all_ciphers, vars=CIPHER_KEYS, **common) \
     .dump(SSL_CIPHER_PATH)
 env.from_string(SSL_CIPHER_STRING_MAPPING_TEMPLATE) \
-    .stream(mapping=get_cipher_strings_mapping(), **common) \
+    .stream(mapping=get_cipher_strings_mapping(all_ciphers), **common) \
     .dump(SSL_CIPHER_STRING_MAPPING_PATH)
 generate_test_data(
     os.path.join(REPO, 'graalpython/com.oracle.graal.python.test/src/tests/ssldata/expected_ciphers.json'))
