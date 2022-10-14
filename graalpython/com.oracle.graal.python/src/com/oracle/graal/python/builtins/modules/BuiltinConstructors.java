@@ -141,6 +141,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -2150,7 +2151,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, lookupMroEntriesNode);
             if (winner != metaclass) {
                 Object newFunc = getNewFuncNode.execute(winner);
-                if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
+                if (newFunc instanceof PBuiltinMethod && (((PBuiltinMethod) newFunc).getFunction().getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
                     metaclass = winner;
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {
