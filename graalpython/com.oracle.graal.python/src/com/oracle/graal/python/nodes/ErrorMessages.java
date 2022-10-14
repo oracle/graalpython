@@ -556,6 +556,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NEED_BYTELIKE_OBJ = tsLiteral("decoding to str: need a bytes-like object, %p found");
     public static final TruffleString DECODING_STR_NOT_SUPPORTED = tsLiteral("decoding str is not supported");
     public static final TruffleString S_NEEDS_S_AS_FIRST_ARG = tsLiteral("%s() needs %s as first arg");
+    public static final TruffleString NEG_ARG_NOT_ALLOWED = tsLiteral("negative argument not allowed");
     public static final TruffleString NEG_INF_PLUS_INF_IN = tsLiteral("-inf + inf in fsum");
     public static final TruffleString NEGATIVE_COUNT = tsLiteral("negative count");
     public static final TruffleString NEGATIVE_DATA_SIZE = tsLiteral("negative data size");

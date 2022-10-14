@@ -2081,11 +2081,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
-        @Specialization
+        @Specialization(guards = "size >= 0")
         PBytes urandom(int size) {
             byte[] bytes = new byte[size];
             nextBytes(getContext().getSecureRandom(), bytes);
             return factory().createBytes(bytes);
+        }
+
+        @Specialization(guards = "size < 0")
+        Object urandomNeg(int size) {
+            throw raise(ValueError, ErrorMessages.NEG_ARG_NOT_ALLOWED);
         }
 
         @TruffleBoundary
