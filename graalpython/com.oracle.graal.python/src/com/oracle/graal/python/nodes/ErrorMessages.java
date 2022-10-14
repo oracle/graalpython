@@ -869,7 +869,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UID_SHOULD_BE_INTEGER_NOT_P = tsLiteral("uid should be integer, not %p");
     public static final TruffleString INIT_WAS_NOT_CALLED = tsLiteral("zipimporter.__init__() wasn't called");
     public static final TruffleString RANGE_OBJ_IDX_OUT_OF_RANGE = tsLiteral("range object index out of range");
-    public static final TruffleString NUMBER_OF_BITS_MUST_BE_GREATER_THAN_ZERO = tsLiteral("number of bits must be greater than zero");
+    public static final TruffleString NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE = tsLiteral("number of bits must be non-negative");
     public static final TruffleString TIMEOUT_MUST_BE_NON_NEG_NUM = tsLiteral("'timeout' must be a non-negative number");
     public static final TruffleString THIRD_ARG_MUST_BE_A_VALID_MACHINE_CODE_FMT = tsLiteral("third argument must be a valid machine format code.");
     public static final TruffleString OBJ_DOES_NOT_PROVIDE_DIR = tsLiteral("object does not provide __dir__");
