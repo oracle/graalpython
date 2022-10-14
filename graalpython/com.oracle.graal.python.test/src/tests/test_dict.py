@@ -1158,27 +1158,43 @@ def test_check_ref_identity_before_eq():
     assert eq_calls == 1
 
 
-def test_pop_side_effects():
-    class MyKey:
-        def __init__(self):
-            self.hash_calls = 0
-            self.eq_calls = 0
-        def __hash__(self):
-            self.hash_calls += 1
-            return 42
-        def __eq__(self, other):
-            self.eq_calls += 1
-            return True
+class TrackingKey:
+    def __init__(self, id):
+        self.clear_observations()
+        self.id = id
+    def __hash__(self):
+        self.hash_calls += 1
+        return hash(self.id)
+    def __eq__(self, other):
+        self.eq_calls += 1
+        return self.id == getattr(other, 'id', other)
+    def clear_observations(self):
+        self.hash_calls = 0
+        self.eq_calls = 0
 
-    key = MyKey()
+
+def test_pop_side_effects():
+    key = TrackingKey(1)
     d = {key: 42, 'other_key': 33}
     assert key.hash_calls == 1
     assert key.eq_calls == 0
 
-    lookup_key = MyKey()
+    lookup_key = TrackingKey(1)
     assert d.pop(lookup_key) == 42
     assert lookup_key.hash_calls == 1
     assert lookup_key.eq_calls == 0
+
+
+def test_eq_side_effects():
+    key = TrackingKey('foo')
+    d1 = {key: 42}
+    key.clear_observations()
+    d2 = {'foo': 42}  # This should use specialized storage strategy
+
+    assert d1 == d2
+    assert key.hash_calls == 0
+    assert key.eq_calls == 1
+
 
 # TODO: GR-40680
 # def test_iteration_and_del():

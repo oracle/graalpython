@@ -47,8 +47,6 @@ import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -57,7 +55,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -177,27 +174,27 @@ public final class ObjectHashMap {
     private int[] indices;
 
     // Compact arrays with the actual dict items:
-    private long[] hashes;
-    private Object[] keysAndValues;
+    long[] hashes;
+    Object[] keysAndValues;
 
     // How many real items are in the dict
-    private int size;
+    int size;
     // How many of the slots in the hashes/keysAndValues arrays are occupied either with real item
     // or dummy item. Note: we compact those arrays on deletion if there are too many dummy entries,
     // but we do not compact the indices array to retain the collision sequences. On rehashing,
     // triggered from insertion, we do remove dummy entries and rearrange the collision sequences
     // (as a side effect of reinserting all the items again).
-    private int usedHashes;
+    int usedHashes;
     // How many of the buckets in indices array are used. This may be larger by usedHashes if
     // we compacted on deletion.
-    private int usedIndices;
+    int usedIndices;
 
     /**
      * If the map contains elements with potential side effects in __eq__, then this map may have to
      * restart collision resolution on a side effect. This flag is used for this. TODO: the restart
      * of collision resolution is not implemented yet.
      */
-    private boolean hasSideEffectingKeys;
+    boolean hasSideEffectingKeys;
 
     public ObjectHashMap(int capacity, boolean hasSideEffects) {
         if (capacity <= INITIAL_INDICES_SIZE) {
@@ -795,34 +792,6 @@ public final class ObjectHashMap {
         public Throwable fillInStackTrace() {
             return this;
         }
-    }
-
-    private boolean keysEqual(int[] originalIndices, ThreadState state, int index, Object key, long keyHash,
-                    PyObjectRichCompareBool.EqNode eqNode, ConditionProfile hasState) throws RestartLookupException {
-        if (hashes[index] != keyHash) {
-            return false;
-        }
-        Object originalKey = getKey(index);
-        if (originalKey == key) {
-            return true;
-        }
-        VirtualFrame frame = hasState.profile(state == null) ? null : PArguments.frameForCall(state);
-        boolean result = eqNode.execute(frame, originalKey, key);
-        if (getKey(index) != originalKey || indices != originalIndices) {
-            // Either someone overridden the slot we are just examining, or rehasing reallocated the
-            // indices array. We need to restart the lookup. Other situations are OK:
-            //
-            // New entry was added: if its key is different to what we look for we don't care, if
-            // its key collides with what we look for, it will be put at the end of the collision
-            // chain, and we'll find it.
-            //
-            // Entry was removed: if it was not the entry we're looking at right now, we don't care.
-            // Removal could have triggered a compaction, which shuffles things around in the arrays
-            // (hashes, keysAndValues), but does not reallocate the arrays or changes collision
-            // sequences.
-            throw RestartLookupException.INSTANCE;
-        }
-        return result;
     }
 
     private boolean keysEqual(int[] originalIndices, Frame frame, int index, Object key, long keyHash,

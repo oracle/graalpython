@@ -730,7 +730,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "remove", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object remove(VirtualFrame frame, PSet self, Object key,
                         @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
             if (!discardNode.execute(frame, self, key)) {

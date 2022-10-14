@@ -77,7 +77,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(HashingStorageLibrary.class)
 public class KeywordsStorage extends HashingStorage {
 
-    private final PKeyword[] keywords;
+    final PKeyword[] keywords;
 
     protected KeywordsStorage(PKeyword[] keywords) {
         this.keywords = keywords;
@@ -152,10 +152,14 @@ public class KeywordsStorage extends HashingStorage {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class GetItemNode extends Node {
-        public abstract Object execute(Frame frame, KeywordsStorage self, Object key);
+        /**
+         * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
+         * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
+         */
+        public abstract Object execute(Frame frame, KeywordsStorage self, Object key, long hash);
 
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static Object cached(KeywordsStorage self, TruffleString key,
+        static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
@@ -163,26 +167,26 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
-        static Object string(KeywordsStorage self, TruffleString key,
+        static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findStringKey(key, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static Object pstring(KeywordsStorage self, PString key,
+        static Object pstring(KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return string(self, castToTruffleStringNode.execute(key), equalNode);
+            return string(self, castToTruffleStringNode.execute(key), -1, equalNode);
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static Object notString(Frame frame, KeywordsStorage self, Object key,
+        static Object notString(Frame frame, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectHashNode hashNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            long hash = hashNode.execute(frame, key);
+            long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
             for (int i = 0; i < self.keywords.length; i++) {
                 TruffleString currentKey = self.keywords[i].getName();
                 long keyHash = hashNode.execute(frame, currentKey);

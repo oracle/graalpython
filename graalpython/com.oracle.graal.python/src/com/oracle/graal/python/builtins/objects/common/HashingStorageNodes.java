@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
@@ -48,10 +50,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -59,17 +64,51 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class HashingStorageNodes {
 
+    @GenerateUncached
     public static abstract class HashingStorageGetItemWithHash extends Node {
-        public abstract Object execute(HashingStorage self, Object key, long keyHash);
+        public abstract Object execute(Frame frame, HashingStorage self, Object key, long keyHash);
+
+        @Specialization
+        static Object economicMap(Frame frame, EconomicMapStorage self, Object key, long keyHash,
+                        @Cached ObjectHashMap.GetNode getNode) {
+            return getNode.execute(frame, self.map, key, keyHash);
+        }
+
+        @Specialization
+        static Object dom(Frame frame, DynamicObjectStorage self, Object key, long keyHash,
+                        @Cached DynamicObjectStorage.GetItemNode getNode) {
+            return getNode.execute(frame, self, key, keyHash);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static Object empty(Frame frame, EmptyStorage self, Object key, long keyHash) {
+            return null;
+        }
+
+        @Specialization
+        static Object keywords(Frame frame, KeywordsStorage self, Object key, long keyHash,
+                        @Cached KeywordsStorage.GetItemNode getNode) {
+            return getNode.execute(frame, self, key, keyHash);
+        }
+
+        @Specialization
+        static Object locals(Frame frame, LocalsStorage self, Object key, long keyHash,
+                        @Cached LocalsStorage.GetItemNode getNode) {
+            return getNode.execute(frame, self, key, keyHash);
+        }
     }
 
     @GenerateUncached
@@ -109,7 +148,7 @@ public class HashingStorageNodes {
         @Specialization
         static Object dom(Frame frame, DynamicObjectStorage self, Object key,
                         @Cached DynamicObjectStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key);
+            return getNode.execute(frame, self, key, -1);
         }
 
         @Specialization
@@ -123,13 +162,13 @@ public class HashingStorageNodes {
         @Specialization
         static Object keywords(Frame frame, KeywordsStorage self, Object key,
                         @Cached KeywordsStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key);
+            return getNode.execute(frame, self, key, -1);
         }
 
         @Specialization
         static Object locals(Frame frame, LocalsStorage self, Object key,
                         @Cached LocalsStorage.GetItemNode getNode) {
-            return getNode.execute(frame, self, key);
+            return getNode.execute(frame, self, key, -1);
         }
     }
 
@@ -366,6 +405,343 @@ public class HashingStorageNodes {
             self.addAllTo(newStorage, specializedPutNode);
             toUpdate.setDictStorage(newStorage);
             return economicMap(frame, newStorage, key, isPop, toUpdate, hashNode, removeNode);
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class HashingStorageLen extends Node {
+        public abstract int execute(HashingStorage storage);
+
+        @Specialization
+        static int economicMap(EconomicMapStorage self) {
+            return self.length();
+        }
+
+        @Specialization
+        static int dom(DynamicObjectStorage self,
+                        @Cached DynamicObjectStorage.LengthNode lengthNode) {
+            return lengthNode.execute(self);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static int empty(EmptyStorage self) {
+            return 0;
+        }
+
+        @Specialization
+        static int keywords(KeywordsStorage self) {
+            return self.length();
+        }
+
+        @Specialization
+        static int locals(LocalsStorage self) {
+            return self.length();
+        }
+    }
+
+    @ValueType
+    public static final class HashingStorageIterator {
+        int index = -1;
+        Object currentValue;
+        final Object[] domKeys;
+        final DynamicObjectLibrary dylib;
+
+        public HashingStorageIterator() {
+            domKeys = null;
+            dylib = null;
+        }
+
+        public HashingStorageIterator(Object[] domKeys, DynamicObjectLibrary dylib) {
+            this.domKeys = domKeys;
+            this.dylib = dylib;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageGetIterator extends Node {
+        public abstract HashingStorageIterator execute(HashingStorage storage);
+
+        @Specialization
+        static HashingStorageIterator economicMap(EconomicMapStorage self) {
+            return new HashingStorageIterator();
+        }
+
+        @Specialization
+        static HashingStorageIterator dom(DynamicObjectStorage self,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            return new HashingStorageIterator(dylib.getKeyArray(self.store), dylib);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static HashingStorageIterator empty(EmptyStorage self) {
+            return new HashingStorageIterator();
+        }
+
+        @Specialization
+        static HashingStorageIterator keywords(KeywordsStorage self) {
+            return new HashingStorageIterator();
+        }
+
+        @Specialization
+        static HashingStorageIterator locals(LocalsStorage self,
+                        @Cached BranchProfile calculateLen) {
+            if (self.len == -1) {
+                calculateLen.enter();
+                self.calculateLength();
+            }
+            return new HashingStorageIterator();
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageIteratorNext extends Node {
+        /**
+         * Returns {@code true} if the iterator has next value. Use nodes to get the current value,
+         * key, and hash of the current key.
+         */
+        public abstract boolean execute(HashingStorage storage, HashingStorageIterator it);
+
+        @Specialization
+        static boolean economicMap(EconomicMapStorage self, HashingStorageIterator it) {
+            ObjectHashMap map = self.map;
+            it.index++;
+            while (it.index < map.usedHashes) {
+                Object val = map.getValue(it.index);
+                if (val != null) {
+                    it.currentValue = val;
+                    return true;
+                }
+                it.index++;
+            }
+            assert (it.currentValue = null) == null;
+            return false;
+        }
+
+        @Specialization
+        static boolean dom(DynamicObjectStorage self, HashingStorageIterator it) {
+            it.index++;
+            while (it.index < it.domKeys.length) {
+                Object val = it.dylib.getOrDefault(self.store, it.domKeys[it.index], PNone.NO_VALUE);
+                if (val == PNone.NO_VALUE) {
+                    it.currentValue = val;
+                    return true;
+                }
+                it.index++;
+            }
+            assert (it.currentValue = null) == null;
+            return false;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static boolean empty(EmptyStorage self, HashingStorageIterator it) {
+            return false;
+        }
+
+        @Specialization
+        static boolean keywords(KeywordsStorage self, HashingStorageIterator it) {
+            return ++it.index < self.length();
+        }
+
+        @Specialization
+        static boolean locals(LocalsStorage self, HashingStorageIterator it) {
+            FrameDescriptor fd = self.frame.getFrameDescriptor();
+            while (it.index < fd.getNumberOfSlots()) {
+                it.index++;
+                Object identifier = fd.getSlotName(it.index);
+                if (isUserFrameSlot(identifier)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageIteratorValue extends Node {
+        public abstract Object execute(HashingStorage storage, HashingStorageIterator it);
+
+        @Specialization
+        static Object economicMap(EconomicMapStorage self, HashingStorageIterator it) {
+            return it.currentValue;
+        }
+
+        @Specialization
+        static Object dom(DynamicObjectStorage self, HashingStorageIterator it) {
+            return it.currentValue;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static boolean empty(EmptyStorage self, HashingStorageIterator it) {
+            throw CompilerDirectives.shouldNotReachHere("empty in HashingStorageIteratorValue");
+        }
+
+        @Specialization
+        static Object keywords(KeywordsStorage self, HashingStorageIterator it) {
+            return self.keywords[it.index].getValue();
+        }
+
+        @Specialization
+        static Object locals(LocalsStorage self, HashingStorageIterator it) {
+            return LocalsStorage.getValue(self.frame, it.index);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageIteratorKey extends Node {
+        public abstract Object execute(HashingStorage storage, HashingStorageIterator it);
+
+        @Specialization
+        static Object economicMap(EconomicMapStorage self, HashingStorageIterator it) {
+            return self.map.getKey(it.index);
+        }
+
+        @Specialization
+        static Object dom(DynamicObjectStorage self, HashingStorageIterator it) {
+            return it.domKeys[it.index];
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static boolean empty(EmptyStorage self, HashingStorageIterator it) {
+            throw CompilerDirectives.shouldNotReachHere("empty in HashingStorageIteratorKey");
+        }
+
+        @Specialization
+        static Object keywords(KeywordsStorage self, HashingStorageIterator it) {
+            return self.keywords[it.index].getName();
+        }
+
+        @Specialization
+        static Object locals(LocalsStorage self, HashingStorageIterator it) {
+            return self.frame.getFrameDescriptor().getSlotName(it.index);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageIteratorKeyHash extends Node {
+        public abstract long execute(HashingStorage storage, HashingStorageIterator it);
+
+        @Specialization
+        static long economicMap(EconomicMapStorage self, HashingStorageIterator it) {
+            return self.map.hashes[it.index];
+        }
+
+        @Specialization
+        static long dom(DynamicObjectStorage self, HashingStorageIterator it,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(null, it.domKeys[it.index]);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static long empty(EmptyStorage self, HashingStorageIterator it) {
+            throw CompilerDirectives.shouldNotReachHere("empty in HashingStorageIteratorKey");
+        }
+
+        @Specialization
+        static long keywords(KeywordsStorage self, HashingStorageIterator it,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(null, self.keywords[it.index].getName());
+        }
+
+        @Specialization
+        static long locals(LocalsStorage self, HashingStorageIterator it,
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(null, self.frame.getFrameDescriptor().getSlotName(it.index));
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageEq extends Node {
+        public abstract boolean execute(Frame frame, HashingStorage a, HashingStorage b);
+
+        @Specialization
+        boolean doEconomicMapAndOther(Frame frame, EconomicMapStorage aStorage, HashingStorage bStorage,
+                        @Cached HashingStorageGetItemWithHash getNode,
+                        @Cached HashingStorageLen lenNode,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile) {
+            ObjectHashMap a = aStorage.map;
+            if (a.size() != lenNode.execute(bStorage)) {
+                return false;
+            }
+            int index = 0;
+            try {
+                while (true) {
+                    while (index < a.usedHashes && a.getValue(index) == null) {
+                        index++; // Skip empty slots
+                    }
+                    if (loopProfile.profile(index >= a.usedHashes)) {
+                        // Reached the end, everything was equal so far
+                        return true;
+                    }
+                    Object otherValue = getNode.execute(frame, bStorage, a.getKey(index), a.hashes[index]);
+                    if (earlyExitProfile.profile(!(otherValue == null || !eqNode.execute(frame, otherValue, a.getValue(index))))) {
+                        // if->continue such that the "true" count of the profile represents the
+                        // loop iterations and the "false" count the early exit
+                        continue;
+                    }
+                    return false;
+                }
+            } finally {
+                if (index != 0) {
+                    LoopNode.reportLoopCount(this, index);
+                }
+            }
+        }
+
+        @Specialization(replaces = "doEconomicMapAndOther")
+        boolean doGeneric(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Cached HashingStorageGetItemWithHash getBNode,
+                        @Cached HashingStorageLen lenANode,
+                        @Cached HashingStorageLen lenBNode,
+                        @Cached HashingStorageGetIterator getAIter,
+                        @Cached HashingStorageIteratorNext aIterNext,
+                        @Cached HashingStorageIteratorKey aIterKey,
+                        @Cached HashingStorageIteratorValue aIterValue,
+                        @Cached HashingStorageIteratorKeyHash aIterHash,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
+                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile) {
+            if (lenANode.execute(aStorage) != lenBNode.execute(bStorage)) {
+                return false;
+            }
+            int index = 0;
+            try {
+                HashingStorageIterator aIter = getAIter.execute(aStorage);
+                while (loopProfile.profile(aIterNext.execute(aStorage, aIter))) {
+                    if (CompilerDirectives.hasNextTier()) {
+                        index++;
+                    }
+
+                    Object aKey = aIterKey.execute(aStorage, aIter);
+                    long aHash = aIterHash.execute(aStorage, aIter);
+                    Object bValue = getBNode.execute(frame, bStorage, aKey, aHash);
+                    Object aValue = aIterKey.execute(aStorage, aIter);
+                    if (earlyExitProfile.profile(!(bValue == null || !eqNode.execute(frame, bValue, aValue)))) {
+                        // if->continue such that the "true" count of the profile represents the
+                        // loop iterations and the "false" count the early exit
+                        continue;
+                    }
+                    return false;
+                }
+            } finally {
+                if (index != 0) {
+                    LoopNode.reportLoopCount(this, index);
+                }
+            }
+            return true;
         }
     }
 }

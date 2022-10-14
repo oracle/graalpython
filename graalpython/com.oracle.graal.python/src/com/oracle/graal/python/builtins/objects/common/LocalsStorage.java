@@ -83,7 +83,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(HashingStorageLibrary.class)
 public final class LocalsStorage extends HashingStorage {
     /* This won't be the real (materialized) frame but a clone of it. */
-    protected final MaterializedFrame frame;
+    final MaterializedFrame frame;
     int len = -1;
 
     public LocalsStorage(FrameDescriptor fd) {
@@ -102,7 +102,7 @@ public final class LocalsStorage extends HashingStorage {
         return getValue(this.frame, slot);
     }
 
-    private static Object getValue(MaterializedFrame frame, int slot) {
+    static Object getValue(MaterializedFrame frame, int slot) {
         if (slot >= 0) {
             Object value = frame.getValue(slot);
             if (value instanceof PCell) {
@@ -124,7 +124,7 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @TruffleBoundary
-    private void calculateLength() {
+    void calculateLength() {
         FrameDescriptor fd = this.frame.getFrameDescriptor();
         int size = fd.getNumberOfSlots();
         for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
@@ -143,10 +143,14 @@ public final class LocalsStorage extends HashingStorage {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     static abstract class GetItemNode extends Node {
-        public abstract Object execute(Frame frame, LocalsStorage self, Object key);
+        /**
+         * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
+         * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
+         */
+        public abstract Object execute(Frame frame, LocalsStorage self, Object key, long hash);
 
         @Specialization(guards = {"key == cachedKey", "desc == self.frame.getFrameDescriptor()"}, limit = "3")
-        static Object getItemCached(LocalsStorage self, TruffleString key,
+        static Object getItemCached(LocalsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Cached("key") TruffleString cachedKey,
                         @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
                         @Cached("findSlot(desc, key)") int slot) {
@@ -154,7 +158,7 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "getItemCached")
-        static Object string(LocalsStorage self, TruffleString key) {
+        static Object string(LocalsStorage self, TruffleString key, @SuppressWarnings("unused") long hash) {
             if (!isUserFrameSlot(key)) {
                 return null;
             }
@@ -163,19 +167,18 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static Object pstring(LocalsStorage self, PString key,
+        static Object pstring(LocalsStorage self, PString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached CastToTruffleStringNode castToStringNode) {
-            return string(self, castToStringNode.execute(key));
+            return string(self, castToStringNode.execute(key), -1);
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static Object notString(Frame frame, LocalsStorage self, Object key,
+        static Object notString(Frame frame, LocalsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached PyObjectHashNode hashNode) {
-            CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
-            long hash = hashNode.execute(frame, key);
+            long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
             FrameDescriptor descriptor = self.frame.getFrameDescriptor();
             for (int slot = 0; slot < descriptor.getNumberOfSlots(); slot++) {
                 Object currentKey = descriptor.getSlotName(slot);
