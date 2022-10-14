@@ -270,6 +270,10 @@ public class HashingStorageNodes {
             return execute(null, self, key, null);
         }
 
+        public final HashingStorage execute(HashingStorage self, TruffleString key, boolean[] found) {
+            return execute(null, self, key, found);
+        }
+
         public final HashingStorage execute(Frame frame, HashingStorage self, Object key) {
             return execute(frame, self, key, null);
         }

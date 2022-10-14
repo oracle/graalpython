@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
@@ -84,7 +84,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PThreadLocal)
@@ -316,8 +315,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached("create(T___DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached CallBinaryMethodNode callDelete,
-                        @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Cached HashingStorageDelItem delHashingStorageItem,
                         @Cached CastToTruffleStringNode castKeyToStringNode) {
             // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
@@ -337,10 +335,10 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
             }
-            Object currentValue = getItem.execute(localDict.getDictStorage(), key);
-            if (currentValue != null) {
-                HashingStorage storage = hlib.delItem(localDict.getDictStorage(), key);
-                localDict.setDictStorage(storage);
+            boolean[] found = new boolean[1];
+            HashingStorage newStorage = delHashingStorageItem.execute(localDict.getDictStorage(), key, found);
+            if (found[0]) {
+                localDict.setDictStorage(newStorage);
                 return PNone.NONE;
             }
             if (descr != PNone.NO_VALUE) {
