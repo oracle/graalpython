@@ -95,7 +95,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -185,28 +184,26 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization(guards = "!isNoValue(defaultValue)")
         public Object popDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasKey,
-                        @Cached ConditionProfile hasDefault,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage dictStorage = dict.getDictStorage();
-            Object retVal = getItem.execute(frame, dictStorage, key);
-            if (hasKey.profile(retVal != null)) {
-                HashingStorage newStore = lib.delItemWithFrame(dictStorage, key, hasFrame, frame);
-                if (newStore != dictStorage) {
-                    updatedStorage.enter();
-                    dict.setDictStorage(newStore);
-                }
+                        @Cached ConditionProfile hasKeyProfile,
+                        @Shared("delItem") @Cached HashingStorageDelItem delItem) {
+            Object retVal = delItem.executePop(frame, dict.getDictStorage(), key, dict);
+            if (hasKeyProfile.profile(retVal != null)) {
                 return retVal;
-            } else if (hasDefault.profile(defaultValue != PNone.NO_VALUE)) {
-                return defaultValue;
             } else {
-                throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.S, key);
+                return defaultValue;
             }
+        }
+
+        @Specialization(guards = "isNoValue(defaultValue)")
+        public Object popWithoutDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") PNone defaultValue,
+                        @Shared("delItem") @Cached HashingStorageDelItem delItem) {
+            Object retVal = delItem.executePop(frame, dict.getDictStorage(), key, dict);
+            if (retVal != null) {
+                return retVal;
+            }
+            throw raise(PythonBuiltinClassType.KeyError, ErrorMessages.S, key);
         }
     }
 
@@ -330,23 +327,9 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object run(VirtualFrame frame, PDict self, Object key,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage storage = self.getDictStorage();
-            HashingStorage newStore = null;
-            // TODO: FIXME: this might call __hash__ twice
-            boolean hasKey = getItem.hasKey(frame, storage, key);
-            if (hasKey) {
-                newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
-            }
-
-            if (hasKey) {
-                if (newStore != storage) {
-                    updatedStorage.enter();
-                    self.setDictStorage(newStore);
-                }
+                        @Cached HashingStorageDelItem delItem) {
+            Object found = delItem.executePop(frame, self.getDictStorage(), key, self);
+            if (found != null) {
                 return PNone.NONE;
             }
             throw raise(KeyError, ErrorMessages.S, key);

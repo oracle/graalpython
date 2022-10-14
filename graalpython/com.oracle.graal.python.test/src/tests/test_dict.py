@@ -1157,6 +1157,29 @@ def test_check_ref_identity_before_eq():
     assert d[k] == 'some value'
     assert eq_calls == 1
 
+
+def test_pop_side_effects():
+    class MyKey:
+        def __init__(self):
+            self.hash_calls = 0
+            self.eq_calls = 0
+        def __hash__(self):
+            self.hash_calls += 1
+            return 42
+        def __eq__(self, other):
+            self.eq_calls += 1
+            return True
+
+    key = MyKey()
+    d = {key: 42, 'other_key': 33}
+    assert key.hash_calls == 1
+    assert key.eq_calls == 0
+
+    lookup_key = MyKey()
+    assert d.pop(lookup_key) == 42
+    assert lookup_key.hash_calls == 1
+    assert lookup_key.eq_calls == 0
+
 # TODO: GR-40680
 # def test_iteration_and_del():
 #     def test_iter(get_iterable):
