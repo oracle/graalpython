@@ -67,46 +67,46 @@ public enum OpCodes {
     /**
      * Performs a unary operation specified by the immediate operand. It has to be the ordinal of
      * one of {@link UnaryOps} constants.
-     * 
+     *
      * Pops: operand
-     * 
+     *
      * Pushes: result
      */
     UNARY_OP(1, 1, 1),
     /**
      * Performs a binary operation specified by the immediate operand. It has to be the ordinal of
      * one of {@link BinaryOps} constants.
-     * 
+     *
      * Pops: right operand, then left operand
-     * 
+     *
      * Pushes: result
      */
     BINARY_OP(1, 2, 1),
     /**
      * Performs subscript get operation - {@code a[b]}.
-     * 
+     *
      * Pops: {@code b}, then {@code a}
-     * 
+     *
      * Pushes: result
      */
     BINARY_SUBSCR(0, 2, 1),
     /**
      * Performs subscript set operation - {@code a[b] = c}.
-     * 
+     *
      * Pops: {@code b}, then {@code a}, then {@code c}
      */
     STORE_SUBSCR(0, 3, 0),
     /**
      * Performs subscript delete operation - {@code del a[b]}.
-     * 
+     *
      * Pops: {@code b}, then {@code a}
      */
     DELETE_SUBSCR(0, 2, 0),
     /**
      * Gets an iterator of an object
-     * 
+     *
      * Pops: object
-     * 
+     *
      * Pushes: iterator
      */
     GET_ITER(0, 1, 1),
@@ -142,7 +142,7 @@ public enum OpCodes {
     /**
      * Writes the stack top into a name in locals dict or globals determined by the immediate
      * operand which indexes the names array ({@code co_names}).
-     * 
+     *
      * Pops: object to be written
      */
     STORE_NAME(1, 1, 0),
@@ -156,7 +156,7 @@ public enum OpCodes {
      * indexes the names array ({@code co_names}).
      *
      * Pops: {@code a}
-     * 
+     *
      * Pushes: read attribute
      */
     LOAD_ATTR(1, 1, 1),
@@ -202,7 +202,7 @@ public enum OpCodes {
     DELETE_GLOBAL(1, 0, 0),
     /**
      * Reads a constant object from constants array ({@code co_consts}). Performs no conversion.
-     * 
+     *
      * Pushes: read constant
      */
     LOAD_CONST(1, 0, 1),
@@ -264,7 +264,7 @@ public enum OpCodes {
      * {@code a:b}. It pops {@code b}, then {@code a}. If the immediate argument is 3, it is
      * equivalent to a slice {@code a:b:c}. It pops {@code c}, then {@code b}, then {@code a}. Other
      * immediate operand values are illegal.
-     * 
+     *
      * Pushes: the created slice object
      */
     BUILD_SLICE(1, (oparg, followingArgs, withJump) -> oparg, 1),
@@ -288,18 +288,18 @@ public enum OpCodes {
     /**
      * Imports a module by name determined by the immediate operand which indexes the names array
      * ({@code co_names}).
-     * 
+     *
      * Pops: fromlist (must be {@code String[]}), then level (must be {@code int})
-     * 
+     *
      * Pushes: imported module
      */
     IMPORT_NAME(1, 2, 1),
     /**
      * Imports a name from a module. The name determined by the immediate operand which indexes the
      * names array ({@code co_names}).
-     * 
+     *
      * Pops: module object
-     * 
+     *
      * Pushes: module object, imported object
      */
     IMPORT_FROM(1, 1, 2),
@@ -307,7 +307,7 @@ public enum OpCodes {
      * Imports all names from a module of name determined by the immediate operand which indexes the
      * names array ({@code co_names}). The imported names are written to locals dict (can only be
      * invoked on module level).
-     * 
+     *
      * Pops: level (must be {@code int})
      */
     IMPORT_STAR(1, 1, 0),
@@ -377,7 +377,7 @@ public enum OpCodes {
      * the names array ({@code co_names}).
      *
      * Pops: args ({@code Object[]} of size >= 1)
-     * 
+     *
      * Pushes: call result
      */
     CALL_METHOD_VARARGS(1, 1, 1),
@@ -414,7 +414,7 @@ public enum OpCodes {
      * Calls a callable using an arguments array and keywords array.
      *
      * Pops: keyword args ({@code PKeyword[]}), then args ({@code Object[]}), then callable
-     * 
+     *
      * Pushes: call result
      */
     CALL_FUNCTION_KW(0, 3, 1),
@@ -430,9 +430,9 @@ public enum OpCodes {
     // destructuring bytecodes
     /**
      * Unpacks an iterable into multiple stack items.
-     * 
+     *
      * Pops: iterable
-     * 
+     *
      * Pushed: unpacked items, the count is determined by the immediate operand
      */
     UNPACK_SEQUENCE(1, 1, (oparg, followingArgs, withJump) -> oparg),
@@ -469,7 +469,7 @@ public enum OpCodes {
     /**
      * Jump forward by the offset in the immediate operand if the top of the stack is false (in
      * Python sense).
-     * 
+     *
      * Pops (if not jumping): top of the stack
      */
     JUMP_IF_FALSE_OR_POP(3, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
@@ -498,26 +498,26 @@ public enum OpCodes {
     // making callables
     /**
      * Like {@link #LOAD_DEREF}, but loads the cell itself, not the contents.
-     * 
+     *
      * Pushes: the cell object
      */
     LOAD_CLOSURE(1, 0, 1),
     /**
      * Reduces multiple stack items into an array of cell objects.
-     * 
+     *
      * Pops: multiple cells (count = immediate argument)
-     * 
+     *
      * Pushes: cell object array ({@code PCell[]})
      */
     CLOSURE_FROM_STACK(1, (oparg, followingArgs, withJump) -> oparg, 1),
     /**
      * Creates a function object. The first immediate argument is an index to the constants array
      * that determines the {@link CodeUnit} object that will provide the function's code.
-     * 
+     *
      * Pops: The second immediate arguments contains flags (defined in {@link CodeUnit}) that
      * determine whether it will need to pop (in this order): closure, annotations, keyword only
      * defaults, defaults.
-     * 
+     *
      * Pushes: created function
      */
     MAKE_FUNCTION(2, (oparg, followingArgs, withJump) -> Integer.bitCount(followingArgs[0]), 1),
@@ -535,16 +535,16 @@ public enum OpCodes {
     /**
      * Add multiple elements from the stack to the collection below them. Collection type is
      * determined by {@link CollectionBits} in immediate operand. Tuple is not supported.
-     * 
+     *
      * Pops: items to be added (count = immediate argument)
      */
     COLLECTION_ADD_STACK(1, (oparg, followingArgs, withJump) -> CollectionBits.elementCount(oparg) + 1, 1),
     /**
      * Concatenates two collection of the same type. Collection type is determined by
      * {@link CollectionBits} in immediate operand. Tuple is not supported.
-     * 
+     *
      * Pops: second collection, first collection
-     * 
+     *
      * Pushes: concatenated collection
      */
     COLLECTION_ADD_COLLECTION(1, 2, 1),
@@ -552,9 +552,9 @@ public enum OpCodes {
      * Converts collection to another type determined by {@link CollectionBits} in immediate
      * operand. The converted collection is expected to be an independent copy (they don't share
      * storage).
-     * 
+     *
      * Pops: original collection
-     * 
+     *
      * Pushes: converted collection
      */
     COLLECTION_FROM_COLLECTION(1, 1, 1),
@@ -567,9 +567,17 @@ public enum OpCodes {
      */
     TUPLE_FROM_LIST(0, 1, 1),
     /**
+     * Converts list to frozenset.
+     *
+     * Pops: list
+     *
+     * Pushes: frozenset
+     */
+    FROZENSET_FROM_LIST(0, 1, 1),
+    /**
      * Adds an item to a collection that is multiple items deep under the top of the stack,
      * determined by the immediate argument.
-     * 
+     *
      * Pops: item to be added
      */
     ADD_TO_COLLECTION(1, (oparg, followingArgs, withJump) -> CollectionBits.collectionKind(oparg) == CollectionBits.KIND_DICT ? 2 : 1, 0),
@@ -582,9 +590,9 @@ public enum OpCodes {
     /**
      * Create a single {@link PKeyword} object. The name is determined by the immediate operand
      * which indexes the names array ({@code co_names})
-     * 
+     *
      * Pops: keyword value
-     * 
+     *
      * Pushes: keyword object
      */
     MAKE_KEYWORD(1, 1, 1),
@@ -593,9 +601,9 @@ public enum OpCodes {
     /**
      * Jump forward by the offset in the immediate argument if the exception doesn't match the
      * expected type. The exception object is {@link PException}, not a python exception.
-     * 
+     *
      * Pops: expected type, then exception
-     * 
+     *
      * Pushes (if jumping): the exception
      */
     MATCH_EXC_OR_JUMP(3, 2, 1),
@@ -603,28 +611,28 @@ public enum OpCodes {
      * Save the current exception state on the stack and set it to the exception on the stack. The
      * exception object is {@link PException}, not a python exception. The exception is pushed back
      * to the top.
-     * 
+     *
      * Pops: the exception
-     * 
+     *
      * Pushes: the saved exception state, the exception
      */
     PUSH_EXC_INFO(0, 0, 1),
     /**
      * Sets the current exception state to the saved state (by {@link #PUSH_EXC_INFO}) on the stack
      * and pop it.
-     * 
+     *
      * Pops: save exception state
      */
     POP_EXCEPT(0, 1, 0),
     /**
      * Restore exception state and reraise exception.
-     * 
+     *
      * Pops: exception to reraise, then saved exception state
      */
     END_EXC_HANDLER(0, 2, 0),
     /**
      * Gets the python-level exception object from a {@link PException}.
-     * 
+     *
      * Pops: a {@link PException} Pushes: python exception
      */
     UNWRAP_EXC(0, 1, 1),
@@ -633,24 +641,24 @@ public enum OpCodes {
     /**
      * Yield value from the stack to the caller. Saves execution state. The generator will resume at
      * the next instruction.
-     * 
+     *
      * Pops: yielded value
      */
     YIELD_VALUE(0, 1, 0),
     /**
      * Resume after yield. Will raise exception passed by {@code throw} if any.
-     * 
+     *
      * Pushes: value received from {@code send} or {@code None}.
      */
     RESUME_YIELD(0, 0, 1),
     /**
      * Send value into a generator. Jumps forward by the offset in the immediate argument if the
      * generator is exhausted. Used to implement {@code yield from}.
-     * 
+     *
      * Pops: value to be sent, then generator
-     * 
+     *
      * Pushes (if not jumping): the generator, then the yielded value
-     * 
+     *
      * Pushes (if jumping): the generator return value
      */
     SEND(1, 2, (oparg, followingArgs, withJump) -> withJump ? 1 : 2),
@@ -668,16 +676,16 @@ public enum OpCodes {
     // with statements
     /**
      * Enter a context manager and save data for its exit.
-     * 
+     *
      * Pops: the context manager
-     * 
+     *
      * Pushes: the context manager, then maybe-bound {@code __exit__}, then the result of
      * {@code __enter__}
      */
     SETUP_WITH(0, 1, 3),
     /**
      * Run the exit handler of a context manager and reraise if necessary.
-     * 
+     *
      * Pops: exception or {@code None}, then maybe-bound {@code __exit__}, then the context manager
      */
     EXIT_WITH(0, 3, 0),

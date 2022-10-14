@@ -67,6 +67,7 @@ import static com.oracle.graal.python.compiler.OpCodes.END_EXC_HANDLER;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_WITH;
 import static com.oracle.graal.python.compiler.OpCodes.FORMAT_VALUE;
 import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
+import static com.oracle.graal.python.compiler.OpCodes.FROZENSET_FROM_LIST;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_FROM;
@@ -1248,7 +1249,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 return addOp(TUPLE_FROM_LIST);
             case FROZENSET:
                 addConstantList(value.getFrozensetElements());
-                return addOp(TUPLE_FROM_LIST);
+                return addOp(FROZENSET_FROM_LIST);
             default:
                 throw new IllegalStateException("Unknown constant kind " + value.kind);
         }
