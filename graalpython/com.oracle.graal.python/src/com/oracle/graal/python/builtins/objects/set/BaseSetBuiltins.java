@@ -61,7 +61,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -74,6 +73,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -197,17 +200,22 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         public Object reduce(VirtualFrame frame, PBaseSet self,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached HashingStorageIteratorKey getIterKey,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookup) {
             HashingStorage storage = self.getDictStorage();
-            int len = lib.length(storage);
-            Iterator<Object> keys = lib.keys(storage).iterator();
+            int len = lenNode.execute(storage);
             Object[] keysArray = new Object[len];
+            HashingStorageIterator it = getIter.execute(storage);
             for (int i = 0; i < len; i++) {
-                keysArray[i] = keys.next();
+                boolean hasNext = iterNext.execute(storage, it);
+                assert hasNext;
+                keysArray[i] = getIterKey.execute(storage, it);
             }
             PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
             Object dict = lookup.execute(frame, self, T___DICT__);
