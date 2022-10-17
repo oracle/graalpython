@@ -468,14 +468,14 @@ public class Compiler implements SSTreeVisitor<Void> {
          * 2^16 conditionals it most likely wouldn't compile anyway, so there's not much harm if
          * there's some false sharing of profiles.
          */
-        byte[] follwingArgs = new byte[2];
-        ByteArraySupport.littleEndian().putShort(follwingArgs, 0, (short) profileIndex);
-        addOp(code, target, follwingArgs);
+        byte[] followingArgs = new byte[2];
+        ByteArraySupport.littleEndian().putShort(followingArgs, 0, (short) profileIndex);
+        addOp(code, target, followingArgs);
     }
 
-    private void addOp(OpCodes code, Block target, byte[] follwingArgs) {
+    private void addOp(OpCodes code, Block target, byte[] followingArgs) {
         Block b = unit.currentBlock;
-        Instruction insn = new Instruction(code, 0, follwingArgs, target, unit.currentLocation);
+        Instruction insn = new Instruction(code, 0, followingArgs, target, unit.currentLocation);
         b.instr.add(insn);
         pushOp(insn);
     }
