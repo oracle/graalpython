@@ -82,6 +82,10 @@ public class EconomicMapStorage extends HashingStorage {
         return new EconomicMapStorage();
     }
 
+    public static EconomicMapStorage createWithSideEffects() {
+        return new EconomicMapStorage(4, true);
+    }
+
     public static EconomicMapStorage create(int initialCapacity) {
         return new EconomicMapStorage(initialCapacity, false);
     }

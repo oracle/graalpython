@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
@@ -98,6 +99,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -614,51 +616,51 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
 
-        protected static HashingStorage xor(HashingStorageLibrary lib, HashingStorage left, HashingStorage right) {
-            return lib.xor(left, right);
-        }
-
-        @Specialization(limit = "1")
-        PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
-        }
-
-        @Specialization(limit = "1")
-        PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
-        }
-
-        @Specialization(limit = "1")
-        PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
-                        @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+        protected static HashingStorage xor(VirtualFrame frame, HashingStorageXor xorNode, HashingStorage left, HashingStorage right) {
+            return xorNode.execute(frame, left, right);
         }
 
         @Specialization
-        PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached SetNodes.ConstructSetNode constructSetNode) {
+        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
+            return factory().createSet(xor(frame, xorNode, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
+        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
+            return factory().createSet(xor(frame, xorNode, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
+        }
+
+        @Specialization
+        PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
+                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
+            return factory().createSet(xor(frame, xorNode, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+        }
+
+        @Specialization
+        PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode,
+                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
-            return factory().createSet(xor(lib, selfSet.getDictStorage(), other.getDictStorage()));
+            return factory().createSet(xor(frame, xorNode, selfSet.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached SetNodes.ConstructSetNode constructSetNode) {
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode,
+                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            return factory().createSet(xor(lib, selfSet.getDictStorage(), otherSet.getDictStorage()));
+            return factory().createSet(xor(frame, xorNode, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, Object other,
-                        @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return factory().createSet(xor(lib, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Shared("constructSet") @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared("xorNode") @Cached HashingStorageXor xorNode) {
+            return factory().createSet(xor(frame, xorNode, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
     }
 

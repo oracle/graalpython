@@ -225,6 +225,11 @@ public final class ObjectHashMap {
         allocateData(INITIAL_INDICES_SIZE);
     }
 
+    public ObjectHashMap(boolean hasSideEffects) {
+        allocateData(INITIAL_INDICES_SIZE);
+        this.hasSideEffectingKeys = hasSideEffects;
+    }
+
     private void allocateData(int newSize) {
         assert isPow2(newSize);
         indices = new int[newSize];

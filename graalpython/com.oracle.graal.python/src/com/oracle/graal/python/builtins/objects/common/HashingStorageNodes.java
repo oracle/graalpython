@@ -46,6 +46,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXorCallback.Acc;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -525,10 +527,12 @@ public class HashingStorageNodes {
         static boolean dom(DynamicObjectStorage self, HashingStorageIterator it) {
             it.index++;
             while (it.index < it.domKeys.length) {
-                Object val = it.dylib.getOrDefault(self.store, it.domKeys[it.index], PNone.NO_VALUE);
-                if (val == PNone.NO_VALUE) {
-                    it.currentValue = val;
-                    return true;
+                if (it.domKeys[it.index] instanceof TruffleString) {
+                    Object val = it.dylib.getOrDefault(self.store, it.domKeys[it.index], PNone.NO_VALUE);
+                    if (val != PNone.NO_VALUE) {
+                        it.currentValue = val;
+                        return true;
+                    }
                 }
                 it.index++;
             }
@@ -554,6 +558,8 @@ public class HashingStorageNodes {
                 it.index++;
                 Object identifier = fd.getSlotName(it.index);
                 if (isUserFrameSlot(identifier)) {
+                    // Update the code in HashingStorageIteratorKey if this assumption changes:
+                    assert identifier instanceof TruffleString;
                     return true;
                 }
             }
@@ -604,8 +610,8 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static Object dom(DynamicObjectStorage self, HashingStorageIterator it) {
-            return it.domKeys[it.index];
+        static TruffleString dom(DynamicObjectStorage self, HashingStorageIterator it) {
+            return (TruffleString) it.domKeys[it.index];
         }
 
         @Specialization
@@ -620,8 +626,8 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static Object locals(LocalsStorage self, HashingStorageIterator it) {
-            return self.frame.getFrameDescriptor().getSlotName(it.index);
+        static TruffleString locals(LocalsStorage self, HashingStorageIterator it) {
+            return (TruffleString) self.frame.getFrameDescriptor().getSlotName(it.index);
         }
     }
 
@@ -636,9 +642,9 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static long dom(DynamicObjectStorage self, HashingStorageIterator it,
-                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, it.domKeys[it.index]);
+        static long dom(@SuppressWarnings("unused") DynamicObjectStorage self, HashingStorageIterator it,
+                        @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
+            return PyObjectHashNode.hash((TruffleString) it.domKeys[it.index], hashNode);
         }
 
         @Specialization
@@ -649,14 +655,14 @@ public class HashingStorageNodes {
 
         @Specialization
         static long keywords(KeywordsStorage self, HashingStorageIterator it,
-                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, self.keywords[it.index].getName());
+                        @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
+            return PyObjectHashNode.hash(self.keywords[it.index].getName(), hashNode);
         }
 
         @Specialization
         static long locals(LocalsStorage self, HashingStorageIterator it,
-                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
-            return hashNode.execute(null, self.frame.getFrameDescriptor().getSlotName(it.index));
+                        @Shared("hash") @Cached TruffleString.HashCodeNode hashNode) {
+            return PyObjectHashNode.hash((TruffleString) self.frame.getFrameDescriptor().getSlotName(it.index), hashNode);
         }
     }
 
@@ -666,43 +672,7 @@ public class HashingStorageNodes {
         public abstract boolean execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization
-        boolean doEconomicMapAndOther(Frame frame, EconomicMapStorage aStorage, HashingStorage bStorage,
-                        @Cached HashingStorageGetItemWithHash getNode,
-                        @Cached HashingStorageLen lenNode,
-                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile) {
-            ObjectHashMap a = aStorage.map;
-            if (a.size() != lenNode.execute(bStorage)) {
-                return false;
-            }
-            int index = 0;
-            try {
-                while (true) {
-                    while (index < a.usedHashes && a.getValue(index) == null) {
-                        index++; // Skip empty slots
-                    }
-                    if (loopProfile.profile(index >= a.usedHashes)) {
-                        // Reached the end, everything was equal so far
-                        return true;
-                    }
-                    Object otherValue = getNode.execute(frame, bStorage, a.getKey(index), a.hashes[index]);
-                    if (earlyExitProfile.profile(!(otherValue == null || !eqNode.execute(frame, otherValue, a.getValue(index))))) {
-                        // if->continue such that the "true" count of the profile represents the
-                        // loop iterations and the "false" count the early exit
-                        continue;
-                    }
-                    return false;
-                }
-            } finally {
-                if (index != 0) {
-                    LoopNode.reportLoopCount(this, index);
-                }
-            }
-        }
-
-        @Specialization(replaces = "doEconomicMapAndOther")
-        boolean doGeneric(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+        boolean doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
                         @Cached HashingStorageGetItemWithHash getBNode,
                         @Cached HashingStorageLen lenANode,
                         @Cached HashingStorageLen lenBNode,
@@ -711,9 +681,9 @@ public class HashingStorageNodes {
                         @Cached HashingStorageIteratorKey aIterKey,
                         @Cached HashingStorageIteratorValue aIterValue,
                         @Cached HashingStorageIteratorKeyHash aIterHash,
-                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached LoopConditionProfile earlyExitProfile) {
             if (lenANode.execute(aStorage) != lenBNode.execute(bStorage)) {
                 return false;
             }
@@ -728,7 +698,7 @@ public class HashingStorageNodes {
                     Object aKey = aIterKey.execute(aStorage, aIter);
                     long aHash = aIterHash.execute(aStorage, aIter);
                     Object bValue = getBNode.execute(frame, bStorage, aKey, aHash);
-                    Object aValue = aIterKey.execute(aStorage, aIter);
+                    Object aValue = aIterValue.execute(aStorage, aIter);
                     if (earlyExitProfile.profile(!(bValue == null || !eqNode.execute(frame, bValue, aValue)))) {
                         // if->continue such that the "true" count of the profile represents the
                         // loop iterations and the "false" count the early exit
@@ -742,6 +712,115 @@ public class HashingStorageNodes {
                 }
             }
             return true;
+        }
+    }
+
+    public static final class HashingStorageForEachExitException extends ControlFlowException {
+        private static final long serialVersionUID = -5855878615632623699L;
+        static final HashingStorageForEachExitException INSTANCE = new HashingStorageForEachExitException();
+    }
+
+    public abstract static class HashingStorageForEachCallback<T> extends Node {
+        public abstract T execute(Frame frame, HashingStorage storage, HashingStorageIterator it, T accumulator);
+    }
+
+    public abstract static class HashingStorageInjectInto extends HashingStorageForEachCallback<HashingStorage[]> {
+        public abstract HashingStorage[] execute(Frame frame, HashingStorage storage, HashingStorageIterator it, HashingStorage[] accumulator);
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageForEach extends Node {
+        @SuppressWarnings("unchecked")
+        public final <T> T execute(Frame frame, HashingStorage storage, HashingStorageForEachCallback<T> callback, T accumulator) {
+            CompilerAsserts.partialEvaluationConstant(callback);
+            return (T) executeUntyped(frame, storage, (HashingStorageForEachCallback<Object>) callback, accumulator);
+        }
+
+        abstract Object executeUntyped(Frame frame, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulator);
+
+        @Specialization
+        Object doIt(Frame frame, HashingStorage storage, HashingStorageForEachCallback<Object> callback, Object accumulatorIn,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached LoopConditionProfile loopProfile) {
+            int index = 0;
+            Object accumulator = accumulatorIn;
+            try {
+                HashingStorageIterator aIter = getIter.execute(storage);
+                while (loopProfile.profile(iterNext.execute(storage, aIter))) {
+                    if (CompilerDirectives.hasNextTier()) {
+                        index++;
+                    }
+                    accumulator = callback.execute(frame, storage, aIter, accumulator);
+                }
+            } catch (HashingStorageForEachExitException ex) {
+                return accumulator;
+            } finally {
+                if (index != 0) {
+                    LoopNode.reportLoopCount(this, index);
+                }
+            }
+            return accumulator;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageXorCallback extends HashingStorageForEachCallback<HashingStorageXorCallback.Acc> {
+
+        @ValueType
+        public static final class Acc {
+            final ObjectHashMap result;
+            final HashingStorage other;
+
+            public Acc(ObjectHashMap result, HashingStorage other) {
+                this.result = result;
+                this.other = other;
+            }
+        }
+
+        @Override
+        public abstract Acc execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Acc accumulator);
+
+        @Specialization
+        Acc doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, Acc acc,
+                        @Cached ObjectHashMap.PutNode putResultNode,
+                        @Cached HashingStorageGetItemWithHash getFromResultNode,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue,
+                        @Cached HashingStorageIteratorKeyHash iterHash) {
+            Object key = iterKey.execute(storage, it);
+            long hash = iterHash.execute(storage, it);
+            Object otherValue = getFromResultNode.execute(frame, acc.other, key, hash);
+            if (otherValue == null) {
+                putResultNode.put(frame, acc.result, key, hash, iterValue.execute(storage, it));
+            }
+            return acc;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageXor extends Node {
+        public abstract HashingStorage execute(Frame frame, HashingStorage a, HashingStorage b);
+
+        @Specialization
+        HashingStorage doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Cached HashingStorageForEach forEachA,
+                        @Cached HashingStorageForEach forEachB,
+                        @Cached HashingStorageXorCallback callbackA,
+                        @Cached HashingStorageXorCallback callbackB) {
+            final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
+            ObjectHashMap resultMap = result.map;
+
+            HashingStorageXorCallback.Acc accA = new Acc(resultMap, bStorage);
+            forEachA.execute(frame, aStorage, callbackA, accA);
+
+            HashingStorageXorCallback.Acc accB = new Acc(resultMap, aStorage);
+            forEachB.execute(frame, bStorage, callbackB, accB);
+
+            return result;
         }
     }
 }
