@@ -33,6 +33,8 @@
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_mul
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_none_arguments
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_partition
+*graalpython.lib-python.3.test.test_userstring.UserStringTest.test_removeprefix
+*graalpython.lib-python.3.test.test_userstring.UserStringTest.test_removesuffix
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_replace
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_replace_overflow
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_rfind
