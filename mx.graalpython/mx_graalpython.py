@@ -1613,7 +1613,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
     ],
-    priority=5,
+    priority=6,  # Higher than 'GraalVM Python' to help defining the main
     stability="experimental",
 ))
 
