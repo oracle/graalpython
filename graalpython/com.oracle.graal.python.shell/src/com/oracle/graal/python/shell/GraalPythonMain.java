@@ -711,6 +711,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static String toAbsolutePath(String executable) {
+        if (executable.contains(":")) {
+            // this is either already an absolute windows path, or not a single executable
+            return executable;
+        }
         return Paths.get(executable).toAbsolutePath().toString();
     }
 
