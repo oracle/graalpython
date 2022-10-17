@@ -1301,6 +1301,11 @@ public abstract class CExtNodes {
             return materializedFloat;
         }
 
+        @Specialization(guards = "isMaterialized(object)")
+        static Object doMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+            return object.getDelegate();
+        }
+
         @Specialization(guards = "!isPrimitiveNativeWrapper(object)")
         static Object doNativeWrapperGeneric(PythonNativeWrapper object) {
             return object.getDelegate();
