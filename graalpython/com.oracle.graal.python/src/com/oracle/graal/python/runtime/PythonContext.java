@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
@@ -1285,7 +1286,15 @@ public final class PythonContext extends Python3Core {
             try {
                 secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
             } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+                if (getPythonOS() == PLATFORM_WIN32) {
+                    try {
+                        secureRandom = SecureRandom.getInstanceStrong();
+                    } catch (NoSuchAlgorithmException e2) {
+                        throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e2);
+                    }
+                } else {
+                    throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+                }
             }
         }
         return secureRandom;
