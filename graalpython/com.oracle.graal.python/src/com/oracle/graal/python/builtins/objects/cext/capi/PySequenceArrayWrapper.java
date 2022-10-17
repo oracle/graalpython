@@ -372,9 +372,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void toNative(
-                    @Exclusive @Cached ToNativeArrayNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
+                    @Exclusive @Cached ToNativeArrayNode toPyObjectNode) {
         if (!isNative()) {
             setNativePointer(toPyObjectNode.execute(this));
         }

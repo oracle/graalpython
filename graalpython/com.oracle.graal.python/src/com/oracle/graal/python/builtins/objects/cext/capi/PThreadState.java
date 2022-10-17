@@ -496,9 +496,7 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
-                    @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
+                    @Exclusive @Cached ToPyObjectNode toPyObjectNode) {
         if (!isNative()) {
             setNativePointer(toPyObjectNode.execute(this));
         }

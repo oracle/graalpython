@@ -96,9 +96,7 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         void toNative(
-                        @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
+                        @Cached ToPyObjectNode toPyObjectNode) {
             if (!isNative()) {
                 setNativePointer(toPyObjectNode.execute(this));
             }

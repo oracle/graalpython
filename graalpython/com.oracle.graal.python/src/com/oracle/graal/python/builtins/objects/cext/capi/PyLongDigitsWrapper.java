@@ -201,14 +201,12 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public void toNative(
-                    @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                     @Cached PCallCapiFunction callToNativeNode,
                     @CachedLibrary(limit = "2") InteropLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            invalidateNode.execute();
             if (!isNative()) {
                 Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(obSizeNode, gil));
                 setNativePointer(coerceToLong(ptr, lib));

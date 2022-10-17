@@ -614,7 +614,6 @@ public final class PythonContext extends Python3Core {
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
-    private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -2089,10 +2088,6 @@ public final class PythonContext extends Python3Core {
 
     public static Assumption getSingleNativeContextAssumption() {
         return singleNativeContext;
-    }
-
-    public final Assumption getNativeObjectsAllManagedAssumption() {
-        return nativeObjectsAllManagedAssumption;
     }
 
     public boolean isExecutableAccessAllowed() {

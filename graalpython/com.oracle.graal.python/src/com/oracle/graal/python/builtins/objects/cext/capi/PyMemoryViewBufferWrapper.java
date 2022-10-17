@@ -290,9 +290,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
-                    @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
+                    @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode) {
         if (!isNative()) {
             setNativePointer(toPyObjectNode.execute(this));
         }

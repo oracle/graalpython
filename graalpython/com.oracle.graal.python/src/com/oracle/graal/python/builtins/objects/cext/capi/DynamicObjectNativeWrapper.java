@@ -1741,9 +1741,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization
         static void doPythonNativeWrapper(PythonNativeWrapper obj,
-                        @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
+                        @Cached ToPyObjectNode toPyObjectNode) {
             if (!obj.isNative()) {
                 obj.setNativePointer(toPyObjectNode.execute(obj));
             }

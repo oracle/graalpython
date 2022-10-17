@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -253,14 +252,12 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         void toNative(
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             if (!PythonContext.get(switchEncodingNode).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            invalidateNode.execute();
             if (!isNative()) {
                 setNativePointer(stringToNativeUtf8Bytes(getString(), switchEncodingNode, copyToByteArrayNode));
             }
@@ -336,13 +333,11 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        void toNative(
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            if (!PythonContext.get(invalidateNode).isNativeAccessAllowed()) {
+        void toNative() {
+            if (!PythonContext.get(null).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            invalidateNode.execute();
             if (!isNative()) {
                 setNativePointer(byteArrayToNativeInt8(getByteArray(), true));
             }
@@ -399,13 +394,11 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        void toNative(
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            if (!PythonContext.get(invalidateNode).isNativeAccessAllowed()) {
+        void toNative() {
+            if (!PythonContext.get(null).isNativeAccessAllowed()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            invalidateNode.execute();
             if (!isNative()) {
                 setNativePointer(intArrayToNativeInt32(getIntArray()));
             }

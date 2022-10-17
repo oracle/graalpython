@@ -157,14 +157,12 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
      */
     @ExportMessage
     void toNative(
-                    @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                     @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
         if (!PythonContext.get(toNewRefNode).isNativeAccessAllowed()) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
         }
-        invalidateNode.execute();
         if (!isNative()) {
             Object[] data = getObjectArray();
             long ptr = allocateBoundary((long) wrappers.length * Long.BYTES);

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -173,10 +172,8 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         void toNative(
-                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @CachedLibrary(limit = "1") InteropLibrary delegateLib,
                         @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
-            invalidateNode.execute();
             if (!isPointer()) {
                 for (int i = 0; i < delegate.length; i++) {
                     Object element = delegate[i];
