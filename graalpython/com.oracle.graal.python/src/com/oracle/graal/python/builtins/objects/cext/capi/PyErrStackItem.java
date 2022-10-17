@@ -138,7 +138,7 @@ public final class PyErrStackItem extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage

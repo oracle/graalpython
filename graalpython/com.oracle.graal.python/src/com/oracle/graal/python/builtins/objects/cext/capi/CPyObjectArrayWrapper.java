@@ -100,7 +100,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage
@@ -193,7 +193,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-            freeBoundary(getPrimitiveNativePointer());
+            freeBoundary(getNativePointer());
         }
     }
 }

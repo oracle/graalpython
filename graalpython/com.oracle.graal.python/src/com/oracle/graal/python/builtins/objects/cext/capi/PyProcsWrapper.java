@@ -117,7 +117,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage

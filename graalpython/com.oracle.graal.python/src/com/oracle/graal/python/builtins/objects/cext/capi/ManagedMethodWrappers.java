@@ -82,7 +82,7 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public long asPointer() {
-            return getPrimitiveNativePointer();
+            return getNativePointer();
         }
 
         @ExportMessage

@@ -96,7 +96,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         this.delegate = delegate;
     }
 
-    public final long getPrimitiveNativePointer() {
+    public final long getNativePointer() {
         return nativePointer;
     }
 

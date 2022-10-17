@@ -91,7 +91,7 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         long asPointer() {
-            return getPrimitiveNativePointer();
+            return getNativePointer();
         }
 
         @ExportMessage

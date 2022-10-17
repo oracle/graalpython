@@ -171,12 +171,12 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         long asPointer() {
-            return getPrimitiveNativePointer();
+            return getNativePointer();
         }
 
         public void free() {
             if (isNative()) {
-                freeBoundary(getPrimitiveNativePointer());
+                freeBoundary(getNativePointer());
             }
         }
     }

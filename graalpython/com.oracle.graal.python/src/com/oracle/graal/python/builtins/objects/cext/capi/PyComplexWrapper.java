@@ -114,7 +114,7 @@ public final class PyComplexWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage

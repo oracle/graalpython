@@ -466,7 +466,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage

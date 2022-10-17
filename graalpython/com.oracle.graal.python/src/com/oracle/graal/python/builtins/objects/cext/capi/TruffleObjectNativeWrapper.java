@@ -177,7 +177,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage

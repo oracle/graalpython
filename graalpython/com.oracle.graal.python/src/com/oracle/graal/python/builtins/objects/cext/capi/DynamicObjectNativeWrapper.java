@@ -1760,18 +1760,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached MaterializeDelegateNode materializeNode) {
             // special case for True and False singletons
             PInt boxed = (PInt) materializeNode.execute(obj);
-            assert obj.getPrimitiveNativePointer() == boxed.getNativeWrapper().getPrimitiveNativePointer();
-            return obj.getPrimitiveNativePointer();
+            assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
+            return obj.getNativePointer();
         }
 
         @Specialization(guards = {"obj.isBool()", "obj.isNative()"})
         long doBoolNative(PrimitiveNativeWrapper obj) {
-            return obj.getPrimitiveNativePointer();
+            return obj.getNativePointer();
         }
 
         @Specialization(guards = "!isBoolNativeWrapper(obj)")
         long doFast(PythonNativeWrapper obj) {
-            return obj.getPrimitiveNativePointer();
+            return obj.getNativePointer();
         }
 
         protected static boolean isBoolNativeWrapper(Object obj) {
@@ -1992,7 +1992,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // reason for this is to avoid native pointer sharing. Handles are shared if the
                 // objects are equal but in this case we must not share because otherwise we would
                 // mess up the reference counts.
-                return getPrimitiveNativePointer() == other.getPrimitiveNativePointer();
+                return getNativePointer() == other.getNativePointer();
             }
             return false;
         }
@@ -2178,7 +2178,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                      * objects are equal but in this case we must not share because otherwise we
                      * would mess up the reference counts.
                      */
-                    return TriState.valueOf(this.getPrimitiveNativePointer() == other.getPrimitiveNativePointer());
+                    return TriState.valueOf(this.getNativePointer() == other.getNativePointer());
                 }
                 return TriState.FALSE;
             } else {
@@ -2194,13 +2194,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @Cached MaterializeDelegateNode materializeNode) {
                 // special case for True and False singletons
                 PInt boxed = (PInt) materializeNode.execute(obj);
-                assert obj.getPrimitiveNativePointer() == boxed.getNativeWrapper().getPrimitiveNativePointer();
-                return obj.getPrimitiveNativePointer();
+                assert obj.getNativePointer() == boxed.getNativeWrapper().getNativePointer();
+                return obj.getNativePointer();
             }
 
             @Specialization(guards = {"!obj.isBool() || obj.isNative()"})
             static long doBoolNative(PrimitiveNativeWrapper obj) {
-                return obj.getPrimitiveNativePointer();
+                return obj.getNativePointer();
             }
         }
     }
@@ -2212,7 +2212,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected long asPointer() {
-        return getDelegate() == PNone.NO_VALUE ? 0L : getPrimitiveNativePointer();
+        return getDelegate() == PNone.NO_VALUE ? 0L : getNativePointer();
     }
 
     @ExportMessage

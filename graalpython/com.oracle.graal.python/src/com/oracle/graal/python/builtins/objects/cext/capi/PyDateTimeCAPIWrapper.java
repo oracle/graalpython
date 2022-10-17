@@ -435,7 +435,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer() {
-        return getPrimitiveNativePointer();
+        return getNativePointer();
     }
 
     @ExportMessage

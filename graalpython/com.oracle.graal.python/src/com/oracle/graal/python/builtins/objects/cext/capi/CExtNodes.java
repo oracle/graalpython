@@ -1241,7 +1241,7 @@ public abstract class CExtNodes {
             // If the singleton already has a native wrapper, we may need to update the pointer
             // of wrapper 'object' since the native could code see the same pointer.
             if (materializedInt.getNativeWrapper() != null) {
-                object.setNativePointer(materializedInt.getNativeWrapper().getPrimitiveNativePointer());
+                object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());
             } else {
                 materializedInt.setNativeWrapper(object);
             }
@@ -1294,7 +1294,7 @@ public abstract class CExtNodes {
             // pointer
             // of wrapper 'object' since the native code should see the same pointer.
             if (materializedFloat.getNativeWrapper() != null) {
-                object.setNativePointer(materializedFloat.getNativeWrapper().getPrimitiveNativePointer());
+                object.setNativePointer(materializedFloat.getNativeWrapper().getNativePointer());
             } else {
                 materializedFloat.setNativeWrapper(object);
             }
