@@ -143,6 +143,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -169,6 +170,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -1673,9 +1675,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                  * error.
                  */
                 converted = new Object[]{selfToJava.execute(arguments[0])};
+            } else if (function instanceof PBuiltinFunction && CExtContext.isMethVarargs(((PBuiltinFunction) function).getFlags()) && arguments.length == 2) {
+                converted = allToJavaNode.execute(arguments);
+                assert converted[1] instanceof PTuple;
+                SequenceStorage argsStorage = ((PTuple) converted[1]).getSequenceStorage();
+                Object[] wrapArgs = new Object[argsStorage.length() + 1];
+                wrapArgs[0] = converted[0];
+                PythonUtils.arraycopy(argsStorage.getInternalArray(), 0, wrapArgs, 1, argsStorage.length());
+                converted = wrapArgs;
             } else {
                 converted = allToJavaNode.execute(arguments);
             }
+
+
             Object result = executeNode.execute(function, converted);
 
             /*
