@@ -58,33 +58,44 @@ import datetime
 import os
 import subprocess
 import sys
+import platform as plat
 import re
 from collections import namedtuple
 
 includes = '''
-#include <dirent.h>
-#include <dlfcn.h>
+#ifndef _MSC_VER
+# include <dirent.h>
+# include <dlfcn.h>
+# include <netdb.h>
+# include <netinet/in.h>
+# include <netinet/tcp.h>
+# include <sys/mman.h>
+# include <sys/select.h>
+# include <sys/socket.h>
+# include <sys/un.h>
+# include <sys/unistd.h>
+# include <sys/utsname.h>
+# include <sys/wait.h>
+#else
+# include <winsock2.h>
+# include <ws2tcpip.h>
+# include <windows.h>
+# include <sys/stat.h>
+# ifndef PATH_MAX
+#  define PATH_MAX MAX_PATH
+# endif
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <sys/mman.h>
-#include <sys/select.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/un.h>
-#include <sys/unistd.h>
-#include <sys/utsname.h>
-#include <sys/wait.h>
 '''
 
 type_defs = {
     'i': ('Int', '%d'),
-    'x': ('Int', '0x%08X'),
+    'x': ('Int', '0x%08lX'),
     'b': ('Boolean', None)
 }
 
@@ -95,16 +106,16 @@ constant_defs = '''
 
   i FD_SETSIZE
   i PATH_MAX
-  i L_ctermid
+0 i L_ctermid
   i INET_ADDRSTRLEN
   i INET6_ADDRSTRLEN
 * i HOST_NAME_MAX
-  i _POSIX_HOST_NAME_MAX
+0 i _POSIX_HOST_NAME_MAX
   i SOL_SOCKET
   i NI_MAXHOST
   i NI_MAXSERV
 
-  i AT_FDCWD
+0 i AT_FDCWD
 
   i SEEK_SET
   i SEEK_CUR
@@ -115,7 +126,7 @@ constant_defs = '''
   i SOMAXCONN
 
 [openFlags]
-  x O_ACCMODE
+0 x O_ACCMODE
   x O_RDONLY
   x O_WRONLY
   x O_RDWR
@@ -123,43 +134,43 @@ constant_defs = '''
   x O_EXCL
   x O_TRUNC
   x O_APPEND
-  x O_NONBLOCK
-  x O_NDELAY
-  x O_DSYNC
-  x O_CLOEXEC
-  x O_SYNC
+0 x O_NONBLOCK
+0 x O_NDELAY
+0 x O_DSYNC
+0 x O_CLOEXEC
+0 x O_SYNC
 * x O_DIRECT
 * x O_RSYNC
 * x O_TMPFILE
 
 [fileType]
-  x S_IFMT
-  x S_IFSOCK
-  x S_IFLNK
-  x S_IFREG
-  x S_IFBLK
-  x S_IFDIR
-  x S_IFCHR
-  x S_IFIFO
+u x S_IFMT
+0 x S_IFSOCK
+0 x S_IFLNK
+u x S_IFREG
+0 x S_IFBLK
+u x S_IFDIR
+u x S_IFCHR
+0 x S_IFIFO
 
 [mmapFlags]
-  x MAP_SHARED
-  x MAP_PRIVATE
-  x MAP_ANONYMOUS
+0 x MAP_SHARED
+0 x MAP_PRIVATE
+0 x MAP_ANONYMOUS
 * x MAP_DENYWRITE
 * x MAP_EXECUTABLE
 
 [mmapProtection]
-  x PROT_NONE
-  x PROT_READ
-  x PROT_WRITE
-  x PROT_EXEC
+0 x PROT_NONE
+0 x PROT_READ
+0 x PROT_WRITE
+0 x PROT_EXEC
 
 [flockOperation]
-  x LOCK_SH
-  x LOCK_EX
-  x LOCK_NB
-  x LOCK_UN
+0 x LOCK_SH
+0 x LOCK_EX
+0 x LOCK_NB
+0 x LOCK_UN
 
 [flockType]
 * i F_RDLCK
@@ -167,32 +178,32 @@ constant_defs = '''
 * i F_UNLCK
 
 [direntType]
-  i DT_UNKNOWN
-  i DT_FIFO
-  i DT_CHR
-  i DT_DIR
-  i DT_BLK
-  i DT_REG
-  i DT_LNK
-  i DT_SOCK
-  i DT_WHT
+0 i DT_UNKNOWN
+0 i DT_FIFO
+0 i DT_CHR
+0 i DT_DIR
+0 i DT_BLK
+0 i DT_REG
+0 i DT_LNK
+0 i DT_SOCK
+0 i DT_WHT
 
 [waitOptions]
-  i WNOHANG
-  i WUNTRACED
+0 i WNOHANG
+0 i WUNTRACED
 
 [accessMode]
-  x R_OK
-  x W_OK
-  x X_OK
-  x F_OK
-  x EX_OK
+0 x R_OK
+0 x W_OK
+0 x X_OK
+0 x F_OK
+0 x EX_OK
 
 [rtld]
-  x RTLD_LAZY
-  x RTLD_NOW
-  x RTLD_GLOBAL
-  x RTLD_LOCAL
+0 x RTLD_LAZY
+0 x RTLD_NOW
+0 x RTLD_GLOBAL
+0 x RTLD_LOCAL
 
 [socketFamily]
   i AF_UNSPEC
@@ -204,21 +215,21 @@ constant_defs = '''
 [socketType]
   i SOCK_DGRAM
   i SOCK_STREAM
-  
+
 [ip4Address]
   x INADDR_ANY
   x INADDR_BROADCAST
   x INADDR_NONE
   x INADDR_LOOPBACK
-  x INADDR_ALLHOSTS_GROUP
-  x INADDR_MAX_LOCAL_GROUP
-  x INADDR_UNSPEC_GROUP
+0 x INADDR_ALLHOSTS_GROUP
+0 x INADDR_MAX_LOCAL_GROUP
+0 x INADDR_UNSPEC_GROUP
 
 [gaiFlags]
   x AI_PASSIVE
   x AI_CANONNAME
   x AI_NUMERICHOST
-  x AI_V4MAPPED 
+  x AI_V4MAPPED
   x AI_ALL
   x AI_ADDRCONFIG
 * x AI_IDN
@@ -234,10 +245,10 @@ constant_defs = '''
   i EAI_SOCKTYPE
   i EAI_SERVICE
   i EAI_MEMORY
-  i EAI_SYSTEM
-  i EAI_OVERFLOW 
+0 i EAI_SYSTEM
+0 i EAI_OVERFLOW
   i EAI_NODATA
-  i EAI_ADDRFAMILY
+0 i EAI_ADDRFAMILY
 * i EAI_INPROGRESS
 * i EAI_CANCELED
 * i EAI_NOTCANCELED
@@ -257,28 +268,28 @@ constant_defs = '''
   i IPPROTO_IP
   i IPPROTO_ICMP
   i IPPROTO_IGMP
-  i IPPROTO_IPIP
+0 i IPPROTO_IPIP
   i IPPROTO_TCP
   i IPPROTO_EGP
   i IPPROTO_PUP
   i IPPROTO_UDP
   i IPPROTO_IDP
-  i IPPROTO_TP
+0 i IPPROTO_TP
   i IPPROTO_IPV6
-  i IPPROTO_RSVP
-  i IPPROTO_GRE
+0 i IPPROTO_RSVP
+0 i IPPROTO_GRE
   i IPPROTO_ESP
   i IPPROTO_AH
-  i IPPROTO_MTP
-  i IPPROTO_ENCAP
+0 i IPPROTO_MTP
+0 i IPPROTO_ENCAP
   i IPPROTO_PIM
   i IPPROTO_SCTP
   i IPPROTO_RAW
 
 [shutdownHow]
-  i SHUT_RD
-  i SHUT_WR
-  i SHUT_RDWR
+0 i SHUT_RD
+0 i SHUT_WR
+0 i SHUT_RDWR
 
 [socketOptions]
   i SO_DEBUG
@@ -291,7 +302,7 @@ constant_defs = '''
 * i SO_USELOOPBACK
   i SO_LINGER
   i SO_OOBINLINE
-  i SO_REUSEPORT
+0 i SO_REUSEPORT
   i SO_SNDBUF
   i SO_RCVBUF
   i SO_SNDLOWAT
@@ -342,8 +353,8 @@ layout_defs = '''
 
 [struct in_addr]
   s_addr
-  
-[struct sockaddr_un]
+
+[struct sockaddr_un] u
   sun_path
 '''
 
@@ -404,13 +415,14 @@ class PosixConstants{platform} {{
 }}'''
 
 Constant = namedtuple('Constant', ['name', 'optional', 'type', 'format'])
+Struct = namedtuple('Struct', ['name', 'members', 'skipped'])
 
 c_source_file = 'gen_native_cfg.c'
 c_executable_file = 'gen_native_cfg'
 
 
 def parse_defs():
-    regex = re.compile(r'\[(\w+)\]|(\*?)\s*(\w+)\s+(\w+)')
+    regex = re.compile(r'\[(\w+)\]|(\*|u|0?)\s*(\w+)\s+(\w+)')
     current_group = []
     groups = {}
     constants = []
@@ -427,12 +439,15 @@ def parse_defs():
             groups[m.group(1)] = current_group
         else:
             d = type_defs[m.group(3)]
-            c = Constant(m.group(4), m.group(2) == '*', *d)
+            optional = m.group(2) == '*' or (m.group(2) and sys.platform.capitalize() == 'Win32')
+            if sys.platform.capitalize() == 'Win32':
+                optional = m.group(2)
+            c = Constant(m.group(4), optional, *d)
             current_group.append(c)
             constants.append(c)
 
-    regex = re.compile(r'\[(.*?)\]|(.*)')
-    layouts = {}
+    regex = re.compile(r'(?:\[(.*?)\]\s*(u?))|(.*)')
+    layouts = []
     current_struct = None
     for line in layout_defs.splitlines():
         line = line.strip()
@@ -443,9 +458,9 @@ def parse_defs():
             raise ValueError(f'Invalid layout definition {line!r}')
         if m.group(1):
             current_struct = []
-            layouts[m.group(1)] = current_struct
+            layouts.append(Struct(m.group(1), current_struct, sys.platform.capitalize() == 'Win32' and m.group(2)))
         else:
-            current_struct.append(m.group(2))
+            current_struct.append(m.group(3))
 
     return constants, groups, layouts
 
@@ -475,7 +490,7 @@ def offsetof_name(struct_name, member_name):
 def generate_platform():
     constants, _, layouts = parse_defs()
     platform = sys.platform.capitalize()
-    if platform not in ('Linux', 'Darwin'):
+    if platform not in ('Linux', 'Darwin', 'Win32'):
         raise ValueError(f'Unsupported platform: {platform}')
     script_name = os.path.basename(__file__)
     if script_name == '<stdin>':
@@ -493,22 +508,37 @@ def generate_platform():
                 f.write(f'#ifdef {c.name}\n')
             f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", {c.name});\n')
             if c.optional:
+                if c.optional not in ["*", True]:
+                    f.write('#else\n')
+                    if c.optional == "u":
+                        f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", _{c.name});\n')
+                    elif c.optional == "0":
+                        f.write(f'    printf("        constants.put(\\"{c.name}\\", 0);\\n");\n')
+                    else:
+                        raise ValueError(f"Unsupported fallback specifier for {c.name}: {c.optional}")
                 f.write(f'#endif\n')
 
-        for struct_name, members in layouts.items():
-            f.write(f'    printf("        constants.put(\\"{sizeof_name(struct_name)}\\", %zu);\\n", sizeof({struct_name}));\n')
-            for member in members:
-                f.write(f'    printf("        constants.put(\\"{offsetof_name(struct_name, member)}\\", %zu);\\n", offsetof({struct_name}, {member}));\n')
-                f.write(f'    printf("        constants.put(\\"{sizeof_name(struct_name, member)}\\", %zu);\\n", sizeof((({struct_name} *) 0)->{member}));\n')
+        for struct in layouts:
+            if struct.skipped:
+                f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name)}\\", 0);\\n");\n')
+            else:
+                f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name)}\\", %zu);\\n", sizeof({struct.name}));\n')
+            for member in struct.members:
+                if struct.skipped:
+                    f.write(f'    printf("        constants.put(\\"{offsetof_name(struct.name, member)}\\", 0);\\n");\n')
+                    f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name, member)}\\", 0);\\n");\n')
+                else:
+                    f.write(f'    printf("        constants.put(\\"{offsetof_name(struct.name, member)}\\", %zu);\\n", offsetof({struct.name}, {member}));\n')
+                    f.write(f'    printf("        constants.put(\\"{sizeof_name(struct.name, member)}\\", %zu);\\n", sizeof((({struct.name} *) 0)->{member}));\n')
 
         f.write('    return 0;\n}\n')
 
     flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
     cc = os.environ.get('CC', 'cc')
-    subprocess.run(f'{cc} -Wall -Werror {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
+    subprocess.run(f'{cc} -Wall -Werror -Wno-format {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
 
     output = subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1]
-    uname = subprocess.run('uname -srvm', shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True).stdout.strip()
+    uname = " ".join(tuple(plat.uname()))
 
     print(platform_template.format(java_copyright=java_copyright, script_name=script_name, timestamp=datetime.datetime.now(), uname=uname, platform=platform, output=output))
 
