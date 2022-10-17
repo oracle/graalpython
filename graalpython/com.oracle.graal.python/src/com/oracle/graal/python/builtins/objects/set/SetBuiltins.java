@@ -679,49 +679,25 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "difference_update", minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = "difference_update", minNumOfPositionalArgs = 1, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class DifferenceUpdateNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(other)")
         @SuppressWarnings("unused")
-        static PNone doSet(VirtualFrame frame, PSet self, PNone other) {
+        static PNone doNone(VirtualFrame frame, PSet self, PNone other) {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached("args.length") int len,
+        @Specialization
+        static PNone doDiffUpdate(VirtualFrame frame, PSet self, Object[] args,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
-            for (int i = 0; i < len; i++) {
+            for (int i = 0; i < args.length; i++) {
                 result = lib.diffWithFrame(result, getHashingStorage.execute(frame, args[i]), hasFrame, frame);
             }
-            self.setDictStorage(result);
-            return PNone.NONE;
-        }
-
-        @Specialization(replaces = "doCached")
-        static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = self.getDictStorage();
-            for (Object o : args) {
-                result = lib.diffWithFrame(result, getHashingStorage.execute(frame, o), hasFrame, frame);
-            }
-            self.setDictStorage(result);
-            return PNone.NONE;
-        }
-
-        @Specialization(limit = "3")
-        static PNone doSet(VirtualFrame frame, PSet self, Object other,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.diffWithFrame(self.getDictStorage(), getHashingStorage.execute(frame, other), hasFrame, frame);
             self.setDictStorage(result);
             return PNone.NONE;
         }
