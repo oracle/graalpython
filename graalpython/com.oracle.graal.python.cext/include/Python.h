@@ -75,12 +75,19 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/dir.h>
 #include <dirent.h>
-#include <locale.h>
 #include <langinfo.h>
-#include <assert.h>
 #include <unistd.h>
+#else
+#define HAVE_COPYSIGN
+#define HAVE_ROUND
+#define HAVE_HYPOT
+#define NT_THREADS
+#endif
+#include <locale.h>
+#include <assert.h>
 #include <math.h>
 
 #include "pyport.h"
