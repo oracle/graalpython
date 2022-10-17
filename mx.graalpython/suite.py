@@ -236,6 +236,17 @@ suite = {
             "jacoco": "include",
             "native": True,
             "vpath": False,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild" : False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.pegparser": {
@@ -245,9 +256,19 @@ suite = {
             "dependencies": [
                 "truffle:ICU4J",
             ],
-            "buildDependencies": [
-                "com.oracle.graal.python.pegparser.generator",
-            ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "buildDependencies": [
+                            "com.oracle.graal.python.pegparser.generator",
+                        ],
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.pegparser.test": {
@@ -264,6 +285,17 @@ suite = {
         "com.oracle.graal.python.pegparser.generator": {
             "subDir": "graalpython",
             "native": True,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild" : False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.shell": {
@@ -363,7 +395,6 @@ suite = {
                 "jdk.unsupported",
                 "jdk.security.auth",
             ],
-            "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
             "javaCompliance": "11+",
             "checkstyleVersion": "8.36.1",
@@ -373,6 +404,17 @@ suite = {
             ],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
+                    },
+                },
+            },
         },
 
         # GRAALPYTHON TEST
@@ -474,11 +516,24 @@ suite = {
                 "com.oracle.graal.python", # for the generated JNI header file
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
-            "cflags": ["-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
-                       "-g", "-O3", "-Werror",
-                       "-I<path:com.oracle.graal.python.cext>/include",
-                       "-I<path:com.oracle.graal.python.cext>/hpy"
+            "cflags": [
+                "-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                "-g", "-O3", "-Werror",
+                "-I\"<path:com.oracle.graal.python.cext>/include\"",
+                "-I\"<path:com.oracle.graal.python.cext>/hpy\""
             ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
+                        "defaultBuild": False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "python-lib": {
@@ -539,12 +594,26 @@ suite = {
                 "linux-amd64",
                 "linux-aarch64",
                 "darwin-amd64",
+                "windows-amd64",
             ],
-            "dependencies": [
-                "com.oracle.graal.python.jni",
-            ],
-            "layout": {
-                "./": "dependency:com.oracle.graal.python.jni",
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "layout": {
+                            "./": "file:graalpython/com.oracle.graal.python.jni/include",
+                        },
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "dependencies": [
+                            "com.oracle.graal.python.jni",
+                        ],
+                        "layout": {
+                            "./": "dependency:com.oracle.graal.python.jni",
+                        },
+                    },
+                },
             },
             "description": "Contains the native library needed by HPy JNI backend.",
             "maven": True,
