@@ -1,13 +1,22 @@
-Module[0, 47]
-    Match[0, 47]
-        Subject: Name[6, 7] Value: "a"
+Input:
+------
+match a:
+    case None if x is 42:
+        pass
+
+
+Output:
+-------
+Module[1:0-3:12]
+    Match[1:0-3:12]
+        Subject: Name[1:6-1:7] Value: "a"
         Cases:
-            MatchCaseTy[13, 47]
-                Pattern: MatchSingleton[18, 22], value: null
+            MatchCaseTy[2:4-3:12]
+                Pattern: MatchSingleton[2:9-2:13], value: null
                 Guard: 
-                    Compare[26, 33]
-                        LHS: Name[26, 27] Value: "x"
+                    Compare[2:17-2:24]
+                        LHS: Name[2:17-2:18] Value: "x"
                         Op: Is
-                        RHS: LONG[31, 33] Value: 42
+                        RHS: LONG[2:22-2:24] Value: 42
                 Body:
-                    Pass[43, 47]
+                    Pass[3:8-3:12]

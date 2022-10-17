@@ -280,6 +280,7 @@ public abstract class BuiltinNames {
     public static final TruffleString T_REPR = tsLiteral(J_REPR);
 
     public static final String J_ZIP = "zip";
+    public static final TruffleString T_ZIP = tsLiteral("zip");
 
     public static final String J_COMPILE = "compile";
     public static final TruffleString T_COMPILE = tsLiteral(J_COMPILE);

@@ -1,1 +1,7 @@
-Module[1, 1]
+Input:
+------
+
+
+Output:
+-------
+Module[1:-1-1:-1]

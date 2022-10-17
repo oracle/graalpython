@@ -1,33 +1,45 @@
-Module[0, 165]
-    FunctionDef[0, 165]
+Input:
+------
+def merge(sequences):
+    for s1 in sequences:
+        for s2 in sequences:
+            if candidate in s2[1:]:
+                break
+        else:
+            break
+
+Output:
+-------
+Module[1:0-7:17]
+    FunctionDef[1:0-7:17]
         Name:merge
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[10, 19] sequences
+                ArgTy[1:10-1:19] sequences
         ---- Function body of merge ----
-        For[26, 165]
-            Target: Name[30, 32] Value: "s1" Store
-            Iter: Name[36, 45] Value: "sequences"
+        For[2:4-7:17]
+            Target: Name[2:8-2:10] Value: "s1" Store
+            Iter: Name[2:14-2:23] Value: "sequences"
             Body:
-                For[55, 165]
-                    Target: Name[59, 61] Value: "s2" Store
-                    Iter: Name[65, 74] Value: "sequences"
+                For[3:8-7:17]
+                    Target: Name[3:12-3:14] Value: "s2" Store
+                    Iter: Name[3:18-3:27] Value: "sequences"
                     Body:
-                        If[88, 133]
+                        If[4:12-5:21]
                             Test: 
-                                Compare[91, 110]
-                                    LHS: Name[91, 100] Value: "candidate"
+                                Compare[4:15-4:34]
+                                    LHS: Name[4:15-4:24] Value: "candidate"
                                     Op: In
                                     RHS: 
-                                        Subscript[104, 106]
+                                        Subscript[4:28-4:34]
                                             Slice: 
-                                                Slice[107, 109]
-                                                    Start: LONG[107, 108] Value: 1
+                                                Slice[4:31-4:33]
+                                                    Start: LONG[4:31-4:32] Value: 1
                                                     Stop: 
                                                     Step: 
-                                            Value: Name[104, 106] Value: "s2"
+                                            Value: Name[4:28-4:30] Value: "s2"
                             Then:
-                                Break[128, 133]
+                                Break[5:16-5:21]
                     Else:
-                        Break[160, 165]
+                        Break[7:12-7:17]
         ---- End of merge function ----

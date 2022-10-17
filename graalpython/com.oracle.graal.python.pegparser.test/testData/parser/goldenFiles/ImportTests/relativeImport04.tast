@@ -1,3 +1,9 @@
-Module[0, 21]
-    ImportFrom[0, 21] Level 4 null
+Input:
+------
+from .... import name
+
+Output:
+-------
+Module[1:0-1:21]
+    ImportFrom[1:0-1:21] Level 4 null
         name

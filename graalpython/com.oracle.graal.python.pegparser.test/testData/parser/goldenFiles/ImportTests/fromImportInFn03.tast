@@ -1,8 +1,15 @@
-Module[0, 54]
-    FunctionDef[0, 54]
+Input:
+------
+def fn():
+  from sys.path import dirname as my_dirname
+
+Output:
+-------
+Module[1:0-2:44]
+    FunctionDef[1:0-2:44]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        ImportFrom[12, 54] Level 0 sys.path
+        ImportFrom[2:2-2:44] Level 0 sys.path
             dirname as my_dirname
         ---- End of fn function ----

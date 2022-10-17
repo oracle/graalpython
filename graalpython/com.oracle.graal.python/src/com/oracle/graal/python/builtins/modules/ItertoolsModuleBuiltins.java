@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
 import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
+import com.oracle.graal.python.builtins.objects.itertools.PPairwise;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
@@ -1068,6 +1069,28 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         protected Object construct(Object cls, Object iterables, Object repeat,
                         @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "pairwise", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PPairwise, doc = "Return an iterator of overlapping pairs taken from the input iterator.\n\n" +
+                    "    s -> (s0,s1), (s1,s2), (s2, s3), ...")
+    @GenerateNodeFactory
+    public abstract static class PairwaiseNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PPairwise construct(VirtualFrame frame, Object cls, Object iterable,
+                        @Cached PyObjectGetIter getIter,
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
+            PPairwise self = factory().createPairwise(cls);
+            self.setIterable(getIter.execute(frame, iterable));
+            return self;
+        }
+
+        @Specialization(guards = "!isTypeNode.execute(cls)", limit = "1")
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object iterable,
+                        @SuppressWarnings("unused") @Shared("typeNode") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }

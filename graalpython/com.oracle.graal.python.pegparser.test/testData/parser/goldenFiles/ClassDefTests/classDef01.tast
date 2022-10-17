@@ -1,5 +1,11 @@
-Module[0, 16]
-    ClassDef[0, 16] foo
+Input:
+------
+class foo():pass
+
+Output:
+-------
+Module[1:0-1:16]
+    ClassDef[1:0-1:16] foo
         ---- Class body of foo ----
-        Pass[12, 16]
+        Pass[1:12-1:16]
         ---- End of foo class ----

@@ -1,5 +1,11 @@
-Module[0, 6]
-    Dict[0, 6]
+Input:
+------
+{1: 2}
+
+Output:
+-------
+Module[1:0-1:6]
+    Dict[1:0-1:6]
         Values:
-            Key: LONG[1, 2] Value: 1
-            Val: LONG[4, 5] Value: 2
+            Key: LONG[1:1-1:2] Value: 1
+            Val: LONG[1:4-1:5] Value: 2

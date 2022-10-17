@@ -1,5 +1,11 @@
-Module[0, 6]
-    BinOp[0, 6]
+Input:
+------
+1 + 10
+
+Output:
+-------
+Module[1:0-1:6]
+    BinOp[1:0-1:6]
         Op: Add
-        LHS: LONG[0, 1] Value: 1
-        RHS: LONG[4, 6] Value: 10
+        LHS: LONG[1:0-1:1] Value: 1
+        RHS: LONG[1:4-1:6] Value: 10

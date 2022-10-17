@@ -1,10 +1,16 @@
-Module[0, 17]
-    Assign[0, 17]
-        LHS: Name[0, 7] Value: "element" Store
+Input:
+------
+element = a[b:=0]
+
+Output:
+-------
+Module[1:0-1:17]
+    Assign[1:0-1:17]
+        LHS: Name[1:0-1:7] Value: "element" Store
         RHS: 
-            Subscript[10, 11]
+            Subscript[1:10-1:17]
                 Slice: 
-                    NamedExpr[12, 16]
-                        Target: Name[12, 13] Value: "b" Store
-                        Value: LONG[15, 16] Value: 0
-                Value: Name[10, 11] Value: "a"
+                    NamedExpr[1:12-1:16]
+                        Target: Name[1:12-1:13] Value: "b" Store
+                        Value: LONG[1:15-1:16] Value: 0
+                Value: Name[1:10-1:11] Value: "a"

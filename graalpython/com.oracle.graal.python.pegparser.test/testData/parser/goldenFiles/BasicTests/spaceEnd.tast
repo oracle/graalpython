@@ -1,4 +1,10 @@
-Module[0, 3]
-    Assign[0, 3]
-        LHS: Name[0, 1] Value: "x" Store
-        RHS: LONG[2, 3] Value: 5
+Input:
+------
+x=5 
+
+Output:
+-------
+Module[1:0-1:3]
+    Assign[1:0-1:3]
+        LHS: Name[1:0-1:1] Value: "x" Store
+        RHS: LONG[1:2-1:3] Value: 5

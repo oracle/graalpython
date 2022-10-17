@@ -1,12 +1,18 @@
-Module[0, 20]
-    For[0, 20]
+Input:
+------
+for i, b in (): pass
+
+Output:
+-------
+Module[1:0-1:20]
+    For[1:0-1:20]
         Target: 
-            Tuple[4, 8] Context: Store
+            Tuple[1:4-1:8] Context: Store
                 Values:
-                    Name[4, 5] Value: "i" Store
-                    Name[7, 8] Value: "b" Store
+                    Name[1:4-1:5] Value: "i" Store
+                    Name[1:7-1:8] Value: "b" Store
         Iter: 
-            Tuple[12, 14]
+            Tuple[1:12-1:14]
                 Values:
         Body:
-            Pass[16, 20]
+            Pass[1:16-1:20]

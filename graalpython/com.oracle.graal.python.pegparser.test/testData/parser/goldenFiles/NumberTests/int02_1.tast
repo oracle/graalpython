@@ -1,4 +1,10 @@
-Module[0, 5]
-    UnaryOp[0, 5]
+Input:
+------
+-   1
+
+Output:
+-------
+Module[1:0-1:5]
+    UnaryOp[1:0-1:5]
         Op: USub
-        Value: LONG[4, 5] Value: 1
+        Value: LONG[1:4-1:5] Value: 1

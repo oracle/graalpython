@@ -1,32 +1,47 @@
-Module[0, 257]
-    ClassDef[0, 257] XN
+Input:
+------
+class XN:
+            def fn1(self):
+                nonlocal __class__
+                __class__ = YN
+            def fn2(self):
+                return __class__
+            def fn3(slef):
+                nonlocal __class__
+                return __class__
+
+
+Output:
+-------
+Module[1:0-9:32]
+    ClassDef[1:0-9:32] XN
         ---- Class body of XN ----
-        FunctionDef[22, 102]
+        FunctionDef[2:12-4:30]
             Name:fn1
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[30, 34] self
+                    ArgTy[2:20-2:24] self
             ---- Function body of fn1 ----
-            Nonlocal[53, 71]: __class__ 
-            Assign[88, 102]
-                LHS: Name[88, 97] Value: "__class__" Store
-                RHS: Name[100, 102] Value: "YN"
+            Nonlocal[3:16-3:34]: __class__ 
+            Assign[4:16-4:30]
+                LHS: Name[4:16-4:25] Value: "__class__" Store
+                RHS: Name[4:28-4:30] Value: "YN"
             ---- End of fn1 function ----
-        FunctionDef[115, 162]
+        FunctionDef[5:12-6:32]
             Name:fn2
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[123, 127] self
+                    ArgTy[5:20-5:24] self
             ---- Function body of fn2 ----
-            Return[146, 162] Name[153, 162] Value: "__class__"
+            Return[6:16-6:32] Name[6:23-6:32] Value: "__class__"
             ---- End of fn2 function ----
-        FunctionDef[175, 257]
+        FunctionDef[7:12-9:32]
             Name:fn3
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[183, 187] slef
+                    ArgTy[7:20-7:24] slef
             ---- Function body of fn3 ----
-            Nonlocal[206, 224]: __class__ 
-            Return[241, 257] Name[248, 257] Value: "__class__"
+            Nonlocal[8:16-8:34]: __class__ 
+            Return[9:16-9:32] Name[9:23-9:32] Value: "__class__"
             ---- End of fn3 function ----
         ---- End of XN class ----

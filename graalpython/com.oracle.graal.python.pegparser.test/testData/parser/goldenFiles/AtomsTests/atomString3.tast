@@ -1,2 +1,8 @@
-Module[0, 14]
-    RAW[0, 14] Value: "a String"
+Input:
+------
+'''a String'''
+
+Output:
+-------
+Module[1:0-1:14]
+    RAW[1:0-1:14] Value: "a String"

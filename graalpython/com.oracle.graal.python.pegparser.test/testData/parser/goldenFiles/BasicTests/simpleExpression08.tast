@@ -1,2 +1,8 @@
-Expression[0, 8]
-    RAW[0, 8] Value: "\ud800"
+Input:
+------
+"\uD800"
+
+Output:
+-------
+Expression[1:0-1:8]
+    RAW[1:0-1:8] Value: "\ud800"

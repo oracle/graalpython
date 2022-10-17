@@ -1,25 +1,36 @@
-Module[0, 100]
-    For[0, 100]
-        Target: Name[4, 7] Value: "num" Store
+Input:
+------
+for num in range(10,20):
+   for i in range(2,num):
+      if True:
+         break
+   else:
+      pass
+
+Output:
+-------
+Module[1:0-6:10]
+    For[1:0-6:10]
+        Target: Name[1:4-1:7] Value: "num" Store
         Iter: 
-            Call[11, 23]
-                Target: Name[11, 16] Value: "range"
+            Call[1:11-1:23]
+                Target: Name[1:11-1:16] Value: "range"
                 Args:
-                    LONG[17, 19] Value: 10
-                    LONG[20, 22] Value: 20
+                    LONG[1:17-1:19] Value: 10
+                    LONG[1:20-1:22] Value: 20
         Body:
-            For[28, 100]
-                Target: Name[32, 33] Value: "i" Store
+            For[2:3-6:10]
+                Target: Name[2:7-2:8] Value: "i" Store
                 Iter: 
-                    Call[37, 49]
-                        Target: Name[37, 42] Value: "range"
+                    Call[2:12-2:24]
+                        Target: Name[2:12-2:17] Value: "range"
                         Args:
-                            LONG[43, 44] Value: 2
-                            Name[45, 48] Value: "num"
+                            LONG[2:18-2:19] Value: 2
+                            Name[2:20-2:23] Value: "num"
                 Body:
-                    If[57, 80]
-                        Test: BOOLEAN[60, 64] Value: true
+                    If[3:6-4:14]
+                        Test: BOOLEAN[3:9-3:13] Value: true
                         Then:
-                            Break[75, 80]
+                            Break[4:9-4:14]
                 Else:
-                    Pass[96, 100]
+                    Pass[6:6-6:10]

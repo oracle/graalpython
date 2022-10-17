@@ -1,39 +1,51 @@
-Module[0, 96]
-    Assign[0, 9]
-        LHS: Name[0, 3] Value: "var" Store
-        RHS: LONG[6, 9] Value: 100
-    If[10, 96]
+Input:
+------
+var = 100
+if var == 200:
+  print (2)
+elif var == 150:
+  print (1.5)
+elif var == 100:
+  print (1)
+
+Output:
+-------
+Module[1:0-7:11]
+    Assign[1:0-1:9]
+        LHS: Name[1:0-1:3] Value: "var" Store
+        RHS: LONG[1:6-1:9] Value: 100
+    If[2:0-7:11]
         Test: 
-            Compare[13, 23]
-                LHS: Name[13, 16] Value: "var"
+            Compare[2:3-2:13]
+                LHS: Name[2:3-2:6] Value: "var"
                 Op: Eq
-                RHS: LONG[20, 23] Value: 200
+                RHS: LONG[2:10-2:13] Value: 200
         Then:
-            Call[27, 36]
-                Target: Name[27, 32] Value: "print"
+            Call[3:2-3:11]
+                Target: Name[3:2-3:7] Value: "print"
                 Args:
-                    LONG[34, 35] Value: 2
+                    LONG[3:9-3:10] Value: 2
         Else:
-            If[37, 96]
+            If[4:0-7:11]
                 Test: 
-                    Compare[42, 52]
-                        LHS: Name[42, 45] Value: "var"
+                    Compare[4:5-4:15]
+                        LHS: Name[4:5-4:8] Value: "var"
                         Op: Eq
-                        RHS: LONG[49, 52] Value: 150
+                        RHS: LONG[4:12-4:15] Value: 150
                 Then:
-                    Call[56, 67]
-                        Target: Name[56, 61] Value: "print"
+                    Call[5:2-5:13]
+                        Target: Name[5:2-5:7] Value: "print"
                         Args:
-                            DOUBLE[63, 66] Value: 1.5
+                            DOUBLE[5:9-5:12] Value: 1.5
                 Else:
-                    If[68, 96]
+                    If[6:0-7:11]
                         Test: 
-                            Compare[73, 83]
-                                LHS: Name[73, 76] Value: "var"
+                            Compare[6:5-6:15]
+                                LHS: Name[6:5-6:8] Value: "var"
                                 Op: Eq
-                                RHS: LONG[80, 83] Value: 100
+                                RHS: LONG[6:12-6:15] Value: 100
                         Then:
-                            Call[87, 96]
-                                Target: Name[87, 92] Value: "print"
+                            Call[7:2-7:11]
+                                Target: Name[7:2-7:7] Value: "print"
                                 Args:
-                                    LONG[94, 95] Value: 1
+                                    LONG[7:9-7:10] Value: 1

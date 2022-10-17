@@ -1,10 +1,16 @@
-Module[0, 16]
-    Assign[0, 16]
-        LHS: Name[0, 4] Value: "list" Store
+Input:
+------
+list = [1,2,3,4]
+
+Output:
+-------
+Module[1:0-1:16]
+    Assign[1:0-1:16]
+        LHS: Name[1:0-1:4] Value: "list" Store
         RHS: 
-            List[7, 16]
+            List[1:7-1:16]
                 Values:
-                    LONG[8, 9] Value: 1
-                    LONG[10, 11] Value: 2
-                    LONG[12, 13] Value: 3
-                    LONG[14, 15] Value: 4
+                    LONG[1:8-1:9] Value: 1
+                    LONG[1:10-1:11] Value: 2
+                    LONG[1:12-1:13] Value: 3
+                    LONG[1:14-1:15] Value: 4

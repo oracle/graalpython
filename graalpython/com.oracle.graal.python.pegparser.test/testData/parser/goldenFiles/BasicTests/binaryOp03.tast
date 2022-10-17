@@ -1,5 +1,11 @@
-Module[0, 6]
-    BinOp[0, 6]
+Input:
+------
+3 ** 2
+
+Output:
+-------
+Module[1:0-1:6]
+    BinOp[1:0-1:6]
         Op: Pow
-        LHS: LONG[0, 1] Value: 3
-        RHS: LONG[5, 6] Value: 2
+        LHS: LONG[1:0-1:1] Value: 3
+        RHS: LONG[1:5-1:6] Value: 2

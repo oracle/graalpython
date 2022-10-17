@@ -239,6 +239,7 @@ public abstract class TypeNodes {
                 case Structure:
                 case Union:
                 case SimpleCData:
+                case PArray:
                     result = DEFAULT | BASETYPE;
                     break;
                 case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
@@ -294,6 +295,7 @@ public abstract class TypeNodes {
                 case PDequeRevIter:
                 case CField:
                 case CThunkObject:
+                case PArrayIterator:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PDict:
@@ -450,17 +452,7 @@ public abstract class TypeNodes {
                         @Cached("createClassProfile()") ValueProfile storageProfile) {
             Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
             if (lazyTypeInitProfile.profile(tupleObj == PNone.NO_VALUE)) {
-                // Special case: lazy type initialization (should happen at most only once per type)
-                CompilerDirectives.transferToInterpreter();
-
-                // call 'PyType_Ready' on the type
-                int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
-                if (res < 0) {
-                    throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.getUncached().execute(obj));
-                }
-
-                tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
-                assert tupleObj != PNone.NO_VALUE : "MRO object is still NULL even after lazy type initialization";
+                tupleObj = initializeType(obj, getTpMroNode, raise);
             }
             Object profiled = tpMroProfile.profile(tupleObj);
             if (profiled instanceof PTuple) {
@@ -470,6 +462,21 @@ public abstract class TypeNodes {
                 }
             }
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+        }
+
+        private static Object initializeType(PythonNativeClass obj, GetTypeMemberNode getTpMroNode, PRaiseNode raise) {
+            // Special case: lazy type initialization (should happen at most only once per type)
+            CompilerDirectives.transferToInterpreter();
+
+            // call 'PyType_Ready' on the type
+            int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
+            if (res < 0) {
+                throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.getUncached().execute(obj));
+            }
+
+            Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
+            assert tupleObj != PNone.NO_VALUE : "MRO object is still NULL even after lazy type initialization";
+            return tupleObj;
         }
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
@@ -483,6 +490,9 @@ public abstract class TypeNodes {
             } else if (PGuards.isNativeClass(obj)) {
                 GetTypeMemberNode getTypeMemeberNode = GetTypeMemberNode.getUncached();
                 Object tupleObj = getTypeMemeberNode.execute(obj, NativeMember.TP_MRO);
+                if (tupleObj == PNone.NO_VALUE) {
+                    tupleObj = initializeType((PythonNativeClass) obj, GetTypeMemberNode.getUncached(), raise);
+                }
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
                     if (sequenceStorage instanceof MroSequenceStorage) {

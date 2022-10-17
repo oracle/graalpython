@@ -1,4 +1,10 @@
-Module[0, 20]
-    UnaryOp[0, 20]
+Input:
+------
+-9223372036854775808
+
+Output:
+-------
+Module[1:0-1:20]
+    UnaryOp[1:0-1:20]
         Op: USub
-        Value: BIGINTEGER[1, 20] Value: 9223372036854775808
+        Value: BIGINTEGER[1:1-1:20] Value: 9223372036854775808

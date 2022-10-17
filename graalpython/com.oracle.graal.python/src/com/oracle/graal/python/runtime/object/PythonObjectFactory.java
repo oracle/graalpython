@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
 import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
+import com.oracle.graal.python.builtins.objects.itertools.PPairwise;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
@@ -1088,8 +1089,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMap(cls, getShape(cls)));
     }
 
-    public final PZip createZip(Object cls, Object[] iterables) {
-        return trace(new PZip(cls, getShape(cls), iterables));
+    public final PZip createZip(Object cls, Object[] iterables, boolean strict) {
+        return trace(new PZip(cls, getShape(cls), iterables, strict));
     }
 
     public final PForeignArrayIterator createForeignArrayIterator(Object iterable) {
@@ -1242,6 +1243,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PIslice createIslice(Object cls) {
         return trace(new PIslice(cls, getShape(cls)));
+    }
+
+    public final PPairwise createPairwise(Object cls) {
+        return trace(new PPairwise(cls, getShape(cls)));
     }
 
     public final PPermutations createPermutations(Object cls) {

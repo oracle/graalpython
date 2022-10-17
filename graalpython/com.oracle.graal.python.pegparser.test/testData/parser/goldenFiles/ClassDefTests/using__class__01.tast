@@ -1,12 +1,21 @@
-Module[0, 51]
-    ClassDef[0, 51] X
+Input:
+------
+class X:
+     def fn(self):
+       return __class__
+
+
+Output:
+-------
+Module[1:0-3:23]
+    ClassDef[1:0-3:23] X
         ---- Class body of X ----
-        FunctionDef[14, 51]
+        FunctionDef[2:5-3:23]
             Name:fn
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
                 Args:
-                    ArgTy[21, 25] self
+                    ArgTy[2:12-2:16] self
             ---- Function body of fn ----
-            Return[35, 51] Name[42, 51] Value: "__class__"
+            Return[3:7-3:23] Name[3:14-3:23] Value: "__class__"
             ---- End of fn function ----
         ---- End of X class ----

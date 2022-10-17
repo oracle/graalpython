@@ -1,17 +1,23 @@
-Module[0, 53]
-    Assign[0, 53]
-        LHS: Name[0, 9] Value: "predicate" Store
+Input:
+------
+predicate = func if func is not None else lambda a: a
+
+Output:
+-------
+Module[1:0-1:53]
+    Assign[1:0-1:53]
+        LHS: Name[1:0-1:9] Value: "predicate" Store
         RHS: 
-            IfExp[12, 53]
+            IfExp[1:12-1:53]
                 Test: 
-                    Compare[20, 36]
-                        LHS: Name[20, 24] Value: "func"
+                    Compare[1:20-1:36]
+                        LHS: Name[1:20-1:24] Value: "func"
                         Op: IsNot
-                        RHS: NONE[32, 36] Value: null
-                Then: Name[12, 16] Value: "func"
+                        RHS: NONE[1:32-1:36] Value: null
+                Then: Name[1:12-1:16] Value: "func"
                 Else: 
-                    Lambda[42, 53]
-                        ArgumentsTy[0, 0]
+                    Lambda[1:42-1:53]
+                        ArgumentsTy[0:0-0:0]
                             Args:
-                                ArgTy[49, 50] a
-                        Body: Name[52, 53] Value: "a"
+                                ArgTy[1:49-1:50] a
+                        Body: Name[1:52-1:53] Value: "a"

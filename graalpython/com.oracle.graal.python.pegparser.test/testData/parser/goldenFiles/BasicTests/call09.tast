@@ -1,7 +1,13 @@
-Module[0, 12]
-    Call[0, 12]
-        Target: Name[0, 3] Value: "foo"
+Input:
+------
+foo(*mylist)
+
+Output:
+-------
+Module[1:0-1:12]
+    Call[1:0-1:12]
+        Target: Name[1:0-1:3] Value: "foo"
         Args:
-            Starred[4, 11]
+            Starred[1:4-1:11]
                  Context: Load
-                 Expr: Name[5, 11] Value: "mylist"
+                 Expr: Name[1:5-1:11] Value: "mylist"

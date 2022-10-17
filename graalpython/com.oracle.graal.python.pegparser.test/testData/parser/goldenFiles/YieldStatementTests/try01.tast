@@ -1,17 +1,27 @@
-Module[0, 60]
-    FunctionDef[0, 60]
+Input:
+------
+def gen(x):
+  try:
+    pass
+  except ValueError:
+    yield 3
+
+Output:
+-------
+Module[1:0-5:11]
+    FunctionDef[1:0-5:11]
         Name:gen
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
             Args:
-                ArgTy[8, 9] x
+                ArgTy[1:8-1:9] x
         ---- Function body of gen ----
-        Try[14, 17]
+        Try[2:2-5:11]
             Body:
-                Pass[23, 27]
+                Pass[3:4-3:8]
             Except:
-                ExceptHandler[30, 36]
-                    Type: Name[37, 47] Value: "ValueError"
+                ExceptHandler[4:2-5:11]
+                    Type: Name[4:9-4:19] Value: "ValueError"
                     Body:
-                        Yield[53, 60]
-                            LONG[59, 60] Value: 3
+                        Yield[5:4-5:11]
+                            LONG[5:10-5:11] Value: 3
         ---- End of gen function ----

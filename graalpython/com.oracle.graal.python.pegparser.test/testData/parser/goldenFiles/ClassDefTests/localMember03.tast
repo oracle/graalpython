@@ -1,32 +1,46 @@
-Module[0, 210]
-    FunctionDef[0, 210]
+Input:
+------
+def fn():
+    a_local_var = "a local var"
+
+    def f():
+        class C(object):
+            a_local_var = a_local_var
+            def method01():
+                return a_local_var
+        return C.a_local_var
+
+Output:
+-------
+Module[1:0-9:28]
+    FunctionDef[1:0-9:28]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        Assign[14, 41]
-            LHS: Name[14, 25] Value: "a_local_var" Store
-            RHS: RAW[28, 41] Value: "a local var"
-        FunctionDef[47, 210]
+        Assign[2:4-2:31]
+            LHS: Name[2:4-2:15] Value: "a_local_var" Store
+            RHS: RAW[2:18-2:31] Value: "a local var"
+        FunctionDef[4:4-9:28]
             Name:f
-            ArgumentsTy[0, 0]
+            ArgumentsTy[0:0-0:0]
             ---- Function body of f ----
-            ClassDef[64, 181] C
+            ClassDef[5:8-8:34] C
                 Bases:
-                    Name[72, 78] Value: "object"
+                    Name[5:16-5:22] Value: "object"
                 ---- Class body of C ----
-                Assign[93, 118]
-                    LHS: Name[93, 104] Value: "a_local_var" Store
-                    RHS: Name[107, 118] Value: "a_local_var"
-                FunctionDef[131, 181]
+                Assign[6:12-6:37]
+                    LHS: Name[6:12-6:23] Value: "a_local_var" Store
+                    RHS: Name[6:26-6:37] Value: "a_local_var"
+                FunctionDef[7:12-8:34]
                     Name:method01
-                    ArgumentsTy[0, 0]
+                    ArgumentsTy[0:0-0:0]
                     ---- Function body of method01 ----
-                    Return[163, 181] Name[170, 181] Value: "a_local_var"
+                    Return[8:16-8:34] Name[8:23-8:34] Value: "a_local_var"
                     ---- End of method01 function ----
                 ---- End of C class ----
-            Return[190, 210] 
-                Attribute[197, 198] 
-                    Receiver: Name[197, 198] Value: "C"
+            Return[9:8-9:28] 
+                Attribute[9:15-9:28] 
+                    Receiver: Name[9:15-9:16] Value: "C"
                     Attr: a_local_var
             ---- End of f function ----
         ---- End of fn function ----

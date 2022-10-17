@@ -1,8 +1,14 @@
-Module[0, 25]
-    Call[0, 25]
-        Target: Name[0, 3] Value: "foo"
+Input:
+------
+foo(**mydict1, **mydict2)
+
+Output:
+-------
+Module[1:0-1:25]
+    Call[1:0-1:25]
+        Target: Name[1:0-1:3] Value: "foo"
         KWArgs:
-            KeywordTy[4, 13]
-                null: Name[6, 13] Value: "mydict1"
-            KeywordTy[15, 24]
-                null: Name[17, 24] Value: "mydict2"
+            KeywordTy[1:4-1:13]
+                null: Name[1:6-1:13] Value: "mydict1"
+            KeywordTy[1:15-1:24]
+                null: Name[1:17-1:24] Value: "mydict2"

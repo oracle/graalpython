@@ -1,22 +1,32 @@
-Module[0, 58]
-    FunctionDef[0, 58]
+Input:
+------
+def fn():
+  for x in xrange(3):
+    if x == 1:
+      break
+
+
+Output:
+-------
+Module[1:0-4:11]
+    FunctionDef[1:0-4:11]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of fn ----
-        For[12, 58]
-            Target: Name[16, 17] Value: "x" Store
+        For[2:2-4:11]
+            Target: Name[2:6-2:7] Value: "x" Store
             Iter: 
-                Call[21, 30]
-                    Target: Name[21, 27] Value: "xrange"
+                Call[2:11-2:20]
+                    Target: Name[2:11-2:17] Value: "xrange"
                     Args:
-                        LONG[28, 29] Value: 3
+                        LONG[2:18-2:19] Value: 3
             Body:
-                If[36, 58]
+                If[3:4-4:11]
                     Test: 
-                        Compare[39, 45]
-                            LHS: Name[39, 40] Value: "x"
+                        Compare[3:7-3:13]
+                            LHS: Name[3:7-3:8] Value: "x"
                             Op: Eq
-                            RHS: LONG[44, 45] Value: 1
+                            RHS: LONG[3:12-3:13] Value: 1
                     Then:
-                        Break[53, 58]
+                        Break[4:6-4:11]
         ---- End of fn function ----

@@ -1,16 +1,22 @@
-Module[0, 35]
-    ListComp[0, 35]
-        Element: Name[1, 2] Value: "e"
-        ComprehensionTy[3, 34]
-            Target: Name[7, 8] Value: "e" Store
+Input:
+------
+[e for e in [s for s in (1, 2, 3)]]
+
+Output:
+-------
+Module[1:0-1:35]
+    ListComp[1:0-1:35]
+        Element: Name[1:1-1:2] Value: "e"
+        ComprehensionTy[1:3-1:34]
+            Target: Name[1:7-1:8] Value: "e" Store
             Iterator: 
-                ListComp[12, 34]
-                    Element: Name[13, 14] Value: "s"
-                    ComprehensionTy[15, 33]
-                        Target: Name[19, 20] Value: "s" Store
+                ListComp[1:12-1:34]
+                    Element: Name[1:13-1:14] Value: "s"
+                    ComprehensionTy[1:15-1:33]
+                        Target: Name[1:19-1:20] Value: "s" Store
                         Iterator: 
-                            Tuple[24, 33]
+                            Tuple[1:24-1:33]
                                 Values:
-                                    LONG[25, 26] Value: 1
-                                    LONG[28, 29] Value: 2
-                                    LONG[31, 32] Value: 3
+                                    LONG[1:25-1:26] Value: 1
+                                    LONG[1:28-1:29] Value: 2
+                                    LONG[1:31-1:32] Value: 3

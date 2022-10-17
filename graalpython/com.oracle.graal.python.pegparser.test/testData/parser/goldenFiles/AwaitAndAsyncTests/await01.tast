@@ -1,10 +1,17 @@
-Module[0, 28]
-    AsyncFunctionDef[0, 28]
+Input:
+------
+async def f():
+ await smth()
+
+Output:
+-------
+Module[1:0-2:13]
+    AsyncFunctionDef[1:0-2:13]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[0:0-0:0]
         ---- Function body of f ----
-        Await[16, 28]
+        Await[2:1-2:13]
             Value: 
-                Call[22, 28]
-                    Target: Name[22, 26] Value: "smth"
+                Call[2:7-2:13]
+                    Target: Name[2:7-2:11] Value: "smth"
         ---- End of f function ----

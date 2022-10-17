@@ -1,28 +1,34 @@
-Module[0, 61]
-    Assign[0, 61]
-        LHS: Name[0, 3] Value: "res" Store
+Input:
+------
+res = [(x, y, x/y) for x in input_data if (y := spam(x)) > 0]
+
+Output:
+-------
+Module[1:0-1:61]
+    Assign[1:0-1:61]
+        LHS: Name[1:0-1:3] Value: "res" Store
         RHS: 
-            ListComp[6, 61]
-                Element: Tuple[7, 18]
+            ListComp[1:6-1:61]
+                Element: Tuple[1:7-1:18]
                     Values:
-                        Name[8, 9] Value: "x"
-                        Name[11, 12] Value: "y"
-                        BinOp[14, 17]
+                        Name[1:8-1:9] Value: "x"
+                        Name[1:11-1:12] Value: "y"
+                        BinOp[1:14-1:17]
                             Op: Div
-                            LHS: Name[14, 15] Value: "x"
-                            RHS: Name[16, 17] Value: "y"
-                ComprehensionTy[19, 60]
-                    Target: Name[23, 24] Value: "x" Store
-                    Iterator: Name[28, 38] Value: "input_data"
+                            LHS: Name[1:14-1:15] Value: "x"
+                            RHS: Name[1:16-1:17] Value: "y"
+                ComprehensionTy[1:19-1:60]
+                    Target: Name[1:23-1:24] Value: "x" Store
+                    Iterator: Name[1:28-1:38] Value: "input_data"
                     Ifs:
-                        Compare[42, 60]
+                        Compare[1:42-1:60]
                             LHS: 
-                                NamedExpr[43, 55]
-                                    Target: Name[43, 44] Value: "y" Store
+                                NamedExpr[1:43-1:55]
+                                    Target: Name[1:43-1:44] Value: "y" Store
                                     Value: 
-                                        Call[48, 55]
-                                            Target: Name[48, 52] Value: "spam"
+                                        Call[1:48-1:55]
+                                            Target: Name[1:48-1:52] Value: "spam"
                                             Args:
-                                                Name[53, 54] Value: "x"
+                                                Name[1:53-1:54] Value: "x"
                             Op: Gt
-                            RHS: LONG[59, 60] Value: 0
+                            RHS: LONG[1:59-1:60] Value: 0

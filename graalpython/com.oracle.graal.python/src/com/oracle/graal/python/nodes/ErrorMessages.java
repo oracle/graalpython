@@ -854,6 +854,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = tsLiteral("type '%s' takes at least one argument");
     public static final TruffleString S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at least %d arguments (%d given)");
     public static final TruffleString S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at most %d arguments (%d given)");
+    public static final TruffleString S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN = tsLiteral("%s() takes at most 1 keyword argument (%d given)");
     public static final TruffleString S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S = tsLiteral("%p constructor takes at most %d positional argument%s");
     public static final TruffleString P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S = tsLiteral("%p got multiple values for argument '%s'");
     public static final TruffleString RES_O_O_RANGE = tsLiteral("%s result out of range");
@@ -1010,6 +1011,8 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
     public static final TruffleString EXPECTING_VALUE = tsLiteral("Expecting value");
     public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
+    public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("\"zip() argument %d is longer than argument%s%d\",");
+    public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("\"zip() argument %d is shorter than argument%s%d\",");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

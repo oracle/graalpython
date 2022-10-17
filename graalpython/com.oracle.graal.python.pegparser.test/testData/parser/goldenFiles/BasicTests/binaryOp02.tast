@@ -1,5 +1,11 @@
-Module[0, 11]
-    BinOp[0, 11]
+Input:
+------
+'ahoj' + 10
+
+Output:
+-------
+Module[1:0-1:11]
+    BinOp[1:0-1:11]
         Op: Add
-        LHS: RAW[0, 6] Value: "ahoj"
-        RHS: LONG[9, 11] Value: 10
+        LHS: RAW[1:0-1:6] Value: "ahoj"
+        RHS: LONG[1:9-1:11] Value: 10

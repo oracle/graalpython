@@ -1,8 +1,14 @@
-Module[0, 13]
-    Delete[0, 13]
+Input:
+------
+del [x, y, z]
+
+Output:
+-------
+Module[1:0-1:13]
+    Delete[1:0-1:13]
         Targets:
-            List[4, 13] Context: Del
+            List[1:4-1:13] Context: Del
                 Values:
-                    Name[5, 6] Value: "x" Del
-                    Name[8, 9] Value: "y" Del
-                    Name[11, 12] Value: "z" Del
+                    Name[1:5-1:6] Value: "x" Del
+                    Name[1:8-1:9] Value: "y" Del
+                    Name[1:11-1:12] Value: "z" Del

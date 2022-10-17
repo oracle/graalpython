@@ -1,25 +1,32 @@
-Module[0, 94]
-    Assign[0, 94]
-        LHS: Name[0, 6] Value: "resutl" Store
+Input:
+------
+resutl = {i: tuple(j for j in t if i != j)
+                     for t in something for i in t}
+
+Output:
+-------
+Module[1:0-2:51]
+    Assign[1:0-2:51]
+        LHS: Name[1:0-1:6] Value: "resutl" Store
         RHS: 
-            DictComp[9, 94]
-                Key: Name[10, 11] Value: "i"
-                Value: Call[13, 42]
-                    Target: Name[13, 18] Value: "tuple"
+            DictComp[1:9-2:51]
+                Key: Name[1:10-1:11] Value: "i"
+                Value: Call[1:13-1:42]
+                    Target: Name[1:13-1:18] Value: "tuple"
                     Args:
-                        GeneratorExp[18, 42]
-                            Element: Name[19, 20] Value: "j"
-                            ComprehensionTy[21, 41]
-                                Target: Name[25, 26] Value: "j" Store
-                                Iterator: Name[30, 31] Value: "t"
+                        GeneratorExp[1:18-1:42]
+                            Element: Name[1:19-1:20] Value: "j"
+                            ComprehensionTy[1:21-1:41]
+                                Target: Name[1:25-1:26] Value: "j" Store
+                                Iterator: Name[1:30-1:31] Value: "t"
                                 Ifs:
-                                    Compare[35, 41]
-                                        LHS: Name[35, 36] Value: "i"
+                                    Compare[1:35-1:41]
+                                        LHS: Name[1:35-1:36] Value: "i"
                                         Op: NotEq
-                                        RHS: Name[40, 41] Value: "j"
-                ComprehensionTy[64, 82]
-                    Target: Name[68, 69] Value: "t" Store
-                    Iterator: Name[73, 82] Value: "something"
-                ComprehensionTy[83, 93]
-                    Target: Name[87, 88] Value: "i" Store
-                    Iterator: Name[92, 93] Value: "t"
+                                        RHS: Name[1:40-1:41] Value: "j"
+                ComprehensionTy[2:21-2:39]
+                    Target: Name[2:25-2:26] Value: "t" Store
+                    Iterator: Name[2:30-2:39] Value: "something"
+                ComprehensionTy[2:40-2:50]
+                    Target: Name[2:44-2:45] Value: "i" Store
+                    Iterator: Name[2:49-2:50] Value: "t"

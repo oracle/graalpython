@@ -1,10 +1,19 @@
-Module[0, 68]
-    Try[0, 3]
+Input:
+------
+try:
+   raise KeyboardInterrupt
+finally:
+   print('Goodbye, world!')
+
+Output:
+-------
+Module[1:0-4:27]
+    Try[1:0-4:27]
         Body:
-            Raise[8, 31]
-                Exc: Name[14, 31] Value: "KeyboardInterrupt"
+            Raise[2:3-2:26]
+                Exc: Name[2:9-2:26] Value: "KeyboardInterrupt"
         Finally:
-            Call[44, 68]
-                Target: Name[44, 49] Value: "print"
+            Call[4:3-4:27]
+                Target: Name[4:3-4:8] Value: "print"
                 Args:
-                    RAW[50, 67] Value: "Goodbye, world!"
+                    RAW[4:9-4:26] Value: "Goodbye, world!"

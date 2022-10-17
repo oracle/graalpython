@@ -1,5 +1,11 @@
-Module[0, 10]
-    Dict[0, 10]
+Input:
+------
+{'a':'b',}
+
+Output:
+-------
+Module[1:0-1:10]
+    Dict[1:0-1:10]
         Values:
-            Key: RAW[1, 4] Value: "a"
-            Val: RAW[5, 8] Value: "b"
+            Key: RAW[1:1-1:4] Value: "a"
+            Val: RAW[1:5-1:8] Value: "b"

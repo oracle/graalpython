@@ -1359,15 +1359,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     // just assert that we try to set the same flags; if there is a difference, this
                     // means we did not properly maintain our flag definition in
                     // TypeNodes.GetTypeFlagsNode.
-                    assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object);
+                    assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object, getTypeFlagsNode.execute(object), flags);
                 } else {
                     writeAttributeToObjectNode.execute(object, SpecialAttributeNames.T___FLAGS__, flags);
                 }
             }
 
             @TruffleBoundary
-            private static String flagsErrorMessage(PythonManagedClass object) {
-                return "type flags of " + object.getName() + " definitions are out of sync";
+            private static String flagsErrorMessage(PythonManagedClass object, long expected, long actual) {
+                return "type flags of " + object.getName() + " definitions are out of sync: expected " + expected + " vs. actual " + actual;
             }
 
             @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})

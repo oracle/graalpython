@@ -1,3 +1,9 @@
-Module[0, 31]
-    ImportFrom[0, 31] Level 0 sys.path
+Input:
+------
+from sys.path import (dirname,)
+
+Output:
+-------
+Module[1:0-1:31]
+    ImportFrom[1:0-1:31] Level 0 sys.path
         dirname

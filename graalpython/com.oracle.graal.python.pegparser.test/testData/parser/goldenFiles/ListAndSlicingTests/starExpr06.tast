@@ -1,10 +1,16 @@
-Module[0, 18]
-    Assign[0, 18]
+Input:
+------
+first, *rest = seq
+
+Output:
+-------
+Module[1:0-1:18]
+    Assign[1:0-1:18]
         LHS: 
-            Tuple[0, 12] Context: Store
+            Tuple[1:0-1:12] Context: Store
                 Values:
-                    Name[0, 5] Value: "first" Store
-                    Starred[7, 12]
+                    Name[1:0-1:5] Value: "first" Store
+                    Starred[1:7-1:12]
                          Context: Store
-                         Expr: Name[8, 12] Value: "rest" Store
-        RHS: Name[15, 18] Value: "seq"
+                         Expr: Name[1:8-1:12] Value: "rest" Store
+        RHS: Name[1:15-1:18] Value: "seq"

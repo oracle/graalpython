@@ -1,3 +1,9 @@
-Module[0, 9]
-    RAW[0, 6] Value: "ahoj"
-    LONG[8, 9] Value: 2
+Input:
+------
+'ahoj'; 2
+
+Output:
+-------
+Module[1:0-1:9]
+    RAW[1:0-1:6] Value: "ahoj"
+    LONG[1:8-1:9] Value: 2

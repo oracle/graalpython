@@ -1,28 +1,35 @@
-Module[0, 52]
-    For[0, 52]
+Input:
+------
+for a, *b in [(1, 2, 3), (4, 5, 6, 7)]:
+    print(b)
+
+Output:
+-------
+Module[1:0-2:12]
+    For[1:0-2:12]
         Target: 
-            Tuple[4, 9] Context: Store
+            Tuple[1:4-1:9] Context: Store
                 Values:
-                    Name[4, 5] Value: "a" Store
-                    Starred[7, 9]
+                    Name[1:4-1:5] Value: "a" Store
+                    Starred[1:7-1:9]
                          Context: Store
-                         Expr: Name[8, 9] Value: "b" Store
+                         Expr: Name[1:8-1:9] Value: "b" Store
         Iter: 
-            List[13, 38]
+            List[1:13-1:38]
                 Values:
-                    Tuple[14, 23]
+                    Tuple[1:14-1:23]
                         Values:
-                            LONG[15, 16] Value: 1
-                            LONG[18, 19] Value: 2
-                            LONG[21, 22] Value: 3
-                    Tuple[25, 37]
+                            LONG[1:15-1:16] Value: 1
+                            LONG[1:18-1:19] Value: 2
+                            LONG[1:21-1:22] Value: 3
+                    Tuple[1:25-1:37]
                         Values:
-                            LONG[26, 27] Value: 4
-                            LONG[29, 30] Value: 5
-                            LONG[32, 33] Value: 6
-                            LONG[35, 36] Value: 7
+                            LONG[1:26-1:27] Value: 4
+                            LONG[1:29-1:30] Value: 5
+                            LONG[1:32-1:33] Value: 6
+                            LONG[1:35-1:36] Value: 7
         Body:
-            Call[44, 52]
-                Target: Name[44, 49] Value: "print"
+            Call[2:4-2:12]
+                Target: Name[2:4-2:9] Value: "print"
                 Args:
-                    Name[50, 51] Value: "b"
+                    Name[2:10-2:11] Value: "b"

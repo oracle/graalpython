@@ -1,12 +1,18 @@
-Module[0, 37]
-    Assign[0, 37]
-        LHS: Name[0, 9] Value: "generator" Store
+Input:
+------
+generator = type((lambda: (yield))())
+
+Output:
+-------
+Module[1:0-1:37]
+    Assign[1:0-1:37]
+        LHS: Name[1:0-1:9] Value: "generator" Store
         RHS: 
-            Call[12, 37]
-                Target: Name[12, 16] Value: "type"
+            Call[1:12-1:37]
+                Target: Name[1:12-1:16] Value: "type"
                 Args:
-                    Call[17, 36]
+                    Call[1:17-1:36]
                         Target: 
-                            Lambda[18, 33]
-                                ArgumentsTy[0, 0]
-                                Body: Yield[27, 32]
+                            Lambda[1:18-1:33]
+                                ArgumentsTy[0:0-0:0]
+                                Body: Yield[1:27-1:32]

@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
@@ -35,11 +36,17 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -63,7 +70,7 @@ public class PZipBuiltins extends PythonBuiltins {
             throw raiseStopIteration();
         }
 
-        @Specialization(guards = "!isEmpty(self.getIterators())")
+        @Specialization(guards = {"!isEmpty(self.getIterators())", "!self.isStrict()"})
         Object doNext(VirtualFrame frame, PZip self,
                         @Cached GetNextNode next) {
             Object[] iterators = self.getIterators();
@@ -72,6 +79,35 @@ public class PZipBuiltins extends PythonBuiltins {
                 tupleElements[i] = next.execute(frame, iterators[i]);
             }
             return factory().createTuple(tupleElements);
+        }
+
+        @Specialization(guards = {"!isEmpty(self.getIterators())", "self.isStrict()"})
+        Object doNext(VirtualFrame frame, PZip self,
+                        @Cached GetNextNode next,
+                        @Cached IsBuiltinClassProfile classProfile) {
+            Object[] iterators = self.getIterators();
+            Object[] tupleElements = new Object[iterators.length];
+            int i = 0;
+            try {
+                for (; i < iterators.length; i++) {
+                    tupleElements[i] = next.execute(frame, iterators[i]);
+                }
+                return factory().createTuple(tupleElements);
+            } catch (PException e) {
+                e.expectStopIteration(classProfile);
+                if (i > 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                }
+                for (i = 1; i < iterators.length; i++) {
+                    try {
+                        next.execute(frame, iterators[i]);
+                        throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ZIP_ARG_D_IS_LONGER_THEN_ARG_SD, i + 1, i == 1 ? " " : "s 1-", i);
+                    } catch (PException e2) {
+                        e2.expectStopIteration(classProfile);
+                    }
+                }
+                throw e;
+            }
         }
     }
 
@@ -88,12 +124,31 @@ public class PZipBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object reducePos(PZip self,
+        @Specialization(guards = "!self.isStrict()")
+        Object reduce(PZip self,
                         @Cached GetClassNode getClass) {
             Object type = getClass.execute(self);
             PTuple tuple = factory().createTuple(self.getIterators());
             return factory().createTuple(new Object[]{type, tuple});
+        }
+
+        @Specialization(guards = "self.isStrict()")
+        Object reduceStrict(PZip self,
+                        @Cached GetClassNode getClass) {
+            Object type = getClass.execute(self);
+            PTuple tuple = factory().createTuple(self.getIterators());
+            return factory().createTuple(new Object[]{type, tuple, true});
+        }
+    }
+
+    @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doit(VirtualFrame frame, PZip self, Object state,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setStrict(isTrueNode.execute(frame, state));
+            return PNone.NONE;
         }
     }
 }
