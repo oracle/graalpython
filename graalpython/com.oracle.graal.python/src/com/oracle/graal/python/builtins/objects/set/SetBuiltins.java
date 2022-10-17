@@ -732,29 +732,11 @@ public final class SetBuiltins extends PythonBuiltins {
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         Object remove(VirtualFrame frame, PSet self, Object key,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached BaseSetBuiltins.ConvertKeyNode conv,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = self.getDictStorage();
-            HashingStorage newStore = null;
-            // TODO: FIXME: this might call __hash__ twice
-            Object checkedKey = conv.execute(key);
-            boolean hasKey = getItem.hasKey(frame, storage, checkedKey);
-            if (hasKey) {
-                newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
+                        @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
+            if (!discardNode.execute(frame, self, key)) {
+                throw raise(PythonErrorType.KeyError, new Object[]{key});
             }
-
-            if (hasKey) {
-                if (newStore != storage) {
-                    updatedStorage.enter();
-                    self.setDictStorage(newStore);
-                }
-                return PNone.NONE;
-            }
-            throw raise(PythonErrorType.KeyError, new Object[]{key});
-
+            return PNone.NONE;
         }
     }
 

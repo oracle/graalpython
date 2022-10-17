@@ -135,7 +135,6 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 HashingStorage storage = anyset.getDictStorage();
-                // TODO: FIXME: this might call __hash__ twice
                 return PInt.intValue(getItem.hasKey(frame, storage, item));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -149,7 +148,6 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 HashingStorage storage = anyset.getDictStorage();
-                // TODO: FIXME: this might call __hash__ twice
                 return PInt.intValue(getItem.hasKey(frame, storage, item));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
