@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -414,8 +415,8 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     abstract static class PySetSize extends PythonUnaryBuiltinNode {
         @Specialization
         static int doSet(PSet type,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return lib.length(type.getDictStorage());
+                        @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(type.getDictStorage());
         }
     }
 }

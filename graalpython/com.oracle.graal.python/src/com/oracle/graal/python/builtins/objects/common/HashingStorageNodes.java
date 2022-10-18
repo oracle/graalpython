@@ -199,6 +199,8 @@ public class HashingStorageNodes {
             return execute(null, self, key, value);
         }
 
+        // TODO: Add these execute methods to "Result of method call ignored" inspection in IDE and
+        // review the results
         public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key, Object value);
 
         @Specialization

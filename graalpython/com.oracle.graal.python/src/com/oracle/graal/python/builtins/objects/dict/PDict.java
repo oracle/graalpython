@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -57,7 +58,6 @@ import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownKeyException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -130,13 +130,13 @@ public class PDict extends PHashingCollection {
         return true;
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static long getHashSize(PDict self,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                    @Cached HashingStorageLen lenNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return lib.length(self.getDictStorage());
+            return lenNode.execute(self.getDictStorage());
         } finally {
             gil.release(mustRelease);
         }

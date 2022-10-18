@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.MapNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -74,7 +74,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -195,9 +194,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         Object next(PBaseSetIterator self,
                         @Cached ConditionProfile sizeChanged,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLibrary) {
+                        @Cached HashingStorageLen lenNode) {
             if (self.hasNext()) {
-                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
+                if (sizeChanged.profile(self.checkSizeChanged(lenNode))) {
                     throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "Set");
                 }
                 return self.next();
@@ -223,10 +222,10 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         Object next(PDictView.PBaseDictIterator<?> self,
                         @Cached ConditionProfile sizeChanged,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary storageLibrary,
+                        @Cached HashingStorageLen lenNode,
                         @Cached ConditionProfile profile) {
             if (profile.profile(self.hasNext())) {
-                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
+                if (sizeChanged.profile(self.checkSizeChanged(lenNode))) {
                     throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
                 }
                 return nextDictValue(self);
@@ -282,11 +281,11 @@ public class IteratorBuiltins extends PythonBuiltins {
             return self.array.getLength() - self.getIndex();
         }
 
-        @Specialization(guards = "!self.isExhausted()", limit = "2")
+        @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(@SuppressWarnings({"unused"}) VirtualFrame frame, PDictView.PBaseDictIterator<?> self,
-                        @CachedLibrary("self.getHashingStorage()") HashingStorageLibrary hlib,
+                        @Cached HashingStorageLen lenNode,
                         @Cached ConditionProfile profile) {
-            if (profile.profile(self.checkSizeChanged(hlib))) {
+            if (profile.profile(self.checkSizeChanged(lenNode))) {
                 return 0;
             }
             return self.getSize() - self.getIndex();
@@ -327,12 +326,12 @@ public class IteratorBuiltins extends PythonBuiltins {
             return len < 0 ? 0 : len;
         }
 
-        @Specialization(guards = "!self.isExhausted()", limit = "1")
+        @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PBaseSetIterator self,
-                        @CachedLibrary("self.getSet().getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached HashingStorageLen lenNode,
                         @Cached ConditionProfile profile) {
             int size = self.getSize();
-            final int lenSet = hlib.length(self.getSet().getDictStorage());
+            final int lenSet = lenNode.execute(self.getSet().getDictStorage());
             if (profile.profile(lenSet != size)) {
                 return 0;
             }

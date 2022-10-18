@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
@@ -231,12 +232,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_Size", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class PyDictSizeNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public static int size(PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageLen lenNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return lib.length(dict.getDictStorage());
+                return lenNode.execute(dict.getDictStorage());
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;

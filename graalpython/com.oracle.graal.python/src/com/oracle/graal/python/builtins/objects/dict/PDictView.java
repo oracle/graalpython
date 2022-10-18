@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.objects.dict;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -86,8 +86,8 @@ public abstract class PDictView extends PythonBuiltinObject {
             return this.next();
         }
 
-        public final boolean checkSizeChanged(HashingStorageLibrary lib) {
-            return lib.length(hashingStorage) != size;
+        public final boolean checkSizeChanged(HashingStorageLen lenNode) {
+            return lenNode.execute(hashingStorage) != size;
         }
     }
 
