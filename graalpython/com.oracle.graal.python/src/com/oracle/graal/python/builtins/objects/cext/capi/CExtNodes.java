@@ -852,14 +852,6 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToBorrowedRefNode extends CExtToNativeNode {
 
-        public final Object executeInt(int i) {
-            return executeInt(CExtContext.LAZY_CONTEXT, i);
-        }
-
-        public final Object executeLong(long l) {
-            return executeLong(CExtContext.LAZY_CONTEXT, l);
-        }
-
         public abstract Object executeInt(CExtContext cExtContext, int i);
 
         public abstract Object executeLong(CExtContext cExtContext, long l);
@@ -1750,10 +1742,6 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
     public abstract static class AllToPythonNode extends PNodeWithContext {
-
-        final Object[] execute(Object[] args) {
-            return execute(args, 0);
-        }
 
         abstract Object[] execute(Object[] args, int offset);
 

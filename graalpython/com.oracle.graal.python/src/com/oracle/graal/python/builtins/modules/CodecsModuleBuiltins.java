@@ -633,24 +633,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, TruffleString errors) {
-            return decodeBytes(bytes, bytes.length, errors);
-        }
-
         @Specialization(limit = "3")
         Object decode(VirtualFrame frame, Object buffer, TruffleString errors,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
-                return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
+                ByteArrayBuffer result = doDecode(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
+                return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
-        }
-
-        private Object decodeBytes(byte[] bytes, int len, TruffleString errors) {
-            ByteArrayBuffer result = doDecode(bytes, len, errors);
-            return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
         }
 
         @TruffleBoundary

@@ -309,14 +309,6 @@ public class ArrayBuiltins extends PythonBuiltins {
         static Object eq(PArray left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
-
-        protected static boolean shouldCompareDouble(PArray left, PArray right) {
-            return left.getFormat() == right.getFormat() && (left.getFormat() == BufferFormat.DOUBLE || left.getFormat() == BufferFormat.FLOAT);
-        }
-
-        protected static boolean shouldCompareBytes(PArray left, PArray right) {
-            return left.getFormat() == right.getFormat() && left.getFormat() != BufferFormat.DOUBLE && left.getFormat() != BufferFormat.FLOAT;
-        }
     }
 
     @ImportStatic(BufferFormat.class)

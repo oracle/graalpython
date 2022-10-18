@@ -189,7 +189,7 @@ public final class CApiContext extends CExtContext {
     /**
      * Next key that will be allocated byt PyThread_tss_create
      */
-    private AtomicLong nextTssKey = new AtomicLong();
+    private final AtomicLong nextTssKey = new AtomicLong();
 
     public static TruffleLogger getLogger(Class<?> clazz) {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
