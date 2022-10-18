@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.partial.PPartial;
@@ -169,8 +170,8 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                     "of the given arguments and keywords.\n")
     @GenerateNodeFactory
     public abstract static class PartialNode extends PythonBuiltinNode {
-        protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args, HashingStorageLibrary lib, boolean withKwDict) {
-            return isPartialWithoutDict(getDict, args) && withKwDict == ((PPartial) args[0]).hasKw(lib);
+        protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args, HashingStorageLen lenNode, boolean withKwDict) {
+            return isPartialWithoutDict(getDict, args) && withKwDict == ((PPartial) args[0]).hasKw(lenNode);
         }
 
         protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args) {
@@ -185,12 +186,12 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return args.length >= 1;
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lib, false)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, false)"})
         Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached ConditionProfile hasKeywordsProfile,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
@@ -205,10 +206,11 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, funcKwDict);
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lib, true)", "!withKeywords(keywords)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "!withKeywords(keywords)"})
         Object createFromPartialWoDictWKw(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
@@ -216,11 +218,12 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), lib));
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lib, true)", "withKeywords(keywords)"})
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"})
         Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached HashingStorage.InitNode initNode,
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];

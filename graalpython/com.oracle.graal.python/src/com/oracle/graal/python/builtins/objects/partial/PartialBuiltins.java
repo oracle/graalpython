@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -289,31 +290,31 @@ public class PartialBuiltins extends PythonBuiltins {
             return keywords.length > 0;
         }
 
-        @Specialization(guards = "!self.hasKw(lib)")
+        @Specialization(guards = "!self.hasKw(lenNode)")
         Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, keywords);
         }
 
-        @Specialization(guards = {"self.hasKw(lib)", "!withKeywords(keywords)"})
+        @Specialization(guards = {"self.hasKw(lenNode)", "!withKeywords(keywords)"})
         Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached ExpandKeywordStarargsNode starargsNode,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(self.getKw()));
         }
 
-        @Specialization(guards = {"self.hasKw(lib)", "withKeywords(keywords)"})
+        @Specialization(guards = {"self.hasKw(lenNode)", "withKeywords(keywords)"})
         Object callWDictWKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Cached ExpandKeywordStarargsNode starargsNode,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
 
             final PKeyword[] pKeywords = starargsNode.execute(self.getKw());
