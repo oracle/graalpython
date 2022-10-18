@@ -147,8 +147,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -1582,7 +1582,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)", limit = "1")
         @SuppressWarnings("unused")
         static PKeyword[] doNoKeywords(Object kwargsObj,
-                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Shared("lenNode") @Cached HashingStorageLen lenNode,
                         @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PKeyword.EMPTY_KEYWORDS;
@@ -1590,17 +1590,17 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!lib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "1")
         static PKeyword[] doKeywords(Object kwargsObj,
-                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Shared("lenNode") @Cached HashingStorageLen lenNode,
                         @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
             return expandKwargsNode.execute(kwargsToJavaNode.execute(kwargsObj));
         }
 
-        static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingCollectionNodes.LenNode lenNode, Object kwargsObj) {
+        static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingStorageLen lenNode, Object kwargsObj) {
             Object unwrapped = asPythonObjectNode.execute(kwargsObj);
             if (unwrapped instanceof PDict) {
-                return lenNode.execute((PDict) unwrapped) == 0;
+                return lenNode.execute(((PDict) unwrapped).getDictStorage()) == 0;
             }
             return false;
         }

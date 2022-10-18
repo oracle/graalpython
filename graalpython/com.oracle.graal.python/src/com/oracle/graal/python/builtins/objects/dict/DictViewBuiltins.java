@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -131,8 +130,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object len(PDictView self,
-                        @Cached HashingCollectionNodes.LenNode len) {
-            return len.execute(self.getWrappedDict());
+                        @Cached HashingStorageLen len) {
+            return len.execute(self.getWrappedDict().getDictStorage());
         }
     }
 
@@ -182,9 +181,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "len.execute(self.getWrappedDict()) == 0")
+        @Specialization(guards = "len.execute(self.getWrappedDict().getDictStorage()) == 0")
         static boolean containsEmpty(PDictView self, Object key,
-                        @Cached HashingCollectionNodes.LenNode len) {
+                        @Cached HashingStorageLen len) {
             return false;
         }
 
@@ -232,13 +231,13 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self == other"})
         static boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
-                        @Cached HashingCollectionNodes.LenNode len) {
-            return len.execute(self.getWrappedDict()) == 0;
+                        @Cached HashingStorageLen len) {
+            return len.execute(self.getWrappedDict().getDictStorage()) == 0;
         }
 
         @Specialization(guards = {"self != other"})
         static boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
-                        @Cached HashingCollectionNodes.LenNode len,
+                        @Cached HashingStorageLen len,
                         @Cached ConditionProfile sizeProfile,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached("create(false)") ContainedInNode contained) {
@@ -247,16 +246,16 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Cached HashingCollectionNodes.LenNode len,
+                        @Cached HashingStorageLen len,
                         @Cached ConditionProfile sizeProfile,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached("create(false)") ContainedInNode contained) {
             return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
         }
 
-        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingCollectionNodes.LenNode len, ConditionProfile sizeProfile, PyObjectSizeNode sizeNode,
+        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingStorageLen len, ConditionProfile sizeProfile, PyObjectSizeNode sizeNode,
                         ContainedInNode contained) {
-            if (sizeProfile.profile(len.execute(self.getWrappedDict()) <= sizeNode.execute(frame, other))) {
+            if (sizeProfile.profile(len.execute(self.getWrappedDict().getDictStorage()) <= sizeNode.execute(frame, other))) {
                 return !contained.execute(frame, self, other);
             } else {
                 return !contained.execute(frame, other, self);

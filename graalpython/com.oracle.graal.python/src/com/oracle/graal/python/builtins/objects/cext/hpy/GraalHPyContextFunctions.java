@@ -128,9 +128,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.Recursive
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -2538,7 +2538,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached ExecutePositionalStarargsNode expandArgsNode,
-                        @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Cached HashingStorageLen lenNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached CallNode callNode,
@@ -2578,9 +2578,9 @@ public abstract class GraalHPyContextFunctions {
         }
 
         private static PKeyword[] castKwargs(Object kwargs,
-                        @Cached HashingCollectionNodes.LenNode lenNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached PRaiseNode raiseNode) {
+                        HashingStorageLen lenNode,
+                        ExpandKeywordStarargsNode expandKwargsNode,
+                        PRaiseNode raiseNode) {
             // this indicates that a NULL handle was passed (which is valid)
             if (kwargs == PNone.NO_VALUE || isEmptyDict(kwargs, lenNode)) {
                 return PKeyword.EMPTY_KEYWORDS;
@@ -2591,8 +2591,8 @@ public abstract class GraalHPyContextFunctions {
             throw raiseNode.raise(TypeError, ErrorMessages.HPY_CALLTUPLEDICT_REQUIRES_KW_DICT_OR_NULL);
         }
 
-        private static boolean isEmptyDict(Object delegate, HashingCollectionNodes.LenNode lenNode) {
-            return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
+        private static boolean isEmptyDict(Object delegate, HashingStorageLen lenNode) {
+            return delegate instanceof PDict && lenNode.execute(((PDict) delegate).getDictStorage()) == 0;
         }
     }
 

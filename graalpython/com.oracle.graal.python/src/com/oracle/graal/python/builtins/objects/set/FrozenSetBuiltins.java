@@ -348,7 +348,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return self.getHash();
         }
 
-        @Specialization(guards = {"self.getHash() == HASH_UNSET"}, limit = "1")
+        @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public static long computeHash(VirtualFrame frame, PFrozenSet self,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,

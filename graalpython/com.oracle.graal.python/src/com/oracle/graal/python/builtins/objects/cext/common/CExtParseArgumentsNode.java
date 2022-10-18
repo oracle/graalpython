@@ -67,8 +67,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -161,13 +161,13 @@ public abstract class CExtParseArgumentsNode {
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached("createConvertArgNodes(cachedFormat, lengthNode)") ConvertArgNode[] convertArgNodes,
-                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
+                        @Cached HashingStorageLen kwdsLenNode,
                         @Cached SequenceStorageNodes.LenNode argvLenNode,
                         @Cached PRaiseNativeNode raiseNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @SuppressWarnings("unused") @Cached TruffleString.EqualNode eqNode) {
             try {
                 PDict kwdsDict = null;
-                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                if (kwds != null && kwdsLenNode.execute(((PDict) kwds).getDictStorage()) != 0) {
                     kwdsDict = (PDict) kwds;
                 }
                 doParsingExploded(funName, argv, kwdsDict, format, kwdnames, varargs, nativeConext, convertArgNodes, argvLenNode, lengthNode, codepointAtIndexNode, raiseNode);
@@ -181,14 +181,14 @@ public abstract class CExtParseArgumentsNode {
         @Megamorphic
         int doGeneric(TruffleString funName, PTuple argv, Object kwds, TruffleString format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
-                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
+                        @Cached HashingStorageLen kwdsLenNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached SequenceStorageNodes.LenNode argvLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 PDict kwdsDict = null;
-                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                if (kwds != null && kwdsLenNode.execute(((PDict) kwds).getDictStorage()) != 0) {
                     kwdsDict = (PDict) kwds;
                 }
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);

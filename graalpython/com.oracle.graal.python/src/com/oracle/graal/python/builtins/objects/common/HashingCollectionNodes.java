@@ -44,7 +44,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -76,22 +75,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class HashingCollectionNodes {
-
-    @GenerateUncached
-    @ImportStatic(PGuards.class)
-    public abstract static class LenNode extends PNodeWithContext {
-        public abstract int execute(PHashingCollection c);
-
-        @Specialization(limit = "4")
-        static int getLen(PHashingCollection c,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(c.getDictStorage());
-        }
-
-        public static LenNode create() {
-            return LenNodeGen.create();
-        }
-    }
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
