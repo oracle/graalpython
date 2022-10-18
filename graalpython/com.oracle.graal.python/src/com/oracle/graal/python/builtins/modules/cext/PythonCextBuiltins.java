@@ -2356,7 +2356,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_tss_get")
+    @Builtin(name = "PyTruffle_tss_get", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleTssGet extends PythonUnaryBuiltinNode {
         @Specialization
@@ -2370,7 +2370,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_tss_set")
+    @Builtin(name = "PyTruffle_tss_set", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffleTssSet extends PythonBinaryBuiltinNode {
         @Specialization
@@ -2381,7 +2381,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_tss_delete")
+    @Builtin(name = "PyTruffle_tss_delete", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleTssDelete extends PythonUnaryBuiltinNode {
         @Specialization
