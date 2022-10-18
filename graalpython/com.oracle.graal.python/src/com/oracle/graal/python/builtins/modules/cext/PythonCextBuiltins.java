@@ -120,7 +120,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalRestoreThread;
@@ -1302,15 +1301,6 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             PythonNativeNull nn = getContext().getNativeNull();
             nn.setPtr(object);
             return nn;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_HandleCache_Create", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleHandleCacheCreate extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object createCache(Object ptrToResolveHandle) {
-            return new HandleCache(ptrToResolveHandle);
         }
     }
 

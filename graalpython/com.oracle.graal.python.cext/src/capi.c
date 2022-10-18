@@ -93,7 +93,6 @@ void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 uint32_t Py_Truffle_Options;
 
 
-cache_t cache;
 ptr_cache_t ptr_cache;
 ptr_cache_t ptr_cache_stealing;
 type_ptr_cache_t type_ptr_cache;
@@ -130,7 +129,6 @@ static void initialize_upcall_functions() {
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
-    cache = (cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", resolve_handle);
     ptr_cache = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
     ptr_cache_stealing = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
     type_ptr_cache = (type_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
@@ -405,7 +403,7 @@ void* native_long_to_java(uint64_t val) {
     } else if (obj == Py_None) {
         return Py_None;
     } else if (points_to_handle_space(obj)) {
-        return resolve_handle_cached(cache, (uint64_t)obj);
+        return resolve_handle((void*) obj);
     }
     return obj;
 }
@@ -868,8 +866,13 @@ PyAPI_FUNC(int) PyTruffle_Debug(void *arg) {
 }
 
 PyAPI_FUNC(int) PyTruffle_ToNative(void *arg) {
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ToNative", arg);
-    return 0;
+	if (polyglot_has_member(PY_TRUFFLE_CEXT, "PyTruffle_ToNative")) {
+		polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ToNative", arg);
+		return 0;
+	} else {
+		printf("PyTruffle_ToNative is not enabled - enable with --python.EnableDebuggingBuiltins\n");
+		return 1;
+	}
 }
 
 PyAPI_FUNC(int) truffle_ptr_compare(void* x, void* y, int op) {

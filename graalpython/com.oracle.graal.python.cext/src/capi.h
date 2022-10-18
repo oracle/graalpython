@@ -210,9 +210,6 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
-typedef void* (*cache_t)(uint64_t);
-PyAPI_DATA(cache_t) cache;
-
 typedef PyObject* (*ptr_cache_t)(PyObject *);
 typedef PyTypeObject* (*type_ptr_cache_t)(PyTypeObject *, int64_t);
 PyAPI_DATA(ptr_cache_t) ptr_cache;
@@ -229,8 +226,6 @@ PyAPI_DATA(free_upcall_fun_t) free_upcall;
 // TODO we need a reliable solution for that
 #define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
 
-#define resolve_handle_cached(__cache__, __addr__) (__cache__)(__addr__)
-
 PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
@@ -239,7 +234,7 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
 MUST_INLINE
 PyObject* native_to_java(PyObject* obj) {
     if (points_to_handle_space(obj)) {
-        return resolve_handle_cached(cache, (uint64_t)obj);
+        return resolve_handle(obj);
     }
     return ptr_cache(obj);
 }
@@ -247,7 +242,7 @@ PyObject* native_to_java(PyObject* obj) {
 MUST_INLINE
 PyObject* native_to_java_stealing(PyObject* obj) {
     if (points_to_handle_space(obj)) {
-        return resolve_handle_cached(cache, (uint64_t)obj);
+        return resolve_handle(obj);
     }
     return ptr_cache_stealing(obj);
 }
@@ -267,7 +262,7 @@ PyTypeObject* native_type_to_java(PyTypeObject* type) {
 MUST_INLINE
 void* native_pointer_to_java(void* obj) {
     if (points_to_handle_space(obj)) {
-        return resolve_handle_cached(cache, (uint64_t)obj);
+        return resolve_handle(obj);
     }
     return obj;
 }
@@ -275,7 +270,7 @@ void* native_pointer_to_java(void* obj) {
 MUST_INLINE
 void* function_pointer_to_java(void* obj) {
     if (points_to_handle_space(obj)) {
-        return resolve_handle_cached(cache, (uint64_t)obj);
+        return resolve_handle(obj);
     } else if (!polyglot_is_value(obj)) {
     	return resolve_function(obj);
     }

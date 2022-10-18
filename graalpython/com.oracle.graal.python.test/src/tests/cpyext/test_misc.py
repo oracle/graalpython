@@ -262,11 +262,16 @@ class TestMisc(CPyExtTestCase):
 
             double dval = PyFloat_AsDouble(val);
 
-            PyTruffle_ToNative(val);
+            if (PyTruffle_ToNative(val)) {
+                return Py_False;
+            }
 
             // a fresh object with the same value
             PyObject *val1 = PyFloat_FromDouble(dval);
-            PyTruffle_ToNative(val1);
+
+            if (PyTruffle_ToNative(val1)) {
+                return Py_False;
+            }
 
             // now, kill it
             Py_DECREF(val1);
