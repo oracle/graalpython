@@ -282,6 +282,7 @@ import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
