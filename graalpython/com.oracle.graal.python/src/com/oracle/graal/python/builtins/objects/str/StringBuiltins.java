@@ -96,7 +96,12 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -168,7 +173,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1042,19 +1046,26 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageLen lenNode,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterHasNext,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue) {
             HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
-            HashingStorage destStorage = PDict.createNewStorage(false, hlib.length(srcStorage));
-            for (HashingStorage.DictEntry entry : hlib.entries(srcStorage)) {
-                if (PGuards.isInteger(entry.key) || PGuards.isPInt(entry.key)) {
-                    destStorage = setHashingStorageItem.execute(frame, destStorage, entry.key, entry.value);
+            HashingStorage destStorage = PDict.createNewStorage(false, lenNode.execute(srcStorage));
+            HashingStorageIterator it = getIter.execute(srcStorage);
+            while (!iterHasNext.execute(srcStorage, it)) {
+                Object currentKey = iterKey.execute(srcStorage, it);
+                Object currentValue = iterValue.execute(srcStorage, it);
+                if (PGuards.isInteger(currentKey) || PGuards.isPInt(currentKey)) {
+                    destStorage = setHashingStorageItem.execute(frame, destStorage, currentKey, currentValue);
                 } else {
-                    TruffleString strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
+                    TruffleString strKey = cast.cast(currentKey, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
                     if (codePointLengthNode.execute(strKey, TS_ENCODING) != 1) {
                         throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     int codePoint = codePointAtIndexNode.execute(strKey, 0, TS_ENCODING);
-                    destStorage = setHashingStorageItem.execute(frame, destStorage, codePoint, entry.value);
+                    destStorage = setHashingStorageItem.execute(frame, destStorage, codePoint, currentValue);
                 }
             }
             return factory().createDict(destStorage);
