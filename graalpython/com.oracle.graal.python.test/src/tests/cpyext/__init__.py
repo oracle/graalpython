@@ -543,12 +543,12 @@ def CPyExtType(name, code, **kwargs):
     }};
 
     static struct PyMethodDef {name}_methods[] = {{
-        {tp_methods},
+        """ + ("""{tp_methods},""" if "tp_methods" in kwargs else "") + """
         {{NULL, NULL, 0, NULL}}
     }};
 
     static struct PyMemberDef {name}_members[] = {{
-        {tp_members},
+        """ + ("""{tp_members},""" if "tp_members" in kwargs else "") + """
         {{NULL, 0, 0, 0, NULL}}
     }};
 
