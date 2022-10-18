@@ -50,7 +50,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -96,9 +96,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
-                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 3)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "isReverse",
@@ -106,9 +106,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object doBuiltinFunctionCachedReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
-                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 3)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg2, arg1, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse", "frame != null || unusedFrame"}, //
@@ -116,9 +116,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object doBuiltinFunctionCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
-                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 3)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse", "frame != null || unusedFrame"}, //
@@ -126,9 +126,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object doBuiltinFunctionCtCachedReverse(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
-                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 3)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg2, arg1, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -136,9 +136,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object doBuiltinMethodCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 3)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
@@ -147,9 +147,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 3)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
+        return callTernaryBuiltin(frame, builtinNode, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg",
@@ -157,9 +157,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
+        return callQuaternaryBuiltin(frame, builtinNode, func.getSelf(), arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg",
@@ -168,9 +168,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
+        return callQuaternaryBuiltin(frame, builtinNode, func.getSelf(), arg1, arg2, arg3);
     }
 
     @Specialization(guards = "!isTernaryBuiltinDescriptor(func)", replaces = {"doBuiltinFunctionCached", "doBuiltinFunctionCtCached", "doBuiltinFunctionCachedReverse",
