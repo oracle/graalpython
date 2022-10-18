@@ -360,7 +360,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             throw new IllegalStateException("subclass should have implemented lenCompare");
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         boolean doView(VirtualFrame frame, PDictView self, PBaseSet other,
                         @Cached HashingStorageLen selfLenNode,
                         @Cached HashingStorageLen otherLenNode,
@@ -370,7 +370,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         boolean doView(VirtualFrame frame, PDictView self, PDictView other,
                         @Cached HashingStorageLen selfLenNode,
                         @Cached HashingStorageLen otherLenNode,

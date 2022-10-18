@@ -137,7 +137,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             appendStringNode.execute(sb, T_RBRACE);
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         public static Object repr(VirtualFrame frame, PBaseSet self,
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,

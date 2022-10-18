@@ -1074,7 +1074,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getAttributeNode.execute(object, SpecialAttributeNames.T___QUALNAME__));
         }
 
-        @Specialization(guards = "eq(SET_USED, key)", limit = "1")
+        @Specialization(guards = "eq(SET_USED, key)")
         static long doSetUsed(PBaseSet object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(object.getDictStorage());

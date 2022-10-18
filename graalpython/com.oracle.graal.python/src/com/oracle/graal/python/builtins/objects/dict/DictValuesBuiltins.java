@@ -75,7 +75,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         static Object run(PDictView self,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(self.getWrappedDict().getDictStorage());

@@ -392,7 +392,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = J___LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         public static int len(PDict self,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(self.getDictStorage());
