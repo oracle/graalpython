@@ -663,6 +663,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
+        String osName = System.getProperty("os.name");
+        if (osName != null && osName.toLowerCase().contains("windows")) {
+            contextBuilder.option("python.PosixModuleBackend", "java");
+        }
+
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
         }
