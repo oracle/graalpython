@@ -120,17 +120,19 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
-        private static void fillItems(VirtualFrame frame, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr, HashingStorageLibrary.HashingStorageIterator<Object> iter,
+        private static void fillItems(VirtualFrame frame, HashingStorage storage, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr,
+                        HashingStorageGetIterator getIter, HashingStorageIteratorNext iterNext, HashingStorageIteratorKey iterKey,
                         TruffleStringBuilder.AppendStringNode appendStringNode) {
             boolean first = true;
             appendStringNode.execute(sb, T_LBRACE);
-            while (iter.hasNext()) {
+            HashingStorageIterator it = getIter.execute(storage);
+            while (iterNext.execute(storage, it)) {
                 if (first) {
                     first = false;
                 } else {
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                 }
-                appendStringNode.execute(sb, repr.execute(frame, iter.next()));
+                appendStringNode.execute(sb, repr.execute(frame, iterKey.execute(storage, it)));
             }
             appendStringNode.execute(sb, T_RBRACE);
         }
@@ -140,13 +142,16 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached PyObjectReprAsTruffleStringNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached HashingStorageGetIterator getStorageIterator,
+                        @Cached HashingStorageIteratorNext iteratorNext,
+                        @Cached HashingStorageIteratorKey iteratorKey,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             Object clazz = getClassNode.execute(self);
             PythonContext ctxt = PythonContext.get(getNameNode);
-            int len = hlib.length(self.getDictStorage());
+            int len = lenNode.execute(self.getDictStorage());
             if (len == 0) {
                 appendStringNode.execute(sb, getNameNode.execute(clazz));
                 appendStringNode.execute(sb, T_EMPTY_PARENS);
@@ -158,13 +163,12 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 return toStringNode.execute(sb);
             }
             try {
-                HashingStorageLibrary.HashingStorageIterator<Object> iter = hlib.keys(self.getDictStorage()).iterator();
                 boolean showType = clazz != PythonBuiltinClassType.PSet;
                 if (showType) {
                     appendStringNode.execute(sb, getNameNode.execute(clazz));
                     appendStringNode.execute(sb, T_LPAREN);
                 }
-                fillItems(frame, sb, repr, iter, appendStringNode);
+                fillItems(frame, self.getDictStorage(), sb, repr, getStorageIterator, iteratorNext, iteratorKey, appendStringNode);
                 if (showType) {
                     appendStringNode.execute(sb, T_RPAREN);
                 }
