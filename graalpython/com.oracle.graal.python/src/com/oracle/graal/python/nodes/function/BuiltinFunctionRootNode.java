@@ -170,6 +170,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                             " vs " + builtin.maxNumOfPositionalArgs() + " - " + factory.toString();
         }
 
+        assert validateBuiltin(factory, builtin);
+
         if (constructsClass && maxNumPosArgs == 0) {
             // we have this convention to always declare the cls argument without setting the num
             // args
@@ -217,6 +219,37 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
         return new Signature(posOnlyArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
                         builtin.varArgsMarker(), parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
+    }
+
+    private static boolean validateBuiltin(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
+        Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
+        if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 1);
+        } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 2);
+        } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 3);
+        } else if (PythonQuaternaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 4);
+        } else if (PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            assert builtin.takesVarArgs() : "PythonVararagsBuiltin subclass must take varargs, builtin " + nodeClass.getName();
+            assert builtin.takesVarKeywordArgs() : "PythonVararagsBuiltin subclass must take varkwargs, builtin " + nodeClass.getName();
+        }
+        return true;
+    }
+
+    private static void validateBuiltinForArity(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, int arity) {
+        int minNumPosArgs = builtin.minNumOfPositionalArgs();
+        int maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+        if (builtin.parameterNames().length > 0) {
+            assert builtin.parameterNames().length == arity : "Mismatch in parameter list length and arity for n-ary builtin " + nodeClass.getName();
+            maxNumPosArgs = builtin.parameterNames().length;
+        } else if (maxNumPosArgs == -1) {
+            maxNumPosArgs = minNumPosArgs;
+        }
+        assert minNumPosArgs <= arity && minNumPosArgs <= maxNumPosArgs : "Invalid number of min arguments for a n-ary builtin " + nodeClass.getName();
+        assert maxNumPosArgs == arity : "Invalid number of max arguments for a n-ary builtin " + nodeClass.getName();
+        assert !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() : "Invalid varargs declaration for a n-ary builtin " + nodeClass.getName();
     }
 
     // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)
