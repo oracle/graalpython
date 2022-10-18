@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.Econom
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXorCallback.Acc;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -412,6 +413,10 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     public static abstract class HashingStorageLen extends Node {
+        public static int executeUncached(HashingStorage dictStorage) {
+            return HashingStorageLenNodeGen.getUncached().execute(dictStorage);
+        }
+
         public abstract int execute(HashingStorage storage);
 
         @Specialization

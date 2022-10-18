@@ -141,16 +141,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
+                        @Cached HashingStorageLen lenNode,
                         @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lenNode.execute(storage));
         }
 
         @Specialization(limit = "3")
         Object getItemsViewIter(@SuppressWarnings("unused") PDictItemsView self,
+                        @Cached HashingStorageLen lenNode,
                         @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib) {
-            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lenNode.execute(storage));
         }
     }
 
@@ -159,18 +161,20 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getReversedKeysViewIter(PDictKeysView self,
+                        @Cached HashingStorageLen lenNode,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             PHashingCollection dict = self.getWrappedDict();
             HashingStorage storage = dict.getDictStorage();
-            return factory().createDictReverseKeyIterator(lib.reverseKeys(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictReverseKeyIterator(lib.reverseKeys(storage).iterator(), storage, lenNode.execute(storage));
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getReversedItemsViewIter(PDictItemsView self,
+                        @Cached HashingStorageLen lenNode,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             PHashingCollection dict = self.getWrappedDict();
             HashingStorage storage = dict.getDictStorage();
-            return factory().createDictReverseItemIterator(lib.reverseEntries(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictReverseItemIterator(lib.reverseEntries(storage).iterator(), storage, lenNode.execute(storage));
         }
     }
 

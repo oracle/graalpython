@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -775,7 +776,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(MA_VERSION_TAG, key)")
         @TruffleBoundary
         static long doMaVersionTag(PDict object, PythonObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            if (HashingStorageLibrary.getUncached().length(object.getDictStorage()) == 0) {
+            if (HashingStorageLen.executeUncached(object.getDictStorage()) == 0) {
                 return 0;
             }
 
@@ -1075,8 +1076,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(SET_USED, key)", limit = "1")
         static long doSetUsed(PBaseSet object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(object.getDictStorage());
+                        @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(object.getDictStorage());
         }
 
         @Specialization(guards = "eq(MMAP_DATA, key)")
