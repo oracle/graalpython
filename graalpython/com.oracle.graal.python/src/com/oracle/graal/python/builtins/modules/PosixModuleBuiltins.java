@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -139,7 +141,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
-@CoreFunctions(defineModule = "posix", isEager = true)
+@CoreFunctions(defineModule = "posix", extendsModule = "nt", isEager = true)
 public class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
@@ -252,7 +254,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         // define a class in one module (os) and make it public in another (posix), so we create
         // them directly in the 'os' module, and expose them in the `posix` module as well.
         // Note that the classes are still re-imported by os.py.
-        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        PythonModule posix;
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            posix = core.lookupBuiltinModule(T_NT);
+        } else {
+            posix = core.lookupBuiltinModule(T_POSIX);
+        }
         posix.setAttribute(PythonBuiltinClassType.PStatResult.getName(), core.lookupType(PythonBuiltinClassType.PStatResult));
         posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
 
@@ -288,7 +295,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes((entry.getValue().getBytes())));
             }
         }
-        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        PythonModule posix;
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            posix = core.lookupBuiltinModule(T_NT);
+        } else {
+            posix = core.lookupBuiltinModule(T_POSIX);
+        }
         Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }

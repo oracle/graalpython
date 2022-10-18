@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
@@ -511,6 +512,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PropertyBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),
+                        new NtModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
@@ -945,13 +947,22 @@ public abstract class Python3Core extends ParserErrorCallback {
              * access is never allowed during native image build time.
              */
             if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
-                builtinModules.remove(BuiltinNames.T_BZ2);
-                sysModules.delItem(BuiltinNames.T_BZ2);
+                removeBuiltinModule(BuiltinNames.T_BZ2);
             }
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());
             getContext().getSharedFinalizer().registerAsyncAction();
             initialized = true;
+        }
+    }
+
+    @TruffleBoundary
+    public final void removeBuiltinModule(TruffleString name) {
+        assert !initialized : "can only remove builtin modules before initialization is finished";
+        builtinModules.remove(name);
+        if (sysModules != null) {
+            // may already be published
+            sysModules.delItem(name);
         }
     }
 
