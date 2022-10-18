@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -76,8 +77,8 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         static Object run(PDictView self,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(self.getWrappedDict().getDictStorage());
+                        @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(self.getWrappedDict().getDictStorage());
         }
     }
 
@@ -86,9 +87,10 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         Object doPDictValuesView(@SuppressWarnings("unused") PDictValuesView self,
+                        @Cached HashingStorageLen lenNode,
                         @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib) {
-            return factory().createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictValueIterator(lib.values(storage).iterator(), storage, lenNode.execute(storage));
         }
     }
 
@@ -97,10 +99,11 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object doPDictValuesView(PDictValuesView self,
+                        @Cached HashingStorageLen lenNode,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             PHashingCollection dict = self.getWrappedDict();
             HashingStorage storage = dict.getDictStorage();
-            return factory().createDictReverseValueIterator(lib.reverseValues(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictReverseValueIterator(lib.reverseValues(storage).iterator(), storage, lenNode.execute(storage));
         }
     }
 

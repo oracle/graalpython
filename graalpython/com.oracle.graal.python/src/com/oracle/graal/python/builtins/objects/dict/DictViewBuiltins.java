@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -357,21 +358,21 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         boolean doView(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary selflib,
-                        @CachedLibrary("other.getDictStorage()") HashingStorageLibrary otherlib,
+                        @Cached HashingStorageLen selfLenNode,
+                        @Cached HashingStorageLen otherLenNode,
                         @Cached ContainedInNode allContained) {
-            int lenSelf = selflib.length(self.getWrappedDict().getDictStorage());
-            int lenOther = otherlib.length(other.getDictStorage());
+            int lenSelf = selfLenNode.execute(self.getWrappedDict().getDictStorage());
+            int lenOther = otherLenNode.execute(other.getDictStorage());
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Specialization(limit = "1")
         boolean doView(VirtualFrame frame, PDictView self, PDictView other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary selflib,
-                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary otherlib,
+                        @Cached HashingStorageLen selfLenNode,
+                        @Cached HashingStorageLen otherLenNode,
                         @Cached ContainedInNode allContained) {
-            int lenSelf = selflib.length(self.getWrappedDict().getDictStorage());
-            int lenOther = otherlib.length(other.getWrappedDict().getDictStorage());
+            int lenSelf = selfLenNode.execute(self.getWrappedDict().getDictStorage());
+            int lenOther = otherLenNode.execute(other.getWrappedDict().getDictStorage());
             return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 

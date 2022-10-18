@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageEq;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -341,9 +342,10 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object run(@SuppressWarnings("unused") PDict self,
+                        @Cached HashingStorageLen lenNode,
                         @Bind("self.getDictStorage()") HashingStorage dictStorage,
                         @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.keys(dictStorage).iterator(), dictStorage, lib.length(dictStorage));
+            return factory().createDictKeyIterator(lib.keys(dictStorage).iterator(), dictStorage, lenNode.execute(dictStorage));
         }
     }
 
@@ -352,9 +354,10 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object run(PDict self,
+                        @Cached HashingStorageLen lenNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = self.getDictStorage();
-            return factory().createDictKeyIterator(lib.reverseKeys(storage).iterator(), storage, lib.length(storage));
+            return factory().createDictKeyIterator(lib.reverseKeys(storage).iterator(), storage, lenNode.execute(storage));
         }
     }
 
@@ -391,8 +394,8 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
         public static int len(PDict self,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(self.getDictStorage());
+                        @Cached HashingStorageLen lenNode) {
+            return lenNode.execute(self.getDictStorage());
         }
     }
 
