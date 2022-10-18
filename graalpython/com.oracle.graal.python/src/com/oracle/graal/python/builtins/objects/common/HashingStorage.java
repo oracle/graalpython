@@ -691,5 +691,4 @@ public abstract class HashingStorage {
         }
         return storage;
     }
-
 }

@@ -49,6 +49,10 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.Econom
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXorCallback.Acc;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetIteratorNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorKeyNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorNextNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorValueNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -470,6 +474,10 @@ public class HashingStorageNodes {
     @GenerateUncached
     @ImportStatic({PGuards.class})
     public static abstract class HashingStorageGetIterator extends Node {
+        public static HashingStorageIterator executeUncached(HashingStorage storage) {
+            return HashingStorageGetIteratorNodeGen.getUncached().execute(storage);
+        }
+
         public abstract HashingStorageIterator execute(HashingStorage storage);
 
         @Specialization
@@ -508,6 +516,10 @@ public class HashingStorageNodes {
     @GenerateUncached
     @ImportStatic({PGuards.class})
     public static abstract class HashingStorageIteratorNext extends Node {
+        public static boolean executeUncached(HashingStorage storage, HashingStorageIterator it) {
+            return HashingStorageIteratorNextNodeGen.getUncached().execute(storage, it);
+        }
+
         /**
          * Returns {@code true} if the iterator has next value. Use nodes to get the current value,
          * key, and hash of the current key.
@@ -577,6 +589,10 @@ public class HashingStorageNodes {
     @GenerateUncached
     @ImportStatic({PGuards.class})
     public static abstract class HashingStorageIteratorValue extends Node {
+        public static Object executeUncached(HashingStorage storage, HashingStorageIterator it) {
+            return HashingStorageIteratorValueNodeGen.getUncached().execute(storage, it);
+        }
+
         public abstract Object execute(HashingStorage storage, HashingStorageIterator it);
 
         @Specialization
@@ -609,6 +625,10 @@ public class HashingStorageNodes {
     @GenerateUncached
     @ImportStatic({PGuards.class})
     public static abstract class HashingStorageIteratorKey extends Node {
+        public static Object executeUncached(HashingStorage storage, HashingStorageIterator it) {
+            return HashingStorageIteratorKeyNodeGen.getUncached().execute(storage, it);
+        }
+
         public abstract Object execute(HashingStorage storage, HashingStorageIterator it);
 
         @Specialization
