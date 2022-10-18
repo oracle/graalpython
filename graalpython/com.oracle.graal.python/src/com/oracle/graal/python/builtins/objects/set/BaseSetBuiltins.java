@@ -321,29 +321,26 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self != other", "!cannotBeOverridden(other, getClassNode)"}, limit = "3")
         static boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
+                        @Cached HashingStorageGetItem getHashingStorageItem,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            return isDisjointGeneric(frame, self, other, hasFrame, selfLib, getIter, getNextNode, errorProfile);
+            return isDisjointGeneric(frame, self, other, getHashingStorageItem, getIter, getNextNode, errorProfile);
         }
 
-        @Specialization(guards = {"!isAnySet(other)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(other)"})
         static boolean isDisjointGeneric(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
+                        @Cached HashingStorageGetItem getHashingStorageItem,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
             HashingStorage selfStorage = self.getDictStorage();
             Object iterator = getIter.execute(frame, other);
             while (true) {
                 try {
                     Object nextValue = getNextNode.execute(frame, iterator);
-                    if (selfLib.hasKeyWithState(selfStorage, nextValue, state)) {
+                    if (getHashingStorageItem.hasKey(frame, selfStorage, nextValue)) {
                         return false;
                     }
                 } catch (PException e) {
