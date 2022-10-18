@@ -32,7 +32,6 @@ import itertools
 import json
 import os
 import pathlib
-import platform
 import re
 import shlex
 import shutil
@@ -484,6 +483,7 @@ AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_in
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
+    unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
     unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
@@ -864,19 +864,20 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
-                mx.log("Running tests with CPython")
-                exe = os.environ.get("PYTHON3_HOME", None)
-                if exe:
-                    exe = os.path.join(exe, "python")
-                else:
-                    exe = "python3"
-                env = os.environ.copy()
-                env['PYTHONHASHSEED'] = '0'
-                test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(test_args, nonZeroIsFatal=True, env=env)
             mx.run(["env"])
             run_python_unittests(python_gvm(), javaAsserts=True)
+
+    with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
+        if task:
+            exe = os.environ.get("PYTHON3_HOME", None)
+            if exe:
+                exe = os.path.join(exe, "python")
+            else:
+                exe = "python3"
+            env = os.environ.copy()
+            env['PYTHONHASHSEED'] = '0'
+            test_args = [exe, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
+            mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
@@ -1613,7 +1614,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
     ],
-    priority=5,
+    priority=6,  # Higher than 'GraalVM Python' to help defining the main
     stability="experimental",
 ))
 
