@@ -46,6 +46,10 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -346,18 +350,23 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"}, limit = "1")
         public static long computeHash(VirtualFrame frame, PFrozenSet self,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached HashingStorageIteratorKey iterKey,
                         @Cached PyObjectHashNode hashNode) {
             // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
             HashingStorage storage = self.getDictStorage();
-            int len = hlib.length(storage);
             long m1 = 0x72e8ef4d;
             long m2 = 0x10dcd;
             long c1 = 0x3611c3e3;
             long c2 = 0x2338c7c1;
             long hash = 0;
 
-            for (Object key : hlib.keys(storage)) {
+            int len = 0;
+            HashingStorageIterator it = getIter.execute(storage);
+            while (iterNext.execute(storage, it)) {
+                len++;
+                Object key = iterKey.execute(storage, it);
                 long tmp = hashNode.execute(frame, key);
                 hash ^= shuffleBits(tmp);
             }
