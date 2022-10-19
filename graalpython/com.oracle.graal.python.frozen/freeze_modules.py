@@ -369,7 +369,7 @@ def _iter_sources(modules):
 
 
 def _get_checksum(filename):
-    with open(filename, "rb") as infile:
+    with open(filename, "rb", encoding="utf-8") as infile:
         contents = infile.read()
     m = sha256()
     m.update(contents)
@@ -532,7 +532,7 @@ public final class FrozenModules {"""
 
 
 def freeze_module(src):
-    with open(src.pyfile, "r") as src_file, open(src.binaryfile, "wb") as binary_file:
+    with open(src.pyfile, "r", encoding="utf-8") as src_file, open(src.binaryfile, "wb") as binary_file:
         code_obj = compile(src_file.read(), f"<frozen {src.id}>", "exec")
         marshal.dump(code_obj, binary_file)
 
@@ -572,21 +572,21 @@ def write_frozen_lookup(out_file, modules):
 
 def write_frozen_module_file(file, modules):
     if os.path.exists(file):
-        with open(file, "r") as f:
+        with open(file, "r", encoding="utf-8") as f:
             content = f.read()
         stat_result = os.stat(file)
         atime, mtime = stat_result.st_atime, stat_result.st_mtime
     else:
         content = None
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    with open(file, "w") as out_file:
+    with open(file, "w", encoding="utf-8") as out_file:
         out_file.write(FROZEN_MODULES_HEADER)
         out_file.write("\n\n")
         write_frozen_modules_map(out_file, modules)
         out_file.write("\n")
         write_frozen_lookup(out_file, modules)
         out_file.write("}\n")
-    with open(file, "r") as f:
+    with open(file, "r", encoding="utf-8") as f:
         new_content = f.read()
     if new_content == content:
         # set mtime to the old one, if we didn't change anything
