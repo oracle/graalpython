@@ -176,7 +176,7 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTuple_Size", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTuple_Size", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyTupleSizeNode extends PythonUnaryBuiltinNode {
         @Specialization

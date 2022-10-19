@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -60,7 +61,11 @@ class InstrumentationRootImpl extends InstrumentationRoot {
     public InstrumentableNode materializeInstrumentableNodes(Set<Class<? extends Tag>> materializedTags) {
         if (materializedTags.contains(StandardTags.StatementTag.class)) {
             if (instrumentationSupport == null) {
-                PBytecodeRootNode rootNode = (PBytecodeRootNode) getParent();
+                Node node = getParent();
+                while (!(node instanceof PBytecodeRootNode)) {
+                    node = node.getParent();
+                }
+                PBytecodeRootNode rootNode = (PBytecodeRootNode) node;
                 if (rootNode.getSource() != null && rootNode.getSource().hasCharacters()) {
                     instrumentationSupport = insert(new InstrumentationSupport(rootNode));
                     rootNode.materializeContainedFunctionsForInstrumentation(materializedTags);

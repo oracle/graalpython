@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -69,14 +68,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonLanguage lang, TruffleString name, Object enclosingType, int numDefaults, int flags, RootCallTarget callTarget) {
-        this(lang, name, enclosingType, generateDefaults(numDefaults), null, flags, callTarget);
-    }
-
-    public PBuiltinFunction(PythonLanguage lang, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
-        this(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang), name, enclosingType, defaults, kwDefaults, flags, callTarget);
-    }
-
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         super(cls, shape);
         this.name = name;
@@ -102,7 +93,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return kwDefaults;
     }
 
-    private static Object[] generateDefaults(int numDefaults) {
+    public static Object[] generateDefaults(int numDefaults) {
         Object[] defaults = new Object[numDefaults];
         Arrays.fill(defaults, PNone.NO_VALUE);
         return defaults;
@@ -213,7 +204,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (klass == enclosingType) {
             return this;
         } else {
-            PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, flags, callTarget);
+            PBuiltinFunction func = factory.createBuiltinFunction(this, klass);
             func.setAttribute(T___DOC__, getAttribute(T___DOC__));
             return func;
         }

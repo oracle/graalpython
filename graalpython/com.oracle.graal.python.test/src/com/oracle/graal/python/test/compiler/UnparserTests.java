@@ -49,9 +49,12 @@ import com.oracle.graal.python.compiler.Unparser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public class UnparserTests extends PythonTests {
 
@@ -65,11 +68,44 @@ public class UnparserTests extends PythonTests {
         checkRoundTrip("f'a={a},b={b!r},c={c:2.0}'");
     }
 
+    @Test
+    public void testUnparseConstant() {
+        assertEquals("...", unparseConstant(ConstantValue.ELLIPSIS));
+        assertEquals("'abc'", unparseConstant(ConstantValue.ofRaw(ts("abc"))));
+        assertEquals("u'abc'", unparseConstant(ConstantValue.ofRaw(ts("abc")), "u"));
+        ConstantValue[] empty = new ConstantValue[0];
+        ConstantValue[] single = new ConstantValue[]{ConstantValue.ofLong(42)};
+        ConstantValue[] multiple = new ConstantValue[]{
+                        ConstantValue.ofLong(42),
+                        ConstantValue.ofDouble(3.14),
+                        ConstantValue.FALSE,
+                        ConstantValue.ELLIPSIS,
+                        ConstantValue.ofRaw(ts("abc")),
+                        ConstantValue.ofBytes("xyz".getBytes())
+        };
+        assertEquals("()", unparseConstant(ConstantValue.ofTuple(empty)));
+        assertEquals("(42,)", unparseConstant(ConstantValue.ofTuple(single)));
+        assertEquals("(42, 3.14, False, Ellipsis, 'abc', b'xyz')", unparseConstant(ConstantValue.ofTuple(multiple)));
+        assertEquals("frozenset()", unparseConstant(ConstantValue.ofFrozenset(empty)));
+        assertEquals("frozenset({42})", unparseConstant(ConstantValue.ofFrozenset(single)));
+    }
+
     private static void checkRoundTrip(String source) {
         ErrorCallback errorCallback = new CompilerTests.TestErrorCallbackImpl();
         Parser parser = Compiler.createParser(source, errorCallback, InputType.EVAL, false);
         ModTy.Expression result = (ModTy.Expression) parser.parse();
-        TruffleString unparsed = Unparser.unparse(result.body);
-        assertEquals(source, unparsed.toJavaStringUncached());
+        assertEquals(source, unparse(result.body));
+    }
+
+    private static String unparse(SSTNode node) {
+        return Unparser.unparse(node).toJavaStringUncached();
+    }
+
+    private static String unparseConstant(ConstantValue constantValue) {
+        return unparseConstant(constantValue, null);
+    }
+
+    private static String unparseConstant(ConstantValue constantValue, String kind) {
+        return unparse(new ExprTy.Constant(constantValue, kind, SourceRange.ARTIFICIAL_RANGE));
     }
 }

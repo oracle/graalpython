@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_D_ARGS;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.GeneratedBy;
@@ -78,7 +80,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PythonOptions.class, PGuards.class})
@@ -112,6 +113,34 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             if (!callerExceedsMaxSize(builtinNode)) {
                 return builtinNode;
             }
+        }
+        return null;
+    }
+
+    protected PythonBuiltinBaseNode getBuiltin(VirtualFrame frame, PBuiltinFunction func, int nargs) {
+        CompilerAsserts.neverPartOfCompilation();
+        NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
+        if (builtinNodeFactory == null) {
+            return null; // see for example MethodDescriptorRoot and subclasses
+        }
+        Class<? extends PythonBuiltinBaseNode> nodeClass = builtinNodeFactory.getNodeClass();
+        if (!(PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass) || PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass) ||
+                        PythonQuaternaryBuiltinNode.class.isAssignableFrom(nodeClass))) {
+            return null;
+        }
+        Builtin[] builtinAnnotations = nodeClass.getAnnotationsByType(Builtin.class);
+        assert builtinAnnotations.length > 0 : "PBuiltinFunction " + func + " is expected to have a Builtin annotated node.";
+        Builtin builtinAnnotation = builtinAnnotations[0];
+        if (builtinAnnotation.needsFrame() && frame == null) {
+            return null;
+        }
+        int maxArgs = Math.max(Math.max(builtinAnnotation.maxNumOfPositionalArgs(), builtinAnnotation.minNumOfPositionalArgs()), builtinAnnotation.parameterNames().length);
+        if (nargs < builtinAnnotation.minNumOfPositionalArgs() || nargs > maxArgs) {
+            return null;
+        }
+        PythonBuiltinBaseNode builtinNode = builtinNodeFactory.createNode();
+        if (!callerExceedsMaxSize(builtinNode)) {
+            return builtinNode;
         }
         return null;
     }
@@ -195,34 +224,6 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return builtinNode == null || !builtinNode.getClass().getAnnotation(GeneratedBy.class).value().getAnnotationsByType(Builtin.class)[0].needsFrame();
     }
 
-    PythonUnaryBuiltinNode getUnary(VirtualFrame frame, Object func) {
-        if (func instanceof PBuiltinFunction) {
-            return getBuiltin(frame, (PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
-        }
-        return null;
-    }
-
-    PythonBinaryBuiltinNode getBinary(VirtualFrame frame, Object func) {
-        if (func instanceof PBuiltinFunction) {
-            return getBuiltin(frame, (PBuiltinFunction) func, PythonBinaryBuiltinNode.class);
-        }
-        return null;
-    }
-
-    PythonTernaryBuiltinNode getTernary(VirtualFrame frame, Object func) {
-        if (func instanceof PBuiltinFunction) {
-            return getBuiltin(frame, (PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
-        }
-        return null;
-    }
-
-    PythonQuaternaryBuiltinNode getQuaternary(VirtualFrame frame, Object func) {
-        if (func instanceof PBuiltinFunction) {
-            return getBuiltin(frame, (PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
-        }
-        return null;
-    }
-
     PythonVarargsBuiltinNode getVarargs(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin(frame, (PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
@@ -242,57 +243,12 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return true;
     }
 
-    /**
-     * Determines the minimum number of positional arguments accepted by the given built-in function
-     * or method.
-     */
-    protected static int getMinArgs(Object func) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (func instanceof PBuiltinFunction) {
-            RootNode functionRootNode = ((PBuiltinFunction) func).getFunctionRootNode();
-            if (functionRootNode instanceof BuiltinFunctionRootNode) {
-                return ((BuiltinFunctionRootNode) functionRootNode).getBuiltin().minNumOfPositionalArgs();
-            }
-        } else if (func instanceof PBuiltinMethod) {
-            return getMinArgs(((PBuiltinMethod) func).getFunction());
-        }
-        return 0;
-    }
-
     protected static RootCallTarget getCallTarget(PMethod meth, GetCallTargetNode getCtNode) {
         return getCtNode.execute(meth.getFunction());
     }
 
     protected static RootCallTarget getCallTarget(PBuiltinMethod meth, GetCallTargetNode getCtNode) {
         return getCtNode.execute(meth.getFunction());
-    }
-
-    protected static boolean expectBooleanResult(Object value) throws UnexpectedResultException {
-        if (value instanceof Boolean) {
-            return (boolean) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
-    protected static double expectDoubleResult(Object value) throws UnexpectedResultException {
-        if (value instanceof Double) {
-            return (double) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
-    protected static int expectIntegerResult(Object value) throws UnexpectedResultException {
-        if (value instanceof Integer) {
-            return (int) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
-
-    protected static long expectLongResult(Object value) throws UnexpectedResultException {
-        if (value instanceof Long) {
-            return (long) value;
-        }
-        throw new UnexpectedResultException(value);
     }
 
     protected void raiseInvalidArgsNumUncached(boolean hasValidArgsNum, BuiltinMethodDescriptor descr) {
@@ -304,5 +260,49 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
     @TruffleBoundary
     private void raiseInvalidArgsNumUncached(BuiltinMethodDescriptor descr) {
         throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.minNumOfPositionalArgs());
+    }
+
+    protected static Object callUnaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1) {
+        CompilerAsserts.partialEvaluationConstant(builtin);
+        if (builtin instanceof PythonUnaryBuiltinNode) {
+            return ((PythonUnaryBuiltinNode) builtin).execute(frame, arg1);
+        } else if (builtin instanceof PythonBinaryBuiltinNode) {
+            return ((PythonBinaryBuiltinNode) builtin).execute(frame, arg1, PNone.NO_VALUE);
+        } else if (builtin instanceof PythonTernaryBuiltinNode) {
+            return ((PythonTernaryBuiltinNode) builtin).execute(frame, arg1, PNone.NO_VALUE, PNone.NO_VALUE);
+        } else if (builtin instanceof PythonQuaternaryBuiltinNode) {
+            return ((PythonQuaternaryBuiltinNode) builtin).execute(frame, arg1, PNone.NO_VALUE, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+        throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
+    }
+
+    protected static Object callBinaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2) {
+        CompilerAsserts.partialEvaluationConstant(builtin);
+        if (builtin instanceof PythonBinaryBuiltinNode) {
+            return ((PythonBinaryBuiltinNode) builtin).execute(frame, arg1, arg2);
+        } else if (builtin instanceof PythonTernaryBuiltinNode) {
+            return ((PythonTernaryBuiltinNode) builtin).execute(frame, arg1, arg2, PNone.NO_VALUE);
+        } else if (builtin instanceof PythonQuaternaryBuiltinNode) {
+            return ((PythonQuaternaryBuiltinNode) builtin).execute(frame, arg1, arg2, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+        throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
+    }
+
+    protected static Object callTernaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2, Object arg3) {
+        CompilerAsserts.partialEvaluationConstant(builtin);
+        if (builtin instanceof PythonTernaryBuiltinNode) {
+            return ((PythonTernaryBuiltinNode) builtin).execute(frame, arg1, arg2, arg3);
+        } else if (builtin instanceof PythonQuaternaryBuiltinNode) {
+            return ((PythonQuaternaryBuiltinNode) builtin).execute(frame, arg1, arg2, arg3, PNone.NO_VALUE);
+        }
+        throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
+    }
+
+    protected static Object callQuaternaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2, Object arg3, Object arg4) {
+        CompilerAsserts.partialEvaluationConstant(builtin);
+        if (builtin instanceof PythonQuaternaryBuiltinNode) {
+            return ((PythonQuaternaryBuiltinNode) builtin).execute(frame, arg1, arg2, arg3, arg4);
+        }
+        throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
     }
 }

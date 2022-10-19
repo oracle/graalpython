@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -192,7 +193,7 @@ public final class PythonCextComplexBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyComplex_FromDoubles", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyComplex_FromDoubles", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyComplexFromDoublesNode extends PythonBinaryBuiltinNode {
 

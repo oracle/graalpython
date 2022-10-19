@@ -76,7 +76,6 @@
 *graalpython.lib-python.3.test.test_ast.ConstantTests.test_get_docstring
 *graalpython.lib-python.3.test.test_ast.ConstantTests.test_literal_eval
 *graalpython.lib-python.3.test.test_ast.ConstantTests.test_load_const
-*graalpython.lib-python.3.test.test_ast.ConstantTests.test_singletons
 *graalpython.lib-python.3.test.test_ast.ConstantTests.test_string_kind
 *graalpython.lib-python.3.test.test_ast.ConstantTests.test_values
 *graalpython.lib-python.3.test.test_ast.EndPositionTests.test_attribute_spaces

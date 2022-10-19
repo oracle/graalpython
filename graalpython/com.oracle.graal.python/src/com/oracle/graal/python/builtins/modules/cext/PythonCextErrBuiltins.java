@@ -404,7 +404,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_GivenExceptionMatches")
+    @Builtin(name = "PyErr_GivenExceptionMatches", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyErrGivenExceptionMatchesNode extends PythonBinaryBuiltinNode {
         public abstract int executeInt(VirtualFrame frame, Object err, Object exc);

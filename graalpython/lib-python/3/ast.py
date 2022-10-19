@@ -29,6 +29,19 @@ from _ast import *
 from contextlib import contextmanager, nullcontext
 from enum import IntEnum, auto
 
+# dummy classes that return the first parameter upon creation:
+class Index(slice):
+    def __new__(self, arg = None):
+        if arg is None:
+            return super().__new__(self)
+        else:
+            return arg
+
+
+class ExtSlice(slice):
+    def __new__(self, arg = None):
+        return Tuple(arg)
+
 
 def parse(source, filename='<unknown>', mode='exec', *,
           type_comments=False, feature_version=None):

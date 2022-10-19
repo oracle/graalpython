@@ -49,20 +49,41 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INTEGER_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.REQUIRED_FIELD_S_MISSING_FROM_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FIELD_S_CHANGED_SIZE_DURING_ITERATION;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_FIELD_S_MUST_BE_A_LIST_NOT_P;
+import static com.oracle.graal.python.nodes.PGuards.isBuiltinPInt;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.function.IntFunction;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.lib.PyBytesCheckExactNode;
+import com.oracle.graal.python.lib.PyComplexCheckExactNode;
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyFrozenSetCheckExactNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -194,8 +215,77 @@ abstract class Obj2SstBase {
     }
 
     ConstantValue obj2ConstantValue(Object obj) {
-        // TODO convert to a Java object if possible
-        return ConstantValue.ofArbitraryPythonObject(obj);
+        // CPython does not do any checks here - they just store obj directly into the SST and
+        // later validate that the value is a constant (validate_constants in ast.c).
+        // We don't want arbitrary python object in SST, so we need to convert here, which means
+        // that we may report errors in different order. If it turns out to be a problem, we can
+        // just detect the error here and report it in Validator#validateConstant.
+        if (obj == PNone.NONE) {
+            return ConstantValue.NONE;
+        }
+        if (obj == PEllipsis.INSTANCE) {
+            return ConstantValue.ELLIPSIS;
+        }
+        if (obj instanceof Boolean) {
+            return ConstantValue.ofBoolean((Boolean) obj);
+        }
+        if (obj instanceof Integer) {
+            return ConstantValue.ofLong((Integer) obj);
+        }
+        if (obj instanceof Long) {
+            return ConstantValue.ofLong((Long) obj);
+        }
+        if (obj instanceof PInt && isBuiltinPInt((PInt) obj)) {
+            BigInteger v = ((PInt) obj).getValue();
+            if (PInt.bigIntegerFitsInLong(v)) {
+                return ConstantValue.ofLong(v.longValue());
+            }
+            return ConstantValue.ofBigInteger(v);
+        }
+        if (obj instanceof Double) {
+            return ConstantValue.ofDouble((Double) obj);
+        }
+        if (obj instanceof PFloat && PyFloatCheckExactNode.getUncached().execute(obj)) {
+            return ConstantValue.ofDouble(((PFloat) obj).getValue());
+        }
+        if (obj instanceof PComplex && PyComplexCheckExactNode.getUncached().execute(obj)) {
+            PComplex c = (PComplex) obj;
+            return ConstantValue.ofComplex(c.getReal(), c.getImag());
+        }
+        if (obj instanceof TruffleString) {
+            return ConstantValue.ofRaw(obj);
+        }
+        if (obj instanceof PString && PyUnicodeCheckExactNode.getUncached().execute(obj)) {
+            return ConstantValue.ofRaw(((PString) obj).getValueUncached());
+        }
+        if (obj instanceof PBytes && PyBytesCheckExactNode.getUncached().execute(obj)) {
+            Object buf = PythonBufferAcquireLibrary.getUncached().acquireReadonly(obj);
+            PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getFactory().getUncached(buf);
+            try {
+                return ConstantValue.ofBytes(accessLib.getCopiedByteArray(buf));
+            } finally {
+                accessLib.release(buf);
+            }
+        }
+        boolean isTuple = PyTupleCheckExactNode.getUncached().execute(obj);
+        if (isTuple || PyFrozenSetCheckExactNode.getUncached().execute(obj)) {
+            Object iter = PyObjectGetIter.getUncached().execute(null, obj);
+            GetNextNode nextNode = GetNextNode.getUncached();
+            ArrayList<ConstantValue> list = new ArrayList<>();
+            while (true) {
+                try {
+                    list.add(obj2ConstantValue(nextNode.execute(iter)));
+                } catch (PException e) {
+                    e.expectStopIteration(IsBuiltinClassProfile.getUncached());
+                    break;
+                }
+            }
+            if (isTuple) {
+                return ConstantValue.ofTuple(list.toArray(ConstantValue[]::new));
+            }
+            return ConstantValue.ofFrozenset(list.toArray(ConstantValue[]::new));
+        }
+        throw raiseTypeError(ErrorMessages.GOT_AN_INVALID_TYPE_IN_CONSTANT, obj);
     }
 
     static PException unexpectedNodeType(TruffleString expected, Object obj) {

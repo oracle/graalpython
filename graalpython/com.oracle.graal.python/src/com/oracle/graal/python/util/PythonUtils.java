@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -633,11 +634,12 @@ public final class PythonUtils {
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
         RootCallTarget callTarget = language.createCachedCallTarget(l -> {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(nodeSupplier.get());
-            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
+            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, false, PythonBuiltinClassType.PTuple);
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         PBuiltinFunction function = factory.createBuiltinFunction(toTruffleStringUncached(builtin.name()), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, T___NEW__, function);
+        PBuiltinMethod method = factory.createBuiltinMethod(PythonBuiltinClassType.PTuple, function);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, T___NEW__, method);
     }
 
     private static Object[] createCalltargetKeys(Object[] callTargetCacheKeys, Class<?> nodeClass) {

@@ -97,11 +97,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.AbstractSetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -387,12 +387,11 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @ReportPolymorphism
     public abstract static class BindNew extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Object descriptor, Object type);
 
         @Specialization
-        static Object doBuiltin(PBuiltinFunction descriptor, @SuppressWarnings("unused") Object type) {
+        static Object doBuiltinMethod(PBuiltinMethod descriptor, @SuppressWarnings("unused") Object type) {
             return descriptor;
         }
 
