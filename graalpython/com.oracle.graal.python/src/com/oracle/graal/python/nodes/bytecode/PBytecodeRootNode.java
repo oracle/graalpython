@@ -361,6 +361,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<IntBuiltins.NegNode> NODE_INT_NEG = IntBuiltins.NegNode::create;
     private static final NodeSupplier<IntBuiltins.PowNode> NODE_INT_POW = IntBuiltins.PowNode::create;
     private static final NodeSupplier<FloatBuiltins.PowNode> NODE_FLOAT_POW = FloatBuiltins.PowNode::create;
+    private static final NodeSupplier<HashingStorageFromListSequenceStorageNode> NODE_HASHING_STORAGE_FROM_SEQUENCE = HashingStorageFromListSequenceStorageNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -1404,6 +1405,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.TUPLE_FROM_LIST: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         bytecodeTupleFromList(virtualFrame, stackTop);
+                        break;
+                    }
+                    case OpCodesConstants.FROZENSET_FROM_LIST: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        bytecodeFrozensetFromList(virtualFrame, stackTop, beginBci, localNodes);
                         break;
                     }
                     case OpCodesConstants.KWARGS_DICT_MERGE: {
@@ -5322,6 +5328,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeTupleFromList(VirtualFrame virtualFrame, int stackTop) {
         PList list = (PList) virtualFrame.getObject(stackTop);
         Object result = factory.createTuple(list.getSequenceStorage());
+        virtualFrame.setObject(stackTop, result);
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeFrozensetFromList(VirtualFrame virtualFrame, int stackTop, int nodeIndex, Node[] localNodes) {
+        PList list = (PList) virtualFrame.getObject(stackTop);
+        HashingStorageFromListSequenceStorageNode node = insertChildNode(localNodes, nodeIndex, HashingStorageFromListSequenceStorageNodeGen.class, NODE_HASHING_STORAGE_FROM_SEQUENCE);
+        Object result = factory.createFrozenSet(node.execute(virtualFrame, list.getSequenceStorage()));
         virtualFrame.setObject(stackTop, result);
     }
 

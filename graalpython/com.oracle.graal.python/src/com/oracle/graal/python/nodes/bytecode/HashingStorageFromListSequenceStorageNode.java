@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,29 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
-/**
- * Equivalent of CPython's {@code PyTuple_CheckExact}.
- */
-@GenerateUncached
-public abstract class PyTupleCheckExactNode extends Node {
-    public abstract boolean execute(Object object);
+abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContext {
+
+    public abstract HashingStorage execute(Frame virtualFrame, SequenceStorage sequenceStorage);
 
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Cached IsBuiltinClassProfile isBuiltin) {
-        return isBuiltin.profileObject(object, PythonBuiltinClassType.PTuple);
+    HashingStorage doIt(SequenceStorage sequenceStorage,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
+                    @Cached LoopConditionProfile loopConditionProfile) {
+        HashingStorage setStorage = EmptyStorage.INSTANCE;
+        int length = lenNode.execute(sequenceStorage);
+        loopConditionProfile.profileCounted(length);
+        for (int i = 0; loopConditionProfile.inject(i < length); ++i) {
+            Object o = getItemNode.execute(sequenceStorage, i);
+            setStorage = hashingStorageLibrary.setItem(setStorage, o, PNone.NONE);
+        }
+        return setStorage;
     }
 
-    public static PyTupleCheckExactNode getUncached() {
-        return PyTupleCheckExactNodeGen.getUncached();
+    static HashingStorageFromListSequenceStorageNode create() {
+        return HashingStorageFromListSequenceStorageNodeGen.create();
     }
 }

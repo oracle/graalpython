@@ -65,4 +65,8 @@ public abstract class PyUnicodeCheckExactNode extends PNodeWithContext {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PString);
     }
+
+    public static PyUnicodeCheckExactNode getUncached() {
+        return PyUnicodeCheckExactNodeGen.getUncached();
+    }
 }

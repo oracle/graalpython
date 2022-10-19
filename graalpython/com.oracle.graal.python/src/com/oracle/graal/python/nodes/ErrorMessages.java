@@ -341,6 +341,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING = tsLiteral("getattr(): attribute name must be string");
     public static final TruffleString GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = tsLiteral("getting the source is not supported for '%p'");
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
+    public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");

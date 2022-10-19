@@ -125,7 +125,8 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
                 return factory.createBytes(v.getBytes());
             case RAW:
                 return v.getRaw(TruffleString.class);
-            case ARBITRARY_PYTHON_OBJECT:
+            case TUPLE:
+            case FROZENSET:
             default:
                 throw shouldNotReachHere();
         }
