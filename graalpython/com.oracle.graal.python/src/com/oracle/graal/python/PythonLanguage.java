@@ -32,6 +32,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -952,7 +953,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             sourceBuilder.content(src);
                         }
                     }
-                } catch (SecurityException | IOException e) {
+                } catch (SecurityException | IOException | InvalidPathException e) {
                     sourceBuilder = null;
                 }
             }
