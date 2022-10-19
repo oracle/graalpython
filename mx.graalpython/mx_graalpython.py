@@ -26,6 +26,7 @@ from __future__ import print_function
 
 import contextlib
 import datetime
+import fnmatch
 import getpass
 import glob
 import itertools
@@ -291,28 +292,57 @@ def compare_unittests(args):
     mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
 
 
-def run_cpython_test(args):
-    interp_args = []
-    globs = []
-    test_args = []
-    for arg in args:
-        if arg.startswith("-"):
-            if not globs:
-                interp_args.append(arg)
-            else:
-                test_args.append(arg)
-        else:
-            globs.append(arg)
+def run_cpython_test(raw_args):
+    test_args = ['-v']
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('--gvm', dest='vm', action='store_const', const='gvm')
+    parser.add_argument('--svm', dest='vm', action='store_const', const='svm')
+    parser.add_argument('-k', dest='tags', nargs='*')
+    parser.add_argument('globs', nargs='+')
+    args, rest_args = parser.parse_known_args(raw_args)
     testfiles = []
-    for g in globs:
-        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
-    interp_args.insert(0, "--python.CAPI=%s" % _get_capi_home())
-    env = os.environ.copy()
-    delete_bad_env_keys(env)
-    with _dev_pythonhome_context():
-        mx.run([python_gvm()] + ['--vm.ea'] + interp_args + [
-            os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-        ] + test_args + testfiles, env=env)
+    for g in args.globs:
+        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", f"{g}.py"))
+        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", g, "__init__.py"))
+    if not args.all:
+        test_tags = get_test_tags(args.globs)
+        if args.tags:
+            user_tags = [tag if '*' in tag else f'*{tag}*' for tag in args.tags]
+            test_tags = [tag for tag in test_tags if any(fnmatch.fnmatch(tag.replace('*', ''), user_tag) for user_tag in user_tags)]
+        if not test_tags:
+            sys.exit("No tags matched")
+    else:
+        test_tags = args.tags
+    for tag in test_tags or ():
+        test_args += ['-k', tag]
+
+    python_args = rest_args + [
+        os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
+    ] + test_args + testfiles
+    if args.vm:
+        env = os.environ.copy()
+        delete_bad_env_keys(env)
+        vm = python_gvm() if args.vm == 'gvm' else python_svm()
+        with _dev_pythonhome_context():
+            mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
+    else:
+        do_run_python(python_args)
+
+
+def get_test_tags(globs):
+    sys.path += ["graalpython/com.oracle.graal.python.test/src/tests", "graalpython/lib-python/3"]
+    os.environ['ENABLE_CPYTHON_TAGGED_UNITTESTS'] = 'true'
+    try:
+        import test_tagged_unittests
+        collected = []
+        for name, tags in test_tagged_unittests.collect_working_tests():
+            if any(fnmatch.fnmatch(name, g) for g in globs):
+                collected += tags
+        return collected
+    finally:
+        del os.environ['ENABLE_CPYTHON_TAGGED_UNITTESTS']
 
 
 def retag_unittests(args):
@@ -2455,7 +2485,7 @@ mx.update_commands(SUITE, {
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
-    'python-run-cpython-unittest': [run_cpython_test, 'test-name'],
+    'python-run-cpython-unittest': [run_cpython_test, '[-k TEST_PATTERN] [--gvm] [--svm] [--all] TESTS'],
     'python-update-unittest-tags': [update_unittest_tags, ''],
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],

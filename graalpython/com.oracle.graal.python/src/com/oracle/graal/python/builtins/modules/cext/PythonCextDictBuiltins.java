@@ -227,7 +227,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "PyDict_Size", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "PyDict_Size", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyDictSizeNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
@@ -266,7 +266,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyDict_Copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PyDictCopyNode extends PythonBinaryBuiltinNode {
+    public abstract static class PyDictCopyNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         public Object copy(PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,

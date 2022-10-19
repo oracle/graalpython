@@ -275,7 +275,8 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
                 case PMethod:
-                case PBuiltinMethod:
+                case PBuiltinFunctionOrMethod:
+                case MethodWrapper:
                     result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
                     break;
                 case PInstancemethod:

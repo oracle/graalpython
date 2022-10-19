@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -71,18 +71,18 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -90,9 +90,9 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
     Object callMethodSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
@@ -101,9 +101,9 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 4)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(replaces = {"callSingle", "call", "callMethodSingle", "callMethod"})

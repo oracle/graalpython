@@ -871,7 +871,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dlsym", minNumOfPositionalArgs = 1)
+    @Builtin(name = "dlsym", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class DlSymNode extends PythonBinaryBuiltinNode {
 
@@ -1066,7 +1066,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return ptr;
     }
 
-    @Builtin(name = "call_function", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "call_function", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CallFunctionNode extends PythonTernaryBuiltinNode {
 
@@ -1116,7 +1116,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CallCdeclfunctionNode extends PythonTernaryBuiltinNode {
 
@@ -1415,13 +1415,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-
+        
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-
+        
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;

@@ -143,12 +143,12 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     @Specialization
     static Object getFunction(@SuppressWarnings("unused") PFunction object) {
-        return PythonBuiltinClassType.PFunction;
+        return object.getInitialPythonClass();
     }
 
     @Specialization
     static Object getBuiltinFunction(@SuppressWarnings("unused") PBuiltinFunction object) {
-        return PythonBuiltinClassType.PBuiltinFunction;
+        return object.getInitialPythonClass();
     }
 
     @Specialization(guards = {"isSingleContext()", "klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1")

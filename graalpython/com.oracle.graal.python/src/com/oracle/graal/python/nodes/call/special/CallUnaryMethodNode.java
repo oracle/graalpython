@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -128,18 +129,18 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -147,9 +148,9 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
@@ -158,9 +159,9 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 1)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "takesSelfArg",
@@ -168,9 +169,9 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg);
+        return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg",
@@ -179,36 +180,12 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
                     @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
+                    @Cached("getBuiltin(frame, func.getFunction(), 2)") PythonBuiltinBaseNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg);
+        return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 
-    @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null", "!takesSelfArg", "minArgs == 1",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    static Object callBinaryMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
-                    @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver, PNone.NO_VALUE);
-    }
-
-    @Specialization(guards = {"builtinNode != null", "minArgs == 1", "getCallTarget(func, getCt) == ct", "!takesSelfArg",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    static Object callBinaryMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
-                    @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg, PNone.NO_VALUE);
-    }
-
-    @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod",
-                    "callBinaryMethodSingleContext", "callBinaryMethod"})
+    @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object receiver,
                     @Cached CallNode callNode,

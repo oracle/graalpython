@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,65 +38,73 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.cext;
+package com.oracle.graal.python.builtins.objects.function;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
-@GenerateNodeFactory
-public final class PythonCextSliceBuiltins extends PythonBuiltins {
-
+@CoreFunctions(extendClasses = PythonBuiltinClassType.WrapperDescriptor)
+public class WrapperDescriptorBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PythonCextSliceBuiltinsFactory.getFactories();
+        return WrapperDescriptorBuiltinsFactory.getFactories();
     }
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-    }
-
-    @Builtin(name = "PySlice_New", minNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonTypes.class)
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class PySliceNewNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        public static Object slice(Object start, Object stop, Object step,
-                        @Cached PySliceNew sliceNode) {
-            return sliceNode.execute(prepare(start), prepare(stop), prepare(step));
+    @SuppressWarnings("unused")
+    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = {"!isPNone(instance)"})
+        protected PMethod doMethod(PFunction self, Object instance, Object klass) {
+            return factory().createMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
         }
 
-        private static Object prepare(Object obj) {
-            if (obj == PNone.NO_VALUE) {
-                return PNone.NONE;
-            }
-            return obj;
+        @Specialization
+        protected static Object doFunction(PFunction self, PNone instance, Object klass) {
+            return self;
+        }
+
+        @Specialization(guards = {"!isPNone(instance)"})
+        protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
+            return factory().createBuiltinMethod(PythonBuiltinClassType.MethodWrapper, instance, self);
+        }
+
+        @Specialization
+        protected static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
+            return self;
         }
     }
 
-    @Builtin(name = "Py_Ellipsis")
+    @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class PyEllipsisNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object run() {
-            return PEllipsis.INSTANCE;
+        static TruffleString reprClassFunction(PBuiltinFunction self,
+                        @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            return simpleTruffleStringFormatNode.format("<slot wrapper '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }
 }

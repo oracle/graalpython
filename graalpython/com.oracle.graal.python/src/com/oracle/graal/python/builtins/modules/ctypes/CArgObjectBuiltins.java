@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -73,9 +72,9 @@ public class CArgObjectBuiltins extends PythonBuiltins {
         return CArgObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "_obj", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "_obj", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class ObjNode extends PythonBinaryBuiltinNode {
+    abstract static class ObjNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doit(PyCArgObject self) {
             return self.obj;

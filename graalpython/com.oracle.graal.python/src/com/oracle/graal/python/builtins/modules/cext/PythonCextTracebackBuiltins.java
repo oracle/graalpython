@@ -78,7 +78,7 @@ public final class PythonCextTracebackBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 1)
+    @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
         @Specialization
