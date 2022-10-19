@@ -678,6 +678,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SyntaxWarning.base = Warning;
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
+        EncodingWarning.base = Warning;
 
         PStatResult.base = PTuple;
         PTerminalSize.base = PTuple;

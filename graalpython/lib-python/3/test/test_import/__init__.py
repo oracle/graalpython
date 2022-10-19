@@ -87,6 +87,7 @@ class ImportTests(unittest.TestCase):
 
     def test_from_import_missing_attr_has_name_and_path(self):
         # truffle change: replace usage of frozen os module with something else
+        import test.support
         with self.assertRaises(ImportError) as cm:
             from test.support import i_dont_exist
         self.assertEqual(cm.exception.name, 'test.support')
