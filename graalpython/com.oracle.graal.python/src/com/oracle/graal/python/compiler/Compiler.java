@@ -199,7 +199,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     List<CompilationUnit> stack = new ArrayList<>();
     private boolean interactive;
 
-    private class PatternContext {
+    private static class PatternContext {
         ArrayList<String> stores;
         // boolean allowIrrefutable;
         ArrayList<Block> failPop;
@@ -2557,7 +2557,24 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public Void visit(PatternTy.MatchSingleton node, PatternContext pc) {
-        return emitNotImplemented("match star");
+        setLocation(node);
+        switch (node.value.kind) {
+            case BOOLEAN:
+                if (node.value.getBoolean()) {
+                    addOp(LOAD_TRUE);
+                } else {
+                    addOp(LOAD_TRUE);
+                }
+                break;
+            case NONE:
+                addOp(LOAD_NONE);
+                break;
+            default:
+                throw new IllegalStateException("wrong MatchSingleton value kind " + node.value.kind);
+        }
+        addCompareOp(CmpOpTy.Is);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        return null;
     }
 
     public Void visit(PatternTy.MatchValue node, PatternContext pc) {
@@ -2626,6 +2643,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         int pops = pc.onTop + (pc.stores == null ? 0 : pc.stores.size());
         ensureFailPop(pops, pc);
         addConditionalJump(op, pc.failPop.get(pops));
+        unit.useNextBlock(new Block());
     }
 
     private void ensureFailPop(int n, PatternContext pc) {
@@ -2644,6 +2662,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private void emitAndResetFailPop(PatternContext pc) {
         if (pc.failPop == null) {
+            unit.useNextBlock(new Block());
             return;
         }
         Collections.reverse(pc.failPop);
@@ -3114,7 +3133,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (interactiveTerminal) {
             flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
         }
-        return createParser(src, errorCb, inputType, flags, 10);
+        return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {

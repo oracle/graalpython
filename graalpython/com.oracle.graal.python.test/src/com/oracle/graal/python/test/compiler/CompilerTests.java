@@ -840,6 +840,24 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
+    // @Test skip until 3.10
+    public void testMatchSingletonBoolean() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case True:\n" +
+                        "       pass\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchSingletonNone() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case None:\n" +
+                        "       pass\n";
+        doTest(source);
+    }
+
     @Test
     public void testAssignToDebug() {
         checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
