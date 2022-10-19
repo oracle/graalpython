@@ -1622,17 +1622,17 @@ def _setup(_bootstrap_module):
     setattr(self_module, '_weakref', weakref_module)
 
     # Directly load the winreg module (needed during bootstrap).
-    # if builtin_os == 'nt':
-    #     winreg_module = _bootstrap._builtin_from_name('winreg')
-    #     setattr(self_module, '_winreg', winreg_module)
+    if builtin_os == 'nt':
+        winreg_module = _bootstrap._builtin_from_name('winreg')
+        setattr(self_module, '_winreg', winreg_module)
 
     # Constants
     setattr(self_module, '_relax_case', _make_relax_case())
     EXTENSION_SUFFIXES.extend(_imp.extension_suffixes())
-    # if builtin_os == 'nt':
-    #     SOURCE_SUFFIXES.append('.pyw')
-    #     if '_d.pyd' in EXTENSION_SUFFIXES:
-    #         WindowsRegistryFinder.DEBUG_BUILD = True
+    if builtin_os == 'nt':
+        SOURCE_SUFFIXES.append('.pyw')
+        if '_d.pyd' in EXTENSION_SUFFIXES:
+            WindowsRegistryFinder.DEBUG_BUILD = True
 
 
 def _install(_bootstrap_module):
