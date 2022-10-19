@@ -227,18 +227,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         ArrayList<TruffleString> haveFunctions = new ArrayList<>();
-        Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
-                        tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
-                        tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
-        // Not implemented yet:
-        // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
-        // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
-        // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
-        if (PosixConstants.HAVE_FUTIMENS.value) {
-            haveFunctions.add(tsLiteral("HAVE_FUTIMENS"));
-        }
-        if (PosixConstants.HAVE_UTIMENSAT.value) {
-            haveFunctions.add(tsLiteral("HAVE_UTIMENSAT"));
+        if (PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+            Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
+                    tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
+                    tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
+            // Not implemented yet:
+            // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
+            // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
+            // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
+            if (PosixConstants.HAVE_FUTIMENS.value) {
+                haveFunctions.add(tsLiteral("HAVE_FUTIMENS"));
+            }
+            if (PosixConstants.HAVE_UTIMENSAT.value) {
+                haveFunctions.add(tsLiteral("HAVE_UTIMENSAT"));
+            }
+        } else {
+            haveFunctions.add(tsLiteral("HAVE_FTRUNCATE"));
+            haveFunctions.add(tsLiteral("MS_WINDOWS"));
         }
         addBuiltinConstant("_have_functions", core.factory().createList(haveFunctions.toArray()));
         addBuiltinConstant("environ", core.factory().createDict());
