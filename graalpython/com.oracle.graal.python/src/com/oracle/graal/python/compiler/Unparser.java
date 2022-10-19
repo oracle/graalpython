@@ -503,7 +503,7 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Constant node) {
-        // equivalent of case Constant_kind in see append_ast_expr
+        // equivalent of case Constant_kind in append_ast_expr
         if (node.value.kind == Kind.ELLIPSIS) {
             appendStr("...");
             return null;
