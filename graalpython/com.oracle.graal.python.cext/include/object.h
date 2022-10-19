@@ -767,6 +767,8 @@ PyAPI_FUNC(void) _PyTrash_thread_destroy_chain(void);
 #  undef Py_CPYTHON_OBJECT_H
 #endif
 
+PyAPI_FUNC(void) _PyTruffle_DebugTrace(void);
+
 #ifdef __cplusplus
 }
 #endif
