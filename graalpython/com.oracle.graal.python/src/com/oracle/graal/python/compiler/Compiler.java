@@ -105,6 +105,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
+import static com.oracle.graal.python.compiler.OpCodes.NOP;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_EXCEPT;
@@ -137,8 +138,10 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -164,6 +167,7 @@ import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
@@ -172,6 +176,7 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -193,6 +198,13 @@ public class Compiler implements SSTreeVisitor<Void> {
     CompilationUnit unit;
     List<CompilationUnit> stack = new ArrayList<>();
     private boolean interactive;
+
+    private class PatternContext {
+        ArrayList<String> stores;
+        // boolean allowIrrefutable;
+        ArrayList<Block> failPop;
+        int onTop;
+    }
 
     public enum Flags {
     }
@@ -2450,52 +2462,245 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Match node) {
         setLocation(node);
-        return emitNotImplemented("match");
+        PatternContext pc = new PatternContext();
+        node.subject.accept(this);
+        Block end = new Block();
+        assert node.cases.length > 0;
+        boolean hasDefault = node.cases.length > 1 && wildcardCheck(node.cases[node.cases.length - 1].pattern);
+        int lastIdx = hasDefault ? node.cases.length - 2 : node.cases.length - 1;
+        for (int i = 0; i <= lastIdx; i++) {
+            MatchCaseTy c = node.cases[i];
+            setLocation(c);
+
+            // Only copy the subject if we're *not* on the last case:
+            if (i < lastIdx) {
+                addOp(DUP_TOP);
+            }
+            visit(c.pattern, pc);
+
+            // Success! Pop the subject off, we're done with it:
+            if (i < lastIdx) {
+                addOp(POP_TOP);
+            }
+            visitBody(c.body, true);
+            addOp(JUMP_FORWARD, end);
+            // If the pattern fails to match, we want the line number of the
+            // cleanup to be associated with the failed pattern, not the last line
+            // of the body
+            setLocation(c);
+            emitAndResetFailPop(pc);
+        }
+        if (hasDefault) {
+            MatchCaseTy c = node.cases[node.cases.length - 1];
+            setLocation(c);
+            if (node.cases.length == 1) {
+                // No matches. Done with the subject:
+                addOp(POP_TOP);
+            } else {
+                // Show line coverage for default case (it doesn't create bytecode)
+                addOp(NOP);
+            }
+            visitBody(c.body, true);
+        }
+        unit.useNextBlock(end);
+        return null;
+    }
+
+    private boolean wildcardCheck(PatternTy pattern) {
+        return pattern instanceof PatternTy.MatchAs && ((PatternTy.MatchAs) pattern).name == null;
+    }
+
+    public Void visit(PatternTy pattern, PatternContext pc) {
+        if (pattern instanceof PatternTy.MatchAs) {
+            return visit((PatternTy.MatchAs) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchMapping) {
+            return visit((PatternTy.MatchMapping) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchSingleton) {
+            return visit((PatternTy.MatchSingleton) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchClass) {
+            return visit((PatternTy.MatchClass) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchOr) {
+            return visit((PatternTy.MatchOr) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchSequence) {
+            return visit((PatternTy.MatchSequence) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchStar) {
+            return visit((PatternTy.MatchStar) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchValue) {
+            return visit((PatternTy.MatchValue) pattern, pc);
+        } else {
+            throw new IllegalStateException("unknown PatternTy type " + pattern.getClass());
+        }
+    }
+
+    public Void visit(PatternTy.MatchAs node, PatternContext pc) {
+        return emitNotImplemented("match as");
+    }
+
+    public Void visit(PatternTy.MatchClass node, PatternContext pc) {
+        return emitNotImplemented("match class");
+    }
+
+    public Void visit(PatternTy.MatchMapping node, PatternContext pc) {
+        return emitNotImplemented("match mapping");
+    }
+
+    public Void visit(PatternTy.MatchOr node, PatternContext pc) {
+        return emitNotImplemented("match or");
+    }
+
+    public Void visit(PatternTy.MatchSequence node, PatternContext pc) {
+        return emitNotImplemented("match sequence");
+    }
+
+    public Void visit(PatternTy.MatchStar node, PatternContext pc) {
+        return emitNotImplemented("match star");
+    }
+
+    public Void visit(PatternTy.MatchSingleton node, PatternContext pc) {
+        return emitNotImplemented("match star");
+    }
+
+    public Void visit(PatternTy.MatchValue node, PatternContext pc) {
+        setLocation(node);
+        ExprTy value = node.value;
+        if (value instanceof ExprTy.Constant || value instanceof ExprTy.Attribute) {
+            node.value.accept(this);
+        } else if (value instanceof ExprTy.UnaryOp) {
+            patterMatchValueUnaryOp((ExprTy.UnaryOp) value);
+        } else if (value instanceof ExprTy.BinOp) {
+            try {
+                patternMatchValueBinOp((ExprTy.BinOp) value);
+            } catch (Throwable t) {
+                ExceptionUtils.printPythonLikeStackTrace();
+                throw t;
+            }
+        } else {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "patterns may only match literals and attribute lookups");
+        }
+        addCompareOp(CmpOpTy.Eq);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        return null;
+    }
+
+    private void patterMatchValueUnaryOp(ExprTy.UnaryOp unaryOp) {
+        assert unaryOp.op == UnaryOpTy.USub;
+        assert unaryOp.operand instanceof ExprTy.Constant : unaryOp.operand;
+        SourceRange savedLocation = setLocation(unaryOp);
+        try {
+            unaryOp.operand.accept(this);
+            addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
+        } finally {
+            setLocation(savedLocation);
+        }
+    }
+
+    private void patternMatchValueBinOp(ExprTy.BinOp binOp) {
+        assert (binOp.left instanceof ExprTy.UnaryOp || binOp.left instanceof ExprTy.Constant) && binOp.right instanceof ExprTy.Constant : binOp.left + " " + binOp.right;
+        assert binOp.op == OperatorTy.Sub || binOp.op == OperatorTy.Add;
+        SourceRange savedLocation = setLocation(binOp);
+        try {
+            if (binOp.left instanceof ExprTy.UnaryOp) {
+                patterMatchValueUnaryOp((ExprTy.UnaryOp) binOp.left);
+            } else {
+                binOp.left.accept(this);
+            }
+            binOp.right.accept(this);
+            switch (binOp.op) {
+                case Add:
+                    addOp(BINARY_OP, BinaryOps.ADD.ordinal());
+                    break;
+                case Sub:
+                    addOp(BINARY_OP, BinaryOps.SUB.ordinal());
+                    break;
+                default:
+                    throw new IllegalStateException("wrong constant BinOp operator " + binOp.op);
+            }
+        } finally {
+            setLocation(savedLocation);
+        }
+    }
+
+    private void jumpToFailPop(OpCodes op, PatternContext pc) {
+        // Pop any items on the top of the stack, plus any objects we were going to capture on
+        // success:
+        int pops = pc.onTop + (pc.stores == null ? 0 : pc.stores.size());
+        ensureFailPop(pops, pc);
+        addConditionalJump(op, pc.failPop.get(pops));
+    }
+
+    private void ensureFailPop(int n, PatternContext pc) {
+        int size = n + 1;
+        if (pc.failPop != null && size <= pc.failPop.size()) {
+            return;
+        }
+        if (pc.failPop == null) {
+            pc.failPop = new ArrayList<>();
+        }
+        while (pc.failPop.size() < size) {
+            Block b = new Block();
+            pc.failPop.add(b);
+        }
+    }
+
+    private void emitAndResetFailPop(PatternContext pc) {
+        if (pc.failPop == null) {
+            return;
+        }
+        Collections.reverse(pc.failPop);
+        Iterator<Block> it = pc.failPop.iterator();
+        while (it.hasNext()) {
+            Block b = it.next();
+            unit.useNextBlock(b);
+            it.remove();
+            if (it.hasNext()) {
+                addOp(POP_TOP);
+            }
+        }
     }
 
     @Override
     public Void visit(MatchCaseTy node) {
-        return emitNotImplemented("case");
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
-    public Void visit(PatternTy.MatchAs node) {
-        return emitNotImplemented("match as");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchClass node) {
-        return emitNotImplemented("match class");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchMapping node) {
-        return emitNotImplemented("match mapping");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchOr node) {
-        return emitNotImplemented("match or");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchSequence node) {
-        return emitNotImplemented("match sequence");
+    public Void visit(PatternTy.MatchValue node) {
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
     public Void visit(PatternTy.MatchSingleton node) {
-        return emitNotImplemented("match singleton");
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchAs node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchClass node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchMapping node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchOr node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchSequence node) {
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
     public Void visit(PatternTy.MatchStar node) {
         return emitNotImplemented("match star");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchValue node) {
-        return emitNotImplemented("match value");
     }
 
     @Override
@@ -2909,7 +3114,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         if (interactiveTerminal) {
             flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
         }
-        return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
+        return createParser(src, errorCb, inputType, flags, 10);
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {

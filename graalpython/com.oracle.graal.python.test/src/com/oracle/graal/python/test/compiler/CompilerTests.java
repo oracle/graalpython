@@ -809,6 +809,37 @@ public class CompilerTests extends PythonTests {
         doTest(s);
     }
 
+    // @Test skip until 3.10
+    public void testMatchValueConst() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case 1:\n" +
+                        "       pass\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchValue() {
+        String source = "" +
+                        "s = 1\n" +
+                        "match s:\n" +
+                        "   case 1:\n" +
+                        "       pass\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchValueWithDefault() {
+        String source = "" +
+                        "s = 1\n" +
+                        "match s:\n" +
+                        "   case 1:\n" +
+                        "       pass\n" +
+                        "   case _:\n" +
+                        "       pass\n";
+        doTest(source);
+    }
+
     @Test
     public void testAssignToDebug() {
         checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
