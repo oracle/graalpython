@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContext {
 
@@ -60,10 +61,12 @@ abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContex
     HashingStorage doIt(SequenceStorage sequenceStorage,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
+                    @Cached LoopConditionProfile loopConditionProfile) {
         HashingStorage setStorage = EmptyStorage.INSTANCE;
         int length = lenNode.execute(sequenceStorage);
-        for (int i = 0; i < length; ++i) {
+        loopConditionProfile.profileCounted(length);
+        for (int i = 0; loopConditionProfile.inject(i < length); ++i) {
             Object o = getItemNode.execute(sequenceStorage, i);
             setStorage = hashingStorageLibrary.setItem(setStorage, o, PNone.NONE);
         }
