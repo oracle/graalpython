@@ -2178,7 +2178,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "AddMember", takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true, minNumOfPositionalArgs = 1)
+    @Builtin(name = "AddMember", parameterNames = {"$mod"}, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class AddMemberNode extends PythonVarargsBuiltinNode {
 

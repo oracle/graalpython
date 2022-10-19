@@ -106,7 +106,7 @@ public abstract class ManagedMethodWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class MethKeywords extends MethodWrapper {
+    static final class MethKeywords extends MethodWrapper {
 
         public MethKeywords(Object method, Object typeid) {
             super(method, typeid);
@@ -151,7 +151,7 @@ public abstract class ManagedMethodWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class MethVarargs extends MethodWrapper {
+    static final class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {
             super(method, null);
