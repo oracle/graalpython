@@ -1601,6 +1601,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(stackTop - 2, top);
                         break;
                     }
+                    case OpCodesConstants.ROT_N: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        bytcodeRotN(virtualFrame, stackTop, oparg);
+                        break;
+                    }
                     case OpCodesConstants.DUP_TOP:
                         virtualFrame.setObject(stackTop + 1, virtualFrame.getObject(stackTop));
                         stackTop++;
@@ -2225,6 +2230,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     notifyStatementAfterException(virtualFrame, instrumentation, bci);
                 }
             }
+        }
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytcodeRotN(VirtualFrame virtualFrame, int stackTop, int oparg) {
+        if (oparg > 1) {
+            Object top = virtualFrame.getObject(stackTop);
+            int i = 0;
+            for (; i < oparg - 1; i++) {
+                virtualFrame.setObject(stackTop - i, virtualFrame.getObject(stackTop - i - 1));
+            }
+            virtualFrame.setObject(stackTop - i, top);
         }
     }
 

@@ -115,6 +115,7 @@ import static com.oracle.graal.python.compiler.OpCodes.PUSH_EXC_INFO;
 import static com.oracle.graal.python.compiler.OpCodes.RAISE_VARARGS;
 import static com.oracle.graal.python.compiler.OpCodes.RESUME_YIELD;
 import static com.oracle.graal.python.compiler.OpCodes.RETURN_VALUE;
+import static com.oracle.graal.python.compiler.OpCodes.ROT_N;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_THREE;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_TWO;
 import static com.oracle.graal.python.compiler.OpCodes.SEND;
@@ -201,7 +202,7 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     private static class PatternContext {
         ArrayList<String> stores;
-        // boolean allowIrrefutable;
+        boolean allowIrrefutable;
         ArrayList<Block> failPop;
         int onTop;
     }
@@ -2476,9 +2477,24 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (i < lastIdx) {
                 addOp(DUP_TOP);
             }
+            pc.stores = new ArrayList<>();
+            // Irrefutable cases must be either guarded, last, or both:
+            pc.allowIrrefutable = c.guard != null || i == node.cases.length - 1;
+            pc.failPop = null;
+            pc.onTop = 0;
+
             visit(c.pattern, pc);
 
-            // Success! Pop the subject off, we're done with it:
+            // Store all of the captured names (they're on the stack).
+            for (String name : pc.stores) {
+                addNameOp(name, ExprContextTy.Store);
+            }
+            if (c.guard != null) {
+                ensureFailPop(i, pc);
+                jumpIf(c.guard, pc.failPop.get(0), false);
+            }
+
+            // Pop the subject off, we're done with it:
             if (i < lastIdx) {
                 addOp(POP_TOP);
             }
@@ -2499,6 +2515,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             } else {
                 // Show line coverage for default case (it doesn't create bytecode)
                 addOp(NOP);
+            }
+            if (c.guard != null) {
+                jumpIf(c.guard, end, false);
             }
             visitBody(c.body, false);
         }
@@ -2533,7 +2552,38 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public Void visit(PatternTy.MatchAs node, PatternContext pc) {
-        return emitNotImplemented("match as");
+        if (node.pattern == null) {
+            if (!pc.allowIrrefutable) {
+                if (node.name != null) {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "name capture %s makes remaining patterns unreachable", node.name);
+                }
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "wildcard makes remaining patterns unreachable");
+            }
+            patternHelperStoreName(node.name, pc);
+            return null;
+        }
+        // Need to make a copy for (possibly) storing later:
+        pc.onTop++;
+        addOp(DUP_TOP);
+        visit(node.pattern, pc);
+        pc.onTop--;
+        patternHelperStoreName(node.name, pc);
+        return null;
+    }
+
+    private void patternHelperStoreName(String n, PatternContext pc) {
+        if (n == null) {
+            addOp(POP_TOP);
+            return;
+        }
+        checkForbiddenName(n, ExprContextTy.Store);
+        // Can't assign to the same name twice:
+        if (pc.stores.contains(n)) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name %s in pattern", n);
+        }
+        // Rotate this object underneath any items we need to preserve:
+        pc.stores.add(n);
+        addOp(ROT_N, pc.onTop + pc.stores.size());
     }
 
     public Void visit(PatternTy.MatchClass node, PatternContext pc) {
