@@ -1671,7 +1671,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
                     throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, getName());
                 } else {
-                    currentValue = defaultVal;
+                    return defaultVal;
                 }
             }
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);

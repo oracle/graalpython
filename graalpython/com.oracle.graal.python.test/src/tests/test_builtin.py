@@ -87,3 +87,7 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(getattr(builtins, 'None'), None)
         self.assertEqual(getattr(builtins, 'False'), False)
         self.assertEqual(getattr(builtins, 'True'), True)
+
+    def test_min(self):
+        self.assertEqual(min((), default=1, key="adsf"), 1)
+        
