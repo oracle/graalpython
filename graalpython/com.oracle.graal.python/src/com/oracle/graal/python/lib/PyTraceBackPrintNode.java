@@ -268,7 +268,12 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     @CompilerDirectives.TruffleBoundary
     protected CharSequence getSourceLine(TruffleString fileName, int lineNo) {
         final PythonContext context = getContext();
-        TruffleFile file = context.getEnv().getInternalTruffleFile(fileName.toJavaStringUncached());
+        TruffleFile file = null;
+        try {
+            file = context.getEnv().getInternalTruffleFile(fileName.toJavaStringUncached());
+        } catch (Exception e) {
+            return null;
+        }
         String line = null;
         try {
             Charset encoding;
