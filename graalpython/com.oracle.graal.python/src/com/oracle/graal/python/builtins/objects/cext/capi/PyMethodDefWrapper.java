@@ -44,7 +44,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -298,15 +300,14 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
+    boolean hasNativeType() {
+        return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
+    Object getNativeType(
+                    @Cached GetLLVMType getLLVMType) {
+        return getLLVMType.execute(LLVMType.PyMethodDef);
     }
 }
