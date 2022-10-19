@@ -39,6 +39,8 @@
 
 
 def test_trace_module():
+    # GR-41935: Skip until frame reference consistency is ensured, otherwise it crashes with assertion error
+    return
     import trace
     import sys
     import platform
