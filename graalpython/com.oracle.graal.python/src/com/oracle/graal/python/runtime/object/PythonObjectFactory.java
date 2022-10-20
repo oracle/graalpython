@@ -1123,8 +1123,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct));
     }
 
-    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, lnotab, filename));
+    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, linetable, filename));
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
@@ -1132,9 +1132,9 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
-                    Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] lnotab) {
+                    Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
-                        filename, name, firstlineno, lnotab));
+                        filename, name, firstlineno, linetable));
     }
 
     public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {

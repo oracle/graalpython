@@ -99,7 +99,7 @@ public abstract class CodeNodes {
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                         TruffleString filename, TruffleString name, int firstlineno,
-                        byte[] lnotab) {
+                        byte[] linetable) {
 
             PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = PythonContext.get(this);
@@ -107,7 +107,7 @@ public abstract class CodeNodes {
             try {
                 return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
-                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, linetable);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
@@ -120,7 +120,7 @@ public abstract class CodeNodes {
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                         TruffleString filename, TruffleString name, int firstlineno,
-                        byte[] lnotab) {
+                        byte[] linetable) {
 
             RootCallTarget ct;
             if (codedata.length == 0) {
@@ -138,7 +138,7 @@ public abstract class CodeNodes {
             }
             PythonObjectFactory factory = context.factory();
             return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
-                            firstlineno, lnotab);
+                            firstlineno, linetable);
         }
 
         private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {

@@ -224,18 +224,19 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
+    // They are not the same, but we don't really implement either properly
     @Builtin(name = "co_lnotab", minNumOfPositionalArgs = 1, isGetter = true)
     @Builtin(name = "co_linetable", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetLNoTabNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetLineTableNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            byte[] lnotab = self.getLnotab();
-            if (lnotab == null) {
+            byte[] linetable = self.getLinetable();
+            if (linetable == null) {
                 // TODO: this is for the moment undefined (see co_code)
-                lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
+                linetable = PythonUtils.EMPTY_BYTE_ARRAY;
             }
-            return factory().createBytes(lnotab);
+            return factory().createBytes(linetable);
         }
     }
 
@@ -378,7 +379,7 @@ public class CodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self",
                     "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
-                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_lnotab"})
+                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_linetable"})
     @ArgumentClinic(name = "co_argcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
@@ -394,7 +395,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "co_cellvars", conversion = ArgumentClinic.ClinicConversion.Tuple)
     @ArgumentClinic(name = "co_filename", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
     @ArgumentClinic(name = "co_name", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
-    @ArgumentClinic(name = "co_lnotab", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_linetable", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonClinicBuiltinNode {
         @Override
@@ -431,7 +432,7 @@ public class CodeBuiltins extends PythonBuiltins {
                                 coFilename.isEmpty() ? self.co_filename() : coFilename,
                                 coName.isEmpty() ? self.co_name() : coName,
                                 coFirstlineno == -1 ? self.co_firstlineno() : coFirstlineno,
-                                PGuards.isNone(coLnotab) ? self.getLnotab() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
+                                PGuards.isNone(coLnotab) ? self.getLinetable() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {
                 if (!PGuards.isNone(coCode)) {
                     bufferLib.release(coCode, frame, this);

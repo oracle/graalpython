@@ -146,7 +146,7 @@ public final class PCode extends PythonBuiltinObject {
     // number of first line in Python source code
     private int firstlineno = -1;
     // is a string encoding the mapping from bytecode offsets to line numbers
-    private byte[] lnotab;
+    private byte[] linetable;
     // tuple of names of free variables (referenced via a function’s closure)
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
@@ -158,20 +158,20 @@ public final class PCode extends PythonBuiltinObject {
         initializeSignature(callTarget);
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
         this(cls, instanceShape, callTarget);
         this.flags = flags;
         this.firstlineno = firstlineno;
-        this.lnotab = lnotab;
+        this.linetable = linetable;
         this.filename = filename;
     }
 
-    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
+    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
         super(cls, instanceShape);
         this.callTargetSupplier = callTargetSupplier;
         this.flags = flags;
         this.firstlineno = firstlineno;
-        this.lnotab = lnotab;
+        this.linetable = linetable;
         this.filename = filename;
     }
 
@@ -181,7 +181,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names,
-                    Object[] varnames, Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] lnotab) {
+                    Object[] varnames, Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
         super(cls, instanceShape);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
@@ -192,7 +192,7 @@ public final class PCode extends PythonBuiltinObject {
         this.filename = filename;
         this.name = name;
         this.firstlineno = firstlineno;
-        this.lnotab = lnotab;
+        this.linetable = linetable;
         this.freevars = freevars;
         this.cellvars = cellvars;
         this.callTarget = callTarget;
@@ -659,8 +659,8 @@ public final class PCode extends PythonBuiltinObject {
         return names;
     }
 
-    public byte[] getLnotab() {
-        return lnotab;
+    public byte[] getLinetable() {
+        return linetable;
     }
 
     public boolean isGenerator() {
@@ -814,7 +814,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public PBytes co_lnotab(PythonObjectFactory factory) {
-        return createBytes(this.getLnotab(), factory);
+        return createBytes(this.getLinetable(), factory);
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {

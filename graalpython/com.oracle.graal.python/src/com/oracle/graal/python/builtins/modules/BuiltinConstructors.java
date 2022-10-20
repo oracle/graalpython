@@ -2506,7 +2506,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, numOfPositionalOnlyArgs = 17, parameterNames = {
                     "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring", "constants", "names", "varnames", "filename", "name", "firstlineno",
-                    "lnotab", "freevars", "cellvars"})
+                    "linetable", "freevars", "cellvars"})
     @ArgumentClinic(name = "argcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
@@ -2524,14 +2524,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
                         PTuple varnames, TruffleString filename, TruffleString name,
-                        int firstlineno, PBytes lnotab,
+                        int firstlineno, PBytes linetable,
                         PTuple freevars, PTuple cellvars,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
-            byte[] lnotabBytes = bufferLib.getCopiedByteArray(lnotab);
+            byte[] linetableBytes = bufferLib.getCopiedByteArray(linetable);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             TruffleString[] namesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(names), castToTruffleStringNode);
@@ -2544,7 +2544,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
                             filename, name, firstlineno,
-                            lnotabBytes);
+                            linetableBytes);
         }
 
         @Fallback
@@ -2553,7 +2553,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
                         Object varnames, Object filename, Object name,
-                        Object firstlineno, Object lnotab,
+                        Object firstlineno, Object linetable,
                         Object freevars, Object cellvars) {
             throw raise(TypeError, ErrorMessages.INVALID_ARGS, "code");
         }
