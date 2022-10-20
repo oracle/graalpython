@@ -229,8 +229,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         ArrayList<TruffleString> haveFunctions = new ArrayList<>();
         if (PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32) {
             Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
-                    tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
-                    tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
+                            tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
+                            tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
             // Not implemented yet:
             // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
             // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
