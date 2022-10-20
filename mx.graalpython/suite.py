@@ -611,7 +611,7 @@ suite = {
                 "windows": {
                     "<others>": {
                         "layout": {
-                            "./": "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README",
+                            "./": "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README.md",
                         },
                     },
                 },
@@ -625,7 +625,7 @@ suite = {
                                 "source_type": "dependency",
                                 "dependency": "com.oracle.graal.python.jni",
                                 "path": "*",
-                                "exclude": ["JNI-WINDOWS-README"],
+                                "exclude": ["JNI-WINDOWS-README.md"],
                             },
                         },
                     },
@@ -740,7 +740,7 @@ suite = {
                 "windows": {
                     "<others>": {
                         "layout": {
-                            "./": "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README",
+                            "./": "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                         },
                     },
                 },
@@ -754,7 +754,7 @@ suite = {
                                 "source_type": "dependency",
                                 "dependency": "graalpython:com.oracle.graal.python.cext",
                                 "path": "*",
-                                "exclude": ["CEXT-WINDOWS-README"],
+                                "exclude": ["CEXT-WINDOWS-README.md"],
                             },
                         },
                     },
