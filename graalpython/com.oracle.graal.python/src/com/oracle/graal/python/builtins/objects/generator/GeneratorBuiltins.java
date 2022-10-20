@@ -420,10 +420,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                             @Cached GetObjectArrayNode getObjectArrayNode,
                             @Shared("callCtor") @Cached CallNode callConstructor) {
                 checkExceptionClass(type);
-                Object[] array = getObjectArrayNode.execute(value);
-                Object[] args = new Object[array.length + 1];
-                args[0] = type;
-                PythonUtils.arraycopy(array, 0, args, 1, array.length);
+                Object[] args = getObjectArrayNode.execute(value);
                 Object instance = callConstructor.execute(frame, type, args);
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
@@ -432,7 +429,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPBaseException(value)"}, limit = "1")
+            @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"}, limit = "1")
             PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Shared("callCtor") @Cached CallNode callConstructor) {
