@@ -46,7 +46,7 @@ from distutils.sysconfig import get_config_var, get_config_vars
 
 import _sysconfig
 
-__dir__ = __file__.rpartition("/")[0]
+__dir__ = os.path.dirname(__file__)
 cflags_warnings = [ "-Wno-int-to-pointer-cast"
                   , "-Wno-int-conversion"
                   , "-Wno-void-pointer-to-int-cast"
@@ -60,13 +60,15 @@ libhpy_name = "libhpy"
 libposix_name = "libposix"
 
 MACOS = sys.platform == "darwin"
+WIN32 = sys.platform == "win32"
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = MACOS and __graalpython__.platform_id == "native"
+win32_native = WIN32 and __graalpython__.platform_id == "native"
 relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 is_managed = 'managed' in SOABI
-lib_ext = 'dylib' if MACOS else 'so'
+lib_ext = 'dylib' if MACOS else ('dll' if WIN32 else 'so')
 
 # configure logger
 logger = logging.getLogger(__name__)
