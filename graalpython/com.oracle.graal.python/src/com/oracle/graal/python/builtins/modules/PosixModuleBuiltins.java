@@ -281,6 +281,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
+            Object key, val;
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                key = toTruffleStringUncached(entry.getKey());
+            } else {
+                key = core.factory().createBytes(entry.getKey().getBytes());
+            }
             if (pyenvLauncherKey.equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
@@ -295,10 +301,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     posixLib.setenv(posixSupport, k, v, true);
                 } catch (PosixException ignored) {
                 }
-                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.toJavaStringUncached().getBytes()));
+                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                    val = value;
+                } else {
+                    val = core.factory().createBytes(value.toJavaStringUncached().getBytes());
+                }
             } else {
-                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes((entry.getValue().getBytes())));
+                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                    val = toTruffleStringUncached(entry.getValue());
+                } else {
+                    val = core.factory().createBytes((entry.getValue().getBytes()));
+                }
             }
+            environ.setItem(key, val);
         }
         PythonModule posix;
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
