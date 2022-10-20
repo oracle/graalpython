@@ -381,6 +381,31 @@ PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwarg
     return result;
 }
 
+// Taken from CPython object.c
+int
+PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
+{
+    PyObject **dictptr = _PyObject_GetDictPtr(obj);
+    if (dictptr == NULL) {
+        PyErr_SetString(PyExc_AttributeError,
+                        "This object has no __dict__");
+        return -1;
+    }
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "cannot delete __dict__");
+        return -1;
+    }
+    if (!PyDict_Check(value)) {
+        PyErr_Format(PyExc_TypeError,
+                     "__dict__ must be set to a dictionary, "
+                     "not a '%.200s'", Py_TYPE(value)->tp_name);
+        return -1;
+    }
+    Py_INCREF(value);
+    Py_XSETREF(*dictptr, value);
+    return 0;
+}
+
 PyObject* PyObject_Type(PyObject* obj) {
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("type", SRC_CS), native_to_java(obj));
 }
