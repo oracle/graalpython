@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,8 +49,13 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes;
+import com.oracle.graal.python.compiler.SourceMap;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -237,6 +243,42 @@ public class CodeBuiltins extends PythonBuiltins {
                 linetable = PythonUtils.EMPTY_BYTE_ARRAY;
             }
             return factory().createBytes(linetable);
+        }
+    }
+
+    @Builtin(name = "co_lines", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CoLinesNode extends PythonUnaryBuiltinNode {
+        private static class IteratorData {
+            int start = 0;
+            int line = -1;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object lines(PCode self) {
+            PTuple tuple;
+            if (self.getRootNode() instanceof PBytecodeRootNode) {
+                CodeUnit co = ((PBytecodeRootNode) self.getRootNode()).getCodeUnit();
+                SourceMap map = co.getSourceMap();
+                List<PTuple> lines = new ArrayList<>();
+                if (map != null && map.startLineMap.length > 0) {
+                    IteratorData data = new IteratorData();
+                    data.line = map.startLineMap[0];
+                    co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
+                        int nextStart = bci + op.length();
+                        if (map.startLineMap[bci] != data.line || nextStart == co.code.length) {
+                            lines.add(factory().createTuple(new int[]{data.start, nextStart, data.line}));
+                            data.line = map.startLineMap[bci];
+                            data.start = nextStart;
+                        }
+                    });
+                }
+                tuple = factory().createTuple(lines.toArray());
+            } else {
+                tuple = factory().createEmptyTuple();
+            }
+            return PyObjectGetIter.getUncached().execute(null, tuple);
         }
     }
 
