@@ -70,7 +70,7 @@ FROZEN = [
             "genericpath",
             "ntpath",
             "posixpath",
-            # We must explicitly mark os.path as a frozen module
+            # We must explicitly mark os.path as a frozen module, it is also special cased below
             ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
             "os",
             "site",
@@ -279,7 +279,7 @@ class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile stdlib_path"
 
     @property
     def modname(self):
-        if self.pyfile.startswith(self.stdlib_path):
+        if os.path.normpath(self.pyfile).startswith(os.path.normpath(self.stdlib_path)):
             return self.id
         return None
 
@@ -528,6 +528,8 @@ FROZEN_MODULES_HEADER = """/*
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import com.oracle.graal.python.builtins.PythonOS;
+
 public final class FrozenModules {"""
 
 
@@ -561,6 +563,9 @@ def write_frozen_lookup(out_file, modules):
             out_file.write(
                 f'                return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n'
             )
+        elif module.name == "os.path": # Special case for os.path
+            out_file.write(u'            case "os.path":\n')
+            out_file.write(u'                return PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32 ? Map.POSIXPATH : Map.NTPATH;\n')
         else:
             out_file.write(f'            case "{module.name}":\n')
             out_file.write(f"                return Map.{module.symbol};\n")
