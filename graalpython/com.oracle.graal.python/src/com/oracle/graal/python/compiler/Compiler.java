@@ -2482,7 +2482,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             if (i < lastIdx) {
                 addOp(POP_TOP);
             }
-            visitBody(c.body, true);
+            visitBody(c.body, false);
             addOp(JUMP_FORWARD, end);
             // If the pattern fails to match, we want the line number of the
             // cleanup to be associated with the failed pattern, not the last line
@@ -2500,7 +2500,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 // Show line coverage for default case (it doesn't create bytecode)
                 addOp(NOP);
             }
-            visitBody(c.body, true);
+            visitBody(c.body, false);
         }
         unit.useNextBlock(end);
         return null;

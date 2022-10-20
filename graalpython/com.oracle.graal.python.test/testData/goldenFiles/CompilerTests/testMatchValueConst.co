@@ -2,9 +2,7 @@ Disassembly of <module>:
   1:6   -   1:7         0 LOAD_BYTE_I                       1                                      can quicken
   2:8   -   2:9         2 LOAD_BYTE_I                       1                                      can quicken
   2:8   -   2:9         4 BINARY_OP                         12   (EQ)                              can quicken, generalizes: 2, 0
-  2:8   -   2:9         6 POP_AND_JUMP_IF_FALSE             8    (to 14)                           generalizes: 4
-  3:7   -   3:11       10 LOAD_NONE
-  3:7   -   3:11       11 RETURN_VALUE
-  3:7   -   3:11       12 JUMP_FORWARD                      2    (to 14)
-  2:3   -   3:11  >>   14 LOAD_NONE
-  2:3   -   3:11       15 RETURN_VALUE
+  2:8   -   2:9         6 POP_AND_JUMP_IF_FALSE             6    (to 12)                           generalizes: 4
+  3:7   -   3:11       10 JUMP_FORWARD                      2    (to 12)
+  2:3   -   3:11  >>   12 LOAD_NONE
+  2:3   -   3:11       13 RETURN_VALUE
