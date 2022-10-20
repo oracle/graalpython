@@ -69,10 +69,16 @@ def _get_posix_vars():
     import sys
     import os
     darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
+    win32_native = sys.platform == "win32" and __graalpython__.platform_id == "native"
 
     # note: this must be kept in sync with _imp.extension_suffixes
     so_abi = sys.implementation.cache_tag + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
-    so_ext = ".so" if not darwin_native else ".dylib"
+    if darwin_native:
+        so_ext = ".dylib"
+    elif win32_native:
+        so_ext = ".dll"
+    else:
+        so_ext = ".so"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
     toolchain_cxx = __graalpython__.get_toolchain_tool_path('CXX')

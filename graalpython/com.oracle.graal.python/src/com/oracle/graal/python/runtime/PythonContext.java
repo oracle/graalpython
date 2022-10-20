@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DLL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -181,6 +182,8 @@ public final class PythonContext extends Python3Core {
     private static String getJniSoExt() {
         if (getPythonOS() == PLATFORM_DARWIN) {
             return ".dylib";
+        } else if (getPythonOS() == PLATFORM_WIN32) {
+            return ".dll";
         }
         return ".so";
     }
@@ -2343,10 +2346,12 @@ public final class PythonContext extends Python3Core {
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleString toolchainId = toTruffleStringUncached(toolchain.getIdentifier());
 
-            // only use '.dylib' if we are on 'Darwin-native'
+            // only use '.dylib'/'.dll' if we are on 'Darwin-native'/'Win32-native'
             TruffleString soExt;
             if (getPythonOS() == PLATFORM_DARWIN && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
                 soExt = T_EXT_DYLIB;
+            } else if (getPythonOS() == PLATFORM_WIN32 && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
+                soExt = T_EXT_DLL;
             } else {
                 soExt = T_EXT_SO;
             }

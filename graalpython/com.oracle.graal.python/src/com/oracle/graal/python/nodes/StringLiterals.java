@@ -162,6 +162,7 @@ public abstract class StringLiterals {
     public static final TruffleString T_EXT_SO = tsLiteral(".so");
     public static final TruffleString T_EXT_DYLIB = tsLiteral(".dylib");
     public static final TruffleString T_EXT_SU = tsLiteral(".su");
+    public static final TruffleString T_EXT_DLL = tsLiteral(".dll");
 
     public static final TruffleString T_NATIVE = tsLiteral("native");
 
