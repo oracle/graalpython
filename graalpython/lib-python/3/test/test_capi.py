@@ -29,7 +29,8 @@ except ImportError:
 # Skip this test if the _testcapi module isn't available.
 _testcapi = import_helper.import_module('_testcapi')
 
-import _testinternalcapi
+# GraalVM change: we don't have _testinternalcapi
+# import _testinternalcapi
 
 # Were we compiled --with-pydebug or with #define Py_DEBUG?
 Py_DEBUG = hasattr(sys, 'gettotalrefcount')
@@ -851,10 +852,11 @@ class Test_testcapi(unittest.TestCase):
         _testcapi.test_widechar()
 
 
-class Test_testinternalcapi(unittest.TestCase):
-    locals().update((name, getattr(_testinternalcapi, name))
-                    for name in dir(_testinternalcapi)
-                    if name.startswith('test_'))
+# GraalVM change: we don't have _testinternalcapi
+# class Test_testinternalcapi(unittest.TestCase):
+#     locals().update((name, getattr(_testinternalcapi, name))
+#                     for name in dir(_testinternalcapi)
+#                     if name.startswith('test_'))
 
 
 class PyMemDebugTests(unittest.TestCase):
