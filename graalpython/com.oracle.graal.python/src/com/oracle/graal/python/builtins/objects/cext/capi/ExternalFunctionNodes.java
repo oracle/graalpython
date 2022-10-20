@@ -219,7 +219,8 @@ public abstract class ExternalFunctionNodes {
         TP_STR(43),
         TP_REPR(44);
 
-        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
+        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[50];
 
         PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
             this.value = value;
@@ -240,20 +241,21 @@ public abstract class ExternalFunctionNodes {
             this(value, 0, AllToSulongNode::create, DefaultCheckFunctionResultNodeGen::create);
         }
 
-        @ExplodeLoop
-        static PExternalFunctionWrapper fromValue(int value) {
-            for (int i = 0; i < VALUES.length; i++) {
-                if (VALUES[i].value == value) {
-                    return VALUES[i];
-                }
-            }
-            return null;
-        }
-
         private final int value;
         private final int numDefaults;
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
         private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
+
+        static {
+            for (var e : VALUES) {
+                assert BY_ID[e.value] == null;
+                BY_ID[e.value] = e;
+            }
+        }
+
+        static PExternalFunctionWrapper fromValue(int value) {
+            return BY_ID[value];
+        }
 
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean doArgAndResultConversion, boolean isStatic) {

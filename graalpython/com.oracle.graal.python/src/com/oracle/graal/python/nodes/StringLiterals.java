@@ -123,7 +123,8 @@ public abstract class StringLiterals {
 
     public static final TruffleString T_STRUCT_TIME = tsLiteral("struct_time");
 
-    public static final TruffleString T_GET_ = tsLiteral("get_");
+    public static final String J_GET_ = "get_";
+    public static final TruffleString T_GET_ = tsLiteral(J_GET_);
 
     public static final TruffleString T_NAME = tsLiteral("name");
 
@@ -156,7 +157,8 @@ public abstract class StringLiterals {
     public static final String J_WRITABLE = "writable";
     public static final TruffleString T_WRITABLE = tsLiteral(J_WRITABLE);
 
-    public static final TruffleString T_TYPE_ID = tsLiteral("_typeid");
+    public static final String J_TYPE_ID = "_typeid";
+    public static final TruffleString T_TYPE_ID = tsLiteral(J_TYPE_ID);
 
     public static final TruffleString T_HPY_SUFFIX = tsLiteral(".hpy.so");
     public static final TruffleString T_EXT_SO = tsLiteral(".so");

@@ -62,10 +62,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TYPE_ID;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -900,15 +897,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         HPyFunc_releasebufferproc,
         HPyFunc_destroyfunc,
         HPyModule_init;
-
-        public static GraalHPyNativeSymbol getGetterFunctionName(LLVMType llvmType) {
-            CompilerAsserts.neverPartOfCompilation();
-            TruffleString getterFunctionName = cat(T_GET_, toTruffleStringUncached(llvmType.name()), T_TYPE_ID);
-            if (!GraalHPyNativeSymbol.isValid(getterFunctionName, TruffleString.EqualNode.getUncached())) {
-                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + getterFunctionName);
-            }
-            return GraalHPyNativeSymbol.getByName(getterFunctionName, TruffleString.EqualNode.getUncached());
-        }
     }
 
     private static final int IMMUTABLE_HANDLE_COUNT = 256;

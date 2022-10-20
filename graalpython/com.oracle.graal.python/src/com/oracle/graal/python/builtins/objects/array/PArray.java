@@ -26,9 +26,9 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_U;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_W;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
@@ -41,10 +41,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -223,24 +223,30 @@ public final class PArray extends PythonBuiltinObject {
             this.unicodeEncoding = unicodeEncoding;
         }
 
-        @ExplodeLoop
-        public static MachineFormat forFormat(BufferFormat format) {
-            for (MachineFormat machineFormat : MachineFormat.values()) {
-                if (machineFormat.format == format && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
-                    return machineFormat;
+        @CompilationFinal(dimensions = 1) private static final MachineFormat[] BY_BUFFER_FORMAT = new MachineFormat[BufferFormat.values().length];
+        @CompilationFinal(dimensions = 1) private static final MachineFormat[] BY_CODE = new MachineFormat[values().length];
+
+        static {
+            outer: for (var format : BufferFormat.values()) {
+                for (var machineFormat : values()) {
+                    if (machineFormat.format == format && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
+                        BY_BUFFER_FORMAT[format.ordinal()] = machineFormat;
+                        break outer;
+                    }
                 }
             }
-            return null;
+            for (var machineFormat : values()) {
+                assert BY_CODE[machineFormat.ordinal()] == null;
+                BY_CODE[machineFormat.ordinal()] = machineFormat;
+            }
         }
 
-        @ExplodeLoop
+        public static MachineFormat forFormat(BufferFormat format) {
+            return BY_BUFFER_FORMAT[format.ordinal()];
+        }
+
         public static MachineFormat fromCode(int code) {
-            for (MachineFormat machineFormat : MachineFormat.values()) {
-                if (machineFormat.code == code) {
-                    return machineFormat;
-                }
-            }
-            return null;
+            return BY_CODE[code];
         }
     }
 

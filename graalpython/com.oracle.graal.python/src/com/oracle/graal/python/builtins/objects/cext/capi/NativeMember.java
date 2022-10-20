@@ -44,11 +44,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberTyp
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeMember {
@@ -307,17 +307,17 @@ public enum NativeMember {
     private final String jMemberName;
     private final TruffleString tMemberName;
     private final NativeMemberType type;
+    private final NativeCAPISymbol getter;
 
     private NativeMember(String name) {
-        this.jMemberName = name;
-        this.tMemberName = toTruffleStringUncached(name);
-        this.type = POINTER;
+        this(name, POINTER);
     }
 
     private NativeMember(String name, NativeMemberType type) {
         this.jMemberName = name;
         this.tMemberName = toTruffleStringUncached(name);
         this.type = type;
+        this.getter = NativeCAPISymbol.getByName(StringLiterals.J_GET_ + name);
     }
 
     public TruffleString getMemberNameTruffleString() {
@@ -333,6 +333,14 @@ public enum NativeMember {
         return type;
     }
 
+    public NativeCAPISymbol getGetterFunctionName() {
+        if (getter == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere("no getter for native member " + jMemberName);
+        }
+        return getter;
+    }
+
     @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
 
     public static NativeMember byName(String name) {
@@ -342,20 +350,6 @@ public enum NativeMember {
             }
         }
         return null;
-    }
-
-    @ExplodeLoop
-    public static NativeMember byName(TruffleString name, TruffleString.EqualNode eqNode) {
-        for (NativeMember nativeMember : VALUES) {
-            if (eqNode.execute(nativeMember.tMemberName, name, TS_ENCODING)) {
-                return nativeMember;
-            }
-        }
-        return null;
-    }
-
-    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
-        return byName(name, eqNode) != null;
     }
 
     public static boolean isValid(String name) {

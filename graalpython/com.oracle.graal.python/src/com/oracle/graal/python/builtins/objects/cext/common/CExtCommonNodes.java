@@ -177,39 +177,36 @@ public abstract class CExtCommonNodes {
         Object doWithSymbolCacheSingleContext(@SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
-                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib,
-                        @Shared("toJavaString") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib, toJavaStringNode);
+                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib) {
+            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
         }
 
         @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
         Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
-                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
-                        @Shared("toJavaString") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib) {
             Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                nativeSymbol = importCAPISymbolUncached(nativeContext, symbol, symbolCache, dynamicObjectLib, toJavaStringNode);
+                nativeSymbol = importCAPISymbolUncached(nativeContext, symbol, symbolCache, dynamicObjectLib);
             }
             return nativeSymbol;
         }
 
         protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol) {
             CompilerAsserts.neverPartOfCompilation();
-            return importCAPISymbolUncached(nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached(), TruffleString.ToJavaStringNode.getUncached());
+            return importCAPISymbolUncached(nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
         }
 
         @TruffleBoundary
-        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib,
-                        TruffleString.ToJavaStringNode toJavaStringNode) {
+        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
             Object llvmLibrary = nativeContext.getLLVMLibrary();
-            TruffleString name = symbol.getName();
+            String name = symbol.getName();
             try {
-                Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, toJavaStringNode.execute(name));
+                Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, name);
                 dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
                 return nativeSymbol;
             } catch (UnknownIdentifierException e) {
-                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getTsName());
             } catch (UnsupportedMessageException e) {
                 throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
@@ -237,7 +234,7 @@ public abstract class CExtCommonNodes {
             } catch (UnsupportedTypeException | ArityException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getName());
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getTsName());
             }
         }
     }
