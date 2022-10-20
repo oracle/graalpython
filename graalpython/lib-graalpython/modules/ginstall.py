@@ -555,6 +555,17 @@ library_dirs = {lapack_lib}"""
 
 
 KNOWN_PACKAGES = known_packages()
+_KNOW_PACKAGES_FILES = dict()
+
+
+def get_file_for_package(package, version):
+    return _KNOW_PACKAGES_FILES.get((package, version), None)
+
+
+def set_file_for_package(pth):
+    package, version = package_from_path(pth)
+    _KNOW_PACKAGES_FILES[(package, version)] = pth
+    return package
 
 
 def xit(fmt, *args, **kwargs):
@@ -651,7 +662,7 @@ def _install_from_url(url, package, extra_opts=None, add_cflags="", ignore_error
         user_arg = []
     start = time.time()
     cmd = [sys.executable]
-    if debug_build:
+    if debug_build and sys.implementation.name == 'graalpy':
         cmd += ["-debug-java", "--python.ExposeInternalSources", "--python.WithJavaStacktrace=2"]
     cmd += ["setup.py"] + build_cmd + ["install"] + user_arg + extra_opts
     status = run_cmd(cmd, env=setup_env,
@@ -700,6 +711,15 @@ def install_with_pip(package, msg="", failOnError=False, **kwargs):
     run_cmd([sys.executable, "-m", "pip", "install", package], msg=msg, failOnError=failOnError, **kwargs)
 
 
+def package_from_path(pth):
+    assert os.path.exists(pth)
+    package = os.path.splitext(os.path.split(pth)[-1])[0]
+    version = None
+    if "-" in package:
+        package, _, version = package.rpartition("-")
+    return package, version
+
+
 def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=True, env=None, pre_install_hook=None,
                       build_cmd=None, debug_build=False):
     if build_cmd is None:
@@ -715,6 +735,12 @@ def install_from_pypi(package, extra_opts=None, add_cflags="", ignore_errors=Tru
         url = package_version_pattern % (package, version)
     else:
         url = package_pattern % package
+
+    # check to see if we want to install the package from a file
+    pth = get_file_for_package(package, version)
+    if pth:
+        url = f"file://{os.path.abspath(pth)}"
+        warn(f"[install] installing '{package}' from '{url}'")
 
     if any(url.endswith(ending) for ending in [".zip", ".tar.bz2", ".tar.gz"]):
         # this is already the url to the actual package
@@ -829,16 +855,21 @@ def main(argv):
             else:
                 xit("Unknown package: '{!s}'", pkg)
     elif args.command == "install":
+        extra_opts = [] + quiet_flag
+        if args.prefix:
+            extra_opts += ["--prefix", args.prefix]
+        if args.user:
+            extra_opts += ["--user"]
+
         for pkg in args.package.split(","):
+            if os.path.exists(pkg):
+                warn("installing from file: {}".format(pkg))
+                pkg = set_file_for_package(pkg)
+
             if pkg not in KNOWN_PACKAGES:
                 warn("package: '%s' not found in known packages, installing with pip" % pkg)
                 install_with_pip(pkg, msg="Unknown package: '{!s}'".format(pkg), failOnError=True)
             else:
-                extra_opts = [] + quiet_flag
-                if args.prefix:
-                    extra_opts += ["--prefix", args.prefix]
-                if args.user:
-                    extra_opts += ["--user"]
                 KNOWN_PACKAGES[pkg](extra_opts=extra_opts, debug_build=args.debug_build)
     elif args.command == "pypi":
         for pkg in args.package.split(","):
