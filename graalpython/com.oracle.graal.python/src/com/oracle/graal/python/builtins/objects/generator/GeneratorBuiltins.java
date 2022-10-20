@@ -68,9 +68,9 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.GeneratorReturnException;
 import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -391,7 +391,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                             @Cached BranchProfile isNotInstanceProfile,
-                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Shared("callCtor") @Cached CallNode callConstructor) {
                 if (isInstanceNode.executeWith(frame, value, type)) {
                     checkExceptionClass(type);
                     return value;
@@ -404,13 +404,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
             @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
-                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Shared("callCtor") @Cached CallNode callConstructor) {
                 checkExceptionClass(type);
-                Object instance = callConstructor.execute(frame, type, new Object[]{type});
+                Object instance = callConstructor.execute(frame, type);
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
                 } else {
-                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
+                    return handleInstanceNotAnException(type, instance);
                 }
             }
 
@@ -418,7 +418,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached GetObjectArrayNode getObjectArrayNode,
-                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Shared("callCtor") @Cached CallNode callConstructor) {
                 checkExceptionClass(type);
                 Object[] array = getObjectArrayNode.execute(value);
                 Object[] args = new Object[array.length + 1];
@@ -428,21 +428,29 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
                 } else {
-                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
+                    return handleInstanceNotAnException(type, instance);
                 }
             }
 
-            @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"}, limit = "1")
+            @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPBaseException(value)"}, limit = "1")
             PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
                             @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
-                            @Cached("create(T___CALL__)") LookupAndCallVarargsNode callConstructor) {
+                            @Shared("callCtor") @Cached CallNode callConstructor) {
                 checkExceptionClass(type);
-                Object instance = callConstructor.execute(frame, type, new Object[]{type, value});
+                Object instance = callConstructor.execute(frame, type, value);
                 if (instance instanceof PBaseException) {
                     return (PBaseException) instance;
                 } else {
-                    throw raise().raise(TypeError, ErrorMessages.EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX);
+                    return handleInstanceNotAnException(type, instance);
                 }
+            }
+
+            private PBaseException handleInstanceNotAnException(Object type, Object instance) {
+                /*
+                 * Instead of throwing the exception here, we throw it into the generator. That's
+                 * what CPython does
+                 */
+                return PythonObjectFactory.getUncached().createBaseException(TypeError, ErrorMessages.CALLING_N_SHOULD_HAVE_RETURNED_AN_INSTANCE_OF_BASE_EXCEPTION_NOT_P, new Object[]{type, instance});
             }
 
             @Fallback
@@ -504,6 +512,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 // nothing that would handle it.
                 // Instead, we throw the exception here and fake entering the generator by adding
                 // its frame to the traceback manually.
+                self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);

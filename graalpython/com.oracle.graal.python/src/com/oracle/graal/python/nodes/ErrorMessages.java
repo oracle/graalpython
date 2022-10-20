@@ -280,6 +280,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXCEPTION_NOT_BASEEXCEPTION = tsLiteral("exception %s not a BaseException subclass");
     public static final TruffleString EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX = tsLiteral("exceptions must be classes or instances deriving from BaseException, not %p");
     public static final TruffleString EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX = tsLiteral("exceptions must derive from BaseException");
+    public static final TruffleString CALLING_N_SHOULD_HAVE_RETURNED_AN_INSTANCE_OF_BASE_EXCEPTION_NOT_P = tsLiteral("calling %N should have returned an instance of BaseException, not %p");
     public static final TruffleString EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY = tsLiteral("execv() arg 2 first element cannot be empty");
     public static final TruffleString EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P = tsLiteral("expected argument types (%s) or (%s) but not (%p, %p)");
     public static final TruffleString EXPECTED_AT_MOST_D_ARGS_GOT_D = tsLiteral("%s expected at most %d arguments, got %d");
