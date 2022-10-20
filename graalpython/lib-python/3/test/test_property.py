@@ -210,7 +210,8 @@ class PropertyTests(unittest.TestCase):
         for i in (0, 1, 3):
             with self.assertRaisesRegex(
                 TypeError,
-                fr'^__set_name__\(\) takes 2 positional arguments but {i} were given$'
+                # GraalVM change: relax message requirement
+                fr'^__set_name__\(\) .*positional.*'
             ):
                 p.__set_name__(*([0] * i))
 

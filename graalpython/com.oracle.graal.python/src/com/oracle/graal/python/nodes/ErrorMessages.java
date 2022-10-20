@@ -635,7 +635,13 @@ public abstract class ErrorMessages {
     public static final TruffleString READ_BYTE_OUT_OF_RANGE = tsLiteral("read byte out of range");
     public static final TruffleString READ_ONLY_BYTELIKE_OBJ = tsLiteral("read-only bytes-like object");
     public static final TruffleString READ_WRITE_BYTELIKE_OBJ = tsLiteral("read-write bytes-like object");
-    public static final TruffleString READONLY_ATTRIBUTE = tsLiteral("readonly attribute");
+    public static final TruffleString ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE = tsLiteral("attribute '%s' of '%p' objects is not writable");
+    public static final TruffleString UNREADABLE_ATTRIBUTE = tsLiteral("unreadable attribute");
+    public static final TruffleString UNREADABLE_ATTRIBUTE_S = tsLiteral("unreadable attribute %s");
+    public static final TruffleString CANT_DELETE_ATTRIBUTE = tsLiteral("can't delete attribute");
+    public static final TruffleString CANT_DELETE_ATTRIBUTE_S = tsLiteral("can't delete attribute %s");
+    public static final TruffleString CANT_SET_ATTRIBUTE = tsLiteral("can't set attribute");
+    public static final TruffleString CANT_SET_ATTRIBUTE_S = tsLiteral("can't set attribute %s");
     public static final TruffleString RECURSION_DEPTH_EXCEEDED = tsLiteral("Recursion depth exceeded");
     public static final TruffleString REPLACEMENT_INDEX_S_OUT_OF_RANGE = tsLiteral("Replacement index %s out of range for positional args tuple");
     public static final TruffleString REQUIRES_CODE_OBJ = tsLiteral("%s() requires a code object with %d free vars, not %d");
@@ -1183,7 +1189,6 @@ public abstract class ErrorMessages {
     public static final TruffleString CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE = tsLiteral("can only concatenate deque (not \"%p\") to deque");
     public static final TruffleString MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = tsLiteral("multi-phase init of extension module %s");
     public static final TruffleString INIT_S_RETURNED_AN_UNEXPECTED_VALUE = tsLiteral("HPyInit_%s returned an unexpected value (expected a Python module).");
-    public static final TruffleString UNREADABLE_ATTRIBUTE = tsLiteral("unreadable attribute");
     public static final TruffleString POP_FROM_EMPTY_DEQUE = tsLiteral("pop from an empty deque");
     public static final TruffleString DEQUE_AT_MAX_SIZE = tsLiteral("deque already at its maximum size");
     public static final TruffleString S_IS_NOT_DEQUE = tsLiteral("%s is not in deque");
@@ -1229,8 +1234,6 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_S_INSTANCE_INSTEAD_OF_S = tsLiteral("expected %s instance instead of %s");
     public static final TruffleString ARRAY_LENGTH_MUST_BE_0_NOT_D = tsLiteral("Array length must be >= 0, not %d");
     public static final TruffleString EXPECTED_A_TYPE_OBJECT = tsLiteral("Expected a type object");
-    public static final TruffleString CANT_SET_ATTRIBUTE = tsLiteral("can't set attribute");
-    public static final TruffleString CANT_DELETE_ATTRIBUTE = tsLiteral("can't delete attribute");
     public static final TruffleString HAS_NO_STGINFO = tsLiteral("has no _stginfo_");
     public static final TruffleString DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D = tsLiteral("Don't know how to convert parameter %d");
     public static final TruffleString MUST_BE_A_CTYPES_TYPE = tsLiteral("must be a ctypes type");

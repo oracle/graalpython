@@ -272,7 +272,7 @@ public class DescriptorBuiltins extends PythonBuiltins {
                     }
                     throw getRaiseNode().raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());
                 } else {
-                    throw getRaiseNode().raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+                    throw getRaiseNode().raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, descr.getName(), obj);
                 }
             }
         }

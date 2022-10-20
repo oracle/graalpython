@@ -601,7 +601,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(obj)")
         static Object setRunning(@SuppressWarnings("unused") PGenerator self, @SuppressWarnings("unused") Object obj,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+            throw raiseNode.raise(AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, "gi_running", self);
         }
     }
 

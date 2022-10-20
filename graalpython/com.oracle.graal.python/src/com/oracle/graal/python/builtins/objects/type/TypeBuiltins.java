@@ -1283,7 +1283,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPythonBuiltinClass(cls)", "!isNoValue(value)"})
         Object setItemsize(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, J___ITEMSIZE__, cls);
         }
 
         @Specialization(guards = "!isNoValue(value)")
