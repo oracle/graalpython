@@ -109,5 +109,7 @@
 
 #define WITH_THREAD 1
 
+#define TIME_WITH_SYS_TIME 1
+
 #endif /*Py_PYCONFIG_H*/
 
