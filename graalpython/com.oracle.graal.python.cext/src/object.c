@@ -847,3 +847,11 @@ _PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs,
     *p_kwnames = kwnames;
     return 0;
 }
+
+
+typedef void (*call_debugtrace_t)(void);
+UPCALL_TYPED_ID(PyTruffle_DebugTrace, call_debugtrace_t);
+void PyTruffle_DebugTrace(void) {
+    _jls_PyTruffle_DebugTrace();
+}
+
