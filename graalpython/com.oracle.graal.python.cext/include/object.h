@@ -84,7 +84,7 @@ typedef struct _typeobject PyTypeObject;
 #endif
 
 /* PyObject_HEAD defines the initial segment of every PyObject. */
-#define PyObject_HEAD                   PyObject ob_base;
+#define PyObject_HEAD                   PyObject Py_HIDE_IMPL_FIELD(ob_base);
 
 #define PyObject_HEAD_INIT(type)        \
     { _PyObject_EXTRA_INIT              \
@@ -99,7 +99,7 @@ typedef struct _typeobject PyTypeObject;
  * has room for ob_size elements.  Note that ob_size is an element count,
  * not necessarily a byte count.
  */
-#define PyObject_VAR_HEAD      PyVarObject ob_base;
+#define PyObject_VAR_HEAD      PyVarObject Py_HIDE_IMPL_FIELD(ob_base);
 #define Py_INVALID_SIZE (Py_ssize_t)-1
 
 /* Nothing is actually declared to be a PyObject, but every pointer to
@@ -109,8 +109,8 @@ typedef struct _typeobject PyTypeObject;
  */
 typedef struct _object {
     _PyObject_HEAD_EXTRA
-    Py_ssize_t ob_refcnt;
-    PyTypeObject *ob_type;
+    Py_ssize_t HIDE_IMPL_FIELD(ob_refcnt);
+    PyTypeObject *Py_HIDE_IMPL_FIELD(ob_type);
 } PyObject;
 
 /* Cast argument to PyObject* type. */
@@ -118,8 +118,8 @@ typedef struct _object {
 #define _PyObject_CAST_CONST(op) ((const PyObject*)(op))
 
 typedef struct {
-    PyObject ob_base;
-    Py_ssize_t ob_size; /* Number of items in variable part */
+    PyObject Py_HIDE_IMPL_FIELD(ob_base);
+    Py_ssize_t Py_HIDE_IMPL_FIELD(ob_size); /* Number of items in variable part */
 } PyVarObject;
 
 /* Cast argument to PyVarObject* type. */

@@ -19,7 +19,7 @@ extern "C" {
 #ifndef Py_LIMITED_API
 typedef struct {
     PyObject_HEAD
-    double ob_fval;
+    double Py_HIDE_IMPL_FIELD(ob_fval);
 } PyFloatObject;
 #endif
 

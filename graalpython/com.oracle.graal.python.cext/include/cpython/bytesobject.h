@@ -46,7 +46,7 @@ typedef struct {
     PyObject_VAR_HEAD
     Py_hash_t ob_shash;
     // Truffle change: char ob_sval[1] doesn't work for us in Sulong
-    char *ob_sval;
+    char* Py_HIDE_IMPL_FIELD(ob_sval);
 
     /* Invariants:
      *     ob_sval contains space for 'ob_size+1' elements.

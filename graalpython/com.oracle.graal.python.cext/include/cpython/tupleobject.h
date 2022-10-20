@@ -13,7 +13,7 @@ typedef struct {
        Items must normally not be NULL, except during construction when
        the tuple is not yet visible outside the function that builds it. */
     // Truffle change: PyObject *ob_item[1] doesn't work for us in Sulong
-    PyObject **ob_item;
+    PyObject **Py_HIDE_IMPL_FIELD(ob_item);
 } PyTupleObject;
 
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject **, Py_ssize_t);

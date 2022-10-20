@@ -10,6 +10,10 @@
 /* Include nearly all Python header files */
 
 #include "patchlevel.h"
+
+// can be used to bulk-rename fields, e.g., by concatenating "_internal"
+#define Py_HIDE_IMPL_FIELD(name) name
+
 #include "pyconfig.h"
 
 #include <limits.h>

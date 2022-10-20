@@ -10,7 +10,7 @@
 typedef struct {
     PyObject_VAR_HEAD
     /* Vector of pointers to list elements.  list[0] is ob_item[0], etc. */
-    PyObject **ob_item;
+    PyObject **Py_HIDE_IMPL_FIELD(ob_item);
 
     /* ob_item contains space for 'allocated' elements.  The number
      * currently in use is ob_size.

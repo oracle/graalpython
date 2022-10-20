@@ -45,9 +45,9 @@ struct wrapperbase {
 
 typedef struct {
     PyObject_HEAD
-    PyTypeObject *d_type;
-    PyObject *d_name;
-    PyObject *d_qualname;
+    PyTypeObject *Py_HIDE_IMPL_FIELD(d_type);
+    PyObject *Py_HIDE_IMPL_FIELD(d_name);
+    PyObject *Py_HIDE_IMPL_FIELD(d_qualname);
 } PyDescrObject;
 
 #define PyDescr_COMMON PyDescrObject d_common
@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
     PyDescr_COMMON;
-    PyMethodDef *d_method;
+    PyMethodDef *Py_HIDE_IMPL_FIELD(d_method);
     vectorcallfunc vectorcall;
 } PyMethodDescrObject;
 
