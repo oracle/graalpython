@@ -524,7 +524,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
         try {
             return Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
-        } catch (IOException | SecurityException | UnsupportedOperationException e) {
+        } catch (IOException | SecurityException | UnsupportedOperationException | InvalidPathException e) {
             return null;
         }
     }
