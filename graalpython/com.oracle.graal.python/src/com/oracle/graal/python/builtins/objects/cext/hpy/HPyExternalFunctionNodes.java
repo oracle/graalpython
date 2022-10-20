@@ -1081,14 +1081,14 @@ public abstract class HPyExternalFunctionNodes {
                 // consume exception
                 pythonThreadState.setCurrentException(null);
                 if (!errOccurred) {
-                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, name);
+                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION, name);
                 } else {
                     throw currentException.getExceptionForReraise();
                 }
             } else if (errOccurred) {
                 // consume exception
                 pythonThreadState.setCurrentException(null);
-                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
                 PythonLanguage language = PythonLanguage.get(this);
                 throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));

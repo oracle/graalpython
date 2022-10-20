@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR;
-import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -1880,7 +1880,7 @@ public abstract class ExternalFunctionNodes {
 
         private static void checkFunctionResult(Node node, TruffleString name, boolean indicatesError, boolean strict, PythonContext context, ConditionProfile errOccurredProfile) {
             PythonLanguage language = PythonLanguage.get(node);
-            checkFunctionResult(node, name, indicatesError, strict, language, context, errOccurredProfile, RETURNED_NULL_WO_SETTING_ERROR, RETURNED_RESULT_WITH_ERROR_SET);
+            checkFunctionResult(node, name, indicatesError, strict, language, context, errOccurredProfile, RETURNED_NULL_WO_SETTING_EXCEPTION, RETURNED_RESULT_WITH_EXCEPTION_SET);
         }
 
         /**

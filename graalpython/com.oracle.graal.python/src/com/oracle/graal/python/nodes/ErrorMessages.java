@@ -668,8 +668,8 @@ public abstract class ErrorMessages {
     public static final TruffleString P_S_RETURNED_NON_STRING = tsLiteral("%p.%s returned non-string (type %p)");
     public static final TruffleString RETURNED_NONBYTES = tsLiteral("%s returned non-bytes (type %p)");
     public static final TruffleString RETURNED_NONITER = tsLiteral("iter() returned non-iterator of type %p");
-    public static final TruffleString RETURNED_NULL_WO_SETTING_ERROR = tsLiteral("%s returned NULL without setting an error");
-    public static final TruffleString RETURNED_RESULT_WITH_ERROR_SET = tsLiteral("%s returned a result with an error set");
+    public static final TruffleString RETURNED_NULL_WO_SETTING_EXCEPTION = tsLiteral("%s returned NULL without setting an exception");
+    public static final TruffleString RETURNED_RESULT_WITH_EXCEPTION_SET = tsLiteral("%s returned a result with an exception set");
     public static final TruffleString RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = tsLiteral("%s returned an unexpected return code; expected 'int' but was %s");
     public static final TruffleString EMBEDDED_NULL_CHARACTER = tsLiteral("embedded null character");
     public static final TruffleString S = tsLiteral("%s");
