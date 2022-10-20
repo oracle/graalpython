@@ -42,6 +42,7 @@
 
 #include "pycore_pymem.h"
 #include "pycore_object.h"
+#include "pycore_tuple.h"
 
 PyObject* PyObject_SelfIter(PyObject* obj) {
     Py_INCREF(obj);
@@ -246,6 +247,138 @@ PyObject* _PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
         kwvalues = polyglot_from_PyObjectPtr_array(args + nargs, PyTuple_GET_SIZE(keywords));
     }
     return _jls__PyObject_MakeTpCall(native_to_java(callable), polyglot_from_PyObjectPtr_array(args, nargs), native_to_java(keywords), kwvalues);
+}
+
+// Taken from cpython call.c
+static void
+_PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
+                         PyObject *kwnames);
+static PyObject *const *
+_PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs,
+                    PyObject *kwargs, PyObject **p_kwnames)
+{
+    assert(nargs >= 0);
+    assert(kwargs != NULL);
+    assert(PyDict_Check(kwargs));
+
+    Py_ssize_t nkwargs = PyDict_GET_SIZE(kwargs);
+    /* Check for overflow in the PyMem_Malloc() call below. The subtraction
+     * in this check cannot overflow: both maxnargs and nkwargs are
+     * non-negative signed integers, so their difference fits in the type. */
+    Py_ssize_t maxnargs = PY_SSIZE_T_MAX / sizeof(args[0]) - 1;
+    if (nargs > maxnargs - nkwargs) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+    /* Add 1 to support PY_VECTORCALL_ARGUMENTS_OFFSET */
+    PyObject **stack = PyMem_Malloc((1 + nargs + nkwargs) * sizeof(args[0]));
+    if (stack == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+    PyObject *kwnames = PyTuple_New(nkwargs);
+    if (kwnames == NULL) {
+        PyMem_Free(stack);
+        return NULL;
+    }
+
+    stack++;  /* For PY_VECTORCALL_ARGUMENTS_OFFSET */
+
+    /* Copy positional arguments */
+    for (Py_ssize_t i = 0; i < nargs; i++) {
+        Py_INCREF(args[i]);
+        stack[i] = args[i];
+    }
+
+    PyObject **kwstack = stack + nargs;
+    /* This loop doesn't support lookup function mutating the dictionary
+       to change its size. It's a deliberate choice for speed, this function is
+       called in the performance critical hot code. */
+    Py_ssize_t pos = 0, i = 0;
+    PyObject *key, *value;
+    unsigned long keys_are_strings = Py_TPFLAGS_UNICODE_SUBCLASS;
+    while (PyDict_Next(kwargs, &pos, &key, &value)) {
+        keys_are_strings &= Py_TYPE(key)->tp_flags;
+        Py_INCREF(key);
+        Py_INCREF(value);
+        PyTuple_SET_ITEM(kwnames, i, key);
+        kwstack[i] = value;
+        i++;
+    }
+
+    /* keys_are_strings has the value Py_TPFLAGS_UNICODE_SUBCLASS if that
+     * flag is set for all keys. Otherwise, keys_are_strings equals 0.
+     * We do this check once at the end instead of inside the loop above
+     * because it simplifies the deallocation in the failing case.
+     * It happens to also make the loop above slightly more efficient. */
+    if (!keys_are_strings) {
+        PyErr_SetString(PyExc_TypeError,
+                         "keywords must be strings");
+        _PyStack_UnpackDict_Free(stack, nargs, kwnames);
+        return NULL;
+    }
+
+    *p_kwnames = kwnames;
+    return stack;
+}
+
+// Taken from cpython call.c
+static void
+_PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
+                         PyObject *kwnames)
+{
+    Py_ssize_t n = PyTuple_GET_SIZE(kwnames) + nargs;
+    for (Py_ssize_t i = 0; i < n; i++) {
+        Py_DECREF(stack[i]);
+    }
+    PyMem_Free((PyObject **)stack - 1);
+    Py_DECREF(kwnames);
+}
+
+// Taken from cpython call.c
+PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs) {
+    vectorcallfunc func;
+
+    /* get vectorcallfunc as in PyVectorcall_Function, but without
+     * the Py_TPFLAGS_HAVE_VECTORCALL check */
+    Py_ssize_t offset = Py_TYPE(callable)->tp_vectorcall_offset;
+    if (offset <= 0) {
+        PyErr_Format(PyExc_TypeError,
+                      "'%.200s' object does not support vectorcall",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+    memcpy(&func, (char *) callable + offset, sizeof(func));
+    if (func == NULL) {
+        PyErr_Format(PyExc_TypeError,
+                      "'%.200s' object does not support vectorcall",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+
+    Py_ssize_t nargs = PyTuple_GET_SIZE(tuple);
+
+    /* Fast path for no keywords */
+    if (kwargs == NULL || PyDict_GET_SIZE(kwargs) == 0) {
+        return func(callable, _PyTuple_ITEMS(tuple), nargs, NULL);
+    }
+
+    /* Convert arguments & call */
+    PyObject *const *args;
+    PyObject *kwnames;
+    args = _PyStack_UnpackDict(_PyTuple_ITEMS(tuple), nargs,
+                               kwargs, &kwnames);
+    if (args == NULL) {
+        return NULL;
+    }
+    PyObject *result = func(callable, args,
+                            nargs | PY_VECTORCALL_ARGUMENTS_OFFSET, kwnames);
+    _PyStack_UnpackDict_Free(args, nargs, kwnames);
+
+    //return _Py_CheckFunctionResult(tstate, callable, result, NULL);
+    return result;
 }
 
 PyObject* PyObject_Type(PyObject* obj) {

@@ -167,6 +167,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_object.h,python
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pystate.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_tuple.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_ucnhash.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_warnings.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/iterobject.h,python.copyright
