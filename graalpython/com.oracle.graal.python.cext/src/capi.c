@@ -313,6 +313,50 @@ REGISTER_POINTER_TYPE(float_t, float_ptr_t);
 REGISTER_POINTER_TYPE(double_t, double_ptr_t);
 REGISTER_POINTER_TYPE(Py_ssize_t, Py_ssize_ptr_t);
 
+#define VALIST_NEXT(typename)                                         \
+	NO_INLINE typename valist_next_ ## typename(va_list* args) {      \
+    	return va_arg(*args, typename);                               \
+    }
+
+#define VALIST_SET_NEXT(typename)                                                \
+	NO_INLINE void valist_set_next_ ## typename(va_list* args, typename value) { \
+    	va_arg(*args, typename*)[0] = value;                                     \
+    }
+
+VALIST_NEXT(void_ptr_t);
+VALIST_NEXT(int_t);
+VALIST_NEXT(uint_t);
+VALIST_NEXT(long_t);
+VALIST_NEXT(ulong_t);
+VALIST_NEXT(longlong_t);
+VALIST_NEXT(ulonglong_t);
+VALIST_NEXT(Py_ssize_t);
+VALIST_NEXT(size_t);
+VALIST_NEXT(char_ptr_t);
+VALIST_NEXT(Py_complex_ptr_t);
+VALIST_NEXT(PyObject_ptr_t);
+
+VALIST_SET_NEXT(uint8_t)
+VALIST_SET_NEXT(int8_t)
+VALIST_SET_NEXT(uint16_t)
+VALIST_SET_NEXT(int16_t)
+VALIST_SET_NEXT(int32_t)
+VALIST_SET_NEXT(uint32_t)
+VALIST_SET_NEXT(int64_t)
+VALIST_SET_NEXT(uint64_t)
+VALIST_SET_NEXT(Py_ssize_t)
+VALIST_SET_NEXT(float_t)
+VALIST_SET_NEXT(double_t)
+VALIST_SET_NEXT(PyObject_ptr_t)
+
+// complex is special - pass value as two doubles
+NO_INLINE void valist_set_next_Py_complex(va_list* args, double real, double imag) {
+    Py_complex* p = va_arg(*args, Py_complex*);
+    p[0].real = real;
+    p[0].imag = imag;
+}
+
+
 struct _longobject* _Py_FalseStructReference;
 struct _longobject* _Py_TrueStructReference;
 PyObject* _Py_EllipsisObjectReference;

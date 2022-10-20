@@ -120,8 +120,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
-import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
+import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -2493,7 +2493,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "lengthNode.execute(value, TS_ENCODING) == 1", limit = "1")
         static long doString(TruffleString value,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
-                        @Cached TruffleString.CodePointLengthNode lengthNode) {
+                        @SuppressWarnings("unused") @Cached TruffleString.CodePointLengthNode lengthNode) {
             return codepointAtIndexNode.execute(value, 0, TS_ENCODING);
         }
 
@@ -3334,7 +3334,7 @@ public abstract class CExtNodes {
             String format = f.toJavaStringUncached();
 
             // helper nodes
-            GetVaArgsNode getVaArgsNode = GetVaArgsNodeGen.getUncached();
+            GetNextVaArgNode getVaArgsNode = GetNextVaArgNodeGen.getUncached();
             ToJavaNode toJavaNode = ToJavaNodeGen.getUncached();
             CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
             FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
@@ -3372,7 +3372,7 @@ public abstract class CExtNodes {
                             valid = true;
                             break;
                         case 'c':
-                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
+                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_INT_T);
                             if (ordinal < 0 || ordinal > 0x110000) {
                                 throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
                             }
@@ -3384,26 +3384,26 @@ public abstract class CExtNodes {
                         case 'i':
                             // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
                             if (len != null) {
-                                LLVMType llvmType = null;
+                                NativeCAPISymbol llvmType = null;
                                 switch (len) {
                                     case "ll":
-                                        llvmType = LLVMType.longlong_t;
+                                        llvmType = NativeCAPISymbol.VALIST_NEXT_LONGLONG_T;
                                         break;
                                     case "l":
-                                        llvmType = LLVMType.long_t;
+                                        llvmType = NativeCAPISymbol.VALIST_NEXT_LONG_T;
                                         break;
                                     case "z":
-                                        llvmType = LLVMType.Py_ssize_t;
+                                        llvmType = NativeCAPISymbol.VALIST_NEXT_PYSSIZE_T;
                                         break;
                                 }
                                 if (llvmType != null) {
-                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    Object value = getVaArgsNode.execute(vaList, llvmType);
                                     vaArgIdx++;
                                     result.append(castToLong(interopLibrary, raiseNode, value));
                                     valid = true;
                                 }
                             } else {
-                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t));
+                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_INT_T));
                                 vaArgIdx++;
                                 valid = true;
                             }
@@ -3411,39 +3411,39 @@ public abstract class CExtNodes {
                         case 'u':
                             // %u, %lu, %llu, %zu
                             if (len != null) {
-                                LLVMType llvmType = null;
+                                NativeCAPISymbol llvmType = null;
                                 switch (len) {
                                     case "ll":
-                                        llvmType = LLVMType.ulonglong_t;
+                                        llvmType = NativeCAPISymbol.VALIST_NEXT_ULONGLONG_T;
                                         break;
                                     case "l":
-                                        llvmType = LLVMType.ulong_t;
+                                        llvmType = NativeCAPISymbol.VALIST_NEXT_ULONG_T;
                                         break;
                                     case "z":
-                                        llvmType = LLVMType.size_t;
+                                        llvmType = NativeCAPISymbol.VALIST_NEXT_SIZE_T;
                                         break;
                                 }
                                 if (llvmType != null) {
-                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    Object value = getVaArgsNode.execute(vaList, llvmType);
                                     vaArgIdx++;
                                     result.append(castToLong(interopLibrary, raiseNode, value));
                                     valid = true;
                                 }
                             } else {
-                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.uint_t)));
+                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_UINT_T)));
                                 vaArgIdx++;
                                 valid = true;
                             }
                             break;
                         case 'x':
                             // %x
-                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t)));
+                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_INT_T)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 's':
                             // %s
-                            Object charPtr = getVaArgsNode.getCharPtr(vaList, vaArgIdx);
+                            Object charPtr = getVaArgsNode.getCharPtr(vaList);
                             String sValue;
                             if (interopLibrary.isNull(charPtr)) {
                                 // CPython would segfault. Let's make debugging easier for ourselves
@@ -3469,7 +3469,7 @@ public abstract class CExtNodes {
                             break;
                         case 'p':
                             // %p
-                            Object ptr = getVaArgsNode.getVoidPtr(vaList, vaArgIdx);
+                            Object ptr = getVaArgsNode.getVoidPtr(vaList);
                             long value;
                             if (interopLibrary.isPointer(ptr)) {
                                 value = interopLibrary.asPointer(ptr);
@@ -3484,21 +3484,21 @@ public abstract class CExtNodes {
                             break;
                         case 'A':
                             // %A
-                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(getVaArgsNode, vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'U':
                             // %U
-                            result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'V':
                             // %V
-                            Object pyObjectPtr = getVaArgsNode.getPyObjectPtr(vaList, vaArgIdx);
+                            Object pyObjectPtr = getVaArgsNode.getPyObjectPtr(vaList);
                             if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
-                                unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx + 1));
+                                unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList));
                             } else {
                                 unicodeObj = toJavaNode.execute(pyObjectPtr);
                             }
@@ -3508,13 +3508,13 @@ public abstract class CExtNodes {
                             break;
                         case 'S':
                             // %S
-                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(getVaArgsNode, vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
                         case 'R':
                             // %R
-                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(getVaArgsNode, vaList)));
                             vaArgIdx++;
                             valid = true;
                             break;
@@ -3547,8 +3547,8 @@ public abstract class CExtNodes {
          * Read an element from the {@code va_list} with the specified type and cast it to a Java
          * {@code int}. Throws a {@code SystemError} if this is not possible.
          */
-        private static int getAndCastToInt(GetVaArgsNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList, int idx, LLVMType llvmType) throws InteropException {
-            Object value = getVaArgsNode.execute(vaList, idx, llvmType);
+        private static int getAndCastToInt(GetNextVaArgNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList, NativeCAPISymbol llvmType) {
+            Object value = getVaArgsNode.execute(vaList, llvmType);
             if (lib.fitsInInt(value)) {
                 try {
                     return lib.asInt(value);
@@ -3574,8 +3574,8 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
-        private static Object getPyObject(GetVaArgsNode getVaArgsNode, Object vaList, int idx) throws InteropException {
-            return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList, idx));
+        private static Object getPyObject(GetNextVaArgNode getVaArgsNode, Object vaList) {
+            return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList));
         }
 
         @TruffleBoundary
