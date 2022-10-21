@@ -101,6 +101,7 @@ public final class PosixConstants {
     public static final OptionalIntConstant O_DIRECT;
     public static final OptionalIntConstant O_RSYNC;
     public static final OptionalIntConstant O_TMPFILE;
+    public static final OptionalIntConstant O_DIRECTORY;
     public static final MandatoryIntConstant S_IFMT;
     public static final MandatoryIntConstant S_IFSOCK;
     public static final MandatoryIntConstant S_IFLNK;
@@ -140,7 +141,23 @@ public final class PosixConstants {
     public static final MandatoryIntConstant W_OK;
     public static final MandatoryIntConstant X_OK;
     public static final MandatoryIntConstant F_OK;
-    public static final MandatoryIntConstant EX_OK;
+    public static final OptionalIntConstant EX_OK;
+    public static final OptionalIntConstant EX_USAGE;
+    public static final OptionalIntConstant EX_DATAERR;
+    public static final OptionalIntConstant EX_NOINPUT;
+    public static final OptionalIntConstant EX_NOUSER;
+    public static final OptionalIntConstant EX_NOHOST;
+    public static final OptionalIntConstant EX_UNAVAILABLE;
+    public static final OptionalIntConstant EX_SOFTWARE;
+    public static final OptionalIntConstant EX_OSERR;
+    public static final OptionalIntConstant EX_OSFILE;
+    public static final OptionalIntConstant EX_CANTCREAT;
+    public static final OptionalIntConstant EX_IOERR;
+    public static final OptionalIntConstant EX_TEMPFAIL;
+    public static final OptionalIntConstant EX_PROTOCOL;
+    public static final OptionalIntConstant EX_NOPERM;
+    public static final OptionalIntConstant EX_CONFIG;
+    public static final OptionalIntConstant EX_NOTFOUND;
     public static final MandatoryIntConstant RTLD_LAZY;
     public static final MandatoryIntConstant RTLD_NOW;
     public static final MandatoryIntConstant RTLD_GLOBAL;
@@ -285,6 +302,7 @@ public final class PosixConstants {
     public static final IntConstant[] direntType;
     public static final IntConstant[] waitOptions;
     public static final IntConstant[] accessMode;
+    public static final IntConstant[] exitStatus;
     public static final IntConstant[] rtld;
     public static final IntConstant[] socketFamily;
     public static final IntConstant[] socketType;
@@ -334,6 +352,7 @@ public final class PosixConstants {
         O_DIRECT = reg.createOptionalInt("O_DIRECT");
         O_RSYNC = reg.createOptionalInt("O_RSYNC");
         O_TMPFILE = reg.createOptionalInt("O_TMPFILE");
+        O_DIRECTORY = reg.createOptionalInt("O_DIRECTORY");
         S_IFMT = reg.createMandatoryInt("S_IFMT");
         S_IFSOCK = reg.createMandatoryInt("S_IFSOCK");
         S_IFLNK = reg.createMandatoryInt("S_IFLNK");
@@ -373,7 +392,23 @@ public final class PosixConstants {
         W_OK = reg.createMandatoryInt("W_OK");
         X_OK = reg.createMandatoryInt("X_OK");
         F_OK = reg.createMandatoryInt("F_OK");
-        EX_OK = reg.createMandatoryInt("EX_OK");
+        EX_OK = reg.createOptionalInt("EX_OK");
+        EX_USAGE = reg.createOptionalInt("EX_USAGE");
+        EX_DATAERR = reg.createOptionalInt("EX_DATAERR");
+        EX_NOINPUT = reg.createOptionalInt("EX_NOINPUT");
+        EX_NOUSER = reg.createOptionalInt("EX_NOUSER");
+        EX_NOHOST = reg.createOptionalInt("EX_NOHOST");
+        EX_UNAVAILABLE = reg.createOptionalInt("EX_UNAVAILABLE");
+        EX_SOFTWARE = reg.createOptionalInt("EX_SOFTWARE");
+        EX_OSERR = reg.createOptionalInt("EX_OSERR");
+        EX_OSFILE = reg.createOptionalInt("EX_OSFILE");
+        EX_CANTCREAT = reg.createOptionalInt("EX_CANTCREAT");
+        EX_IOERR = reg.createOptionalInt("EX_IOERR");
+        EX_TEMPFAIL = reg.createOptionalInt("EX_TEMPFAIL");
+        EX_PROTOCOL = reg.createOptionalInt("EX_PROTOCOL");
+        EX_NOPERM = reg.createOptionalInt("EX_NOPERM");
+        EX_CONFIG = reg.createOptionalInt("EX_CONFIG");
+        EX_NOTFOUND = reg.createOptionalInt("EX_NOTFOUND");
         RTLD_LAZY = reg.createMandatoryInt("RTLD_LAZY");
         RTLD_NOW = reg.createMandatoryInt("RTLD_NOW");
         RTLD_GLOBAL = reg.createMandatoryInt("RTLD_GLOBAL");
@@ -509,7 +544,8 @@ public final class PosixConstants {
         OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH");
         SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH");
 
-        openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC, O_TMPFILE};
+        openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC, O_TMPFILE,
+                        O_DIRECTORY};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};
         mmapFlags = new IntConstant[]{MAP_SHARED, MAP_PRIVATE, MAP_ANONYMOUS, MAP_DENYWRITE, MAP_EXECUTABLE};
         mmapProtection = new IntConstant[]{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
@@ -517,7 +553,9 @@ public final class PosixConstants {
         flockType = new IntConstant[]{F_RDLCK, F_WRLCK, F_UNLCK};
         direntType = new IntConstant[]{DT_UNKNOWN, DT_FIFO, DT_CHR, DT_DIR, DT_BLK, DT_REG, DT_LNK, DT_SOCK, DT_WHT};
         waitOptions = new IntConstant[]{WNOHANG, WUNTRACED};
-        accessMode = new IntConstant[]{R_OK, W_OK, X_OK, F_OK, EX_OK};
+        accessMode = new IntConstant[]{R_OK, W_OK, X_OK, F_OK};
+        exitStatus = new IntConstant[]{EX_OK, EX_USAGE, EX_DATAERR, EX_NOINPUT, EX_NOUSER, EX_NOHOST, EX_UNAVAILABLE, EX_SOFTWARE, EX_OSERR, EX_OSFILE, EX_CANTCREAT, EX_IOERR, EX_TEMPFAIL,
+                        EX_PROTOCOL, EX_NOPERM, EX_CONFIG, EX_NOTFOUND};
         rtld = new IntConstant[]{RTLD_LAZY, RTLD_NOW, RTLD_GLOBAL, RTLD_LOCAL};
         socketFamily = new IntConstant[]{AF_UNSPEC, AF_INET, AF_INET6, AF_PACKET, AF_UNIX};
         socketType = new IntConstant[]{SOCK_DGRAM, SOCK_STREAM};

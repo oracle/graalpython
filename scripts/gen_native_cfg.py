@@ -72,6 +72,8 @@ includes = '''
 #include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdio.h>
+#include <sysexits.h>
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -131,6 +133,7 @@ constant_defs = '''
 * x O_DIRECT
 * x O_RSYNC
 * x O_TMPFILE
+* x O_DIRECTORY
 
 [fileType]
   x S_IFMT
@@ -186,7 +189,25 @@ constant_defs = '''
   x W_OK
   x X_OK
   x F_OK
-  x EX_OK
+
+[exitStatus]
+* i EX_OK
+* i EX_USAGE
+* i EX_DATAERR
+* i EX_NOINPUT
+* i EX_NOUSER
+* i EX_NOHOST
+* i EX_UNAVAILABLE
+* i EX_SOFTWARE
+* i EX_OSERR
+* i EX_OSFILE
+* i EX_CANTCREAT
+* i EX_IOERR
+* i EX_TEMPFAIL
+* i EX_PROTOCOL
+* i EX_NOPERM
+* i EX_CONFIG
+* i EX_NOTFOUND
 
 [rtld]
   x RTLD_LAZY
@@ -204,7 +225,7 @@ constant_defs = '''
 [socketType]
   i SOCK_DGRAM
   i SOCK_STREAM
-  
+
 [ip4Address]
   x INADDR_ANY
   x INADDR_BROADCAST
@@ -235,7 +256,7 @@ constant_defs = '''
   i EAI_SERVICE
   i EAI_MEMORY
   i EAI_SYSTEM
-  i EAI_OVERFLOW 
+  i EAI_OVERFLOW
   i EAI_NODATA
   i EAI_ADDRFAMILY
 * i EAI_INPROGRESS

@@ -203,6 +203,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.openFlags);
         addConstants(PosixConstants.waitOptions);
         addConstants(PosixConstants.accessMode);
+        addConstants(PosixConstants.exitStatus);
         addConstants(PosixConstants.rtld);
 
         addConstant(PosixConstants.SEEK_DATA);
