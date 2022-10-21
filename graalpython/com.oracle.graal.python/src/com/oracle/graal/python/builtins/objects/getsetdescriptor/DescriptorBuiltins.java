@@ -223,13 +223,12 @@ public class DescriptorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doHiddenKeyDescriptor(HiddenKeyDescriptor descr, Object obj,
-                        @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached ReadAttributeFromObjectNode readNode) {
             Object val = readNode.execute(obj, descr.getKey());
             if (val != PNone.NO_VALUE) {
                 return val;
             }
-            throw getRaiseNode().raise(AttributeError, fromJavaStringNode.execute(descr.getKey().getName(), TS_ENCODING));
+            throw getRaiseNode().raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getKey().getName());
         }
     }
 

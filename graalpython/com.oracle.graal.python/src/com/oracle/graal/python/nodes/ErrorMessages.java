@@ -608,6 +608,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ = tsLiteral("the object '%p' or klass '%p' arguments is not a host object");
     public static final TruffleString OBJ_P_HAS_NO_ATTR_S = tsLiteral("'%p' object has no attribute '%s'");
     public static final TruffleString OBJ_S_HAS_NO_ATTR_S = tsLiteral("'%s' object has no attribute '%s'");
+    public static final TruffleString OBJ_N_HAS_NO_ATTR_S = tsLiteral("'%N' object has no attribute '%s'");
     public static final TruffleString P_OBJ_HAS_NO_ATTRS = tsLiteral("'%p' object has no attributes");
     public static final TruffleString P_OBJ_DOES_NOT_SUPPRT_IEM_ASSIGMENT = tsLiteral("%p object does not support item assignment");
     public static final TruffleString OBJ_IS_NOT_WRITABLE = tsLiteral("Object is not writable.");

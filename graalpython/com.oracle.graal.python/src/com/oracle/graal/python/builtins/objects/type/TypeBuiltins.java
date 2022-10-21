@@ -653,7 +653,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter();
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, getTypeName(object), key);
+            throw raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
         }
 
         private Object readAttribute(Object object, Object key) {
@@ -694,14 +694,6 @@ public class TypeBuiltins extends PythonBuiltins {
                 valueGetLookup = insert(LookupInheritedSlotNode.create(SpecialMethodSlot.Get));
             }
             return valueGetLookup.execute(value);
-        }
-
-        private TruffleString getTypeName(Object clazz) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(TypeNodes.GetNameNode.create());
-            }
-            return getNameNode.execute(clazz);
         }
 
         private Object getDescClass(Object desc) {
@@ -1372,7 +1364,7 @@ public class TypeBuiltins extends PythonBuiltins {
                     return result;
                 }
             }
-            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, GetNameNode.getUncached().execute(self), T___ABSTRACTMETHODS__);
+            throw raise(AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, self, T___ABSTRACTMETHODS__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
