@@ -166,7 +166,6 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -199,7 +198,7 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -2388,8 +2387,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         PTuple update(PTuple bases, Object[] arguments, int nargs,
                         @Cached PythonObjectFactory factory,
-                        @Cached PyObjectGetMethod getMroEntries,
-                        @Cached CallBinaryMethodNode callMroEntries) {
+                        @Cached PyObjectLookupAttr getMroEntries,
+                        @Cached CallUnaryMethodNode callMroEntries) {
             CompilerAsserts.neverPartOfCompilation();
             ArrayList<Object> newBases = null;
             for (int i = 0; i < nargs; i++) {
@@ -2410,11 +2409,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     }
                     continue;
                 }
-                Object newBase = callMroEntries.executeObject(null, meth, base, bases);
-                if (newBase == null) {
-                    // error
-                    return null;
-                }
+                Object newBase = callMroEntries.executeObject(null, meth, bases);
                 if (!PGuards.isPTuple(newBase)) {
                     throw raise(PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }

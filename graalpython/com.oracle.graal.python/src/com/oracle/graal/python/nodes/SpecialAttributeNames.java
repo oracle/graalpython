@@ -98,8 +98,6 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___MRO__ = "__mro__";
 
-    public static final TruffleString T___MRO_ENTRIES__ = tsLiteral("__mro_entries__");
-
     public static final TruffleString T___LOADER__ = tsLiteral("__loader__");
 
     public static final TruffleString T___PACKAGE__ = tsLiteral("__package__");
