@@ -216,6 +216,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -996,9 +997,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object stringToIntInternal(String num, int base) {
+        private static Object stringToIntInternal(String num, int base, PythonContext context) {
             try {
-                BigInteger bi = asciiToBigInteger(num, base);
+                BigInteger bi = asciiToBigInteger(num, base, context);
                 if (bi == null) {
                     return null;
                 }
@@ -1020,7 +1021,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
             notSimpleDecimalLiteralProfile.enter();
-            Object value = stringToIntInternal(number, base);
+            Object value = stringToIntInternal(number, base, getContext());
             if (value == null) {
                 invalidValueProfile.enter();
                 if (callReprNode == null) {
@@ -1071,7 +1072,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         // Adapted from Jython
-        private static BigInteger asciiToBigInteger(String str, int possibleBase) throws NumberFormatException {
+        private static BigInteger asciiToBigInteger(String str, int possibleBase, PythonContext context) throws NumberFormatException {
             CompilerAsserts.neverPartOfCompilation();
             int base = possibleBase;
             int b = 0;
@@ -1160,6 +1161,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             s = s.replace("_", "");
 
+            checkMaxDigits(context, s.length(), base);
+
             BigInteger bi;
             if (sign == '-') {
                 bi = new BigInteger("-" + s, base);
@@ -1171,6 +1174,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw new NumberFormatException("Obsolete octal int literal");
             }
             return bi;
+        }
+
+        private static void checkMaxDigits(PythonContext context, int digits, int base) {
+            if (digits > SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD && Integer.bitCount(base) != 1) {
+                Integer maxDigits = context.getIntMaxStrDigits();
+                if (maxDigits > 0 && digits > maxDigits) {
+                    throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, maxDigits, digits);
+                }
+            }
         }
 
         /**
