@@ -877,7 +877,10 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private void initializeImportlib() {
-        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
+        PythonModule bootstrap = null;
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
+        }
         PythonModule bootstrapExternal;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();

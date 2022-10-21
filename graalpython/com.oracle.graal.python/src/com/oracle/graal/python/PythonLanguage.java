@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -974,6 +975,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            srcBuilder.canonicalizePath(false);
+        }
         if (shouldMarkSourceInternal(context)) {
             srcBuilder.internal(true);
         }
