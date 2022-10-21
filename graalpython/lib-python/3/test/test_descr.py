@@ -2283,8 +2283,6 @@ order (MRO) for bases """
             try:
                 setattr(raw, attr, 42)
             except AttributeError as msg:
-                # XXX Truffle change: relax error msg
-                # if str(msg).find('readonly') < 0:
                 if str(msg).find('readonly') < 0:
                     self.fail("when setting readonly attr %r on a property, "
                               "got unexpected AttributeError msg %r" % (attr, str(msg)))

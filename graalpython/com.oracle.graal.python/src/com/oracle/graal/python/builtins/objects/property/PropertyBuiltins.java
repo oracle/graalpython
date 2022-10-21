@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -144,7 +145,7 @@ public class PropertyBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         @SuppressWarnings("unused")
-        Object doSet(VirtualFrame frame, PProperty self, Object value) {
+        Object doSet(PProperty self, Object value) {
             /*
              * That's a bit unfortunate: if we define 'isGetter = true' and 'isSetter = false' then
              * this will use a GetSetDescriptor which has a slightly different error message for
@@ -152,11 +153,7 @@ public class PropertyBuiltins extends PythonBuiltins {
              * with expected message. This should be fixed by distinguishing between getset and
              * member descriptors.
              */
-            if (self.getPropertyName() != null) {
-                throw raise(AttributeError, CANT_SET_ATTRIBUTE_S, PyObjectReprAsTruffleStringNode.getUncached().execute(frame, self.getPropertyName()));
-            } else {
-                throw raise(AttributeError, CANT_SET_ATTRIBUTE);
-            }
+            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
     }
 

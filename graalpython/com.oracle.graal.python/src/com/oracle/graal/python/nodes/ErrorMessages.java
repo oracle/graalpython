@@ -636,6 +636,7 @@ public abstract class ErrorMessages {
     public static final TruffleString READ_BYTE_OUT_OF_RANGE = tsLiteral("read byte out of range");
     public static final TruffleString READ_ONLY_BYTELIKE_OBJ = tsLiteral("read-only bytes-like object");
     public static final TruffleString READ_WRITE_BYTELIKE_OBJ = tsLiteral("read-write bytes-like object");
+    public static final TruffleString READONLY_ATTRIBUTE = tsLiteral("readonly attribute");
     public static final TruffleString ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE = tsLiteral("attribute '%s' of '%p' objects is not writable");
     public static final TruffleString UNREADABLE_ATTRIBUTE = tsLiteral("unreadable attribute");
     public static final TruffleString UNREADABLE_ATTRIBUTE_S = tsLiteral("unreadable attribute %s");
