@@ -187,14 +187,9 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            Object msg = null;
-            Object filename = null;
-            Object lineno = null;
-            Object offset = null;
-            Object text = null;
-            Object printFileAndLine = null;
+            Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
             if (args.length >= 1) {
-                msg = args[0];
+                attrs[IDX_MSG] = args[0];
             }
             if (args.length == 2) {
                 PTuple info = constructTupleNode.execute(frame, args[1]);
@@ -204,19 +199,19 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
                 }
 
-                filename = getItemNode.execute(storage, 0);
-                lineno = getItemNode.execute(storage, 1);
-                offset = getItemNode.execute(storage, 2);
-                text = getItemNode.execute(storage, 3);
+                attrs[IDX_FILENAME] = getItemNode.execute(storage, 0);
+                attrs[IDX_LINENO] = getItemNode.execute(storage, 1);
+                attrs[IDX_OFFSET] = getItemNode.execute(storage, 2);
+                attrs[IDX_TEXT] = getItemNode.execute(storage, 3);
 
                 // Issue #21669: Custom error for 'print' & 'exec' as statements
                 // Only applies to SyntaxError instances, not to subclasses such
                 // as TabError or IndentationError (see issue #31161)
-                if (PGuards.isString(text)) {
-                    msg = reportMissingParentheses(msg, castToJavaStringNode.execute(text));
+                if (PGuards.isString(attrs[IDX_TEXT])) {
+                    attrs[IDX_MSG] = reportMissingParentheses(attrs[IDX_MSG], castToJavaStringNode.execute(attrs[IDX_TEXT]));
                 }
             }
-            self.setExceptionAttributes(new Object[]{msg, filename, lineno, offset, text, printFileAndLine});
+            self.setExceptionAttributes(attrs);
             return PNone.NONE;
         }
     }
