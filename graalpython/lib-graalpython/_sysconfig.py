@@ -76,7 +76,7 @@ def _get_posix_vars():
     if darwin_native:
         so_ext = ".dylib"
     elif win32_native:
-        so_ext = ".dll"
+        so_ext = ".pyd"
     else:
         so_ext = ".so"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"

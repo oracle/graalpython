@@ -68,7 +68,7 @@ relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 is_managed = 'managed' in SOABI
-lib_ext = 'dylib' if MACOS else ('dll' if WIN32 else 'so')
+lib_ext = 'dylib' if MACOS else ('pyd' if WIN32 else 'so')
 
 # configure logger
 logger = logging.getLogger(__name__)
