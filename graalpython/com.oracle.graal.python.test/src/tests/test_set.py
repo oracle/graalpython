@@ -542,3 +542,26 @@ def test_graal_4816():
         foo.pop()
         if foo:
             do_something(foo)
+
+# GR-41996
+# def test_pop_side_effects():
+#     class TrackingKey:
+#         def __init__(self):
+#             self.hash_calls = 0
+#             self.eq_calls = 0
+#         def __hash__(self):
+#             self.hash_calls += 1
+#             return 42
+#         def __eq__(self, other):
+#             self.eq_calls += 1
+#             return True
+#
+#     key = TrackingKey()
+#     s = {key, 'other_key'}
+#     assert key.hash_calls == 1
+#     assert key.eq_calls == 0, "first"
+#
+#     val = s.pop()
+#     assert key.hash_calls == 1
+#     assert key.eq_calls == 0
+#     assert val == key

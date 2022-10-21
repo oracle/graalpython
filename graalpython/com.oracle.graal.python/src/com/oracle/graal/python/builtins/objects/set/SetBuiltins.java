@@ -55,7 +55,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -89,7 +93,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -754,34 +757,20 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "pop", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonUnaryBuiltinNode {
-
-        protected static void removeItem(VirtualFrame frame, PSet self, Object key,
-                        HashingStorageGetItem getItem, HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
-            HashingStorage storage = self.getDictStorage();
-            HashingStorage newStore = null;
-            // TODO: FIXME: this might call __hash__ twice
-            boolean hasKey = getItem.hasKey(frame, storage, key);
-            if (hasKey) {
-                newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
-            }
-
-            if (hasKey) {
-                if (newStore != storage) {
-                    updatedStorage.enter();
-                    self.setDictStorage(newStore);
-                }
-            }
-        }
-
         @Specialization
         Object remove(VirtualFrame frame, PSet self,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            for (Object next : lib.keys(self.getDictStorage())) {
-                removeItem(frame, self, next, getItem, lib, hasFrame, updatedStorage);
-                return next;
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageDelItem delItem) {
+            HashingStorage storage = self.getDictStorage();
+            HashingStorageIterator it = getIter.execute(storage);
+            if (iterNext.execute(storage, it)) {
+                Object key = iterKey.execute(storage, it);
+                // TODO: (GR-41996) this may still invokes __hash__, may invoke __eq__ and is
+                // suboptimal. There is ignored test for this in test_set.py
+                delItem.execute(frame, storage, key, self);
+                return key;
             }
             throw raise(PythonErrorType.KeyError, ErrorMessages.POP_FROM_EMPTY_SET);
         }
