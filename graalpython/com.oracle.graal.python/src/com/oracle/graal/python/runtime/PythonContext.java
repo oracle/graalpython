@@ -678,6 +678,8 @@ public final class PythonContext extends Python3Core {
     private final Map<TruffleString, PTuple> codecSearchCache = new HashMap<>();
     private final Map<TruffleString, Object> codecErrorRegistry = new HashMap<>();
 
+    private int intMaxStrDigits;
+
     // the full module name for package imports
     private TruffleString pyPackageContext;
 
@@ -709,6 +711,14 @@ public final class PythonContext extends Python3Core {
 
     public Map<TruffleString, Object> getCodecErrorRegistry() {
         return codecErrorRegistry;
+    }
+
+    public int getIntMaxStrDigits() {
+        return intMaxStrDigits;
+    }
+
+    public void setIntMaxStrDigits(int intMaxStrDigits) {
+        this.intMaxStrDigits = intMaxStrDigits;
     }
 
     public static final class ChildContextData {
@@ -1460,6 +1470,7 @@ public final class PythonContext extends Python3Core {
         if (!ImageInfo.inImageBuildtimeCode()) {
             initializeHashSecret();
         }
+        intMaxStrDigits = getOption(PythonOptions.IntMaxStrDigits);
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");

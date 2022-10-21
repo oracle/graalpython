@@ -70,6 +70,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     public static final String STRING_LIST_DELIMITER = "🏆";
 
+    // Duplicate of SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD
+    public static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
+
     public static void main(String[] args) {
         GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
@@ -98,6 +101,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean multiContext = false;
     private boolean snaptshotStartup = false;
     private boolean warnDefaultEncoding = false;
+    private int intMaxStrDigits = -1;
     private VersionAction versionAction = VersionAction.None;
     private List<String> givenArguments;
     private List<String> relaunchArgs;
@@ -316,6 +320,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             String xOption = getShortOptionParameter(argumentIterator, remainder, 'X');
                             if ("warn_default_encoding".equals(xOption)) {
                                 warnDefaultEncoding = true;
+                            } else if (xOption.startsWith("int_max_str_digits")) {
+                                int eq = xOption.indexOf('=');
+                                if (eq > 0) {
+                                    intMaxStrDigits = validateIntMaxStrDigits(xOption.substring(eq), "-X int_max_str_digits");
+                                }
                             }
                             break shortOptionLoop;
                         default:
@@ -564,6 +573,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             verboseFlag = verboseFlag || System.getenv("PYTHONVERBOSE") != null;
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
             dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
+            if (intMaxStrDigits < 0 && System.getenv("PYTHONINTMAXSTRDIGITS") != null) {
+                intMaxStrDigits = validateIntMaxStrDigits(System.getenv("PYTHONINTMAXSTRDIGITS"), "PYTHONINTMAXSTRDIGITS");
+            }
 
             String hashSeed = System.getenv("PYTHONHASHSEED");
             if (hashSeed != null) {
@@ -630,6 +642,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.IsolateFlag", Boolean.toString(isolateFlag));
         contextBuilder.option("python.WarnOptions", warnOptions);
         contextBuilder.option("python.WarnDefaultEncodingFlag", Boolean.toString(warnDefaultEncoding));
+        if (intMaxStrDigits > 0) {
+            contextBuilder.option("python.IntMaxStrDigits", Integer.toString(intMaxStrDigits));
+        }
         contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
         if (verboseFlag) {
             contextBuilder.option("log.python.level", "FINE");
@@ -713,6 +728,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             consoleHandler.setContext(null);
         }
         System.exit(rc);
+    }
+
+    private int validateIntMaxStrDigits(String input, String name) {
+        try {
+            int value = Integer.parseInt(input);
+            if (value == 0 || value >= INT_MAX_STR_DIGITS_THRESHOLD) {
+                return value;
+            }
+        } catch (NumberFormatException e) {
+            // fallthrough
+        }
+        throw abort(String.format("%s: invalid limit; must be >= %d  or 0 for unlimited.", name, INT_MAX_STR_DIGITS_THRESHOLD), 1);
     }
 
     private static String toAbsolutePath(String executable) {
@@ -893,7 +920,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +
                         "         when given twice, print more information about the build\n" +
-                        "-X opt : CPython implementation-specific options. Ignored on GraalPython\n" +
+                        "-X opt : CPython implementation-specific options. warn_default_encoding and int_max_str_digits are supported on GraalPy\n" +
                         "-W arg : warning control; arg is action:message:category:module:lineno\n" +
                         "         also PYTHONWARNINGS=arg\n" +
                         // "-x : skip first line of source, allowing use of non-Unix forms of

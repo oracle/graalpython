@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -52,6 +53,7 @@ import org.graalvm.options.OptionType;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -143,6 +145,20 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -X warn_default_encoding flag. Enable opt-in EncodingWarning for 'encoding=None'", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> WarnDefaultEncodingFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to the Python -X int_max_str_digits option.", stability = OptionStability.STABLE) //
+    public static final OptionKey<Integer> IntMaxStrDigits = new OptionKey<>(SysModuleBuiltins.INT_DEFAULT_MAX_STR_DIGITS,
+                    new OptionType<>("IntMaxStrDigits", (input) -> {
+                        try {
+                            int value = Integer.parseInt(input);
+                            if (value == 0 || value >= INT_MAX_STR_DIGITS_THRESHOLD) {
+                                return value;
+                            }
+                        } catch (NumberFormatException e) {
+                            // fallthrough
+                        }
+                        throw new IllegalArgumentException(String.format("IntMaxStrDigits: invalid limit; must be >= %d or 0 for unlimited.", INT_MAX_STR_DIGITS_THRESHOLD));
+                    }));
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -B flag. Don't write bytecode files.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(true);
