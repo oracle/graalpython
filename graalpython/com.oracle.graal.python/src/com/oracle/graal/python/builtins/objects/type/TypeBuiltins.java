@@ -255,12 +255,12 @@ public class TypeBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class DocNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "isNoValue(value)")
         Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
             return getDoc(getCore().lookupType(self), value);
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(value)")
         @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
@@ -271,7 +271,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!isAnyBuiltinClass(self)")
+        @Specialization(guards = {"isNoValue(value)", "!isPythonBuiltinClass(self)"})
         static Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             Object res = self.getAttribute(T___DOC__);
@@ -283,37 +283,25 @@ public class TypeBuiltins extends PythonBuiltins {
             return res;
         }
 
-        protected boolean isAnyBuiltinClass(PythonClass klass) {
-            return IsBuiltinClassProfile.getUncached().profileIsAnyBuiltinClass(klass);
-        }
-
         @Specialization
         static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
             return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, T___DOC__);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!isPythonBuiltinClass(self)"})
         static Object setDoc(PythonClass self, Object value) {
             self.setAttribute(T___DOC__, value);
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "isBuiltin.profileIsAnyBuiltinClass(self)"})
-        Object doc(Object self, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_N_S, self, T___DOC__);
-        }
-
-        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        static Object doc(PythonClass self, Object value) {
-            self.setAttribute(T___DOC__, value);
-            return PNone.NO_VALUE;
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "isKindOfBuiltinClass(self)"})
+        Object doc(Object self, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___DOC__, self);
         }
 
         @Specialization
-        Object doc(Object self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
-                        @Cached GetNameNode getName) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getName.execute(self), T___DOC__);
+        Object doc(Object self, @SuppressWarnings("unused") DescriptorDeleteMarker marker) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_DELETE_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, T___DOC__, self);
         }
     }
 
