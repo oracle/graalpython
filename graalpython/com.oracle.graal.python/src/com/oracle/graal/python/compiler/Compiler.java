@@ -70,6 +70,7 @@ import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
 import static com.oracle.graal.python.compiler.OpCodes.FROZENSET_FROM_LIST;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
+import static com.oracle.graal.python.compiler.OpCodes.GET_LEN;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_FROM;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_STAR;
@@ -105,6 +106,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.NOP;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_TRUE;
@@ -2529,6 +2531,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         return pattern instanceof PatternTy.MatchAs && ((PatternTy.MatchAs) pattern).name == null;
     }
 
+    private boolean wildcardStarCheck(PatternTy pattern) {
+        return pattern instanceof PatternTy.MatchStar && ((PatternTy.MatchStar) pattern).name == null;
+    }
+
     public Void visit(PatternTy pattern, PatternContext pc) {
         if (pattern instanceof PatternTy.MatchAs) {
             return visit((PatternTy.MatchAs) pattern, pc);
@@ -2551,11 +2557,148 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    public Void visit(PatternTy.MatchStar node, PatternContext pc) {
+        patternHelperStoreName(node.name, pc);
+        return null;
+    }
+
+    public Void visit(PatternTy.MatchSequence node, PatternContext pc) {
+        int size = lengthOrZero(node.patterns);
+        int star = -1;
+        boolean onlyWildcard = true;
+        boolean starWildcard = false;
+
+        // Find a starred name, if it exists. There may be at most one:
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = node.patterns[i];
+            if (pattern instanceof PatternTy.MatchStar) {
+                if (star >= 0) {
+                    errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "multiple starred names in sequence pattern");
+                }
+                starWildcard = wildcardStarCheck(pattern);
+                onlyWildcard &= starWildcard;
+                star = i;
+                continue;
+            }
+            onlyWildcard &= wildcardCheck(pattern);
+        }
+
+        // We need to keep the subject on top during the sequence and length checks:
+        pc.onTop++;
+        addOp(MATCH_SEQUENCE);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        if (star < 0) {
+            // No star: len(subject) == size
+            addOp(GET_LEN);
+            addLoadNumber(size);
+            addCompareOp(CmpOpTy.Eq);
+            jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        } else if (size > 1) {
+            // Star: len(subject) >= size - 1
+            addOp(GET_LEN);
+            addLoadNumber(size - 1);
+            addCompareOp(CmpOpTy.GtE);
+            jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        }
+        // Whatever comes next should consume the subject:
+        pc.onTop--;
+        if (onlyWildcard) {
+            // Patterns like: [] / [_] / [_, _] / [*_] / [_, *_] / [_, _, *_] / etc.
+            addOp(POP_TOP);
+        } else if (starWildcard) {
+            patternHelperSequenceSubscr(node.patterns, star, pc);
+        } else {
+            patternHelperSequenceUnpack(node.patterns, star, pc);
+        }
+        return null;
+    }
+
+    // Like pattern_helper_sequence_unpack, but uses BINARY_SUBSCR instead of
+    // UNPACK_SEQUENCE / UNPACK_EX. This is more efficient for patterns with a
+    // starred wildcard like [first, *_] / [first, *_, last] / [*_, last] / etc.
+    private void patternHelperSequenceSubscr(PatternTy[] patterns, int star, PatternContext pc) {
+        // We need to keep the subject around for extracting elements:
+        pc.onTop++;
+        int size = lengthOrZero(patterns);
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = patterns[i];
+            if (wildcardCheck(pattern)) {
+                continue;
+            }
+            if (i == star) {
+                assert wildcardStarCheck(pattern);
+                continue;
+            }
+            addOp(DUP_TOP);
+            if (i < star) {
+                addLoadNumber(i);
+            } else {
+                // The subject may not support negative indexing! Compute a
+                // nonnegative index:
+                addOp(GET_LEN);
+                addLoadNumber(size - i);
+                addOp(BINARY_OP, BinaryOps.SUB.ordinal());
+            }
+            addOp(BINARY_SUBSCR);
+            patternSubpattern(pattern, pc);
+        }
+        // Pop the subject, we're done with it:
+        pc.onTop--;
+        addOp(POP_TOP);
+    }
+
+    // Like compiler_pattern, but turn off checks for irrefutability.
+    private void patternSubpattern(PatternTy pattern, PatternContext pc) {
+        boolean allowIrrefutable = pc.allowIrrefutable;
+        pc.allowIrrefutable = true;
+        visit(pattern, pc);
+        pc.allowIrrefutable = allowIrrefutable;
+    }
+
+    private void patternHelperSequenceUnpack(PatternTy[] patterns, int star, PatternContext pc) {
+        patternUnpackHelper(patterns);
+        int size = lengthOrZero(patterns);
+        // We've now got a bunch of new subjects on the stack. They need to remain
+        // there after each subpattern match:
+        pc.onTop += size;
+        for (int i = 0; i < size; i++) {
+            // One less item to keep track of each time we loop through:
+            pc.onTop--;
+            patternSubpattern(patterns[i], pc);
+        }
+    }
+
+    private void patternUnpackHelper(PatternTy[] patterns) {
+        int n = lengthOrZero(patterns);
+        boolean seenStar = false;
+        for (int i = 0; i < n; i++) {
+            PatternTy pattern = patterns[i];
+            if (pattern instanceof PatternTy.MatchStar) {
+                if (seenStar) {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple starred expressions in sequence pattern");
+                }
+                seenStar = true;
+                int countAfter = n - i - 1;
+                if (countAfter != (byte) countAfter) {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many expressions in star-unpacking sequence pattern");
+                }
+                addOp(UNPACK_EX, i, new byte[]{(byte) countAfter});
+            }
+        }
+        if (!seenStar) {
+            addOp(UNPACK_SEQUENCE, n);
+        }
+    }
+
+    private int lengthOrZero(PatternTy[] p) {
+        return p == null ? 0 : p.length;
+    }
+
     public Void visit(PatternTy.MatchAs node, PatternContext pc) {
         if (node.pattern == null) {
             if (!pc.allowIrrefutable) {
                 if (node.name != null) {
-                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "name capture %s makes remaining patterns unreachable", node.name);
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "name capture '%s' makes remaining patterns unreachable", node.name);
                 }
                 errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "wildcard makes remaining patterns unreachable");
             }
@@ -2579,7 +2722,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         checkForbiddenName(n, ExprContextTy.Store);
         // Can't assign to the same name twice:
         if (pc.stores.contains(n)) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name %s in pattern", n);
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name '%s' in pattern", n);
         }
         // Rotate this object underneath any items we need to preserve:
         pc.stores.add(n);
@@ -2596,14 +2739,6 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     public Void visit(PatternTy.MatchOr node, PatternContext pc) {
         return emitNotImplemented("match or");
-    }
-
-    public Void visit(PatternTy.MatchSequence node, PatternContext pc) {
-        return emitNotImplemented("match sequence");
-    }
-
-    public Void visit(PatternTy.MatchStar node, PatternContext pc) {
-        return emitNotImplemented("match star");
     }
 
     public Void visit(PatternTy.MatchSingleton node, PatternContext pc) {

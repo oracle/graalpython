@@ -1,0 +1,9 @@
+Disassembly of <module>:
+  1:7   -   1:8         0 LOAD_BYTE_O                       1
+  2:2   -   3:8         2 MATCH_SEQUENCE
+  2:2   -   3:8         3 POP_AND_JUMP_IF_FALSE             7    (to 10)
+  2:2   -   3:8         7 POP_TOP
+  3:4   -   3:8         8 JUMP_FORWARD                      3    (to 11)
+  2:2   -   3:8   >>   10 POP_TOP
+  2:2   -   3:8   >>   11 LOAD_NONE
+  2:2   -   3:8        12 RETURN_VALUE

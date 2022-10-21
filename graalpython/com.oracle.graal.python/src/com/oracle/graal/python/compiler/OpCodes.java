@@ -324,6 +324,16 @@ public enum OpCodes {
      */
     SETUP_ANNOTATIONS(0, 0, 0),
 
+    /**
+     * Determines if a python object is a sequence.
+     */
+    MATCH_SEQUENCE(0, 0, 1),
+
+    /**
+     * Retrieves the length of a python object and stores it on top.
+     */
+    GET_LEN(0, 0, 1),
+
     // load bytecodes for special constants
     LOAD_NONE(0, 0, 1),
     LOAD_ELLIPSIS(0, 0, 1),
