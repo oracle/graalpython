@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -975,7 +977,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (getPythonOS() == PLATFORM_WIN32 && ImageInfo.inImageBuildtimeCode()) {
+            // canonicalization on windows means something else than on linux and causes issues
+            // with paths
             srcBuilder.canonicalizePath(false);
         }
         if (shouldMarkSourceInternal(context)) {
