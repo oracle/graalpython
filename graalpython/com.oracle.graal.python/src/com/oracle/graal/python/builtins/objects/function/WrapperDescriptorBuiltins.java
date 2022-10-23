@@ -104,7 +104,12 @@ public class WrapperDescriptorBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString reprClassFunction(PBuiltinFunction self,
                         @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<slot wrapper '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
+            if (self.getEnclosingType() == null) {
+                // XXX: this is wrong
+                return simpleTruffleStringFormatNode.format("<builtin_function_or_method '%s'>", self.getName());
+            } else {
+                return simpleTruffleStringFormatNode.format("<slot wrapper '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.doSlowPath(self.getEnclosingType()));
+            }
         }
     }
 }
