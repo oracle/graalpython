@@ -72,6 +72,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_D_ARGUME
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_JOIN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
@@ -84,6 +86,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.DeprecationWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
@@ -172,6 +175,7 @@ import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -986,6 +990,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
         @Child private LookupAndCallUnaryNode callIntNode;
+        @Child private PyIndexCheckNode indexCheckNode;
         @Child private WarnNode warnNode;
 
         public final Object executeWith(VirtualFrame frame, Object number) {
@@ -1444,7 +1449,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
             // is handled in createIntGeneric
             if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, J___INDEX__, result);
             }
             return result;
         }
@@ -1454,7 +1459,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callTruncNode = insert(LookupAndCallUnaryNode.create(T___TRUNC__));
             }
-            return callTruncNode.executeObject(frame, obj);
+            Object result = callTruncNode.executeObject(frame, obj);
+            if (result != PNone.NO_VALUE) {
+                getWarnNode().warnEx(frame, DeprecationWarning, ErrorMessages.WARN_DELEGATION_OF_INT_TO_TRUNC_IS_DEPRECATED, 1);
+                if (getIndexCheckNode().execute(result)) {
+                    return callIndex(frame, result);
+                } else {
+                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
+                }
+            }
+            return result;
         }
 
         private Object callInt(VirtualFrame frame, Object object) {
@@ -1467,6 +1481,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, T___INT__, result);
             }
             return result;
+        }
+
+        private PyIndexCheckNode getIndexCheckNode() {
+            if (indexCheckNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                indexCheckNode = insert(PyIndexCheckNode.create());
+            }
+            return indexCheckNode;
         }
 
         private WarnNode getWarnNode() {
