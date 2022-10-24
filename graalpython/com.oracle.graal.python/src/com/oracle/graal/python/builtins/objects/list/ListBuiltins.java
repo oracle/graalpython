@@ -815,8 +815,8 @@ public class ListBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage s = self.getSequenceStorage();
             for (int i = 0; i < lenNode.execute(s); i++) {
-                Object object = getItemNode.execute(s, i);
-                if (eqNode.execute(frame, value, object)) {
+                Object seqItem = getItemNode.execute(s, i);
+                if (eqNode.execute(frame, seqItem, value)) {
                     count++;
                 }
             }
