@@ -773,7 +773,10 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         else:
             # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
             def graalvm_vm_arg(java_arg):
-                assert java_arg[0] == "-"
+                if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
+                    with open(java_arg[1:], "r") as f:
+                        java_arg = f.read()
+                assert java_arg[0] == "-", java_arg
                 return "--vm." + java_arg[1:]
             agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
