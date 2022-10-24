@@ -1830,7 +1830,11 @@ def python_coverage(args):
 
     if args.jacoco:
         jacoco_args = [
-            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+            '--jacoco-omit-excluded',
+            '--jacoco-generic-paths',
+            '--jacoco-omit-src-gen',
+            '--jacocout', 'coverage',
+            '--jacoco-format', 'lcov',
         ]
         jacoco_gates = (
             GraalPythonTags.junit,
@@ -1839,24 +1843,22 @@ def python_coverage(args):
             GraalPythonTags.unittest_jython,
             GraalPythonTags.tagged,
         )
-        mx.run_mx(jacoco_args + [
+        mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
             '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
-            '--jacocout', 'html',
-        ])
-        if mx.get_env("SONAR_HOST_URL", None):
-            mx.run_mx(jacoco_args + [
-                'sonarqube-upload',
-                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
-                '-Dsonar.projectKey=com.oracle.graalvm.python',
-                '-Dsonar.projectName=GraalVM - Python',
-                '--exclude-generated',
-            ])
-        mx.run_mx(jacoco_args + [
-            'coverage-upload',
+        ] + jacoco_args)
+        mx.run_mx([
+            '--strict-compliance',
+            '--kill-with-sigquit',
+            'jacocoreport',
+            '--format', 'lcov',
+            '--omit-excluded',
+            'coverage',
+            '--generic-paths',
+            '--exclude-src-gen',
         ])
     if args.truffle:
         executable = python_gvm()
@@ -1866,7 +1868,7 @@ def python_coverage(args):
             # {"args": ["--llvm.managed"]},
             {"tagged": True},
         ]
-        outputlcov = "coverage.lcov"
+        outputlcov = "lcov.info"
         if os.path.exists(outputlcov):
             os.unlink(outputlcov)
         cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
@@ -1948,20 +1950,17 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     lcov_file.write(lcov)
                 cmdargs += ["-a", f]
 
+        # actually run the merge command
         mx.run(cmdargs)
-        primary = mx.primary_suite()
-        info = primary.vc.parent_info(primary.dir)
-        rev = primary.vc.parent(primary.dir)
-        coverage_dir = '{}-truffle-coverage_{}_{}'.format(
-            primary.name,
-            datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
-            rev[:7],
-        )
-        mx.run(["/usr/bin/env", "genhtml", "--prefix", prefix, "--ignore-errors", "source", "-o", coverage_dir, outputlcov])
-        if args.truffle_upload_url:
-            if not args.truffle_upload_url.endswith("/"):
-                args.truffle_upload_url = args.truffle_upload_url + "/"
-            mx.run(["scp", "-r", coverage_dir, args.truffle_upload_url])
+
+    # upload coverage data
+    out = mx.OutputCapture()
+    mx.run_mx(['sversions', '--print-repositories', '--json'], out=out)
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as f:
+        f.write(out.data)
+        f.flush()
+        print(f"Associated data", out.data, sep="\n")
+        mx.run(['coverage-uploader.py', '--associated-repos', f.name])
 
 
 def python_build_watch(args):
