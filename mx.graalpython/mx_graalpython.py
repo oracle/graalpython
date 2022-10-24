@@ -942,7 +942,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            run_tagged_unittests(python_svm())
+            # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
+            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -1893,7 +1894,7 @@ def python_coverage(args):
                 if kwds.pop("tagged", False):
                     run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
                 else:
-                    run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
+                    run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
