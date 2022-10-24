@@ -1180,7 +1180,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (digits > SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD && Integer.bitCount(base) != 1) {
                 Integer maxDigits = context.getIntMaxStrDigits();
                 if (maxDigits > 0 && digits > maxDigits) {
-                    throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, maxDigits, digits);
+                    throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D, maxDigits, digits);
                 }
             }
         }

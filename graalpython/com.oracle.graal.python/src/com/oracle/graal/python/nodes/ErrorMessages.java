@@ -276,7 +276,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ERRORS_WITHOUT_STR_ARG = tsLiteral("errors without a string argument");
     public static final TruffleString EXPORTS_CANNOT_RESIZE = tsLiteral("Existing exports of data: object cannot be re-sized");
     public static final TruffleString ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = tsLiteral("'e*' format specifiers are not supported");
-    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION = tsLiteral("Exceeds the limit (%d) for integer string conversion: value has %d digits");
+    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D = tsLiteral("Exceeds the limit (%d) for integer string conversion: value has %d digits");
+    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION = tsLiteral("Exceeds the limit (%d) for integer string conversion");
     public static final TruffleString EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception cause must be None or derive from BaseException");
     public static final TruffleString EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = tsLiteral("exception causes must derive from BaseException");
     public static final TruffleString EXCEPTION_NOT_BASEEXCEPTION = tsLiteral("exception %s not a BaseException subclass");

@@ -139,6 +139,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
@@ -2653,6 +2654,8 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
+        private static final double DECIMAL_DIGITS_PER_BIT = 0.3010299956639812; // log10(2)
+
         @Specialization
         static TruffleString doL(long self,
                         @Shared("fromLong") @Cached TruffleString.FromLongNode fromLongNode) {
@@ -2660,9 +2663,38 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleString doPInt(PInt self,
+        TruffleString doPInt(PInt self,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(self.toString(), TS_ENCODING);
+            int intMaxStrDigits = PythonContext.get(this).getIntMaxStrDigits();
+            /*
+             * Approximate pre-check for the number of digits. It's done as a prevention for DoS
+             * attacks, because CPython's conversion algorithm has bad complexity. Java's is
+             * probably better, but we need to be compatible. CPython has different pre-check based
+             * on internals of their representation.
+             */
+            if (intMaxStrDigits > 0) {
+                int bitLength = positiveBitLength(self);
+                if (Math.floor(bitLength * DECIMAL_DIGITS_PER_BIT + 1) > intMaxStrDigits) {
+                    throw raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
+                }
+            }
+            String value = self.toString();
+            /*
+             * Post check for the exact value. It does nothing for DoS prevention anymore, it's just
+             * for consistency.
+             */
+            if (intMaxStrDigits > 0) {
+                int digits = self.isNegative() ? value.length() - 1 : value.length();
+                if (digits > intMaxStrDigits) {
+                    throw raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION);
+                }
+            }
+            return fromJavaStringNode.execute(value, TS_ENCODING);
+        }
+
+        @TruffleBoundary
+        private static int positiveBitLength(PInt self) {
+            return self.abs().bitLength();
         }
 
         @Specialization
