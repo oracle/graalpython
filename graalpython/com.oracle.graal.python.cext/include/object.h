@@ -750,6 +750,8 @@ static inline int _PyType_CheckExact(PyObject *op) {
 }
 #define PyType_CheckExact(op) _PyType_CheckExact(_PyObject_CAST(op))
 
+PyAPI_FUNC(void) _PyTruffle_DebugTrace(void);
+
 #ifdef __cplusplus
 }
 #endif

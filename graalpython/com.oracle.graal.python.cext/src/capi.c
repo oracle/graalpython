@@ -281,6 +281,7 @@ REGISTER_BASIC_TYPE(uint8_t);
 REGISTER_BASIC_TYPE(Py_complex);
 REGISTER_BASIC_TYPE(char_t);
 REGISTER_BASIC_TYPE(PyObject);
+REGISTER_BASIC_TYPE(PyMethodDef);
 REGISTER_BASIC_TYPE(PyTypeObject);
 REGISTER_BASIC_TYPE(float_t);
 REGISTER_BASIC_TYPE(double_t);
@@ -489,7 +490,6 @@ unsigned long get_tp_flags(PyTypeObject* obj) {
     return obj->tp_flags;
 }
 
-POLYGLOT_DECLARE_TYPE(PyMethodDef);
 /**
  * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
  * returns a typed pointer that can be used as interop array.

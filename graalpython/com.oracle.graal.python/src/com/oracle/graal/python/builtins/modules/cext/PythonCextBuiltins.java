@@ -58,6 +58,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -69,6 +70,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -220,6 +222,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -233,6 +236,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -1892,6 +1898,38 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
             context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
             LOGGER.fine(() -> PythonUtils.formatJString("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_DebugTrace", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class PyTruffleDebugTrace extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        int trace() {
+            PrintStream out = new PrintStream(getContext().getEnv().out());
+            if (getContext().getOption(PythonOptions.EnableDebuggingBuiltins)) {
+                out.println("\n\nJava Stacktrace:");
+                new RuntimeException().printStackTrace(out);
+                out.println("\n\nTruffle Stacktrace:");
+                printStack();
+                out.println("\n\nFrames:");
+                Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Void>() {
+
+                    public Void visitFrame(FrameInstance frame) {
+                        out.println("  ===========================");
+                        out.println("  call: " + frame.getCallNode());
+                        out.println("  target: " + frame.getCallTarget());
+                        Frame f = frame.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                        out.println("  args: " + Arrays.asList(f.getArguments()));
+                        return null;
+                    }
+                });
+            } else {
+                out.println("\n\nDEBUG TRACE (enable details via --python.EnableDebuggingBuiltins)");
+            }
             return 0;
         }
     }

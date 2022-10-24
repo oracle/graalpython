@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -215,7 +216,9 @@ public class FunctionBuiltins extends PythonBuiltins {
             ArrayList<PKeyword> keywords = new ArrayList<>();
             for (HashingStorage.DictEntry e : arg.entries()) {
                 Object key = assertNoJavaString(e.getKey());
-                if (!(key instanceof TruffleString)) {
+                if (key instanceof PString) {
+                    key = ((PString) key).getValueUncached();
+                } else if (!(key instanceof TruffleString)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, e.getKey());
                 }
                 keywords.add(new PKeyword((TruffleString) key, e.getValue()));

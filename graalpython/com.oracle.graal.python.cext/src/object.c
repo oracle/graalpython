@@ -944,3 +944,11 @@ int Py_IsFalse(PyObject *x)
 {
     return Py_Is(x, Py_False);
 }
+
+
+typedef void (*call_debugtrace_t)(void);
+UPCALL_TYPED_ID(PyTruffle_DebugTrace, call_debugtrace_t);
+void PyTruffle_DebugTrace(void) {
+    _jls_PyTruffle_DebugTrace();
+}
+
