@@ -56,12 +56,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -303,11 +301,11 @@ public class AsyncHandler {
                             // when the thread in question isn't actually holding it.
                             gilReleaseRequested.set(false);
                             RootNode rootNode = access.getLocation().getRootNode();
-                            if (rootNode instanceof PClosureRootNode) {
+                            if (rootNode instanceof PRootNode) {
                                 if (rootNode.isInternal()) {
                                     return;
                                 }
-                                if (rootNode instanceof FunctionRootNode && ((FunctionRootNode) rootNode).isPythonInternal()) {
+                                if (((PRootNode) rootNode).isPythonInternal()) {
                                     return;
                                 }
                                 // we only release the gil in ordinary Python code nodes
