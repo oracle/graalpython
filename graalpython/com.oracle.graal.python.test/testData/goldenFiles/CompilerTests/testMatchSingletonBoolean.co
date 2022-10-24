@@ -1,0 +1,8 @@
+Disassembly of <module>:
+  1:6   -   1:7         0 LOAD_BYTE_O                       1                                      can quicken
+  2:8   -   2:12        2 LOAD_TRUE_O                                                              can quicken
+  2:8   -   2:12        3 BINARY_OP                         31   (IS)                              can quicken, generalizes: 2, 0
+  2:8   -   2:12        5 POP_AND_JUMP_IF_FALSE             6    (to 11)                           generalizes: 3
+  3:7   -   3:11        9 JUMP_FORWARD                      2    (to 11)
+  2:3   -   3:11  >>   11 LOAD_NONE
+  2:3   -   3:11       12 RETURN_VALUE
