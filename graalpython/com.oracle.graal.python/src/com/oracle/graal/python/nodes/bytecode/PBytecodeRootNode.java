@@ -2250,7 +2250,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
+    @ExplodeLoop
     private void bytcodeRotN(VirtualFrame virtualFrame, int stackTop, int oparg) {
+        CompilerAsserts.partialEvaluationConstant(oparg);
         if (oparg > 1) {
             Object top = virtualFrame.getObject(stackTop);
             int i = 0;
