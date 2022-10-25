@@ -96,6 +96,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
+
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLEAR__;
@@ -243,16 +245,18 @@ public abstract class GraalHPyLegacyDef {
             return signature;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] VALUES = Arrays.copyOf(values(), values().length);
+        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] BY_VALUE = new HPyLegacySlot[40];
 
-        @ExplodeLoop
-        static HPyLegacySlot fromValue(int value) {
-            for (int i = 0; i < VALUES.length; i++) {
-                if (VALUES[i].value == value) {
-                    return VALUES[i];
-                }
+        static {
+            for (var entry : VALUES) {
+                assert BY_VALUE[entry.value] == null;
+                BY_VALUE[entry.value] = entry;
             }
-            return null;
+        }
+
+        static HPyLegacySlot fromValue(int value) {
+            return value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
         }
     }
 }

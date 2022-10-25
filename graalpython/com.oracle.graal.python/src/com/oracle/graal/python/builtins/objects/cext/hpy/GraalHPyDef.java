@@ -193,16 +193,18 @@ public abstract class GraalHPyDef {
             return llvmFunctionType;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPyFuncSignature[] VALUES = Arrays.copyOf(values(), values().length);
+        @CompilationFinal(dimensions = 1) private static final HPyFuncSignature[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final HPyFuncSignature[] BY_VALUE = new HPyFuncSignature[40];
 
-        @ExplodeLoop
-        static HPyFuncSignature fromValue(int value) {
-            for (int i = 0; i < VALUES.length; i++) {
-                if (VALUES[i].value == value) {
-                    return VALUES[i];
-                }
+        static {
+            for (var entry : VALUES) {
+                assert BY_VALUE[entry.value] == null;
+                BY_VALUE[entry.value] = entry;
             }
-            return null;
+        }
+
+        static HPyFuncSignature fromValue(int value) {
+            return value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
         }
 
         public static int getFlags(HPyFuncSignature sig) {
@@ -447,16 +449,20 @@ public abstract class GraalHPyDef {
             return signatures;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPySlot[] VALUES = Arrays.copyOf(values(), values().length);
+        @CompilationFinal(dimensions = 1) private static final HPySlot[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final HPySlot[] BY_VALUE = new HPySlot[100];
 
-        @ExplodeLoop
-        static HPySlot fromValue(int value) {
-            for (int i = 0; i < VALUES.length; i++) {
-                if (VALUES[i].value == value) {
-                    return VALUES[i];
+        static {
+            for (var entry : VALUES) {
+                if (entry != HPY_TP_DESTROY) {
+                    assert BY_VALUE[entry.value] == null;
+                    BY_VALUE[entry.value] = entry;
                 }
             }
-            return null;
+        }
+
+        static HPySlot fromValue(int value) {
+            return value == HPY_TP_DESTROY.value ? HPY_TP_DESTROY : value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
         }
 
         private static HPySlotWrapper[] w(HPySlotWrapper... wrappers) {
