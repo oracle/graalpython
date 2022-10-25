@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "4d1ff9c2d204ae0118adc54a999e7650c5855d34",
+                "version": "26a1d76a70ae4816469727d86c9cc29915297140",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "4d1ff9c2d204ae0118adc54a999e7650c5855d34",
+                "version": "26a1d76a70ae4816469727d86c9cc29915297140",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "4d1ff9c2d204ae0118adc54a999e7650c5855d34",
+                "version": "26a1d76a70ae4816469727d86c9cc29915297140",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -236,6 +236,17 @@ suite = {
             "jacoco": "include",
             "native": True,
             "vpath": False,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild" : False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.pegparser": {
@@ -245,9 +256,19 @@ suite = {
             "dependencies": [
                 "truffle:ICU4J",
             ],
-            "buildDependencies": [
-                "com.oracle.graal.python.pegparser.generator",
-            ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "buildDependencies": [
+                            "com.oracle.graal.python.pegparser.generator",
+                        ],
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.pegparser.test": {
@@ -264,6 +285,17 @@ suite = {
         "com.oracle.graal.python.pegparser.generator": {
             "subDir": "graalpython",
             "native": True,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild" : False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.shell": {
@@ -363,7 +395,6 @@ suite = {
                 "jdk.unsupported",
                 "jdk.security.auth",
             ],
-            "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
             "javaCompliance": "11+",
             "checkstyleVersion": "8.36.1",
@@ -373,6 +404,17 @@ suite = {
             ],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
+                    },
+                },
+            },
         },
 
         # GRAALPYTHON TEST
@@ -464,6 +506,17 @@ suite = {
                 "XZ-5.2.6": "<path:XZ-5.2.6>",
                 "BZIP2": "<path:BZIP2>",
             },
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "defaultBuild": False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "com.oracle.graal.python.jni": {
@@ -474,11 +527,24 @@ suite = {
                 "com.oracle.graal.python", # for the generated JNI header file
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
-            "cflags": ["-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
-                       "-g", "-O3", "-Werror",
-                       "-I<path:com.oracle.graal.python.cext>/include",
-                       "-I<path:com.oracle.graal.python.cext>/hpy"
+            "cflags": [
+                "-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                "-g", "-O3", "-Werror",
+                "-I\"<path:com.oracle.graal.python.cext>/include\"",
+                "-I\"<path:com.oracle.graal.python.cext>/hpy\""
             ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        # "/Z7", "/O2", "/WX", # cflags to replace -g -O3 -Werror
+                        "defaultBuild": False,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                    },
+                },
+            },
         },
 
         "python-lib": {
@@ -539,12 +605,31 @@ suite = {
                 "linux-amd64",
                 "linux-aarch64",
                 "darwin-amd64",
+                "windows-amd64",
             ],
-            "dependencies": [
-                "com.oracle.graal.python.jni",
-            ],
-            "layout": {
-                "./": "dependency:com.oracle.graal.python.jni",
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "layout": {
+                            "./": "file:graalpython/com.oracle.graal.python.jni/JNI-WINDOWS-README.md",
+                        },
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "dependencies": [
+                            "com.oracle.graal.python.jni",
+                        ],
+                        "layout": {
+                            "./": {
+                                "source_type": "dependency",
+                                "dependency": "com.oracle.graal.python.jni",
+                                "path": "*",
+                                "exclude": ["JNI-WINDOWS-README.md"],
+                            },
+                        },
+                    },
+                },
             },
             "description": "Contains the native library needed by HPy JNI backend.",
             "maven": True,
@@ -648,12 +733,43 @@ suite = {
             "testDistribution": True,
         },
 
+        "GRAALPYTHON_CEXT": {
+            "native": True,
+            "platformDependent": True,
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "layout": {
+                            "./": "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
+                        },
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "dependencies": [
+                            "com.oracle.graal.python.cext",
+                        ],
+                        "layout": {
+                            "./": {
+                                "source_type": "dependency",
+                                "dependency": "graalpython:com.oracle.graal.python.cext",
+                                "path": "*",
+                                "exclude": ["CEXT-WINDOWS-README.md"],
+                            },
+                        },
+                    },
+                },
+            },
+            "maven": False,
+        },
+
         "GRAALPYTHON_GRAALVM_SUPPORT": {
             "native": True,
             "platformDependent": True,
             "description": "GraalVM Python support distribution for the GraalVM",
             "distDependencies": [
                 "GRAALPYTHON_JNI",
+                "GRAALPYTHON_CEXT",
             ],
             "layout": {
                 "./": [
@@ -663,7 +779,7 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.cext/include",
                 ],
                 "./lib-graalpython/": [
-                    "dependency:graalpython:com.oracle.graal.python.cext/*",
+                    "extracted-dependency:GRAALPYTHON_CEXT/*",
                     "extracted-dependency:GRAALPYTHON_JNI/*",
                 ],
             },

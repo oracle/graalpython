@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
@@ -32,6 +34,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -39,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -523,7 +527,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
         try {
             return Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
-        } catch (IOException | SecurityException | UnsupportedOperationException e) {
+        } catch (IOException | SecurityException | UnsupportedOperationException | InvalidPathException e) {
             return null;
         }
     }
@@ -952,7 +956,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             sourceBuilder.content(src);
                         }
                     }
-                } catch (SecurityException | IOException e) {
+                } catch (SecurityException | IOException | InvalidPathException e) {
                     sourceBuilder = null;
                 }
             }
@@ -973,6 +977,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private static Source newSource(PythonContext context, SourceBuilder srcBuilder) throws IOException {
+        if (getPythonOS() == PLATFORM_WIN32 && ImageInfo.inImageBuildtimeCode()) {
+            // canonicalization on windows means something else than on linux and causes issues
+            // with paths
+            srcBuilder.canonicalizePath(false);
+        }
         if (shouldMarkSourceInternal(context)) {
             srcBuilder.internal(true);
         }

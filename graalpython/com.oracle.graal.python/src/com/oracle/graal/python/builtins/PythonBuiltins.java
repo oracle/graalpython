@@ -163,7 +163,6 @@ public abstract class PythonBuiltins {
             final boolean declaresExplicitSelf;
             PythonBuiltinClassType constructsClass = builtin.constructsClass();
             if ((annotation.defineModule().length() > 0 || annotation.extendsModule().length() > 0) && constructsClass == PythonBuiltinClassType.nil) {
-                assert annotation.defineModule().isEmpty() && !annotation.extendsModule().isEmpty() || !annotation.defineModule().isEmpty() && annotation.extendsModule().isEmpty();
                 assert !builtin.isGetter();
                 assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;

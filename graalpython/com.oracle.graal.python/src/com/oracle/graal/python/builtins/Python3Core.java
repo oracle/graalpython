@@ -60,6 +60,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -93,6 +94,7 @@ import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
@@ -439,12 +441,14 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     private static void filterBuiltins(List<PythonBuiltins> builtins) {
         PythonOS currentOs = PythonOS.getPythonOS();
+        List<PythonBuiltins> toRemove = new ArrayList<>();
         for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
-                builtins.remove(builtin);
+                toRemove.add(builtin);
             }
         }
+        builtins.removeAll(toRemove);
     }
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
@@ -511,6 +515,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PropertyBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),
+                        new NtModuleBuiltins(),
+                        new WinregModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
@@ -871,7 +877,10 @@ public abstract class Python3Core extends ParserErrorCallback {
     }
 
     private void initializeImportlib() {
-        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
+        PythonModule bootstrap = null;
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
+        }
         PythonModule bootstrapExternal;
 
         PyObjectCallMethodObjArgs callNode = PyObjectCallMethodObjArgs.getUncached();
@@ -945,13 +954,22 @@ public abstract class Python3Core extends ParserErrorCallback {
              * access is never allowed during native image build time.
              */
             if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
-                builtinModules.remove(BuiltinNames.T_BZ2);
-                sysModules.delItem(BuiltinNames.T_BZ2);
+                removeBuiltinModule(BuiltinNames.T_BZ2);
             }
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());
             getContext().getSharedFinalizer().registerAsyncAction();
             initialized = true;
+        }
+    }
+
+    @TruffleBoundary
+    public final void removeBuiltinModule(TruffleString name) {
+        assert !initialized : "can only remove builtin modules before initialization is finished";
+        builtinModules.remove(name);
+        if (sysModules != null) {
+            // may already be published
+            sysModules.delItem(name);
         }
     }
 

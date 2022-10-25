@@ -531,6 +531,7 @@ class GraalPythonTags(object):
     svm = 'python-svm'
     native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
+    windows = 'python-windows-smoketests'
 
 
 def python_gate(args):
@@ -603,6 +604,8 @@ def _graalvm_home(*, envfile, extra_dy=""):
 def _join_bin(home, name):
     if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
         return os.path.join(home, "Contents", "Home", "bin", name)
+    elif sys.platform == "win32":
+        return os.path.join(home, "bin", f"{name}.cmd")
     else:
         return os.path.join(home, "bin", name)
 
@@ -974,6 +977,16 @@ def graalpython_gate_runner(args, tasks):
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
             assert "Using preinitialized context." in out.data
+
+    with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
+        if task:
+            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'])
+            svm_image = python_svm()
+            out = mx.OutputCapture()
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            success = "\n".join(["win32"])
+            if success not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)

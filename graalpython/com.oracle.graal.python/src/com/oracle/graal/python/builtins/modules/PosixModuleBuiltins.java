@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -139,7 +141,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
-@CoreFunctions(defineModule = "posix", isEager = true)
+@CoreFunctions(defineModule = "posix", extendsModule = "nt", isEager = true)
 public class PosixModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
@@ -225,18 +227,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         ArrayList<TruffleString> haveFunctions = new ArrayList<>();
-        Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
-                        tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
-                        tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
-        // Not implemented yet:
-        // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
-        // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
-        // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
-        if (PosixConstants.HAVE_FUTIMENS.value) {
-            haveFunctions.add(tsLiteral("HAVE_FUTIMENS"));
-        }
-        if (PosixConstants.HAVE_UTIMENSAT.value) {
-            haveFunctions.add(tsLiteral("HAVE_UTIMENSAT"));
+        if (PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+            Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
+                            tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
+                            tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
+            // Not implemented yet:
+            // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
+            // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
+            // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
+            if (PosixConstants.HAVE_FUTIMENS.value) {
+                haveFunctions.add(tsLiteral("HAVE_FUTIMENS"));
+            }
+            if (PosixConstants.HAVE_UTIMENSAT.value) {
+                haveFunctions.add(tsLiteral("HAVE_UTIMENSAT"));
+            }
+        } else {
+            haveFunctions.add(tsLiteral("HAVE_FTRUNCATE"));
+            haveFunctions.add(tsLiteral("MS_WINDOWS"));
         }
         addBuiltinConstant("_have_functions", core.factory().createList(haveFunctions.toArray()));
         addBuiltinConstant("environ", core.factory().createDict());
@@ -252,7 +259,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         // define a class in one module (os) and make it public in another (posix), so we create
         // them directly in the 'os' module, and expose them in the `posix` module as well.
         // Note that the classes are still re-imported by os.py.
-        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        PythonModule posix;
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            posix = core.lookupBuiltinModule(T_NT);
+        } else {
+            posix = core.lookupBuiltinModule(T_POSIX);
+        }
         posix.setAttribute(PythonBuiltinClassType.PStatResult.getName(), core.lookupType(PythonBuiltinClassType.PStatResult));
         posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
 
@@ -269,6 +281,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
+            Object key, val;
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                key = toTruffleStringUncached(entry.getKey());
+            } else {
+                key = core.factory().createBytes(entry.getKey().getBytes());
+            }
             if (pyenvLauncherKey.equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
@@ -283,12 +301,26 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     posixLib.setenv(posixSupport, k, v, true);
                 } catch (PosixException ignored) {
                 }
-                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.toJavaStringUncached().getBytes()));
+                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                    val = value;
+                } else {
+                    val = core.factory().createBytes(value.toJavaStringUncached().getBytes());
+                }
             } else {
-                environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes((entry.getValue().getBytes())));
+                if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                    val = toTruffleStringUncached(entry.getValue());
+                } else {
+                    val = core.factory().createBytes((entry.getValue().getBytes()));
+                }
             }
+            environ.setItem(key, val);
         }
-        PythonModule posix = core.lookupBuiltinModule(T_POSIX);
+        PythonModule posix;
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            posix = core.lookupBuiltinModule(T_NT);
+        } else {
+            posix = core.lookupBuiltinModule(T_POSIX);
+        }
         Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
     }

@@ -70,7 +70,7 @@ FROZEN = [
             "genericpath",
             "ntpath",
             "posixpath",
-            # We must explicitly mark os.path as a frozen module
+            # We must explicitly mark os.path as a frozen module, it is also special cased below
             ("ntpath" if os.name == "nt" else "posixpath") + " : os.path",
             "os",
             "site",
@@ -279,7 +279,7 @@ class FrozenSource(namedtuple("FrozenSource", "id pyfile binaryfile stdlib_path"
 
     @property
     def modname(self):
-        if self.pyfile.startswith(self.stdlib_path):
+        if os.path.normpath(self.pyfile).startswith(os.path.normpath(self.stdlib_path)):
             return self.id
         return None
 
@@ -369,7 +369,7 @@ def _iter_sources(modules):
 
 
 def _get_checksum(filename):
-    with open(filename, "rb") as infile:
+    with open(filename, "rb", encoding="utf-8") as infile:
         contents = infile.read()
     m = sha256()
     m.update(contents)
@@ -528,11 +528,13 @@ FROZEN_MODULES_HEADER = """/*
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import com.oracle.graal.python.builtins.PythonOS;
+
 public final class FrozenModules {"""
 
 
 def freeze_module(src):
-    with open(src.pyfile, "r") as src_file, open(src.binaryfile, "wb") as binary_file:
+    with open(src.pyfile, "r", encoding="utf-8") as src_file, open(src.binaryfile, "wb") as binary_file:
         code_obj = compile(src_file.read(), f"<frozen {src.id}>", "exec")
         marshal.dump(code_obj, binary_file)
 
@@ -561,6 +563,9 @@ def write_frozen_lookup(out_file, modules):
             out_file.write(
                 f'                return Map.{module.symbol}.asPackage({"true" if module.ispkg else "false"});\n'
             )
+        elif module.name == "os.path": # Special case for os.path
+            out_file.write(u'            case "os.path":\n')
+            out_file.write(u'                return PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32 ? Map.POSIXPATH : Map.NTPATH;\n')
         else:
             out_file.write(f'            case "{module.name}":\n')
             out_file.write(f"                return Map.{module.symbol};\n")
@@ -572,21 +577,21 @@ def write_frozen_lookup(out_file, modules):
 
 def write_frozen_module_file(file, modules):
     if os.path.exists(file):
-        with open(file, "r") as f:
+        with open(file, "r", encoding="utf-8") as f:
             content = f.read()
         stat_result = os.stat(file)
         atime, mtime = stat_result.st_atime, stat_result.st_mtime
     else:
         content = None
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    with open(file, "w") as out_file:
+    with open(file, "w", encoding="utf-8") as out_file:
         out_file.write(FROZEN_MODULES_HEADER)
         out_file.write("\n\n")
         write_frozen_modules_map(out_file, modules)
         out_file.write("\n")
         write_frozen_lookup(out_file, modules)
         out_file.write("}\n")
-    with open(file, "r") as f:
+    with open(file, "r", encoding="utf-8") as f:
         new_content = f.read()
     if new_content == content:
         # set mtime to the old one, if we didn't change anything
