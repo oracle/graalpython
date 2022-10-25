@@ -1366,7 +1366,7 @@ public class Tokenizer {
 
     private Token createToken(int kind, Object extraData) {
         if (kind == Token.Kind.ENDMARKER) {
-            return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, currentLineNumber, -1, currentLineNumber, -1), extraData);
+            return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(currentLineNumber, -1, currentLineNumber, -1), extraData);
         }
         int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
         int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
@@ -1381,17 +1381,17 @@ public class Tokenizer {
         if (endLineno == 1) {
             endColOffset += srcStartColumn;
         }
-        return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
+        return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(lineno, colOffset, endLineno, endColOffset), extraData);
     }
 
     public String getTokenString(Token tok) {
         String s;
-        if (tok.sourceRange.startOffset >= codePointsInput.length) {
+        if (tok.startOffset >= codePointsInput.length) {
             return "";
-        } else if (tok.sourceRange.endOffset >= codePointsInput.length) {
-            s = new String(codePointsInput, tok.sourceRange.startOffset, codePointsInput.length - tok.sourceRange.startOffset);
+        } else if (tok.endOffset >= codePointsInput.length) {
+            s = new String(codePointsInput, tok.startOffset, codePointsInput.length - tok.startOffset);
         } else {
-            s = new String(codePointsInput, tok.sourceRange.startOffset, tok.sourceRange.endOffset - tok.sourceRange.startOffset);
+            s = new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
         }
         if (s.indexOf('\r') >= 0) {
             s = s.replaceAll("\r\n", "\n");
@@ -1404,7 +1404,7 @@ public class Tokenizer {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
         sb.append(token.typeName());
-        sb.append(" [").append(token.sourceRange.startOffset).append(", ").append(token.sourceRange.endOffset).append("]");
+        sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn);
         sb.append(") (").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
@@ -1412,7 +1412,7 @@ public class Tokenizer {
     }
 
     public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
-        return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
+        return rangeStart.withEnd(currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
     /**

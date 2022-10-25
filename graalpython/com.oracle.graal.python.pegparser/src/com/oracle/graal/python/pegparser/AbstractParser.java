@@ -531,7 +531,7 @@ public abstract class AbstractParser {
         if (cachedDummyName != null) {
             return cachedDummyName;
         }
-        cachedDummyName = factory.createVariable("", new SourceRange(0, 0, 0, 0, 0, 0));
+        cachedDummyName = factory.createVariable("", new SourceRange(0, 0, 0, 0));
         return cachedDummyName;
     }
 
@@ -1145,7 +1145,7 @@ public abstract class AbstractParser {
         int errorCol = tokenizer.getParensColumnsStack()[nestingLevel - 1];
         // TODO unknown source offsets
         raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
-                        new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
+                        new SourceRange(errorLineno, errorCol, errorLineno, -1),
                         "'%c' was never closed", tokenizer.getParensStack()[nestingLevel - 1]);
     }
 
@@ -1190,7 +1190,7 @@ public abstract class AbstractParser {
                 break;
         }
         // TODO unknown source offsets
-        raiseErrorKnownLocation(errorType, new SourceRange(0, 0, tokenizer.getCurrentLineNumber(),
+        raiseErrorKnownLocation(errorType, new SourceRange(tokenizer.getCurrentLineNumber(),
                         colOffset >= 0 ? colOffset : 0, tokenizer.getCurrentLineNumber(), -1), msg);
     }
 

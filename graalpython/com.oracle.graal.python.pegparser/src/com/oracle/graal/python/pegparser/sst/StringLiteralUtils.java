@@ -273,7 +273,7 @@ public abstract class StringLiteralUtils {
                         column++;
                     }
                 }
-                return new SourceRange(textSourceRange.startOffset + startIndex, textSourceRange.startOffset + endIndex, startLine, startColumn, line, column);
+                return new SourceRange(startLine, startColumn, line, column);
             }
         }
 
