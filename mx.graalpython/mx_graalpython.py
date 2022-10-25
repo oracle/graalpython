@@ -756,38 +756,29 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         args += [_graalpytest_driver(), "-v"]
 
     if mx_gate.get_jacoco_agent_args():
-        if is_bash_launcher(python_binary):
-            agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
-            # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
-            # with the arguments
-            basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-            launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpy').resolve())
-            launcher_path_bak = launcher_path + ".bak"
-            shutil.copy(launcher_path, launcher_path_bak)
-            try:
-                patch_batch_launcher(launcher_path, agent_args)
-                # jacoco only dumps the data on exit, and when we run all our unittests
-                # at once it generates so much data we run out of heap space
-                for testfile in testfiles:
-                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd,
-                           out=out, err=err)
-            finally:
-                shutil.move(launcher_path_bak, launcher_path)
-        else:
-            # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
-            def graalvm_vm_arg(java_arg):
-                if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
-                    with open(java_arg[1:], "r") as f:
-                        java_arg = f.read()
-                assert java_arg[0] == "-", java_arg
-                return "--vm." + java_arg[1:]
-            agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
+        # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
+        def graalvm_vm_arg(java_arg):
+            if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
+                with open(java_arg[1:], "r") as f:
+                    java_arg = f.read()
+            assert java_arg[0] == "-", java_arg
+            return shlex.quote(f'--vm.{java_arg[1:]}')
+        agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
-            # jacoco only dumps the data on exit, and when we run all our unittests
-            # at once it generates so much data we run out of heap space
-            for testfile in testfiles:
-                mx.run([python_binary, "--jvm", agent_args] + args + [testfile],
-                       nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+        # with the arguments. We also disable compilation, it hardly helps for this use case
+        original_launcher = os.path.abspath(os.path.realpath(python_binary))
+        bash_launcher = f'{original_launcher}.sh'
+        with open(bash_launcher, "w") as f:
+            f.write("#!/bin/sh\n")
+            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
+            f.write(f'exec {original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
+        os.chmod(bash_launcher, 0o775)
+
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        for testfile in testfiles:
+            mx.run([bash_launcher] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
     else:
         if javaAsserts:
             args += ['-ea']
@@ -797,20 +788,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         if lock:
             lock.release()
         return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
-
-
-def is_bash_launcher(launcher_path):
-    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-        return re.match(r'^#!.*bash', launcher.readline())
-
-
-def patch_batch_launcher(launcher_path, jvm_args):
-    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-        lines = launcher.readlines()
-    assert re.match(r'^#!.*bash', lines[0]), "expected a bash launcher"
-    lines.insert(-1, 'jvm_args+=(%s)\n' % jvm_args)
-    with open(launcher_path, 'w') as launcher:
-        launcher.writelines(lines)
 
 
 def run_hpy_unittests(python_binary, args=None, include_native=True):
@@ -901,7 +878,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True)
+            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -921,7 +898,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True)
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
