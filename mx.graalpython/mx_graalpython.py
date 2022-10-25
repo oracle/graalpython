@@ -604,6 +604,8 @@ def _graalvm_home(*, envfile, extra_dy=""):
 def _join_bin(home, name):
     if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
         return os.path.join(home, "Contents", "Home", "bin", name)
+    elif sys.platform == "win32":
+        return os.path.join(home, "bin", f"{name}.cmd")
     else:
         return os.path.join(home, "bin", name)
 
