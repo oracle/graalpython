@@ -4239,6 +4239,7 @@ class MiscIOTest(unittest.TestCase):
         # there used to be a buffer overflow in the parser for rawmode
         self.assertRaises(ValueError, self.open, os_helper.TESTFN, 'rwax+', encoding="utf-8")
 
+    @support.impl_detail('dev mode', graalpy=False)
     def test_check_encoding_errors(self):
         # bpo-37388: open() and TextIOWrapper must check encoding and errors
         # arguments in dev mode

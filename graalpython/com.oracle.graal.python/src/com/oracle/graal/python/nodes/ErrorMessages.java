@@ -1120,6 +1120,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = tsLiteral("Cannot specify both preset and filter chain");
 
     // io errors
+    public static final TruffleString RAW_READINTO_FAILED = tsLiteral("raw readinto() failed");
     public static final TruffleString IO_S_INVALID_LENGTH = tsLiteral("raw %s returned invalid length %d (should have been between 0 and %d)");
     public static final TruffleString IO_S_SHOULD_RETURN_BYTES = tsLiteral("%s should return bytes");
     public static final TruffleString CANNOT_FIT_P_IN_OFFSET_SIZE = tsLiteral("cannot fit '%p' into an offset-sized integer");
