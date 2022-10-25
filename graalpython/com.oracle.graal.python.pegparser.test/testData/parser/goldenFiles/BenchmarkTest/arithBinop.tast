@@ -26,7 +26,7 @@ Output:
 Module[1:0-19:16]
     FunctionDef[1:0-9:15]
         Name:docompute
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:14-1:17] num
         ---- Function body of docompute ----
@@ -95,7 +95,7 @@ Module[1:0-19:16]
         ---- End of docompute function ----
     FunctionDef[12:0-15:22]
         Name:measure
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[12:12-12:15] num
         ---- Function body of measure ----
@@ -122,7 +122,7 @@ Module[1:0-19:16]
         ---- End of measure function ----
     FunctionDef[18:0-19:16]
         Name:__benchmark__
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[18:18-18:21] num
             Defaults:

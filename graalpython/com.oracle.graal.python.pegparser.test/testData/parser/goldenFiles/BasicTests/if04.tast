@@ -17,7 +17,7 @@ Module[1:0-1:53]
                 Then: Name[1:12-1:16] Value: "func"
                 Else: 
                     Lambda[1:42-1:53]
-                        ArgumentsTy[0:0-0:0]
+                        ArgumentsTy[1:0-1:0]
                             Args:
                                 ArgTy[1:49-1:50] a
                         Body: Name[1:52-1:53] Value: "a"

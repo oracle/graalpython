@@ -15,7 +15,7 @@ Module[1:0-6:21]
         RHS: Name[1:12-1:16] Value: "NONE"
     FunctionDef[2:0-4:28]
         Name:setup
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of setup ----
         Global[3:2-3:18]: SOMETHING 
         If[4:2-4:28]
@@ -27,7 +27,7 @@ Module[1:0-6:21]
         ---- End of setup function ----
     FunctionDef[5:0-6:21]
         Name:install
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of install ----
         If[6:2-6:21]
             Test: Name[6:5-6:14] Value: "SOMETHING"

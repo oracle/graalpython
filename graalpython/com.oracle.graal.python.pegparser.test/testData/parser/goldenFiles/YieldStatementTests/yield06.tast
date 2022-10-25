@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:18]
     FunctionDef[1:0-1:18]
         Name:f
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
         Assign[1:9-1:18]
             LHS: Name[1:9-1:10] Value: "x" Store

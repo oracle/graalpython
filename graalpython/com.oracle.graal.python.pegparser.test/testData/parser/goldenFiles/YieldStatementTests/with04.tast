@@ -9,7 +9,7 @@ Output:
 Module[1:0-3:11]
     FunctionDef[1:0-3:11]
         Name:gen
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of gen ----
         With[2:2-3:11]
             Items:

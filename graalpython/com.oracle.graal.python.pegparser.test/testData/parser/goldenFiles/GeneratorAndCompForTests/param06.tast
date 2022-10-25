@@ -8,7 +8,7 @@ Output:
 Module[1:0-2:57]
     FunctionDef[1:0-2:57]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:7-1:12] files
                 ArgTy[1:14-1:18] dirs

@@ -15,14 +15,14 @@ Output:
 Module[1:0-9:28]
     FunctionDef[1:0-9:28]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         Assign[2:4-2:31]
             LHS: Name[2:4-2:15] Value: "a_local_var" Store
             RHS: RAW[2:18-2:31] Value: "a local var"
         FunctionDef[4:4-9:28]
             Name:f
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of f ----
             ClassDef[5:8-8:34] C
                 Bases:
@@ -33,7 +33,7 @@ Module[1:0-9:28]
                     RHS: Name[6:26-6:37] Value: "a_local_var"
                 FunctionDef[7:12-8:34]
                     Name:method01
-                    ArgumentsTy[0:0-0:0]
+                    ArgumentsTy[1:0-1:0]
                     ---- Function body of method01 ----
                     Return[8:16-8:34] Name[8:23-8:34] Value: "a_local_var"
                     ---- End of method01 function ----

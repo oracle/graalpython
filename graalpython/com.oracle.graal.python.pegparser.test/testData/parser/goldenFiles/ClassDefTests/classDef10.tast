@@ -11,7 +11,7 @@ Output:
 Module[1:0-5:22]
     FunctionDef[1:0-2:6]
         Name:test
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:9-1:12] arg
         ---- Function body of test ----
@@ -21,7 +21,7 @@ Module[1:0-5:22]
         ---- Class body of FalseRec ----
         FunctionDef[4:2-5:22]
             Name:test
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[4:11-4:15] self
                     ArgTy[4:17-4:20] arg

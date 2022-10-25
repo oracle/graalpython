@@ -11,11 +11,11 @@ Output:
 Module[1:0-5:19]
     FunctionDef[1:0-5:19]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         FunctionDef[2:2-3:8]
             Name:decorator1
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:17-2:19] fn
             ---- Function body of decorator1 ----
@@ -25,7 +25,7 @@ Module[1:0-5:19]
             Name:inner
             Decorators:
             Name[4:3-4:13] Value: "decorator1"
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of inner ----
             Pass[5:15-5:19]
             ---- End of inner function ----

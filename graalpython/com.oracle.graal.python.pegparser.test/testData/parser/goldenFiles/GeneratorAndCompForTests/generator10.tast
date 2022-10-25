@@ -12,7 +12,7 @@ Output:
 Module[1:0-6:26]
     FunctionDef[1:0-6:26]
         Name:non_empty_lines
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:20-1:24] path
         ---- Function body of non_empty_lines ----

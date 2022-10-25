@@ -18,7 +18,7 @@ Module[1:0-2:14]
                             Attr: path
                     Attr: to
             Attr: decorator
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         Pass[2:10-2:14]
         ---- End of fn function ----

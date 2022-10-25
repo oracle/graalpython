@@ -12,7 +12,7 @@ Module[1:0-3:15]
         ---- Class body of X ----
         FunctionDef[2:4-3:15]
             Name:run
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:12-2:16] self
             ---- Function body of run ----

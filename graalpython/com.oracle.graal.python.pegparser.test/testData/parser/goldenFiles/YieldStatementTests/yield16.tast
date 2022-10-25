@@ -10,7 +10,7 @@ Output:
 Module[1:0-3:15]
     FunctionDef[1:0-3:15]
         Name:f
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
         If[2:4-3:15]
             Test: Yield[2:8-2:13]

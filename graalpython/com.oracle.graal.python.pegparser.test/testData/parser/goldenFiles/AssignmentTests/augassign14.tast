@@ -8,7 +8,7 @@ Output:
 Module[1:0-2:29]
     FunctionDef[1:0-2:29]
         Name:_method
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             VarArg: ArgTy[1:13-1:17] args
             Kwarg: ArgTy[1:21-1:29] keywords
         ---- Function body of _method ----

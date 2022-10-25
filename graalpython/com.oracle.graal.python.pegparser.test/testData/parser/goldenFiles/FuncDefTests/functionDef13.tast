@@ -17,14 +17,14 @@ Output:
 Module[2:0-11:7]
     FunctionDef[2:0-9:31]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         Assign[3:4-3:10]
             LHS: Name[3:4-3:5] Value: "x" Store
             RHS: LONG[3:8-3:10] Value: 10
         FunctionDef[4:4-6:35]
             Name:inner
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of inner ----
             Assign[5:8-5:13]
                 LHS: Name[5:8-5:9] Value: "x" Store

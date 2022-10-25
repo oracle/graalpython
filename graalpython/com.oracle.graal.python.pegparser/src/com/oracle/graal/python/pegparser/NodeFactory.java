@@ -263,12 +263,12 @@ public class NodeFactory {
         }
 
         return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults,
-                        new SourceRange(0, 0, 0, 0));
+                        SourceRange.ARTIFICIAL_RANGE);
     }
 
     public ArgumentsTy emptyArguments() {
         return new ArgumentsTy(EMPTY_ARG_ARRAY, EMPTY_ARG_ARRAY, null, EMPTY_ARG_ARRAY, EMPTY_EXPR_ARRAY,
-                        null, EMPTY_EXPR_ARRAY, new SourceRange(0, 0, 0, 0));
+                        null, EMPTY_EXPR_ARRAY, SourceRange.ARTIFICIAL_RANGE);
     }
 
     public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, SourceRange sourceRange) {

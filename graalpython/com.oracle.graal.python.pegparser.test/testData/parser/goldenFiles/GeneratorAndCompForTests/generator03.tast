@@ -9,7 +9,7 @@ Output:
 Module[1:0-3:28]
     FunctionDef[1:0-3:28]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         Assign[2:2-2:8]
             LHS: Name[2:2-2:3] Value: "c" Store

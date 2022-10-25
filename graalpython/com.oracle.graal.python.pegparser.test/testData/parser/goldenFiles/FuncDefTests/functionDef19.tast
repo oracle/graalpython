@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:71]
     FunctionDef[1:0-1:71]
         Name:__build_class__
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:20-1:24] func
                 ArgTy[1:26-1:30] name

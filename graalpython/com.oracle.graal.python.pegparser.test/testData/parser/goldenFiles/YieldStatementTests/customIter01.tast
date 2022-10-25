@@ -17,13 +17,13 @@ Output:
 Module[1:0-11:15]
     FunctionDef[1:0-11:15]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         ClassDef[2:4-6:35] MyIter
             ---- Class body of MyIter ----
             FunctionDef[3:8-4:23]
                 Name:__iter__
-                ArgumentsTy[0:0-0:0]
+                ArgumentsTy[1:0-1:0]
                     Args:
                         ArgTy[3:21-3:25] self
                 ---- Function body of __iter__ ----
@@ -31,7 +31,7 @@ Module[1:0-11:15]
                 ---- End of __iter__ function ----
             FunctionDef[5:8-6:35]
                 Name:__next__
-                ArgumentsTy[0:0-0:0]
+                ArgumentsTy[1:0-1:0]
                     Args:
                         ArgTy[5:21-5:25] self
                 ---- Function body of __next__ ----
@@ -45,7 +45,7 @@ Module[1:0-11:15]
             ---- End of MyIter class ----
         FunctionDef[7:4-9:33]
             Name:gen
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of gen ----
             Nonlocal[8:8-8:20]: ret 
             Assign[9:8-9:33]

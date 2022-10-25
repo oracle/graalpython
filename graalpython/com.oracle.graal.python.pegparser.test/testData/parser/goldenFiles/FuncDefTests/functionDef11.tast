@@ -12,7 +12,7 @@ Output:
 Module[2:0-6:7]
     FunctionDef[2:0-4:12]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         Assign[3:4-3:10]
             LHS: Name[3:4-3:5] Value: "x" Store

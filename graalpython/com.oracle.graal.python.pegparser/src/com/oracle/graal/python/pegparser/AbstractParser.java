@@ -531,7 +531,7 @@ public abstract class AbstractParser {
         if (cachedDummyName != null) {
             return cachedDummyName;
         }
-        cachedDummyName = factory.createVariable("", new SourceRange(0, 0, 0, 0));
+        cachedDummyName = factory.createVariable("", SourceRange.ARTIFICIAL_RANGE);
         return cachedDummyName;
     }
 

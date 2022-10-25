@@ -8,10 +8,10 @@ Output:
 Module[1:0-2:22]
     FunctionDef[1:0-2:22]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         Lambda[2:2-2:22]
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:9-2:10] x
                 VarArg: ArgTy[2:13-2:14] y
