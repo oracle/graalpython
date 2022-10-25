@@ -109,7 +109,9 @@ public abstract class AbstractParser {
 
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
 
-    private final ParserTokenizer tokenizer;
+    private int currentPos; // position of the mark
+    private final ArrayList<Token> tokens;
+    private final Tokenizer tokenizer;
     private final ErrorCallback errorCb;
     protected final NodeFactory factory;
     private final PythonStringFactory<?> stringFactory;
@@ -143,7 +145,9 @@ public abstract class AbstractParser {
     protected abstract SSTNode runParser(InputType inputType);
 
     AbstractParser(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
-        this.tokenizer = new ParserTokenizer(errorCb, source, getTokenizerFlags(startRule, flags), sourceRange);
+        this.currentPos = 0;
+        this.tokens = new ArrayList<>();
+        this.tokenizer = Tokenizer.fromString(errorCb, source, getTokenizerFlags(startRule, flags), sourceRange);
         this.factory = new NodeFactory();
         this.errorCb = errorCb;
         this.stringFactory = stringFactory;
@@ -179,26 +183,26 @@ public abstract class AbstractParser {
                 // shouldn't we return at least wrong AST based on a option?
                 return null;
             }
-            int fill = tokenizer.getFill();
+            int fill = getFill();
             if (fill == 0) {
                 raiseSyntaxError("error at start before reading any input");
-            } else if (tokenizer.peekToken(fill - 1).type == Token.Kind.ERRORTOKEN && tokenizer.getTokenizer().getDone() == Tokenizer.StatusCode.EOF) {
-                if (tokenizer.getTokenizer().getParensNestingLevel() > 0) {
+            } else if (peekToken(fill - 1).type == Token.Kind.ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.EOF) {
+                if (tokenizer.getParensNestingLevel() > 0) {
                     raiseUnclosedParenthesesError();
                 } else {
                     raiseSyntaxError("unexpected EOF while parsing");
                 }
             } else {
-                if (tokenizer.peekToken(fill - 1).type == INDENT) {
+                if (peekToken(fill - 1).type == INDENT) {
                     raiseIndentationError("unexpected indent");
-                } else if (tokenizer.peekToken(fill - 1).type == DEDENT) {
+                } else if (peekToken(fill - 1).type == DEDENT) {
                     raiseIndentationError("unexpected unindent");
                 } else {
-                    raiseSyntaxErrorKnownLocation(tokenizer.peekToken(fill - 1), "invalid syntax");
+                    raiseSyntaxErrorKnownLocation(peekToken(fill - 1), "invalid syntax");
                 }
             }
         }
-        if (startRule == InputType.SINGLE && tokenizer.getTokenizer().isBadSingleStatement()) {
+        if (startRule == InputType.SINGLE && tokenizer.isBadSingleStatement()) {
             return raiseSyntaxError("multiple statements found while compiling a single statement");
         }
 
@@ -210,7 +214,8 @@ public abstract class AbstractParser {
         callInvalidRules = true;
         level = 0;
         cache.clear();
-        tokenizer.prepareForSecondPass();
+        currentPos = 0;
+        tokenizer.reportIncompleteSourceIfInteractive = false;
     }
 
     /**
@@ -219,7 +224,7 @@ public abstract class AbstractParser {
      * @return the position in tokenizer.
      */
     public int mark() {
-        return tokenizer.mark();
+        return currentPos;
     }
 
     /**
@@ -228,7 +233,7 @@ public abstract class AbstractParser {
      * @param position where the tokenizer should set the current position
      */
     public void reset(int position) {
-        tokenizer.reset(position);
+        currentPos = position;
     }
 
     /**
@@ -242,7 +247,7 @@ public abstract class AbstractParser {
     public Token expect(int tokenKind) {
         Token token = getAndInitializeToken();
         if (token.type == tokenKind) {
-            tokenizer.advance();
+            currentPos++;
             return token;
         }
         return null;
@@ -258,8 +263,8 @@ public abstract class AbstractParser {
      */
     public Token expect(String text) {
         Token token = getAndInitializeToken();
-        if (text.equals(tokenizer.getText(token))) {
-            tokenizer.advance();
+        if (text.equals(getText(token))) {
+            currentPos++;
             return token;
         }
         return null;
@@ -294,36 +299,34 @@ public abstract class AbstractParser {
         if (token == null) {
             return null;
         }
-        return tokenizer.getText(token);
+        return tokenizer.getTokenString(token);
     }
 
     /**
      * equivalent to _PyPegen_fill_token in that it modifies the token, and does not advance
      */
     public Token getAndInitializeToken() {
-        int pos = mark();
-        if (pos < tokenizer.getFill()) {
-            return tokenizer.peekToken(pos);
+        if (currentPos < getFill()) {
+            return peekToken(currentPos);
         }
-        Token token = tokenizer.getNewToken();
+        Token token = tokenizer.next();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
             comments.add(factory.createTypeIgnore(token.sourceRange.startLine, tag, token.sourceRange));
-            token = tokenizer.getNewToken();
+            token = tokenizer.next();
         }
 
         if (startRule == InputType.SINGLE && token.type == Token.Kind.ENDMARKER && parsingStarted) {
             token.type = Token.Kind.NEWLINE;
             parsingStarted = false;
-            Tokenizer t = tokenizer.getTokenizer();
-            if (t.getCurrentIndentIndex() > 0) {
-                t.setPendingIndents(-t.getCurrentIndentIndex());
-                t.setCurrentIndentIndex(0);
+            if (tokenizer.getCurrentIndentIndex() > 0) {
+                tokenizer.setPendingIndents(-tokenizer.getCurrentIndentIndex());
+                tokenizer.setCurrentIndentIndex(0);
             }
         } else {
             parsingStarted = true;
         }
-        tokenizer.add(token);
+        tokens.add(token);
         return initializeToken(token);
     }
 
@@ -333,16 +336,12 @@ public abstract class AbstractParser {
     public Token getLastNonWhitespaceToken() {
         Token t = null;
         for (int i = mark() - 1; i >= 0; i--) {
-            t = tokenizer.peekToken(i);
+            t = peekToken(i);
             if (t.type != Token.Kind.ENDMARKER && (t.type < Token.Kind.NEWLINE || t.type > DEDENT)) {
                 break;
             }
         }
         return t;
-    }
-
-    public Token peekToken(int position) {
-        return tokenizer.peekToken(position);
     }
 
     /**
@@ -379,7 +378,7 @@ public abstract class AbstractParser {
     protected ExprTy.Name expect_SOFT_KEYWORD(String keyword) {
         Token t = getAndInitializeToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
-            tokenizer.advance();
+            currentPos++;
             return factory.createVariable(getText(t), t.sourceRange);
         }
         return null;
@@ -496,7 +495,7 @@ public abstract class AbstractParser {
             raiseSyntaxErrorKnownLocation(t, "expected '%s'", expected);
             return null;
         }
-        tokenizer.advance();
+        currentPos++;
         return t;
     }
 
@@ -1028,7 +1027,7 @@ public abstract class AbstractParser {
      */
     SSTNode raiseSyntaxError(String msg, Object... arguments) {
         errorIndicator = true;
-        Token errorToken = tokenizer.peekToken();
+        Token errorToken = peekToken();
         errorCb.onError(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
         return null;
     }
@@ -1131,7 +1130,7 @@ public abstract class AbstractParser {
      */
     SSTNode raiseIndentationError(String msg, Object... arguments) {
         errorIndicator = true;
-        Token errorToken = tokenizer.peekToken();
+        Token errorToken = peekToken();
         errorCb.onError(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
         return null;
     }
@@ -1140,34 +1139,32 @@ public abstract class AbstractParser {
      * raise_unclosed_parentheses_error
      */
     void raiseUnclosedParenthesesError() {
-        Tokenizer t = tokenizer.getTokenizer();
-        int nestingLevel = t.getParensNestingLevel();
+        int nestingLevel = tokenizer.getParensNestingLevel();
         assert nestingLevel > 0;
-        int errorLineno = t.getParensLineNumberStack()[nestingLevel - 1];
-        int errorCol = t.getParensColumnsStack()[nestingLevel - 1];
+        int errorLineno = tokenizer.getParensLineNumberStack()[nestingLevel - 1];
+        int errorCol = tokenizer.getParensColumnsStack()[nestingLevel - 1];
         // TODO unknown source offsets
         raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax,
                         new SourceRange(0, 0, errorLineno, errorCol, errorLineno, -1),
-                        "'%c' was never closed", t.getParensStack()[nestingLevel - 1]);
+                        "'%c' was never closed", tokenizer.getParensStack()[nestingLevel - 1]);
     }
 
     /**
      * tokenizer_error
      */
     void tokenizerError(Token token) {
-        Tokenizer t = tokenizer.getTokenizer();
-        if (token.type == ERRORTOKEN && t.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
+        if (token.type == ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
             raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
         }
         ErrorCallback.ErrorType errorType = ErrorCallback.ErrorType.Syntax;
         String msg;
         int colOffset = -1;
-        switch (t.getDone()) {
+        switch (tokenizer.getDone()) {
             case BAD_TOKEN:
                 msg = "invalid token";
                 break;
             case EOF:
-                if (t.getParensNestingLevel() > 0) {
+                if (tokenizer.getParensNestingLevel() > 0) {
                     raiseUnclosedParenthesesError();
                 } else {
                     raiseSyntaxError("unexpected EOF while parsing");
@@ -1186,15 +1183,15 @@ public abstract class AbstractParser {
                 break;
             case LINE_CONTINUATION_ERROR:
                 msg = "unexpected character after line continuation character";
-                colOffset = t.getNextCharIndex() - t.getLineStartIndex();
+                colOffset = tokenizer.getNextCharIndex() - tokenizer.getLineStartIndex();
                 break;
             default:
                 msg = "unknown parsing error";
                 break;
         }
         // TODO unknown source offsets
-        raiseErrorKnownLocation(errorType, new SourceRange(0, 0, t.getCurrentLineNumber(),
-                        colOffset >= 0 ? colOffset : 0, t.getCurrentLineNumber(), -1), msg);
+        raiseErrorKnownLocation(errorType, new SourceRange(0, 0, tokenizer.getCurrentLineNumber(),
+                        colOffset >= 0 ? colOffset : 0, tokenizer.getCurrentLineNumber(), -1), msg);
     }
 
     // Equivalent of _PyPegen_interactive_exit
@@ -1259,5 +1256,25 @@ public abstract class AbstractParser {
         if (featureVersion < version) {
             raiseSyntaxError("%s only supported in Python 3.%d and greater", msg, version);
         }
+    }
+
+    private int getFill() {
+        return tokens.size();
+    }
+
+    private Token peekToken() {
+        if (currentPos == tokens.size()) {
+            Token t = tokenizer.next();
+            if (t.type != Token.Kind.TYPE_IGNORE) {
+                tokens.add(t);
+            }
+            return t;
+        }
+        return tokens.get(currentPos);
+    }
+
+    protected final Token peekToken(int position) {
+        assert position < tokens.size();
+        return tokens.get(position);
     }
 }
