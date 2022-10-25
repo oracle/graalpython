@@ -226,11 +226,11 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         wrapper.datetimeFromDateAndTimeWrapper = new ConstructorWrapper();
         wrapper.timeFromTimeWrapper = new ConstructorWrapper();
         wrapper.deltaFromDeltaWrapper = new DeltaConstructorWrapper();
-        wrapper.datetimeFromDateAndTimeAdFoldWrapper = new FoldConstructorWrapper();
-        wrapper.timeFromTimeAndFold = new FoldConstructorWrapper();
         wrapper.timezoneFromTimezoneWrapper = new TimeZoneWrapper(timezoneType);
         wrapper.datetimeFromTimestamp = new FromTimestampWrapper();
         wrapper.dateFromTimestamp = new FromTimestampWrapper();
+        wrapper.datetimeFromDateAndTimeAdFoldWrapper = new FoldConstructorWrapper();
+        wrapper.timeFromTimeAndFold = new FoldConstructorWrapper();
 
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
@@ -451,15 +451,10 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    abstract static class AbstractWrapper extends PythonNativeWrapper {
+    abstract static class AbstractWrapper extends PyProcsWrapper {
 
         public AbstractWrapper() {
             super(null);
-        }
-
-        @ExportMessage
-        protected boolean isExecutable() {
-            return true;
         }
 
         protected abstract Object call(Object[] args, AllToJavaNode allToJavaNode, CallVarargsMethodNode callNode, ToSulongNode toSulongNode, CExtNodes.AddRefCntNode incRefNode);
@@ -471,7 +466,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                         @Cached CallVarargsMethodNode callNode,
                         @Cached CExtNodes.AddRefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return call(args, allToJavaNode, callNode, toSulongNode, incRefNode);
@@ -481,14 +476,6 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
             } finally {
                 gil.release(mustRelease);
             }
-        }
-
-        @ExportMessage
-        protected void toNative(
-                        @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            setNativePointer(toPyObjectNode.execute(this));
         }
     }
 

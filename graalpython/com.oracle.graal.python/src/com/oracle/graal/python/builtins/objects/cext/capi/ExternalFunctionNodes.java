@@ -284,7 +284,7 @@ public abstract class ExternalFunctionNodes {
                         return null;
                     }
                     nodeKlass = MethDirectRoot.class;
-                    rootNodeFunction = l -> MethDirectRoot.create(language, name);
+                    rootNodeFunction = l -> MethDirectRoot.create(language, name, sig);
                     break;
                 case CALL:
                 case INITPROC:
@@ -304,8 +304,11 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = MethVarargsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethVarargsRoot(l, name, isStatic, sig) : l -> new MethVarargsRoot(l, name, isStatic);
                     break;
-                case NOARGS:
                 case INQUIRY:
+                    nodeKlass = MethInquiryRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethInquiryRoot(l, name, isStatic, sig) : l -> new MethInquiryRoot(l, name, isStatic);
+                    break;
+                case NOARGS:
                     nodeKlass = MethNoargsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethNoargsRoot(l, name, isStatic, sig) : l -> new MethNoargsRoot(l, name, isStatic);
                     break;
@@ -492,8 +495,8 @@ public abstract class ExternalFunctionNodes {
     static final class MethDirectRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, true, 0, false, null, KEYWORDS_HIDDEN_CALLABLE);
 
-        private MethDirectRoot(PythonLanguage lang, TruffleString name) {
-            super(lang, name, true, PExternalFunctionWrapper.DIRECT);
+        private MethDirectRoot(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            super(lang, name, true, provider);
         }
 
         @Override
@@ -516,8 +519,8 @@ public abstract class ExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        public static MethDirectRoot create(PythonLanguage lang, TruffleString name) {
-            return new MethDirectRoot(lang, name);
+        public static MethDirectRoot create(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            return new MethDirectRoot(lang, name, provider);
         }
     }
 
@@ -535,6 +538,12 @@ public abstract class ExternalFunctionNodes {
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+
+        private final PExternalFunctionWrapper provider;
+
+        public PExternalFunctionWrapper getWrapper() {
+            return provider;
+        }
 
         @Override
         public Assumption needNotPassFrameAssumption() {
@@ -555,13 +564,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        ExternalFunctionInvokeNode() {
-            this.checkResultNode = DefaultCheckFunctionResultNodeGen.create();
-        }
-
-        @TruffleBoundary
-        ExternalFunctionInvokeNode(CheckFunctionResultNode checkFunctionResultNode) {
-            this.checkResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : DefaultCheckFunctionResultNodeGen.create();
+        ExternalFunctionInvokeNode(PExternalFunctionWrapper provider) {
+            CheckFunctionResultNode node = provider.getCheckFunctionResultNode();
+            this.checkResultNode = node != null ? node : DefaultCheckFunctionResultNodeGen.create();
+            this.provider = provider;
         }
 
         public Object execute(VirtualFrame frame, TruffleString name, Object callable, Object[] cArguments) {
@@ -619,12 +625,8 @@ public abstract class ExternalFunctionNodes {
             return raiseNode;
         }
 
-        public static ExternalFunctionInvokeNode create() {
-            return new ExternalFunctionInvokeNode();
-        }
-
-        public static ExternalFunctionInvokeNode create(CheckFunctionResultNode checkFunctionResultNode) {
-            return new ExternalFunctionInvokeNode(checkFunctionResultNode);
+        public static ExternalFunctionInvokeNode create(PExternalFunctionWrapper provider) {
+            return new ExternalFunctionInvokeNode(provider);
         }
     }
 
@@ -649,7 +651,7 @@ public abstract class ExternalFunctionNodes {
             CompilerAsserts.neverPartOfCompilation();
             this.name = name;
             if (provider != null) {
-                this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider.getCheckFunctionResultNode());
+                this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
                 ConvertArgsToSulongNode convertArgsNode = provider.createConvertArgsToSulongNode();
                 this.toSulongNode = convertArgsNode != null ? convertArgsNode : CExtNodes.AllToSulongNode.create();
             } else {
@@ -850,6 +852,33 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    public static final class MethInquiryRoot extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
+
+        public MethInquiryRoot(PythonLanguage language, TruffleString name, boolean isStatic) {
+            super(language, name, isStatic);
+        }
+
+        public MethInquiryRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{readSelf(frame)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("self"), KEYWORDS_HIDDEN_CALLABLE, true);
 
@@ -863,8 +892,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelf(frame);
-            return new Object[]{self, PNone.NONE};
+            return new Object[]{readSelf(frame), PNone.NONE};
         }
 
         @Override
