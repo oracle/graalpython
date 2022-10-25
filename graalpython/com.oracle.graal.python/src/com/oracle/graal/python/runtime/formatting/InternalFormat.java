@@ -35,9 +35,9 @@ public class InternalFormat {
      * @return parsed equivalent to text
      */
     @TruffleBoundary
-    public static Spec fromText(PRaiseNode raiseNode, TruffleString text) {
+    public static Spec fromText(PRaiseNode raiseNode, TruffleString text, char defaultType, char defaultAlignment) {
         Parser parser = new Parser(text.toJavaStringUncached());
-        return parser.parse(raiseNode);
+        return parser.parse(raiseNode, defaultType, defaultAlignment);
     }
 
     /**
@@ -545,10 +545,7 @@ public class InternalFormat {
      * A typical idiom is:
      *
      * <pre>
-     *     private static final InternalFormatSpec FLOAT_DEFAULTS = InternalFormatSpec.from(">");
-     *     ...
-     *         InternalFormat.Spec spec = InternalFormat.fromText(specString);
-     *         spec = spec.withDefaults(FLOAT_DEFAULTS);
+     *         InternalFormat.Spec spec = InternalFormat.fromText(specString, Spec.NONE, '>');
      *         ... // Validation of spec.type, and other attributes, for this type.
      *         FloatFormatter f = new FloatFormatter(spec);
      *         String result = f.format(value).getResult();
@@ -669,45 +666,6 @@ public class InternalFormat {
         }
 
         /**
-         * Return a merged <code>Spec</code> object, in which any attribute of this object that is
-         * specified (or <code>true</code>), has the same value in the result, and any attribute of
-         * this object that is unspecified (or <code>false</code>), has the value that attribute
-         * takes in the other object. Thus the second object supplies default values. (These
-         * defaults may also be unspecified.) The use of this method is to allow a <code>Spec</code>
-         * constructed from text to record exactly, and only, what was in the textual specification,
-         * while the __format__ method of a client object supplies its type-specific defaults. Thus
-         * "20" means "<20s" to a <code>str</code>, ">20.12" to a <code>float</code> and ">20.12g"
-         * to a <code>complex</code>.
-         *
-         * @param other defaults to merge where this object does not specify the attribute.
-         * @return a new Spec object.
-         */
-        public Spec withDefaults(Spec other) {
-            return new Spec(//
-                            specified(fill) ? fill : other.fill, //
-                            specified(align) ? align : other.align, //
-                            specified(sign) ? sign : other.sign, //
-                            alternate || other.alternate, //
-                            specified(width) ? width : other.width, //
-                            specified(grouping) ? grouping : other.grouping, //
-                            specified(precision) ? precision : other.precision, //
-                            specified(type) ? type : other.type //
-            );
-        }
-
-        /**
-         * Defaults applicable to most numeric types. Equivalent to " >"
-         */
-        public static final Spec NUMERIC = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED,
-                        NONE, Spec.UNSPECIFIED, Spec.NONE);
-
-        /**
-         * Defaults applicable to string types. Equivalent to " &lt;"
-         */
-        public static final Spec STRING = new Spec(' ', '<', Spec.NONE, false, Spec.UNSPECIFIED,
-                        NONE, Spec.UNSPECIFIED, Spec.NONE);
-
-        /**
          * Constructor offering just precision and type.
          *
          * <pre>
@@ -759,8 +717,8 @@ public class InternalFormat {
 
     /**
      * Parser for PEP-3101 field format specifications. This class provides a
-     * {@link #parse(PRaiseNode)} method that translates the format specification into an
-     * <code>Spec</code> object.
+     * {@link #parse(PRaiseNode, char, char)} method that translates the format specification into
+     * an <code>Spec</code> object.
      */
     private static class Parser {
 
@@ -768,8 +726,8 @@ public class InternalFormat {
         private int ptr;
 
         /**
-         * Constructor simply holds the specification string ahead of the {@link #parse(PRaiseNode)}
-         * operation.
+         * Constructor simply holds the specification string ahead of the
+         * {@link #parse(PRaiseNode, char, char)} operation.
          *
          * @param spec format specifier to parse (e.g. "&lt;+12.3f")
          */
@@ -789,13 +747,14 @@ public class InternalFormat {
          */
         /*
          * This method is the equivalent of CPython's parse_internal_render_format_spec() in
-         * ~/Objects/stringlib/formatter.h, but we deal with defaults another way.
+         * ~/Objects/stringlib/formatter.h.
          */
-        Spec parse(PRaiseNode raiseNode) {
-
-            char fill = Spec.NONE, align = Spec.NONE;
-            char sign = Spec.NONE, type = Spec.NONE;
-            boolean alternate = false;
+        Spec parse(PRaiseNode raiseNode, char defaultType, char defaultAlignment) {
+            char type = defaultType;
+            char align = defaultAlignment;
+            char fill = Spec.NONE;
+            char sign = Spec.NONE;
+            boolean alternate;
             char grouping = NONE;
             int width = Spec.UNSPECIFIED, precision = Spec.UNSPECIFIED;
 
@@ -829,7 +788,7 @@ public class InternalFormat {
                 // Accept 0 here as equivalent to zero-fill but only not set already.
                 if (!Spec.specified(fill)) {
                     fill = '0';
-                    if (!Spec.specified(align)) {
+                    if (!Spec.specified(align) && defaultAlignment == '>') {
                         // Also accept it as equivalent to "=" aligment but only not set already.
                         align = '=';
                     }

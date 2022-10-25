@@ -2767,8 +2767,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         private static Spec getSpec(TruffleString formatString, PRaiseNode raiseNode) {
-            Spec spec = InternalFormat.fromText(raiseNode, formatString);
-            return spec.withDefaults(Spec.NUMERIC);
+            return InternalFormat.fromText(raiseNode, formatString, 'd', '>');
         }
 
         private static boolean isDoubleSpec(Spec spec) {

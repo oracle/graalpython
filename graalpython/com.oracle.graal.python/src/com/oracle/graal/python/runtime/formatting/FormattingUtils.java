@@ -48,7 +48,7 @@ public final class FormattingUtils {
     private FormattingUtils() {
     }
 
-    public static Spec validateAndPrepareForFloat(PRaiseNode raiseNode, Spec spec, String forType) {
+    public static Spec validateForFloat(PRaiseNode raiseNode, Spec spec, String forType) {
         switch (spec.type) {
             case InternalFormat.Spec.NONE:
             case 'n':
@@ -59,9 +59,7 @@ public final class FormattingUtils {
             case 'F':
             case 'G':
             case '%':
-                // spec may be incomplete. The defaults are those commonly used for numeric
-                // formats.
-                return spec.withDefaults(InternalFormat.Spec.NUMERIC);
+                return spec;
             default:
                 throw Formatter.unknownFormat(raiseNode, spec.type, forType);
         }

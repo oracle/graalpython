@@ -68,7 +68,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
-import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateAndPrepareForFloat;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
 
 import java.util.List;
 
@@ -708,14 +708,14 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!formatString.isEmpty()")
         TruffleString format(PComplex self, TruffleString formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString);
+            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, Spec.NONE, '>');
             validateSpec(spec);
             return doFormat(getRaiseNode(), self, spec);
         }
 
         @TruffleBoundary
         private static TruffleString doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
-            ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateAndPrepareForFloat(raiseNode, spec, "complex"));
+            ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateForFloat(raiseNode, spec, "complex"));
             formatter.format(self);
             return formatter.pad().getResult();
         }

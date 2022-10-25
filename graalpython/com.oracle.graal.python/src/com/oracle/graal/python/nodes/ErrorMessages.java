@@ -837,6 +837,7 @@ public abstract class ErrorMessages {
     public static final TruffleString S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = tsLiteral("'%c' alignment flag is not allowed in complex format specifier");
     public static final TruffleString EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT = tsLiteral("'=' alignment not allowed in string format specifier");
     public static final TruffleString SIGN_NOT_ALLOWED_FOR_STRING_FMT = tsLiteral("Sign not allowed in string format specifier");
+    public static final TruffleString SPACE_NOT_ALLOWED_IN_STRING_FORMAT_SPECIFIER = tsLiteral("Space not allowed in string format specifier");
     public static final TruffleString ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = tsLiteral("Zero padding is not allowed in complex format specifier");
     public static final TruffleString POW_THIRD_ARG_CANNOT_BE_ZERO = tsLiteral("pow() 3rd argument cannot be 0");
     public static final TruffleString CANNOT_ENCODE_CLASSNAME = tsLiteral("'utf-8' codec can't encode class name '%s'");
