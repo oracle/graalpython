@@ -40,16 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLEAR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FREE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
@@ -93,18 +98,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ALLOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLEAR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEALLOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FREE__;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
