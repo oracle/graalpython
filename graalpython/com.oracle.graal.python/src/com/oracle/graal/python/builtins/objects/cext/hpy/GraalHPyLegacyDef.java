@@ -241,7 +241,7 @@ public abstract class GraalHPyLegacyDef {
         }
 
         @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] VALUES = values();
-        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] BY_VALUE = new HPyLegacySlot[40];
+        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] BY_VALUE = new HPyLegacySlot[100];
 
         static {
             for (var entry : VALUES) {
