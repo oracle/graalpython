@@ -1121,10 +1121,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if ((kwFlags & PyCF_TYPE_COMMENTS) != 0) {
                     flags.add(AbstractParser.Flags.TYPE_COMMENTS);
                 }
+                if (featureVersion < 0) {
+                    featureVersion = PythonLanguage.MINOR;
+                }
                 if (featureVersion < 7) {
                     flags.add(AbstractParser.Flags.ASYNC_HACKS);
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, flags, featureVersion >= 0 ? featureVersion : PythonLanguage.MINOR);
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, flags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 errorCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
