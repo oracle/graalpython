@@ -246,7 +246,7 @@ public final class PArray extends PythonBuiltinObject {
         }
 
         public static MachineFormat fromCode(int code) {
-            return BY_CODE[code];
+            return code >= 0 && code < BY_CODE.length ? BY_CODE[code] : null;
         }
     }
 

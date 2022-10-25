@@ -254,7 +254,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         static PExternalFunctionWrapper fromValue(int value) {
-            return BY_ID[value];
+            return value >= 0 && value < BY_ID.length ? BY_ID[value] : null;
         }
 
         @TruffleBoundary
