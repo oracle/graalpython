@@ -83,6 +83,19 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public class HashingStorageNodes {
 
+    public static abstract class HashingStorageGuards {
+        private HashingStorageGuards() {
+        }
+
+        /**
+         * If the storage may contain keys that may have side-effecting {@code __eq__}
+         * implementation.
+         */
+        public static boolean mayHaveSideEffectingStorage(PHashingCollection wrapper) {
+            return wrapper.getDictStorage() instanceof EconomicMapStorage;
+        }
+    }
+
     @GenerateUncached
     public static abstract class HashingStorageGetItemWithHash extends Node {
         public abstract Object execute(Frame frame, HashingStorage self, Object key, long keyHash);
@@ -179,8 +192,60 @@ public class HashingStorageNodes {
         }
     }
 
-    public static abstract class SpecializedSetStringKey extends Node {
+    static abstract class SpecializedSetStringKey extends Node {
         public abstract void execute(HashingStorage self, TruffleString key, Object value);
+    }
+
+    @GenerateUncached
+    static abstract class HashingStorageToEconomicMap extends Node {
+        abstract EconomicMapStorage execute(HashingStorage storage);
+
+        @Specialization
+        static EconomicMapStorage doEconomicMap(EconomicMapStorage s) {
+            return s;
+        }
+
+        @Specialization
+        static EconomicMapStorage doEmptyStorage(EmptyStorage s) {
+            return EconomicMapStorage.create();
+        }
+
+        @Specialization
+        static EconomicMapStorage doDynamicObjectStorage(DynamicObjectStorage s,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached ObjectHashMap.PutNode putNode) {
+            // TODO: shouldn't we invalidate all MRO assumptions in this case?
+            DynamicObject store = s.store;
+            EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
+            ObjectHashMap resultMap = result.map;
+            Object[] keys = dylib.getKeyArray(store);
+            for (Object k : keys) {
+                if (k instanceof TruffleString) {
+                    Object v = dylib.getOrDefault(store, k, PNone.NO_VALUE);
+                    if (v != PNone.NO_VALUE) {
+                        putNode.put(null, resultMap, k, hashNode.execute(null, k), v);
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Specialization
+        static EconomicMapStorage doLocals(LocalsStorage s,
+                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+            EconomicMapStorage result = EconomicMapStorage.create(s.lengthHint());
+            s.addAllTo(result, specializedPutNode);
+            return result;
+        }
+
+        @Specialization
+        static EconomicMapStorage doKeywords(KeywordsStorage s,
+                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+            EconomicMapStorage result = EconomicMapStorage.create(s.length());
+            s.addAllTo(result, specializedPutNode);
+            return result;
+        }
     }
 
     @GenerateUncached
@@ -252,20 +317,8 @@ public class HashingStorageNodes {
                         @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
-            // TODO: shouldn't we invalidate all MRO assumptions in this case?
-            DynamicObject store = self.store;
-            EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
-            ObjectHashMap resultMap = result.map;
-            Object[] keys = dylib.getKeyArray(store);
-            for (Object k : keys) {
-                if (k instanceof TruffleString) {
-                    Object v = dylib.getOrDefault(store, k, PNone.NO_VALUE);
-                    if (v != PNone.NO_VALUE) {
-                        putNode.put(null, resultMap, k, hashNode.execute(null, k), v);
-                    }
-                }
-            }
-            putNode.put(frame, resultMap, key, hashNode.execute(frame, key), value);
+            EconomicMapStorage result = HashingStorageToEconomicMap.doDynamicObjectStorage(self, dylib, hashNode, putNode);
+            putNode.put(frame, result.map, key, hashNode.execute(frame, key), value);
             return result;
         }
 
@@ -848,6 +901,67 @@ public class HashingStorageNodes {
             forEachB.execute(frame, bStorage, callbackB, accB);
 
             return result;
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class HashingStorageTransferItem extends HashingStorageForEachCallback<PHashingCollection> {
+        @Override
+        public final PHashingCollection execute(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest) {
+            return execute(frame, src, it, dest, dest.getDictStorage());
+        }
+
+        public abstract PHashingCollection execute(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage);
+
+        @Specialization
+        static PHashingCollection doEconomicMap2(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+            ObjectHashMap srcMap = src.map;
+            putNode.put(frame, destStorage.map, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
+            return dest;
+        }
+
+        @Specialization(guards = "!isEconomicMap(destStorage)")
+        static PHashingCollection doEconomicMapOther(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
+                        @Cached HashingStorageToEconomicMap toEconomicMapNode,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+            EconomicMapStorage newStorage = toEconomicMapNode.execute(destStorage);
+            dest.setDictStorage(newStorage);
+            return doEconomicMap2(frame, src, it, dest, newStorage, putNode);
+        }
+
+        static boolean isEconomicMap(HashingStorage s) {
+            return s instanceof EconomicMapStorage;
+        }
+
+        @Specialization(guards = "!isEconomicMap(src)")
+        static PHashingCollection doOtherAny(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorKey iterValue,
+                        @Cached HashingStorageSetItem setItem) {
+            // We know that for all other storages the key hash must be side effect free, so we can
+            // just insert it leaving it up to the HashingStorageSetItem whether we need to compute
+            // hash or not. Since the src is not EconomicMapStorage, we do not know the hash anyway
+            HashingStorage s = setItem.execute(frame, destStorage, iterKey.execute(src, it), iterValue.execute(src, it));
+            dest.setDictStorage(s);
+            return dest;
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class HashingStorageAddAllToOther extends Node {
+        public abstract void execute(Frame frame, HashingStorage source, PHashingCollection dest);
+
+        @Specialization(guards = "source == dest")
+        @SuppressWarnings("unused")
+        static void doIdentical(Frame frame, HashingStorage source, PHashingCollection dest) {
+        }
+
+        @Specialization(guards = "source != dest")
+        static void doIt(Frame frame, HashingStorage source, PHashingCollection dest,
+                        @Cached HashingStorageForEach forEach,
+                        @Cached HashingStorageTransferItem transferItem) {
+            forEach.execute(frame, source, transferItem, dest);
         }
     }
 }
