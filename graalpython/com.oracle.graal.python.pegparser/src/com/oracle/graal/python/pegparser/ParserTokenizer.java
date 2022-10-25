@@ -83,15 +83,26 @@ public class ParserTokenizer {
         pos = position;
     }
 
-    public Token getToken() {
-        Token token = peekToken();
+    public void advance() {
         pos++;
-        return token;
+    }
+
+    public Token getNewToken() {
+        assert pos == tokens.size();
+        return tokenizer.next();
+    }
+
+    public void add(Token token) {
+        tokens.add(token);
     }
 
     protected Token peekToken() {
         if (pos == tokens.size()) {
-            tokens.add(tokenizer.next());
+            Token t = tokenizer.next();
+            if (t.type != Token.Kind.TYPE_IGNORE) {
+                tokens.add(t);
+            }
+            return t;
         }
         return tokens.get(pos);
     }

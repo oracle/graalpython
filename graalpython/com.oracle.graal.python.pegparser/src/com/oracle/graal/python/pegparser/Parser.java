@@ -652,7 +652,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createModule(a, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = makeModule(a, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FILE_ID, _res);
                 return (ModTy)_res;
             }
@@ -755,6 +755,7 @@ public final class Parser extends AbstractParser {
             _res = (ModTy)cache.getResult(_mark, FUNC_TYPE_ID);
             return (ModTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '(' type_expressions? ')' '->' expression NEWLINE* $
             if (errorIndicator) {
                 return null;
@@ -782,9 +783,11 @@ public final class Parser extends AbstractParser {
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
             {
-                // TODO: node.action: _PyAST_FunctionType ( a , b , p -> arena )
-                ruleNotImplemented("_PyAST_FunctionType ( a , b , p -> arena )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createFunctionType(a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FUNC_TYPE_ID, _res);
                 return (ModTy)_res;
             }

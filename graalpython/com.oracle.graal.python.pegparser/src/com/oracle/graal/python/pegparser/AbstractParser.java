@@ -45,23 +45,26 @@ import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.ERRORTOKEN;
 import static com.oracle.graal.python.pegparser.tokenizer.Token.Kind.INDENT;
 
 import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.StmtTy;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
@@ -100,7 +103,8 @@ public abstract class AbstractParser {
         /**
          * Corresponds to fp_interactive and prompt != NULL in struct tok_state.
          */
-        INTERACTIVE_TERMINAL
+        INTERACTIVE_TERMINAL,
+        ASYNC_HACKS
     }
 
     private static final String BARRY_AS_BDFL = "with Barry as BDFL, use '<>' instead of '!='";
@@ -127,7 +131,7 @@ public abstract class AbstractParser {
     private ExprTy.Name cachedDummyName;
 
     protected final RuleResultCache<Object> cache = new RuleResultCache<>(this);
-    protected final Map<Integer, String> comments = new LinkedHashMap<>();
+    protected final ArrayList<TypeIgnoreTy> comments = new ArrayList<>();
 
     private final Object[][][] reservedKeywords;
     private final String[] softKeywords;
@@ -159,6 +163,9 @@ public abstract class AbstractParser {
         }
         if (parserFlags.contains(Flags.TYPE_COMMENTS)) {
             flags.add(Tokenizer.Flag.TYPE_COMMENT);
+        }
+        if (parserFlags.contains(Flags.ASYNC_HACKS)) {
+            flags.add(Tokenizer.Flag.ASYNC_HACKS);
         }
         return flags;
     }
@@ -235,7 +242,8 @@ public abstract class AbstractParser {
     public Token expect(int tokenKind) {
         Token token = getAndInitializeToken();
         if (token.type == tokenKind) {
-            return tokenizer.getToken();
+            tokenizer.advance();
+            return token;
         }
         return null;
     }
@@ -249,9 +257,10 @@ public abstract class AbstractParser {
      *         one.
      */
     public Token expect(String text) {
-        Token token = tokenizer.peekToken();
+        Token token = getAndInitializeToken();
         if (text.equals(tokenizer.getText(token))) {
-            return tokenizer.getToken();
+            tokenizer.advance();
+            return token;
         }
         return null;
     }
@@ -296,14 +305,12 @@ public abstract class AbstractParser {
         if (pos < tokenizer.getFill()) {
             return tokenizer.peekToken(pos);
         }
-        Token token = tokenizer.getToken();
+        Token token = tokenizer.getNewToken();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
-            comments.put(token.sourceRange.startLine, tag);
-            pos++;
-            token = tokenizer.getToken();
+            comments.add(factory.createTypeIgnore(token.sourceRange.startLine, tag, token.sourceRange));
+            token = tokenizer.getNewToken();
         }
-        reset(pos);
 
         if (startRule == InputType.SINGLE && token.type == Token.Kind.ENDMARKER && parsingStarted) {
             token.type = Token.Kind.NEWLINE;
@@ -316,11 +323,12 @@ public abstract class AbstractParser {
         } else {
             parsingStarted = true;
         }
+        tokenizer.add(token);
         return initializeToken(token);
     }
 
     /**
-     * _PyPegen_get_last_nonnwhitespace_token
+     * _PyPegen_get_last_nonwhitespace_token
      */
     public Token getLastNonWhitespaceToken() {
         Token t = null;
@@ -369,9 +377,9 @@ public abstract class AbstractParser {
      * _PyPegen_expect_soft_keyword
      */
     protected ExprTy.Name expect_SOFT_KEYWORD(String keyword) {
-        Token t = tokenizer.peekToken();
+        Token t = getAndInitializeToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
-            tokenizer.getToken();
+            tokenizer.advance();
             return factory.createVariable(getText(t), t.sourceRange);
         }
         return null;
@@ -390,10 +398,92 @@ public abstract class AbstractParser {
      */
     public ExprTy number_token() {
         Token t = expect(Token.Kind.NUMBER);
-        if (t != null) {
-            return factory.createNumber(getText(t), t.sourceRange);
-        } else {
+        if (t == null) {
             return null;
+        }
+
+        String number = getText(t);
+        if (number.contains("_")) {
+            if (featureVersion < 6) {
+                raiseSyntaxError("Underscores in numeric literals are only supported in Python 3.6 and greater");
+            }
+            number = number.replace("_", "");
+        }
+        int base = 10;
+        int start = 0;
+        boolean isFloat = false;
+        boolean isComplex = false;
+
+        if (number.startsWith("0")) {
+            if (number.startsWith("0x") || number.startsWith("0X")) {
+                base = 16;
+                start = 2;
+            } else if (number.startsWith("0o") || number.startsWith("0O")) {
+                base = 8;
+                start = 2;
+            } else if (number.startsWith("0b") || number.startsWith("0B")) {
+                base = 2;
+                start = 2;
+            }
+        }
+        if (base == 10) {
+            isComplex = number.endsWith("j") || number.endsWith("J");
+            if (!isComplex) {
+                isFloat = number.contains(".") || number.contains("e") || number.contains("E");
+            }
+        }
+
+        if (isComplex) {
+            double imag = Double.parseDouble(number.substring(0, number.length() - 1));
+            return factory.createConstant(ConstantValue.ofComplex(0.0, imag), t.sourceRange);
+        }
+        if (isFloat) {
+            return factory.createConstant(ConstantValue.ofDouble(Double.parseDouble(number)), t.sourceRange);
+        }
+        final long max = Long.MAX_VALUE;
+        final long moltmax = max / base;
+        int i = start;
+        long result = 0;
+        int lastD;
+        boolean overunder = false;
+        while (i < number.length()) {
+            lastD = digitValue(number.charAt(i));
+
+            long next = result;
+            if (next > moltmax) {
+                overunder = true;
+            } else {
+                next *= base;
+                if (next > (max - lastD)) {
+                    overunder = true;
+                } else {
+                    next += lastD;
+                }
+            }
+            if (overunder) {
+                // overflow
+                BigInteger bigResult = BigInteger.valueOf(result);
+                BigInteger bigBase = BigInteger.valueOf(base);
+                while (i < number.length()) {
+                    bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(number.charAt(i))));
+                    i++;
+                }
+                return factory.createConstant(ConstantValue.ofBigInteger(bigResult), t.sourceRange);
+            }
+            result = next;
+            i++;
+        }
+        return factory.createConstant(ConstantValue.ofLong(result), t.sourceRange);
+    }
+
+    private static int digitValue(char ch) {
+        if (ch >= '0' && ch <= '9') {
+            return ch - '0';
+        } else if (ch >= 'a' && ch <= 'f') {
+            return ch - 'a' + 10;
+        } else {
+            assert ch >= 'A' && ch <= 'f';
+            return ch - 'A' + 10;
         }
     }
 
@@ -406,7 +496,7 @@ public abstract class AbstractParser {
             raiseSyntaxErrorKnownLocation(t, "expected '%s'", expected);
             return null;
         }
-        tokenizer.getToken(); // advance
+        tokenizer.advance();
         return t;
     }
 
@@ -489,7 +579,6 @@ public abstract class AbstractParser {
             result[0] = element;
         } else {
             result = Arrays.copyOf(seq, seq.length + 1);
-            System.arraycopy(seq, 0, result, 1, seq.length);
             result[seq.length] = element;
         }
         return result;
@@ -1117,10 +1206,6 @@ public abstract class AbstractParser {
         return null;
     }
 
-    void ruleNotImplemented(String s) {
-        debugMessageln("\033[33;5;7m!!! TODO: Convert <%s> to Java !!!\033[0m", s);
-    }
-
     <T> T lastItem(T[] seq) {
         return seq[seq.length - 1];
     }
@@ -1144,6 +1229,10 @@ public abstract class AbstractParser {
             raiseSyntaxErrorKnownLocation(e, "imaginary number required in complex literal");
         }
         return e;
+    }
+
+    ModTy makeModule(StmtTy[] statements, SourceRange sourceRange) {
+        return factory.createModule(statements, comments.toArray(TypeIgnoreTy[]::new), sourceRange);
     }
 
     /**
