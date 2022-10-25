@@ -368,6 +368,9 @@ public abstract class BuiltinNames {
     public static final String J_POSIX = "posix";
     public static final TruffleString T_POSIX = tsLiteral(J_POSIX);
 
+    public static final String J_NT = "nt";
+    public static final TruffleString T_NT = tsLiteral(J_NT);
+
     public static final String J_ARRAY = "array";
     public static final TruffleString T_ARRAY = tsLiteral(J_ARRAY);
 

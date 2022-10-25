@@ -41,6 +41,7 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -455,7 +456,11 @@ public final class EmulatedPosixSupport extends PosixResources {
         } else {
             file = truffleFile;
         }
-        fc = file.newByteChannel(options, attributes);
+        if (getPythonOS() == PLATFORM_WIN32) {
+            fc = file.newByteChannel(options);
+        } else {
+            fc = file.newByteChannel(options, attributes);
+        }
         return open(file, fc);
     }
 

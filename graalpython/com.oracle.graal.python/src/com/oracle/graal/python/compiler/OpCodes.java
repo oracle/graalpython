@@ -474,7 +474,7 @@ public enum OpCodes {
      */
     JUMP_IF_FALSE_OR_POP(3, (oparg, followingArgs, withJump) -> withJump ? 0 : 1, 0),
     /**
-     * Jump forward by the offset in the immediate operand if the top of the stack is false (in
+     * Jump forward by the offset in the immediate operand if the top of the stack is true (in
      * Python sense).
      *
      * Pops (if not jumping): top of the stack

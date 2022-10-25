@@ -41,6 +41,26 @@
 #ifndef Py_PYCONFIG_H
 #define Py_PYCONFIG_H
 
+#define GRAALVM_PYTHON 1
+
+/* If Cython is involved, avoid accesses to internal structures. While we are
+ * supporting this in many cases, it still involves overhead. */
+#define CYTHON_USE_TYPE_SLOTS 0
+#define CYTHON_USE_PYTYPE_LOOKUP 0
+#define CYTHON_UNPACK_METHODS 0
+#define CYTHON_FAST_PYCALL 0
+#define CYTHON_FAST_PYCCALL 0
+#define CYTHON_USE_DICT_VERSIONS 0
+#define CYTHON_AVOID_BORROWED_REFS 1
+#define CYTHON_USE_TP_FINALIZE 0
+#define CYTHON_USE_PYLIST_INTERNALS 0
+#define CYTHON_USE_UNICODE_INTERNALS 0
+#define CYTHON_USE_PYLONG_INTERNALS 0
+#define CYTHON_USE_ASYNC_SLOTS 0
+#define CYTHON_USE_UNICODE_WRITER 0
+#define CYTHON_USE_EXC_INFO_STACK 0
+#define CYTHON_FAST_THREAD_STATE 0
+
 /* Enable GNU extensions on systems that have them. */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
@@ -102,6 +122,11 @@
 #define HAVE_SENDFILE 1
 #define HAVE_SYS_STAT_H 1
 #define HAVE_ERRNO_H 1
+#define HAVE_UTIME_H
+#define HAVE_UNISTD_H
+#define HAVE_SIGNAL_H
+#define HAVE_FCNTL_H
+#define HAVE_SYS_WAIT_H
 
 #define HAVE_STDARG_PROTOTYPES
 

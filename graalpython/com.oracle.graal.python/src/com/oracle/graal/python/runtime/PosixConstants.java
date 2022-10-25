@@ -52,13 +52,23 @@ public final class PosixConstants {
 
     // equivalent of #ifdef __linux__
     public static final boolean IS_LINUX;
+    public static final boolean IS_DARWIN;
+    public static final boolean IS_WIN32;
 
     static {
         String os = System.getProperty("os.name");
         if (os.contains("Linux")) {
             IS_LINUX = true;
+            IS_DARWIN = false;
+            IS_WIN32 = false;
         } else if (os.contains("Mac")) {
             IS_LINUX = false;
+            IS_DARWIN = true;
+            IS_WIN32 = false;
+        } else if (os.contains("Windows")) {
+            IS_LINUX = false;
+            IS_DARWIN = false;
+            IS_WIN32 = true;
         } else {
             throw new RuntimeException("Unsupported platform " + os);
         }
@@ -660,8 +670,11 @@ public final class PosixConstants {
             Registry registry = new Registry();
             if (IS_LINUX) {
                 PosixConstantsLinux.getConstants(registry);
-            } else {
+            } else if (IS_DARWIN) {
                 PosixConstantsDarwin.getConstants(registry);
+            } else {
+                assert IS_WIN32;
+                PosixConstantsWin32.getConstants(registry);
             }
             return registry;
         }

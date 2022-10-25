@@ -59,6 +59,7 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SE
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -133,7 +135,11 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant(BlockingIOError.getName(), core.lookupType(BlockingIOError));
 
         addBuiltinConstant("_warn", core.lookupBuiltinModule(T__WARNINGS).getAttribute(T_WARN));
-        addBuiltinConstant("_os", core.lookupBuiltinModule(T_POSIX));
+        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            addBuiltinConstant("_os", core.lookupBuiltinModule(T_NT));
+        } else {
+            addBuiltinConstant("_os", core.lookupBuiltinModule(T_POSIX));
+        }
     }
 
     @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)

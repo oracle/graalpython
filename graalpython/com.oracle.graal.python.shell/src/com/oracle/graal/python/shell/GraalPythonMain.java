@@ -683,6 +683,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
+        String osName = System.getProperty("os.name");
+        if (osName != null && osName.toLowerCase().contains("windows")) {
+            contextBuilder.option("python.PosixModuleBackend", "java");
+        }
+
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
         }
@@ -743,6 +748,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static String toAbsolutePath(String executable) {
+        if (executable.contains(":")) {
+            // this is either already an absolute windows path, or not a single executable
+            return executable;
+        }
         return Paths.get(executable).toAbsolutePath().toString();
     }
 

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import com.oracle.graal.python.builtins.PythonOS;
+
 public final class FrozenModules {
 
     private static final class Map {
@@ -522,7 +524,7 @@ public final class FrozenModules {
             case "posixpath":
                 return Map.POSIXPATH;
             case "os.path":
-                return Map.POSIXPATH;
+                return PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32 ? Map.POSIXPATH : Map.NTPATH;
             case "os":
                 return Map.OS;
             case "site":
