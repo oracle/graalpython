@@ -1863,38 +1863,34 @@ def python_coverage(args):
         ])
     if args.truffle:
         executable = python_gvm()
+        file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
         variants = [
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
             {"tagged": True},
         ]
-        outputlcov = "lcov.info"
-        if os.path.exists(outputlcov):
-            os.unlink(outputlcov)
-        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
-        prefix = os.path.join(SUITE.dir, "graalpython")
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
-            for pattern in ["py"]:
-                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$UUID$.lcov" % (variant_str, pattern))
-                if os.path.exists(outfile):
-                    os.unlink(outfile)
-                extra_args = [
-                    "--experimental-options",
-                    "--coverage",
-                    "--coverage.TrackInternal",
-                    "--coverage.FilterFile=*/lib-*/*.%s" % pattern,
-                    "--coverage.Output=lcov",
-                    "--coverage.OutputFile=%s" % outfile,
-                ]
-                env = os.environ.copy()
-                env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-                env['ENABLE_THREADED_GRAALPYTEST'] = "false"
-                if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
-                else:
-                    run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
+            outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
+            if os.path.exists(outfile):
+                os.unlink(outfile)
+            extra_args = [
+                "--experimental-options",
+                "--llvm.lazyParsing=false",
+                "--coverage",
+                "--coverage.TrackInternal",
+                f"--coverage.FilterFile={file_filter}",
+                "--coverage.Output=lcov",
+                f"--coverage.OutputFile={outfile}",
+            ]
+            env = os.environ.copy()
+            env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+            env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+            if kwds.pop("tagged", False):
+                run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
+            else:
+                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
@@ -1916,7 +1912,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     compile(f.read(), fullname, 'exec')
                 except BaseException as e:
                     print('Could not compile', fullname, e)
-            """.format(os.path.join(prefix, "lib-python")))
+            """.format(os.path.join(SUITE.dir, "graalpython", "lib-python")))
             f.flush()
             lcov_file = 'zero.lcov'
             try:
@@ -1930,23 +1926,36 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     executable,
                     "-S",
                     "--experimental-options",
+                    "--llvm.lazyParsing=false",
                     "--python.PosixModuleBackend=java",
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=%s/*.py" % prefix,
+                    f"--coverage.FilterFile={file_filter}",
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=" + lcov_file,
                     f.name
                 ])
 
         home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
+        suite_dir = SUITE.dir
+        if suite_dir.endswith("/"):
+            suite_dir = suite_dir[:-1]
+        suite_parent = os.path.dirname(SUITE.dir)
+        if not suite_parent.endswith("/"):
+            suite_parent = f"{suite_parent}/"
         # merge all generated lcov files
+        outputlcov = "lcov.info"
+        if os.path.exists(outputlcov):
+            os.unlink(outputlcov)
+        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov") and os.path.getsize(f):
-                # Normalize lib-graalpython path
                 with open(f) as lcov_file:
                     lcov = lcov_file.read()
-                lcov = lcov.replace(home_launcher, prefix)
+                # Normalize graalpython paths to be relative to a graalpython checkout
+                lcov = lcov.replace(home_launcher, "graalpython/graalpython").replace(suite_dir, "graalpython").replace(suite_parent, "")
+                # link our generated include paths back to the sources
+                lcov = lcov.replace("graalpython/graalpython/include/", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
                 cmdargs += ["-a", f]
