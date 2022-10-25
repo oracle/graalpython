@@ -44,7 +44,8 @@ def spawn(cmd, search_path=1, verbose=0, dry_run=0):
     if dry_run:
         return
     # TODO: Begin Truffle change
-    status = os.system(' '.join(cmd))
+    import shlex
+    status = os.system(shlex.join(cmd))
     if status != 0:
         raise DistutilsExecError( "command %r failed with exit status %d" % (cmd, status))
     return
