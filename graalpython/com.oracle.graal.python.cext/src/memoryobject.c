@@ -79,7 +79,7 @@
         return -1;                                                \
     }
 
-PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t));
+PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_SEQUENCE, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t));
 PyTypeObject PyBuffer_Type = PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
 
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags) {

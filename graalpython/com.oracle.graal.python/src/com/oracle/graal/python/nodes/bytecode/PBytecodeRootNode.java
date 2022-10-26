@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -60,7 +61,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -87,9 +87,7 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltinsFactory;
@@ -98,7 +96,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
@@ -325,6 +323,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<SetNodes.AddNode> NODE_SET_ADD = SetNodes.AddNode::create;
     private static final PyObjectSizeNode UNCACHED_SIZE = PyObjectSizeNode.getUncached();
     private static final NodeSupplier<PyObjectSizeNode> NODE_SIZE = PyObjectSizeNode::create;
+    private static final NodeSupplier<GetTPFlagsNode> NODE_TP_FLAGS = GetTPFlagsNode::create;
+    private static final GetTPFlagsNode UNCACHED_TP_FLAGS = GetTPFlagsNode.getUncached();
     private static final KwargsMergeNode UNCACHED_KWARGS_MERGE = KwargsMergeNode.getUncached();
     private static final NodeSupplier<KwargsMergeNode> NODE_KWARGS_MERGE = KwargsMergeNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
@@ -370,6 +370,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<IntBuiltins.PowNode> NODE_INT_POW = IntBuiltins.PowNode::create;
     private static final NodeSupplier<FloatBuiltins.PowNode> NODE_FLOAT_POW = FloatBuiltins.PowNode::create;
     private static final NodeSupplier<HashingStorageFromListSequenceStorageNode> NODE_HASHING_STORAGE_FROM_SEQUENCE = HashingStorageFromListSequenceStorageNode::create;
+    private static final NodeSupplier<MatchClassNode> NODE_MATCH_CLASS = MatchClassNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -1615,7 +1616,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.MATCH_SEQUENCE: {
-                        stackTop = bytecodeCheckSeq(virtualFrame, stackTop);
+                        stackTop = bytecodeCheckSeq(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.GET_LEN: {
@@ -2264,9 +2265,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeCheckSeq(VirtualFrame virtualFrame, int stackTop) {
+    private int bytecodeCheckSeq(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
         Object seq = virtualFrame.getObject(stackTop);
-        boolean res = seq instanceof PList || seq instanceof PTuple || seq instanceof PRange || seq instanceof PMemoryView || seq instanceof PArray;
+        GetTPFlagsNode flagsNode = insertChildNode(localNodes, bci, UNCACHED_TP_FLAGS, GetTPFlagsNodeGen.class, NODE_TP_FLAGS, useCachedNodes);
+        boolean res = (flagsNode.execute(seq) & Py_TPFLAGS_SEQUENCE) != 0;
         virtualFrame.setObject(++stackTop, res);
         return stackTop;
     }
