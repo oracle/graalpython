@@ -964,7 +964,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         if (callable instanceof PCode) {
             return ((PCode) callable).getName();
         }
-        return getProperty(callable, NameGetter.INSTANCE);
+        return getProperty(callable, QualnameGetter.INSTANCE);
     }
 
     protected static Object getSelf(Object callable) {
@@ -1064,17 +1064,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
     }
 
-    private static final class NameGetter extends Getter<TruffleString> {
-        private static final NameGetter INSTANCE = new NameGetter();
+    private static final class QualnameGetter extends Getter<TruffleString> {
+        private static final QualnameGetter INSTANCE = new QualnameGetter();
 
         @Override
         public TruffleString fromPFunction(PFunction fun) {
-            return fun.getName();
+            return fun.getQualname();
         }
 
         @Override
         public TruffleString fromPBuiltinFunction(PBuiltinFunction fun) {
-            return fun.getName();
+            return fun.getQualname();
         }
     }
 
