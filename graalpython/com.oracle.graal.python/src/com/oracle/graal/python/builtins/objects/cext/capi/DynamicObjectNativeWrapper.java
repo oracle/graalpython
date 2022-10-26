@@ -1066,6 +1066,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(object.getClassObject());
         }
 
+        @Specialization(guards = "eq(FUNC, key)")
+        static Object doPyCMethodObjectFunc(@SuppressWarnings("unused") PBuiltinMethod object, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return nativeWrapper;
+        }
+
         @Specialization(guards = "eq(D_QUALNAME, key)")
         static Object doDQualname(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Exclusive @Cached PythonAbstractObject.PInteropGetAttributeNode getAttributeNode,
