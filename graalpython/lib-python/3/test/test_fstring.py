@@ -13,6 +13,7 @@ import re
 import types
 import decimal
 import unittest
+from test.support import impl_detail
 from test.support.os_helper import temp_cwd
 from test.support.script_helper import assert_python_failure
 

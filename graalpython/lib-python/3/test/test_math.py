@@ -1048,7 +1048,6 @@ class MathTests(unittest.TestCase):
                              436522681849110124616458784),
                              16592536571065866494401400422922201534178938447014944)
 
-(??)
         x = 43461045657039990237
         y = 10645022458251153277
         for c in (652560,
@@ -2088,13 +2087,6 @@ class MathTests(unittest.TestCase):
         self.assertEqual(x, y)
         self.assertEqual(math.copysign(1.0, x), math.copysign(1.0, y))
 
-    def assertEqualSign(self, x, y):
-        """Similar to assertEqual(), but compare also the sign with copysign().
-
-        Function useful to compare signed zeros.
-        """
-        self.assertEqual(x, y)
-        self.assertEqual(math.copysign(1.0, x), math.copysign(1.0, y))
 
 class IsCloseTests(unittest.TestCase):
     isclose = math.isclose  # subclasses should override this
