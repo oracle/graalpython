@@ -1397,7 +1397,7 @@ class TestPosixDirFd(unittest.TestCase):
                     # whoops!  using both together not supported on this platform.
                     pass
 
-    @unittest.skipUnless(os.link in os.supports_dir_fd, "test needs dir_fd support in os.link()")
+    @unittest.skipUnless(hasattr(os, 'link') and os.link in os.supports_dir_fd, "test needs dir_fd support in os.link()")
     def test_link_dir_fd(self):
         with self.prepare_file() as (dir_fd, name, fullname), \
              self.prepare() as (dir_fd2, linkname, fulllinkname):
@@ -1485,7 +1485,7 @@ class TestPosixDirFd(unittest.TestCase):
                 self.addCleanup(posix.unlink, fullname)
                 raise
 
-    @unittest.skipUnless(os.mkfifo in os.supports_dir_fd, "test needs dir_fd support in os.mkfifo()")
+    @unittest.skipUnless(hasattr(os, 'mkfifo') and os.mkfifo in os.supports_dir_fd, "test needs dir_fd support in os.mkfifo()")
     def test_mkfifo_dir_fd(self):
         with self.prepare() as (dir_fd, name, fullname):
             try:
