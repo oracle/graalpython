@@ -3165,7 +3165,8 @@ def test_run_doctestsuite_multiple_times():
 
 def load_tests(loader, tests, pattern):
     tests.addTest(doctest.DocTestSuite(doctest))
-    tests.addTest(doctest.DocTestSuite())
+    # TODO GraalVM change: disable this suite, it cannot be controlled by our tagging mechanism
+    # tests.addTest(doctest.DocTestSuite())
     return tests
 
 
