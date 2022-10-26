@@ -1,0 +1,18 @@
+Disassembly of <module>:
+  1:6   -   1:12        0 LOAD_CONST_COLLECTION             0    ([1, 2] type int into tuple)
+  2:2   -   3:5         3 MATCH_SEQUENCE
+  2:2   -   3:5         4 POP_AND_JUMP_IF_FALSE             25   (to 29)
+  2:2   -   3:5         8 GET_LEN
+  2:2   -   3:5         9 LOAD_BYTE_O                       2
+  2:2   -   3:5        11 BINARY_OP                         12   (EQ)                              can quicken
+  2:2   -   3:5        13 POP_AND_JUMP_IF_FALSE             16   (to 29)                           generalizes: 11
+  2:2   -   3:5        17 UNPACK_SEQUENCE                   2
+  2:2   -   3:5        19 POP_TOP
+  2:2   -   3:5        20 ROT_N                             1
+  2:2   -   3:5        22 STORE_NAME                        0    (x)
+  3:4   -   3:5        24 LOAD_NAME                         0    (x)
+  3:4   -   3:5        26 POP_TOP
+  3:4   -   3:5        27 JUMP_FORWARD                      3    (to 30)
+  2:2   -   3:5   >>   29 POP_TOP
+  2:2   -   3:5   >>   30 LOAD_NONE
+  2:2   -   3:5        31 RETURN_VALUE

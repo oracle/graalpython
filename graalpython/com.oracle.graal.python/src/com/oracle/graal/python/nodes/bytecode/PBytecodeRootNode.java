@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -86,7 +87,9 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltinsFactory;
@@ -95,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
@@ -124,6 +128,8 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSetItemNodeGen;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -317,6 +323,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ListNodes.AppendNode> NODE_LIST_APPEND = ListNodes.AppendNode::create;
     private static final SetNodes.AddNode UNCACHED_SET_ADD = SetNodes.AddNode.getUncached();
     private static final NodeSupplier<SetNodes.AddNode> NODE_SET_ADD = SetNodes.AddNode::create;
+    private static final PyObjectSizeNode UNCACHED_SIZE = PyObjectSizeNode.getUncached();
+    private static final NodeSupplier<PyObjectSizeNode> NODE_SIZE = PyObjectSizeNode::create;
     private static final KwargsMergeNode UNCACHED_KWARGS_MERGE = KwargsMergeNode.getUncached();
     private static final NodeSupplier<KwargsMergeNode> NODE_KWARGS_MERGE = KwargsMergeNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
@@ -1601,6 +1609,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(stackTop - 2, top);
                         break;
                     }
+                    case OpCodesConstants.ROT_N: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        bytcodeRotN(virtualFrame, stackTop, oparg);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_SEQUENCE: {
+                        stackTop = bytecodeCheckSeq(virtualFrame, stackTop);
+                        break;
+                    }
+                    case OpCodesConstants.GET_LEN: {
+                        stackTop = bytecodeGetLen(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
+                        break;
+                    }
                     case OpCodesConstants.DUP_TOP:
                         virtualFrame.setObject(stackTop + 1, virtualFrame.getObject(stackTop));
                         stackTop++;
@@ -2226,6 +2247,37 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             }
         }
+    }
+
+    @BytecodeInterpreterSwitch
+    @ExplodeLoop
+    private void bytcodeRotN(VirtualFrame virtualFrame, int stackTop, int oparg) {
+        CompilerAsserts.partialEvaluationConstant(oparg);
+        if (oparg > 1) {
+            Object top = virtualFrame.getObject(stackTop);
+            int i = 0;
+            for (; i < oparg - 1; i++) {
+                virtualFrame.setObject(stackTop - i, virtualFrame.getObject(stackTop - i - 1));
+            }
+            virtualFrame.setObject(stackTop - i, top);
+        }
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeCheckSeq(VirtualFrame virtualFrame, int stackTop) {
+        Object seq = virtualFrame.getObject(stackTop);
+        boolean res = seq instanceof PList || seq instanceof PTuple || seq instanceof PRange || seq instanceof PMemoryView || seq instanceof PArray;
+        virtualFrame.setObject(++stackTop, res);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeGetLen(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
+        Object seq = virtualFrame.getObject(stackTop);
+        PyObjectSizeNode sizeNode = insertChildNode(localNodes, bci, UNCACHED_SIZE, PyObjectSizeNodeGen.class, NODE_SIZE, useCachedNodes);
+        Object s = sizeNode.execute(virtualFrame, seq);
+        virtualFrame.setObject(++stackTop, s);
+        return stackTop;
     }
 
     @BytecodeInterpreterSwitch

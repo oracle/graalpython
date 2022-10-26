@@ -858,6 +858,110 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
+    // @Test skip until 3.10
+    public void testGuard() {
+        String source = "" +
+                        "x = 1\n" +
+                        "match 1:\n" +
+                        "   case 1 if x == 1:\n" +
+                        "       x\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchAs() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case 1 as x:\n" +
+                        "       x\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchAs2() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case 1 as x:\n" +
+                        "       x\n" +
+                        "   case 2 as y:\n" +
+                        "       x\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchAsDefault() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case 1 as x:\n" +
+                        "       x\n" +
+                        "   case _:\n" +
+                        "       x\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testMatchAsGuard() {
+        String source = "" +
+                        "match 1:\n" +
+                        "   case 1 as x if x == 1:\n" +
+                        "       x\n";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testWildcard() {
+        String source = "" +
+                        "match 1:\n" +
+                        "  case _:\n" +
+                        "    pass";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testSeq() {
+        String source = "" +
+                        "match (1):\n" +
+                        "  case [1]:\n" +
+                        "    pass";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testSeqWildcard() {
+        String source = "" +
+                        "match (1):\n" +
+                        "  case [_]:\n" +
+                        "    pass";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testSeqWildcardStar() {
+        String source = "" +
+                        "match (1):\n" +
+                        "  case [*_]:\n" +
+                        "    pass";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testSeqWildcardSubscript() {
+        String source = "" +
+                        "match (1, 2):\n" +
+                        "  case [_, x]:\n" +
+                        "    x";
+        doTest(source);
+    }
+
+    // @Test skip until 3.10
+    public void testSeqWildcardStarSubscript() {
+        String source = "" +
+                        "match (1, 2, 3):\n" +
+                        "  case [*_, y]:\n" +
+                        "    y";
+        doTest(source);
+    }
+
     @Test
     public void testAssignToDebug() {
         checkSyntaxErrorMessage("obj.__debug__ = 1", "cannot assign to __debug__");
@@ -872,6 +976,9 @@ public class CompilerTests extends PythonTests {
         checkSyntaxErrorMessage("def f(**kwargs:(lambda __debug__:0)): pass", "cannot assign to __debug__");
         checkSyntaxErrorMessage("def f(**__debug__): pass", "cannot assign to __debug__");
         checkSyntaxErrorMessage("def f(*xx, __debug__): pass", "cannot assign to __debug__");
+        // @Test skip until 3.10
+        // checkSyntaxErrorMessage("match 1:\n\tcase 1 as __debug__:\n\t\tpass", "cannot assign to
+        // __debug__");
     }
 
     @Test
