@@ -359,9 +359,9 @@ public abstract class AbstractParser {
     /**
      * _PyPegen_seq_count_dots
      */
-    public int countDots(Token[] tokens) {
+    public int countDots(Token[] tokenArray) {
         int cnt = 0;
-        for (Token t : tokens) {
+        for (Token t : tokenArray) {
             if (t.type == Token.Kind.ELLIPSIS) {
                 cnt += 3;
             } else {
@@ -590,12 +590,12 @@ public abstract class AbstractParser {
     /**
      * _PyPegen_concatenate_strings
      */
-    public SSTNode concatenateStrings(Token[] tokens) {
-        int n = tokens.length;
+    public SSTNode concatenateStrings(Token[] tokenArray) {
+        int n = tokenArray.length;
         String[] values = new String[n];
         SourceRange[] sourceRanges = new SourceRange[n];
         for (int i = 0; i < n; i++) {
-            Token t = tokens[i];
+            Token t = tokenArray[i];
             values[i] = getText(t);
             sourceRanges[i] = t.sourceRange;
         }
