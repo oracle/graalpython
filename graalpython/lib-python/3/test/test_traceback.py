@@ -1146,8 +1146,6 @@ class TestStack(unittest.TestCase):
         self.assertEqual(s[0].locals, None)
 
     def test_format_locals(self):
-        support.skipIfBCI(self)
-            
         def some_inner(k, v):
             a = 1
             b = 2
