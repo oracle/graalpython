@@ -2037,10 +2037,7 @@ public abstract class TypeNodes {
 
         private boolean isAnyBaseWithoutSlots(PythonClass pythonClass, PythonAbstractClass[] mro) {
             for (PythonAbstractClass cls : mro) {
-                if (!PGuards.isNativeClass(cls)) {
-                    if (cls == pythonClass || (cls instanceof PythonBuiltinClass && ((PythonBuiltinClass) cls).getType() == PythonBuiltinClassType.PythonObject)) {
-                        continue;
-                    }
+                if (cls != pythonClass && !PGuards.isNativeClass(cls) && !PGuards.isPythonBuiltinClass(cls)) {
                     if (!hasSlots(cls)) {
                         return true;
                     }
