@@ -97,6 +97,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ITEM_IN_S_MUST_BE_STRING = tsLiteral("Item in %s.%s must be str, not %p");
     public static final TruffleString ATTR_NAME_MUST_BE_STRING = tsLiteral("attribute name must be string, not '%p'");
     public static final TruffleString S_MUST_BE_STRING_NOT_S = tsLiteral("\"%s\" must be string, not %.200s");
+    public static final TruffleString S_MUST_BE_STRING_OR_NONE_NOT_S = tsLiteral("\"%s\" must be string or None, not %.200s");
     public static final TruffleString ATTR_S_OF_S_IS_NOT_READABLE = tsLiteral("attribute %s of %s objects is not readable");
     public static final TruffleString ATTR_S_OF_S_IS_NOT_WRITABLE = tsLiteral("attribute %s of %s is not writable");
     public static final TruffleString ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE = tsLiteral("attribute %s of %s object is not writable");
