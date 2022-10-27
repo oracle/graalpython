@@ -58,8 +58,8 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_EN
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
@@ -218,7 +218,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
             PBytesIO bytesIO = factory().createBytesIO(cls);
-            bytesIO.setBuf(factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
+            bytesIO.setBuf(factory().createByteArray(PythonUtils.EMPTY_BYTE_ARRAY));
             return bytesIO;
         }
     }
