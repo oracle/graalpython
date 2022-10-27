@@ -676,7 +676,7 @@ public class InternalFormat {
          * @param type indicator character
          */
         public Spec(int precision, char type) {
-            this(' ', '>', Spec.NONE, false, UNSPECIFIED, NONE, precision, type);
+            this(' ', '>', NONE, false, UNSPECIFIED, NONE, precision, type);
         }
 
         /** The alignment from the parsed format specification, or default. */
@@ -751,9 +751,9 @@ public class InternalFormat {
          */
         Spec parse(PRaiseNode raiseNode, char defaultType, char defaultAlignment) {
             char type = defaultType;
-            char align = defaultAlignment;
-            char fill = Spec.NONE;
-            char sign = Spec.NONE;
+            char align = NONE;
+            char fill = NONE;
+            char sign = NONE;
             boolean alternate;
             char grouping = NONE;
             int width = Spec.UNSPECIFIED, precision = Spec.UNSPECIFIED;
@@ -789,10 +789,14 @@ public class InternalFormat {
                 if (!Spec.specified(fill)) {
                     fill = '0';
                     if (!Spec.specified(align) && defaultAlignment == '>') {
-                        // Also accept it as equivalent to "=" aligment but only not set already.
+                        // Also accept it as equivalent to "=" alignment but only not set already.
                         align = '=';
                     }
                 }
+            }
+
+            if (!Spec.specified(align)) {
+                align = defaultAlignment;
             }
 
             // Scan [width]
