@@ -227,17 +227,15 @@ public final class PArray extends PythonBuiltinObject {
         @CompilationFinal(dimensions = 1) private static final MachineFormat[] BY_CODE = new MachineFormat[values().length];
 
         static {
-            outer: for (var format : BufferFormat.values()) {
-                for (var machineFormat : values()) {
-                    if (machineFormat.format == format && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
-                        BY_BUFFER_FORMAT[format.ordinal()] = machineFormat;
-                        break outer;
-                    }
+            for (var machineFormat : values()) {
+                BufferFormat bufferFormat = machineFormat.format;
+                if (BY_BUFFER_FORMAT[bufferFormat.ordinal()] == null && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
+                    BY_BUFFER_FORMAT[bufferFormat.ordinal()] = machineFormat;
                 }
             }
             for (var machineFormat : values()) {
-                assert BY_CODE[machineFormat.ordinal()] == null;
-                BY_CODE[machineFormat.ordinal()] = machineFormat;
+                assert BY_CODE[machineFormat.code] == null;
+                BY_CODE[machineFormat.code] = machineFormat;
             }
         }
 
