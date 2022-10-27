@@ -809,7 +809,7 @@ public class CompilerTests extends PythonTests {
         doTest(s);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchValueConst() {
         String source = "" +
                         "match 1:\n" +
@@ -818,7 +818,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchValue() {
         String source = "" +
                         "s = 1\n" +
@@ -828,7 +828,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchValueWithDefault() {
         String source = "" +
                         "s = 1\n" +
@@ -840,7 +840,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchSingletonBoolean() {
         String source = "" +
                         "match 1:\n" +
@@ -849,7 +849,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchSingletonNone() {
         String source = "" +
                         "match 1:\n" +
