@@ -143,7 +143,7 @@ class sha:
     digest_size = digestsize = 20
     block_size = 512 // 8
 
-    def __init__(self):
+    def __init__(self, *, usedforsecurity=True):
         "Initialisation."
 
         self.name = 'sha'
