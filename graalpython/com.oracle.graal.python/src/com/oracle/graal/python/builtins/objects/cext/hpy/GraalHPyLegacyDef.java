@@ -40,16 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLEAR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FREE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
@@ -93,16 +98,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_RICHCMP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ALLOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLEAR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEALLOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FREE__;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -243,16 +240,18 @@ public abstract class GraalHPyLegacyDef {
             return signature;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] VALUES = Arrays.copyOf(values(), values().length);
+        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final HPyLegacySlot[] BY_VALUE = new HPyLegacySlot[100];
 
-        @ExplodeLoop
-        static HPyLegacySlot fromValue(int value) {
-            for (int i = 0; i < VALUES.length; i++) {
-                if (VALUES[i].value == value) {
-                    return VALUES[i];
-                }
+        static {
+            for (var entry : VALUES) {
+                assert BY_VALUE[entry.value] == null;
+                BY_VALUE[entry.value] = entry;
             }
-            return null;
+        }
+
+        static HPyLegacySlot fromValue(int value) {
+            return value >= 0 && value < BY_VALUE.length ? BY_VALUE[value] : null;
         }
     }
 }
