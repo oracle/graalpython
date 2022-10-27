@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 #include "capi.h"
 
-PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS | Py_TPFLAGS_SEQUENCE, sizeof(PyListObject));
+PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyListObject));
 
 UPCALL_ID(PyList_New);
 PyObject* PyList_New(Py_ssize_t size) {

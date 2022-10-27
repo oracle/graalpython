@@ -63,6 +63,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags._Py_TPFLAGS_MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -256,19 +257,21 @@ public abstract class TypeNodes {
                     break;
                 case Super:
                 case PythonModule:
-                case PSet:
-                case PFrozenSet:
                 case PReferenceType:
                 case PProperty:
                 case PDeque:
                 case PSimpleQueue:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
+                case PFrozenSet:
+                case PSet:
+                    result = DEFAULT | HAVE_GC | BASETYPE | _Py_TPFLAGS_MATCH_SELF;
+                    break;
                 case Boolean:
-                    result = DEFAULT | LONG_SUBCLASS;
+                    result = DEFAULT | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
                     break;
                 case PBytes:
-                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS;
+                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
                     break;
                 case PFunction:
                 case PBuiltinFunction:
@@ -304,22 +307,22 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | Py_TPFLAGS_SEQUENCE;
                     break;
                 case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS;
+                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
                     break;
                 case PBaseException:
                     result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
                     break;
                 case PList:
-                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE;
                     break;
                 case PInt:
-                    result = DEFAULT | BASETYPE | LONG_SUBCLASS;
+                    result = DEFAULT | BASETYPE | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
                     break;
                 case PString:
-                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS;
+                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
                     break;
                 case PTuple:
-                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE;
                     break;
                 case PRange:
                     result = DEFAULT | Py_TPFLAGS_SEQUENCE;
@@ -327,9 +330,12 @@ public abstract class TypeNodes {
                 case PythonModuleDef:
                     result = 0;
                     break;
+                case PByteArray:
+                case PFloat:
+                    result = DEFAULT | BASETYPE | _Py_TPFLAGS_MATCH_SELF;
+                    break;
                 default:
-                    // default case; this includes:
-                    // PythonObject, PByteArray, PCode, PInstancemethod, PFloat, PNone,
+                    // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
                     // PNotImplemented, PEllipsis, exceptions
                     result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0) | (PythonBuiltinClassType.isExceptionType(clazz) ? BASE_EXC_SUBCLASS | HAVE_GC : 0L);
                     break;

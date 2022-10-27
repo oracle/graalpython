@@ -40,7 +40,7 @@
  */
 #include "capi.h"
 
-PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
+PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
 
 POLYGLOT_DECLARE_TYPE(wchar_t);
 POLYGLOT_DECLARE_TYPE(Py_UCS1);

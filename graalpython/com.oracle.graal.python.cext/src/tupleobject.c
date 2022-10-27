@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
 /* tuple type */
-PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, 0, 0, 0);
+PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE_GENERIC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE, sizeof(PyTupleObject) - sizeof(PyObject *), sizeof(PyObject *), PyTruffle_Tuple_Alloc, 0, 0, 0);
 
 /* Tuples */
 UPCALL_ID(PyTuple_New);

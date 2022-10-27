@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,7 +7,7 @@
 #include "capi.h"
 
 
-PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyFloatObject));
+PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyFloatObject));
 
 typedef enum {
     unknown_format, ieee_big_endian_format, ieee_little_endian_format

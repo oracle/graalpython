@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,7 @@ public abstract class TypeFlags {
     public static final long HAVE_VERSION_TAG = (1L << 18);
     public static final long VALID_VERSION_TAG = (1L << 19);
     public static final long IS_ABSTRACT = (1L << 20);
+    public static final long _Py_TPFLAGS_MATCH_SELF = (1L << 22);
     public static final long LONG_SUBCLASS = (1L << 24);
     public static final long LIST_SUBCLASS = (1L << 25);
     public static final long TUPLE_SUBCLASS = (1L << 26);
