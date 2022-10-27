@@ -123,6 +123,10 @@ public abstract class StringLiteralUtils {
                 }
             }
 
+            if (isFormat && featureVersion < 6) {
+                errorCallback.onError(ErrorCallback.ErrorType.Syntax, sourceRange, "Format strings are only supported in Python 3.6 and greater");
+            }
+
             if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
                 strStartIndex += 2;
                 strEndIndex -= 2;
@@ -269,7 +273,7 @@ public abstract class StringLiteralUtils {
                         column++;
                     }
                 }
-                return new SourceRange(textSourceRange.startOffset + startIndex, textSourceRange.startOffset + endIndex, startLine, startColumn, line, column);
+                return new SourceRange(startLine, startColumn, line, column);
             }
         }
 

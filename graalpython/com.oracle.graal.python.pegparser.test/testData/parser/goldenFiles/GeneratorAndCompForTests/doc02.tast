@@ -13,7 +13,7 @@ Output:
 Module[1:0-6:15]
     FunctionDef[1:0-6:15]
         Name:walk_stack
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:15-1:16] f
         ---- Function body of walk_stack ----

@@ -18,7 +18,7 @@ Module[1:0-5:22]
             RHS: LONG[3:5-3:10] Value: 12345
         FunctionDef[4:1-5:22]
             Name:f
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[4:7-4:11] self
             ---- Function body of f ----

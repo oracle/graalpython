@@ -9,7 +9,7 @@ Output:
 Module[1:0-3:11]
     FunctionDef[1:0-3:11]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Kwarg: ArgTy[1:9-1:12] arg
         ---- Function body of fn ----
         For[2:2-3:11]

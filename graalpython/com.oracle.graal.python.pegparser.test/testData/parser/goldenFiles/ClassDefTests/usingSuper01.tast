@@ -13,13 +13,13 @@ Module[1:0-4:15]
         ---- Class body of X ----
         FunctionDef[2:4-4:15]
             Name:run
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:12-2:16] self
             ---- Function body of run ----
             FunctionDef[3:6-4:15]
                 Name:f
-                ArgumentsTy[0:0-0:0]
+                ArgumentsTy[1:0-1:0]
                 ---- Function body of f ----
                 Call[4:8-4:15]
                     Target: Name[4:8-4:13] Value: "super"

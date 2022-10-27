@@ -10,7 +10,7 @@ Output:
 Module[1:0-4:6]
     FunctionDef[1:0-2:25]
         Name:bla
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of bla ----
         Call[2:2-2:25]
             Target: Name[2:2-2:9] Value: "install"
@@ -22,7 +22,7 @@ Module[1:0-4:6]
         ---- End of bla function ----
     FunctionDef[3:0-4:6]
         Name:install
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[3:12-3:22] extra_opts
             Defaults:

@@ -10,7 +10,7 @@ Output:
 Module[1:0-4:19]
     FunctionDef[1:0-4:19]
         Name:test_isidentifier
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of test_isidentifier ----
         Call[3:1-4:19]
             Target: 

@@ -17,7 +17,7 @@ Module[1:0-7:28]
         ---- Class body of OrderedDict ----
         FunctionDef[2:4-7:28]
             Name:__reversed__
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:21-2:25] self
             ---- Function body of __reversed__ ----

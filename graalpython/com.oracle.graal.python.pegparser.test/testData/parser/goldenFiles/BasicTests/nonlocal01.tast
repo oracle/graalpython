@@ -19,14 +19,14 @@ Output:
 Module[1:0-12:7]
     FunctionDef[1:0-10:22]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         Assign[2:4-2:15]
             LHS: Name[2:4-2:5] Value: "x" Store
             RHS: RAW[2:8-2:15] Value: "local"
         FunctionDef[4:4-7:26]
             Name:inner
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of inner ----
             Nonlocal[5:8-5:18]: x 
             Assign[6:8-6:22]

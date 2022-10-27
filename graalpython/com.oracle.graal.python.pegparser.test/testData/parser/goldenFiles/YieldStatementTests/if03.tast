@@ -15,7 +15,7 @@ Output:
 Module[1:0-9:12]
     FunctionDef[1:0-9:12]
         Name:gen
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:8-1:9] c
                 ArgTy[1:11-1:12] b

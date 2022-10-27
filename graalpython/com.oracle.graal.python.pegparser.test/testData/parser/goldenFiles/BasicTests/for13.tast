@@ -14,7 +14,7 @@ Output:
 Module[1:0-8:25]
     FunctionDef[1:0-8:25]
         Name:format
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:11-1:15] self
         ---- Function body of format ----

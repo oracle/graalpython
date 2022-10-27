@@ -49,7 +49,8 @@ public class Tokenizer {
     public enum Flag {
         EXEC_INPUT,
         INTERACTIVE,
-        TYPE_COMMENT
+        TYPE_COMMENT,
+        ASYNC_HACKS
     }
 
     /**
@@ -116,9 +117,6 @@ public class Tokenizer {
     private final int[] parensLineNumberStack = new int[MAXLEVEL];
     /** {@code tok_state->parencolstack} */
     private final int[] parensColumnsStack = new int[MAXLEVEL];
-    /** {@code tok_state->filename} */
-    // TODO
-    @SuppressWarnings("unused") private final String filename = null;
     /** {@code tok_state->altindstack} */
     private final int[] altIndentationStack = new int[MAXINDENT];
     /** {@code tok_state->cont_line} */
@@ -130,6 +128,8 @@ public class Tokenizer {
     private int multiLineStartIndex = 0;
     /** {@code tok_state->type_comments} */
     private final boolean lookForTypeComments;
+    /** {@code tok_state->async_hacks} */
+    private final boolean asyncHacks;
     /** {@code tok_state->async_def} */
     private boolean insideAsyncDef = false;
     /** {@code tok_state->async_def_indent} */
@@ -149,6 +149,7 @@ public class Tokenizer {
         this.execInput = flags.contains(Flag.EXEC_INPUT);
         this.interactive = flags.contains(Flag.INTERACTIVE);
         this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+        this.asyncHacks = flags.contains(Flag.ASYNC_HACKS);
         if (inputSourceRange != null) {
             srcStartLine = inputSourceRange.startLine - 1;    // lines use 1-base indexing
             srcStartColumn = inputSourceRange.startColumn - 1;    // account for extra '(' in the
@@ -157,6 +158,42 @@ public class Tokenizer {
             srcStartLine = 0;
             srcStartColumn = 0;
         }
+    }
+
+    /**
+     * Copy constructor used to look ahead if there is a 'def' after 'async'.
+     */
+    private Tokenizer(Tokenizer t) {
+        errorCallback = t.errorCallback;
+        execInput = t.execInput;
+        codePointsInput = t.codePointsInput;
+        nextCharIndex = t.nextCharIndex;
+        interactive = t.interactive;
+        tokenStart = t.tokenStart;
+        done = t.done;
+        currentIndentIndex = t.currentIndentIndex;
+        System.arraycopy(t.indentationStack, 0, indentationStack, 0, indentationStack.length);
+        atBeginningOfLine = t.atBeginningOfLine;
+        pendingIndents = t.pendingIndents;
+        currentLineNumber = t.currentLineNumber;
+        firstLineNumber = t.firstLineNumber;
+        parensNestingLevel = t.parensNestingLevel;
+        System.arraycopy(t.parensStack, 0, parensStack, 0, parensStack.length);
+        System.arraycopy(t.parensLineNumberStack, 0, parensLineNumberStack, 0, parensLineNumberStack.length);
+        System.arraycopy(t.parensColumnsStack, 0, parensColumnsStack, 0, parensColumnsStack.length);
+        System.arraycopy(t.altIndentationStack, 0, altIndentationStack, 0, altIndentationStack.length);
+        inContinuationLine = t.inContinuationLine;
+        lineStartIndex = t.lineStartIndex;
+        multiLineStartIndex = t.multiLineStartIndex;
+        lookForTypeComments = t.lookForTypeComments;
+        asyncHacks = t.asyncHacks;
+        insideAsyncDef = t.insideAsyncDef;
+        indentationOfAsyncDef = t.indentationOfAsyncDef;
+        asyncDefFollowedByNewline = t.asyncDefFollowedByNewline;
+        readNewline = t.readNewline;
+        reportIncompleteSourceIfInteractive = t.reportIncompleteSourceIfInteractive;
+        srcStartLine = t.srcStartLine;
+        srcStartColumn = t.srcStartColumn;
     }
 
     /**
@@ -871,14 +908,21 @@ public class Tokenizer {
                         if (nonascii && ((errMsg = verifyIdentifier(tokenString)) != null)) {
                             return createToken(Token.Kind.ERRORTOKEN, errMsg);
                         }
-                        // we never do the async hacks that cpython has as of 3.10
-                        if (tokenString.equals("async")) {
-                            return createToken(Token.Kind.ASYNC);
+                        if (!asyncHacks || insideAsyncDef) {
+                            if (tokenString.equals("async")) {
+                                return createToken(Token.Kind.ASYNC);
+                            }
+                            if (tokenString.equals("await")) {
+                                return createToken(Token.Kind.AWAIT);
+                            }
+                        } else if (tokenString.equals("async")) {
+                            Token t = new Tokenizer(this).next();
+                            if (t.type == Token.Kind.NAME && getTokenString(t).equals("def")) {
+                                insideAsyncDef = true;
+                                indentationOfAsyncDef = currentIndentIndex;
+                                return createToken(Token.Kind.ASYNC);
+                            }
                         }
-                        if (tokenString.equals("await")) {
-                            return createToken(Token.Kind.AWAIT);
-                        }
-
                         return createToken(Token.Kind.NAME);
                     }
 
@@ -1322,7 +1366,7 @@ public class Tokenizer {
 
     private Token createToken(int kind, Object extraData) {
         if (kind == Token.Kind.ENDMARKER) {
-            return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, currentLineNumber, -1, currentLineNumber, -1), extraData);
+            return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(currentLineNumber, -1, currentLineNumber, -1), extraData);
         }
         int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
         int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
@@ -1337,17 +1381,17 @@ public class Tokenizer {
         if (endLineno == 1) {
             endColOffset += srcStartColumn;
         }
-        return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
+        return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(lineno, colOffset, endLineno, endColOffset), extraData);
     }
 
     public String getTokenString(Token tok) {
         String s;
-        if (tok.sourceRange.startOffset >= codePointsInput.length) {
+        if (tok.startOffset >= codePointsInput.length) {
             return "";
-        } else if (tok.sourceRange.endOffset >= codePointsInput.length) {
-            s = new String(codePointsInput, tok.sourceRange.startOffset, codePointsInput.length - tok.sourceRange.startOffset);
+        } else if (tok.endOffset >= codePointsInput.length) {
+            s = new String(codePointsInput, tok.startOffset, codePointsInput.length - tok.startOffset);
         } else {
-            s = new String(codePointsInput, tok.sourceRange.startOffset, tok.sourceRange.endOffset - tok.sourceRange.startOffset);
+            s = new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
         }
         if (s.indexOf('\r') >= 0) {
             s = s.replaceAll("\r\n", "\n");
@@ -1360,7 +1404,7 @@ public class Tokenizer {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
         sb.append(token.typeName());
-        sb.append(" [").append(token.sourceRange.startOffset).append(", ").append(token.sourceRange.endOffset).append("]");
+        sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn);
         sb.append(") (").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
@@ -1368,7 +1412,7 @@ public class Tokenizer {
     }
 
     public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
-        return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
+        return rangeStart.withEnd(currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
     /**

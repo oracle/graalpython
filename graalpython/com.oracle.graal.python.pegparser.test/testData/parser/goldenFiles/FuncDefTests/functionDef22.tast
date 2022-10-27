@@ -14,20 +14,20 @@ Output:
 Module[1:0-7:13]
     FunctionDef[1:0-5:17]
         Name:test
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of test ----
         Assign[2:2-2:7]
             LHS: Name[2:2-2:3] Value: "a" Store
             RHS: LONG[2:6-2:7] Value: 1
         FunctionDef[3:2-3:17]
             Name:fn1
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of fn1 ----
             Pass[3:13-3:17]
             ---- End of fn1 function ----
         FunctionDef[4:2-4:17]
             Name:fn2
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of fn2 ----
             Pass[4:13-4:17]
             ---- End of fn2 function ----

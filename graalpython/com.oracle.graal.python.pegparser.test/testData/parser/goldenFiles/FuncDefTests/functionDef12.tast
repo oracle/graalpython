@@ -14,11 +14,11 @@ Output:
 Module[1:0-8:7]
     FunctionDef[1:0-6:11]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         FunctionDef[2:4-3:17]
             Name:inner
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of inner ----
             Call[3:8-3:17]
                 Target: Name[3:8-3:13] Value: "print"

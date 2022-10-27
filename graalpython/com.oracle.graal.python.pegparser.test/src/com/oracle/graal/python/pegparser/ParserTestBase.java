@@ -213,7 +213,7 @@ public class ParserTestBase {
         ErrorCallback errorCb = new ErrorCallback() {
             @Override
             public void onError(ErrorCallback.ErrorType type, SourceRange sourceRange, String message) {
-                errors.add(String.format("%s[%d:%d]:%s", type.name(), sourceRange.startOffset, sourceRange.endOffset, message));
+                errors.add(String.format("%s[%d:%d-%d:%d]:%s", type.name(), sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message));
             }
 
             @Override

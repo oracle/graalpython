@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:17]
     FunctionDef[1:0-1:17]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         AugAssign[1:11-1:17]
             Op: Add

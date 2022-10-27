@@ -13,17 +13,17 @@ Output:
 Module[1:0-7:6]
     FunctionDef[1:0-6:17]
         Name:test
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of test ----
         FunctionDef[2:2-5:17]
             Name:inner
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:13-2:16] end
             ---- Function body of inner ----
             FunctionDef[3:4-4:35]
                 Name:inner_inner
-                ArgumentsTy[0:0-0:0]
+                ArgumentsTy[1:0-1:0]
                 ---- Function body of inner_inner ----
                 Call[4:6-4:35]
                     Target: Name[4:6-4:11] Value: "print"

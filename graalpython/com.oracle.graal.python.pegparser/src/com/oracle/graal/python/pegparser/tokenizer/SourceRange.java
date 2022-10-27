@@ -42,18 +42,14 @@
 package com.oracle.graal.python.pegparser.tokenizer;
 
 public final class SourceRange {
-    public static final SourceRange ARTIFICIAL_RANGE = new SourceRange(0, 0, 1, 0, 1, 0);
+    public static final SourceRange ARTIFICIAL_RANGE = new SourceRange(1, 0, 1, 0);
 
-    public final int startOffset;
-    public final int endOffset;
     public final int startLine;
     public final int startColumn;
     public final int endLine;
     public final int endColumn;
 
-    public SourceRange(int startOffset, int endOffset, int startLine, int startColumn, int endLine, int endColumn) {
-        this.startOffset = startOffset;
-        this.endOffset = endOffset;
+    public SourceRange(int startLine, int startColumn, int endLine, int endColumn) {
         this.startLine = startLine;
         this.startColumn = startColumn;
         this.endLine = endLine;
@@ -61,11 +57,11 @@ public final class SourceRange {
     }
 
     public SourceRange withEnd(SourceRange end) {
-        return withEnd(end.endOffset, end.endLine, end.endColumn);
+        return withEnd(end.endLine, end.endColumn);
     }
 
-    public SourceRange withEnd(int newEndOffset, int newEndLine, int newEndColumn) {
-        return new SourceRange(startOffset, newEndOffset, startLine, startColumn, newEndLine, newEndColumn);
+    public SourceRange withEnd(int newEndLine, int newEndColumn) {
+        return new SourceRange(startLine, startColumn, newEndLine, newEndColumn);
     }
 
     public SourceRange shiftStartRight(int columns) {
@@ -73,7 +69,7 @@ public final class SourceRange {
         if (columns == 0) {
             return this;
         }
-        return new SourceRange(startOffset + columns, endOffset, startLine, startColumn + columns, endLine, endColumn);
+        return new SourceRange(startLine, startColumn + columns, endLine, endColumn);
     }
 
     public SourceRange shiftEndRight(int columns) {
@@ -81,6 +77,6 @@ public final class SourceRange {
         if (columns == 0) {
             return this;
         }
-        return new SourceRange(startOffset, endOffset + columns, startLine, startColumn, endLine, endColumn + columns);
+        return new SourceRange(startLine, startColumn, endLine, endColumn + columns);
     }
 }

@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:24]
     FunctionDef[1:0-1:24]
         Name:f
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
         Return[1:9-1:15]
         Yield[1:17-1:24]

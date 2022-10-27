@@ -11,7 +11,7 @@ Output:
 Module[1:0-4:11]
     FunctionDef[1:0-4:11]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         For[2:2-4:11]
             Target: Name[2:6-2:7] Value: "x" Store

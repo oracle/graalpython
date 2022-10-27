@@ -16,7 +16,7 @@ Module[1:0-6:19]
         ---- Class body of Counter ----
         FunctionDef[2:4-6:19]
             Name:_keep_positive
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:23-2:27] self
             ---- Function body of _keep_positive ----

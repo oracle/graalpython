@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:35]
     FunctionDef[1:0-1:35]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:7-1:10] arg
             Defaults:
