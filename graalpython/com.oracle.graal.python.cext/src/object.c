@@ -237,7 +237,7 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args), IS_SINGLE_ARG(fmt));
 }
 
-typedef PyObject *(*make_tp_call_func)(PyObject *, void *, PyObject *, void *);
+typedef PyObject *(*make_tp_call_func)(PyObject *, void *, int, PyObject *, void *);
 UPCALL_TYPED_ID(_PyObject_MakeTpCall, make_tp_call_func);
 PyObject* _PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
                      PyObject *const *args, Py_ssize_t nargs,
@@ -246,7 +246,8 @@ PyObject* _PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
     if (keywords != NULL && PyTuple_Check(keywords)) {
         kwvalues = polyglot_from_PyObjectPtr_array(args + nargs, PyTuple_GET_SIZE(keywords));
     }
-    return _jls__PyObject_MakeTpCall(native_to_java(callable), polyglot_from_PyObjectPtr_array(args, nargs), native_to_java(keywords), kwvalues);
+    // We have to pass nargs separately because of GR-35465 - Sulong ignores the array size for our wrappers
+    return _jls__PyObject_MakeTpCall(native_to_java(callable), polyglot_from_PyObjectPtr_array(args, nargs), nargs, native_to_java(keywords), kwvalues);
 }
 
 // Taken from cpython call.c
@@ -379,6 +380,41 @@ PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwarg
 
     //return _Py_CheckFunctionResult(tstate, callable, result, NULL);
     return result;
+}
+
+// Taken from cpython call.c
+PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
+                       size_t nargsf, PyObject *kwargs) {
+    assert(callable != NULL);
+
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+    assert(nargs >= 0);
+    assert(nargs == 0 || args != NULL);
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+
+    vectorcallfunc func = PyVectorcall_Function(callable);
+    if (func == NULL) {
+        /* Use tp_call instead */
+        return _PyObject_MakeTpCall(NULL, callable, args, nargs, kwargs);
+    }
+
+    PyObject *res;
+    if (kwargs == NULL || PyDict_GET_SIZE(kwargs) == 0) {
+        res = func(callable, args, nargsf, NULL);
+    }
+    else {
+        PyObject *kwnames;
+        PyObject *const *newargs;
+        newargs = _PyStack_UnpackDict(args, nargs,
+                                      kwargs, &kwnames);
+        if (newargs == NULL) {
+            return NULL;
+        }
+        res = func(callable, newargs,
+                   nargs | PY_VECTORCALL_ARGUMENTS_OFFSET, kwnames);
+        _PyStack_UnpackDict_Free(newargs, nargs, kwnames);
+    }
+    return res;
 }
 
 // Taken from CPython object.c
