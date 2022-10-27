@@ -1022,7 +1022,8 @@ class BuiltinTest(unittest.TestCase):
 
         with self.assertRaisesRegex(
             TypeError,
-            'max expected at least 1 argument, got 0'
+            # GraalVM change: relax error message expecations
+            'max'
         ):
             max()
 
@@ -1081,7 +1082,8 @@ class BuiltinTest(unittest.TestCase):
 
         with self.assertRaisesRegex(
             TypeError,
-            'min expected at least 1 argument, got 0'
+            # GraalVM change: relax error message expecations
+            'min'
         ):
             min()
 
