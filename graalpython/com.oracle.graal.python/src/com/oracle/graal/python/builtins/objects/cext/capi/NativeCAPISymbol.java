@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.util.HashMap;
+
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeCAPISymbol implements NativeCExtSymbol {
@@ -125,6 +125,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_TP_SUBCLASSES("get_tp_subclasses"),
     FUN_GET_TP_DICTOFFSET("get_tp_dictoffset"),
     FUN_GET_TP_WEAKLISTOFFSET("get_tp_weaklistoffset"),
+    FUN_GET_TP_VECTORCALLOFFSET("get_tp_vectorcall_offset"),
     FUN_GET_TP_BASICSIZE("get_tp_basicsize"),
     FUN_GET_TP_ITEMSIZE("get_tp_itemsize"),
     FUN_GET_TP_AS_BUFFER("get_tp_as_buffer"),
@@ -240,35 +241,40 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_CAST("cast"),
     FUN_WSTRING_AT("wstring_at");
 
-    private final TruffleString name;
+    private final String name;
+    private final TruffleString tsName;
 
     @CompilationFinal(dimensions = 1) private static final NativeCAPISymbol[] VALUES = values();
+    private static final HashMap<String, NativeCAPISymbol> MAP = new HashMap<>();
 
     private NativeCAPISymbol(String name) {
-        this.name = toTruffleStringUncached(name);
+        this.name = name;
+        this.tsName = toTruffleStringUncached(name);
     }
 
     @Override
-    public TruffleString getName() {
+    public String getName() {
         return name;
     }
 
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static NativeCAPISymbol getByName(TruffleString name, TruffleString.EqualNode eqNode) {
-        for (int i = 0; i < VALUES.length; i++) {
-            if (eqNode.execute(VALUES[i].name, name, TS_ENCODING)) {
-                return VALUES[i];
-            }
-        }
-        return null;
+    @Override
+    public TruffleString getTsName() {
+        return tsName;
     }
 
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
-        return getByName(name, eqNode) != null;
+    public static NativeCAPISymbol getByName(String name) {
+        CompilerAsserts.neverPartOfCompilation();
+        return MAP.get(name);
     }
 
     public static NativeCAPISymbol[] getValues() {
         return VALUES;
+    }
+
+    static {
+        for (var symbol : VALUES) {
+            assert !MAP.containsKey(symbol.name);
+            MAP.put(symbol.name, symbol);
+        }
     }
 }

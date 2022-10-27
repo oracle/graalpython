@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.csv;
 
-import java.util.Arrays;
-
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public enum QuoteStyle {
@@ -50,7 +48,7 @@ public enum QuoteStyle {
     QUOTE_NONNUMERIC,
     QUOTE_NONE;
 
-    @CompilationFinal(dimensions = 1) private static final QuoteStyle[] VALUES = Arrays.copyOf(values(), values().length);
+    @CompilationFinal(dimensions = 1) private static final QuoteStyle[] VALUES = values();
 
     public static QuoteStyle getQuoteStyle(int ordinal) {
         return VALUES[ordinal];

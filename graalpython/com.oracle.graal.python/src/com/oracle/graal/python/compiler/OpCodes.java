@@ -60,6 +60,8 @@ public enum OpCodes {
     ROT_TWO(0, 2, 2),
     /** Exchange three top stack items. [a, b, c] (a is top) becomes [b, c, a] */
     ROT_THREE(0, 3, 3),
+    /** Exchange N top stack items. [a, b, c, ..., N] (a is top) becomes [b, c, ..., N, a] */
+    ROT_N(1, (oparg, followingArgs, withJump) -> oparg, (oparg, followingArgs, withJump) -> oparg),
     /** Duplicates the top stack item */
     DUP_TOP(0, 1, 2),
     /** Does nothing. Might still be useful to maintain a line number */
@@ -321,6 +323,16 @@ public enum OpCodes {
      * Creates annotations dict in locals
      */
     SETUP_ANNOTATIONS(0, 0, 0),
+
+    /**
+     * Determines if a python object is a sequence.
+     */
+    MATCH_SEQUENCE(0, 0, 1),
+
+    /**
+     * Retrieves the length of a python object and stores it on top.
+     */
+    GET_LEN(0, 0, 1),
 
     // load bytecodes for special constants
     LOAD_NONE(0, 0, 1),

@@ -52,12 +52,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_FLOAT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TUPLE;
 import static com.oracle.graal.python.nodes.PGuards.isTruffleString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -223,8 +219,8 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 public abstract class CExtNodes {
 
-    private static final TruffleString T_UNICODE = tsLiteral("unicode");
-    private static final TruffleString T_SUBTYPE_NEW = tsLiteral("_subtype_new");
+    private static final String J_UNICODE = "unicode";
+    private static final String J_SUBTYPE_NEW = "_subtype_new";
 
     @GenerateUncached
     abstract static class ImportCAPISymbolNode extends PNodeWithContext {
@@ -248,33 +244,32 @@ public abstract class CExtNodes {
      */
     @ImportStatic({PGuards.class})
     public abstract static class SubtypeNew extends Node {
+
         /**
-         * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
+         * tget the <code>typename_subtype_new</code> function
          */
-        protected TruffleString getTypenamePrefix() {
+        protected NativeCAPISymbol getFunction() {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
         protected abstract Object execute(Object object, Object arg);
 
-        protected NativeCAPISymbol getFunctionName() {
+        protected static NativeCAPISymbol getFunction(String typenamePrefix) {
             CompilerAsserts.neverPartOfCompilation();
-            TruffleString subtypeNewFunctionName = cat(getTypenamePrefix(), T_SUBTYPE_NEW);
-            if (!NativeCAPISymbol.isValid(subtypeNewFunctionName, TruffleString.EqualNode.getUncached())) {
-                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + subtypeNewFunctionName);
-            }
-            return NativeCAPISymbol.getByName(subtypeNewFunctionName, TruffleString.EqualNode.getUncached());
+            String subtypeNewFunctionName = typenamePrefix + J_SUBTYPE_NEW;
+            NativeCAPISymbol result = NativeCAPISymbol.getByName(subtypeNewFunctionName);
+            assert result != null : "SubtypeNew function not found: " + subtypeNewFunctionName;
+            return result;
         }
 
         @Specialization(guards = "isNativeClass(object)")
         protected Object callNativeConstructor(Object object, Object arg,
-                        @Cached("getFunctionName()") NativeCAPISymbol functionName,
                         @Cached ToSulongNode toSulongNode,
                         @Cached ToJavaNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             try {
-                Object result = interopLibrary.execute(importCAPISymbolNode.execute(functionName), toSulongNode.execute(object), arg);
+                Object result = interopLibrary.execute(importCAPISymbolNode.execute(getFunction()), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -284,9 +279,12 @@ public abstract class CExtNodes {
     }
 
     public abstract static class FloatSubtypeNew extends SubtypeNew {
+
+        private static final NativeCAPISymbol NEW_FUNCTION = getFunction(BuiltinNames.J_FLOAT);
+
         @Override
-        protected final TruffleString getTypenamePrefix() {
-            return T_FLOAT;
+        protected final NativeCAPISymbol getFunction() {
+            return NEW_FUNCTION;
         }
 
         public final Object call(Object object, double arg) {
@@ -300,11 +298,13 @@ public abstract class CExtNodes {
 
     public abstract static class TupleSubtypeNew extends SubtypeNew {
 
+        private static final NativeCAPISymbol NEW_FUNCTION = getFunction(BuiltinNames.J_TUPLE);
+
         @Child private ToSulongNode toSulongNode;
 
         @Override
-        protected final TruffleString getTypenamePrefix() {
-            return T_TUPLE;
+        protected final NativeCAPISymbol getFunction() {
+            return NEW_FUNCTION;
         }
 
         public final Object call(Object object, Object arg) {
@@ -321,11 +321,14 @@ public abstract class CExtNodes {
     }
 
     public abstract static class StringSubtypeNew extends SubtypeNew {
+
+        private static final NativeCAPISymbol NEW_FUNCTION = getFunction(J_UNICODE);
+
         @Child private ToSulongNode toSulongNode;
 
         @Override
-        protected final TruffleString getTypenamePrefix() {
-            return T_UNICODE;
+        protected final NativeCAPISymbol getFunction() {
+            return NEW_FUNCTION;
         }
 
         public final Object call(Object object, Object arg) {
@@ -2792,24 +2795,20 @@ public abstract class CExtNodes {
         static Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
                         @SuppressWarnings("unused") @Cached TruffleString.ConcatNode concatNode,
-                        @Cached TruffleString.EqualNode eqNode,
-                        @Cached("getterFuncName(memberName, concatNode, eqNode)") NativeCAPISymbol getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
-            return toJavaNode.execute(callMemberGetterNode.call(getterName, toSulong.execute(self)));
+            return toJavaNode.execute(callMemberGetterNode.call(cachedMemberName.getGetterFunctionName(), toSulong.execute(self)));
         }
 
         @Specialization(replaces = {"doCachedObj", "getByMember", "getByMemberAttachType", "doCachedMember"})
         static Object doGeneric(Object self, NativeMember memberName,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached TruffleString.ConcatNode concatNode,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached ToJavaNode toJavaNode,
                         @Cached CharPtrToJavaNode charPtrToJavaNode,
                         @Cached VoidPtrToJavaNode voidPtrToJavaNode,
-                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode,
-                        @Cached TruffleString.EqualNode eqNode) {
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
             if (self instanceof PythonAbstractNativeObject) {
                 PythonAbstractNativeObject nativeObject = (PythonAbstractNativeObject) self;
                 if (lib.hasMembers(nativeObject.getPtr())) {
@@ -2820,7 +2819,7 @@ public abstract class CExtNodes {
                     }
                 }
             }
-            Object value = callMemberGetterNode.call(getterFuncName(memberName, concatNode, eqNode), toSulong.execute(self));
+            Object value = callMemberGetterNode.call(memberName.getGetterFunctionName(), toSulong.execute(self));
             switch (memberName.getType()) {
                 case OBJECT:
                     return toJavaNode.execute(value);
@@ -2834,14 +2833,7 @@ public abstract class CExtNodes {
         }
 
         static Object doSlowPath(Object obj, NativeMember memberName) {
-            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(
-                            getterFuncName(memberName, TruffleString.ConcatNode.getUncached(), TruffleString.EqualNode.getUncached()), ToSulongNode.getUncached().execute(obj)));
-        }
-
-        static NativeCAPISymbol getterFuncName(NativeMember memberName, TruffleString.ConcatNode concatNode, TruffleString.EqualNode eqNode) {
-            TruffleString name = concatNode.execute(T_GET_, memberName.getMemberNameTruffleString(), TS_ENCODING, false);
-            assert NativeCAPISymbol.isValid(name, eqNode) : "invalid native member getter function " + name;
-            return NativeCAPISymbol.getByName(name, eqNode);
+            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(memberName.getGetterFunctionName(), ToSulongNode.getUncached().execute(obj)));
         }
 
         static ToJavaBaseNode createForMember(NativeMember member) {
@@ -3158,7 +3150,6 @@ public abstract class CExtNodes {
         static long doNativeObjectTypedWithContext(CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
                 boolean haveCApiContext = cApiContext != null;
@@ -3196,9 +3187,8 @@ public abstract class CExtNodes {
         static long doNativeObjectTyped(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
-            return doNativeObjectTypedWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, toJavaStringNode, castToJavaLongNode);
+            return doNativeObjectTypedWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
         }
 
         @Specialization(limit = "2", replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext", "doNativeObjectTyped"})
@@ -3344,7 +3334,7 @@ public abstract class CExtNodes {
             // TODO(fa): get rid of lazy initialization for better sharing
             if (llvmTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                NativeCAPISymbol getterFunctionSymbol = LLVMType.getGetterFunctionName(llvmType);
+                NativeCAPISymbol getterFunctionSymbol = llvmType.getGetterFunctionName();
                 llvmTypeID = PCallCapiFunction.getUncached().call(getterFunctionSymbol);
                 cApiContext.setLLVMTypeID(cachedType, llvmTypeID);
             }
@@ -4116,7 +4106,7 @@ public abstract class CExtNodes {
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getTsName(), result);
             return (PMemoryView) asPythonObjectNode.execute(result);
         }
     }
