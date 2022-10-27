@@ -76,3 +76,18 @@ class TestMixedInheritanceDict:
         assert not hasattr(A(), '__dict__')
         assert hasattr(B(), '__dict__')
         assert hasattr(C(), '__dict__')
+
+    def test_slots_subprop(self):
+        class PropertySubSlots(property):
+            __slots__ = ()
+
+        try:
+            class Foo(object):
+                @PropertySubSlots
+                def spam(self):
+                    """Trying to copy this docstring will raise an exception"""
+                    return 1
+        except AttributeError:
+            pass
+        else:
+            raise Exception("AttributeError not raised")
