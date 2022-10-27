@@ -883,7 +883,7 @@ public class CompilerTests extends PythonTests {
 
     @Test
     public void testRepeatedKwArg() {
-        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "keyword argument repeated");
+        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "keyword argument repeated: k1");
     }
 
     @Test
