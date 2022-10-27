@@ -1619,6 +1619,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeCheckSeq(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
                         break;
                     }
+                    case OpCodesConstants.MATCH_CLASS: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeMatchClass(virtualFrame, useCachedNodes, stackTop, oparg, bci, localNodes);
+                        break;
+                    }
                     case OpCodesConstants.GET_LEN: {
                         stackTop = bytecodeGetLen(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
                         break;
@@ -2270,6 +2275,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         GetTPFlagsNode flagsNode = insertChildNode(localNodes, bci, UNCACHED_TP_FLAGS, GetTPFlagsNodeGen.class, NODE_TP_FLAGS, useCachedNodes);
         boolean res = (flagsNode.execute(seq) & Py_TPFLAGS_SEQUENCE) != 0;
         virtualFrame.setObject(++stackTop, res);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeMatchClass(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int oparg, int bci, Node[] localNodes) {
+        TruffleString[] names = (TruffleString[]) virtualFrame.getObject(stackTop--);
+        Object type = virtualFrame.getObject(stackTop);
+        Object subject = virtualFrame.getObject(stackTop - 1);
+
+        MatchClassNode matchClassNode = insertChildNode(localNodes, bci, MatchClassNodeGen.class, NODE_MATCH_CLASS);
+        Object attrs = matchClassNode.execute(virtualFrame, subject, type, oparg, names);
+
+        if (attrs != null) {
+            virtualFrame.setObject(stackTop, true);
+            virtualFrame.setObject(stackTop - 1, attrs);
+        } else {
+            virtualFrame.setObject(stackTop, false);
+        }
         return stackTop;
     }
 
