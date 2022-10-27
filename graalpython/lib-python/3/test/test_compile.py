@@ -154,6 +154,7 @@ if 1:
     # to other implementations.  We are trying to ensure that when
     # the first line of code starts after 256, correct line numbers
     # in tracebacks are still produced.
+    @impl_detail("CPython bytecode", graalpy=False)
     def test_leading_newlines(self):
         s256 = "".join(["\n"] * 256 + ["spam"])
         co = compile(s256, 'fn', 'exec')
