@@ -1823,6 +1823,7 @@ public abstract class TypeNodes {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
         @Child private GetAnyAttributeNode getAttrNode;
+        @Child private ReadAttributeFromObjectNode readAttr;
         @Child private CastToJavaIntExactNode castToInt;
         @Child private CastToListNode castToList;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
@@ -1941,7 +1942,6 @@ public abstract class TypeNodes {
                 addWeakrefDescrAttribute(pythonClass, factory);
             } else {
                 // have slots
-
                 // Make it into a list
                 SequenceStorage slotsStorage;
                 Object slotsObject;
@@ -1964,6 +1964,10 @@ public abstract class TypeNodes {
                     throw raise.raise(TypeError, ErrorMessages.NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S, base);
                 }
 
+                if (isAnyBaseWithoutSlots(pythonClass, mro)) {
+                    addDictIfNative(frame, pythonClass, mro, getItemSize, writeItemSize);
+                    addDictDescrAttribute(basesArray, pythonClass, factory);
+                }
                 for (int i = 0; i < slotlen; i++) {
                     TruffleString slotName;
                     Object element = getSlotItemNode().execute(slotsStorage, i);
@@ -2031,6 +2035,17 @@ public abstract class TypeNodes {
             return pythonClass;
         }
 
+        private boolean isAnyBaseWithoutSlots(PythonClass pythonClass, PythonAbstractClass[] mro) {
+            for (PythonAbstractClass cls : mro) {
+                if (cls != pythonClass && !PGuards.isNativeClass(cls) && !PGuards.isPythonBuiltinClass(cls)) {
+                    if (!hasSlots(cls)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         @TruffleBoundary
         private static void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass, PythonObjectFactory factory) {
             // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
@@ -2086,6 +2101,19 @@ public abstract class TypeNodes {
                 }
             }
             return false;
+        }
+
+        private boolean hasSlots(Object type) {
+            Object slots = getReadAttr().execute(type, T___SLOTS__);
+            return slots != PNone.NO_VALUE;
+        }
+
+        private ReadAttributeFromObjectNode getReadAttr() {
+            if (readAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttr = insert(ReadAttributeFromObjectNode.createForceType());
+            }
+            return readAttr;
         }
 
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
