@@ -60,10 +60,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.modules.cext.PythonCextContextVarBuiltins;
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -121,6 +117,7 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
