@@ -192,7 +192,7 @@ def known_packages():
     @pip_package()
     def setuptools(**kwargs):
         six(**kwargs)
-        install_from_pypi("setuptools==41.0.1", **kwargs)
+        install_from_pypi("setuptools==63.2.0", **kwargs)
 
     @pip_package()
     def pkgconfig(**kwargs):
