@@ -195,9 +195,9 @@ public class ClassmethodBuiltins extends PythonBuiltins {
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        private static final TruffleString PREFIX = tsLiteral("<classmethod");
+        private static final TruffleString PREFIX = tsLiteral("<classmethod(");
         private static final int PREFIX_LEN = PREFIX.byteLength(TS_ENCODING);
-        private static final TruffleString SUFFIX = tsLiteral(">");
+        private static final TruffleString SUFFIX = tsLiteral(")>");
         private static final int SUFFIX_LEN = SUFFIX.byteLength(TS_ENCODING);
 
         @Specialization
