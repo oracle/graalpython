@@ -967,15 +967,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object unregister(Object serachFunction) {
+        Object unregister(Object searchFunction) {
             PythonContext context = PythonContext.get(this);
-            remove(context, serachFunction);
+            remove(context, searchFunction);
             return PNone.NONE;
         }
 
         @TruffleBoundary
         private static void remove(PythonContext context, Object searchFunction) {
             context.getCodecSearchPath().remove(searchFunction);
+            context.getCodecSearchCache().clear();
         }
     }
 
