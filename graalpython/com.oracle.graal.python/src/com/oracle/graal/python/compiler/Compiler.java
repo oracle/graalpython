@@ -1888,8 +1888,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(KeywordTy node) {
         node.value.accept(this);
-        setLocation(node);
-        return addOp(MAKE_KEYWORD, addObject(unit.constants, toTruffleStringUncached(node.arg)));
+        SourceRange savedLocation = setLocation(node);
+        try {
+            return addOp(MAKE_KEYWORD, addObject(unit.constants, toTruffleStringUncached(node.arg)));
+        } finally {
+            setLocation(savedLocation);
+        }
     }
 
     @Override
