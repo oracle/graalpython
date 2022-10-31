@@ -4,6 +4,6 @@ Disassembly of <module>:
   1:0   -   1:22        4 COLLECTION_FROM_STACK             1    (Object[])
   1:18  -   1:21        6 LOAD_STRING                       1    (';')
   1:14  -   1:21        8 MAKE_KEYWORD                      2    ('end')
-  1:14  -   1:21       10 COLLECTION_FROM_STACK             1    (PKeyword[])
-  1:14  -   1:21       12 CALL_FUNCTION_KW
+  1:0   -   1:22       10 COLLECTION_FROM_STACK             1    (PKeyword[])
+  1:0   -   1:22       12 CALL_FUNCTION_KW
   1:0   -   1:22       13 RETURN_VALUE
