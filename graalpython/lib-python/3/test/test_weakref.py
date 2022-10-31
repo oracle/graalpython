@@ -11,7 +11,7 @@ import time
 import random
 
 from test import support
-from test.support import script_helper, ALWAYS_EQ
+from test.support import script_helper, ALWAYS_EQ, impl_detail
 from test.support import gc_collect
 
 # Used in ReferencesTestCase.test_ref_created_during_del() .
@@ -2056,6 +2056,7 @@ class FinalizeTestCase(unittest.TestCase):
         self.assertRaises(TypeError, weakref.finalize, a)
         self.assertRaises(TypeError, weakref.finalize)
 
+    @impl_detail("finalization", graalpy=False)  # We cannot guarantee that objects get collected in a specific order
     def test_order(self):
         a = self.A()
         res = []

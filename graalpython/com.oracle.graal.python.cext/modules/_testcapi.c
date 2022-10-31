@@ -3789,6 +3789,7 @@ without_gc(PyObject *Py_UNUSED(self), PyObject *obj)
     if (!PyType_Check(obj) || !PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE)) {
         return PyErr_Format(PyExc_TypeError, "heap type expected, got %R", obj);
     }
+    /* GraalVM Change
     if (PyType_IS_GC(tp)) {
         // Don't try this at home, kids:
         tp->tp_flags -= Py_TPFLAGS_HAVE_GC;
@@ -3797,6 +3798,7 @@ without_gc(PyObject *Py_UNUSED(self), PyObject *obj)
         tp->tp_clear = NULL;
     }
     assert(!PyType_IS_GC(tp));
+    */
     Py_INCREF(obj);
     return obj;
 }
