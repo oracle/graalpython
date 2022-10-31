@@ -2752,7 +2752,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         checkForbiddenName(n, ExprContextTy.Store);
         // Can't assign to the same name twice:
         if (pc.stores.contains(n)) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name '%s' in pattern", n);
+            duplicateStoreError(n);
         }
         // Rotate this object underneath any items we need to preserve:
         pc.stores.add(n);
@@ -2835,7 +2835,119 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public Void visit(PatternTy.MatchOr node, PatternContext pc) {
-        return emitNotImplemented("match or");
+        Block end = new Block();
+        int size = node.patterns.length;
+        assert size > 1;
+        PatternContext oldPc = pc;
+        // control is the list of names bound by the first alternative. It is used
+        // for checking different name bindings in alternatives, and for correcting
+        // the order in which extracted elements are placed on the stack.
+        ArrayList<String> control = null;
+
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = node.patterns[i];
+            setLocation(pattern);
+            pc = new PatternContext();
+            pc.stores = new ArrayList<>();
+            // An irrefutable sub-pattern must be last, if it is allowed at all:
+            pc.allowIrrefutable = (i == size - 1) && oldPc.allowIrrefutable;
+            pc.failPop = null;
+            pc.onTop = 0;
+
+            addOp(DUP_TOP);
+            visit(pattern, pc);
+            int nstores = pc.stores.size();
+            if (i == 0) {
+                // This is the first alternative, so save its stores as a "control"
+                // for the others (they can't bind a different set of names, and
+                // might need to be reordered):
+                assert control == null;
+                control = pc.stores;
+            }
+            if (nstores != control.size()) {
+                altPatternsDiffNamesError();
+            } else if (nstores != 0) {
+                // There were captures. Check to see if we differ from control:
+                int icontrol = nstores;
+                while (icontrol-- > 0) {
+                    String name = control.get(icontrol);
+                    int istores = pc.stores.indexOf(name);
+                    if (istores < 0) {
+                        altPatternsDiffNamesError();
+                    }
+                    if (icontrol != istores) {
+                        // Reorder the names on the stack to match the order of the
+                        // names in control. There's probably a better way of doing
+                        // this; the current solution is potentially very
+                        // inefficient when each alternative subpattern binds lots
+                        // of names in different orders. It's fine for reasonable
+                        // cases, though.
+                        assert istores < icontrol;
+                        int rotations = istores + 1;
+                        // Perform the same rotation on pc.stores:
+                        ArrayList<String> rotated = new ArrayList<>();
+                        Iterator<String> it = pc.stores.iterator();
+                        int r = 0;
+                        while (it.hasNext() && r++ < rotations) {
+                            rotated.add(it.next());
+                            it.remove();
+                        }
+                        for (int j = 0; j < rotated.size(); j++) {
+                            pc.stores.add(icontrol - istores + j, rotated.get(j));
+                        }
+
+                        // That just did:
+                        // rotated = pc_stores[:rotations]
+                        // del pc_stores[:rotations]
+                        // pc_stores[icontrol-istores:icontrol-istores] = rotated
+                        // Do the same thing to the stack, using several ROT_Ns:
+                        while (rotations-- > 0) {
+                            addOp(ROT_N, icontrol + 1);
+                        }
+                    }
+                }
+            }
+            assert control != null;
+            addOp(JUMP_FORWARD, end);
+            unit.useNextBlock(new Block());
+            emitAndResetFailPop(pc);
+        }
+        pc = oldPc;
+        addOp(POP_TOP);
+        jumpToFailPop(JUMP_FORWARD, pc);
+        unit.useNextBlock(end);
+
+        int nstores = control.size();
+        // There's a bunch of stuff on the stack between any where the new stores
+        // are and where they need to be:
+        // - The other stores.
+        // - A copy of the subject.
+        // - Anything else that may be on top of the stack.
+        // - Any previous stores we've already stashed away on the stack.
+        int nrots = nstores + 1 + pc.onTop + pc.stores.size();
+        for (int i = 0; i < nstores; i++) {
+            // Rotate this capture to its proper place on the stack:
+            addOp(ROT_N, nrots);
+            // Update the list of previous stores with this new name, checking for duplicates:
+            String name = control.get(i);
+            if (pc.stores.contains(name)) {
+                duplicateStoreError(name);
+            }
+            pc.stores.add(name);
+        }
+
+        // Pop the copy of the subject:
+        addOp(POP_TOP);
+
+        return null;
+    }
+
+    private void altPatternsDiffNamesError() {
+        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "alternative patterns bind different names");
+    }
+
+    private void duplicateStoreError(String name) {
+        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name '%s' in pattern", name);
     }
 
     public Void visit(PatternTy.MatchSingleton node, PatternContext pc) {
