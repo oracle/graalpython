@@ -10,7 +10,7 @@ Output:
 Module[1:0-4:10]
     FunctionDef[1:0-4:10]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         With[2:2-4:10]
             Items:

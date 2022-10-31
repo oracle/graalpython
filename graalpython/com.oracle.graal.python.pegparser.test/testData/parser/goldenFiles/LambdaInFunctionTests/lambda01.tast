@@ -8,9 +8,9 @@ Output:
 Module[1:0-2:11]
     FunctionDef[1:0-2:11]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         Lambda[2:2-2:11]
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             Body: LONG[2:10-2:11] Value: 0
         ---- End of fn function ----

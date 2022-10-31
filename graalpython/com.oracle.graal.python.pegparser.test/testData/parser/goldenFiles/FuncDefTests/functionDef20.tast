@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:64]
     FunctionDef[1:0-1:64]
         Name:__init__
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:13-1:17] self
                 ArgTy[1:19-1:27] max_size

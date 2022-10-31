@@ -8,7 +8,7 @@ Output:
 Module[1:0-2:24]
     AsyncFunctionDef[1:0-2:24]
         Name:f
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
         Assign[2:1-2:24]
             LHS: 

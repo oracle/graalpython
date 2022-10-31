@@ -8,7 +8,7 @@ Output:
 Module[1:0-2:60]
     FunctionDef[1:0-2:60]
         Name:__new__
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:12-1:16] _cls
                 ArgTy[1:18-1:22] hits

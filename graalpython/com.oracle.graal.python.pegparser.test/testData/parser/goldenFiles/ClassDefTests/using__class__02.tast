@@ -18,7 +18,7 @@ Module[1:0-9:30]
         ---- Class body of X ----
         FunctionDef[2:12-7:24]
             Name:createY
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:24-2:28] this
             ---- Function body of createY ----
@@ -29,7 +29,7 @@ Module[1:0-9:30]
                     RHS: Name[4:24-4:33] Value: "__class__"
                 FunctionDef[5:20-6:37]
                     Name:methodY
-                    ArgumentsTy[0:0-0:0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
                             ArgTy[5:32-5:36] this
                     ---- Function body of methodY ----
@@ -42,7 +42,7 @@ Module[1:0-9:30]
             ---- End of createY function ----
         FunctionDef[8:12-9:30]
             Name:methodX
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[8:24-8:28] this
             ---- Function body of methodX ----

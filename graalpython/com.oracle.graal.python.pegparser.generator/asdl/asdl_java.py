@@ -388,7 +388,7 @@ class Obj2Sst2Generator(Generator):
             for a in attributes:
                 self.visit_field(a, class_name, emitter)
             names = ', '.join(a.name.java for a in attributes)
-            emitter.println(f'SourceRange sourceRange = new SourceRange(0, 0, {names});')
+            emitter.println(f'SourceRange sourceRange = new SourceRange({names});')
         else:
             emitter.println(f'SourceRange sourceRange = SourceRange.ARTIFICIAL_RANGE;')
 

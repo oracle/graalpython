@@ -11,7 +11,7 @@ Output:
 Module[1:0-5:19]
     FunctionDef[1:0-5:19]
         Name:merge
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:10-1:11] h
         ---- Function body of merge ----

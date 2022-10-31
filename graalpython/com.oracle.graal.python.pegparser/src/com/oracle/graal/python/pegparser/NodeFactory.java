@@ -45,7 +45,6 @@ package com.oracle.graal.python.pegparser;
 import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_ARG_ARRAY;
 import static com.oracle.graal.python.pegparser.AbstractParser.EMPTY_EXPR_ARRAY;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.oracle.graal.python.pegparser.AbstractParser.NameDefaultPair;
@@ -68,6 +67,8 @@ import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.StringLiteralUtils;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy.TypeIgnore;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -78,9 +79,6 @@ public class NodeFactory {
     }
 
     public StmtTy createAssert(ExprTy test, ExprTy msg, SourceRange sourceRange) {
-        if (test == null) {
-            // TODO Handle error if the field is null.
-        }
         return new StmtTy.Assert(test, msg, sourceRange);
     }
 
@@ -96,8 +94,8 @@ public class NodeFactory {
         return new ExprTy.BinOp(left, op, right, sourceRange);
     }
 
-    public ModTy createModule(StmtTy[] statements, SourceRange sourceRange) {
-        return new ModTy.Module(statements, null, sourceRange);
+    public ModTy createModule(StmtTy[] statements, TypeIgnoreTy[] typeIgnores, SourceRange sourceRange) {
+        return new ModTy.Module(statements, typeIgnores, sourceRange);
     }
 
     public ModTy createExpressionModule(ExprTy expression, SourceRange sourceRange) {
@@ -106,6 +104,14 @@ public class NodeFactory {
 
     public ModTy createInteractiveModule(StmtTy[] body, SourceRange sourceRange) {
         return new ModTy.Interactive(body, sourceRange);
+    }
+
+    public ModTy createFunctionType(ExprTy[] argTypes, ExprTy returns, SourceRange sourceRange) {
+        return new ModTy.FunctionType(argTypes, returns, sourceRange);
+    }
+
+    public TypeIgnore createTypeIgnore(int lineNo, String tag, SourceRange sourceRange) {
+        return new TypeIgnoreTy.TypeIgnore(lineNo, tag, sourceRange);
     }
 
     public ExprTy createBooleanLiteral(boolean value, SourceRange sourceRange) {
@@ -156,87 +162,8 @@ public class NodeFactory {
         }
     }
 
-    private static int digitValue(char ch) {
-        if (ch >= '0' && ch <= '9') {
-            return ch - '0';
-        } else if (ch >= 'a' && ch <= 'f') {
-            return ch - 'a' + 10;
-        } else {
-            assert ch >= 'A' && ch <= 'f';
-            return ch - 'A' + 10;
-        }
-    }
-
-    public ExprTy createNumber(String numberWithUnderscores, SourceRange sourceRange) {
-        String number = numberWithUnderscores;
-        if (number.contains("_")) {
-            number = number.replace("_", "");
-        }
-        int base = 10;
-        int start = 0;
-        boolean isFloat = false;
-        boolean isComplex = false;
-
-        if (number.startsWith("0")) {
-            if (number.startsWith("0x") || number.startsWith("0X")) {
-                base = 16;
-                start = 2;
-            } else if (number.startsWith("0o") || number.startsWith("0O")) {
-                base = 8;
-                start = 2;
-            } else if (number.startsWith("0b") || number.startsWith("0B")) {
-                base = 2;
-                start = 2;
-            }
-        }
-        if (base == 10) {
-            isComplex = number.endsWith("j") || number.endsWith("J");
-            if (!isComplex) {
-                isFloat = number.contains(".") || number.contains("e") || number.contains("E");
-            }
-        }
-
-        if (isComplex) {
-            double imag = Double.parseDouble(number.substring(0, number.length() - 1));
-            return new ExprTy.Constant(ConstantValue.ofComplex(0.0, imag), null, sourceRange);
-        } else if (isFloat) {
-            return new ExprTy.Constant(ConstantValue.ofDouble(Double.parseDouble(number)), null, sourceRange);
-        } else {
-            final long max = Long.MAX_VALUE;
-            final long moltmax = max / base;
-            int i = start;
-            long result = 0;
-            int lastD;
-            boolean overunder = false;
-            while (i < number.length()) {
-                lastD = digitValue(number.charAt(i));
-
-                long next = result;
-                if (next > moltmax) {
-                    overunder = true;
-                } else {
-                    next *= base;
-                    if (next > (max - lastD)) {
-                        overunder = true;
-                    } else {
-                        next += lastD;
-                    }
-                }
-                if (overunder) {
-                    // overflow
-                    BigInteger bigResult = BigInteger.valueOf(result);
-                    BigInteger bigBase = BigInteger.valueOf(base);
-                    while (i < number.length()) {
-                        bigResult = bigResult.multiply(bigBase).add(BigInteger.valueOf(digitValue(number.charAt(i))));
-                        i++;
-                    }
-                    return new ExprTy.Constant(ConstantValue.ofBigInteger(bigResult), null, sourceRange);
-                }
-                result = next;
-                i++;
-            }
-            return new ExprTy.Constant(ConstantValue.ofLong(result), null, sourceRange);
-        }
+    public ExprTy createConstant(ConstantValue value, SourceRange sourceRange) {
+        return new ExprTy.Constant(value, null, sourceRange);
     }
 
     public ExprTy createString(String[] values, SourceRange[] sourceRanges, FExprParser exprParser, ErrorCallback errorCb, PythonStringFactory<?> stringFactory, int featureVersion) {
@@ -336,12 +263,12 @@ public class NodeFactory {
         }
 
         return new ArgumentsTy(posOnlyArgs, posArgs, starEtc != null ? starEtc.varArg : null, kwOnlyArgs, kwDefaults, starEtc != null ? starEtc.kwArg : null, posDefaults,
-                        new SourceRange(0, 0, 0, 0, 0, 0));
+                        SourceRange.ARTIFICIAL_RANGE);
     }
 
     public ArgumentsTy emptyArguments() {
         return new ArgumentsTy(EMPTY_ARG_ARRAY, EMPTY_ARG_ARRAY, null, EMPTY_ARG_ARRAY, EMPTY_EXPR_ARRAY,
-                        null, EMPTY_EXPR_ARRAY, new SourceRange(0, 0, 0, 0, 0, 0));
+                        null, EMPTY_EXPR_ARRAY, SourceRange.ARTIFICIAL_RANGE);
     }
 
     public ExprTy createComparison(ExprTy left, AbstractParser.CmpopExprPair[] pairs, SourceRange sourceRange) {
@@ -496,7 +423,6 @@ public class NodeFactory {
     }
 
     public WithItemTy createWithItem(ExprTy contextExpr, ExprTy optionalVars, SourceRange sourceRange) {
-        // TODO check if context expr is not null -> throw error
         return new WithItemTy(contextExpr, optionalVars, sourceRange);
     }
 

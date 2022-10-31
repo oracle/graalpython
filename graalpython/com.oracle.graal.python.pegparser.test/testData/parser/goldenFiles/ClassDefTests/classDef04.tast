@@ -13,7 +13,7 @@ Module[1:0-4:19]
         ---- Class body of Complex ----
         FunctionDef[2:1-4:19]
             Name:__init__
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:14-2:18] self
                     ArgTy[2:20-2:28] realpart

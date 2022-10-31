@@ -195,6 +195,9 @@ public class SourceMap {
             if (endColumn < 0) {
                 endColumn = 0;
             }
+            if (endLine == 0) {
+                endLine = startLine;
+            }
             assert startLine >= 0 && endLine >= startLine && (startLine != endLine || endColumn >= startColumn);
             int lineDelta = startLine - lastLine;
             int lineSpan = endLine - startLine;

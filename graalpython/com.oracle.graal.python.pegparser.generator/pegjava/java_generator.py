@@ -225,6 +225,7 @@ ACTION_MAPPINGS = {
     '_PyAST_Expression ( a , p -> arena )': (1, 'factory.createExpressionModule(a, $RANGE)'),
     '_PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFor(t, ex, b, el, newTypeComment(tc), $RANGE)'),
     '_PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, (ExprTy) a, newTypeComment((Token) tc), $RANGE)'),
+    '_PyAST_FunctionType ( a , b , p -> arena )': (1, 'factory.createFunctionType(a, b, $RANGE)'),
     '_PyAST_GeneratorExp ( a , b , EXTRA )': (1, 'factory.createGenerator(a, b, $RANGE)'),
     '_PyAST_Global ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createGlobal(extractNames(a), $RANGE)'),
     '_PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )': (2, 'factory.createIf(a, b, new StmtTy[] {c}, $RANGE)'),
@@ -285,7 +286,7 @@ ACTION_MAPPINGS = {
     '_PyPegen_make_arguments ( p , NULL , NULL , a , b , c )': (2, 'factory.createArguments(null, null, a, b, c)'),
     'CHECK_VERSION ( arguments_ty , 8 , "Positional-only parameters are" , _PyPegen_make_arguments ( p , NULL , a , NULL , b , c ) )': (2, 'checkVersion(8, "Positional-only parameters are", factory.createArguments(null, a, null, b, c))'),
     'CHECK_VERSION ( arguments_ty , 8 , "Positional-only parameters are" , _PyPegen_make_arguments ( p , a , NULL , b , c , d ) )': (2, 'checkVersion(8, "Positional-only parameters are", factory.createArguments(a, null, b, c, d))'),
-    '_PyPegen_make_module ( p , a )': (1, 'factory.createModule(a, $RANGE)'),
+    '_PyPegen_make_module ( p , a )': (1, 'makeModule(a, $RANGE)'),
     '_PyPegen_name_default_pair ( p , a , c , NULL )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getSourceRange()), c)'),
     '_PyPegen_name_default_pair ( p , a , c , tc )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange()), c)'),
     '_PyPegen_nonparen_genexp_in_call ( p , a , b )': (1, 'nonparenGenexpInCall(a, b)'),
@@ -344,10 +345,6 @@ ACTION_MAPPINGS = {
     '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
     '_PyPegen_key_pattern_pair ( p , arg , value )': (1, 'new KeyPatternPair(arg, value)'),
     'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )': (1, 'raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns")'),
-
-    # TODO
-    # compile(..., mode='func_type') - used by ast module only
-    '_PyAST_FunctionType ( a , b , p -> arena )': (1, '@_PyAST_FunctionType ( a , b , p -> arena )'),
 }
 
 # Maps pattern to (n, replacement), where:
@@ -1167,15 +1164,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
     def emit_action(self, node: Alt) -> None:
         action = str(node.action)
-        if action[0] == '@':
-            # TODO remove once all actions are translated to Java
-            self.print(f"// TODO: node.action: {action[1:]}")
-            x = action[1:].replace('"', '\\"')
-            self.print(f'ruleNotImplemented("{x}");')
-            self.print(f"_res = null;")
-        else:
-            self.print(f"_res = {action};")
-
+        self.print(f"_res = {action};")
         self.printDebug(
             f'''debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "{str(node).replace('"', "'")}");'''
         )

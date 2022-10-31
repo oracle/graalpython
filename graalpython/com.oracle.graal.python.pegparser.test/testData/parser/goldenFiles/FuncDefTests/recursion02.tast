@@ -10,11 +10,11 @@ Output:
 Module[1:0-4:19]
     FunctionDef[1:0-4:19]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         FunctionDef[2:2-3:34]
             Name:recursionInner
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:21-2:24] arg
             ---- Function body of recursionInner ----

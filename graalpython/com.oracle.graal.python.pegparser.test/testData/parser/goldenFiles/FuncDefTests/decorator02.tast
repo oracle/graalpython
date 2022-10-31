@@ -18,19 +18,19 @@ Output:
 Module[1:0-12:18]
     FunctionDef[1:0-6:15]
         Name:mydecorator
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:16-1:21] delta
         ---- Function body of mydecorator ----
         FunctionDef[2:4-5:24]
             Name:wrap
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:13-2:15] fn
             ---- Function body of wrap ----
             FunctionDef[3:8-4:36]
                 Name:wrapped_f
-                ArgumentsTy[0:0-0:0]
+                ArgumentsTy[1:0-1:0]
                     VarArg: ArgTy[3:23-3:27] args
                 ---- Function body of wrapped_f ----
                 Return[4:12-4:36] 
@@ -56,7 +56,7 @@ Module[1:0-12:18]
             Target: Name[8:1-8:12] Value: "mydecorator"
             Args:
                 LONG[8:13-8:14] Value: 3
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of getNumber ----
         Return[10:4-10:12] LONG[10:11-10:12] Value: 1
         ---- End of getNumber function ----

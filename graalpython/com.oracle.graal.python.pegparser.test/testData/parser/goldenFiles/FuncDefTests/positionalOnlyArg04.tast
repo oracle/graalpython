@@ -7,7 +7,7 @@ Output:
 Module[1:0-1:30]
     FunctionDef[1:0-1:30]
         Name:name
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             PosOnlyArgs:
                 ArgTy[1:9-1:11] p1
                 ArgTy[1:13-1:15] p2

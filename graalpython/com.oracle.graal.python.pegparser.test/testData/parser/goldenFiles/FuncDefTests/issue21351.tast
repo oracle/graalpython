@@ -19,14 +19,14 @@ Output:
 Module[1:0-12:31]
     FunctionDef[1:0-6:21]
         Name:outer
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
         Assign[2:4-2:14]
             LHS: Name[2:4-2:7] Value: "var" Store
             RHS: NONE[2:10-2:14] Value: null
         FunctionDef[3:4-5:14]
             Name:toInternal
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[3:19-3:22] obj
             ---- Function body of toInternal ----

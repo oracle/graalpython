@@ -21,11 +21,11 @@ Output:
 Module[1:0-14:26]
     FunctionDef[1:0-14:26]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         FunctionDef[2:4-13:21]
             Name:get_nested_class
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of get_nested_class ----
             Assign[3:8-3:30]
                 LHS: Name[3:8-3:22] Value: "method_and_var" Store
@@ -36,7 +36,7 @@ Module[1:0-14:26]
                 ---- Class body of Test ----
                 FunctionDef[5:12-6:31]
                     Name:method_and_var
-                    ArgumentsTy[0:0-0:0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
                             ArgTy[5:31-5:35] self
                     ---- Function body of method_and_var ----
@@ -44,7 +44,7 @@ Module[1:0-14:26]
                     ---- End of method_and_var function ----
                 FunctionDef[7:12-8:37]
                     Name:test
-                    ArgumentsTy[0:0-0:0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
                             ArgTy[7:21-7:25] self
                     ---- Function body of test ----
@@ -52,7 +52,7 @@ Module[1:0-14:26]
                     ---- End of test function ----
                 FunctionDef[9:12-10:36]
                     Name:actual_global
-                    ArgumentsTy[0:0-0:0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
                             ArgTy[9:30-9:34] self
                     ---- Function body of actual_global ----
@@ -64,7 +64,7 @@ Module[1:0-14:26]
                     ---- End of actual_global function ----
                 FunctionDef[11:12-12:32]
                     Name:str
-                    ArgumentsTy[0:0-0:0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
                             ArgTy[11:20-11:24] self
                     ---- Function body of str ----

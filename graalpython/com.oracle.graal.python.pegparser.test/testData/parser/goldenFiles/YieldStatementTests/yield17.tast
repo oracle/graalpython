@@ -14,5 +14,5 @@ Module[1:0-1:37]
                     Call[1:17-1:36]
                         Target: 
                             Lambda[1:18-1:33]
-                                ArgumentsTy[0:0-0:0]
+                                ArgumentsTy[1:0-1:0]
                                 Body: Yield[1:27-1:32]

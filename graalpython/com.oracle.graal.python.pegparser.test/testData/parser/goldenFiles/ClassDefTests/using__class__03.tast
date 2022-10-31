@@ -18,7 +18,7 @@ Module[1:0-9:32]
         ---- Class body of XN ----
         FunctionDef[2:12-4:30]
             Name:fn1
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[2:20-2:24] self
             ---- Function body of fn1 ----
@@ -29,7 +29,7 @@ Module[1:0-9:32]
             ---- End of fn1 function ----
         FunctionDef[5:12-6:32]
             Name:fn2
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[5:20-5:24] self
             ---- Function body of fn2 ----
@@ -37,7 +37,7 @@ Module[1:0-9:32]
             ---- End of fn2 function ----
         FunctionDef[7:12-9:32]
             Name:fn3
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
                 Args:
                     ArgTy[7:20-7:24] slef
             ---- Function body of fn3 ----

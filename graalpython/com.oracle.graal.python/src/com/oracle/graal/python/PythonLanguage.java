@@ -609,7 +609,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
          * expression in a module (see Compiler)
          */
         StmtTy astGetFunction = nodeFactory.createExpression(nodeFactory.createVariable(fnName, SourceRange.ARTIFICIAL_RANGE), SourceRange.ARTIFICIAL_RANGE);
-        return nodeFactory.createModule(new StmtTy[]{astFunction, astGetFunction}, SourceRange.ARTIFICIAL_RANGE);
+        return nodeFactory.createModule(new StmtTy[]{astFunction, astGetFunction}, ((ModTy.Module) mod).typeIgnores, SourceRange.ARTIFICIAL_RANGE);
     }
 
     private static class RootNodeWithArguments extends RootNode {

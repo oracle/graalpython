@@ -1029,7 +1029,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final int PyCF_COMPILE_MASK = PyCF_ONLY_AST | PyCF_ALLOW_TOP_LEVEL_AWAIT | PyCF_TYPE_COMMENTS | PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT;
 
         private static final TruffleString T_SINGLE = tsLiteral("single");
-        private static final TruffleString T_FUNC_EVAL = tsLiteral("func_eval");
+        private static final TruffleString T_FUNC_TYPE = tsLiteral("func_type");
 
         /**
          * Decides whether this node should attempt to map the filename to a URI for the benefit of
@@ -1080,7 +1080,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 pm = ParserMode.Eval;
             } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
                 pm = ParserMode.Statement;
-            } else if (mode.equalsUncached(T_FUNC_EVAL, TS_ENCODING)) {
+            } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
                 if ((flags & PyCF_ONLY_AST) == 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
                 }
@@ -1123,7 +1123,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if ((flags & PyCF_TYPE_COMMENTS) != 0) {
                     compilerFlags.add(AbstractParser.Flags.TYPE_COMMENTS);
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, compilerFlags, featureVersion >= 0 ? featureVersion : PythonLanguage.MINOR);
+                if (featureVersion < 0) {
+                    featureVersion = PythonLanguage.MINOR;
+                }
+                if (featureVersion < 7) {
+                    compilerFlags.add(AbstractParser.Flags.ASYNC_HACKS);
+                }
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 errorCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);

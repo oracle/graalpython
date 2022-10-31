@@ -9,7 +9,7 @@ Output:
 Module[1:0-3:9]
     FunctionDef[1:0-3:9]
         Name:fn
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
         Yield[2:2-2:9]
             LONG[2:8-2:9] Value: 1

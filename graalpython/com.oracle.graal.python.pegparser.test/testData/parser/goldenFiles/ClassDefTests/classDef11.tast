@@ -16,7 +16,7 @@ Output:
 Module[1:0-10:22]
     FunctionDef[1:0-10:22]
         Name:make_named_tuple_class
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:27-1:31] name
                 ArgTy[1:33-1:39] fields
@@ -40,7 +40,7 @@ Module[1:0-10:22]
                 RHS: Name[5:17-5:23] Value: "fields"
             FunctionDef[6:8-9:20]
                 Name:__repr__
-                ArgumentsTy[0:0-0:0]
+                ArgumentsTy[1:0-1:0]
                     Args:
                         ArgTy[6:21-6:25] self
                 ---- Function body of __repr__ ----

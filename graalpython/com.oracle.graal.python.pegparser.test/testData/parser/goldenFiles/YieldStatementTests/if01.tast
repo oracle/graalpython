@@ -11,7 +11,7 @@ Output:
 Module[1:0-5:12]
     FunctionDef[1:0-5:12]
         Name:gen
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of gen ----
         If[2:2-5:12]
             Test: Name[2:5-2:6] Value: "b"

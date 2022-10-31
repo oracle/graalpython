@@ -16,13 +16,13 @@ Output:
 Module[1:0-10:18]
     FunctionDef[1:0-4:15]
         Name:mydecorator
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:16-1:18] fn
         ---- Function body of mydecorator ----
         FunctionDef[2:4-3:23]
             Name:wrap
-            ArgumentsTy[0:0-0:0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of wrap ----
             Return[3:8-3:23] 
                 BinOp[3:15-3:23]
@@ -38,7 +38,7 @@ Module[1:0-10:18]
         Name:getNumber
         Decorators:
         Name[6:1-6:12] Value: "mydecorator"
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of getNumber ----
         Return[8:4-8:12] LONG[8:11-8:12] Value: 1
         ---- End of getNumber function ----

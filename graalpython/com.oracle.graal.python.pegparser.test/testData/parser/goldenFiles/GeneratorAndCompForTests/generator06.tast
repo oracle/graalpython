@@ -16,7 +16,7 @@ Output:
 Module[1:0-10:23]
     FunctionDef[1:0-10:23]
         Name:format_exception_only
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:26-1:30] self
         ---- Function body of format_exception_only ----

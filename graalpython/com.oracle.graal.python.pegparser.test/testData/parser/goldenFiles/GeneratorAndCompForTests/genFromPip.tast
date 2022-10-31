@@ -30,7 +30,7 @@ Output:
 Module[1:0-23:22]
     FunctionDef[1:0-23:22]
         Name:find_on_path
-        ArgumentsTy[0:0-0:0]
+        ArgumentsTy[1:0-1:0]
             Args:
                 ArgTy[1:17-1:25] importer
                 ArgTy[1:27-1:36] path_item
