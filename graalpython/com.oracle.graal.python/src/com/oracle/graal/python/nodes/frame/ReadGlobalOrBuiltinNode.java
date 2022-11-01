@@ -184,12 +184,29 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
-                    "cachedGlobals.getDictStorage() == cachedStorage"}, limit = "1")
+    static final class GlobalsDictStorageChanged extends RuntimeException {
+        private static final GlobalsDictStorageChanged INSTANCE = new GlobalsDictStorageChanged();
+        private static final long serialVersionUID = 2982918866373996561L;
+
+        GlobalsDictStorageChanged() {
+            super(null, null);
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1", rewriteOn = GlobalsDictStorageChanged.class)
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals,
                     @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
                     @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+        if (cachedGlobals.getDictStorage() != cachedStorage) {
+            throw GlobalsDictStorageChanged.INSTANCE;
+        }
         Object result = getItem.execute(cachedStorage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
