@@ -930,6 +930,26 @@ def test_update_side_effect_on_other():
 
     assert 'kw' not in d
 
+
+def test_update_side_effect_on_other_with_dom_storage():
+    class MutatingKey:
+        def __hash__(self):
+            return hash('this_is_dom_storage')
+        def __eq__(self, other):
+            if hasattr(self, 'to_mutate'):
+                self.to_mutate['eq'] = 'eq'
+            return self is other
+
+    class DomStorage:
+        def __init__(self):
+            self.this_is_dom_storage = 1
+
+    key = MutatingKey()
+    d = {key: 1, 'another': 2}
+    d2 = DomStorage().__dict__
+    key.to_mutate = d2
+    assert_raises(RuntimeError, d.update, d2)
+
 def test_iter_changed_size():
     def just_iterate(it):
         for i in it:

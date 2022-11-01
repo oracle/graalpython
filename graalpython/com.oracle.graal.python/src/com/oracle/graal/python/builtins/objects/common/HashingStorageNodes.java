@@ -66,6 +66,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -91,8 +92,15 @@ public class HashingStorageNodes {
          * If the storage may contain keys that may have side-effecting {@code __eq__}
          * implementation.
          */
-        public static boolean mayHaveSideEffectingStorage(PHashingCollection wrapper) {
+        public static boolean mayHaveSideEffectingEq(PHashingCollection wrapper) {
             return wrapper.getDictStorage() instanceof EconomicMapStorage;
+        }
+
+        /**
+         * Quick check if given key object may override builtin side-effects free __hash__.
+         */
+        public static boolean keyMayHaveSideEffectingHash(Object key) {
+            return !(key instanceof TruffleString);
         }
     }
 
@@ -268,6 +276,7 @@ public class HashingStorageNodes {
             return execute(null, self, key, value);
         }
 
+        // TODO: version that takes PHashingCollection? Not great for loops.
         // TODO: Add these execute methods to "Result of method call ignored" inspection in IDE and
         // review the results
         public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key, Object value);
@@ -914,7 +923,7 @@ public class HashingStorageNodes {
         public abstract PHashingCollection execute(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage);
 
         @Specialization
-        static PHashingCollection doEconomicMap2(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
+        static PHashingCollection economic2Economic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
                         @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
             ObjectHashMap srcMap = src.map;
             putNode.put(frame, destStorage.map, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
@@ -922,26 +931,40 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isEconomicMap(destStorage)")
-        static PHashingCollection doEconomicMapOther(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
+        static PHashingCollection economic2Generic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
                         @Cached HashingStorageToEconomicMap toEconomicMapNode,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
-            EconomicMapStorage newStorage = toEconomicMapNode.execute(destStorage);
-            dest.setDictStorage(newStorage);
-            return doEconomicMap2(frame, src, it, dest, newStorage, putNode);
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("itKey") @Cached HashingStorageIteratorKey iterKey,
+                        @Shared("itValue") @Cached HashingStorageIteratorValue iterValue,
+                        @Shared("setItem") @Cached HashingStorageSetItem setItem) {
+            // Note that the point is to avoid side-effecting __hash__ call. Since the source is
+            // economic map, the key may be an arbitrary object, and must avoid calling its __hash__
+            // At the same time we want to avoid transition from an optimized storage if not
+            // necessary
+            ObjectHashMap srcMap = src.map;
+            Object key = srcMap.getKey(it.index);
+            if (HashingStorageGuards.keyMayHaveSideEffectingHash(key)) {
+                EconomicMapStorage newStorage = toEconomicMapNode.execute(destStorage);
+                dest.setDictStorage(newStorage);
+                // avoids __hash__:
+                return economic2Economic(frame, src, it, dest, newStorage, putNode);
+            }
+            return generic2Generic(frame, src, it, dest, destStorage, iterKey, iterValue, setItem);
         }
 
         static boolean isEconomicMap(HashingStorage s) {
             return s instanceof EconomicMapStorage;
         }
 
-        @Specialization(guards = "!isEconomicMap(src)")
-        static PHashingCollection doOtherAny(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
-                        @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageIteratorKey iterValue,
-                        @Cached HashingStorageSetItem setItem) {
+        @Fallback
+        static PHashingCollection generic2Generic(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
+                        @Shared("itKey") @Cached HashingStorageIteratorKey iterKey,
+                        @Shared("itValue") @Cached HashingStorageIteratorValue iterValue,
+                        @Shared("setItem") @Cached HashingStorageSetItem setItem) {
             // We know that for all other storages the key hash must be side effect free, so we can
             // just insert it leaving it up to the HashingStorageSetItem whether we need to compute
-            // hash or not. Since the src is not EconomicMapStorage, we do not know the hash anyway
+            // hash or not. Since the src is not EconomicMapStorage, we do not know the hash anyway.
+            // We still pass the frame, because the insertion may trigger __eq__
             HashingStorage s = setItem.execute(frame, destStorage, iterKey.execute(src, it), iterValue.execute(src, it));
             dest.setDictStorage(s);
             return dest;
@@ -952,12 +975,12 @@ public class HashingStorageNodes {
     public static abstract class HashingStorageAddAllToOther extends Node {
         public abstract void execute(Frame frame, HashingStorage source, PHashingCollection dest);
 
-        @Specialization(guards = "source == dest")
+        @Specialization(guards = "source == dest.getDictStorage()")
         @SuppressWarnings("unused")
         static void doIdentical(Frame frame, HashingStorage source, PHashingCollection dest) {
         }
 
-        @Specialization(guards = "source != dest")
+        @Specialization(guards = "source != dest.getDictStorage()")
         static void doIt(Frame frame, HashingStorage source, PHashingCollection dest,
                         @Cached HashingStorageForEach forEach,
                         @Cached HashingStorageTransferItem transferItem) {
