@@ -119,7 +119,7 @@ features.
 This GraalVM implementation of Python is copyright (c) 2017, 2019 Oracle and/or
 its affiliates and is made available to you under the terms the Universal
 Permissive License v 1.0 as shown at
-[http://oss.oracle.com/licenses/upl](http://oss.oracle.com/licenses/upl). This
+https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/). This
 implementation is in part derived from and contains additional code from 3rd
 parties, the copyrights and licensing of which is detailed in the
 [LICENSE](LICENSE) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
