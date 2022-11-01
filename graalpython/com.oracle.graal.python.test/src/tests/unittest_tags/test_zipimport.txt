@@ -8,7 +8,6 @@
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testAFakeZlib
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testBadMTime
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testBadMagic
-*graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testBadMagic2
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testBeginningCruftAndComment
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testBytesPath
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testComment
@@ -27,7 +26,6 @@
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testAFakeZlib
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBadMTime
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBadMagic
-*graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBadMagic2
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBeginningCruftAndComment
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBytesPath
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testComment
