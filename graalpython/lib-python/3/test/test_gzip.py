@@ -10,7 +10,7 @@ import struct
 import sys
 import unittest
 from subprocess import PIPE, Popen
-from test.support import import_helper
+from test.support import import_helper, impl_detail
 from test.support import os_helper
 from test.support import _4G, bigmemtest
 from test.support.script_helper import assert_python_ok, assert_python_failure
@@ -752,7 +752,7 @@ def create_and_remove_directory(directory):
 class TestCommandLine(unittest.TestCase):
     data = b'This is a simple test with gzip'
 
-    @support.impl_detail("timeout", graalpy=False)
+    @impl_detail("timeout", graalpy=False)
     def test_decompress_stdin_stdout(self):
         with io.BytesIO() as bytes_io:
             with gzip.GzipFile(fileobj=bytes_io, mode='wb') as gzip_file:
@@ -788,7 +788,7 @@ class TestCommandLine(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertEqual(out, b'')
 
-    @support.impl_detail("timeout", graalpy=False)
+    @impl_detail("timeout", graalpy=False)
     @create_and_remove_directory(TEMPDIR)
     def test_compress_stdin_outfile(self):
         args = sys.executable, '-m', 'gzip'
