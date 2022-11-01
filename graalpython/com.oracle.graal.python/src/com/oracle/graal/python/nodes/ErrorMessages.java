@@ -1026,8 +1026,8 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
     public static final TruffleString EXPECTING_VALUE = tsLiteral("Expecting value");
     public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
-    public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("\"zip() argument %d is longer than argument%s%d\",");
-    public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("\"zip() argument %d is shorter than argument%s%d\",");
+    public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
+    public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");
