@@ -80,11 +80,14 @@ _PyRuntimeState_GetThreadState(_PyRuntimeState *runtime)
 static inline PyThreadState*
 _PyThreadState_GET(void)
 {
+    /* GraalVM change
 #ifdef EXPERIMENTAL_ISOLATED_SUBINTERPRETERS
     return _PyThreadState_GetTSS();
 #else
     return _PyRuntimeState_GetThreadState(&_PyRuntime);
 #endif
+     */
+    return PyThreadState_Get();
 }
 
 /* Redefine PyThreadState_GET() as an alias to _PyThreadState_GET() */

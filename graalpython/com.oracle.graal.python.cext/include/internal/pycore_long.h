@@ -51,28 +51,19 @@ extern "C" {
 # error "_PY_LONG_DEFAULT_MAX_STR_DIGITS smaller than threshold."
 #endif
 
-// Don't call this function but _PyLong_GetZero() and _PyLong_GetOne()
-static inline PyObject* __PyLong_GetSmallInt_internal(int value)
-{
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-    assert(-_PY_NSMALLNEGINTS <= value && value < _PY_NSMALLPOSINTS);
-    size_t index = _PY_NSMALLNEGINTS + value;
-    PyObject *obj = (PyObject*)interp->small_ints[index];
-    // _PyLong_GetZero(), _PyLong_GetOne() and get_small_int() must not be
-    // called before _PyLong_Init() nor after _PyLong_Fini().
-    assert(obj != NULL);
-    return obj;
-}
+// GraalVM change: use our own globals instead of interpreter state
+extern PyObject* _PyTruffle_Zero;
+extern PyObject* _PyTruffle_One;
 
 // Return a borrowed reference to the zero singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetZero(void)
-{ return __PyLong_GetSmallInt_internal(0); }
+{ return _PyTruffle_Zero; }
 
 // Return a borrowed reference to the one singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetOne(void)
-{ return __PyLong_GetSmallInt_internal(1); }
+{ return _PyTruffle_One; }
 
 #ifdef __cplusplus
 }

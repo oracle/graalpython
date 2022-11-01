@@ -320,6 +320,9 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
+PyObject* _PyTruffle_Zero;
+PyObject* _PyTruffle_One;
+
 static void initialize_globals() {
     // register native NULL
     wrapped_null = polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
@@ -336,6 +339,9 @@ static void initialize_globals() {
     // True, False
     _Py_TrueStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
     _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
+
+    _PyTruffle_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 1, 1);
+    _PyTruffle_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 0, 1);
 }
 
 static void initialize_bufferprocs() {
