@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -560,9 +561,10 @@ public class BytesIOBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, PBytesIO self,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PyMemoryViewFromObject memoryViewNode) {
+                        @Cached PyMemoryViewFromObject memoryViewNode,
+                        @Cached SequenceStorageNodes.SetLenNode setLenNode) {
             self.unshareIfNecessary(bufferLib, factory());
-
+            setLenNode.execute(self.getBuf().getSequenceStorage(), self.getStringSize());
             PBytesIOBuffer buf = factory().createBytesIOBuf(PBytesIOBuf, self);
             return memoryViewNode.execute(frame, buf);
         }
