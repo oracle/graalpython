@@ -51,7 +51,6 @@
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_sni_callback
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_sni_callback_refcycle
-*graalpython.lib-python.3.test.test_ssl.ContextTests.test_verify_flags
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_verify_mode_protocol
 *graalpython.lib-python.3.test.test_ssl.MemoryBIOTests.test_buffer_types
 *graalpython.lib-python.3.test.test_ssl.MemoryBIOTests.test_eof
@@ -105,7 +104,6 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_do_handshake_enotconn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_dual_rsa_ecc
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ecc_cert
-*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert_enotconn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_handshake_timeout

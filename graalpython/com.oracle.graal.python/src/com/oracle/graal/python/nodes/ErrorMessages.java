@@ -1039,10 +1039,10 @@ public abstract class ErrorMessages {
     public static final TruffleString SSL_WANT_READ = tsLiteral("The operation did not complete (read)");
     public static final TruffleString SSL_WANT_WRITE = tsLiteral("The operation did not complete (write)");
     public static final TruffleString SSL_ERROR_EOF = tsLiteral("EOF occurred in violation of protocol");
-    public static final TruffleString SSL_PEM_NO_START_LINE = tsLiteral("[PEM: NO_START_LINE] no start line");
+    public static final TruffleString SSL_PEM_NO_START_LINE = tsLiteral("no start line: cadata does not contain a certificate");
     public static final TruffleString CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED = tsLiteral("cafile, capath and cadata cannot be all omitted");
     public static final TruffleString EMPTY_CERTIFICATE_DATA = tsLiteral("Empty certificate data");
-    public static final TruffleString NOT_ENOUGH_DATA = tsLiteral("not enough data");
+    public static final TruffleString NOT_ENOUGH_DATA = tsLiteral("not enough data: cadata does not contain a certificate");
     public static final TruffleString KEY_VALUES_MISMATCH = tsLiteral("[X509: KEY_VALUES_MISMATCH] key values mismatch");
     public static final TruffleString BAD_BASE64_DECODE = tsLiteral("[PEM: BAD_BASE64_DECODE] bad base64 decode");
     public static final TruffleString NO_CERTIFICATE_OR_CRL_FOUND = tsLiteral("[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found");
