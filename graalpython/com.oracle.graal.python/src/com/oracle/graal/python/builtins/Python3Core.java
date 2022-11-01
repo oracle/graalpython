@@ -60,8 +60,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -119,6 +117,7 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
@@ -280,6 +279,7 @@ import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PairwiseBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
@@ -1103,10 +1103,16 @@ public abstract class Python3Core extends ParserErrorCallback {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(toTruffleStringUncached(annotation.defineModule())), builtin);
+                PythonModule module = builtinModules.get(toTruffleStringUncached(annotation.defineModule()));
+                if (module != null) {
+                    addBuiltinsTo(module, builtin);
+                }
             }
             if (annotation.extendsModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(toTruffleStringUncached(annotation.extendsModule())), builtin);
+                PythonModule module = builtinModules.get(toTruffleStringUncached(annotation.extendsModule()));
+                if (module != null) {
+                    addBuiltinsTo(module, builtin);
+                }
             }
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);

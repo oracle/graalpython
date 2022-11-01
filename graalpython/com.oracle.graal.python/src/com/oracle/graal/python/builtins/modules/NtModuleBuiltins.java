@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -71,7 +70,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class NtModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return NtModuleBuiltinsFactory.getFactories();
     }
 
     @Override
