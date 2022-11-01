@@ -1,8 +1,9 @@
 Disassembly of <module>:
   1:9   -   1:14        0 LOAD_CONST_COLLECTION             0    ([1, 2] type int into list)
   1:0   -   2:5         3 GET_ITER
-  1:0   -   2:5   >>    4 FOR_ITER                          6    (to 10)
+  1:0   -   2:5   >>    4 FOR_ITER                          7    (to 11)
   1:4   -   1:5         6 STORE_NAME                        0    (i)
-  1:0   -   2:5         8 JUMP_BACKWARD                     4    (to 4)
-  1:0   -   2:5   >>   10 LOAD_NONE
-  1:0   -   2:5        11 RETURN_VALUE
+  2:1   -   2:5         8 NOP
+  2:1   -   2:5         9 JUMP_BACKWARD                     5    (to 4)
+  2:1   -   2:5   >>   11 LOAD_NONE
+  2:1   -   2:5        12 RETURN_VALUE

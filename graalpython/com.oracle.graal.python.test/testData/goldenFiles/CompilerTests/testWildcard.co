@@ -1,6 +1,7 @@
 Disassembly of <module>:
   1:6   -   1:7         0 LOAD_BYTE_O                       1
   2:2   -   3:8         2 POP_TOP
-  3:4   -   3:8         3 JUMP_FORWARD                      2    (to 5)
-  2:2   -   3:8   >>    5 LOAD_NONE
-  2:2   -   3:8         6 RETURN_VALUE
+  3:4   -   3:8         3 NOP
+  3:4   -   3:8         4 JUMP_FORWARD                      2    (to 6)
+  2:2   -   3:8   >>    6 LOAD_NONE
+  2:2   -   3:8         7 RETURN_VALUE

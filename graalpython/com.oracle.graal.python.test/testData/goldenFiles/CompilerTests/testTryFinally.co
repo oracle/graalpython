@@ -3,22 +3,23 @@ Disassembly of <module>:
   1:6   -   1:14        2 LOAD_STRING                       0    ('before')
   1:0   -   1:15        4 CALL_FUNCTION                     1
   1:0   -   1:15        6 POP_TOP
-  3:2   -   3:7         7 LOAD_NAME                         0    (print)
-  3:8   -   3:13        9 LOAD_STRING                       1    ('try')
-  3:2   -   3:14       11 CALL_FUNCTION                     1
-  3:2   -   3:14       13 POP_TOP
-  3:2   -   3:14       14 JUMP_FORWARD                      11   (to 25)
-  3:2   -   3:14       16 PUSH_EXC_INFO                                                           (exc handler 7 - 16; stack: 0)
-  5:2   -   5:7        17 LOAD_NAME                         0    (print)
-  5:8   -   5:17       19 LOAD_STRING                       2    ('finally')
-  5:2   -   5:18       21 CALL_FUNCTION                     1
-  5:2   -   5:18       23 POP_TOP
-  5:2   -   5:18       24 END_EXC_HANDLER                                                         (exc handler 17 - 24; stack: 1)
-  5:2   -   5:7   >>   25 LOAD_NAME                         0    (print)
-  5:8   -   5:17       27 LOAD_STRING                       2    ('finally')
-  5:2   -   5:18       29 CALL_FUNCTION                     1
-  5:2   -   5:18       31 POP_TOP
-  6:0   -   6:5        32 LOAD_NAME                         0    (print)
-  6:6   -   6:13       34 LOAD_STRING                       3    ('after')
-  6:0   -   6:14       36 CALL_FUNCTION                     1
-  6:0   -   6:14       38 RETURN_VALUE
+  2:0   -   5:18        7 NOP
+  3:2   -   3:7         8 LOAD_NAME                         0    (print)
+  3:8   -   3:13       10 LOAD_STRING                       1    ('try')
+  3:2   -   3:14       12 CALL_FUNCTION                     1
+  3:2   -   3:14       14 POP_TOP
+  3:2   -   3:14       15 JUMP_FORWARD                      11   (to 26)
+  3:2   -   3:14       17 PUSH_EXC_INFO                                                           (exc handler 8 - 17; stack: 0)
+  5:2   -   5:7        18 LOAD_NAME                         0    (print)
+  5:8   -   5:17       20 LOAD_STRING                       2    ('finally')
+  5:2   -   5:18       22 CALL_FUNCTION                     1
+  5:2   -   5:18       24 POP_TOP
+  5:2   -   5:18       25 END_EXC_HANDLER                                                         (exc handler 18 - 25; stack: 1)
+  5:2   -   5:7   >>   26 LOAD_NAME                         0    (print)
+  5:8   -   5:17       28 LOAD_STRING                       2    ('finally')
+  5:2   -   5:18       30 CALL_FUNCTION                     1
+  5:2   -   5:18       32 POP_TOP
+  6:0   -   6:5        33 LOAD_NAME                         0    (print)
+  6:6   -   6:13       35 LOAD_STRING                       3    ('after')
+  6:0   -   6:14       37 CALL_FUNCTION                     1
+  6:0   -   6:14       39 RETURN_VALUE

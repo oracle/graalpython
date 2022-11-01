@@ -3,25 +3,26 @@ Disassembly of <module>:
   1:15  -   1:17        2 LOAD_BYTE_O                       10
   1:9   -   1:18        4 CALL_FUNCTION                     1
   1:0   -   4:30        6 GET_ITER
-  1:0   -   4:30  >>    7 FOR_ITER                          34   (to 41)
+  1:0   -   4:30  >>    7 FOR_ITER                          35   (to 42)
   1:4   -   1:5         9 STORE_NAME                        1    (i)
-  4:14  -   4:19       11 LOAD_NAME                         2    (print)
-  4:20  -   4:29       13 LOAD_STRING                       0    ('finally')
-  4:14  -   4:30       15 CALL_FUNCTION                     1
-  4:14  -   4:30       17 POP_TOP
+  2:2   -   4:30       11 NOP
+  4:14  -   4:19       12 LOAD_NAME                         2    (print)
+  4:20  -   4:29       14 LOAD_STRING                       0    ('finally')
+  4:14  -   4:30       16 CALL_FUNCTION                     1
   4:14  -   4:30       18 POP_TOP
-  4:14  -   4:30       19 JUMP_FORWARD                      22   (to 41)
-  4:14  -   4:30       21 JUMP_FORWARD                      11   (to 32)
-  4:14  -   4:30       23 PUSH_EXC_INFO
-  4:14  -   4:19       24 LOAD_NAME                         2    (print)
-  4:20  -   4:29       26 LOAD_STRING                       0    ('finally')
-  4:14  -   4:30       28 CALL_FUNCTION                     1
-  4:14  -   4:30       30 POP_TOP
-  4:14  -   4:30       31 END_EXC_HANDLER                                                         (exc handler 24 - 31; stack: 2)
-  4:14  -   4:19  >>   32 LOAD_NAME                         2    (print)
-  4:20  -   4:29       34 LOAD_STRING                       0    ('finally')
-  4:14  -   4:30       36 CALL_FUNCTION                     1
-  4:14  -   4:30       38 POP_TOP
-  4:14  -   4:30       39 JUMP_BACKWARD                     32   (to 7)
-  4:14  -   4:30  >>   41 LOAD_NONE
-  4:14  -   4:30       42 RETURN_VALUE
+  4:14  -   4:30       19 POP_TOP
+  4:14  -   4:30       20 JUMP_FORWARD                      22   (to 42)
+  4:14  -   4:30       22 JUMP_FORWARD                      11   (to 33)
+  4:14  -   4:30       24 PUSH_EXC_INFO
+  4:14  -   4:19       25 LOAD_NAME                         2    (print)
+  4:20  -   4:29       27 LOAD_STRING                       0    ('finally')
+  4:14  -   4:30       29 CALL_FUNCTION                     1
+  4:14  -   4:30       31 POP_TOP
+  4:14  -   4:30       32 END_EXC_HANDLER                                                         (exc handler 25 - 32; stack: 2)
+  4:14  -   4:19  >>   33 LOAD_NAME                         2    (print)
+  4:20  -   4:29       35 LOAD_STRING                       0    ('finally')
+  4:14  -   4:30       37 CALL_FUNCTION                     1
+  4:14  -   4:30       39 POP_TOP
+  4:14  -   4:30       40 JUMP_BACKWARD                     33   (to 7)
+  4:14  -   4:30  >>   42 LOAD_NONE
+  4:14  -   4:30       43 RETURN_VALUE

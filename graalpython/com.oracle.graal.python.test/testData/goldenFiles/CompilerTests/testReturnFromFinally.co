@@ -9,50 +9,51 @@ Disassembly of foo:
   2:17  -   2:19        2 LOAD_BYTE_O                       10
   2:11  -   2:20        4 CALL_FUNCTION                     1
   2:2   -   9:14        6 GET_ITER
-  2:2   -   9:14  >>    7 FOR_ITER                          69   (to 76)                           can quicken
+  2:2   -   9:14  >>    7 FOR_ITER                          70   (to 77)                           can quicken
   2:6   -   2:7         9 STORE_FAST                        0    (i)                               generalizes: 7
-  4:9   -   4:10       11 LOAD_FAST                         0    (i)                               can quicken
-  4:6   -   5:16       13 POP_AND_JUMP_IF_FALSE             23   (to 36)                           generalizes: 11
-  5:15  -   5:16       17 LOAD_GLOBAL                       1    (a)
-  8:6   -   8:11       19 LOAD_GLOBAL                       2    (print)
-  8:12  -   8:21       21 LOAD_STRING                       1    ('finally')
-  8:6   -   8:22       23 CALL_FUNCTION                     1
-  8:6   -   8:22       25 POP_TOP
-  9:13  -   9:14       26 LOAD_GLOBAL                       3    (b)
-  9:6   -   9:14       28 ROT_TWO
-  9:6   -   9:14       29 POP_TOP
-  9:6   -   9:14       30 ROT_TWO
-  9:6   -   9:14       31 POP_TOP
-  9:6   -   9:14       32 RETURN_VALUE
-  9:6   -   9:14       33 ROT_TWO
-  9:6   -   9:14       34 POP_TOP
-  9:6   -   9:14       35 RETURN_VALUE
-  6:6   -   6:11  >>   36 LOAD_GLOBAL                       2    (print)
-  6:12  -   6:13       38 LOAD_FAST                         0    (i)
-  6:6   -   6:14       40 CALL_FUNCTION                     1
-  6:6   -   6:14       42 POP_TOP
-  6:6   -   6:14       43 JUMP_FORWARD                      19   (to 62)
-  6:6   -   6:14       45 PUSH_EXC_INFO                                                           (exc handler 11 - 19; stack: 1 | exc handler 36 - 45; stack: 1)
-  8:6   -   8:11       46 LOAD_GLOBAL                       2    (print)
-  8:12  -   8:21       48 LOAD_STRING                       1    ('finally')
-  8:6   -   8:22       50 CALL_FUNCTION                     1
-  8:6   -   8:22       52 POP_TOP
-  9:13  -   9:14       53 LOAD_GLOBAL                       3    (b)
-  9:6   -   9:14       55 ROT_THREE
-  9:6   -   9:14       56 POP_EXCEPT
-  9:6   -   9:14       57 POP_TOP
-  9:6   -   9:14       58 ROT_TWO
-  9:6   -   9:14       59 POP_TOP
-  9:6   -   9:14       60 RETURN_VALUE
-  9:6   -   9:14       61 END_EXC_HANDLER                                                         (exc handler 46 - 61; stack: 2)
-  8:6   -   8:11  >>   62 LOAD_GLOBAL                       2    (print)
-  8:12  -   8:21       64 LOAD_STRING                       1    ('finally')
-  8:6   -   8:22       66 CALL_FUNCTION                     1
-  8:6   -   8:22       68 POP_TOP
-  9:13  -   9:14       69 LOAD_GLOBAL                       3    (b)
-  9:6   -   9:14       71 ROT_TWO
-  9:6   -   9:14       72 POP_TOP
-  9:6   -   9:14       73 RETURN_VALUE
-  9:6   -   9:14       74 JUMP_BACKWARD                     67   (to 7)
-  9:6   -   9:14  >>   76 LOAD_NONE
-  9:6   -   9:14       77 RETURN_VALUE
+  3:4   -   9:14       11 NOP
+  4:9   -   4:10       12 LOAD_FAST                         0    (i)                               can quicken
+  4:6   -   5:16       14 POP_AND_JUMP_IF_FALSE             23   (to 37)                           generalizes: 12
+  5:15  -   5:16       18 LOAD_GLOBAL                       1    (a)
+  8:6   -   8:11       20 LOAD_GLOBAL                       2    (print)
+  8:12  -   8:21       22 LOAD_STRING                       1    ('finally')
+  8:6   -   8:22       24 CALL_FUNCTION                     1
+  8:6   -   8:22       26 POP_TOP
+  9:13  -   9:14       27 LOAD_GLOBAL                       3    (b)
+  9:6   -   9:14       29 ROT_TWO
+  9:6   -   9:14       30 POP_TOP
+  9:6   -   9:14       31 ROT_TWO
+  9:6   -   9:14       32 POP_TOP
+  9:6   -   9:14       33 RETURN_VALUE
+  9:6   -   9:14       34 ROT_TWO
+  9:6   -   9:14       35 POP_TOP
+  9:6   -   9:14       36 RETURN_VALUE
+  6:6   -   6:11  >>   37 LOAD_GLOBAL                       2    (print)
+  6:12  -   6:13       39 LOAD_FAST                         0    (i)
+  6:6   -   6:14       41 CALL_FUNCTION                     1
+  6:6   -   6:14       43 POP_TOP
+  6:6   -   6:14       44 JUMP_FORWARD                      19   (to 63)
+  6:6   -   6:14       46 PUSH_EXC_INFO                                                           (exc handler 12 - 20; stack: 1 | exc handler 37 - 46; stack: 1)
+  8:6   -   8:11       47 LOAD_GLOBAL                       2    (print)
+  8:12  -   8:21       49 LOAD_STRING                       1    ('finally')
+  8:6   -   8:22       51 CALL_FUNCTION                     1
+  8:6   -   8:22       53 POP_TOP
+  9:13  -   9:14       54 LOAD_GLOBAL                       3    (b)
+  9:6   -   9:14       56 ROT_THREE
+  9:6   -   9:14       57 POP_EXCEPT
+  9:6   -   9:14       58 POP_TOP
+  9:6   -   9:14       59 ROT_TWO
+  9:6   -   9:14       60 POP_TOP
+  9:6   -   9:14       61 RETURN_VALUE
+  9:6   -   9:14       62 END_EXC_HANDLER                                                         (exc handler 47 - 62; stack: 2)
+  8:6   -   8:11  >>   63 LOAD_GLOBAL                       2    (print)
+  8:12  -   8:21       65 LOAD_STRING                       1    ('finally')
+  8:6   -   8:22       67 CALL_FUNCTION                     1
+  8:6   -   8:22       69 POP_TOP
+  9:13  -   9:14       70 LOAD_GLOBAL                       3    (b)
+  9:6   -   9:14       72 ROT_TWO
+  9:6   -   9:14       73 POP_TOP
+  9:6   -   9:14       74 RETURN_VALUE
+  9:6   -   9:14       75 JUMP_BACKWARD                     68   (to 7)
+  9:6   -   9:14  >>   77 LOAD_NONE
+  9:6   -   9:14       78 RETURN_VALUE

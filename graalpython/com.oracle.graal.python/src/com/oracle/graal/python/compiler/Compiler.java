@@ -2965,6 +2965,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Try node) {
         setLocation(node);
+        if (node.body[0].getSourceRange().startLine != node.getSourceRange().startLine) {
+            // Add NOP for tracing the line with 'try:'
+            addOp(NOP);
+        }
         Block tryBody = new Block();
         Block end = new Block();
         boolean hasFinally = node.finalBody != null;
@@ -3311,7 +3315,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Pass aThis) {
+    public Void visit(StmtTy.Pass node) {
+        setLocation(node);
+        addOp(NOP);
         return null;
     }
 
