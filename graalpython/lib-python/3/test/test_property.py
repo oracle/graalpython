@@ -211,7 +211,7 @@ class PropertyTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 TypeError,
                 # GraalVM change: relax message requirement
-                fr'^__set_name__\(\) .*positional.*'
+                fr'__set_name__\(\) .*positional.*'
             ):
                 p.__set_name__(*([0] * i))
 
