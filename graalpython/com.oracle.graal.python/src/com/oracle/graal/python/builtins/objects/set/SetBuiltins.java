@@ -346,33 +346,32 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = self.getDictStorage();
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
             for (int i = 0; i < len; i++) {
-                result = lib.union(result, getHashingStorageNode.execute(frame, args[i]));
+                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), self);
             }
-            self.setDictStorage(result);
             return PNone.NONE;
         }
 
         @Specialization(replaces = "doCached")
         static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = self.getDictStorage();
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
             for (Object o : args) {
-                result = lib.union(result, getHashingStorage.execute(frame, o));
+                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, o), self);
             }
-            self.setDictStorage(result);
             return PNone.NONE;
         }
 
-        @Specialization(limit = "3")
+        static boolean isOther(Object arg) {
+            return !(PGuards.isNoValue(arg) || arg instanceof Object[]);
+        }
+
+        @Specialization(guards = "isOther(other)")
         static PNone doSet(VirtualFrame frame, PSet self, Object other,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.union(self.getDictStorage(), getHashingStorage.execute(frame, other));
-            self.setDictStorage(result);
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            addAllToOther.execute(frame, getHashingStorageNode.execute(frame, other), self);
             return PNone.NONE;
         }
     }
