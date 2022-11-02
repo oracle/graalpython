@@ -340,8 +340,8 @@ static void initialize_globals() {
     _Py_TrueStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
     _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
 
-    _PyTruffle_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 1, 1);
-    _PyTruffle_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 0, 1);
+    _PyTruffle_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 0, 1);
+    _PyTruffle_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 1, 1);
 }
 
 static void initialize_bufferprocs() {
