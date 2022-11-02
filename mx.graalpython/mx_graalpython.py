@@ -756,6 +756,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         args += [_graalpytest_driver(), "-v"]
 
     if mx_gate.get_jacoco_agent_args():
+        env['ENABLE_THREADED_GRAALPYTEST'] = "false"
         # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
         def graalvm_vm_arg(java_arg):
             if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
