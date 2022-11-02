@@ -642,14 +642,24 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_ITER, key)")
         static Object doTpIter(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return PyProcsWrapper.createUnaryFuncWrapper(lookupAttrNode.execute(object, T___ITER__));
+            Object method = lookupAttrNode.execute(object, T___ITER__);
+            if (method instanceof PNone) {
+                return toSulongNode.execute(method);
+            }
+            return PyProcsWrapper.createUnaryFuncWrapper(method);
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
         static Object doTpIternext(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return PyProcsWrapper.createUnaryFuncWrapper(lookupAttrNode.execute(object, T___NEXT__));
+            Object method = lookupAttrNode.execute(object, T___NEXT__);
+            if (method instanceof PNone) {
+                return toSulongNode.execute(method);
+            }
+            return PyProcsWrapper.createUnaryFuncWrapper(method);
         }
 
         @Specialization(guards = "eq(TP_STR, key)")
