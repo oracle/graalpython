@@ -298,7 +298,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_S_GOT_P = tsLiteral("expected %s, got %p");
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");
     public static final TruffleString EXPECTED_S_P_FOUND = tsLiteral("expected %s, %p found");
-    public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected %s after format specifier");
+    public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected '%s' after conversion specifier");
     public static final TruffleString EXPECTED_SOME_SORT_OF_S_BUT_GOT_S = tsLiteral("expected some sort of %s, but got %s");
     public static final TruffleString EXPECTED_STR_OR_BYTES = tsLiteral("expected str or bytes, got '%p'");
     public static final TruffleString EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = tsLiteral("expected str, bytes or os.PathLike object, not %p");
@@ -706,7 +706,7 @@ public abstract class ErrorMessages {
     public static final TruffleString SIGNED_INT_LESS_THAN_MIN = tsLiteral("signed integer is less than minimum");
     public static final TruffleString SIGNED_SHORT_INT_GREATER_THAN_MAX = tsLiteral("signed short integer is greater than maximum");
     public static final TruffleString SIGNED_SHORT_INT_LESS_THAN_MIN = tsLiteral("signed short integer is less than minimum");
-    public static final TruffleString SINGLE_S = tsLiteral("Single %s");
+    public static final TruffleString SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING = tsLiteral("Single '}' encountered in format string");
     public static final TruffleString SIZE_MUST_BE_D_OR_S = tsLiteral("size must be %d or %s");
     public static final TruffleString SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX = tsLiteral("slice indices must be integers or None or have an __index__ method");
     public static final TruffleString SLICE_STEP_CANNOT_BE_ZERO = tsLiteral("slice step cannot be zero");
@@ -797,7 +797,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNKNOWN_OPCODE = tsLiteral("unknown opcode");
     public static final TruffleString UNKNOWN_S_TYPE = tsLiteral("unknown %s type");
     public static final TruffleString UNKNOWN_STORAGE_STRATEGY = tsLiteral("Unknown storage strategy name");
-    public static final TruffleString UNMATCHED_S = tsLiteral("Unmatched %s");
+    public static final TruffleString EXPECTED_RBRACE_BEFORE_END_OF_STRING = tsLiteral("expected '}' before end of string");
     public static final TruffleString UNRECOGNIZED_FLAGS = tsLiteral("compile(): unrecognised flags");
     public static final TruffleString UNRECOGNIZED_FORMAT_CHAR = tsLiteral("unrecognized format char in arguments parsing: %c");
     public static final TruffleString UNRECOGNIZED_KIND = tsLiteral("unrecognized kind");
