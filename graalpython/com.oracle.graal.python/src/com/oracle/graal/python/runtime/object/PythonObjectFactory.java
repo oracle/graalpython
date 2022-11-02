@@ -1031,11 +1031,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PIntRangeIterator createIntRangeIterator(PIntRange fastRange) {
-        return createIntRangeIterator(fastRange.getIntStart(), fastRange.getIntStep(), fastRange.getIntLength());
+        return createIntRangeIterator(fastRange.getIntStart(), fastRange.getIntStop(), fastRange.getIntStep(), fastRange.getIntLength());
     }
 
-    public final PIntRangeIterator createIntRangeIterator(int start, int step, int len) {
-        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, step, len));
+    public final PIntRangeIterator createIntRangeIterator(int start, int stop, int step, int len) {
+        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, stop, step, len));
     }
 
     public final PBigRangeIterator createBigRangeIterator(PInt start, PInt step, PInt len) {

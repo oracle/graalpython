@@ -44,12 +44,14 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PIntRangeIterator extends PIntegerIterator {
     private final int start;
+    private final int stop;
     private final int step;
     private final int len;
 
-    public PIntRangeIterator(Object clazz, Shape instanceShape, int start, int step, int len) {
+    public PIntRangeIterator(Object clazz, Shape instanceShape, int start, int stop, int step, int len) {
         super(clazz, instanceShape);
         this.start = start;
+        this.stop = stop;
         this.step = step;
         this.len = len;
     }
@@ -80,23 +82,11 @@ public final class PIntRangeIterator extends PIntegerIterator {
         return start;
     }
 
-    public int getLen() {
-        return len;
+    public int getStop() {
+        return stop;
     }
 
     public int getStep() {
-        return step;
-    }
-
-    public int getReduceStart() {
-        return start;
-    }
-
-    public int getReduceStop() {
-        return start + len * step;
-    }
-
-    public int getReduceStep() {
         return step;
     }
 }

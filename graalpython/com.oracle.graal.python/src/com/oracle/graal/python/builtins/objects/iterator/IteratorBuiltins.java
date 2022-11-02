@@ -432,12 +432,11 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PIntRangeIterator self,
-                        @Cached LenOfRangeNode length) {
-            int start = self.getReduceStart();
-            int stop = self.getReduceStop();
-            int step = self.getReduceStep();
-            int len = length.executeInt(start, stop, step);
+        public Object reduce(VirtualFrame frame, PIntRangeIterator self) {
+            int start = self.getStart();
+            int stop = self.getStop();
+            int step = self.getStep();
+            int len = self.getLength();
             return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), PythonContext.get(this));
         }
 

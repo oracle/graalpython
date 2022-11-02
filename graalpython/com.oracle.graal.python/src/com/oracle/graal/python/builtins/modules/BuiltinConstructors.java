@@ -93,7 +93,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.addExact;
+import static com.oracle.graal.python.util.PythonUtils.multiplyExact;
+import static com.oracle.graal.python.util.PythonUtils.negateExact;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
+import static com.oracle.graal.python.util.PythonUtils.subtractExact;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -139,6 +143,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
@@ -788,25 +793,37 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+                        @Cached BranchProfile overflowProfile) {
             int lstart = range.getIntStart();
-            int lstop = range.getIntStop();
             int lstep = range.getIntStep();
-            int ulen = lenOfRangeNode.executeInt(lstart, lstop, lstep);
-            int new_stop = lstart - lstep;
-            int new_start = new_stop + ulen * lstep;
+            int ulen = range.getIntLength();
+            try {
+                int new_stop = subtractExact(lstart, lstep);
+                int new_start = addExact(new_stop, multiplyExact(ulen, lstep));
+                return factory().createIntRangeIterator(new_start, new_stop, negateExact(lstep), ulen);
+            } catch (OverflowException e) {
+                overflowProfile.enter();
+                return handleOverflow(lstart, lstep, ulen);
+            }
+        }
 
-            return factory().createIntRangeIterator(new_start, -lstep, ulen);
+        @TruffleBoundary
+        private PBigRangeIterator handleOverflow(int lstart, int lstep, int ulen) {
+            BigInteger bstart = BigInteger.valueOf(lstart);
+            BigInteger bstep = BigInteger.valueOf(lstep);
+            BigInteger blen = BigInteger.valueOf(ulen);
+            BigInteger new_stop = bstart.subtract(bstep);
+            BigInteger new_start = new_stop.add(blen.multiply(bstep));
+
+            return factory().createBigRangeIterator(new_start, bstep.negate(), blen);
         }
 
         @Specialization
         @TruffleBoundary
-        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range) {
             BigInteger lstart = range.getBigIntegerStart();
-            BigInteger lstop = range.getBigIntegerStop();
             BigInteger lstep = range.getBigIntegerStep();
-            BigInteger ulen = lenOfRangeNode.execute(lstart, lstop, lstep);
+            BigInteger ulen = range.getBigIntegerLength();
 
             BigInteger new_stop = lstart.subtract(lstep);
             BigInteger new_start = new_stop.add(ulen.multiply(lstep));
