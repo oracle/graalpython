@@ -85,13 +85,13 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -145,10 +145,10 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "1")
-        PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(lib.copy(self.getDictStorage()));
+        @Specialization
+        PSet doSet(PSet self,
+                        @Cached HashingStorageCopy copyNode) {
+            return factory().createSet(copyNode.execute(self.getDictStorage()));
         }
     }
 
@@ -257,20 +257,20 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateUncached
     public abstract static class UpdateSingleNode extends Node {
 
-        public abstract HashingStorage execute(Frame frame, HashingStorage storage, Object other);
+        public abstract void execute(VirtualFrame frame, PHashingCollection collection, Object other);
 
         @Specialization
-        static HashingStorage update(HashingStorage storage, PHashingCollection other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+        static void update(VirtualFrame frame, PHashingCollection collection, PHashingCollection other,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage dictStorage = other.getDictStorage();
-            return lib.addAllToOther(dictStorage, storage);
+            addAllToOther.execute(frame, dictStorage, collection);
         }
 
         @Specialization
-        static HashingStorage update(HashingStorage storage, PDictView.PDictKeysView other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+        static void update(VirtualFrame frame, PHashingCollection collection, PDictView.PDictKeysView other,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage dictStorage = other.getWrappedDict().getDictStorage();
-            return lib.addAllToOther(dictStorage, storage);
+            addAllToOther.execute(frame, dictStorage, collection);
         }
 
         static boolean isBuiltinSequence(Object other, GetClassNode getClassNode) {
@@ -278,30 +278,30 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isBuiltinSequence(other, getClassNode)", limit = "1")
-        static HashingStorage doBuiltin(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+        static void doBuiltin(VirtualFrame frame, PHashingCollection collection, @SuppressWarnings("unused") PSequence other,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached HashingStorageSetItem setStorageItem) {
             SequenceStorage sequenceStorage = getSequenceStorageNode.execute(other);
             int length = lenNode.execute(sequenceStorage);
-            HashingStorage curStorage = storage;
+            HashingStorage curStorage = collection.getDictStorage();
             for (int i = 0; i < length; i++) {
                 Object key = getItemScalarNode.execute(sequenceStorage, i);
                 curStorage = setStorageItem.execute(frame, curStorage, key, PNone.NONE);
             }
-            return curStorage;
+            collection.setDictStorage(curStorage);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "1")
-        static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, Object other,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+        static void doIterable(VirtualFrame frame, PHashingCollection collection, Object other,
+                        @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached HashingStorageSetItem setStorageItem) {
-            HashingStorage curStorage = storage;
+            HashingStorage curStorage = collection.getDictStorage();
             Object iterator = getIter.execute(frame, other);
             while (true) {
                 Object key;
@@ -309,7 +309,8 @@ public final class SetBuiltins extends PythonBuiltins {
                     key = nextNode.execute(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    return curStorage;
+                    collection.setDictStorage(curStorage);
+                    return;
                 }
                 curStorage = setStorageItem.execute(frame, curStorage, key, PNone.NONE);
             }
@@ -337,7 +338,7 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization(guards = "args.length == 1")
         static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached UpdateSingleNode update) {
-            self.setDictStorage(update.execute(frame, self.getDictStorage(), args[0]));
+            update.execute(frame, self, args[0]);
             return PNone.NONE;
         }
 
