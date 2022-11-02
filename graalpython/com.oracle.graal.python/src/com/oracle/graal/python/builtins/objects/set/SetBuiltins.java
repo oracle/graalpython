@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -180,11 +182,18 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
+        @Specialization(guards = "canDoSetBinOp(other)")
         Object doSet(VirtualFrame frame, PSet self, Object other,
-                        @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(lib.union(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+                        @Cached GetHashingStorageNode getHashingStorage,
+                        @Cached HashingStorageCopy copyStorage,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            // Note: we cannot reuse 'otherStorage' because we need to add from other -> self, in
+            // order to execute __eq__ of keys in 'self' and not other
+            HashingStorage otherStorage = getHashingStorage.execute(frame, other);
+            HashingStorage resultStorage = copyStorage.execute(self.getDictStorage());
+            PSet result = factory().createSet(resultStorage);
+            addAllToOther.execute(frame, otherStorage, result);
+            return result;
         }
 
         @SuppressWarnings("unused")
@@ -197,11 +206,11 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = J___IOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IOrNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
+        @Specialization(guards = "canDoSetBinOp(other)")
         Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            self.setDictStorage(lib.addAllToOther(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            addAllToOther.execute(frame, getHashingStorageNode.execute(frame, other), self);
             return self;
         }
 
@@ -220,23 +229,27 @@ public final class SetBuiltins extends PythonBuiltins {
         PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
+            PSet resultSet = factory().createSet(result);
             for (int i = 0; i < len; i++) {
-                result = lib.union(result, getHashingStorageNode.execute(frame, args[i]));
+                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), resultSet);
             }
-            return factory().createSet(result);
+            return resultSet;
         }
 
         @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
+            PSet resultSet = factory().createSet(result);
             for (int i = 0; i < args.length; i++) {
-                result = lib.union(result, getHashingStorageNode.execute(frame, args[i]));
+                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), resultSet);
             }
-            return factory().createSet(result);
+            return resultSet;
         }
     }
 

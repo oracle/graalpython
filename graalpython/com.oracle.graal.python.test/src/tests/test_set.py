@@ -543,6 +543,74 @@ def test_graal_4816():
         if foo:
             do_something(foo)
 
+class TrackingKey:
+    def __init__(self, id, hash=None):
+        self.clear_observations()
+        self.hash = hash
+        self.id = id
+    def __hash__(self):
+        self.hash_calls += 1
+        return self.hash if self.hash else hash(self.id)
+    def __eq__(self, other):
+        self.eq_calls += 1
+        return self.id == getattr(other, 'id', other)
+    def clear_observations(self):
+        self.hash_calls = 0
+        self.eq_calls = 0
+
+
+def test_update_side_effects():
+    key1 = TrackingKey('foo', hash=42)
+    key2 = TrackingKey('bar', hash=42)
+    d1 = {key1}
+    l = [key2]
+    key1.clear_observations()
+    key2.clear_observations()
+    d1.update(l)
+    assert key1.eq_calls == 1
+    assert key1.hash_calls == 0
+    assert key2.eq_calls == 0
+    assert key2.hash_calls == 1
+
+
+def test_bin_ops_side_effects():
+    def test_op(op, check):
+        key1 = TrackingKey('foo', hash=42)
+        key2 = TrackingKey('bar', hash=42)
+        d1 = {key1}
+        d2 = {key2}
+        key1.clear_observations()
+        key2.clear_observations()
+        op(d1, d2)
+        check(key1, key2)
+
+    def key1_eq_call(key1, key2):
+        assert key1.eq_calls == 1
+        assert key1.hash_calls == 0
+        assert key2.eq_calls == 0
+        assert key2.hash_calls == 0
+
+    import operator
+    test_op(operator.__or__, key1_eq_call)
+    test_op(operator.__ior__, key1_eq_call)
+
+    # TODO:
+    # def symmetric_difference_check(key1, key2):
+    #     assert key1.eq_calls == 0
+    #     assert key1.hash_calls == 0
+    #     assert key2.eq_calls == 2
+    #     assert key2.hash_calls == 0
+    #
+    # test_op(set.symmetric_difference, symmetric_difference_check)
+    #
+    # def symmetric_difference_update_check(key1, key2):
+    #     assert key1.eq_calls == 2
+    #     assert key1.hash_calls == 0
+    #     assert key2.eq_calls == 0
+    #     assert key2.hash_calls == 0
+    #
+    # test_op(set.symmetric_difference_update, symmetric_difference_update_check)
+
 # GR-41996
 # def test_pop_side_effects():
 #     class TrackingKey:
