@@ -56,7 +56,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -78,7 +79,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_functools")
@@ -211,11 +211,11 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageCopy copyNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
-            return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), lib));
+            return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), copyNode));
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lenNode, true)", "withKeywords(keywords)"})
@@ -224,15 +224,17 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached HashingStorage.InitNode initNode,
                         @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageCopy copyHashingStorageNode,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
 
-            HashingStorage storage = function.getKw().getDictStorage();
-            storage = lib.addAllToOther(initNode.execute(frame, PNone.NO_VALUE, keywords), storage);
+            HashingStorage storage = copyHashingStorageNode.execute(function.getKw().getDictStorage());
+            PDict result = factory().createDict(storage);
+            addAllToOtherNode.execute(frame, initNode.execute(frame, PNone.NO_VALUE, keywords), result);
 
-            return factory().createPartial(cls, function.getFn(), funcArgs, factory().createDict(storage));
+            return factory().createPartial(cls, function.getFn(), funcArgs, result);
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"})

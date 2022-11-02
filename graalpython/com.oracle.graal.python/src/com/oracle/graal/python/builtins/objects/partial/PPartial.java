@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.partial;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -98,9 +98,9 @@ public final class PPartial extends PythonBuiltinObject {
         return kw;
     }
 
-    public PDict getKwCopy(PythonObjectFactory factory, HashingStorageLibrary lib) {
+    public PDict getKwCopy(PythonObjectFactory factory, HashingStorageCopy copyNode) {
         assert kw != null;
-        return factory.createDict(lib.copy(kw.getDictStorage()));
+        return factory.createDict(copyNode.execute(kw.getDictStorage()));
     }
 
     public boolean hasKw(HashingStorageLen lenNode) {

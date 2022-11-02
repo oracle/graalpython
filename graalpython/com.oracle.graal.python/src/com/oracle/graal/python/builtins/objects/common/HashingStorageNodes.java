@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Store;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXorCallback.Acc;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
@@ -610,6 +611,43 @@ public class HashingStorageNodes {
         @Specialization
         static int locals(LocalsStorage self) {
             return self.length();
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class HashingStorageCopy extends Node {
+        public abstract HashingStorage execute(HashingStorage source);
+
+        @Specialization
+        static HashingStorage economic(EconomicMapStorage map) {
+            return map.copy();
+        }
+
+        @Specialization
+        static EmptyStorage empty(EmptyStorage map) {
+            return EmptyStorage.INSTANCE;
+        }
+
+        @Specialization
+        static DynamicObjectStorage dom(DynamicObjectStorage dom,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            Object[] keys = dylib.getKeyArray(dom.store);
+            Store newStore = new Store(dom.store.getShape());
+            for (Object key : keys) {
+                dylib.put(newStore, key, dylib.getOrDefault(dom.store, key, PNone.NO_VALUE));
+            }
+            DynamicObjectStorage result = new DynamicObjectStorage(newStore);
+            return result;
+        }
+
+        @Specialization
+        static HashingStorage keywords(KeywordsStorage self) {
+            return self.copy();
+        }
+
+        @Specialization
+        static HashingStorage locals(LocalsStorage self) {
+            return self.copy();
         }
     }
 
