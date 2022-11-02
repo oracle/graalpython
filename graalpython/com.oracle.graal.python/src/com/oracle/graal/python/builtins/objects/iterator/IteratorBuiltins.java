@@ -69,6 +69,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -215,7 +216,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             return stopIteration(self);
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private Object nextDictValue(PDictView.PBaseDictIterator<?> self) {
             return self.next(factory());
         }
@@ -498,7 +499,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public static Object reduce(PBigRangeIterator self, Object index,
                         @Cached CastToJavaBigIntegerNode castToJavaBigIntegerNode) {
             BigInteger idx = castToJavaBigIntegerNode.execute(index);
@@ -509,7 +510,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(guards = "!isPBigRangeIterator(self)")
         public static Object reduce(VirtualFrame frame, PBuiltinIterator self, Object index,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int idx = asSizeNode.executeExact(frame, index);
@@ -518,6 +519,10 @@ public class IteratorBuiltins extends PythonBuiltins {
             }
             self.index = idx;
             return PNone.NONE;
+        }
+
+        protected static boolean isPBigRangeIterator(Object obj) {
+            return obj instanceof PBigRangeIterator;
         }
     }
 }
