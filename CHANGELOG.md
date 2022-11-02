@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 23.0.0
+* Update language version and standard library to 3.10
+
 ## Version 22.3.0
 * Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy` for better integration with other tools.
 * Switched to a new interpreter backend based on interpreting bytecode. This change brings better startup performance and memory footprint while retaining good JIT-compiled performance.
