@@ -9,7 +9,7 @@ Python program that uses more features of standard library modules or external
 packages will hit something unsupported. At this point, the Python
 implementation is made available for experimentation and curious end-users.
 
-### Trying it
+### Trying It
 
 The easiest option to try GraalPy is
 [Pyenv](https://github.com/pyenv/pyenv/), the Python version manager. It allows
@@ -20,23 +20,23 @@ To try GraalPy with a full GraalVM, including the support for Java embedding
 and interop with other languages, you can use the bundled releases from
 [www.graalvm.org](https://www.graalvm.org/downloads/).
 
-### Building from source
+### Building from Source
+
 #### Requirements
 
 * [mx](https://github.com/graalvm/mx) - a separate Python tool co-developed for GraalVM development. This tool must be
   downloaded and put onto your PATH:
-```
-git clone https://github.com/graalvm/mx.git
-export PATH=$PWD/mx:$PATH
-```
+  ```
+  git clone https://github.com/graalvm/mx.git
+  export PATH=$PWD/mx:$PATH
+  ```
 * LabsJDK
 
-The following command will download and install JDKs to built GraalVM upon. If successfull, it will print the path to set into your JAVA_HOME. 
+The following command will download and install JDKs to built GraalVM upon. If successful, it will print the path to set into your JAVA_HOME. 
 ```shell
 mx fetch-jdk
 ```
  
-
 #### Building
 
 Run `mx --dy /compiler python-gvm` in the `graalpython` repository root. If the build is fine, it will print the full
@@ -45,36 +45,33 @@ path to the `graalpy` executable as the last line of output.
 For more information and some examples of what you can do with GraalPy,
 check out the [reference](https://www.graalvm.org/reference-manual/python/).
 
-### Create a virtual environment
+### Create a Virtual Environment
+
 The best way of using the GraalVM implementation of Python is out of a virtual environment. To do so
 execute the following command in the project directory:
-
 ```
 graalpy -m venv <dir-to-venv>
 ```
 
 To activate the environment in your shell session call:
-
 ```
 source <dir-to-venv>/bin/activate
 ```
 
 In the venv, multiple executables are available, like `python`, `python3` and `graalpy`. 
 
-### Installing packages
+### Installing Packages
 
 Currently, not enough of the standard library is implemented to run the
 standard package installers for many packages. As a convenience, we provide a
 simple module to install packages that we know to be working (including
 potential patches required for those packages). Try the following to find out
 which packages are at least partially supported and tested by us in our CI:
-
 ```
 graalpy -m ginstall install --help
 ```
 
 As a slightly exciting example, try:
-
 ```
 graalpy -m ginstall install pandas
 ```
@@ -119,7 +116,7 @@ features.
 This GraalVM implementation of Python is copyright (c) 2017, 2019 Oracle and/or
 its affiliates and is made available to you under the terms the Universal
 Permissive License v 1.0 as shown at
-https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/). This
+[https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/). This
 implementation is in part derived from and contains additional code from 3rd
 parties, the copyrights and licensing of which is detailed in the
 [LICENSE](LICENSE) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
