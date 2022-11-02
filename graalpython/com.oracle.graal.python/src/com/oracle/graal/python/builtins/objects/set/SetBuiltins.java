@@ -424,44 +424,53 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntersectNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isNoValue(other)", limit = "3")
-        PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(lib.copy(self.getDictStorage()));
+        @Specialization(guards = "isNoValue(other)")
+        Object doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
+                        @Cached HashingStorageCopy copyNode) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
+            return createResult(self, result);
         }
 
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
+        Object doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                result = lib.intersectWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
+                result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
             }
-            return factory().createSet(result);
+            return createResult(self, result);
         }
 
         @Specialization(replaces = "doCached")
-        PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached ConditionProfile hasFrame,
+        Object doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                result = lib.intersectWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
+                result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
             }
-            return factory().createSet(result);
+            return createResult(self, result);
         }
 
-        @Specialization(limit = "3")
-        PSet doSet(VirtualFrame frame, PSet self, Object other,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
-            result = lib.intersectWithFrame(result, getHashingStorage.execute(frame, other), hasFrame, frame);
+        static boolean isOther(Object arg) {
+            return !(PGuards.isNoValue(arg) || arg instanceof Object[]);
+        }
+
+        @Specialization(guards = "isOther(other)")
+        Object doSet(VirtualFrame frame, PSet self, Object other,
+                        @Cached GetHashingStorageNode getHashingStorageNode,
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
+            result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, other));
+            return createResult(self, result);
+        }
+
+        protected Object createResult(PSet self, HashingStorage result) {
             return factory().createSet(result);
         }
     }
@@ -469,46 +478,10 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "intersection_update", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     @ImportStatic({SpecialMethodNames.class})
-    public abstract static class IntersectUpdateNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(other)")
-        @SuppressWarnings("unused")
-        static PNone doSet(VirtualFrame frame, PSet self, PNone other) {
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
-        static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached("args.length") int len,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = self.getDictStorage();
-            for (int i = 0; i < len; i++) {
-                result = lib.intersectWithFrame(result, getHashingStorage.execute(frame, args[i]), hasFrame, frame);
-            }
-            self.setDictStorage(result);
-            return PNone.NONE;
-        }
-
-        @Specialization(replaces = "doCached")
-        static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = self.getDictStorage();
-            for (Object o : args) {
-                result = lib.intersectWithFrame(result, getHashingStorage.execute(frame, o), hasFrame, frame);
-            }
-            self.setDictStorage(result);
-            return PNone.NONE;
-        }
-
-        @Specialization(limit = "3")
-        static PNone doSet(VirtualFrame frame, PSet self, Object other,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.intersectWithFrame(self.getDictStorage(), getHashingStorage.execute(frame, other), hasFrame, frame);
+    public abstract static class IntersectUpdateNode extends IntersectNode {
+        @Override
+        protected Object createResult(PSet self, HashingStorage result) {
+            // In order to be compatible w.r.t. __eq__ calls we cannot reuse self storage
             self.setDictStorage(result);
             return PNone.NONE;
         }

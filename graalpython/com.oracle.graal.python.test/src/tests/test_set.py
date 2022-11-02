@@ -596,7 +596,8 @@ def test_bin_ops_side_effects():
     test_op(operator.__and__, key1_eq_call)
     test_op(operator.__iand__, key1_eq_call)
 
-    # TODO:
+    # TODO: intersection, intersection_update
+    #
     # def symmetric_difference_check(key1, key2):
     #     assert key1.eq_calls == 0
     #     assert key1.hash_calls == 0

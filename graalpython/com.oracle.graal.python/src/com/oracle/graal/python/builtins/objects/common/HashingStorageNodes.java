@@ -1066,7 +1066,6 @@ public class HashingStorageNodes {
                         @Cached ObjectHashMap.PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromResultNode,
                         @Cached HashingStorageIteratorKey iterKey,
-                        @Cached HashingStorageIteratorValue iterValue,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
             Object key = iterKey.execute(storage, it);
             long hash = iterHash.execute(storage, it);
