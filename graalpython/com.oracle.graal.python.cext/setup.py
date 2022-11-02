@@ -41,7 +41,7 @@ import logging
 import os
 import shutil
 import sys
-from distutils.core import setup, Extension
+from distutils.core import setup as distutils_setup, Extension
 from distutils.sysconfig import get_config_var, get_config_vars
 
 import _sysconfig
@@ -73,6 +73,14 @@ lib_ext = 'dylib' if MACOS else ('pyd' if WIN32 else 'so')
 # configure logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(message)s', level=logging.DEBUG if sys.flags.verbose else logging.ERROR)
+
+
+def setup(*args, **kwargs):
+    # wrap the distutil setup. since we're running in the same process, running
+    # a full clean will fail the next build, since distutils thinks it already
+    # created the "build" directory
+    os.makedirs("build", exist_ok=False)
+    return distutils_setup(*args, **kwargs)
 
 
 threaded = _sysconfig.get_config_var("WITH_THREAD")
@@ -264,13 +272,18 @@ class Bzip2Depedency(CAPIDependency):
         logger.info("Building dependency %s in %s using Makefile %s" % (self.package_name, lib_src_folder, self.makefile))
 
         # On Darwin, we need to use -install_name for the native linker
+        makefile_path = os.path.join(lib_src_folder, self.makefile)
         if darwin_native:
-            makefile_path = os.path.join(lib_src_folder, self.makefile)
             with open(makefile_path, "r") as f:
                 content = f.read()
                 content = content.replace("-Wl,-soname -Wl,%s" % self.install_name, "-Wl,-install_name -Wl,@rpath/%s" % self.install_name)
             with open(makefile_path, "w") as f:
                 f.write(content)
+
+        with open(makefile_path, "r") as f:
+            content = f.read()
+        with open(makefile_path, "w") as f:
+            f.write(content.replace("CFLAGS=", "CFLAGS:=${CFLAGS} ").replace("$(CC) -shared", "$(CC) -shared $(CFLAGS)"))
 
         parallel_arg =  "-j" + str(min(4, os.cpu_count())) if threaded else ""
         system("make -C '%s' %s -f '%s' CC='%s'" % (lib_src_folder, parallel_arg, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
@@ -462,7 +475,7 @@ def build_libpython(capi_home):
                        sources=files,
                        extra_compile_args=cflags_warnings,
                        )
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
     setup(
         script_name='setup' + libpython_name,
         script_args=args,
@@ -481,7 +494,7 @@ def build_libhpy(capi_home):
                        define_macros=[("HPY_UNIVERSAL_ABI", 1)],
                        extra_compile_args=cflags_warnings,
     )
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
     setup(
         script_name='setup' + libhpy_name,
         script_args=args,
@@ -512,7 +525,7 @@ def build_nativelibsupport(capi_home, subdir, libname, deps=[], **kwargs):
                         extra_link_args=extra_link_args,
 
         )
-        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
         setup(
             script_name='setup' + libname,
             script_args=args,
@@ -532,7 +545,7 @@ def build_libposix(capi_home):
                        sources=files,
                        libraries=['crypt'] if not darwin_native else [],
                        extra_compile_args=cflags_warnings + ['-Wall', '-Werror'])
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
     setup(
         script_name='setup' + libposix_name,
         script_args=args,
@@ -546,7 +559,7 @@ def build_libposix(capi_home):
 
 
 def build_builtin_exts(capi_home):
-    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean", "--all"]
     distutil_exts = [(ext, ext()) for ext in builtin_exts]
     def build_builtin_ext(item):
         ext, distutil_ext = item
