@@ -94,7 +94,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
@@ -733,7 +733,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 3) {
                 return notTuple(self, state);
@@ -773,7 +773,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                  * seems more practical to just update it.
                  */
                 PDict dict = getDict.execute(self);
-                hlib.addAllToOther(((PDict) array[2]).getDictStorage(), dict.getDictStorage());
+                addAllToOtherNode.execute(frame, ((PDict) array[2]).getDictStorage(), dict);
             }
             return PNone.NONE;
         }

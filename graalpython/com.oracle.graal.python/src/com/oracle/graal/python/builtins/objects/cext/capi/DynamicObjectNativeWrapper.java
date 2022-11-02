@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -675,7 +676,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached GetOrCreateDictNode getDict,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
             PDict dict = getDict.execute(object);
@@ -688,11 +689,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return toSulongNode.execute(factory.createDict(dict.getDictStorage()));
             }
             HashingStorage storage = new DynamicObjectStorage(object.getStorage());
+            dict.setDictStorage(storage);
             if (dictStorage != null) {
                 // copy all mappings to the new storage
-                storage = storageLib.addAllToOther(dictStorage, storage);
+                addAllToOtherNode.execute(null, dictStorage, dict);
             }
-            dict.setDictStorage(storage);
             return toSulongNode.execute(dict);
         }
 

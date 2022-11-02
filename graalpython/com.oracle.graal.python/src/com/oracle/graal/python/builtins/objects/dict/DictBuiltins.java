@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageEq;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -132,15 +133,15 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1"})
         Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLib) {
-            self.setDictStorage(storageLib.addAllToOther(getInitNode().execute(frame, args[0], kwargs), self.getDictStorage()));
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOtherNode) {
+            addAllToOtherNode.execute(frame, getInitNode().execute(frame, args[0], kwargs), self);
             return PNone.NONE;
         }
 
         @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
         Object doKeywords(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLib) {
-            self.setDictStorage(storageLib.addAllToOther(getInitNode().execute(frame, NO_VALUE, kwargs), self.getDictStorage()));
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOtherNode) {
+            addAllToOtherNode.execute(frame, getInitNode().execute(frame, NO_VALUE, kwargs), self);
             return PNone.NONE;
         }
 
@@ -466,8 +467,8 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
         static Object update(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
                         @Shared("initNode") @Cached HashingStorage.InitNode initNode,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            updateKwargs(frame, self, kwargs, initNode, lib);
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOtherNode) {
+            updateKwargs(frame, self, kwargs, initNode, addAllToOtherNode);
             return PNone.NONE;
         }
 
@@ -475,9 +476,9 @@ public final class DictBuiltins extends PythonBuiltins {
         static Object update(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @Shared("updateNode") @Cached DictNodes.UpdateNode updateNode,
                         @Shared("initNode") @Cached HashingStorage.InitNode initNode,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             updateNode.execute(frame, self, args[0]);
-            updateKwargs(frame, self, kwargs, initNode, lib);
+            updateKwargs(frame, self, kwargs, initNode, addAllToOtherNode);
             return PNone.NONE;
         }
 
@@ -487,10 +488,8 @@ public final class DictBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
         }
 
-        private static void updateKwargs(VirtualFrame frame, PDict self, PKeyword[] kwargs, HashingStorage.InitNode initNode, HashingStorageLibrary lib) {
-            HashingStorage storage = self.getDictStorage();
-            storage = lib.addAllToOther(initNode.execute(frame, PNone.NO_VALUE, kwargs), storage);
-            self.setDictStorage(storage);
+        private static void updateKwargs(VirtualFrame frame, PDict self, PKeyword[] kwargs, HashingStorage.InitNode initNode, HashingStorageAddAllToOther addAllToOtherNode) {
+            addAllToOtherNode.execute(frame, initNode.execute(frame, PNone.NO_VALUE, kwargs), self);
         }
     }
 
