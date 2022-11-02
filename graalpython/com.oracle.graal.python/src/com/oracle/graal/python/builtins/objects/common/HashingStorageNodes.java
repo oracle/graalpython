@@ -48,6 +48,8 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Dyna
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Store;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXorCallback.Acc;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetIteratorNodeGen;
@@ -616,6 +618,10 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     public static abstract class HashingStorageCopy extends Node {
+        public static HashingStorageCopy getUncached() {
+            return HashingStorageCopyNodeGen.getUncached();
+        }
+
         public abstract HashingStorage execute(HashingStorage source);
 
         @Specialization
@@ -1094,6 +1100,10 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     public static abstract class HashingStorageAddAllToOther extends Node {
+        public static HashingStorageAddAllToOther getUncached() {
+            return HashingStorageAddAllToOtherNodeGen.getUncached();
+        }
+
         public abstract void execute(Frame frame, HashingStorage source, PHashingCollection dest);
 
         @Specialization(guards = "source == dest.getDictStorage()")

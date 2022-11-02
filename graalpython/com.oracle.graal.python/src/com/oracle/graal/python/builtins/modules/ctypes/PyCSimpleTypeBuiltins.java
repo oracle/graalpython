@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -100,7 +100,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PyCSimpleType)
@@ -139,7 +138,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached InternStringNode internStringNode,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached("create(T__TYPE_)") LookupAttributeInMRONode lookupAttrId,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
@@ -202,7 +201,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
             setDict.execute((PythonObject) result, stgdict);
 
             /*
@@ -236,7 +235,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                                 toTruffleStringNode,
                                 getDict,
                                 setDict,
-                                hlib,
+                                addAllToOtherNode,
                                 factory());
                 StgDictObject sw_dict = pyTypeStgDictNode.execute(swapped);
                 setAttrString.execute(frame, result, T_CTYPE_BE, swapped);
@@ -257,7 +256,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                     CastToTruffleStringNode toString,
                     GetDictIfExistsNode getDict,
                     SetDictNode setDict,
-                    HashingStorageLibrary hlib,
+                    HashingStorageAddAllToOther addAllToOther,
                     PythonObjectFactory factory) {
         int argsLen = args.length;
         Object[] swapped_args = new Object[argsLen];
@@ -287,7 +286,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
         if (resDict == null) {
             resDict = factory.createDictFixedStorage((PythonObject) result);
         }
-        stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+        addAllToOther.execute(frame, resDict.getDictStorage(), stgdict);
         setDict.execute((PythonObject) result, stgdict);
 
         return result;

@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -90,7 +90,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -116,7 +115,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
         @Specialization
         protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached IsTypeNode isTypeNode,
@@ -167,7 +166,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
             setDict.execute((PythonObject) result, stgdict);
 
             return result;

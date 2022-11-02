@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -84,7 +84,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtrType)
@@ -123,7 +122,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDict,
                         @Cached PyCallableCheckNode callableCheck,
                         @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
 
             stgdict.paramfunc = CArgObjectBuiltins.PyCFuncPtrTypeParamFunc;
@@ -144,7 +143,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
             setDict.execute((PythonObject) result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
