@@ -659,6 +659,20 @@ def test_setdefault():
     x.fail = True
     assert_raises(Exc, d.setdefault, x, [])
 
+    class SideEffectHash:
+        def __init__(self):
+            self.hash_called = 0
+        def __hash__(self):
+            self.hash_called += 1
+            return 42
+
+    d = {'hello': 'world'}
+    key = SideEffectHash()
+    assert d.setdefault(key, 'new') == 'new'
+    assert key.hash_called == 1
+    assert d.setdefault(key, 'another new') == 'new'
+    assert key.hash_called == 2
+
 
 def test_keys_contained():
     helper_keys_contained(lambda x: x.keys())

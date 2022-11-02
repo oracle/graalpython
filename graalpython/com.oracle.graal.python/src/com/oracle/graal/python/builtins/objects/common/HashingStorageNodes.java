@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorValueNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
@@ -260,6 +261,10 @@ public class HashingStorageNodes {
     @ImportStatic(PGuards.class)
     public static abstract class HashingStorageSetItemWithHash extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
+
+        public static HashingStorageSetItemWithHash create() {
+            return HashingStorageSetItemWithHashNodeGen.create();
+        }
 
         public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key, long keyHash, Object value);
 

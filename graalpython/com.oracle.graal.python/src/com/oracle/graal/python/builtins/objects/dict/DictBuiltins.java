@@ -62,13 +62,16 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageEq;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -96,6 +99,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -156,27 +160,32 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = "setdefault", minNumOfPositionalArgs = 2, parameterNames = {"self", "key", "default"})
     @GenerateNodeFactory
     public abstract static class SetDefaultNode extends PythonBuiltinNode {
+        @Child HashingStorageSetItemWithHash setItemWithHash;
 
-        @Specialization(guards = "lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame)", limit = "3")
-        public static Object setDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
-                        @SuppressWarnings("unused") @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
-                        @SuppressWarnings("unused") @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            return getItem.execute(frame, dict.getDictStorage(), key);
-        }
-
-        @Specialization(guards = "!lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame)", limit = "3")
-        public static Object setDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
-                        @SuppressWarnings("unused") @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
-                        @SuppressWarnings("unused") @Cached ConditionProfile hasFrame,
-                        @Cached ConditionProfile defaultValProfile) {
-            Object value = defaultValue;
-            if (defaultValProfile.profile(defaultValue == PNone.NO_VALUE)) {
-                value = PNone.NONE;
+        @Specialization
+        public Object doIt(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached HashingStorageGetItemWithHash getItem,
+                        @Cached BranchProfile hasValue,
+                        @Cached BranchProfile defaultValProfile) {
+            long keyHash = hashNode.execute(frame, key);
+            Object value = getItem.execute(frame, dict.getDictStorage(), key, keyHash);
+            if (value != null) {
+                hasValue.enter();
+                return value;
             }
-            setItemNode.execute(frame, dict, key, value);
-            return value;
+            Object newValue = defaultValue;
+            if (defaultValue == PNone.NO_VALUE) {
+                defaultValProfile.enter();
+                newValue = PNone.NONE;
+            }
+            if (setItemWithHash == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setItemWithHash = insert(HashingStorageSetItemWithHash.create());
+            }
+            HashingStorage newStorage = setItemWithHash.execute(frame, dict.getDictStorage(), key, keyHash, newValue);
+            dict.setDictStorage(newStorage);
+            return newValue;
         }
     }
 
