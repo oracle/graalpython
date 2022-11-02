@@ -258,6 +258,99 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
+    public static abstract class HashingStorageSetItemWithHash extends Node {
+        static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
+
+        public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key, long keyHash, Object value);
+
+        @Specialization
+        static HashingStorage economicMap(Frame frame, EconomicMapStorage self, Object key, long keyHash, Object value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+            putNode.execute(frame, self.map, key, keyHash, value);
+            if (!self.map.hasSideEffect() && !PGuards.isBuiltinString(key, profile)) {
+                self.map.setSideEffectingKeysFlag();
+            }
+            return self;
+        }
+
+        @Specialization
+        static HashingStorage empty(Frame frame, @SuppressWarnings("unused") EmptyStorage self, Object key, long keyHash, Object value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+            // TODO: do we want to try DynamicObjectStorage if the key is a string?
+            return economicMap(frame, EconomicMapStorage.create(1), key, keyHash, value, profile, putNode);
+        }
+
+        @Specialization(guards = "!self.shouldTransitionOnPut()")
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
+                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            self.setStringKey(key, value, dylib, invalidateMroProfile);
+            return self;
+        }
+
+        @Specialization(guards = {"!self.shouldTransitionOnPut()", "isBuiltinString(key, profile)"}, limit = "1")
+        static HashingStorage domPStringKey(DynamicObjectStorage self, Object key, long keyHash, Object value,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Cached CastToTruffleStringNode castStr,
+                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            self.setStringKey(castStr.execute(key), value, dylib, invalidateMroProfile);
+            return self;
+        }
+
+        @Specialization(guards = {"self.shouldTransitionOnPut() || !isBuiltinString(key, profile)"}, limit = "1")
+        static HashingStorage domTransition(Frame frame, DynamicObjectStorage self, Object key, long keyHash, Object value,
+                        @SuppressWarnings("unused") @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached PyObjectHashNode hashNode,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+            EconomicMapStorage result = HashingStorageToEconomicMap.doDynamicObjectStorage(self, dylib, hashNode, putNode);
+            putNode.put(frame, result.map, key, hashNode.execute(frame, key), value);
+            return result;
+        }
+
+        @Specialization(guards = "self.lengthHint() < DOM_SIZE_THRESHOLD")
+        HashingStorage localsStringKey(LocalsStorage self, TruffleString key, long keyHash, Object value,
+                        @Shared("invalidateMro") @Cached BranchProfile invalidateMroProfile,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached DynamicObjectStorageSetStringKey specializedPutNode) {
+            DynamicObjectStorage result = new DynamicObjectStorage(PythonLanguage.get(this));
+            self.addAllTo(result, specializedPutNode);
+            return domStringKey(result, key, keyHash, value, invalidateMroProfile, dylib);
+        }
+
+        @Specialization(guards = "!isTruffleString(key) || lengthHint >= DOM_SIZE_THRESHOLD")
+        static HashingStorage localsGenericKey(Frame frame, LocalsStorage self, Object key, long keyHash, Object value,
+                        @Bind("self.lengthHint()") int lengthHint,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+            EconomicMapStorage result = EconomicMapStorage.create(lengthHint);
+            self.addAllTo(result, specializedPutNode);
+            return economicMap(frame, result, key, keyHash, value, profile, putNode);
+        }
+
+        @Specialization
+        static HashingStorage keywords(Frame frame, KeywordsStorage self, Object key, long keyHash, Object value,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
+                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
+                        @Shared("economicSpecPut") @Cached EconomicMapSetStringKey specializedPutNode) {
+            // TODO: do we want to try DynamicObjectStorage if the key is a string?
+            EconomicMapStorage result = EconomicMapStorage.create(self.length());
+            self.addAllTo(result, specializedPutNode);
+            return economicMap(frame, result, key, keyHash, value, profile, putNode);
+        }
+    }
+
+    /**
+     * This unfortunately duplicates most of the logic in {@link HashingStorageSetItemWithHash}, but
+     * here we want to avoid computing the hash if we happen to be setting an item into a storage
+     * that does not need the Python hash at all.
+     */
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
     public static abstract class HashingStorageSetItem extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
@@ -924,43 +1017,28 @@ public class HashingStorageNodes {
 
         @Specialization
         static PHashingCollection economic2Economic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+                        @Cached ObjectHashMap.PutNode putNode) {
             ObjectHashMap srcMap = src.map;
             putNode.put(frame, destStorage.map, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
             return dest;
         }
 
-        @Specialization(guards = "!isEconomicMap(destStorage)")
+        @Specialization(replaces = "economic2Economic")
         static PHashingCollection economic2Generic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
-                        @Cached HashingStorageToEconomicMap toEconomicMapNode,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("itKey") @Cached HashingStorageIteratorKey iterKey,
-                        @Shared("itValue") @Cached HashingStorageIteratorValue iterValue,
-                        @Shared("setItem") @Cached HashingStorageSetItem setItem) {
+                        @Cached HashingStorageSetItemWithHash setItemWithHash) {
             // Note that the point is to avoid side-effecting __hash__ call. Since the source is
-            // economic map, the key may be an arbitrary object, and must avoid calling its __hash__
-            // At the same time we want to avoid transition from an optimized storage if not
-            // necessary
+            // economic map, the key may be an arbitrary object.
             ObjectHashMap srcMap = src.map;
-            Object key = srcMap.getKey(it.index);
-            if (HashingStorageGuards.keyMayHaveSideEffectingHash(key)) {
-                EconomicMapStorage newStorage = toEconomicMapNode.execute(destStorage);
-                dest.setDictStorage(newStorage);
-                // avoids __hash__:
-                return economic2Economic(frame, src, it, dest, newStorage, putNode);
-            }
-            return generic2Generic(frame, src, it, dest, destStorage, iterKey, iterValue, setItem);
-        }
-
-        static boolean isEconomicMap(HashingStorage s) {
-            return s instanceof EconomicMapStorage;
+            HashingStorage newStorage = setItemWithHash.execute(frame, destStorage, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
+            dest.setDictStorage(newStorage);
+            return dest;
         }
 
         @Fallback
         static PHashingCollection generic2Generic(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
-                        @Shared("itKey") @Cached HashingStorageIteratorKey iterKey,
-                        @Shared("itValue") @Cached HashingStorageIteratorValue iterValue,
-                        @Shared("setItem") @Cached HashingStorageSetItem setItem) {
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue,
+                        @Cached HashingStorageSetItem setItem) {
             // We know that for all other storages the key hash must be side effect free, so we can
             // just insert it leaving it up to the HashingStorageSetItem whether we need to compute
             // hash or not. Since the src is not EconomicMapStorage, we do not know the hash anyway.
