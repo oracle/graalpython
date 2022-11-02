@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIntersect;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
@@ -382,12 +383,11 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class AndNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
+        @Specialization(guards = "canDoSetBinOp(right)")
         PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
-            HashingStorage storage = leftLib.intersectWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage storage = intersectNode.execute(frame, getHashingStorageNode.execute(frame, right), left.getDictStorage());
             return factory().createSet(storage);
         }
 
@@ -402,12 +402,13 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IAndNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(right)", limit = "3")
+        @Specialization(guards = "canDoSetBinOp(right)")
         PBaseSet doPBaseSet(VirtualFrame frame, PSet left, Object right,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
-            HashingStorage storage = leftLib.intersectWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
+                        @Cached HashingStorageIntersect intersectNode) {
+            // We cannot reuse the left storage without breaking the CPython "contract" of how many
+            // times we can call __eq__ on which key
+            HashingStorage storage = intersectNode.execute(frame, getHashingStorageNode.execute(frame, right), left.getDictStorage());
             left.setDictStorage(storage);
             return left;
         }

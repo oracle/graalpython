@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Store;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXorCallback.Acc;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
@@ -996,26 +995,26 @@ public class HashingStorageNodes {
         }
     }
 
+    @ValueType
+    public static final class ResultAndOther {
+        final ObjectHashMap result;
+        final HashingStorage other;
+
+        public ResultAndOther(ObjectHashMap result, HashingStorage other) {
+            this.result = result;
+            this.other = other;
+        }
+    }
+
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageXorCallback extends HashingStorageForEachCallback<HashingStorageXorCallback.Acc> {
-
-        @ValueType
-        public static final class Acc {
-            final ObjectHashMap result;
-            final HashingStorage other;
-
-            public Acc(ObjectHashMap result, HashingStorage other) {
-                this.result = result;
-                this.other = other;
-            }
-        }
+    public static abstract class HashingStorageXorCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
-        public abstract Acc execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Acc accumulator);
+        public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
 
         @Specialization
-        Acc doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, Acc acc,
+        ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
                         @Cached ObjectHashMap.PutNode putResultNode,
                         @Cached HashingStorageGetItemWithHash getFromResultNode,
                         @Cached HashingStorageIteratorKey iterKey,
@@ -1045,12 +1044,55 @@ public class HashingStorageNodes {
             final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
             ObjectHashMap resultMap = result.map;
 
-            HashingStorageXorCallback.Acc accA = new Acc(resultMap, bStorage);
+            ResultAndOther accA = new ResultAndOther(resultMap, bStorage);
             forEachA.execute(frame, aStorage, callbackA, accA);
 
-            HashingStorageXorCallback.Acc accB = new Acc(resultMap, aStorage);
+            ResultAndOther accB = new ResultAndOther(resultMap, aStorage);
             forEachB.execute(frame, bStorage, callbackB, accB);
 
+            return result;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageIntersectCallback extends HashingStorageForEachCallback<ResultAndOther> {
+
+        @Override
+        public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
+
+        @Specialization
+        ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
+                        @Cached ObjectHashMap.PutNode putResultNode,
+                        @Cached HashingStorageGetItemWithHash getFromResultNode,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue,
+                        @Cached HashingStorageIteratorKeyHash iterHash) {
+            Object key = iterKey.execute(storage, it);
+            long hash = iterHash.execute(storage, it);
+            Object otherValue = getFromResultNode.execute(frame, acc.other, key, hash);
+            if (otherValue != null) {
+                putResultNode.put(frame, acc.result, key, hash, otherValue);
+            }
+            return acc;
+        }
+    }
+
+    /**
+     * Keeps the values from {@code b}.
+     */
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageIntersect extends Node {
+        public abstract HashingStorage execute(Frame frame, HashingStorage a, HashingStorage b);
+
+        @Specialization
+        HashingStorage doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Cached HashingStorageForEach forEachA,
+                        @Cached HashingStorageIntersectCallback callback) {
+            final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
+            ResultAndOther acc = new ResultAndOther(result.map, bStorage);
+            forEachA.execute(frame, aStorage, callback, acc);
             return result;
         }
     }

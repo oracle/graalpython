@@ -593,6 +593,8 @@ def test_bin_ops_side_effects():
     import operator
     test_op(operator.__or__, key1_eq_call)
     test_op(operator.__ior__, key1_eq_call)
+    test_op(operator.__and__, key1_eq_call)
+    test_op(operator.__iand__, key1_eq_call)
 
     # TODO:
     # def symmetric_difference_check(key1, key2):
