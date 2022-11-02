@@ -84,5 +84,6 @@ class TestLoader(unittest.TestLoader):
 
 # We would normmally just pass the loader to the main, but there are tests for the framework itself (test_unittest)
 # that interact weirdly with non-default loaders
-unittest.defaultTestLoader = TestLoader()
-unittest.main(module=None, testLoader=unittest.defaultTestLoader)
+if __name__ == '__main__':
+    unittest.defaultTestLoader = TestLoader()
+    unittest.main(module=None, testLoader=unittest.defaultTestLoader)
