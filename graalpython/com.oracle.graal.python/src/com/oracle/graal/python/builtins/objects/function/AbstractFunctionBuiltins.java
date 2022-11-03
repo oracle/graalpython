@@ -304,12 +304,17 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                     continue;
                 }
                 if (skipSelf) {
+                    skipSelf = false;
                     continue;
                 }
+                if (!first && signature.getPositionalOnlyArgIndex() == i) {
+                    first = appendCommaIfNeeded(sb, first);
+                    sb.appendCodePointUncached('/', 1, true);
+                }
                 first = appendCommaIfNeeded(sb, first);
-                sb.appendStringUncached(parameterNames[i++]);
+                sb.appendStringUncached(parameterNames[i]);
             }
-            if (parameterNames.length > 0) {
+            if (signature.getPositionalOnlyArgIndex() == parameterNames.length) {
                 first = appendCommaIfNeeded(sb, first);
                 sb.appendCodePointUncached('/', 1, true);
             }

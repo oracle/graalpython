@@ -754,7 +754,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // dir([object])
-    @Builtin(name = J_DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
 
