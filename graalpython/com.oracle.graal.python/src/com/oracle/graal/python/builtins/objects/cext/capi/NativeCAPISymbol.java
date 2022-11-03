@@ -101,33 +101,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_WRITE_ULONGLONG_MEMBER("WriteULongLongMember"),
     FUN_WRITE_PYSSIZET_MEMBER("WritePySSizeT"),
 
-    /* C functions for accessing a va_list */
-    VALIST_NEXT_VOID_PTR_T("valist_next_void_ptr_t"),
-    VALIST_NEXT_INT_T("valist_next_int_t"),
-    VALIST_NEXT_UINT_T("valist_next_uint_t"),
-    VALIST_NEXT_LONG_T("valist_next_long_t"),
-    VALIST_NEXT_ULONG_T("valist_next_ulong_t"),
-    VALIST_NEXT_LONGLONG_T("valist_next_longlong_t"),
-    VALIST_NEXT_ULONGLONG_T("valist_next_ulonglong_t"),
-    VALIST_NEXT_PYSSIZE_T("valist_next_Py_ssize_t"),
-    VALIST_NEXT_SIZE_T("valist_next_size_t"),
-    VALIST_NEXT_PYOBJECT_PTR_T("valist_next_PyObject_ptr_t"),
-    VALIST_NEXT_CHAR_PTR_T("valist_next_char_ptr_t"),
-    VALIST_NEXT_PYCOMPLEX_PTR_T("valist_next_Py_complex_ptr_t"),
-    VALIST_SET_NEXT_UINT8("valist_set_next_uint8_t"),
-    VALIST_SET_NEXT_INT8("valist_set_next_int8_t"),
-    VALIST_SET_NEXT_UINT16("valist_set_next_uint16_t"),
-    VALIST_SET_NEXT_INT16("valist_set_next_int16_t"),
-    VALIST_SET_NEXT_UINT32("valist_set_next_uint32_t"),
-    VALIST_SET_NEXT_INT32("valist_set_next_int32_t"),
-    VALIST_SET_NEXT_UINT64("valist_set_next_uint64_t"),
-    VALIST_SET_NEXT_INT64("valist_set_next_int64_t"),
-    VALIST_SET_NEXT_PYSSIZE_T("valist_set_next_Py_ssize_t"),
-    VALIST_SET_NEXT_FLOAT_T("valist_set_next_float_t"),
-    VALIST_SET_NEXT_DOUBLE_T("valist_set_next_double_t"),
-    VALIST_SET_NEXT_PYOBJECT_PTR_T("valist_set_next_PyObject_ptr_t"),
-    VALIST_SET_NEXT_PYCOMPLEX("valist_set_next_Py_complex"),
-
     /* Python C API functions */
 
     FUN_NATIVE_LONG_TO_JAVA("native_long_to_java"),
