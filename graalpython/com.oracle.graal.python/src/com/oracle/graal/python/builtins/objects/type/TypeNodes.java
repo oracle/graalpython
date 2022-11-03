@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRAC
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_MAPPING;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
@@ -291,7 +292,6 @@ public abstract class TypeNodes {
                     break;
                 case GetSetDescriptor:
                 case MemberDescriptor:
-                case PMappingproxy:
                 case PFrame:
                 case PGenerator:
                 case PBuffer:
@@ -304,11 +304,17 @@ public abstract class TypeNodes {
                 case PArrayIterator:
                     result = DEFAULT | HAVE_GC;
                     break;
+                case PMappingproxy:
+                    result = DEFAULT | HAVE_GC | Py_TPFLAGS_MAPPING;
+                    break;
                 case PMemoryView:
                     result = DEFAULT | HAVE_GC | Py_TPFLAGS_SEQUENCE;
                     break;
                 case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_MAPPING;
+                    break;
+                case PDefaultDict:
+                    result = DEFAULT | HAVE_GC | BASETYPE | Py_TPFLAGS_MAPPING;
                     break;
                 case PBaseException:
                     result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
