@@ -46,7 +46,9 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIntersect;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -103,20 +106,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class AndNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
-            HashingStorage storage = leftLib.intersectWithFrame(left.getDictStorage(), right.getDictStorage(), hasFrame, frame);
+                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage storage = intersectNode.execute(frame, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "1")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
-            HashingStorage storage = leftLib.intersectWithFrame(left.getDictStorage(), getHashingStorageNode.execute(frame, right), hasFrame, frame);
+                        @Shared("intersect") @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage storage = intersectNode.execute(frame, left.getDictStorage(), getHashingStorageNode.execute(frame, right));
             return factory().createSet(storage);
         }
 
@@ -138,34 +139,37 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         PBaseSet doCached(VirtualFrame frame, PFrozenSet self, Object[] args,
                         @Cached("args.length") int len,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                result = lib.intersectWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
+                result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
             }
             return factory().createFrozenSet(result);
         }
 
         @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PFrozenSet self, Object[] args,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                result = lib.intersectWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
+                result = intersectNode.execute(frame, result, getHashingStorageNode.execute(frame, args[i]));
             }
             return factory().createFrozenSet(result);
         }
 
-        @Specialization(limit = "3")
+        static boolean isOther(Object arg) {
+            return !(PGuards.isNoValue(arg) || arg instanceof Object[]);
+        }
+
+        @Specialization(guards = "isOther(other)")
         PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.intersectWithFrame(self.getDictStorage(), getHashingStorage.execute(frame, other), hasFrame, frame);
+                        @Cached HashingStorageIntersect intersectNode) {
+            HashingStorage result = intersectNode.execute(frame, self.getDictStorage(), getHashingStorage.execute(frame, other));
             return factory().createFrozenSet(result);
         }
     }
