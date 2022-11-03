@@ -110,9 +110,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtParseArgumentsNode {
     static final int FORMAT_LOWER_S = 's';
@@ -992,29 +990,17 @@ public abstract class CExtParseArgumentsNode {
     @GenerateUncached
     abstract static class ExecuteConverterNode extends Node {
 
-        private static final Source NFI_SIGNATURE = Source.newBuilder("nfi", "(POINTER,POINTER):SINT32", "exec").build();
-
         public abstract void execute(Object converter, Object inputArgument, Object outputArgument);
-
-        public static Object parseSignature() {
-            return PythonContext.get(null).getEnv().parseInternal(NFI_SIGNATURE).call();
-        }
 
         @Specialization(limit = "5")
         static void doExecuteConverterGeneric(Object converter, Object inputArgument, Object outputArgument,
-                        @Cached(value = "parseSignature()", allowUncached = true) Object signature,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
                         @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) {
             try {
-                Object result;
-                if (!converterLib.isExecutable(converter)) {
-                    result = InteropLibrary.getUncached().execute(SignatureLibrary.getUncached().bind(signature, converter), toNativeNode.execute(inputArgument), outputArgument);
-                } else {
-                    result = converterLib.execute(converter, toNativeNode.execute(inputArgument), outputArgument);
-                }
+                Object result = converterLib.execute(converter, toNativeNode.execute(inputArgument), outputArgument);
                 if (resultLib.fitsInInt(result)) {
                     checkResultNode.execute(resultLib.asInt(result));
                     return;
