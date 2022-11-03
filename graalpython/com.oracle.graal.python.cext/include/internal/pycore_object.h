@@ -47,9 +47,13 @@ _PyObject_Init(PyObject *op, PyTypeObject *typeobj)
 {
     assert(op != NULL);
     Py_SET_TYPE(op, typeobj);
+    /* TOOD(fa): properly set HEAPTYPE flag */
+    /*
     if (_PyType_HasFeature(typeobj, Py_TPFLAGS_HEAPTYPE)) {
         Py_INCREF(typeobj);
     }
+    */
+    Py_INCREF(typeobj);
     _Py_NewReference(op);
 }
 
