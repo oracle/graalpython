@@ -233,11 +233,10 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageCopy copyNode,
                         @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage result = copyNode.execute(self.getDictStorage());
-            PSet resultSet = factory().createSet(result);
             for (int i = 0; i < len; i++) {
-                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), resultSet);
+                result = addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), result);
             }
-            return resultSet;
+            return factory().createSet(result);
         }
 
         @Specialization(replaces = "doCached")
@@ -246,11 +245,10 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageCopy copyNode,
                         @Cached HashingStorageAddAllToOther addAllToOther) {
             HashingStorage result = copyNode.execute(self.getDictStorage());
-            PSet resultSet = factory().createSet(result);
             for (int i = 0; i < args.length; i++) {
-                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), resultSet);
+                result = addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), result);
             }
-            return resultSet;
+            return factory().createSet(result);
         }
     }
 
@@ -348,9 +346,11 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage storage = self.getDictStorage();
             for (int i = 0; i < len; i++) {
-                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), self);
+                storage = addAllToOther.execute(frame, getHashingStorageNode.execute(frame, args[i]), storage);
             }
+            self.setDictStorage(storage);
             return PNone.NONE;
         }
 
@@ -358,9 +358,11 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage storage = self.getDictStorage();
             for (Object o : args) {
-                addAllToOther.execute(frame, getHashingStorageNode.execute(frame, o), self);
+                storage = addAllToOther.execute(frame, getHashingStorageNode.execute(frame, o), storage);
             }
+            self.setDictStorage(storage);
             return PNone.NONE;
         }
 

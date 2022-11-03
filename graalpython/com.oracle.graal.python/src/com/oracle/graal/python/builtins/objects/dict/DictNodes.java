@@ -108,11 +108,12 @@ public abstract class DictNodes {
             int initialSize = otherLenNode.execute(otherStorage);
             HashingStorageIterator itOther = getOtherIter.execute(otherStorage);
             while (iterNext.execute(otherStorage, itOther)) {
-                transferItem.execute(frame, otherStorage, itOther, self, selfStorage);
+                selfStorage = transferItem.execute(frame, otherStorage, itOther, selfStorage);
                 if (initialSize != otherLenNode.execute(otherStorage)) {
                     throw raiseNode.raise(RuntimeError, ErrorMessages.MUTATED_DURING_UPDATE, "dict");
                 }
             }
+            self.setDictStorage(selfStorage);
         }
 
         @Specialization(guards = {"!isDict(other)", "hasKeysAttr(frame, other, lookupKeys)"}, limit = "1")

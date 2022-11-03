@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1282,35 +1283,29 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageTransferItem extends HashingStorageForEachCallback<PHashingCollection> {
+    public static abstract class HashingStorageTransferItem extends HashingStorageForEachCallback<HashingStorage> {
         @Override
-        public final PHashingCollection execute(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest) {
-            return execute(frame, src, it, dest, dest.getDictStorage());
-        }
-
-        public abstract PHashingCollection execute(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage);
+        public abstract HashingStorage execute(Frame frame, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage);
 
         @Specialization
-        static PHashingCollection economic2Economic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, EconomicMapStorage destStorage,
-                        @Cached ObjectHashMap.PutNode putNode) {
+        static EconomicMapStorage economic2Economic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, EconomicMapStorage destStorage,
+                        @Cached PutNode putNode) {
             ObjectHashMap srcMap = src.map;
             putNode.put(frame, destStorage.map, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
-            return dest;
+            return destStorage;
         }
 
         @Specialization(replaces = "economic2Economic")
-        static PHashingCollection economic2Generic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
+        static HashingStorage economic2Generic(Frame frame, EconomicMapStorage src, HashingStorageIterator it, HashingStorage destStorage,
                         @Cached HashingStorageSetItemWithHash setItemWithHash) {
             // Note that the point is to avoid side-effecting __hash__ call. Since the source is
             // economic map, the key may be an arbitrary object.
             ObjectHashMap srcMap = src.map;
-            HashingStorage newStorage = setItemWithHash.execute(frame, destStorage, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
-            dest.setDictStorage(newStorage);
-            return dest;
+            return setItemWithHash.execute(frame, destStorage, srcMap.getKey(it.index), srcMap.hashes[it.index], srcMap.getValue(it.index));
         }
 
         @Fallback
-        static PHashingCollection generic2Generic(Frame frame, HashingStorage src, HashingStorageIterator it, PHashingCollection dest, HashingStorage destStorage,
+        static HashingStorage generic2Generic(Frame frame, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue,
                         @Cached HashingStorageSetItem setItem) {
@@ -1318,9 +1313,7 @@ public class HashingStorageNodes {
             // just insert it leaving it up to the HashingStorageSetItem whether we need to compute
             // hash or not. Since the src is not EconomicMapStorage, we do not know the hash anyway.
             // We still pass the frame, because the insertion may trigger __eq__
-            HashingStorage s = setItem.execute(frame, destStorage, iterKey.execute(src, it), iterValue.execute(src, it));
-            dest.setDictStorage(s);
-            return dest;
+            return setItem.execute(frame, destStorage, iterKey.execute(src, it), iterValue.execute(src, it));
         }
     }
 
@@ -1330,18 +1323,23 @@ public class HashingStorageNodes {
             return HashingStorageAddAllToOtherNodeGen.getUncached();
         }
 
-        public abstract void execute(Frame frame, HashingStorage source, PHashingCollection dest);
-
-        @Specialization(guards = "source == dest.getDictStorage()")
-        @SuppressWarnings("unused")
-        static void doIdentical(Frame frame, HashingStorage source, PHashingCollection dest) {
+        public final void execute(Frame frame, HashingStorage source, PHashingCollection dest) {
+            dest.setDictStorage(execute(frame, source, dest.getDictStorage()));
         }
 
-        @Specialization(guards = "source != dest.getDictStorage()")
-        static void doIt(Frame frame, HashingStorage source, PHashingCollection dest,
+        public abstract HashingStorage execute(Frame frame, HashingStorage source, HashingStorage dest);
+
+        @Specialization(guards = "source == dest")
+        @SuppressWarnings("unused")
+        static HashingStorage doIdentical(Frame frame, HashingStorage source, HashingStorage dest) {
+            return dest;
+        }
+
+        @Specialization(guards = "source != dest")
+        static HashingStorage doIt(Frame frame, HashingStorage source, HashingStorage dest,
                         @Cached HashingStorageForEach forEach,
                         @Cached HashingStorageTransferItem transferItem) {
-            forEach.execute(frame, source, transferItem, dest);
+            return forEach.execute(frame, source, transferItem, dest);
         }
     }
 }

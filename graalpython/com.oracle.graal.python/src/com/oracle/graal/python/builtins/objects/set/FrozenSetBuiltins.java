@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -324,10 +325,11 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doCached(VirtualFrame frame, PBaseSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                result = lib.union(result, getHashingStorage.execute(frame, args[i]));
+                result = addAllToOther.execute(frame, getHashingStorage.execute(frame, args[i]), result);
             }
             return factory().createFrozenSet(result);
         }
@@ -335,10 +337,11 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PBaseSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage result = lib.copy(self.getDictStorage());
+                        @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage result = copyNode.execute(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                result = lib.union(result, getHashingStorage.execute(frame, args[i]));
+                result = addAllToOther.execute(frame, getHashingStorage.execute(frame, args[i]), result);
             }
             return factory().createFrozenSet(result);
         }
