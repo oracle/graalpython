@@ -616,6 +616,29 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
+    public static abstract class HashingStorageClear extends Node {
+        public abstract HashingStorage execute(HashingStorage storage);
+
+        @Specialization
+        static HashingStorage economicMap(EconomicMapStorage self) {
+            self.clear();
+            return self;
+        }
+
+        @Specialization
+        static HashingStorage dom(DynamicObjectStorage self,
+                        @Cached DynamicObjectStorage.ClearNode clearNode) {
+            clearNode.execute(self);
+            return self;
+        }
+
+        @Fallback
+        static HashingStorage empty(HashingStorage self) {
+            return EmptyStorage.INSTANCE;
+        }
+    }
+
+    @GenerateUncached
     public static abstract class HashingStorageCopy extends Node {
         public static HashingStorageCopy getUncached() {
             return HashingStorageCopyNodeGen.getUncached();
@@ -1016,13 +1039,13 @@ public class HashingStorageNodes {
         @Specialization
         ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
                         @Cached ObjectHashMap.PutNode putResultNode,
-                        @Cached HashingStorageGetItemWithHash getFromResultNode,
+                        @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
             Object key = iterKey.execute(storage, it);
             long hash = iterHash.execute(storage, it);
-            Object otherValue = getFromResultNode.execute(frame, acc.other, key, hash);
+            Object otherValue = getFromOther.execute(frame, acc.other, key, hash);
             if (otherValue == null) {
                 putResultNode.put(frame, acc.result, key, hash, iterValue.execute(storage, it));
             }
@@ -1064,12 +1087,12 @@ public class HashingStorageNodes {
         @Specialization
         ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
                         @Cached ObjectHashMap.PutNode putResultNode,
-                        @Cached HashingStorageGetItemWithHash getFromResultNode,
+                        @Cached HashingStorageGetItemWithHash getFromOther,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
             Object key = iterKey.execute(storage, it);
             long hash = iterHash.execute(storage, it);
-            Object otherValue = getFromResultNode.execute(frame, acc.other, key, hash);
+            Object otherValue = getFromOther.execute(frame, acc.other, key, hash);
             if (otherValue != null) {
                 putResultNode.put(frame, acc.result, key, hash, otherValue);
             }
@@ -1089,6 +1112,49 @@ public class HashingStorageNodes {
         HashingStorage doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
                         @Cached HashingStorageForEach forEachA,
                         @Cached HashingStorageIntersectCallback callback) {
+            final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
+            ResultAndOther acc = new ResultAndOther(result.map, bStorage);
+            forEachA.execute(frame, aStorage, callback, acc);
+            return result;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageDiffCallback extends HashingStorageForEachCallback<ResultAndOther> {
+
+        @Override
+        public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
+
+        @Specialization
+        ResultAndOther doGeneric(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
+                        @Cached ObjectHashMap.PutNode putResultNode,
+                        @Cached HashingStorageGetItemWithHash getFromOther,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorKeyHash iterHash,
+                        @Cached HashingStorageIteratorValue iterValue) {
+            Object key = iterKey.execute(storage, it);
+            long hash = iterHash.execute(storage, it);
+            Object otherValue = getFromOther.execute(frame, acc.other, key, hash);
+            if (otherValue == null) {
+                putResultNode.put(frame, acc.result, key, hash, iterValue.execute(storage, it));
+            }
+            return acc;
+        }
+    }
+
+    /**
+     * {@code a-b}
+     */
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageDiff extends Node {
+        public abstract HashingStorage execute(Frame frame, HashingStorage a, HashingStorage b);
+
+        @Specialization
+        HashingStorage doIt(Frame frame, HashingStorage aStorage, HashingStorage bStorage,
+                        @Cached HashingStorageForEach forEachA,
+                        @Cached HashingStorageDiffCallback callback) {
             final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
             ResultAndOther acc = new ResultAndOther(result.map, bStorage);
             forEachA.execute(frame, aStorage, callback, acc);

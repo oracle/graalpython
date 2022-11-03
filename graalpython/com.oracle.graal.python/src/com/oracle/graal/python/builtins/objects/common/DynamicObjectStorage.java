@@ -453,6 +453,35 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    static abstract class ClearNode extends Node {
+        public abstract HashingStorage execute(HashingStorage receiver);
+
+        @Specialization(guards = "!isPythonObject(receiver.getStore())")
+        static HashingStorage clearPlain(DynamicObjectStorage receiver,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            dylib.resetShape(receiver.getStore(), PythonLanguage.get(dylib).getEmptyShape());
+            return receiver;
+        }
+
+        @Specialization(guards = "isPythonObject(receiver.getStore())")
+        static HashingStorage clearObjectBacked(DynamicObjectStorage receiver,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            /*
+             * We cannot use resetShape as that would lose hidden keys, such as CLASS or OBJ_ID.
+             * Construct a new storage instead and set it as the object's __dict__'s storage.
+             */
+            DynamicObjectStorage newStorage = new DynamicObjectStorage(new Store(PythonLanguage.get(dylib).getEmptyShape()));
+            PythonObject owner = (PythonObject) receiver.getStore();
+            PDict dict = (PDict) dylib.getOrDefault(owner, PythonObject.DICT, null);
+            if (dict != null && dict.getDictStorage() == receiver) {
+                dict.setDictStorage(newStorage);
+            }
+            return newStorage;
+        }
+    }
+
     @ExportMessage
     public static class Copy {
         static DynamicObjectLibrary[] createAccess(int length) {
