@@ -3372,7 +3372,7 @@ public abstract class CExtNodes {
                             valid = true;
                             break;
                         case 'c':
-                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_INT_T);
+                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, LLVMType.int_t);
                             if (ordinal < 0 || ordinal > 0x110000) {
                                 throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
                             }
@@ -3384,16 +3384,16 @@ public abstract class CExtNodes {
                         case 'i':
                             // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
                             if (len != null) {
-                                NativeCAPISymbol llvmType = null;
+                                LLVMType llvmType = null;
                                 switch (len) {
                                     case "ll":
-                                        llvmType = NativeCAPISymbol.VALIST_NEXT_LONGLONG_T;
+                                        llvmType = LLVMType.longlong_t;
                                         break;
                                     case "l":
-                                        llvmType = NativeCAPISymbol.VALIST_NEXT_LONG_T;
+                                        llvmType = LLVMType.long_t;
                                         break;
                                     case "z":
-                                        llvmType = NativeCAPISymbol.VALIST_NEXT_PYSSIZE_T;
+                                        llvmType = LLVMType.Py_ssize_t;
                                         break;
                                 }
                                 if (llvmType != null) {
@@ -3403,7 +3403,7 @@ public abstract class CExtNodes {
                                     valid = true;
                                 }
                             } else {
-                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_INT_T));
+                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, LLVMType.int_t));
                                 vaArgIdx++;
                                 valid = true;
                             }
@@ -3411,16 +3411,16 @@ public abstract class CExtNodes {
                         case 'u':
                             // %u, %lu, %llu, %zu
                             if (len != null) {
-                                NativeCAPISymbol llvmType = null;
+                                LLVMType llvmType = null;
                                 switch (len) {
                                     case "ll":
-                                        llvmType = NativeCAPISymbol.VALIST_NEXT_ULONGLONG_T;
+                                        llvmType = LLVMType.ulonglong_t;
                                         break;
                                     case "l":
-                                        llvmType = NativeCAPISymbol.VALIST_NEXT_ULONG_T;
+                                        llvmType = LLVMType.ulong_t;
                                         break;
                                     case "z":
-                                        llvmType = NativeCAPISymbol.VALIST_NEXT_SIZE_T;
+                                        llvmType = LLVMType.size_t;
                                         break;
                                 }
                                 if (llvmType != null) {
@@ -3430,14 +3430,14 @@ public abstract class CExtNodes {
                                     valid = true;
                                 }
                             } else {
-                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_UINT_T)));
+                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, LLVMType.uint_t)));
                                 vaArgIdx++;
                                 valid = true;
                             }
                             break;
                         case 'x':
                             // %x
-                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, NativeCAPISymbol.VALIST_NEXT_INT_T)));
+                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, LLVMType.int_t)));
                             vaArgIdx++;
                             valid = true;
                             break;
@@ -3547,7 +3547,7 @@ public abstract class CExtNodes {
          * Read an element from the {@code va_list} with the specified type and cast it to a Java
          * {@code int}. Throws a {@code SystemError} if this is not possible.
          */
-        private static int getAndCastToInt(GetNextVaArgNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList, NativeCAPISymbol llvmType) {
+        private static int getAndCastToInt(GetNextVaArgNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList, LLVMType llvmType) throws InteropException {
             Object value = getVaArgsNode.execute(vaList, llvmType);
             if (lib.fitsInInt(value)) {
                 try {
@@ -3574,7 +3574,7 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
         }
 
-        private static Object getPyObject(GetNextVaArgNode getVaArgsNode, Object vaList) {
+        private static Object getPyObject(GetNextVaArgNode getVaArgsNode, Object vaList) throws InteropException {
             return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList));
         }
 

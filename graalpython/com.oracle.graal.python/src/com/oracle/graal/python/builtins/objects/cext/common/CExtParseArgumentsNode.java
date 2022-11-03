@@ -726,7 +726,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetNextVaArgNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
                         @Cached(value = "createTN()", uncached = "getUncachedTN()") CExtToNativeNode toNativeNode,
-                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             if (la != '*') {
                 throw raise(raiseNode, TypeError, ErrorMessages.INVALID_USE_OF_W_FORMAT_CHAR);
 

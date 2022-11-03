@@ -40,21 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -70,81 +67,89 @@ import com.oracle.truffle.api.nodes.Node;
  * It is important to use the appropriate {@code write*} functions!
  */
 @GenerateUncached
-@ImportStatic(NativeCAPISymbol.class)
+@ImportStatic(LLVMType.class)
 public abstract class WriteNextVaArgNode extends Node {
 
     public final void writeUInt8(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_UINT8, value);
+        execute(valist, LLVMType.uint8_ptr_t, value);
     }
 
     public final void writeInt8(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_INT8, value);
+        execute(valist, LLVMType.int8_ptr_t, value);
     }
 
     public final void writeUInt16(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_UINT16, value);
+        execute(valist, LLVMType.uint16_ptr_t, value);
     }
 
     public final void writeInt16(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_INT16, value);
+        execute(valist, LLVMType.int16_ptr_t, value);
     }
 
     public final void writeUInt32(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_INT32, value);
+        execute(valist, LLVMType.uint32_ptr_t, value);
     }
 
     public final void writeInt32(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_INT32, value);
+        execute(valist, LLVMType.int32_ptr_t, value);
     }
 
     public final void writeUInt64(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_UINT64, value);
+        execute(valist, LLVMType.uint64_ptr_t, value);
     }
 
     public final void writeInt64(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_INT64, value);
+        execute(valist, LLVMType.int64_ptr_t, value);
     }
 
     public final void writePySsizeT(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_PYSSIZE_T, value);
+        execute(valist, LLVMType.Py_ssize_ptr_t, value);
     }
 
     public final void writeFloat(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_FLOAT_T, value);
+        execute(valist, LLVMType.float_ptr_t, value);
     }
 
     public final void writeDouble(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_DOUBLE_T, value);
+        execute(valist, LLVMType.double_ptr_t, value);
     }
 
     public final void writePyObject(Object valist, Object value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_PYOBJECT_PTR_T, value);
+        execute(valist, LLVMType.PyObject_ptr_ptr_t, value);
     }
 
     public final void writeComplex(Object valist, PComplex value) throws InteropException {
-        execute(valist, NativeCAPISymbol.VALIST_SET_NEXT_PYCOMPLEX, value);
+        execute(valist, LLVMType.Py_complex_ptr_t, value);
     }
 
-    protected abstract void execute(Object valist, NativeCAPISymbol accessType, Object value) throws InteropException;
+    public abstract void execute(Object valist, LLVMType accessType, Object value) throws InteropException;
 
-    @Specialization(guards = "name != VALIST_SET_NEXT_PYCOMPLEX")
-    static void doPointer(Object valist, @SuppressWarnings("unused") NativeCAPISymbol name, Object value,
-                    @Shared("importCSym") @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                    @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+    @Specialization(guards = "accessType != Py_complex_ptr_t", limit = "1")
+    static void doPointer(Object valist, @SuppressWarnings("unused") LLVMType accessType, Object value,
+                    @CachedLibrary("valist") InteropLibrary vaListLib,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
+                    @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
         try {
-            interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), valist, value);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            // like 'some_type* out_var = va_arg(vl, some_type*)'
+            Object outVarPtr = vaListLib.invokeMember(valist, "next", getLLVMTypeNode.execute(accessType));
+            // like 'out_var[0] = value'
+            outVarPtrLib.writeArrayElement(outVarPtr, 0, value);
+        } catch (InteropException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
-    @Specialization(guards = "name == VALIST_SET_NEXT_PYCOMPLEX")
-    static void doComplex(Object valist, @SuppressWarnings("unused") NativeCAPISymbol name, PComplex value,
-                    @Shared("importCSym") @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                    @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+    @Specialization(guards = "accessType == Py_complex_ptr_t", limit = "1")
+    static void doComplex(Object valist, @SuppressWarnings("unused") LLVMType accessType, PComplex value,
+                    @CachedLibrary("valist") InteropLibrary vaListLib,
+                    @Exclusive @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
+                    @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
         try {
-            interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), valist, value.getReal(), value.getImag());
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            // like 'some_type* out_var = va_arg(vl, some_type*)'
+            Object outVarPtr = vaListLib.invokeMember(valist, "next", getLLVMTypeNode.execute(accessType));
+            outVarPtrLib.writeMember(outVarPtr, "real", value.getReal());
+            outVarPtrLib.writeMember(outVarPtr, "img", value.getImag());
+        } catch (InteropException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }

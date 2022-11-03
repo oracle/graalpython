@@ -114,6 +114,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -204,7 +205,12 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
             Object[] args = new Object[4];
             int filled = 0;
             while (true) {
-                Object object = getVaArgs.getPyObjectPtr(vaList);
+                Object object;
+                try {
+                    object = getVaArgs.getPyObjectPtr(vaList);
+                } catch (InteropException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
                 if (argLib.isNull(object)) {
                     break;
                 }

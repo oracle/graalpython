@@ -40,24 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.VALIST_NEXT_CHAR_PTR_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.VALIST_NEXT_PYCOMPLEX_PTR_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.VALIST_NEXT_PYOBJECT_PTR_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.VALIST_NEXT_VOID_PTR_T;
-
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -69,34 +61,31 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(LLVMType.class)
 public abstract class GetNextVaArgNode extends Node {
 
-    public final Object getPyObjectPtr(Object valist) {
-        return execute(valist, VALIST_NEXT_PYOBJECT_PTR_T);
+    public final Object getPyObjectPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.PyObject_ptr_t);
     }
 
-    public final Object getCharPtr(Object valist) {
-        return execute(valist, VALIST_NEXT_CHAR_PTR_T);
+    public final Object getCharPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.char_ptr_t);
     }
 
-    public final Object getVoidPtr(Object valist) {
-        return execute(valist, VALIST_NEXT_VOID_PTR_T);
+    public final Object getVoidPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.void_ptr_t);
     }
 
-    public final Object getPyComplexPtr(Object valist) {
-        return execute(valist, VALIST_NEXT_PYCOMPLEX_PTR_T);
+    public final Object getPyComplexPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.Py_complex_ptr_t);
     }
 
-    /**
-     * Call with {@link NativeCAPISymbol}.VALIST_NEXT_... constants.
-     */
-    public abstract Object execute(Object valist, NativeCAPISymbol name);
+    public abstract Object execute(Object valist, LLVMType llvmType) throws InteropException;
 
-    @Specialization
-    static Object doGeneric(Object valist, NativeCAPISymbol name,
-                    @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+    @Specialization(limit = "3")
+    static Object doGeneric(Object valist, LLVMType llvmType,
+                    @CachedLibrary("valist") InteropLibrary valistLib,
+                    @Cached GetLLVMType getLLVMType) throws InteropException {
         try {
-            return interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), valist);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            return valistLib.invokeMember(valist, "next", getLLVMType.execute(llvmType));
+        } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
