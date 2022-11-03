@@ -43,6 +43,7 @@ package com.oracle.graal.python.compiler;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,10 +83,12 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     }
 
     private static class DeprecationWarning {
+        final PythonBuiltinClassType type;
         final SourceRange sourceRange;
         final TruffleString message;
 
-        public DeprecationWarning(SourceRange sourceRange, TruffleString message) {
+        public DeprecationWarning(PythonBuiltinClassType type, SourceRange sourceRange, TruffleString message) {
+            this.type = type;
             this.sourceRange = sourceRange;
             this.message = message;
         }
@@ -183,11 +186,22 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
     }
 
     @Override
-    public void warnDeprecation(SourceRange sourceRange, String message) {
+    public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
         if (deprecationWarnings == null) {
             deprecationWarnings = new ArrayList<>();
         }
-        deprecationWarnings.add(new DeprecationWarning(sourceRange, toTruffleStringUncached(message)));
+        PythonBuiltinClassType type;
+        switch (warningType) {
+            case Deprecation:
+                type = PythonBuiltinClassType.DeprecationWarning;
+                break;
+            case Syntax:
+                type = PythonBuiltinClassType.SyntaxWarning;
+                break;
+            default:
+                throw shouldNotReachHere("Unexpected warning type: " + warningType);
+        }
+        deprecationWarnings.add(new DeprecationWarning(type, sourceRange, toTruffleStringUncached(message)));
     }
 
     public void triggerDeprecationWarnings() {
@@ -202,9 +216,9 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         for (DeprecationWarning warning : deprecationWarnings) {
             try {
                 PyObjectCallMethodObjArgs.getUncached().execute(null, warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
-                                warning.message, PythonBuiltinClassType.DeprecationWarning, getFilename(), warning.sourceRange.startLine);
+                                warning.message, warning.type, getFilename(), warning.sourceRange.startLine);
             } catch (PException e) {
-                e.expect(PythonBuiltinClassType.DeprecationWarning, IsBuiltinClassProfile.getUncached());
+                e.expect(warning.type, IsBuiltinClassProfile.getUncached());
                 /*
                  * Replace the DeprecationWarning exception with a SyntaxError to get a more
                  * accurate error report

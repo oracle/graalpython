@@ -599,7 +599,23 @@ public abstract class AbstractParser {
             values[i] = getText(t);
             sourceRanges[i] = t.sourceRange;
         }
-        FExprParser fexprParser = (code, sourceRange) -> (ExprTy) new Parser(code, sourceRange, stringFactory, errorCb, InputType.FSTRING, flags, featureVersion).parse();
+        FExprParser fexprParser = (code, sourceRange) -> (ExprTy) new Parser(code, sourceRange, stringFactory,
+                        new ErrorCallback() {
+                            @Override
+                            public void reportIncompleteSource(int line) {
+                                errorCb.reportIncompleteSource(line);
+                            }
+
+                            @Override
+                            public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
+                                errorCb.onError(errorType, sourceRange, "f-string: " + message);
+                            }
+
+                            @Override
+                            public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
+                                errorCb.onWarning(warningType, sourceRange, message);
+                            }
+                        }, InputType.FSTRING, flags, featureVersion).parse();
         return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory, featureVersion);
     }
 
