@@ -1846,7 +1846,7 @@ def python_coverage(args):
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
-            {"tagged": True},
+            # {"tagged": True},
         ]
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
