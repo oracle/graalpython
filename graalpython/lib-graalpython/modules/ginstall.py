@@ -862,7 +862,7 @@ def main(argv):
             extra_opts += ["--user"]
 
         for pkg in args.package.split(","):
-            if os.path.exists(pkg):
+            if os.path.isfile(pkg):
                 warn("installing from file: {}".format(pkg))
                 pkg = set_file_for_package(pkg)
 
