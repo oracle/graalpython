@@ -171,4 +171,7 @@ public abstract class SpecialAttributeNames {
     // specific to super
     public static final String J___THISCLASS__ = "__thisclass__";
     public static final String J___SELF_CLASS__ = "__self_class__";
+
+    public static final String J___MATCH_ARGS__ = "__match_args__";
+    public static final TruffleString T___MATCH_ARGS__ = tsLiteral(J___MATCH_ARGS__);
 }

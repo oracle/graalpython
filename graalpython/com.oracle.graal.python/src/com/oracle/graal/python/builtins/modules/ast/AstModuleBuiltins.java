@@ -43,13 +43,12 @@ package com.oracle.graal.python.builtins.modules.ast;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ALLOW_TOP_LEVEL_AWAIT;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ONLY_AST;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_TYPE_COMMENTS;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -60,15 +59,12 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -105,7 +101,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         PTuple emptyTuple = core.factory().createTuple(EMPTY_OBJECT_ARRAY);
         clsAst.setAttribute(T__FIELDS, emptyTuple);
         clsAst.setAttribute(T__ATTRIBUTES, emptyTuple);
-        // TODO clsAst.setAttribute('__match_args__', emptyTuple);
+        clsAst.setAttribute(T___MATCH_ARGS__, emptyTuple);
     }
 
     @Override
@@ -115,8 +111,6 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         AstTypeFactory astTypeFactory = new AstTypeFactory(core.getLanguage(), core.factory(), astModule);
         AstState state = new AstState(astTypeFactory, core.lookupType(PythonBuiltinClassType.AST));
         astModule.setAttribute(AST_STATE_KEY, state);
-
-        createBackwardCompatibilityClasses(core, astModule, state);
     }
 
     @Builtin(name = "AST", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.AST)
@@ -135,31 +129,6 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         PythonObject generic(Object cls, @SuppressWarnings("unused") Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return factory().createPythonObject(cls);
         }
-    }
-
-    private void createBackwardCompatibilityClasses(Python3Core core, PythonModule astModule, AstState state) {
-        // ast.py from cpython 3.10.5 defines classes for backwards compatibility
-        // As long as we are still using ast.py from 3.8.6, we need to provide these classes
-        // somehow.
-        PythonLanguage language = core.getLanguage();
-        PythonObjectFactory factory = core.factory();
-
-        makeType(language, factory, astModule, "Suite", state.clsModTy);
-
-        PythonClass slice_type = makeType(language, factory, astModule, "slice", state.clsAst);
-        makeType(language, factory, astModule, "ExtSlice", slice_type);
-        makeType(language, factory, astModule, "Index", slice_type);
-
-        makeType(language, factory, astModule, "AugLoad", state.clsExprContextTy);
-        makeType(language, factory, astModule, "AugStore", state.clsExprContextTy);
-        makeType(language, factory, astModule, "Param", state.clsExprContextTy);
-    }
-
-    private static PythonClass makeType(PythonLanguage language, PythonObjectFactory factory, PythonModule astModule, String name, PythonAbstractClass base) {
-        TruffleString tsName = toTruffleStringUncached(name);
-        PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, tsName, new PythonAbstractClass[]{base});
-        astModule.setAttribute(tsName, newType);
-        return newType;
     }
 
     private static AstState getAstState(PythonContext context) {
