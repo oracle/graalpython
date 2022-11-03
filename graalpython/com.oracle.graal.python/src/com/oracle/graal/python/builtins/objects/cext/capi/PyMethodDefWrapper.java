@@ -232,7 +232,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
                 wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
             } else if (CExtContext.isMethO(flags)) {
                 wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
-            } else if (CExtContext.isMethVarargs(flags) && CExtContext.isMethKeywords(flags)) {
+            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
                 wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
             } else if (CExtContext.isMethVarargs(flags)) {
                 wrapper = PyProcsWrapper.createVarargWrapper(object);

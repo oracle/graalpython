@@ -145,8 +145,8 @@ public abstract class CExtContext {
         return (flags & CALL_CONVENTION_MASK) == METH_VARARGS;
     }
 
-    public static boolean isMethKeywords(int flags) {
-        return (flags & CALL_CONVENTION_MASK) == METH_KEYWORDS;
+    public static boolean isMethVarargsWithKeywords(int flags) {
+        return (flags & CALL_CONVENTION_MASK) == (METH_VARARGS | METH_KEYWORDS);
     }
 
     public static boolean isMethNoArgs(int flags) {

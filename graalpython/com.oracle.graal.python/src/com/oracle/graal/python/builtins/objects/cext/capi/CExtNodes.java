@@ -4064,7 +4064,7 @@ public abstract class CExtNodes {
                 return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);
             } else if (CExtContext.isMethO(flags)) {
                 return new MethORoot(language, name, isStatic, PExternalFunctionWrapper.O);
-            } else if (CExtContext.isMethKeywords(flags)) {
+            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
                 return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
             } else if (CExtContext.isMethVarargs(flags)) {
                 return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
