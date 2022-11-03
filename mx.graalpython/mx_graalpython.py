@@ -1517,7 +1517,7 @@ def _python_checkpatchfiles():
         checked = set()
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
-            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0"
+            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache"
         ]
         for line in content.split("\n"):
             if os.stat(line).st_size == 0:
@@ -1537,7 +1537,8 @@ def _python_checkpatchfiles():
                     data_license = data["info"]["license"]
                     if data_license not in allowed_licenses:
                         mx.abort(("The license for the original project %r is %r. We cannot include " +
-                                  "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
+                                  "a patch for it. Allowed licenses are: %r.") % (
+                            package_name, data_license, allowed_licenses))
                 except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:
