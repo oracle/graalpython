@@ -265,7 +265,7 @@ public class ListBuiltins extends PythonBuiltins {
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PIntRangeIterator range = (PIntRangeIterator) iterable.getIterator();
-            final int estimatedMaxLen = range.getLength();
+            final int estimatedMaxLen = range.getRemainingLength();
             int realLen = 0;
             if (estimatedMaxLen > 0) {
                 Object value = null;

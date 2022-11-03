@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -307,13 +306,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PIntRangeIterator self) {
-            return self.getLength();
+            return self.getRemainingLength();
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public static int lengthHint(VirtualFrame frame, PBigRangeIterator self,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            return asSizeNode.executeExact(frame, self.getLen());
+        public Object lengthHint(PBigRangeIterator self) {
+            return factory().createInt(self, self.getRemainingLength());
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -437,17 +435,16 @@ public class IteratorBuiltins extends PythonBuiltins {
             int start = self.getStart();
             int stop = self.getStop();
             int step = self.getStep();
-            int len = self.getLength();
+            int len = self.getLen();
             return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), PythonContext.get(this));
         }
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PBigRangeIterator self,
-                        @Cached LenOfRangeNode length) {
-            PInt start = self.getReduceStart();
-            PInt stop = self.getReduceStop(factory());
-            PInt step = self.getReduceStep();
-            PInt len = factory().createInt(length.execute(start.getValue(), stop.getValue(), step.getValue()));
+        public Object reduce(VirtualFrame frame, PBigRangeIterator self) {
+            PInt start = self.getStart();
+            PInt stop = self.getStop();
+            PInt step = self.getStep();
+            PInt len = self.getLen();
             return reduceInternal(frame, factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), PythonContext.get(this));
         }
 

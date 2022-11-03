@@ -56,7 +56,7 @@ public final class PIntRangeIterator extends PIntegerIterator {
         this.len = len;
     }
 
-    public int getLength() {
+    public int getRemainingLength() {
         return this.len - this.index;
     }
 
@@ -88,5 +88,9 @@ public final class PIntRangeIterator extends PIntegerIterator {
 
     public int getStep() {
         return step;
+    }
+
+    public int getLen() {
+        return len;
     }
 }

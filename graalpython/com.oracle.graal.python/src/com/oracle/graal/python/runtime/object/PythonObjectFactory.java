@@ -1038,16 +1038,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, stop, step, len));
     }
 
-    public final PBigRangeIterator createBigRangeIterator(PInt start, PInt step, PInt len) {
-        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, step, len));
+    public final PBigRangeIterator createBigRangeIterator(PInt start, PInt stop, PInt step, PInt len) {
+        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, stop, step, len));
     }
 
     public final PBigRangeIterator createBigRangeIterator(PBigRange longRange) {
-        return createBigRangeIterator(longRange.getPIntStart(), longRange.getPIntStep(), longRange.getPIntLength());
+        return createBigRangeIterator(longRange.getPIntStart(), longRange.getPIntStop(), longRange.getPIntStep(), longRange.getPIntLength());
     }
 
-    public final PBigRangeIterator createBigRangeIterator(BigInteger start, BigInteger step, BigInteger len) {
-        return createBigRangeIterator(createInt(start), createInt(step), createInt(len));
+    public final PBigRangeIterator createBigRangeIterator(BigInteger start, BigInteger stop, BigInteger step, BigInteger len) {
+        return createBigRangeIterator(createInt(start), createInt(stop), createInt(step), createInt(len));
     }
 
     public final PArrayIterator createArrayIterator(PArray array) {

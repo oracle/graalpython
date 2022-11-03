@@ -815,7 +815,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             BigInteger new_stop = bstart.subtract(bstep);
             BigInteger new_start = new_stop.add(blen.multiply(bstep));
 
-            return factory().createBigRangeIterator(new_start, bstep.negate(), blen);
+            return factory().createBigRangeIterator(new_start, new_stop, bstep.negate(), blen);
         }
 
         @Specialization
@@ -828,7 +828,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             BigInteger new_stop = lstart.subtract(lstep);
             BigInteger new_start = new_stop.add(ulen.multiply(lstep));
 
-            return factory().createBigRangeIterator(new_start, lstep.negate(), ulen);
+            return factory().createBigRangeIterator(new_start, new_stop, lstep.negate(), ulen);
         }
 
         @Specialization

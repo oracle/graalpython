@@ -287,7 +287,7 @@ public abstract class IteratorNodes {
 
         @Specialization
         static int doSequenceIntRange(PIntRangeIterator it) {
-            return ensurePositive(it.getLength());
+            return ensurePositive(it.getRemainingLength());
         }
 
         @Specialization(replaces = {"doSeqStorage", "doString", "doSequenceArr", "doSequenceIntRange"})
