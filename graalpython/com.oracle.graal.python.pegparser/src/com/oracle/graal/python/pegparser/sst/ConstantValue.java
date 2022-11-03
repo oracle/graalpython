@@ -66,7 +66,7 @@ public final class ConstantValue {
         }
     }
 
-    private final Object value;
+    public final Object value;
     public final Kind kind;
 
     private ConstantValue(Object value, Kind kind) {

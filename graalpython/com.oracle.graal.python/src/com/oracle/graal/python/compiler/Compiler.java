@@ -55,6 +55,7 @@ import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_COLLECTION
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_STACK;
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_STACK;
+import static com.oracle.graal.python.compiler.OpCodes.COPY_DICT_WITHOUT_KEYS;
 import static com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_ATTR;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_DEREF;
@@ -107,6 +108,8 @@ import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_CLASS;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_KEYS;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_MAPPING;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.NOP;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
@@ -152,6 +155,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
@@ -2831,7 +2835,102 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public Void visit(PatternTy.MatchMapping node, PatternContext pc) {
-        return emitNotImplemented("match mapping");
+        ExprTy[] keys = node.keys;
+        PatternTy[] patterns = node.patterns;
+        int size = lengthOrZero(keys);
+        int npatterns = lengthOrZero(patterns);
+        if (size != npatterns) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "keys (%d) / patterns (%d) length mismatch in mapping pattern", size, npatterns);
+        }
+        // We have a double-star target if "rest" is set
+        String starTarget = node.rest;
+        // We need to keep the subject on top during the mapping and length checks:
+        pc.onTop++;
+        addOp(MATCH_MAPPING);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+
+        if (size == 0 && starTarget == null) {
+            pc.onTop--;
+            addOp(POP_TOP);
+            return null;
+        }
+        if (Integer.MAX_VALUE < size - 1) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many sub-patterns in mapping pattern");
+        }
+        if (size > 0) {
+            // If the pattern has any keys in it, perform a length check:
+            addOp(GET_LEN);
+            addLoadNumber(size);
+            addCompareOp(CmpOpTy.GtE);
+            jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        }
+        // Collect all of the keys into a tuple for MATCH_KEYS and
+        // COPY_DICT_WITHOUT_KEYS. They can either be dotted names or literals:
+        Collector collector = new Collector(CollectionBits.KIND_TUPLE, 0);
+        List<Object> seen = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            ExprTy key = keys[i];
+            if (key == null) {
+                setLocation(patterns[i]);
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "can't use NULL keys in MatchMapping (set 'rest' parameter instead)");
+            }
+            if (key instanceof ExprTy.Constant) {
+                Object value = ((ExprTy.Constant) key).value.value;
+                for (Object o : seen) {
+                    // need python like equal - e.g. 1 equals True
+                    if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, o, value)) {
+                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern checks duplicate key (%s)", value);
+                    }
+                }
+                seen.add(value);
+                addConstant(((ExprTy.Constant) key).value);
+            } else if (key instanceof ExprTy.UnaryOp) {
+                patterMatchValueUnaryOp((ExprTy.UnaryOp) key);
+            } else if (key instanceof ExprTy.BinOp) {
+                patternMatchValueBinOp((ExprTy.BinOp) key);
+            } else if (key instanceof ExprTy.Attribute) {
+                key.accept(this);
+            } else {
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern keys may only match literals and attribute lookups");
+            }
+            collector.appendItem();
+        }
+        collector.finishCollection();
+
+        addOp(MATCH_KEYS);
+        // There's now a tuple of keys and a tuple of values on top of the subject:
+        pc.onTop += 2;
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        // So far so good. Use that tuple of values on the stack to match
+        // sub-patterns against:
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = node.patterns[i];
+            if (wildcardCheck(pattern)) {
+                continue;
+            }
+            addOp(DUP_TOP);
+            addLoadNumber(i);
+            addOp(BINARY_SUBSCR);
+            patternSubpattern(pattern, pc);
+        }
+
+        // If we get this far, it's a match! We're done with the tuple of values,
+        // and whatever happens next should consume the tuple of keys underneath it:
+        pc.onTop -= 2;
+        addOp(POP_TOP);
+        if (starTarget != null) {
+            // If we have a starred name, bind a dict of remaining items to it:
+            addOp(COPY_DICT_WITHOUT_KEYS);
+            patternHelperStoreName(starTarget, pc);
+        } else {
+            // Otherwise, we don't care about this tuple of keys anymore:
+            addOp(POP_TOP);
+        }
+        // Pop the subject:
+        pc.onTop--;
+        addOp(POP_TOP);
+
+        return null;
     }
 
     public Void visit(PatternTy.MatchOr node, PatternContext pc) {

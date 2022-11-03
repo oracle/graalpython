@@ -484,6 +484,7 @@ public abstract class ErrorMessages {
     public static final TruffleString LOST_SYSSTDOUT = tsLiteral("lost sys.stdout");
     public static final TruffleString LENGTH_SHOULD_NOT_BE_NEG = tsLiteral("length should not be negative");
     public static final TruffleString MAKE_ENCODER_ARG_1_MUST_BE_DICT = tsLiteral("make_encoder() argument 1 must be dict or None, not %p");
+    public static final TruffleString MAPPING_PATTERN_CHECKS_DUPE_KEY_S = tsLiteral("mapping pattern checks duplicate key (%s)");
     public static final TruffleString MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P = tsLiteral("__match_args__ elements must be strings (got %p)");
     public static final TruffleString P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P = tsLiteral("%p.__match_args__ must be a tuple (got %p)");
     public static final TruffleString MATCH_AS_MUST_SPECIFY_A_TARGET_NAME_IF_A_PATTERN_IS_GIVEN = tsLiteral("MatchAs must specify a target name if a pattern is given");
