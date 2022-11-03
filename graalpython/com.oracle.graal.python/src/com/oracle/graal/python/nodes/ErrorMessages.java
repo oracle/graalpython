@@ -778,6 +778,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNKNOWN_ATTR = tsLiteral("Unknown attribute: '%s'");
     public static final TruffleString UNKNOWN_ENCODING = tsLiteral("unknown encoding %s");
     public static final TruffleString UNKNOWN_ERROR_HANDLER = tsLiteral("unknown error handler name '%s'");
+    public static final TruffleString UNKNOWN_F_VALUE_CONVERSION_KIND = tsLiteral("unknown f-value conversion kind");
     public static final TruffleString UNKNOWN_FORMAT_CODE = tsLiteral("Unknown format code '%c' for object of type '%s'");
     public static final TruffleString UNKNOWN_OPCODE = tsLiteral("unknown opcode");
     public static final TruffleString UNKNOWN_S_TYPE = tsLiteral("unknown %s type");

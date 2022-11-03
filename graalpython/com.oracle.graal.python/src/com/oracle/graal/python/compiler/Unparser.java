@@ -43,9 +43,12 @@ package com.oracle.graal.python.compiler;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
@@ -645,8 +648,7 @@ public class Unparser implements SSTreeVisitor<Void> {
                     conversion = "!s";
                     break;
                 default:
-                    // TODO GR-40162 raise SystemError
-                    throw new IllegalStateException("unknown f-value conversion kind");
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_F_VALUE_CONVERSION_KIND);
             }
             appendStr(conversion);
         }

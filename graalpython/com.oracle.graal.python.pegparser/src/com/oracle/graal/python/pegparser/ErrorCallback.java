@@ -49,7 +49,8 @@ public interface ErrorCallback {
         Tab,
         Encoding,
         Value,
-        Syntax
+        Syntax,
+        System
     }
 
     enum WarningType {

@@ -1332,8 +1332,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                     oparg = FormatOptions.FVC_NONE;
                     break;
                 default:
-                    // TODO GR-40162 raise SystemError
-                    throw new IllegalStateException("Unknown format conversion");
+                    errorCallback.onError(ErrorType.System, node.getSourceRange(), "Unrecognized conversion character %d", node.conversion);
+                    throw shouldNotReachHere("Error callback did not throw an exception");
             }
             if (node.formatSpec != null) {
                 node.formatSpec.accept(this);

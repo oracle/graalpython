@@ -149,6 +149,9 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         PBaseException instance;
         PythonBuiltinClassType cls = PythonBuiltinClassType.SyntaxError;
         switch (errorType) {
+            case System:
+                cls = PythonBuiltinClassType.SystemError;
+                break;
             case Indentation:
                 cls = PythonBuiltinClassType.IndentationError;
                 break;
