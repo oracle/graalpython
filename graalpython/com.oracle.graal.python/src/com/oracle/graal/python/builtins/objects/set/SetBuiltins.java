@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -493,11 +494,12 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
+        @Specialization(guards = "canDoSetBinOp(other)")
         Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(lib.xor(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+                        @Cached HashingStorageXor xorNode) {
+            // TODO: calls __eq__ wrong number of times compared to CPython (GR-42240)
+            return factory().createSet(xorNode.execute(frame, self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
         }
 
         @SuppressWarnings("unused")
@@ -511,11 +513,11 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IXorNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
+        @Specialization(guards = "canDoSetBinOp(other)")
         Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            self.setDictStorage(lib.xor(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
+                        @Cached HashingStorageXor xorNode) {
+            self.setDictStorage(xorNode.execute(frame, self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
             return self;
         }
 
@@ -530,11 +532,11 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SymmetricDifferenceNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         PSet doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.xor(self.getDictStorage(), getHashingStorage.execute(frame, other));
+                        @Cached HashingStorageXor xorNode) {
+            HashingStorage result = xorNode.execute(frame, self.getDictStorage(), getHashingStorage.execute(frame, other));
             return factory().createSet(result);
         }
     }
@@ -553,32 +555,36 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @Cached HashingStorageXor xorNode) {
             HashingStorage result = self.getDictStorage();
             for (int i = 0; i < len; i++) {
-                result = lib.xor(result, getHashingStorage.execute(frame, args[i]));
+                result = xorNode.execute(frame, result, getHashingStorage.execute(frame, args[i]));
             }
             self.setDictStorage(result);
             return PNone.NONE;
         }
 
         @Specialization(replaces = "doCached")
-        static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+        static PNone doSetArgs(VirtualFrame frame, PSet self, Object[] args,
+                        @Shared("getStorage") @Cached GetHashingStorageNode getHashingStorage,
+                        @Shared("xor") @Cached HashingStorageXor xorNode) {
             HashingStorage result = self.getDictStorage();
             for (Object o : args) {
-                result = lib.xor(result, getHashingStorage.execute(frame, o));
+                result = xorNode.execute(frame, result, getHashingStorage.execute(frame, o));
             }
             self.setDictStorage(result);
             return PNone.NONE;
         }
 
-        @Specialization(limit = "3")
-        static PNone doSet(VirtualFrame frame, PSet self, Object other,
-                        @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage result = lib.xor(self.getDictStorage(), getHashingStorage.execute(frame, other));
+        static boolean isOther(Object arg) {
+            return !(PGuards.isNoValue(arg) || arg instanceof Object[]);
+        }
+
+        @Specialization(guards = "isOther(other)")
+        static PNone doSetOther(VirtualFrame frame, PSet self, Object other,
+                        @Shared("getStorage") @Cached GetHashingStorageNode getHashingStorage,
+                        @Shared("xor") @Cached HashingStorageXor xorNode) {
+            HashingStorage result = xorNode.execute(frame, self.getDictStorage(), getHashingStorage.execute(frame, other));
             self.setDictStorage(result);
             return PNone.NONE;
         }

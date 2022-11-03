@@ -596,7 +596,7 @@ def test_bin_ops_side_effects():
     test_op(operator.__and__, key1_eq_call)
     test_op(operator.__iand__, key1_eq_call)
 
-    # TODO: intersection, intersection_update
+    # TODO: GR-42240
     #
     # def symmetric_difference_check(key1, key2):
     #     assert key1.eq_calls == 0
@@ -605,6 +605,8 @@ def test_bin_ops_side_effects():
     #     assert key2.hash_calls == 0
     #
     # test_op(set.symmetric_difference, symmetric_difference_check)
+    # test_op(operator.__xor__, symmetric_difference_check)
+    # test_op(operator.__ixor__, symmetric_difference_check)
     #
     # def symmetric_difference_update_check(key1, key2):
     #     assert key1.eq_calls == 2
@@ -613,6 +615,8 @@ def test_bin_ops_side_effects():
     #     assert key2.hash_calls == 0
     #
     # test_op(set.symmetric_difference_update, symmetric_difference_update_check)
+    #
+    # TODO: intersection, intersection_update
 
 # GR-41996
 # def test_pop_side_effects():
