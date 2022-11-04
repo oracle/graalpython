@@ -340,10 +340,10 @@ public enum OpCodes {
     MATCH_CLASS(1, 3, 2),
 
     /**
-     * Matches the keys (stack top) in a dict (stack second). On successful match pushes the valus
+     * Matches the keys (stack top) in a dict (stack second). On successful match pushes the values
      * and True, otherwise None and False.
      */
-    MATCH_KEYS(0, 0, 2),
+    MATCH_KEYS(0, 2, 4),
 
     /**
      * Creates a copy of a dict (stack second) without elements matching a tuple of keys (stack
