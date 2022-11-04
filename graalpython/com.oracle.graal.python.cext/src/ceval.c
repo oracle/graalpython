@@ -132,3 +132,11 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                                   polyglot_from_PyObjectPtr_array(defs, defcount),
                                   native_to_java(kwdefs), native_to_java(closure));
 }
+
+#undef Py_EnterRecursiveCall
+int Py_EnterRecursiveCall(const char *where) {
+    return 0;
+}
+
+#undef Py_LeaveRecursiveCall
+void Py_LeaveRecursiveCall(void) {}
