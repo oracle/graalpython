@@ -25,14 +25,12 @@
 from __future__ import print_function
 
 import contextlib
-import datetime
 import fnmatch
 import getpass
 import glob
 import itertools
 import json
 import os
-import pathlib
 import re
 import shlex
 import shutil
@@ -756,38 +754,30 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         args += [_graalpytest_driver(), "-v"]
 
     if mx_gate.get_jacoco_agent_args():
-        if is_bash_launcher(python_binary):
-            agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
-            # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
-            # with the arguments
-            basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-            launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpy').resolve())
-            launcher_path_bak = launcher_path + ".bak"
-            shutil.copy(launcher_path, launcher_path_bak)
-            try:
-                patch_batch_launcher(launcher_path, agent_args)
-                # jacoco only dumps the data on exit, and when we run all our unittests
-                # at once it generates so much data we run out of heap space
-                for testfile in testfiles:
-                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd,
-                           out=out, err=err)
-            finally:
-                shutil.move(launcher_path_bak, launcher_path)
-        else:
-            # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
-            def graalvm_vm_arg(java_arg):
-                if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
-                    with open(java_arg[1:], "r") as f:
-                        java_arg = f.read()
-                assert java_arg[0] == "-", java_arg
-                return "--vm." + java_arg[1:]
-            agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
+        env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+        # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
+        def graalvm_vm_arg(java_arg):
+            if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
+                with open(java_arg[1:], "r") as f:
+                    java_arg = f.read()
+            assert java_arg[0] == "-", java_arg
+            return shlex.quote(f'--vm.{java_arg[1:]}')
+        agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
-            # jacoco only dumps the data on exit, and when we run all our unittests
-            # at once it generates so much data we run out of heap space
-            for testfile in testfiles:
-                mx.run([python_binary, "--jvm", agent_args] + args + [testfile],
-                       nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+        # with the arguments. We also disable compilation, it hardly helps for this use case
+        original_launcher = os.path.abspath(os.path.realpath(python_binary))
+        bash_launcher = f'{original_launcher}.sh'
+        with open(bash_launcher, "w") as f:
+            f.write("#!/bin/sh\n")
+            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
+            f.write(f'exec {original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
+        os.chmod(bash_launcher, 0o775)
+
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        for testfile in testfiles:
+            mx.run([bash_launcher] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
     else:
         if javaAsserts:
             args += ['-ea']
@@ -797,20 +787,6 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         if lock:
             lock.release()
         return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
-
-
-def is_bash_launcher(launcher_path):
-    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-        return re.match(r'^#!.*bash', launcher.readline())
-
-
-def patch_batch_launcher(launcher_path, jvm_args):
-    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-        lines = launcher.readlines()
-    assert re.match(r'^#!.*bash', lines[0]), "expected a bash launcher"
-    lines.insert(-1, 'jvm_args+=(%s)\n' % jvm_args)
-    with open(launcher_path, 'w') as launcher:
-        launcher.writelines(lines)
 
 
 def run_hpy_unittests(python_binary, args=None, include_native=True):
@@ -901,7 +877,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True)
+            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -921,7 +897,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True)
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -942,7 +918,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            run_tagged_unittests(python_svm())
+            # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
+            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -1830,7 +1807,11 @@ def python_coverage(args):
 
     if args.jacoco:
         jacoco_args = [
-            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+            '--jacoco-omit-excluded',
+            '--jacoco-generic-paths',
+            '--jacoco-omit-src-gen',
+            '--jacocout', 'coverage',
+            '--jacoco-format', 'lcov',
         ]
         jacoco_gates = (
             GraalPythonTags.junit,
@@ -1839,59 +1820,53 @@ def python_coverage(args):
             GraalPythonTags.unittest_jython,
             GraalPythonTags.tagged,
         )
-        mx.run_mx(jacoco_args + [
+        mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
             '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
-            '--jacocout', 'html',
-        ])
-        if mx.get_env("SONAR_HOST_URL", None):
-            mx.run_mx(jacoco_args + [
-                'sonarqube-upload',
-                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
-                '-Dsonar.projectKey=com.oracle.graalvm.python',
-                '-Dsonar.projectName=GraalVM - Python',
-                '--exclude-generated',
-            ])
-        mx.run_mx(jacoco_args + [
-            'coverage-upload',
+        ] + jacoco_args)
+        mx.run_mx([
+            '--strict-compliance',
+            '--kill-with-sigquit',
+            'jacocoreport',
+            '--format', 'lcov',
+            '--omit-excluded',
+            'coverage',
+            '--generic-paths',
+            '--exclude-src-gen',
         ])
     if args.truffle:
         executable = python_gvm()
+        file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
         variants = [
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
-            {"tagged": True},
+            # {"tagged": True},
         ]
-        outputlcov = "coverage.lcov"
-        if os.path.exists(outputlcov):
-            os.unlink(outputlcov)
-        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
-        prefix = os.path.join(SUITE.dir, "graalpython")
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
-            for pattern in ["py"]:
-                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$UUID$.lcov" % (variant_str, pattern))
-                if os.path.exists(outfile):
-                    os.unlink(outfile)
-                extra_args = [
-                    "--experimental-options",
-                    "--coverage",
-                    "--coverage.TrackInternal",
-                    "--coverage.FilterFile=*/lib-*/*.%s" % pattern,
-                    "--coverage.Output=lcov",
-                    "--coverage.OutputFile=%s" % outfile,
-                ]
-                env = os.environ.copy()
-                env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-                env['ENABLE_THREADED_GRAALPYTEST'] = "false"
-                if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
-                else:
-                    run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
+            outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
+            if os.path.exists(outfile):
+                os.unlink(outfile)
+            extra_args = [
+                "--experimental-options",
+                "--llvm.lazyParsing=false",
+                "--coverage",
+                "--coverage.TrackInternal",
+                f"--coverage.FilterFile={file_filter}",
+                "--coverage.Output=lcov",
+                f"--coverage.OutputFile={outfile}",
+            ]
+            env = os.environ.copy()
+            env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+            env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+            if kwds.pop("tagged", False):
+                run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
+            else:
+                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
@@ -1913,7 +1888,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     compile(f.read(), fullname, 'exec')
                 except BaseException as e:
                     print('Could not compile', fullname, e)
-            """.format(os.path.join(prefix, "lib-python")))
+            """.format(os.path.join(SUITE.dir, "graalpython", "lib-python")))
             f.flush()
             lcov_file = 'zero.lcov'
             try:
@@ -1927,41 +1902,51 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     executable,
                     "-S",
                     "--experimental-options",
+                    "--llvm.lazyParsing=false",
                     "--python.PosixModuleBackend=java",
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=%s/*.py" % prefix,
+                    f"--coverage.FilterFile={file_filter}",
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=" + lcov_file,
                     f.name
                 ])
 
         home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
+        suite_dir = SUITE.dir
+        if suite_dir.endswith("/"):
+            suite_dir = suite_dir[:-1]
+        suite_parent = os.path.dirname(SUITE.dir)
+        if not suite_parent.endswith("/"):
+            suite_parent = f"{suite_parent}/"
         # merge all generated lcov files
+        outputlcov = "lcov.info"
+        if os.path.exists(outputlcov):
+            os.unlink(outputlcov)
+        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov") and os.path.getsize(f):
-                # Normalize lib-graalpython path
                 with open(f) as lcov_file:
                     lcov = lcov_file.read()
-                lcov = lcov.replace(home_launcher, prefix)
+                # Normalize graalpython paths to be relative to a graalpython checkout
+                lcov = lcov.replace(home_launcher, "graalpython/graalpython").replace(suite_dir, "graalpython").replace(suite_parent, "")
+                # link our generated include paths back to the sources
+                lcov = lcov.replace("graalpython/graalpython/include/", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
                 cmdargs += ["-a", f]
 
+        # actually run the merge command
         mx.run(cmdargs)
-        primary = mx.primary_suite()
-        info = primary.vc.parent_info(primary.dir)
-        rev = primary.vc.parent(primary.dir)
-        coverage_dir = '{}-truffle-coverage_{}_{}'.format(
-            primary.name,
-            datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
-            rev[:7],
-        )
-        mx.run(["/usr/bin/env", "genhtml", "--prefix", prefix, "--ignore-errors", "source", "-o", coverage_dir, outputlcov])
-        if args.truffle_upload_url:
-            if not args.truffle_upload_url.endswith("/"):
-                args.truffle_upload_url = args.truffle_upload_url + "/"
-            mx.run(["scp", "-r", coverage_dir, args.truffle_upload_url])
+
+    # upload coverage data
+    out = mx.OutputCapture()
+    mx.run_mx(['sversions', '--print-repositories', '--json'], out=out)
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as f:
+        f.write(out.data)
+        f.flush()
+        print(f"Associated data", out.data, sep="\n")
+        mx.run(['coverage-uploader.py', '--associated-repos', f.name])
 
 
 def python_build_watch(args):
