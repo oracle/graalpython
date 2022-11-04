@@ -25,14 +25,12 @@
 from __future__ import print_function
 
 import contextlib
-import datetime
 import fnmatch
 import getpass
 import glob
 import itertools
 import json
 import os
-import pathlib
 import re
 import shlex
 import shutil
