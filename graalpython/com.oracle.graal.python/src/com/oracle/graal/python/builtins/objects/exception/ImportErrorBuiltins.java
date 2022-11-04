@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -76,7 +76,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ImportError)
@@ -183,13 +182,13 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ImportErrorReduceNode extends PythonUnaryBuiltinNode {
-        private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem, HashingStorageLibrary hashlib,
+        private Object getState(PBaseException self, GetDictIfExistsNode getDictIfExistsNode, HashingStorageSetItem setHashingStorageItem, HashingStorageCopy copyStorageNode,
                         BaseExceptionAttrNode attrNode) {
             PDict dict = getDictIfExistsNode.execute(self);
             final Object name = attrNode.get(self, IDX_NAME, IMPORT_ERROR_ATTR_FACTORY);
             final Object path = attrNode.get(self, IDX_PATH, IMPORT_ERROR_ATTR_FACTORY);
             if (name != null || path != null) {
-                HashingStorage storage = (dict != null) ? hashlib.copy(dict.getDictStorage()) : EmptyStorage.INSTANCE;
+                HashingStorage storage = (dict != null) ? copyStorageNode.execute(dict.getDictStorage()) : EmptyStorage.INSTANCE;
                 if (name != null) {
                     storage = setHashingStorageItem.execute(storage, T_NAME, name);
                 }
@@ -211,10 +210,10 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached BaseExceptionBuiltins.ArgsNode argsNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") HashingStorageLibrary hashlib) {
+                        @Cached HashingStorageCopy copyStorageNode) {
             Object clazz = getClassNode.execute(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
-            Object state = getState(self, getDictIfExistsNode, setHashingStorageItem, hashlib, attrNode);
+            Object state = getState(self, getDictIfExistsNode, setHashingStorageItem, copyStorageNode, attrNode);
             if (state == PNone.NONE) {
                 return factory().createTuple(new Object[]{clazz, args});
             }

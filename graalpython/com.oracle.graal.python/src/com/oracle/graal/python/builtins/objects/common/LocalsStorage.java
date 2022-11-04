@@ -282,13 +282,6 @@ public final class LocalsStorage extends HashingStorage {
         }
     }
 
-    @ExportMessage
-    public static HashingStorage clear(@SuppressWarnings("unused") LocalsStorage self) {
-        return EmptyStorage.INSTANCE;
-    }
-
-    @ExportMessage
-    @Override
     public HashingStorage copy() {
         return new LocalsStorage(this.frame);
     }

@@ -208,15 +208,10 @@ public class EconomicMapStorage extends HashingStorage {
         return this;
     }
 
-    @ExportMessage
-    @Override
-    HashingStorage clear() {
+    void clear() {
         map.clear();
-        return this;
     }
 
-    @ExportMessage
-    @Override
     public HashingStorage copy() {
         return new EconomicMapStorage(this.map);
     }

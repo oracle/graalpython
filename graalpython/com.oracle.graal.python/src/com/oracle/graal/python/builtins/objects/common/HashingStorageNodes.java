@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Store;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
@@ -659,14 +658,8 @@ public class HashingStorageNodes {
 
         @Specialization
         static DynamicObjectStorage dom(DynamicObjectStorage dom,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            Object[] keys = dylib.getKeyArray(dom.store);
-            Store newStore = new Store(dom.store.getShape());
-            for (Object key : keys) {
-                dylib.put(newStore, key, dylib.getOrDefault(dom.store, key, PNone.NO_VALUE));
-            }
-            DynamicObjectStorage result = new DynamicObjectStorage(newStore);
-            return result;
+                        @Cached DynamicObjectStorage.Copy copyNode) {
+            return copyNode.execute(dom);
         }
 
         @Specialization
@@ -932,7 +925,7 @@ public class HashingStorageNodes {
         static boolean localsReverse(LocalsStorage self, HashingStorageIterator it) {
             FrameDescriptor fd = self.frame.getFrameDescriptor();
             it.index--;
-            while (it.index > 0) {
+            while (it.index >= 0) {
                 Object identifier = fd.getSlotName(it.index);
                 if (isUserFrameSlot(identifier) && self.getValue(it.index) != null) {
                     // Update the code in HashingStorageIteratorKey if this assumption changes:

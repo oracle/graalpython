@@ -269,16 +269,6 @@ public abstract class HashingStorageLibrary extends Library {
     public abstract HashingStorage addAllToOther(HashingStorage self, HashingStorage other);
 
     /**
-     * @return an empty store to use from now on, {@code self} has become invalid.
-     */
-    public abstract HashingStorage clear(HashingStorage self);
-
-    /**
-     * @return a copy of this store, potentially with a different storage.
-     */
-    public abstract HashingStorage copy(HashingStorage self);
-
-    /**
      * Determines if the storage has elements with a potential side effect on access.
      *
      * @return {@code true} if the storage has elements with a potential side effect, otherwise

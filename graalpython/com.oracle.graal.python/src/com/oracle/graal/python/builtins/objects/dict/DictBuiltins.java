@@ -60,6 +60,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageClear;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageEq;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -415,10 +417,10 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         public PDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createDict(lib.copy(dict.getDictStorage()));
+                        @Cached HashingStorageCopy copyNode) {
+            return factory().createDict(copyNode.execute(dict.getDictStorage()));
         }
     }
 
@@ -427,10 +429,10 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         public static PDict clear(PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage newStorage = lib.clear(dict.getDictStorage());
+                        @Cached HashingStorageClear clearNode) {
+            HashingStorage newStorage = clearNode.execute(dict.getDictStorage());
             dict.setDictStorage(newStorage);
             return dict;
         }
@@ -546,11 +548,11 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = J___ROR__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         PDict or(VirtualFrame frame, PDict self, PDict other,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageCopy copyNode,
                         @Cached DictNodes.UpdateNode updateNode) {
-            PDict merged = factory().createDict(lib.copy(self.getDictStorage()));
+            PDict merged = factory().createDict(copyNode.execute(self.getDictStorage()));
             updateNode.execute(frame, merged, other);
             return merged;
         }

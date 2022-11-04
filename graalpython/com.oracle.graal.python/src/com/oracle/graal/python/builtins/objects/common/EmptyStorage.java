@@ -106,18 +106,6 @@ public class EmptyStorage extends HashingStorage {
         return arg;
     }
 
-    @Override
-    @ExportMessage
-    public HashingStorage clear() {
-        return this;
-    }
-
-    @Override
-    @ExportMessage
-    public HashingStorage copy() {
-        return this;
-    }
-
     private static final Iterator<Object> KEYS_ITERATOR = new Iterator<Object>() {
         @Override
         public boolean hasNext() {

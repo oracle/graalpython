@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -221,7 +222,7 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageCopy copyStorageNode) {
             if (lenNode.execute(state.getSequenceStorage()) != 4) {
                 throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
@@ -251,7 +252,7 @@ public class PartialBuiltins extends PythonBuiltins {
             if (fnKwargs == PNone.NONE) {
                 fnKwargsDict = factory().createDict();
             } else if (!dictCheckExactNode.execute(fnKwargs)) {
-                fnKwargsDict = factory().createDict(lib.copy(getHashingStorageNode.execute(frame, fnKwargs)));
+                fnKwargsDict = factory().createDict(copyStorageNode.execute(getHashingStorageNode.execute(frame, fnKwargs)));
             } else {
                 fnKwargsDict = (PDict) fnKwargs;
             }

@@ -54,6 +54,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.For
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
@@ -166,22 +168,23 @@ public abstract class HashingStorage {
         static HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return lib.copy(dictLike.getDictStorage());
+                        @Shared("copy") @Cached HashingStorageCopy copyNode) {
+            return copyNode.execute(dictLike.getDictStorage());
         }
 
         @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, getClassNode, lookupIter)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Cached HashingStorageAddAllToOther addAllToOther) {
             PythonContext contextRef = PythonContext.get(this);
             PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 HashingStorage iterableDictStorage = iterable.getDictStorage();
-                HashingStorage dictStorage = lib.copy(iterableDictStorage);
-                return lib.addAllToOther(new KeywordsStorage(kwargs), dictStorage);
+                HashingStorage dictStorage = copyNode.execute(iterableDictStorage);
+                return addAllToOther.execute(frame, new KeywordsStorage(kwargs), dictStorage);
             } finally {
                 IndirectCallContext.exit(frame, language, contextRef, state);
             }
@@ -262,20 +265,6 @@ public abstract class HashingStorage {
     Object forEachUntyped(ForEachNode<Object> node, Object arg) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.injectInto");
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
-    HashingStorage clear() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.clear");
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
-    HashingStorage copy() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.copy");
     }
 
     @SuppressWarnings({"unused", "static-method"})
@@ -535,9 +524,10 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage union(HashingStorage other,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-        HashingStorage newStore = lib.copy(this);
-        return lib.addAllToOther(other, newStore);
+                    @Cached HashingStorageCopy copyNode,
+                    @Cached HashingStorageAddAllToOther addAllToOther) {
+        HashingStorage newStore = copyNode.execute(this);
+        return addAllToOther.execute(null, other, newStore);
     }
 
     @ExportMessage

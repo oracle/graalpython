@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -141,32 +142,32 @@ public abstract class HashingCollectionNodes {
             return execute(frame, iterator, PNone.NO_VALUE);
         }
 
-        @Specialization(guards = "isNoValue(value)", limit = "1")
+        @Specialization(guards = "isNoValue(value)")
         static HashingStorage doHashingCollectionNoValue(PHashingCollection other, @SuppressWarnings("unused") Object value,
-                        @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.copy(other.getDictStorage());
+                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+            return copyNode.execute(other.getDictStorage());
         }
 
-        @Specialization(guards = "isNoValue(value)", limit = "1")
+        @Specialization(guards = "isNoValue(value)")
         static HashingStorage doPDictKeyViewNoValue(PDictView.PDictKeysView other, Object value,
-                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return doHashingCollectionNoValue(other.getWrappedDict(), value, lib);
+                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+            return doHashingCollectionNoValue(other.getWrappedDict(), value, copyNode);
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        @Specialization(guards = "!isNoValue(value)")
         static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object value,
                         @Cached SetValueHashingStorageNode setValue,
-                        @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = lib.copy(other.getDictStorage());
+                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+            HashingStorage storage = copyNode.execute(other.getDictStorage());
             storage = setValue.execute(frame, storage, value);
             return storage;
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        @Specialization(guards = "!isNoValue(value)")
         static HashingStorage doPDictView(VirtualFrame frame, PDictView.PDictKeysView other, Object value,
                         @Cached SetValueHashingStorageNode setValue,
-                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return doHashingCollection(frame, other.getWrappedDict(), value, setValue, lib);
+                        @Shared("copyNode") @Cached HashingStorageCopy copyNode) {
+            return doHashingCollection(frame, other.getWrappedDict(), value, setValue, copyNode);
         }
 
         @Specialization

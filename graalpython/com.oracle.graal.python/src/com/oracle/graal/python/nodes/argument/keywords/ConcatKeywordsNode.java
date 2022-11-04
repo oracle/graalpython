@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -112,8 +113,8 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
-            return hlib.copy(other.getDictStorage());
+                        @Cached HashingStorageCopy copyNode) {
+            return copyNode.execute(other.getDictStorage());
         }
 
         @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
@@ -123,7 +124,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                         @Cached HashingStorageGetItem otherGetItem,
                         @Cached HashingStorageGetItem resultGetItem,
                         @Cached HashingStorageSetItem resultSetItem,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
             HashingStorage result = dest;
             HashingStorage otherStorage = other.getDictStorage();

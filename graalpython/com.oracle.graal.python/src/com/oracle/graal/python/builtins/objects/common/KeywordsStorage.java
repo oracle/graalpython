@@ -274,14 +274,6 @@ public class KeywordsStorage extends HashingStorage {
         }
     }
 
-    @Override
-    @ExportMessage
-    public HashingStorage clear() {
-        return EmptyStorage.INSTANCE;
-    }
-
-    @Override
-    @ExportMessage
     public HashingStorage copy() {
         // this storage is unmodifiable; just reuse it
         return this;

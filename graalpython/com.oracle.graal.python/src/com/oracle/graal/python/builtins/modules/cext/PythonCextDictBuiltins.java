@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -269,12 +270,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_Copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyDictCopyNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public Object copy(PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageCopy copyNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return factory().createDict(lib.copy(dict.getDictStorage()));
+                return factory().createDict(copyNode.execute(dict.getDictStorage()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
