@@ -57,7 +57,7 @@ INCLUDES=-I$(CONFIG_H_DIR) \
 			-I$(XZ_ROOT)/src/liblzma/simple \
 			-I$(XZ_ROOT)/src/common
 
-CFLAGS=-fPIC -DPIC -g -O2
+CFLAGS:=$(CFLAGS) -fPIC -DPIC -g -O2
 
 ifeq ($(shell uname -s), Darwin)
 LIB_NAME=liblzma.5.dylib
