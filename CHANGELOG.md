@@ -13,7 +13,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Added support for tracing API (`sys.settrace`), which makes `pdb` and related tools work on GraalPy.
 * Added support for profiling API (`sys.setprofile`), which makes the `profile` package work.
 * Updated our pip support to automatically choose the best version for known packages. You can use `pip install pandas`, and pip will select the versions of pandas and numpy that we test in the GraalPy CI.
-* Added support for Flask - https://pypi.org/project/Flask/
+* Added support for [Flask](https://pypi.org/project/Flask/).
 * Implement PEP 405 for full support of virtual environments. This fixes issues with the virtualenv package and tox that are used to in PyCharm or in many projects' CI jobs.
 
 ## Version 22.2.0
@@ -66,7 +66,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
 * Support catching exceptions from other languages or Java with catch-all except blocks
 * Support isinstance and issubclass with instances and classes of other languages
-* Use native posix functions in the GraalPy Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
+* Use native posix functions in the GraalPy Launcher (see [Operating System Interfaces](docs/user/OsInterface.md) for details).
 
 ## Version 21.0.0
 

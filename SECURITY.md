@@ -27,7 +27,7 @@ Alerts](https://www.oracle.com/security-alerts/).
 ### Security-Related Information
 
 Please refer to the [GraalVM Security
-Guide](https://www.graalvm.org/docs/security-guide/) for security related topics
+Guide](https://www.graalvm.org/security-guide/) for security related topics
 such as how to support trusted and less trusted code execution using the Truffle
 language framework, or compiler mitigations for transitive execution
 attacks. However please note that we do not currently support the execution of
