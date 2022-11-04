@@ -139,6 +139,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
     @ExplodeLoop
     private void getArgs(VirtualFrame frame, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs, PyObjectGetAttr getAttr,
                     StringBuiltins.EqNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
+        CompilerAsserts.partialEvaluationConstant(nargs);
         for (int i = 0; i < nargs; i++) {
             Object name = getItemNode.execute(frame, matchArgs, i);
             if (!unicodeCheckNode.execute(name)) {
