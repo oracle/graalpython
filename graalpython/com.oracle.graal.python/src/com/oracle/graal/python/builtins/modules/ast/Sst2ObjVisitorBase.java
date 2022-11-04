@@ -45,10 +45,8 @@ import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_END_COL_
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_END_LINENO;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_LINENO;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
@@ -57,6 +55,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -111,37 +110,7 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
     }
 
     final Object visitNonNull(ConstantValue v) {
-        switch (v.kind) {
-            case BOOLEAN:
-                return v.getBoolean();
-            case LONG: {
-                long l = v.getLong();
-                if (l == (int) l) {
-                    return (int) l;
-                }
-                return l;
-            }
-            case DOUBLE:
-                return v.getDouble();
-            case COMPLEX: {
-                double[] c = v.getComplex();
-                return factory.createComplex(c[0], c[1]);
-            }
-            case NONE:
-                return PNone.NONE;
-            case ELLIPSIS:
-                return PEllipsis.INSTANCE;
-            case BIGINTEGER:
-                return factory.createInt(v.getBigInteger());
-            case BYTES:
-                return factory.createBytes(v.getBytes());
-            case RAW:
-                return v.getRaw(TruffleString.class);
-            case TUPLE:
-            case FROZENSET:
-            default:
-                throw shouldNotReachHere();
-        }
+        return PythonUtils.pythonObjectFromConstantValue(v, factory);
     }
 
     abstract Object visitNonNull(CmpOpTy op);

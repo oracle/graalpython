@@ -43,6 +43,7 @@ package com.oracle.graal.python.util;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -60,6 +61,9 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -736,6 +740,45 @@ public final class PythonUtils {
 
         public boolean isOverLimit() {
             return count >= limit;
+        }
+    }
+
+    public static Object pythonObjectFromConstantValue(ConstantValue v, PythonObjectFactory factory) {
+        switch (v.kind) {
+            case BOOLEAN:
+                return v.getBoolean();
+            case LONG: {
+                long l = v.getLong();
+                if (l == (int) l) {
+                    return (int) l;
+                }
+                return l;
+            }
+            case DOUBLE:
+                return v.getDouble();
+            case COMPLEX: {
+                double[] c = v.getComplex();
+                return factory.createComplex(c[0], c[1]);
+            }
+            case NONE:
+                return PNone.NONE;
+            case ELLIPSIS:
+                return PEllipsis.INSTANCE;
+            case BIGINTEGER:
+                return factory.createInt(v.getBigInteger());
+            case BYTES:
+                return factory.createBytes(v.getBytes());
+            case RAW:
+                return v.getRaw(TruffleString.class);
+            case TUPLE:
+            case FROZENSET:
+                // These cases cannot happen:
+                // - when called from Sst2ObjVisitor, the SST comes from the parser which never
+                // emits tuples or frozensets
+                // - when called from the compiler of pattern matching, the SST has been checked by
+                // Validator#validatePatternMatchValue() which rejects tuples and frozensets
+            default:
+                throw shouldNotReachHere();
         }
     }
 }

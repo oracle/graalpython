@@ -144,7 +144,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -189,6 +188,7 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1807,17 +1807,10 @@ public class Compiler implements SSTreeVisitor<Void> {
             // Basic constant folding for unary negation
             if (node.op == UnaryOpTy.USub && node.operand instanceof ExprTy.Constant) {
                 ExprTy.Constant c = (ExprTy.Constant) node.operand;
-                if (c.value.kind == ConstantValue.Kind.LONG) {
-                    long v = c.value.getLong();
-                    if (v != Long.MIN_VALUE) {
-                        return visit(new ExprTy.Constant(ConstantValue.ofLong(-v), null, c.getSourceRange()));
-                    } else {
-                        return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(BigInteger.valueOf(v).negate()), null, c.getSourceRange()));
-                    }
-                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
-                    return visit(new ExprTy.Constant(ConstantValue.ofDouble(-c.value.getDouble()), null, c.getSourceRange()));
-                } else if (c.value.kind == ConstantValue.Kind.BIGINTEGER) {
-                    return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(c.value.getBigInteger().negate()), null, c.getSourceRange()));
+                if (c.value.kind == ConstantValue.Kind.BIGINTEGER || c.value.kind == ConstantValue.Kind.DOUBLE || c.value.kind == ConstantValue.Kind.LONG ||
+                                c.value.kind == ConstantValue.Kind.COMPLEX) {
+                    ConstantValue cv = c.value.negate();
+                    return visit(new ExprTy.Constant(cv, null, c.getSourceRange()));
                 }
             }
             node.operand.accept(this);
@@ -2874,24 +2867,28 @@ public class Compiler implements SSTreeVisitor<Void> {
                 setLocation(patterns[i]);
                 errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "can't use NULL keys in MatchMapping (set 'rest' parameter instead)");
             }
-            if (key instanceof ExprTy.Constant) {
-                Object value = ((ExprTy.Constant) key).value.value;
-                for (Object o : seen) {
-                    // need python like equal - e.g. 1 equals True
-                    if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, o, value)) {
-                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern checks duplicate key (%s)", value);
-                    }
-                }
-                seen.add(value);
-                addConstant(((ExprTy.Constant) key).value);
-            } else if (key instanceof ExprTy.UnaryOp) {
-                patterMatchValueUnaryOp((ExprTy.UnaryOp) key);
-            } else if (key instanceof ExprTy.BinOp) {
-                patternMatchValueBinOp((ExprTy.BinOp) key);
-            } else if (key instanceof ExprTy.Attribute) {
+
+            if (key instanceof ExprTy.Attribute) {
                 key.accept(this);
             } else {
-                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern keys may only match literals and attribute lookups");
+                ConstantValue constantValue = null;
+                if (key instanceof ExprTy.UnaryOp || key instanceof ExprTy.BinOp) {
+                    constantValue = foldConstantOp(key);
+                } else if (key instanceof ExprTy.Constant) {
+                    constantValue = ((ExprTy.Constant) key).value;
+                } else {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern keys may only match literals and attribute lookups");
+                }
+                assert constantValue != null;
+                Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue, PythonObjectFactory.getUncached());
+                for (Object o : seen) {
+                    // need python like equal - e.g. 1 equals True
+                    if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, o, pythonValue)) {
+                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern checks duplicate key (%s)", pythonValue);
+                    }
+                }
+                seen.add(pythonValue);
+                addConstant(constantValue);
             }
             collector.appendItem();
         }
@@ -3072,13 +3069,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     public Void visit(PatternTy.MatchValue node, PatternContext pc) {
         setLocation(node);
-        ExprTy value = node.value;
-        if (value instanceof ExprTy.Constant || value instanceof ExprTy.Attribute) {
+        if (node.value instanceof ExprTy.UnaryOp || node.value instanceof ExprTy.BinOp) {
+            addConstant(foldConstantOp(node.value));
+        } else if (node.value instanceof ExprTy.Constant || node.value instanceof ExprTy.Attribute) {
             node.value.accept(this);
-        } else if (value instanceof ExprTy.UnaryOp) {
-            patterMatchValueUnaryOp((ExprTy.UnaryOp) value);
-        } else if (value instanceof ExprTy.BinOp) {
-            patternMatchValueBinOp((ExprTy.BinOp) value);
         } else {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "patterns may only match literals and attribute lookups");
         }
@@ -3087,36 +3081,55 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    private void patterMatchValueUnaryOp(ExprTy.UnaryOp unaryOp) {
+    /**
+     * handles only particular cases when a constant comes either as a unary or binary op
+     */
+    private ConstantValue foldConstantOp(ExprTy value) {
+        if (value instanceof ExprTy.UnaryOp) {
+            return foldUnaryOpConstant((ExprTy.UnaryOp) value);
+        } else if (value instanceof ExprTy.BinOp) {
+            return foldBinOpComplexConstant((ExprTy.BinOp) value);
+        }
+        throw new IllegalStateException("should not reach here");
+    }
+
+    /**
+     * handles only unary sub and a numeric constant
+     */
+    private ConstantValue foldUnaryOpConstant(ExprTy.UnaryOp unaryOp) {
         assert unaryOp.op == UnaryOpTy.USub;
         assert unaryOp.operand instanceof ExprTy.Constant : unaryOp.operand;
         SourceRange savedLocation = setLocation(unaryOp);
         try {
-            unaryOp.operand.accept(this);
-            addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
+            ExprTy.Constant c = (ExprTy.Constant) unaryOp.operand;
+            ConstantValue ret = c.value.negate();
+            assert ret != null;
+            return ret;
         } finally {
             setLocation(savedLocation);
         }
     }
 
-    private void patternMatchValueBinOp(ExprTy.BinOp binOp) {
+    /**
+     * handles only complex which comes as a BinOp
+     */
+    private ConstantValue foldBinOpComplexConstant(ExprTy.BinOp binOp) {
         assert (binOp.left instanceof ExprTy.UnaryOp || binOp.left instanceof ExprTy.Constant) && binOp.right instanceof ExprTy.Constant : binOp.left + " " + binOp.right;
         assert binOp.op == OperatorTy.Sub || binOp.op == OperatorTy.Add;
         SourceRange savedLocation = setLocation(binOp);
         try {
+            ConstantValue left;
             if (binOp.left instanceof ExprTy.UnaryOp) {
-                patterMatchValueUnaryOp((ExprTy.UnaryOp) binOp.left);
+                left = foldUnaryOpConstant((ExprTy.UnaryOp) binOp.left);
             } else {
-                binOp.left.accept(this);
+                left = ((ExprTy.Constant) binOp.left).value;
             }
-            binOp.right.accept(this);
+            ExprTy.Constant right = (ExprTy.Constant) binOp.right;
             switch (binOp.op) {
                 case Add:
-                    addOp(BINARY_OP, BinaryOps.ADD.ordinal());
-                    break;
+                    return left.addComplex(right.value);
                 case Sub:
-                    addOp(BINARY_OP, BinaryOps.SUB.ordinal());
-                    break;
+                    return left.subComplex(right.value);
                 default:
                     throw new IllegalStateException("wrong constant BinOp operator " + binOp.op);
             }
