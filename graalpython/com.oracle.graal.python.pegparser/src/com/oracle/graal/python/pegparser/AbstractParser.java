@@ -607,13 +607,13 @@ public abstract class AbstractParser {
                             }
 
                             @Override
-                            public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-                                errorCb.onError(errorType, sourceRange, "f-string: " + message);
+                            public void onError(ErrorType errorType, SourceRange srcRange, String message) {
+                                errorCb.onError(errorType, srcRange, "f-string: " + message);
                             }
 
                             @Override
-                            public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
-                                errorCb.onWarning(warningType, sourceRange, message);
+                            public void onWarning(WarningType warningType, SourceRange srcRange, String message) {
+                                errorCb.onWarning(warningType, srcRange, message);
                             }
                         }, InputType.FSTRING, flags, featureVersion).parse();
         return factory.createString(values, sourceRanges, fexprParser, errorCb, stringFactory, featureVersion);
