@@ -2298,7 +2298,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object keys = virtualFrame.getObject(stackTop);
         Object subject = virtualFrame.getObject(stackTop - 1);
         MatchKeysNode matchKeysNode = insertChildNode(localNodes, bci, MatchKeysNodeGen.class, NODE_MATCH_KEYS);
-        Object values = matchKeysNode.execute(virtualFrame, subject, keys);
+        Object values = matchKeysNode.execute(virtualFrame, subject, (Object[]) keys);
         virtualFrame.setObject(++stackTop, values);
         virtualFrame.setObject(++stackTop, values != PNone.NONE ? true : false);
         return stackTop;
@@ -2309,7 +2309,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object keys = virtualFrame.getObject(stackTop);
         Object subject = virtualFrame.getObject(stackTop - 1);
         CopyDictWithoutKeysNode copyDictNode = insertChildNode(localNodes, bci, CopyDictWithoutKeysNodeGen.class, NODE_COPY_DICT_WITHOUT_KEYS);
-        PDict rest = copyDictNode.execute(virtualFrame, subject, keys);
+        PDict rest = copyDictNode.execute(virtualFrame, subject, (Object[]) keys);
         virtualFrame.setObject(stackTop, rest);
         return stackTop;
     }

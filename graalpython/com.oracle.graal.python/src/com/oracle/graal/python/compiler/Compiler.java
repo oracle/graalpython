@@ -2859,7 +2859,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         // Collect all of the keys into a tuple for MATCH_KEYS and
         // COPY_DICT_WITHOUT_KEYS. They can either be dotted names or literals:
-        Collector collector = new Collector(CollectionBits.KIND_TUPLE, 0);
+        Collector collector = new Collector(CollectionBits.KIND_OBJECT, 0);
         List<Object> seen = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             ExprTy key = keys[i];
@@ -2895,7 +2895,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         collector.finishCollection();
 
         addOp(MATCH_KEYS);
-        // There's now a tuple of keys and a tuple of values on top of the subject:
+        // There's now an Object[] array of keys and a tuple of values on top of the subject:
         pc.onTop += 2;
         jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
         // So far so good. Use that tuple of values on the stack to match
@@ -2912,7 +2912,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
 
         // If we get this far, it's a match! We're done with the tuple of values,
-        // and whatever happens next should consume the tuple of keys underneath it:
+        // and whatever happens next should consume the arrays of keys underneath it:
         pc.onTop -= 2;
         addOp(POP_TOP);
         if (starTarget != null) {

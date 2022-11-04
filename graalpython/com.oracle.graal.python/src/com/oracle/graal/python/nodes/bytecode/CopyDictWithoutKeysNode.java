@@ -43,29 +43,47 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
-    public abstract PDict execute(Frame frame, Object subject, Object keys);
+    public abstract PDict execute(Frame frame, Object subject, Object[] keys);
 
-    @Specialization
-    static PDict copy(VirtualFrame frame, Object subject, Object keys,
+    @Specialization(guards = "keysArg.length <= 32")
+    static PDict copy(VirtualFrame frame, Object subject, @SuppressWarnings("unused") Object[] keysArg,
+                    @Cached(value = "keysArg", dimensions = 1) Object[] keys,
                     @Cached PythonObjectFactory factory,
                     @Cached DictNodes.UpdateNode updateNode,
-                    @Cached TupleBuiltins.LenNode lenNode,
-                    @Cached TupleBuiltins.GetItemNode getItemNode,
                     @Cached DictBuiltins.DelItemNode delItemNode) {
         PDict rest = factory.createDict();
         updateNode.execute(frame, rest, subject);
-        int size = (int) lenNode.execute(frame, keys);
-        for (int i = 0; i < size; i++) {
-            delItemNode.execute(frame, rest, getItemNode.execute(frame, keys, i));
+        deleteKeys(frame, keys, delItemNode, rest);
+        return rest;
+    }
+
+    @ExplodeLoop
+    private static void deleteKeys(VirtualFrame frame, Object[] keys, DictBuiltins.DelItemNode delItemNode, PDict rest) {
+        CompilerAsserts.partialEvaluationConstant(keys);
+        for (int i = 0; i < keys.length; i++) {
+            delItemNode.execute(frame, rest, keys[i]);
+        }
+    }
+
+    @Specialization(guards = "keys.length > 32")
+    static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
+                    @Cached PythonObjectFactory factory,
+                    @Cached DictNodes.UpdateNode updateNode,
+                    @Cached DictBuiltins.DelItemNode delItemNode) {
+        PDict rest = factory.createDict();
+        updateNode.execute(frame, rest, subject);
+        for (int i = 0; i < keys.length; i++) {
+            delItemNode.execute(frame, rest, keys[i]);
         }
         return rest;
     }
