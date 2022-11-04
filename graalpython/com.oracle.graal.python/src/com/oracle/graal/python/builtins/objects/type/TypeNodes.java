@@ -58,8 +58,8 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRAC
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_MAPPING;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
@@ -245,7 +245,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | BASETYPE;
                     break;
                 case PArray:
-                    result = DEFAULT | BASETYPE | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | BASETYPE | SEQUENCE;
                     break;
                 case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
                 case PyCSimpleType: // DEFAULT | BASETYPE | PythonClass.flags
@@ -305,22 +305,22 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PMappingproxy:
-                    result = DEFAULT | HAVE_GC | Py_TPFLAGS_MAPPING;
+                    result = DEFAULT | HAVE_GC | MAPPING;
                     break;
                 case PMemoryView:
-                    result = DEFAULT | HAVE_GC | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | SEQUENCE;
                     break;
                 case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_MAPPING;
+                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | MAPPING;
                     break;
                 case PDefaultDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | Py_TPFLAGS_MAPPING;
+                    result = DEFAULT | HAVE_GC | BASETYPE | MAPPING;
                     break;
                 case PBaseException:
                     result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
                     break;
                 case PList:
-                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | SEQUENCE;
                     break;
                 case PInt:
                     result = DEFAULT | BASETYPE | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
@@ -329,10 +329,10 @@ public abstract class TypeNodes {
                     result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
                     break;
                 case PTuple:
-                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | SEQUENCE;
                     break;
                 case PRange:
-                    result = DEFAULT | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | SEQUENCE;
                     break;
                 case PythonModuleDef:
                     result = 0;

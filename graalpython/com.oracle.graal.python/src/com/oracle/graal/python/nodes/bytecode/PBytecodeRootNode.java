@@ -43,8 +43,8 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_MAPPING;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -1619,11 +1619,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.MATCH_SEQUENCE: {
-                        stackTop = bytecodeCheckTpFlags(virtualFrame, Py_TPFLAGS_SEQUENCE, useCachedNodes, stackTop, bci, localNodes);
+                        stackTop = bytecodeCheckTpFlags(virtualFrame, SEQUENCE, useCachedNodes, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.MATCH_MAPPING: {
-                        stackTop = bytecodeCheckTpFlags(virtualFrame, Py_TPFLAGS_MAPPING, useCachedNodes, stackTop, bci, localNodes);
+                        stackTop = bytecodeCheckTpFlags(virtualFrame, MAPPING, useCachedNodes, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.MATCH_KEYS: {

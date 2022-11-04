@@ -46,8 +46,8 @@ package com.oracle.graal.python.builtins.objects.type;
  */
 public abstract class TypeFlags {
 
-    public static final long Py_TPFLAGS_SEQUENCE = (1L << 5);
-    public static final long Py_TPFLAGS_MAPPING = (1L << 6);
+    public static final long SEQUENCE = (1L << 5);
+    public static final long MAPPING = (1L << 6);
     public static final long HEAPTYPE = (1L << 9);
     public static final long BASETYPE = (1L << 10);
     public static final long HAVE_VECTORCALL = (1L << 11);
