@@ -47,7 +47,6 @@ import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
@@ -56,8 +55,6 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -137,58 +134,8 @@ public class EconomicMapStorage extends HashingStorage {
     @ExportMessage
     Object forEachUntyped(ForEachNode<Object> node, Object arg,
                     @CachedLibrary("this") HashingStorageLibrary thisLib,
-                    @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile) {
+                    @Cached LoopConditionProfile loopProfile) {
         return map.forEachUntyped(node, arg, loopProfile);
-    }
-
-    @ExportMessage
-    public static class AddAllToOther {
-
-        protected static boolean hasSideEffect(EconomicMapStorage self, EconomicMapStorage other) {
-            return !other.map.hasSideEffect() && self.map.hasSideEffect();
-        }
-
-        @Specialization(guards = "hasSideEffect(self, other)")
-        static HashingStorage toSameTypeSideEffect(EconomicMapStorage self, EconomicMapStorage other,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode) {
-            convertToSideEffectMap(other);
-            return toSameType(self, other, thisLib, loopProfile, putNode);
-        }
-
-        @Specialization(guards = "!hasSideEffect(self, other)")
-        static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode) {
-            MapCursor cursor = self.map.getEntries();
-            // get/put may throw, but we ignore that small inaccuracy
-            final int size = self.map.size();
-            loopProfile.profileCounted(size);
-            LoopNode.reportLoopCount(thisLib, size);
-            while (loopProfile.inject(advance(cursor))) {
-                putNode.put(null, other.map, cursor.getKey().getValue(), cursor.getKey().getPythonHash(), cursor.getValue());
-            }
-            return other;
-        }
-
-        @Specialization
-        static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Exclusive @Cached HashingStorageSetItem setItem) {
-            HashingStorage result = other;
-            MapCursor cursor = self.map.getEntries();
-            // get/put may throw, but we ignore that small inaccuracy
-            final int size = self.map.size();
-            loopProfile.profileCounted(size);
-            LoopNode.reportLoopCount(thisLib, size);
-            while (loopProfile.inject(advance(cursor))) {
-                result = setItem.execute(null, result, getKey(cursor), getValue(cursor));
-            }
-            return result;
-        }
     }
 
     void clear() {

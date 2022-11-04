@@ -40,22 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
@@ -63,20 +54,6 @@ public class EmptyStorage extends HashingStorage {
 
     // Singleton
     private EmptyStorage() {
-    }
-
-    @ExportMessage
-    public Object getItemWithState(Object key, ThreadState state,
-                    @Cached PyObjectHashNode hashNode,
-                    @Cached ConditionProfile gotState,
-                    @Cached ConditionProfile notString) {
-        key = assertNoJavaString(key);
-        if (notString.profile(!(key instanceof TruffleString))) {
-            // must call __hash__ for potential side-effect
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            hashNode.execute(frame, key);
-        }
-        return null;
     }
 
     @Override

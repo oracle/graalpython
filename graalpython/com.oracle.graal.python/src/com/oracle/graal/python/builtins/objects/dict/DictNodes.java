@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
@@ -73,7 +72,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class DictNodes {
@@ -120,14 +118,14 @@ public abstract class DictNodes {
         static void updateMapping(VirtualFrame frame, PDict self, Object other,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, self.getDictStorage(),
-                            callKeysNode, getItem, getIter, nextNode, errorProfile, setHasihngStorageItem, lib);
+                            callKeysNode, getItem, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 
@@ -135,7 +133,7 @@ public abstract class DictNodes {
         static void updateSequence(VirtualFrame frame, PDict self, Object other,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PRaiseNode raise,
                         @Cached GetNextNode nextNode,
@@ -148,7 +146,7 @@ public abstract class DictNodes {
             HashingStorage.StorageSupplier storageSupplier = (boolean isStringKey, int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
                             getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile,
-                            errorProfile, setHasihngStorageItem, lib);
+                            errorProfile, setHasihngStorageItem, addAllToOther);
             self.setDictStorage(storage);
         }
 

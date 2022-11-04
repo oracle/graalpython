@@ -68,7 +68,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -107,7 +108,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView})
@@ -555,51 +555,57 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
 
-        protected static HashingStorage union(HashingStorageLibrary lib, HashingStorage left, HashingStorage right) {
-            return lib.union(left, right);
+        protected static HashingStorage union(HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther, HashingStorage left, HashingStorage right) {
+            return left.union(right, copyNode, addAllToOther);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+            return factory().createSet(union(copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getDictStorage()));
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+            return factory().createSet(union(copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+            return factory().createSet(union(copyNode, addAllToOther, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
-            return factory().createSet(union(lib, selfSet.getDictStorage(), other.getDictStorage()));
+            return factory().createSet(union(copyNode, addAllToOther, selfSet.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode) {
             PSet selfSet = constructSetNode.executeWith(frame, self);
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            return factory().createSet(union(lib, selfSet.getDictStorage(), otherSet.getDictStorage()));
+            return factory().createSet(union(copyNode, addAllToOther, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
         @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return factory().createSet(union(lib, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+            return factory().createSet(union(copyNode, addAllToOther, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
     }
 

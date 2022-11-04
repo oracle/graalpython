@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
@@ -72,7 +71,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
  * binary operations are implemented in {@link BaseSetBuiltins}
@@ -182,18 +180,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     abstract static class OrNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
-                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
-            HashingStorage storage = leftLib.union(left.getDictStorage(), right.getDictStorage());
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage storage = left.getDictStorage().union(right.getDictStorage(), copyNode, addAllToOther);
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"})
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
-            HashingStorage storage = leftLib.union(left.getDictStorage(), getHashingStorageNode.execute(frame, right));
+                        @Shared("copy") @Cached HashingStorageCopy copyNode,
+                        @Shared("addAll") @Cached HashingStorageAddAllToOther addAllToOther) {
+            HashingStorage storage = left.getDictStorage().union(getHashingStorageNode.execute(frame, right), copyNode, addAllToOther);
             return factory().createSet(storage);
         }
 

@@ -42,20 +42,11 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /*
  * TODO:
@@ -68,78 +59,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateLibrary
 public abstract class HashingStorageLibrary extends Library {
 
-    @Child HashingStorageGetItem getItem;
-
-    private HashingStorageGetItem ensureGetItem() {
-        if (!isAdoptable()) {
-            return HashingStorageGetItemNodeGen.getUncached();
-        }
-        if (getItem == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getItem = insert(HashingStorageGetItemNodeGen.create());
-        }
-        return getItem;
-    }
-
-    /**
-     * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
-     * with Python semantics.
-     *
-     * @return the value associated with {@code key}, or {@code null}, if no such key is in the
-     *         store.
-     */
-    public Object getItemWithState(HashingStorage self, Object key, ThreadState state) {
-        VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-        return ensureGetItem().execute(frame, self, key);
-    }
-
-    /**
-     * @see #getItemWithState(HashingStorage, Object, ThreadState)
-     */
-    public Object getItem(HashingStorage self, Object key) {
-        return ensureGetItem().execute(null, self, key);
-    }
-
-    @Child HashingStorageSetItem setItem;
-
-    private HashingStorageSetItem ensureSetItem() {
-        if (!isAdoptable()) {
-            return HashingStorageSetItemNodeGen.getUncached();
-        }
-        if (setItem == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            setItem = insert(HashingStorageSetItemNodeGen.create());
-        }
-        return setItem;
-    }
-
-    /**
-     * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
-     * with Python semantics.
-     *
-     * @param key : the key to store under
-     * @param value : the value to store
-     * @return the new store to use from now on, {@code self} has become invalid.
-     */
-    public HashingStorage setItemWithState(HashingStorage self, Object key, Object value, ThreadState state) {
-        VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-        return ensureSetItem().execute(frame, self, key, value);
-    }
-
-    /**
-     * @see #setItemWithState(HashingStorage, Object, Object, ThreadState)
-     */
-    public final HashingStorage setItem(HashingStorage self, Object key, Object value) {
-        return ensureSetItem().execute(null, self, key, value);
-    }
-
-    /**
-     * @see #setItemWithState(HashingStorage, Object, Object, ThreadState)
-     */
-    public final HashingStorage setItemWithFrame(HashingStorage self, Object key, Object value, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        return ensureSetItem().execute(frame, self, key, value);
-    }
-
     /**
      * A node to be called in a loop with different keys to operate on {@code
      * store}. It's execute method returns the new store to use for the next iteration.
@@ -151,18 +70,6 @@ public abstract class HashingStorageLibrary extends Library {
         public final HashingStorage[] execute(Object key, HashingStorage[] accumulator) {
             return execute(accumulator, key);
         }
-    }
-
-    /**
-     * Iterate over {@code self} keys and execute {@code node} with an accumulator and each key. The
-     * first iteration uses {@code firstValue} as the first argument to
-     * {@link InjectIntoNode#execute}. Each subsequent iteration uses the return value of the prior
-     * iteration.
-     *
-     * @return the return value of the last call to {@link InjectIntoNode#execute}
-     */
-    public final HashingStorage[] injectInto(HashingStorage self, HashingStorage[] firstValue, InjectIntoNode node) {
-        return forEach(self, node, firstValue);
     }
 
     /**
@@ -183,18 +90,6 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
-     * Stores all key-value pairs from {@code self} into {@code other}, replacing key-value pairs
-     * that already exist. The message is provided in this direction, so that the source can
-     * optimize its iteration over its own entries. Note that this could of course be implemented
-     * using injectInto, but we provide it as a separate message so that implementers can optimize
-     * this operation.
-     *
-     * @return the new store to use for {@code other} from now on, the previous {@code other} has
-     *         become invalid.
-     */
-    public abstract HashingStorage addAllToOther(HashingStorage self, HashingStorage other);
-
-    /**
      * Determines if the storage has elements with a potential side effect on access.
      *
      * @return {@code true} if the storage has elements with a potential side effect, otherwise
@@ -203,12 +98,6 @@ public abstract class HashingStorageLibrary extends Library {
     public boolean hasSideEffect(@SuppressWarnings("unused") HashingStorage self) {
         return false;
     }
-
-    /**
-     * @return the union of the two storages, by keys, keeping the values from {@code other} in case
-     *         of conflicts.
-     */
-    public abstract HashingStorage union(HashingStorage self, HashingStorage other);
 
     /**
      * An iterable that does not need to be guarded separately with TruffleBoundary.

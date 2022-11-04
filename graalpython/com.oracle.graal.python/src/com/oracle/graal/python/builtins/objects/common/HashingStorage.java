@@ -195,13 +195,13 @@ public abstract class HashingStorage {
                         @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(false, 0);
-            return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, lib);
+            return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
         protected static boolean hasIterAttrButNotBuiltin(PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
@@ -212,20 +212,20 @@ public abstract class HashingStorage {
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Shared("callKeys") @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage curStorage = PDict.createNewStorage(false, 0);
-            return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, lib);
+            return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
         HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setHasihngStorageItem,
-                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("addAllToOther") @Cached HashingStorageAddAllToOther addAllToOther,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PRaiseNode raise,
                         @Shared("getNext") @Cached GetNextNode nextNode,
@@ -238,7 +238,7 @@ public abstract class HashingStorage {
 
             return addSequenceToStorage(frame, iterable, kwargs, PDict::createNewStorage, getIter, nextNode, createListNode,
                             seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
-                            errorProfile, setHasihngStorageItem, lib);
+                            errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
         public static InitNode create() {
@@ -258,32 +258,6 @@ public abstract class HashingStorage {
     HashingStorageIterable<Object> keys() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.keys");
-    }
-
-    @GenerateUncached
-    protected abstract static class AddToOtherInjectNode extends InjectIntoNode {
-        @Specialization
-        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
-                        @Cached HashingStorageGetItem getItem,
-                        @Cached HashingStorageSetItem setItem) {
-            HashingStorage self = accumulator[0];
-            HashingStorage other = accumulator[1];
-            // TODO: channel the frame through the InjectIntoNode node
-            HashingStorage newOther = setItem.execute(null, other, key, getItem.execute(null, self, key));
-            if (CompilerDirectives.inInterpreter() && other == newOther) {
-                // Avoid the allocation in interpreter if possible
-                return accumulator;
-            } else {
-                return new HashingStorage[]{self, newOther};
-            }
-        }
-    }
-
-    @ExportMessage
-    public HashingStorage addAllToOther(HashingStorage other,
-                    @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Cached AddToOtherInjectNode injectNode) {
-        return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
     }
 
     private static final class AbortIteration extends ControlFlowException {
@@ -318,10 +292,7 @@ public abstract class HashingStorage {
         }
     }
 
-    @ExportMessage
-    public HashingStorage union(HashingStorage other,
-                    @Cached HashingStorageCopy copyNode,
-                    @Cached HashingStorageAddAllToOther addAllToOther) {
+    public final HashingStorage union(HashingStorage other, HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther) {
         HashingStorage newStore = copyNode.execute(this);
         return addAllToOther.execute(null, other, newStore);
     }
@@ -393,7 +364,7 @@ public abstract class HashingStorage {
     public static HashingStorage copyToStorage(VirtualFrame frame, Object mapping, PKeyword[] kwargs, HashingStorage storage,
                     LookupAndCallUnaryNode callKeysNode, PyObjectGetItem callGetItemNode,
                     PyObjectGetIter getIter, GetNextNode nextNode,
-                    IsBuiltinClassProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageLibrary lib) {
+                    IsBuiltinClassProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOtherNode) {
         Object keysIterable = callKeysNode.executeObject(frame, mapping);
         Object keysIt = getIter.execute(frame, keysIterable);
         HashingStorage curStorage = storage;
@@ -409,7 +380,7 @@ public abstract class HashingStorage {
             }
         }
         if (kwargs.length > 0) {
-            curStorage = lib.addAllToOther(new KeywordsStorage(kwargs), curStorage);
+            curStorage = addAllToOtherNode.execute(frame, new KeywordsStorage(kwargs), curStorage);
         }
         return curStorage;
     }
@@ -422,7 +393,7 @@ public abstract class HashingStorage {
     public static HashingStorage addSequenceToStorage(VirtualFrame frame, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
                     PyObjectGetIter getIter, GetNextNode nextNode, FastConstructListNode createListNode, LenNode seqLenNode,
                     ConditionProfile lengthTwoProfile, PRaiseNode raise, PyObjectGetItem getItemNode, IsBuiltinClassProfile isTypeErrorProfile,
-                    IsBuiltinClassProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageLibrary lib) throws PException {
+                    IsBuiltinClassProfile errorProfile, HashingStorageSetItem setHashingStorageItem, HashingStorageAddAllToOther addAllToOther) throws PException {
         Object it = getIter.execute(frame, iterable);
         ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
         try {
@@ -455,7 +426,7 @@ public abstract class HashingStorage {
             storage = setHashingStorageItem.execute(frame, storage, key, value);
         }
         if (kwargs.length > 0) {
-            storage = lib.addAllToOther(new KeywordsStorage(kwargs), storage);
+            storage = addAllToOther.execute(frame, new KeywordsStorage(kwargs), storage);
         }
         return storage;
     }

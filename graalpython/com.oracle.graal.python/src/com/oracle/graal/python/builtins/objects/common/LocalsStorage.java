@@ -49,9 +49,7 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -63,7 +61,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -73,7 +70,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -199,12 +195,6 @@ public final class LocalsStorage extends HashingStorage {
         }
     }
 
-    private HashingStorage generalize(HashingStorageLibrary lib, boolean isStringKey, int expectedLength) {
-        HashingStorage newStore = PDict.createNewStorage(isStringKey, expectedLength);
-        newStore = lib.addAllToOther(this, newStore);
-        return newStore;
-    }
-
     void addAllTo(HashingStorage storage, SpecializedSetStringKey putNode) {
         FrameDescriptor fd = this.frame.getFrameDescriptor();
         for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
@@ -234,35 +224,6 @@ public final class LocalsStorage extends HashingStorage {
             }
         }
         return result;
-    }
-
-    @ExportMessage
-    static class AddAllToOther {
-
-        @Specialization(guards = {"desc == self.frame.getFrameDescriptor()"}, limit = "1")
-        @ExplodeLoop
-        static HashingStorage cached(LocalsStorage self, HashingStorage other,
-                        @Exclusive @Cached HashingStorageSetItem setItem,
-                        @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
-            HashingStorage result = other;
-            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
-                Object identifier = desc.getSlotName(slot);
-                if (isUserFrameSlot(identifier)) {
-                    Object value = self.getValue(slot);
-                    if (value != null) {
-                        result = setItem.execute(null, result, desc.getSlotName(slot), value);
-                    }
-                }
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "cached")
-        @TruffleBoundary
-        static HashingStorage generic(LocalsStorage self, HashingStorage other,
-                        @Exclusive @Cached HashingStorageSetItem setItem) {
-            return cached(self, other, setItem, self.frame.getFrameDescriptor());
-        }
     }
 
     public HashingStorage copy() {
