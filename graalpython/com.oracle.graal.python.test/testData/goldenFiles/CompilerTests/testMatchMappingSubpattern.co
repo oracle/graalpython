@@ -1,0 +1,30 @@
+Disassembly of <module>:
+  1:7   -   1:8         0 LOAD_BYTE_O                       1
+  1:9   -   1:10        2 LOAD_BYTE_O                       1
+  1:6   -   1:11        4 COLLECTION_FROM_STACK             2    (dict)
+  2:2   -   3:5         6 MATCH_MAPPING
+  2:2   -   3:5         7 POP_AND_JUMP_IF_FALSE             40   (to 47)
+  2:2   -   3:5        11 GET_LEN
+  2:2   -   3:5        12 LOAD_BYTE_O                       1
+  2:2   -   3:5        14 BINARY_OP                         17   (GE)                              can quicken
+  2:2   -   3:5        16 POP_AND_JUMP_IF_FALSE             31   (to 47)                           generalizes: 14
+  2:2   -   3:5        20 LOAD_BYTE_O                       1
+  2:2   -   3:5        22 COLLECTION_FROM_STACK             1    (Object[])
+  2:2   -   3:5        24 MATCH_KEYS
+  2:2   -   3:5        25 POP_AND_JUMP_IF_FALSE             20   (to 45)
+  2:2   -   3:5        29 DUP_TOP
+  2:2   -   3:5        30 LOAD_BYTE_O                       0
+  2:2   -   3:5        32 BINARY_SUBSCR
+  2:2   -   3:5        33 ROT_N                             4
+  2:2   -   3:5        35 POP_TOP
+  2:2   -   3:5        36 POP_TOP
+  2:2   -   3:5        37 POP_TOP
+  2:2   -   3:5        38 STORE_NAME                        0    (x)
+  3:4   -   3:5        40 LOAD_NAME                         0    (x)
+  3:4   -   3:5        42 POP_TOP
+  3:4   -   3:5        43 JUMP_FORWARD                      5    (to 48)
+  2:2   -   3:5   >>   45 POP_TOP
+  2:2   -   3:5        46 POP_TOP
+  2:2   -   3:5   >>   47 POP_TOP
+  2:2   -   3:5   >>   48 LOAD_NONE
+  2:2   -   3:5        49 RETURN_VALUE

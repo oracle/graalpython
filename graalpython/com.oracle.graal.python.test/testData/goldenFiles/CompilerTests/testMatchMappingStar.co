@@ -1,0 +1,22 @@
+Disassembly of <module>:
+  1:7   -   1:8         0 LOAD_BYTE_O                       1
+  1:9   -   1:10        2 LOAD_BYTE_O                       1
+  1:6   -   1:11        4 COLLECTION_FROM_STACK             2    (dict)
+  2:2   -   3:5         6 MATCH_MAPPING
+  2:2   -   3:5         7 POP_AND_JUMP_IF_FALSE             25   (to 32)
+  2:2   -   3:5        11 COLLECTION_FROM_STACK             0    (Object[])
+  2:2   -   3:5        13 MATCH_KEYS
+  2:2   -   3:5        14 POP_AND_JUMP_IF_FALSE             16   (to 30)
+  2:2   -   3:5        18 POP_TOP
+  2:2   -   3:5        19 COPY_DICT_WITHOUT_KEYS
+  2:2   -   3:5        20 ROT_N                             2
+  2:2   -   3:5        22 POP_TOP
+  2:2   -   3:5        23 STORE_NAME                        0    (z)
+  3:4   -   3:5        25 LOAD_NAME                         0    (z)
+  3:4   -   3:5        27 POP_TOP
+  3:4   -   3:5        28 JUMP_FORWARD                      5    (to 33)
+  2:2   -   3:5   >>   30 POP_TOP
+  2:2   -   3:5        31 POP_TOP
+  2:2   -   3:5   >>   32 POP_TOP
+  2:2   -   3:5   >>   33 LOAD_NONE
+  2:2   -   3:5        34 RETURN_VALUE
