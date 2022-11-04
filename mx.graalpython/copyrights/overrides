@@ -106,7 +106,9 @@ graalpython/com.oracle.graal.python.cext/include/cpython/methodobject.h,python.c
 graalpython/com.oracle.graal.python.cext/include/cpython/object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/objimpl.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pyctype.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/cpython/pydebug.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pyerrors.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/cpython/pyfpe.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pylifecycle.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/pystate.h,python.copyright
@@ -184,10 +186,8 @@ graalpython/com.oracle.graal.python.cext/include/objimpl.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/osmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/patchlevel.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pycapsule.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/pydebug.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyerrors.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyexpat.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/pyfpe.h,pyfpe.copyright
 graalpython/com.oracle.graal.python.cext/include/pyframe.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pylifecycle.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymacro.h,python.copyright

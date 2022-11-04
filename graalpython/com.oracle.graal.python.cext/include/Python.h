@@ -80,6 +80,8 @@
 #include "typeslots.h"
 #include "pyhash.h"
 
+#include "cpython/pydebug.h"
+
 #include "bytearrayobject.h"
 #include "bytesobject.h"
 #include "unicodeobject.h"
@@ -136,6 +138,7 @@
 #include "cpython/pyctype.h"
 #include "pystrtod.h"
 #include "fileutils.h"
+#include "cpython/pyfpe.h"
 #include "tracemalloc.h"
 
 #endif /* !Py_PYTHON_H */
