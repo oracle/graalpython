@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,26 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.nodes.bytecode;
 
-PyTypeObject PyByteArray_Type = PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyByteArrayObject));
-char _PyByteArray_empty_string[] = "";
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 
-// taken from CPython 3.7.0 "Objects/bytearrayobject.c"
-int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
-    void *ptr;
-    if (view == NULL) {
-        PyErr_SetString(PyExc_BufferError,
-            "bytearray_getbuffer: view==NULL argument is obsolete");
-        return -1;
+@GenerateUncached
+public abstract class GetTPFlagsNode extends PNodeWithContext {
+    public abstract long execute(Object object);
+
+    @Specialization
+    long get(Object object,
+                    @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
+                    @Cached GetClassNode getClassNode) {
+        return getTypeFlagsNode.execute(getClassNode.execute(object));
     }
-    ptr = (void *) PyByteArray_AS_STRING(obj);
-    /* cannot fail if view != NULL and readonly == 0 */
-    (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
-    obj->ob_exports++;
-    return 0;
-}
 
-void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
-    obj->ob_exports--;
+    public static GetTPFlagsNode create() {
+        return GetTPFlagsNodeGen.create();
+    }
+
+    public static GetTPFlagsNode getUncached() {
+        return GetTPFlagsNodeGen.getUncached();
+    }
 }
