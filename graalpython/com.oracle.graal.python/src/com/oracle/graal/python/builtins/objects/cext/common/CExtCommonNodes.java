@@ -1191,8 +1191,9 @@ public abstract class CExtCommonNodes {
             return value;
         }
 
+        @SuppressWarnings("unused")
         @Specialization(guards = "interopLib.isNull(value)", limit = "3")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+        static Object doGeneric(CExtContext hpyContext, Object value,
                         @CachedLibrary("value") InteropLibrary interopLib) {
             return PNone.NONE;
         }
