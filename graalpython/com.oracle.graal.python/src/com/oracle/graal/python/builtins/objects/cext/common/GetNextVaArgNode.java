@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,48 +59,32 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @GenerateUncached
 @ImportStatic(LLVMType.class)
-public abstract class GetVaArgsNode extends Node {
+public abstract class GetNextVaArgNode extends Node {
 
-    public final Object getInt8Ptr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.int8_ptr_t);
+    public final Object getPyObjectPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.PyObject_ptr_t);
     }
 
-    public final Object getInt16Ptr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.int16_ptr_t);
+    public final Object getCharPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.char_ptr_t);
     }
 
-    public final Object getInt32Ptr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.int32_ptr_t);
+    public final Object getVoidPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.void_ptr_t);
     }
 
-    public final Object getInt63Ptr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.int64_ptr_t);
+    public final Object getPyComplexPtr(Object valist) throws InteropException {
+        return execute(valist, LLVMType.Py_complex_ptr_t);
     }
 
-    public final Object getPyObjectPtr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.PyObject_ptr_t);
-    }
+    public abstract Object execute(Object valist, LLVMType llvmType) throws InteropException;
 
-    public final Object getCharPtr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.char_ptr_t);
-    }
-
-    public final Object getVoidPtr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.void_ptr_t);
-    }
-
-    public final Object getPyComplexPtr(Object valist, int index) throws InteropException {
-        return execute(valist, index, LLVMType.Py_complex_ptr_t);
-    }
-
-    public abstract Object execute(Object valist, int index, LLVMType llvmType) throws InteropException;
-
-    @Specialization(limit = "1")
-    static Object doGeneric(Object valist, int index, LLVMType llvmType,
+    @Specialization(limit = "3")
+    static Object doGeneric(Object valist, LLVMType llvmType,
                     @CachedLibrary("valist") InteropLibrary valistLib,
                     @Cached GetLLVMType getLLVMType) throws InteropException {
         try {
-            return valistLib.invokeMember(valist, "get", index, getLLVMType.execute(llvmType));
+            return valistLib.invokeMember(valist, "next", getLLVMType.execute(llvmType));
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }

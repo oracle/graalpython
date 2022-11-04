@@ -62,11 +62,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -77,10 +75,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Resol
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFactory.ResolveNativeReferenceNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -112,7 +110,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -121,12 +118,10 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -182,20 +177,19 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectCallFunctionObjArgsNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object doFunction(VirtualFrame frame, Object callableObj, Object vaList,
-                        @CachedLibrary("vaList") InteropLibrary argsArrayLib,
-                        @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @Cached GetNextVaArgNode getVaArgs,
+                        @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached GetLLVMType getLLVMType,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = asPythonObjectNode.execute(callableObj);
-                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callNode, toJavaNode, getLLVMType));
+                return toNewRefNode.execute(callFunction(frame, callable, vaList, getVaArgs, argLib, callNode, toJavaNode));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -204,48 +198,35 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
         }
 
         static Object callFunction(VirtualFrame frame, Object callable, Object vaList,
-                        InteropLibrary argsArrayLib,
+                        GetNextVaArgNode getVaArgs,
                         InteropLibrary argLib,
                         CallNode callNode,
-                        CExtNodes.ToJavaNode toJavaNode,
-                        GetLLVMType getLLVMType) {
-            if (argsArrayLib.hasArrayElements(vaList)) {
+                        CExtNodes.ToJavaNode toJavaNode) {
+            /*
+             * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
+             * 'PyObject *' and is terminated by 'NULL'.
+             */
+            Object[] args = new Object[4];
+            int filled = 0;
+            while (true) {
+                Object object;
                 try {
-                    /*
-                     * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
-                     * 'PyObject *' and is terminated by 'NULL'. Hence, we allocate an argument
-                     * array with one element less than the va_list object says (since the last
-                     * element is expected to be 'NULL'; this is best effort). However, we must also
-                     * stop at the first 'NULL' element we encounter since a user could pass several
-                     * 'NULL'.
-                     */
-                    long arraySize = argsArrayLib.getArraySize(vaList);
-                    Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
-                    int filled = 0;
-                    Object llvmPyObjectPtrType = getLLVMType.execute(LLVMType.PyObject_ptr_t);
-                    for (int i = 0; i < args.length; i++) {
-                        try {
-                            Object object = argsArrayLib.invokeMember(vaList, "get", i, llvmPyObjectPtrType);
-                            if (argLib.isNull(object)) {
-                                break;
-                            }
-                            args[i] = toJavaNode.execute(object);
-                            filled++;
-                        } catch (ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
-                            throw CompilerDirectives.shouldNotReachHere();
-                        }
-                    }
-                    if (filled < args.length) {
-                        args = PythonUtils.arrayCopyOf(args, filled);
-                    }
-                    return callNode.execute(frame, callable, args);
-                } catch (UnsupportedMessageException | OverflowException e) {
-                    // I think we can just assume that there won't be more than
-                    // Integer.MAX_VALUE arguments.
+                    object = getVaArgs.getPyObjectPtr(vaList);
+                } catch (InteropException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
+                if (argLib.isNull(object)) {
+                    break;
+                }
+                if (filled >= args.length) {
+                    args = PythonUtils.arrayCopyOf(args, args.length * 2);
+                }
+                args[filled++] = toJavaNode.execute(object);
             }
-            throw CompilerDirectives.shouldNotReachHere();
+            if (filled < args.length) {
+                args = PythonUtils.arrayCopyOf(args, filled);
+            }
+            return callNode.execute(frame, callable, args);
         }
     }
 
@@ -254,15 +235,14 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectCallMethodObjArgsNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object doMethod(VirtualFrame frame, Object receiverObj, Object methodNameObj, Object vaList,
-                        @CachedLibrary("vaList") InteropLibrary argsArrayLib,
-                        @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @Cached GetNextVaArgNode getVaArgs,
+                        @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached GetAnyAttributeNode getAnyAttributeNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
-                        @Cached GetLLVMType getLLVMType,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -271,7 +251,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
                 Object receiver = asPythonObjectNode.execute(receiverObj);
                 Object methodName = asPythonObjectNode.execute(methodNameObj);
                 Object method = getAnyAttributeNode.executeObject(frame, receiver, methodName);
-                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, callNode, toJavaNode, getLLVMType));
+                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, getVaArgs, argLib, callNode, toJavaNode));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -442,8 +422,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectIsInstanceNode extends PythonBinaryBuiltinNode {
         @Specialization
         static int doGeneric(VirtualFrame frame, Object obj, Object typ,
-                        @Cached IsInstanceNode isInstanceNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached IsInstanceNode isInstanceNode) {
             return ((boolean) isInstanceNode.execute(frame, obj, typ)) ? 1 : 0;
         }
     }
@@ -453,8 +432,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
     abstract static class PyObjectIsSubclassNode extends PythonBinaryBuiltinNode {
         @Specialization
         static int doGeneric(VirtualFrame frame, Object obj, Object typ,
-                        @Cached IsSubClassNode isSubclassNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached IsSubClassNode isSubclassNode) {
             return ((boolean) isSubclassNode.execute(frame, obj, typ)) ? 1 : 0;
         }
     }
@@ -630,7 +608,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBytes(bytes)", "isBytesSubtype(frame, bytes, getClassNode, isSubtypeNode)"})
-        static Object bytes(VirtualFrame frame, Object bytes,
+        static Object bytes(@SuppressWarnings("unused") VirtualFrame frame, Object bytes,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
             return bytes;
@@ -640,7 +618,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
         Object bytes(VirtualFrame frame, Object obj,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached BytesNode bytesNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -655,7 +633,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
         static Object bytes(VirtualFrame frame, Object obj,
                         @Shared("getClass") @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Shared("isSubtype") @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PyBytesFromObjectNode fromObjectNode) {
             return fromObjectNode.execute(frame, obj);
         }

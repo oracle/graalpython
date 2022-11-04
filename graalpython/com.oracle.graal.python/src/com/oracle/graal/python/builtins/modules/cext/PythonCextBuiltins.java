@@ -1597,7 +1597,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             // sort out if kwdnames is native NULL
             Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isNull(nativeKwdnames)) ? null : nativeKwdnames;
 
-            return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, nativeVarargs, nativeContext);
+            return parseTupleAndKeywordsNode.execute(functionName, argv, kwds, format, kwdnames, nativeVarargs);
         }
 
         static Object getKwds(Object[] arguments) {
