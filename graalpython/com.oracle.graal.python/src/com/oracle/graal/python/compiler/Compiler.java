@@ -105,6 +105,7 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_STRING;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_CLASS;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.NOP;
@@ -2692,7 +2693,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private int lengthOrZero(PatternTy[] p) {
+    private int lengthOrZero(Object[] p) {
         return p == null ? 0 : p.length;
     }
 
@@ -2732,7 +2733,74 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public Void visit(PatternTy.MatchClass node, PatternContext pc) {
-        return emitNotImplemented("match class");
+        PatternTy[] patterns = node.patterns;
+        String[] kwdAttrs = node.kwdAttrs;
+        PatternTy[] kwdPatterns = node.kwdPatterns;
+        int nargs = lengthOrZero(patterns);
+        int nattrs = lengthOrZero(kwdAttrs);
+        int nKwdPatterns = lengthOrZero(kwdPatterns);
+        if (nattrs != nKwdPatterns) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "kwd_attrs (%d) / kwd_patterns (%d) length mismatch in class pattern", nattrs, nKwdPatterns);
+        }
+        if (Integer.MAX_VALUE < nargs + nattrs - 1) {
+            String id = node.cls instanceof ExprTy.Name ? ((ExprTy.Name) node.cls).id : node.cls.toString();
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many sub-patterns in class pattern %s", id);
+
+        }
+        if (nattrs > 0) {
+            validateKwdAttrs(kwdAttrs, kwdPatterns);
+            setLocation(node);
+        }
+
+        node.cls.accept(this);
+        TruffleString[] attrNames = new TruffleString[nattrs];
+        for (int i = 0; i < nattrs; i++) {
+            attrNames[i] = toTruffleStringUncached(kwdAttrs[i]);
+        }
+        addOp(LOAD_CONST, addObject(unit.constants, attrNames));
+        addOp(MATCH_CLASS, nargs);
+
+        // TOS is now a tuple of (nargs + nattrs) attributes. Preserve it:
+        pc.onTop++;
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        for (int i = 0; i < nargs + nattrs; i++) {
+            PatternTy pattern;
+            if (i < nargs) {
+                // Positional:
+                pattern = patterns[i];
+            } else {
+                // Keyword:
+                pattern = kwdPatterns[i - nargs];
+            }
+            wildcardCheck(pattern);
+            // Get the i-th attribute, and match it against the i-th pattern:
+            addOp(DUP_TOP);
+            addLoadNumber(i);
+            addOp(BINARY_SUBSCR);
+            patternSubpattern(pattern, pc);
+        }
+        // Pop the tuple of attributes:
+        pc.onTop--;
+        addOp(POP_TOP);
+        return null;
+    }
+
+    private void validateKwdAttrs(String[] attrs, PatternTy[] patterns) {
+        // Any errors will point to the pattern rather than the arg name as the
+        // parser is only supplying identifiers rather than Name or keyword nodes
+        int nattrs = lengthOrZero(attrs);
+        for (int i = 0; i < nattrs; i++) {
+            String attr = attrs[i];
+            setLocation(patterns[i]);
+            checkForbiddenName(attr, ExprContextTy.Store);
+            for (int j = i + 1; j < nattrs; j++) {
+                String other = attrs[j];
+                if (attr.equals(other)) {
+                    setLocation(patterns[i]);
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "attribute name repeated in class pattern: `%s`", attr);
+                }
+            }
+        }
     }
 
     public Void visit(PatternTy.MatchMapping node, PatternContext pc) {
@@ -2750,7 +2818,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 if (node.value.getBoolean()) {
                     addOp(LOAD_TRUE);
                 } else {
-                    addOp(LOAD_TRUE);
+                    addOp(LOAD_FALSE);
                 }
                 break;
             case NONE:

@@ -7,7 +7,7 @@
 #include "capi.h"
 
 
-PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyFloatObject));
+PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | _Py_TPFLAGS_MATCH_SELF, sizeof(PyFloatObject));
 
 typedef enum {
     unknown_format, ieee_big_endian_format, ieee_little_endian_format

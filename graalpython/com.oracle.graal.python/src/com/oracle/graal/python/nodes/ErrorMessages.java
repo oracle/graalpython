@@ -47,6 +47,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");
+    public static final TruffleString P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN = tsLiteral("%p() accepts %d positional sub-pattern%s (%d given)");
     public static final TruffleString AF_UNIX_NOT_SUPPORTED = tsLiteral("%s(): AF_UNIX is not supported");
     public static final TruffleString AF_UNIX_PATH_TOO_LONG = tsLiteral("%s(): AF_UNIX path too long");
     public static final TruffleString ARRAY_ITEM_MUST_BE_UNICODE = tsLiteral("array item must be unicode character");
@@ -140,6 +141,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTE_MUST_BE_IN_RANGE = tsLiteral("byte must be in range(0, 256)");
     public static final TruffleString C_ARG_NOT_IN_RANGE = tsLiteral("%%c arg not in range(0x%s)");
     public static final TruffleString CALL_STACK_NOT_DEEP_ENOUGH = tsLiteral("call stack is not deep enough");
+    public static final TruffleString CALLED_MATCH_PAT_MUST_BE_TYPE = tsLiteral("called match pattern must be a type");
     public static final TruffleString CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P = tsLiteral("calling argument converter failed; expected %d but got %d parameters.");
     public static final TruffleString CALLING_ARG_CONVERTER_FAIL_INCOMPATIBLE_PARAMS = tsLiteral("calling argument converter failed; incompatible parameters '%s'");
     public static final TruffleString CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = tsLiteral("calling argument converter failed; unexpected return value %s");
@@ -348,6 +350,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = tsLiteral("getting the source is not supported for '%p'");
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
+    public static final TruffleString P_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
@@ -480,6 +483,8 @@ public abstract class ErrorMessages {
     public static final TruffleString LOST_SYSSTDOUT = tsLiteral("lost sys.stdout");
     public static final TruffleString LENGTH_SHOULD_NOT_BE_NEG = tsLiteral("length should not be negative");
     public static final TruffleString MAKE_ENCODER_ARG_1_MUST_BE_DICT = tsLiteral("make_encoder() argument 1 must be dict or None, not %p");
+    public static final TruffleString MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P = tsLiteral("__match_args__ elements must be strings (got %p)");
+    public static final TruffleString P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P = tsLiteral("%p.__match_args__ must be a tuple (got %p)");
     public static final TruffleString MATCH_AS_MUST_SPECIFY_A_TARGET_NAME_IF_A_PATTERN_IS_GIVEN = tsLiteral("MatchAs must specify a target name if a pattern is given");
     public static final TruffleString MATCH_CLASS_CLS_FIELD_CAN_ONLY_CONTAIN_NAME_OR_ATTRIBUTE_NODES = tsLiteral("MatchClass cls field can only contain Name or Attribute nodes.");
     public static final TruffleString MATCH_CLASS_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYWORD_ATTRIBUTES_AS_PATTERNS = tsLiteral(

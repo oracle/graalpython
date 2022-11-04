@@ -50,7 +50,7 @@ typedef struct arrayobject {
     int ob_exports;  /* Number of exported buffers */
 } arrayobject;
 
-PyTypeObject Arraytype = PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(arrayobject));
+PyTypeObject Arraytype = PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_SEQUENCE, sizeof(arrayobject));
 
 typedef struct {
     PyObject_HEAD

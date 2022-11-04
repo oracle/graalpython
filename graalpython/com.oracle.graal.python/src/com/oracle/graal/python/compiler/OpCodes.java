@@ -330,6 +330,11 @@ public enum OpCodes {
     MATCH_SEQUENCE(0, 0, 1),
 
     /**
+     * Determines if a python object is of a particular type.
+     */
+    MATCH_CLASS(1, 3, 2),
+
+    /**
      * Retrieves the length of a python object and stores it on top.
      */
     GET_LEN(0, 0, 1),

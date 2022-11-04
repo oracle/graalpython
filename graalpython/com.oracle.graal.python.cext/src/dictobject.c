@@ -40,7 +40,7 @@
  */
 #include "capi.h"
 
-PyTypeObject PyDict_Type = PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS, sizeof(PyDictObject));
+PyTypeObject PyDict_Type = PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyDictObject));
 
 UPCALL_ID(PyDict_New);
 PyObject* PyDict_New(void) {
