@@ -98,7 +98,7 @@ public final class LocalsStorage extends HashingStorage {
         return this.frame;
     }
 
-    private Object getValue(int slot) {
+    Object getValue(int slot) {
         return getValue(this.frame, slot);
     }
 

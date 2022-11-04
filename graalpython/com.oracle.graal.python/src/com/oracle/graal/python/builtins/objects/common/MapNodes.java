@@ -48,6 +48,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class MapNodes {
 
+    /**
+     * Captures internal state of the iterator such that it can be iterated and then restored back
+     * to that state again by {@link SetIteratorState}.
+     */
     @GenerateNodeFactory
     @GenerateUncached
     public abstract static class GetIteratorState extends PNodeWithContext {

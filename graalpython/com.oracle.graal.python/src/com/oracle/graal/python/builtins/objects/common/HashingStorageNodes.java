@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
+import com.oracle.graal.python.builtins.objects.common.MapNodes.SetIteratorState;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -685,15 +686,36 @@ public class HashingStorageNodes {
         Object currentValue;
         final Object[] domKeys;
         final DynamicObjectLibrary dylib;
+        final boolean isReverse;
 
         public HashingStorageIterator() {
             domKeys = null;
             dylib = null;
+            isReverse = false;
         }
 
-        public HashingStorageIterator(Object[] domKeys, DynamicObjectLibrary dylib) {
+        public HashingStorageIterator(boolean isReverse) {
+            domKeys = null;
+            dylib = null;
+            this.isReverse = isReverse;
+        }
+
+        public HashingStorageIterator(Object[] domKeys, DynamicObjectLibrary dylib, boolean isReverse) {
             this.domKeys = domKeys;
             this.dylib = dylib;
+            this.isReverse = isReverse;
+        }
+
+        /**
+         * Captures internal state of the iterator such that it can be iterated and then restored
+         * back to that state again by {@link SetIteratorState}.
+         */
+        public int getState() {
+            return index;
+        }
+
+        public void setState(int state) {
+            index = state;
         }
     }
 
@@ -704,27 +726,32 @@ public class HashingStorageNodes {
             return HashingStorageGetIteratorNodeGen.getUncached().execute(storage);
         }
 
-        public abstract HashingStorageIterator execute(HashingStorage storage);
+        public final HashingStorageIterator execute(HashingStorage storage) {
+            HashingStorageIterator result = executeImpl(storage);
+            assert !result.isReverse;
+            return result;
+        }
+
+        public abstract HashingStorageIterator executeImpl(HashingStorage storage);
 
         @Specialization
-        static HashingStorageIterator economicMap(EconomicMapStorage self) {
+        static HashingStorageIterator economicMap(@SuppressWarnings("unused") EconomicMapStorage self) {
             return new HashingStorageIterator();
         }
 
         @Specialization
         static HashingStorageIterator dom(DynamicObjectStorage self,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            return new HashingStorageIterator(dylib.getKeyArray(self.store), dylib);
+            return new HashingStorageIterator(dylib.getKeyArray(self.store), dylib, false);
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        static HashingStorageIterator empty(EmptyStorage self) {
+        static HashingStorageIterator empty(@SuppressWarnings("unused") EmptyStorage self) {
             return new HashingStorageIterator();
         }
 
         @Specialization
-        static HashingStorageIterator keywords(KeywordsStorage self) {
+        static HashingStorageIterator keywords(@SuppressWarnings("unused") KeywordsStorage self) {
             return new HashingStorageIterator();
         }
 
@@ -741,6 +768,57 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
+    public static abstract class HashingStorageGetReverseIterator extends Node {
+        public final HashingStorageIterator execute(HashingStorage storage) {
+            HashingStorageIterator result = executeImpl(storage);
+            assert result.isReverse;
+            return result;
+        }
+
+        abstract HashingStorageIterator executeImpl(HashingStorage storage);
+
+        @Specialization
+        static HashingStorageIterator economicMap(@SuppressWarnings("unused") EconomicMapStorage self) {
+            HashingStorageIterator it = new HashingStorageIterator(true);
+            it.index = self.map.usedHashes;
+            return it;
+        }
+
+        @Specialization
+        static HashingStorageIterator dom(DynamicObjectStorage self,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            HashingStorageIterator it = new HashingStorageIterator(dylib.getKeyArray(self.store), dylib, true);
+            it.index = it.domKeys.length;
+            return it;
+        }
+
+        @Specialization
+        static HashingStorageIterator empty(@SuppressWarnings("unused") EmptyStorage self) {
+            return new HashingStorageIterator(true);
+        }
+
+        @Specialization
+        static HashingStorageIterator keywords(@SuppressWarnings("unused") KeywordsStorage self) {
+            HashingStorageIterator it = new HashingStorageIterator(true);
+            it.index = self.length();
+            return it;
+        }
+
+        @Specialization
+        static HashingStorageIterator locals(LocalsStorage self,
+                        @Cached BranchProfile calculateLen) {
+            if (self.len == -1) {
+                calculateLen.enter();
+                self.calculateLength();
+            }
+            HashingStorageIterator it = new HashingStorageIterator(true);
+            it.index = self.len;
+            return it;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class})
     public static abstract class HashingStorageIteratorNext extends Node {
         public static boolean executeUncached(HashingStorage storage, HashingStorageIterator it) {
             return HashingStorageIteratorNextNodeGen.getUncached().execute(storage, it);
@@ -752,7 +830,7 @@ public class HashingStorageNodes {
          */
         public abstract boolean execute(HashingStorage storage, HashingStorageIterator it);
 
-        @Specialization
+        @Specialization(guards = "!it.isReverse")
         static boolean economicMap(EconomicMapStorage self, HashingStorageIterator it) {
             ObjectHashMap map = self.map;
             it.index++;
@@ -768,7 +846,23 @@ public class HashingStorageNodes {
             return false;
         }
 
-        @Specialization
+        @Specialization(guards = "it.isReverse")
+        static boolean economicMapReverse(EconomicMapStorage self, HashingStorageIterator it) {
+            ObjectHashMap map = self.map;
+            it.index--;
+            while (it.index >= 0) {
+                Object val = map.getValue(it.index);
+                if (val != null) {
+                    it.currentValue = val;
+                    return true;
+                }
+                it.index--;
+            }
+            assert (it.currentValue = null) == null;
+            return false;
+        }
+
+        @Specialization(guards = "!it.isReverse")
         static boolean dom(DynamicObjectStorage self, HashingStorageIterator it) {
             it.index++;
             while (it.index < it.domKeys.length) {
@@ -785,28 +879,67 @@ public class HashingStorageNodes {
             return false;
         }
 
+        @Specialization(guards = "it.isReverse")
+        static boolean domReverse(DynamicObjectStorage self, HashingStorageIterator it) {
+            it.index--;
+            while (it.index >= 0) {
+                if (it.domKeys[it.index] instanceof TruffleString) {
+                    Object val = it.dylib.getOrDefault(self.store, it.domKeys[it.index], PNone.NO_VALUE);
+                    if (val != PNone.NO_VALUE) {
+                        it.currentValue = val;
+                        return true;
+                    }
+                }
+                it.index--;
+            }
+            assert (it.currentValue = null) == null;
+            return false;
+        }
+
         @Specialization
         @SuppressWarnings("unused")
         static boolean empty(EmptyStorage self, HashingStorageIterator it) {
             return false;
         }
 
-        @Specialization
+        @Specialization(guards = "!it.isReverse")
         static boolean keywords(KeywordsStorage self, HashingStorageIterator it) {
             return ++it.index < self.length();
         }
 
-        @Specialization
+        @Specialization(guards = "it.isReverse")
+        static boolean keywordsReverse(KeywordsStorage self, HashingStorageIterator it) {
+            return --it.index >= 0;
+        }
+
+        @Specialization(guards = "!it.isReverse")
         static boolean locals(LocalsStorage self, HashingStorageIterator it) {
             FrameDescriptor fd = self.frame.getFrameDescriptor();
+            it.index++;
             while (it.index < fd.getNumberOfSlots()) {
-                it.index++;
                 Object identifier = fd.getSlotName(it.index);
-                if (isUserFrameSlot(identifier)) {
+                if (isUserFrameSlot(identifier) && self.getValue(it.index) != null) {
                     // Update the code in HashingStorageIteratorKey if this assumption changes:
                     assert identifier instanceof TruffleString;
                     return true;
                 }
+                it.index++;
+            }
+            return false;
+        }
+
+        @Specialization(guards = "it.isReverse")
+        static boolean localsReverse(LocalsStorage self, HashingStorageIterator it) {
+            FrameDescriptor fd = self.frame.getFrameDescriptor();
+            it.index--;
+            while (it.index > 0) {
+                Object identifier = fd.getSlotName(it.index);
+                if (isUserFrameSlot(identifier) && self.getValue(it.index) != null) {
+                    // Update the code in HashingStorageIteratorKey if this assumption changes:
+                    assert identifier instanceof TruffleString;
+                    return true;
+                }
+                it.index--;
             }
             return false;
         }

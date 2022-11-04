@@ -70,9 +70,10 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetReverseIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
@@ -97,7 +98,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -138,42 +138,40 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @Builtin(name = J___ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
-                        @Cached HashingStorageLen lenNode,
-                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
-                        @CachedLibrary("storage") HashingStorageLibrary lib) {
-            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lenNode.execute(storage));
+                        @Shared("len") @Cached HashingStorageLen lenNode,
+                        @Shared("getit") @Cached HashingStorageGetIterator getIterator) {
+            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            return factory().createDictKeyIterator(getIterator.execute(storage), storage, lenNode.execute(storage));
         }
 
-        @Specialization(limit = "3")
-        Object getItemsViewIter(@SuppressWarnings("unused") PDictItemsView self,
-                        @Cached HashingStorageLen lenNode,
-                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
-                        @CachedLibrary("storage") HashingStorageLibrary lib) {
-            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lenNode.execute(storage));
+        @Specialization
+        Object getItemsViewIter(PDictItemsView self,
+                        @Shared("len") @Cached HashingStorageLen lenNode,
+                        @Shared("getit") @Cached HashingStorageGetIterator getIterator) {
+            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            return factory().createDictItemIterator(getIterator.execute(storage), storage, lenNode.execute(storage));
         }
     }
 
     @Builtin(name = J___REVERSED__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         Object getReversedKeysViewIter(PDictKeysView self,
                         @Cached HashingStorageLen lenNode,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = dict.getDictStorage();
-            return factory().createDictReverseKeyIterator(lib.reverseKeys(storage).iterator(), storage, lenNode.execute(storage));
+                        @Cached HashingStorageGetReverseIterator getReverseIterator) {
+            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            return factory().createDictKeyIterator(getReverseIterator.execute(storage), storage, lenNode.execute(storage));
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         Object getReversedItemsViewIter(PDictItemsView self,
                         @Cached HashingStorageLen lenNode,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = dict.getDictStorage();
-            return factory().createDictReverseItemIterator(lib.reverseEntries(storage).iterator(), storage, lenNode.execute(storage));
+                        @Cached HashingStorageGetReverseIterator getReverseIterator) {
+            HashingStorage storage = self.getWrappedDict().getDictStorage();
+            return factory().createDictItemIterator(getReverseIterator.execute(storage), storage, lenNode.execute(storage));
         }
     }
 

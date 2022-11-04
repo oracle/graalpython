@@ -40,39 +40,38 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class PHashingStorageIterator<T> extends PBuiltinIterator {
+public abstract class PHashingStorageIterator extends PBuiltinIterator {
 
     protected final int size;
-    private final HashingStorageIterator<T> iterator;
+    private final HashingStorageNodes.HashingStorageIterator iterator;
+    private final HashingStorage storage;
 
-    public PHashingStorageIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, int size) {
+    public PHashingStorageIterator(Object clazz, Shape instanceShape, HashingStorage storage, HashingStorageNodes.HashingStorageIterator iterator, int size) {
         super(clazz, instanceShape);
         this.iterator = iterator;
         this.size = size;
+        this.storage = storage;
     }
 
-    public HashingStorageIterator<T> getIterator() {
+    public final HashingStorageNodes.HashingStorageIterator getIterator() {
         return iterator;
     }
 
-    @TruffleBoundary
-    public final Object next() {
-        assert hasNext();
-        index++;
-        return iterator.next();
+    public final HashingStorage getHashingStorage() {
+        return storage;
+    }
+
+    public final boolean checkSizeChanged(HashingStorageLen lenNode) {
+        return lenNode.execute(getHashingStorage()) != size;
     }
 
     public final int getSize() {
         return size;
-    }
-
-    @TruffleBoundary
-    public final boolean hasNext() {
-        return iterator.hasNext();
     }
 }

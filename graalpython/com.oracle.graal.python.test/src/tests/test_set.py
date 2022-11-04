@@ -640,3 +640,10 @@ def test_bin_ops_side_effects():
 #     assert key.hash_calls == 1
 #     assert key.eq_calls == 0
 #     assert val == key
+
+
+def test_set_iterator_reduce():
+    s = {1, 2, 3}
+    it = s.__iter__()
+    it.__reduce__()
+    assert [i for i in it] == [1, 2, 3]
