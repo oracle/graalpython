@@ -1,7 +1,16 @@
 diff --git a/pandas/_libs/algos.c b/pandas/_libs/algos.c
-index 54b2cee..cea933f 100644
+index 54b2cee..73b15b8 100644
 --- a/pandas/_libs/algos.c
 +++ b/pandas/_libs/algos.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -154107,9 +154107,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -39,9 +48,18 @@ index 54b2cee..cea933f 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/groupby.c b/pandas/_libs/groupby.c
-index 9540f8f..875e654 100644
+index 9540f8f..45c34dd 100644
 --- a/pandas/_libs/groupby.c
 +++ b/pandas/_libs/groupby.c
+@@ -165,7 +165,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -71932,9 +71932,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -79,9 +97,18 @@ index 9540f8f..875e654 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/hashing.c b/pandas/_libs/hashing.c
-index d6e7248..9b5e384 100644
+index d6e7248..1b7ea0e 100644
 --- a/pandas/_libs/hashing.c
 +++ b/pandas/_libs/hashing.c
+@@ -161,7 +161,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -20171,9 +20171,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -119,9 +146,18 @@ index d6e7248..9b5e384 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/hashtable.c b/pandas/_libs/hashtable.c
-index 294692f..3c29887 100644
+index 294692f..ea2056d 100644
 --- a/pandas/_libs/hashtable.c
 +++ b/pandas/_libs/hashtable.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -55456,9 +55456,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9hashtable_UInt64HashTable(PyObject
    {
      PyObject *etype, *eval, *etb;
@@ -267,9 +303,18 @@ index 294692f..3c29887 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/index.c b/pandas/_libs/index.c
-index 9f7748f..e286d6f 100644
+index 9f7748f..6a4d16c 100644
 --- a/pandas/_libs/index.c
 +++ b/pandas/_libs/index.c
+@@ -172,7 +172,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -55106,9 +55106,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -316,10 +361,32 @@ index 9f7748f..e286d6f 100644
        __pyx_wrapperbase_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
        __pyx_wrapperbase_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__.doc = __pyx_doc_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__;
        ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_5_libs_5index_25BaseMultiIndexCodesEngine___init__;
+diff --git a/pandas/_libs/indexing.c b/pandas/_libs/indexing.c
+index 7679bf3..ae1c3da 100644
+--- a/pandas/_libs/indexing.c
++++ b/pandas/_libs/indexing.c
+@@ -154,7 +154,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/internals.c b/pandas/_libs/internals.c
-index ccb340e..3720558 100644
+index ccb340e..3b494d5 100644
 --- a/pandas/_libs/internals.c
 +++ b/pandas/_libs/internals.c
+@@ -159,7 +159,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -630,6 +630,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "pythread.h"
  #include "numpy/arrayobject.h"
@@ -365,9 +432,18 @@ index ccb340e..3720558 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/interval.c b/pandas/_libs/interval.c
-index d396c56..53a2c18 100644
+index d396c56..835990e 100644
 --- a/pandas/_libs/interval.c
 +++ b/pandas/_libs/interval.c
+@@ -165,7 +165,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -169345,9 +169345,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -415,9 +491,18 @@ index d396c56..53a2c18 100644
        __pyx_wrapperbase_6pandas_5_libs_8interval_12IntervalTree___init__.doc = __pyx_doc_6pandas_5_libs_8interval_12IntervalTree___init__;
        ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_5_libs_8interval_12IntervalTree___init__;
 diff --git a/pandas/_libs/join.c b/pandas/_libs/join.c
-index 7f40c2c..1dd2b84 100644
+index 7f40c2c..afac99a 100644
 --- a/pandas/_libs/join.c
 +++ b/pandas/_libs/join.c
+@@ -159,7 +159,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -630,6 +630,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "numpy/arrayobject.h"
  #include "numpy/ufuncobject.h"
@@ -463,9 +548,18 @@ index 7f40c2c..1dd2b84 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/lib.c b/pandas/_libs/lib.c
-index 262f970..c6cedfc 100644
+index 262f970..bcb03e7 100644
 --- a/pandas/_libs/lib.c
 +++ b/pandas/_libs/lib.c
+@@ -173,7 +173,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -50592,9 +50592,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -502,10 +596,32 @@ index 262f970..c6cedfc 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/missing.c b/pandas/_libs/missing.c
+index 4fd71c0..2dfdb43 100644
+--- a/pandas/_libs/missing.c
++++ b/pandas/_libs/missing.c
+@@ -169,7 +169,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/ops.c b/pandas/_libs/ops.c
-index 83fe3e9..8489486 100644
+index 83fe3e9..fe841e9 100644
 --- a/pandas/_libs/ops.c
 +++ b/pandas/_libs/ops.c
+@@ -163,7 +163,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -22576,9 +22576,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -543,9 +659,18 @@ index 83fe3e9..8489486 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/parsers.c b/pandas/_libs/parsers.c
-index 49d1856..75288ab 100644
+index 49d1856..dee8799 100644
 --- a/pandas/_libs/parsers.c
 +++ b/pandas/_libs/parsers.c
+@@ -169,7 +169,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -45694,9 +45694,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_7parsers_TextReader(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -594,10 +719,32 @@ index 49d1856..75288ab 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/properties.c b/pandas/_libs/properties.c
+index a982c7b..980e91f 100644
+--- a/pandas/_libs/properties.c
++++ b/pandas/_libs/properties.c
+@@ -153,7 +153,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/reduction.c b/pandas/_libs/reduction.c
-index c6cd9cb..4430369 100644
+index c6cd9cb..19c3501 100644
 --- a/pandas/_libs/reduction.c
 +++ b/pandas/_libs/reduction.c
+@@ -163,7 +163,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -35714,9 +35714,9 @@ static void __pyx_tp_dealloc_6pandas_5_libs_9reduction_BlockSlider(PyObject *o)
    {
      PyObject *etype, *eval, *etb;
@@ -647,9 +794,18 @@ index c6cd9cb..4430369 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/reshape.c b/pandas/_libs/reshape.c
-index 779ff94..82b1d3b 100644
+index 779ff94..1b88b4d 100644
 --- a/pandas/_libs/reshape.c
 +++ b/pandas/_libs/reshape.c
+@@ -158,7 +158,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -629,6 +629,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "numpy/arrayobject.h"
  #include "numpy/ufuncobject.h"
@@ -694,10 +850,32 @@ index 779ff94..82b1d3b 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/skiplist.c b/pandas/_libs/skiplist.c
+index 7b5d16c..c52f68c 100644
+--- a/pandas/_libs/skiplist.c
++++ b/pandas/_libs/skiplist.c
+@@ -158,7 +158,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/sparse.c b/pandas/_libs/sparse.c
-index b488af5..cd81a97 100644
+index b488af5..1886deb 100644
 --- a/pandas/_libs/sparse.c
 +++ b/pandas/_libs/sparse.c
+@@ -159,7 +159,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -630,6 +630,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "numpy/arrayobject.h"
  #include "numpy/ufuncobject.h"
@@ -742,10 +920,32 @@ index b488af5..cd81a97 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/testing.c b/pandas/_libs/testing.c
+index b64448d..610b562 100644
+--- a/pandas/_libs/testing.c
++++ b/pandas/_libs/testing.c
+@@ -154,7 +154,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/tslib.c b/pandas/_libs/tslib.c
-index 333bad8..779df3e 100644
+index 333bad8..72ab9af 100644
 --- a/pandas/_libs/tslib.c
 +++ b/pandas/_libs/tslib.c
+@@ -169,7 +169,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -29775,9 +29775,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -783,9 +983,18 @@ index 333bad8..779df3e 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/c_timestamp.c b/pandas/_libs/tslibs/c_timestamp.c
-index f87f89f..c23322d 100644
+index f87f89f..fb0f744 100644
 --- a/pandas/_libs/tslibs/c_timestamp.c
 +++ b/pandas/_libs/tslibs/c_timestamp.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -26287,9 +26287,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -822,10 +1031,32 @@ index f87f89f..c23322d 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/ccalendar.c b/pandas/_libs/tslibs/ccalendar.c
+index 8bb3683..6faa79c 100644
+--- a/pandas/_libs/tslibs/ccalendar.c
++++ b/pandas/_libs/tslibs/ccalendar.c
+@@ -156,7 +156,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/tslibs/conversion.c b/pandas/_libs/tslibs/conversion.c
-index c579f51..e94e52f 100644
+index c579f51..3eae40a 100644
 --- a/pandas/_libs/tslibs/conversion.c
 +++ b/pandas/_libs/tslibs/conversion.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -27461,9 +27461,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -863,9 +1094,18 @@ index c579f51..e94e52f 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/fields.c b/pandas/_libs/tslibs/fields.c
-index aa94723..2885313 100644
+index aa94723..769ad60 100644
 --- a/pandas/_libs/tslibs/fields.c
 +++ b/pandas/_libs/tslibs/fields.c
+@@ -166,7 +166,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -641,6 +641,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "numpy/ndarraytypes.h"
  #include "numpy/arrayscalars.h"
@@ -910,10 +1150,58 @@ index aa94723..2885313 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/frequencies.c b/pandas/_libs/tslibs/frequencies.c
+index affe355..eb212fb 100644
+--- a/pandas/_libs/tslibs/frequencies.c
++++ b/pandas/_libs/tslibs/frequencies.c
+@@ -158,7 +158,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
+diff --git a/pandas/_libs/tslibs/nattype.c b/pandas/_libs/tslibs/nattype.c
+index dd793f0..a460fd3 100644
+--- a/pandas/_libs/tslibs/nattype.c
++++ b/pandas/_libs/tslibs/nattype.c
+@@ -162,7 +162,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
+diff --git a/pandas/_libs/tslibs/np_datetime.c b/pandas/_libs/tslibs/np_datetime.c
+index 750e401..fe17715 100644
+--- a/pandas/_libs/tslibs/np_datetime.c
++++ b/pandas/_libs/tslibs/np_datetime.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/tslibs/offsets.c b/pandas/_libs/tslibs/offsets.c
-index e02487f..e566def 100644
+index e02487f..8edb900 100644
 --- a/pandas/_libs/tslibs/offsets.c
 +++ b/pandas/_libs/tslibs/offsets.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -34102,9 +34102,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -951,9 +1239,18 @@ index e02487f..e566def 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/parsing.c b/pandas/_libs/tslibs/parsing.c
-index a8cd8d9..5d0f422 100644
+index a8cd8d9..2be457f 100644
 --- a/pandas/_libs/tslibs/parsing.c
 +++ b/pandas/_libs/tslibs/parsing.c
+@@ -164,7 +164,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -33784,9 +33784,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -991,9 +1288,18 @@ index a8cd8d9..5d0f422 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/period.c b/pandas/_libs/tslibs/period.c
-index 20b1e3d..0f82477 100644
+index 20b1e3d..2b68f3f 100644
 --- a/pandas/_libs/tslibs/period.c
 +++ b/pandas/_libs/tslibs/period.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -42016,9 +42016,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -1041,9 +1347,18 @@ index 20b1e3d..0f82477 100644
        __pyx_wrapperbase_6pandas_5_libs_6tslibs_6period_7_Period_24__str__.doc = __pyx_doc_6pandas_5_libs_6tslibs_6period_7_Period_24__str__;
        ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_6pandas_5_libs_6tslibs_6period_7_Period_24__str__;
 diff --git a/pandas/_libs/tslibs/resolution.c b/pandas/_libs/tslibs/resolution.c
-index a63c202..9fb9b87 100644
+index a63c202..729e485 100644
 --- a/pandas/_libs/tslibs/resolution.c
 +++ b/pandas/_libs/tslibs/resolution.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -23527,9 +23527,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -1081,9 +1396,18 @@ index a63c202..9fb9b87 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/strptime.c b/pandas/_libs/tslibs/strptime.c
-index 211a8e4..46c6e39 100644
+index 211a8e4..61c1575 100644
 --- a/pandas/_libs/tslibs/strptime.c
 +++ b/pandas/_libs/tslibs/strptime.c
+@@ -166,7 +166,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -641,6 +641,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "numpy/ndarraytypes.h"
  #include "numpy/arrayscalars.h"
@@ -1129,9 +1453,18 @@ index 211a8e4..46c6e39 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/timedeltas.c b/pandas/_libs/tslibs/timedeltas.c
-index 557f23b..2ac41e1 100644
+index 557f23b..0bf88f5 100644
 --- a/pandas/_libs/tslibs/timedeltas.c
 +++ b/pandas/_libs/tslibs/timedeltas.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -39931,9 +39931,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -1168,10 +1501,32 @@ index 557f23b..2ac41e1 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->from_object);
+diff --git a/pandas/_libs/tslibs/timestamps.c b/pandas/_libs/tslibs/timestamps.c
+index 47b5484..c1d8f6b 100644
+--- a/pandas/_libs/tslibs/timestamps.c
++++ b/pandas/_libs/tslibs/timestamps.c
+@@ -167,7 +167,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 diff --git a/pandas/_libs/tslibs/timezones.c b/pandas/_libs/tslibs/timezones.c
-index 072b14a..cd3e6c8 100644
+index 072b14a..3d2e046 100644
 --- a/pandas/_libs/tslibs/timezones.c
 +++ b/pandas/_libs/tslibs/timezones.c
+@@ -158,7 +158,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -22493,9 +22493,9 @@ static void __pyx_tp_dealloc_array(PyObject *o) {
    {
      PyObject *etype, *eval, *etb;
@@ -1209,9 +1564,18 @@ index 072b14a..cd3e6c8 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/tslibs/tzconversion.c b/pandas/_libs/tslibs/tzconversion.c
-index d6fcfeb..f2bbddd 100644
+index d6fcfeb..e41d963 100644
 --- a/pandas/_libs/tslibs/tzconversion.c
 +++ b/pandas/_libs/tslibs/tzconversion.c
+@@ -166,7 +166,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -641,6 +641,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "numpy/ndarraytypes.h"
  #include "numpy/arrayscalars.h"
@@ -1297,9 +1661,18 @@ index d527af6..10cf643 100644
    }
    Py_CLEAR(p->from_object);
 diff --git a/pandas/_libs/writers.c b/pandas/_libs/writers.c
-index 9cbdce1..699ed7c 100644
+index 9cbdce1..57bf307 100644
 --- a/pandas/_libs/writers.c
 +++ b/pandas/_libs/writers.c
+@@ -158,7 +158,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -629,6 +629,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include "pythread.h"
  #include "numpy/arrayobject.h"
@@ -1403,9 +1776,18 @@ index d6c871c..0528a1d 100644
    }
    Py_CLEAR(p->file_like);
 diff --git a/pandas/io/sas/sas.c b/pandas/io/sas/sas.c
-index 03efa58..17dd919 100644
+index 03efa58..59cfec1 100644
 --- a/pandas/io/sas/sas.c
 +++ b/pandas/io/sas/sas.c
+@@ -154,7 +154,7 @@ END: Cython Metadata */
+ #else
+   #define CYTHON_COMPILING_IN_PYPY 0
+   #define CYTHON_COMPILING_IN_PYSTON 0
+-  #define CYTHON_COMPILING_IN_CPYTHON 1
++  #define CYTHON_COMPILING_IN_CPYTHON 0
+   #ifndef CYTHON_USE_TYPE_SLOTS
+     #define CYTHON_USE_TYPE_SLOTS 1
+   #endif
 @@ -625,6 +625,7 @@ static CYTHON_INLINE float __PYX_NAN() {
  #include <stdlib.h>
  #include <stdio.h>
