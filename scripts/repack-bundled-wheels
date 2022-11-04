@@ -1,0 +1,26 @@
+#!/bin/bash
+set -eo pipefail
+
+GIT_DIR="$(realpath "$(dirname "$0")/..")"
+BUNDLED_DIR="graalpython/lib-python/3/ensurepip/_bundled"
+
+patch_wheel() {
+    cd "$GIT_DIR"
+    local name="$1"
+    local patch="$2"
+    local wheel="$(echo $BUNDLED_DIR/$name-*.whl)"
+    test -f "$patch"
+    test -f "$wheel"
+    local tmpdir="$(basename -s '.whl' "$wheel")"
+    rm -rf "$tmpdir"
+    mkdir "$tmpdir"
+    git show "python-import:$wheel" > tmp.whl
+    cd "$tmpdir"
+    unzip ../tmp.whl
+    rm ../tmp.whl
+    patch -p1 < "../$patch"
+    zip -r "../$wheel" .
+    rm -rf "$tmpdir"
+}
+
+patch_wheel setuptools graalpython/lib-graalpython/patches/setuptools/whl/setuptools-63.patch
