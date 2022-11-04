@@ -87,7 +87,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                     @Cached PRaiseNode raise) {
 
         if (!isTypeNode.execute(type)) {
-            raise.raise(TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
+            throw raise.raise(TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
         }
 
         if (!isInstanceNode.executeWith(frame, subject, type)) {
@@ -105,7 +105,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
             try {
                 matchArgs = getAttr.execute(frame, type, T___MATCH_ARGS);
                 if (!tupleCheckExactNode.execute(matchArgs)) {
-                    raise.raise(TypeError, ErrorMessages.P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P, type, matchArgs);
+                    throw raise.raise(TypeError, ErrorMessages.P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P, type, matchArgs);
                 }
             } catch (PException e) {
                 // _Py_TPFLAGS_MATCH_SELF is only acknowledged if the type does not
@@ -118,7 +118,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
             }
             int allowed = matchSelf ? 1 : tupleSizeNode.execute(matchArgs);
             if (allowed < nargs) {
-                raise.raise(TypeError, ErrorMessages.P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN, type, allowed, (allowed == 1) ? "" : "s", nargs);
+                throw raise.raise(TypeError, ErrorMessages.P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN, type, allowed, (allowed == 1) ? "" : "s", nargs);
             }
             if (matchSelf) {
                 // Easy. Copy the subject itself, and move on to kwargs.
@@ -143,7 +143,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
         for (int i = 0; i < nargs; i++) {
             Object name = getItemNode.execute(frame, matchArgs, i);
             if (!unicodeCheckNode.execute(name)) {
-                raise.raise(TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
+                throw raise.raise(TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
             }
             setName(frame, type, name, seen, seenLength, eqStrNode, raise);
             attrs[attrsLength[0]++] = getAttr.execute(frame, subject, name);
@@ -164,7 +164,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
 
     private void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
         if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
-            raise.raise(TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
+            throw raise.raise(TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
         seen[seenLength[0]++] = name;
     }
