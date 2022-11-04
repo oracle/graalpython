@@ -54,14 +54,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.For
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -137,55 +135,6 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     protected static List<Object> keyList(Shape shape) {
         return shape.getKeyList();
-    }
-
-    @ExportMessage
-    static class Length {
-
-        @Specialization(guards = {"cachedShape == self.store.getShape()", "keys.length < EXPLODE_LOOP_SIZE_LIMIT"}, limit = "2")
-        @ExplodeLoop
-        static int cachedLen(DynamicObjectStorage self,
-                        @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            int len = 0;
-            for (Object key : keys) {
-                len = incrementLen(self, readNode, len, key);
-            }
-            return len;
-        }
-
-        @Specialization(replaces = "cachedLen", guards = {"cachedShape == self.store.getShape()"}, limit = "3")
-        static int cachedKeys(DynamicObjectStorage self,
-                        @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            int len = 0;
-            for (Object key : keys) {
-                len = incrementLen(self, readNode, len, key);
-            }
-            return len;
-        }
-
-        @Specialization(replaces = "cachedKeys")
-        static int length(DynamicObjectStorage self,
-                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            return cachedKeys(self, self.store.getShape(), keyArray(self), readNode);
-        }
-
-        private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromDynamicObjectNode readNode) {
-            return readNode.execute(self.store, key) != PNone.NO_VALUE;
-        }
-
-        private static int incrementLen(DynamicObjectStorage self, ReadAttributeFromDynamicObjectNode readNode, int len, Object key) {
-            key = assertNoJavaString(key);
-            if (key instanceof TruffleString) {
-                if (hasStringKey(self, (TruffleString) key, readNode)) {
-                    return len + 1;
-                }
-            }
-            return len;
-        }
     }
 
     @GenerateUncached
@@ -350,28 +299,6 @@ public final class DynamicObjectStorage extends HashingStorage {
         boolean notDunderDict = store instanceof Store;
         int propertyCount = store.getShape().getPropertyCount();
         return notDunderDict && propertyCount > SIZE_THRESHOLD;
-    }
-
-    @ExportMessage
-    public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary("this") HashingStorageLibrary lib,
-                    @Cached BranchProfile hasMro,
-                    @Cached WriteAttributeToDynamicObjectNode writeNode,
-                    @Cached ConditionProfile gotState) {
-        // __hash__ call is done through hasKey, if necessary
-        boolean hasKey;
-        if (gotState.profile(state != null)) {
-            hasKey = lib.hasKeyWithState(this, key, state);
-        } else {
-            hasKey = lib.hasKey(this, key);
-        }
-        if (hasKey) {
-            // if we're here, key is either a TruffleString or a built-in PString
-            TruffleString strKey = key instanceof TruffleString ? (TruffleString) key : isJavaString(key) ? toTruffleStringUncached((String) key) : ((PString) key).getValueUncached();
-            writeNode.execute(store, strKey, PNone.NO_VALUE);
-            invalidateAttributeInMROFinalAssumptions(mro, strKey, hasMro);
-        }
-        return this;
     }
 
     @ExportMessage

@@ -65,55 +65,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * calls to __hash__ and __eq__
  */
 
-/**
- * A library to interact with our different storage strategies for dictionaries and sets.
- * Generalizations are encoded inside the implementations of the messages - each mutating message
- * potentially returns a new store.
- *
- * A few words of caution are in order.
- *
- * Python always calls {@code __hash__} on keys when they are set or retrieved. Thus, all strategies
- * implementing this library must ensure to call it on the {@code key} argument to the methods
- * {@link #hasKey}, {@link #getItem}, and {@link #setItem}. However, they <i>must not</i> call
- * {@code __hash__} repeatedly on keys that are already inserted, e.g. when comparing them to an
- * argument. Thus, storages must ensure to cache the hash value if a call could be observed.
- */
 @GenerateLibrary
 public abstract class HashingStorageLibrary extends Library {
-
-    /**
-     * @return the length of {@code self}
-     */
-    public abstract int length(HashingStorage self);
-
-    /**
-     * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
-     * with Python semantics.
-     *
-     * @return {@code true} if the object is contained in the store, {@code
-     * false} otherwise.
-     */
-    public boolean hasKeyWithState(HashingStorage self, Object key, ThreadState state) {
-        return getItemWithState(self, key, state) != null;
-    }
-
-    /**
-     * @see #hasKeyWithState(HashingStorage, Object, ThreadState)
-     */
-    public boolean hasKey(HashingStorage self, Object key) {
-        return getItem(self, key) != null;
-    }
-
-    /**
-     * @see #hasKeyWithState(HashingStorage, Object, ThreadState)
-     */
-    public final boolean hasKeyWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return hasKeyWithState(self, key, PArguments.getThreadState(frame));
-        } else {
-            return hasKey(self, key);
-        }
-    }
 
     @Child HashingStorageGetItem getItem;
 
@@ -188,33 +141,6 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
-     * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
-     * with Python semantics.
-     *
-     * @param key : the key to store under
-     * @return the new store to use from now on, {@code self} has become invalid.
-     */
-    public HashingStorage delItemWithState(HashingStorage self, Object key, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.delItem");
-        }
-        return delItem(self, key);
-    }
-
-    public HashingStorage delItem(HashingStorage self, Object key) {
-        return delItemWithState(self, key, null);
-    }
-
-    public final HashingStorage delItemWithFrame(HashingStorage self, Object key, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return delItemWithState(self, key, PArguments.getThreadState(frame));
-        } else {
-            return delItem(self, key);
-        }
-    }
-
-    /**
      * A node to be called in a loop with different keys to operate on {@code
      * store}. It's execute method returns the new store to use for the next iteration.
      */
@@ -279,68 +205,10 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
-     * @return the intersection of the two storages, keeping the values from {@code other}.
-     */
-    public HashingStorage intersectWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.intersectWithState");
-        }
-        return intersect(self, other);
-    }
-
-    /**
-     * @see #intersectWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public HashingStorage intersect(HashingStorage self, HashingStorage other) {
-        return intersectWithState(self, other, null);
-    }
-
-    /**
-     * @see #intersectWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public final HashingStorage intersectWithFrame(HashingStorage self, HashingStorage other, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return intersectWithState(self, other, PArguments.getThreadState(frame));
-        } else {
-            return intersect(self, other);
-        }
-    }
-
-    /**
      * @return the union of the two storages, by keys, keeping the values from {@code other} in case
      *         of conflicts.
      */
     public abstract HashingStorage union(HashingStorage self, HashingStorage other);
-
-    /**
-     * @return the a storage with all keys of {@code self} that are not also in {@code other}
-     */
-    public HashingStorage diffWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.diffWithState");
-        }
-        return diff(self, other);
-    }
-
-    /**
-     * @see #diffWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public HashingStorage diff(HashingStorage self, HashingStorage other) {
-        return diffWithState(self, other, null);
-    }
-
-    /**
-     * @see #getItemWithState(HashingStorage, Object, ThreadState)
-     */
-    public final HashingStorage diffWithFrame(HashingStorage self, HashingStorage other, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return diffWithState(self, other, PArguments.getThreadState(frame));
-        } else {
-            return diff(self, other);
-        }
-    }
 
     /**
      * An iterable that does not need to be guarded separately with TruffleBoundary.

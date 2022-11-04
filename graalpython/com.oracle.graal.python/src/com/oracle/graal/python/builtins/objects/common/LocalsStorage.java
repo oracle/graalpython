@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -72,12 +71,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
@@ -113,8 +110,6 @@ public final class LocalsStorage extends HashingStorage {
         return null;
     }
 
-    @ExportMessage
-    @Override
     public int length() {
         if (this.len == -1) {
             CompilerDirectives.transferToInterpreter();
@@ -201,18 +196,6 @@ public final class LocalsStorage extends HashingStorage {
                 }
             }
             return -1;
-        }
-    }
-
-    @ExportMessage
-    HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached ConditionProfile gotState) {
-        HashingStorage result = generalize(lib, true, length() - 1);
-        if (gotState.profile(state != null)) {
-            return lib.delItemWithState(result, key, state);
-        } else {
-            return lib.delItem(result, key);
         }
     }
 

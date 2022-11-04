@@ -52,8 +52,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Speci
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -67,7 +65,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LoopNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -108,8 +105,6 @@ public class EconomicMapStorage extends HashingStorage {
         return result;
     }
 
-    @ExportMessage
-    @Override
     public int length() {
         return map.size();
     }
@@ -196,130 +191,12 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
-    @ExportMessage
-    HashingStorage delItemWithState(Object key, ThreadState state,
-                    @Cached ObjectHashMap.RemoveNode removeNode,
-                    @Cached PyObjectHashNode hashNode,
-                    @Cached ConditionProfile gotState) {
-        VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-        removeNode.remove(frame, map, key, hashNode.execute(frame, key));
-        return this;
-    }
-
     void clear() {
         map.clear();
     }
 
     public HashingStorage copy() {
         return new EconomicMapStorage(this.map);
-    }
-
-    @ExportMessage
-    public static class IntersectWithState {
-        @Specialization
-        static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("setSideEffect") @Cached BranchProfile setSideEffectFlag) {
-            EconomicMapStorage result = EconomicMapStorage.create();
-            ObjectHashMap resultMap = result.map;
-            ObjectHashMap otherMap = other.map;
-            if (self.map.hasSideEffect() || otherMap.hasSideEffect()) {
-                setSideEffectFlag.enter();
-                resultMap.setSideEffectingKeysFlag();
-            }
-            MapCursor cursor = self.map.getEntries();
-            // get/put may throw, but we ignore that small inaccuracy
-            final int size = self.map.size();
-            loopProfile.profileCounted(size);
-            LoopNode.reportLoopCount(thisLib, size);
-            VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-            while (loopProfile.inject(advance(cursor))) {
-                if (getNode.get(frame, otherMap, getDictKey(cursor)) != null) {
-                    putNode.put(frame, resultMap, getDictKey(cursor), getValue(cursor));
-                }
-            }
-            return result;
-        }
-
-        @Specialization
-        static HashingStorage intersectGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
-            EconomicMapStorage result = EconomicMapStorage.create();
-            ObjectHashMap resultMap = result.map;
-            resultMap.setSideEffectingKeysFlag();
-            MapCursor cursor = self.map.getEntries();
-            // get/put may throw, but we ignore that small inaccuracy
-            final int size = self.map.size();
-            loopProfile.profileCounted(size);
-            LoopNode.reportLoopCount(thisLib, size);
-            VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-            while (loopProfile.inject(advance(cursor))) {
-                if (hlib.hasKey(other, getKey(cursor))) {
-                    putNode.put(frame, resultMap, getDictKey(cursor), getValue(cursor));
-                }
-            }
-            return result;
-        }
-    }
-
-    @ExportMessage
-    public static class DiffWithState {
-        @Specialization
-        static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("setSideEffect") @Cached BranchProfile setSideEffectFlag) {
-            EconomicMapStorage result = EconomicMapStorage.create();
-            ObjectHashMap resultMap = result.map;
-            ObjectHashMap otherMap = other.map;
-            if (self.map.hasSideEffect() || otherMap.hasSideEffect()) {
-                setSideEffectFlag.enter();
-                resultMap.setSideEffectingKeysFlag();
-            }
-            MapCursor cursor = self.map.getEntries();
-            // get/put may throw, but we ignore that small inaccuracy
-            final int size = self.map.size();
-            loopProfile.profileCounted(size);
-            LoopNode.reportLoopCount(thisLib, size);
-            VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-            while (loopProfile.inject(advance(cursor))) {
-                if (getNode.get(frame, otherMap, getDictKey(cursor)) == null) {
-                    putNode.put(frame, resultMap, getDictKey(cursor), getValue(cursor));
-                }
-            }
-            return result;
-        }
-
-        @Specialization
-        static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("putNode") @Cached ObjectHashMap.PutNode putNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
-            EconomicMapStorage result = EconomicMapStorage.create();
-            ObjectHashMap resultMap = result.map;
-            resultMap.setSideEffectingKeysFlag();
-            MapCursor cursor = self.map.getEntries();
-            // get/put may throw, but we ignore that small inaccuracy
-            final int size = self.map.size();
-            loopProfile.profileCounted(size);
-            LoopNode.reportLoopCount(thisLib, size);
-            VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-            while (loopProfile.profile(advance(cursor))) {
-                if (!hlib.hasKey(other, getKey(cursor))) {
-                    putNode.put(frame, resultMap, getDictKey(cursor), getValue(cursor));
-                }
-            }
-            return result;
-        }
     }
 
     @ExportMessage

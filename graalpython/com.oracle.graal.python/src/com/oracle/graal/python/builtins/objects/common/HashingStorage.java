@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -247,19 +246,6 @@ public abstract class HashingStorage {
         }
     }
 
-    @ExportMessage
-    int length() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.length");
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
-    HashingStorage delItemWithState(Object key, ThreadState state) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.delItemWithState");
-    }
-
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     Object forEachUntyped(ForEachNode<Object> node, Object arg) {
@@ -300,18 +286,6 @@ public abstract class HashingStorage {
         return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
     }
 
-    @GenerateUncached
-    protected abstract static class HasKeyNodeForSubsetKeys extends InjectIntoNode {
-        @Specialization
-        HashingStorage[] doit(HashingStorage[] other, Object key,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            if (!lib.hasKey(other[0], key)) {
-                throw AbortIteration.INSTANCE;
-            }
-            return other;
-        }
-    }
-
     private static final class AbortIteration extends ControlFlowException {
         private static final long serialVersionUID = 1L;
         private static final AbortIteration INSTANCE = new AbortIteration();
@@ -344,73 +318,12 @@ public abstract class HashingStorage {
         }
     }
 
-    @GenerateUncached
-    protected abstract static class IntersectInjectionNode extends InjectIntoNode {
-        @Specialization
-        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
-                        @Cached HashingStorageGetItem getItem,
-                        @Cached HashingStorageSetItem setItem) {
-            HashingStorage other = accumulator[0];
-            HashingStorage output = accumulator[1];
-            // TODO: channel the frame through the InjectIntoNode node
-            Object value = getItem.execute(null, other, key);
-            if (value != null) {
-                output = setItem.execute(null, output, key, value);
-            }
-            if (CompilerDirectives.inInterpreter() && output == accumulator[1]) {
-                // Avoid the allocation in interpreter if possible
-                return accumulator;
-            } else {
-                return new HashingStorage[]{other, output};
-            }
-        }
-    }
-
-    @ExportMessage
-    public HashingStorage intersect(HashingStorage other,
-                    @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Cached IntersectInjectionNode injectNode) {
-        HashingStorage newStore = EmptyStorage.INSTANCE;
-        return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
-    }
-
-    @GenerateUncached
-    protected abstract static class DiffInjectNode extends InjectIntoNode {
-        @Specialization
-        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
-                        @Cached HashingStorageGetItem getItemSelf,
-                        @Cached HashingStorageGetItem getItemOutput,
-                        @Cached HashingStorageSetItem setItemOutput) {
-            HashingStorage self = accumulator[0];
-            HashingStorage other = accumulator[1];
-            HashingStorage output = accumulator[2];
-            if (!getItemOutput.hasKey(null, other, key)) {
-                // TODO: channel the frame through the InjectIntoNode node
-                output = setItemOutput.execute(null, output, key, getItemSelf.execute(null, self, key));
-            }
-            if (CompilerDirectives.inInterpreter() && output == accumulator[2]) {
-                // Avoid the allocation in interpreter if possible
-                return accumulator;
-            } else {
-                return new HashingStorage[]{self, other, output};
-            }
-        }
-    }
-
     @ExportMessage
     public HashingStorage union(HashingStorage other,
                     @Cached HashingStorageCopy copyNode,
                     @Cached HashingStorageAddAllToOther addAllToOther) {
         HashingStorage newStore = copyNode.execute(this);
         return addAllToOther.execute(null, other, newStore);
-    }
-
-    @ExportMessage
-    public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Cached DiffInjectNode diffNode) {
-        HashingStorage newStore = EmptyStorage.INSTANCE;
-        return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
     }
 
     @ExportMessage

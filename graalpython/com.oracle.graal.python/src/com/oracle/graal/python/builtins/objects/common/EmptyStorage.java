@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -66,17 +65,11 @@ public class EmptyStorage extends HashingStorage {
     private EmptyStorage() {
     }
 
-    @Override
-    @ExportMessage
-    public int length() {
-        return 0;
-    }
-
     @ExportMessage
     public Object getItemWithState(Object key, ThreadState state,
-                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+                    @Cached PyObjectHashNode hashNode,
+                    @Cached ConditionProfile gotState,
+                    @Cached ConditionProfile notString) {
         key = assertNoJavaString(key);
         if (notString.profile(!(key instanceof TruffleString))) {
             // must call __hash__ for potential side-effect
@@ -84,20 +77,6 @@ public class EmptyStorage extends HashingStorage {
             hashNode.execute(frame, key);
         }
         return null;
-    }
-
-    @ExportMessage
-    public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
-        key = assertNoJavaString(key);
-        if (notString.profile(!(key instanceof TruffleString))) {
-            // must call __hash__ for potential side-effect
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            hashNode.execute(frame, key);
-        }
-        return this;
     }
 
     @Override

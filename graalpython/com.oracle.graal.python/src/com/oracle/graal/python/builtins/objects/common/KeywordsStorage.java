@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -65,13 +64,11 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(HashingStorageLibrary.class)
@@ -87,8 +84,6 @@ public class KeywordsStorage extends HashingStorage {
         return keywords;
     }
 
-    @Override
-    @ExportMessage
     public int length() {
         return keywords.length;
     }
@@ -114,39 +109,6 @@ public class KeywordsStorage extends HashingStorage {
             }
         }
         return -1;
-    }
-
-    @SuppressWarnings("unused")
-    @ExportMessage
-    @ImportStatic(PGuards.class)
-    static class HasKeyWithState {
-        @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static boolean cached(KeywordsStorage self, TruffleString key, ThreadState state,
-                        @Exclusive @Cached("self.length()") int cachedLen,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return self.findCachedStringKey(key, cachedLen, equalNode) != -1;
-        }
-
-        @Specialization(replaces = "cached")
-        static boolean string(KeywordsStorage self, TruffleString key, ThreadState state,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return self.findStringKey(key, equalNode) != -1;
-        }
-
-        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return string(self, castToTruffleStringNode.execute(key), state, equalNode);
-        }
-
-        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static boolean notString(KeywordsStorage self, Object key, ThreadState state,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary("self") HashingStorageLibrary lib) {
-            return lib.getItemWithState(self, key, state) != null;
-        }
     }
 
     @ImportStatic(PGuards.class)
@@ -195,18 +157,6 @@ public class KeywordsStorage extends HashingStorage {
                 }
             }
             return null;
-        }
-    }
-
-    @ExportMessage
-    public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, true, length() - 1);
-        if (gotState.profile(state != null)) {
-            return lib.delItemWithState(newStore, key, state);
-        } else {
-            return lib.delItem(newStore, key);
         }
     }
 
