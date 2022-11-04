@@ -163,7 +163,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
 
     private void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
         if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
-            raise.raise(TypeError, ErrorMessages.P_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
+            raise.raise(TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
         seen[seenLength[0]++] = name;
     }
