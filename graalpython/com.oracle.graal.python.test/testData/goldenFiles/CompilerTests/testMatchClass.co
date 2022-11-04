@@ -3,14 +3,15 @@ Disassembly of <module>:
   2:7   -   2:10        2 LOAD_NAME                         0    (int)
   2:2   -   3:10        4 LOAD_CONST                        0    ([])
   2:2   -   3:10        6 MATCH_CLASS                       1
-  2:2   -   3:10        8 POP_AND_JUMP_IF_FALSE             15   (to 23)
+  2:2   -   3:10        8 POP_AND_JUMP_IF_FALSE             16   (to 24)
   2:2   -   3:10       12 DUP_TOP
   2:2   -   3:10       13 LOAD_BYTE_O                       0
   2:2   -   3:10       15 BINARY_SUBSCR
   2:2   -   3:10       16 ROT_N                             2
   2:2   -   3:10       18 POP_TOP
   2:2   -   3:10       19 STORE_NAME                        1    (x)
-  3:6   -   3:10       21 JUMP_FORWARD                      3    (to 24)
-  2:2   -   3:10  >>   23 POP_TOP
-  2:2   -   3:10  >>   24 LOAD_NONE
-  2:2   -   3:10       25 RETURN_VALUE
+  3:6   -   3:10       21 NOP
+  3:6   -   3:10       22 JUMP_FORWARD                      3    (to 25)
+  2:2   -   3:10  >>   24 POP_TOP
+  2:2   -   3:10  >>   25 LOAD_NONE
+  2:2   -   3:10       26 RETURN_VALUE

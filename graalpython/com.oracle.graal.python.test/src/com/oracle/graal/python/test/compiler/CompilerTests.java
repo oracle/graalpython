@@ -962,7 +962,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchClass() {
         String source = "" +
                         "match 1:\n" +
