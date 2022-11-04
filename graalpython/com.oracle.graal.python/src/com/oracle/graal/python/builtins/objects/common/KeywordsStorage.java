@@ -285,12 +285,6 @@ public class KeywordsStorage extends HashingStorage {
         return new HashingStorageIterable<>(new KeysIterator(this));
     }
 
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new ReverseKeysIterator(this));
-    }
-
     private abstract static class AbstractKeysIterator implements Iterator<Object> {
         protected final KeywordsStorage storage;
         protected int index;

@@ -123,11 +123,4 @@ public class EmptyStorage extends HashingStorage {
     public HashingStorageIterable<Object> keys() {
         return new HashingStorageIterable<>(KEYS_ITERATOR);
     }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(KEYS_ITERATOR);
-    }
-
 }

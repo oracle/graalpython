@@ -292,12 +292,6 @@ public final class LocalsStorage extends HashingStorage {
         return new HashingStorageIterable<>(new LocalsIterator(this.frame));
     }
 
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new ReverseLocalsIterator(this.frame));
-    }
-
     protected abstract static class AbstractLocalsIterator implements Iterator<Object> {
         protected final MaterializedFrame frame;
         protected final int size;

@@ -274,12 +274,6 @@ public abstract class HashingStorage {
         throw new AbstractMethodError("HashingStorage.keys");
     }
 
-    @ExportMessage
-    public HashingStorageIterable<Object> reverseKeys() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.reverseKeys");
-    }
-
     @GenerateUncached
     protected abstract static class AddToOtherInjectNode extends InjectIntoNode {
         @Specialization
@@ -306,18 +300,6 @@ public abstract class HashingStorage {
         return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
     }
 
-    @ExportMessage
-    public boolean equalsWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-        if (this == other) {
-            return true;
-        }
-        if (lib.length(this) == lib.length(other)) {
-            return lib.compareEntries(this, other) == 0;
-        }
-        return false;
-    }
-
     @GenerateUncached
     protected abstract static class HasKeyNodeForSubsetKeys extends InjectIntoNode {
         @Specialization
@@ -333,30 +315,6 @@ public abstract class HashingStorage {
     private static final class AbortIteration extends ControlFlowException {
         private static final long serialVersionUID = 1L;
         private static final AbortIteration INSTANCE = new AbortIteration();
-    }
-
-    @ExportMessage
-    public int compareKeys(HashingStorage other,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached HasKeyNodeForSubsetKeys hasKeyNode) {
-        if (this == other) {
-            return 0;
-        }
-        int otherLen = lib.length(other);
-        int selfLen = lib.length(this);
-        if (selfLen > otherLen) {
-            return 1;
-        }
-        try {
-            lib.injectInto(this, new HashingStorage[]{other}, hasKeyNode);
-        } catch (AbortIteration e) {
-            return 1;
-        }
-        if (selfLen == otherLen) {
-            return 0;
-        } else {
-            return -1;
-        }
     }
 
     @GenerateUncached
@@ -383,30 +341,6 @@ public abstract class HashingStorage {
             } else {
                 throw AbortIteration.INSTANCE;
             }
-        }
-    }
-
-    @ExportMessage
-    public int compareEntriesWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached TestKeyValueEqual testNode) {
-        if (this == other) {
-            return 0;
-        }
-        int otherLen = lib.length(other);
-        int selfLen = lib.length(this);
-        if (selfLen > otherLen) {
-            return 1;
-        }
-        try {
-            lib.injectInto(this, new HashingStorage[]{this, other}, testNode);
-        } catch (AbortIteration e) {
-            return 1;
-        }
-        if (selfLen == otherLen) {
-            return 0;
-        } else {
-            return -1;
         }
     }
 
@@ -440,52 +374,6 @@ public abstract class HashingStorage {
         return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
     }
 
-    protected static final class IsDisjoinForEachAcc {
-        private final HashingStorage other;
-        private final HashingStorageLibrary libOther;
-        private final ThreadState state;
-
-        public IsDisjoinForEachAcc(HashingStorage other, HashingStorageLibrary libOther, ThreadState state) {
-            this.other = other;
-            this.libOther = libOther;
-            this.state = state;
-        }
-    }
-
-    @GenerateUncached
-    protected abstract static class IsDisjointForEachNode extends ForEachNode<IsDisjoinForEachAcc> {
-        @Override
-        public abstract IsDisjoinForEachAcc execute(Object key, IsDisjoinForEachAcc arg);
-
-        @Specialization
-        IsDisjoinForEachAcc doit(Object key, IsDisjoinForEachAcc acc) {
-            if (acc.libOther.hasKeyWithState(acc.other, key, acc.state)) {
-                throw AbortIteration.INSTANCE;
-            }
-            return acc;
-        }
-    }
-
-    @ExportMessage
-    public boolean isDisjointWithState(HashingStorage other, ThreadState state,
-                    @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
-                    @Cached IsDisjointForEachNode isDisjointForEachNode) {
-        try {
-            int selfLen = libSelf.length(this);
-            int otherLen = libOther.length(other);
-            if (selfLen < otherLen) {
-                libSelf.forEach(this, isDisjointForEachNode, new IsDisjoinForEachAcc(other, libOther, state));
-            } else {
-                libOther.forEach(other, isDisjointForEachNode, new IsDisjoinForEachAcc(this, libSelf, state));
-            }
-            return true;
-        } catch (AbortIteration e) {
-            // iteration is aborted iff we found a key that is in both sets
-            return false;
-        }
-    }
-
     @GenerateUncached
     protected abstract static class DiffInjectNode extends InjectIntoNode {
         @Specialization
@@ -510,19 +398,6 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage xor(HashingStorage other,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("diffInjectNode") @Cached DiffInjectNode injectNode) {
-        // could also be done with lib.union(lib.diff(self, other),
-        // lib.diff(other, self)), but that uses one more iteration.
-        HashingStorage newStore = EmptyStorage.INSTANCE;
-        // add all keys in self that are not in other
-        newStore = lib.injectInto(this, new HashingStorage[]{this, other, newStore}, injectNode)[2];
-        // add all keys in other that are not in self
-        return lib.injectInto(other, new HashingStorage[]{other, this, newStore}, injectNode)[2];
-    }
-
-    @ExportMessage
     public HashingStorage union(HashingStorage other,
                     @Cached HashingStorageCopy copyNode,
                     @Cached HashingStorageAddAllToOther addAllToOther) {
@@ -533,7 +408,7 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Shared("diffInjectNode") @Cached DiffInjectNode diffNode) {
+                    @Cached DiffInjectNode diffNode) {
         HashingStorage newStore = EmptyStorage.INSTANCE;
         return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
     }
@@ -541,11 +416,6 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
         return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), getItem));
-    }
-
-    @ExportMessage
-    public HashingStorageIterable<Object> reverseValues(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return new HashingStorageIterable<>(new ValuesIterator(this, lib.reverseKeys(this).iterator(), getItem));
     }
 
     protected static final class ValuesIterator implements Iterator<Object> {
@@ -573,11 +443,6 @@ public abstract class HashingStorage {
     @ExportMessage
     public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
         return new HashingStorageIterable<>(new EntriesIterator(this, lib.keys(this).iterator(), getItem));
-    }
-
-    @ExportMessage
-    public final HashingStorageIterable<DictEntry> reverseEntries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return new HashingStorageIterable<>(new EntriesIterator(this, lib.reverseKeys(this).iterator(), getItem));
     }
 
     protected static final class EntriesIterator implements Iterator<DictEntry> {

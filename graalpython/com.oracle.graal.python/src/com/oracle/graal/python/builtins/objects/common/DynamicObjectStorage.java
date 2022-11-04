@@ -502,12 +502,6 @@ public final class DynamicObjectStorage extends HashingStorage {
         return new HashingStorageIterable<>(new KeysIterator(store, readNode));
     }
 
-    @ExportMessage
-    public HashingStorageIterable<Object> reverseKeys(
-                    @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-        return new HashingStorageIterable<>(new ReverseKeysIterator(store, readNode));
-    }
-
     private abstract static class AbstractKeysIterator implements Iterator<Object> {
         private final DynamicObject store;
         private final ReadAttributeFromDynamicObjectNode readNode;

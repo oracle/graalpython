@@ -279,73 +279,6 @@ public abstract class HashingStorageLibrary extends Library {
     }
 
     /**
-     * @return {@code true} if the key-value pairs are equal between these storages.
-     */
-    public boolean equalsWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.equalsWithState");
-        }
-        return equals(self, other);
-    }
-
-    /**
-     * @see #equalsWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public boolean equals(HashingStorage self, HashingStorage other) {
-        return equalsWithState(self, other, null);
-    }
-
-    /**
-     * @return {@code 0} if the set of keys is equal, {@code -1} if {@code self} is a subset, or
-     *         {@code 1} if neither.
-     */
-    public int compareKeysWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.compareKeysWithState");
-        }
-        return compareKeys(self, other);
-    }
-
-    /**
-     * @see #compareKeysWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public int compareKeys(HashingStorage self, HashingStorage other) {
-        return compareKeysWithState(self, other, null);
-    }
-
-    /**
-     * @see #compareKeysWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public final int compareKeysWithFrame(HashingStorage self, HashingStorage other, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return compareKeysWithState(self, other, PArguments.getThreadState(frame));
-        } else {
-            return compareKeys(self, other);
-        }
-    }
-
-    /**
-     * @return {@code 0} if all entries are equal, {@code -1} if {@code self} is a subset, or
-     *         {@code 1} if neither.
-     */
-    public int compareEntriesWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.compareEntriesWithState");
-        }
-        return compareEntries(self, other);
-    }
-
-    /**
-     * @see #compareEntriesWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public int compareEntries(HashingStorage self, HashingStorage other) {
-        return compareEntriesWithState(self, other, null);
-    }
-
-    /**
      * @return the intersection of the two storages, keeping the values from {@code other}.
      */
     public HashingStorage intersectWithState(HashingStorage self, HashingStorage other, ThreadState state) {
@@ -373,29 +306,6 @@ public abstract class HashingStorageLibrary extends Library {
             return intersect(self, other);
         }
     }
-
-    /**
-     * @return {@code true} iff the intersection of the two sets is empty.
-     */
-    public boolean isDisjointWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.isDisjointWithState");
-        }
-        return isDisjoint(self, other);
-    }
-
-    /**
-     * @see #isDisjointWithState(HashingStorage, HashingStorage, ThreadState)
-     */
-    public boolean isDisjoint(HashingStorage self, HashingStorage other) {
-        return isDisjointWithState(self, other, null);
-    }
-
-    /**
-     * @return the xor of the two storages.
-     */
-    public abstract HashingStorage xor(HashingStorage self, HashingStorage other);
 
     /**
      * @return the union of the two storages, by keys, keeping the values from {@code other} in case
@@ -489,15 +399,6 @@ public abstract class HashingStorageLibrary extends Library {
     public abstract HashingStorageIterable<Object> keys(HashingStorage self);
 
     /**
-     * This method can be used to iterate over the keys of a store in a reversed order. Due to the
-     * nature of Java iterators being an interface and the different storage strategies, this may be
-     * slow and should be used with caution.
-     *
-     * @return an iterator over the keys in this store.
-     */
-    public abstract HashingStorageIterable<Object> reverseKeys(HashingStorage self);
-
-    /**
      * This method can be used to iterate over the values of a store in a reversed order. Due to the
      * nature of Java iterators being an interface and the different storage strategies, this may be
      * slow and should be used with caution.
@@ -507,15 +408,6 @@ public abstract class HashingStorageLibrary extends Library {
     public abstract HashingStorageIterable<Object> values(HashingStorage self);
 
     /**
-     * This method can be used to iterate over the values of a store in a reversed order. Due to the
-     * nature of Java iterators being an interface and the different storage strategies, this may be
-     * slow and should be used with caution.
-     *
-     * @return an iterator over the values in this store.
-     */
-    public abstract HashingStorageIterable<Object> reverseValues(HashingStorage self);
-
-    /**
      * This method can be used to iterate over the key-value pairs of a store. Due to the nature of
      * Java iterators being an interface and the different storage strategies, this may be slow and
      * should be used with caution.
@@ -523,15 +415,6 @@ public abstract class HashingStorageLibrary extends Library {
      * @return an iterator over the keys-value pairs in this store.
      */
     public abstract HashingStorageIterable<HashingStorage.DictEntry> entries(HashingStorage self);
-
-    /**
-     * This method can be used to iterate over the key-value pairs of a store. Due to the nature of
-     * Java iterators being an interface and the different storage strategies, this may be slow and
-     * should be used with caution.
-     *
-     * @return an iterator over the keys-value pairs in this store.
-     */
-    public abstract HashingStorageIterable<HashingStorage.DictEntry> reverseEntries(HashingStorage self);
 
     static final LibraryFactory<HashingStorageLibrary> FACTORY = LibraryFactory.resolve(HashingStorageLibrary.class);
 

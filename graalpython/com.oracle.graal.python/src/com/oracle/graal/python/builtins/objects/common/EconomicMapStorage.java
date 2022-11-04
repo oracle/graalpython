@@ -55,9 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -202,7 +200,7 @@ public class EconomicMapStorage extends HashingStorage {
     HashingStorage delItemWithState(Object key, ThreadState state,
                     @Cached ObjectHashMap.RemoveNode removeNode,
                     @Cached PyObjectHashNode hashNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
+                    @Cached ConditionProfile gotState) {
         VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
         removeNode.remove(frame, map, key, hashNode.execute(frame, key));
         return this;
@@ -214,153 +212,6 @@ public class EconomicMapStorage extends HashingStorage {
 
     public HashingStorage copy() {
         return new EconomicMapStorage(this.map);
-    }
-
-    @ExportMessage
-    public static class EqualsWithState {
-        @Specialization
-        static boolean equalSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode,
-                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
-            if (self.map.size() != other.map.size()) {
-                return false;
-            }
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            MapCursor cursor = self.map.getEntries();
-            int counter = 0;
-            try {
-                while (loopProfile.profile(advance(cursor))) {
-                    if (CompilerDirectives.hasNextTier()) {
-                        counter++;
-                    }
-                    Object otherValue = getNode.get(frame, other.map, cursor.getKey());
-                    if (earlyExitProfile.profile(!(otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))))) {
-                        // if->continue such that the "true" count of the profile represents the
-                        // loop iterations and the "false" count the early exit
-                        continue;
-                    }
-                    return false;
-                }
-            } finally {
-                if (counter != 0) {
-                    LoopNode.reportLoopCount(thisLib, counter);
-                }
-            }
-            return true;
-        }
-
-        @Specialization
-        static boolean equalGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary otherlib,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
-                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            if (self.map.size() != otherlib.length(other)) {
-                return false;
-            }
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            MapCursor cursor = self.map.getEntries();
-            int counter = 0;
-            try {
-                while (loopProfile.profile(advance(cursor))) {
-                    if (CompilerDirectives.hasNextTier()) {
-                        counter++;
-                    }
-                    Object otherValue = otherlib.getItemWithState(other, getKey(cursor), state);
-                    if (earlyExitProfile.profile(!(otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))))) {
-                        // if->continue such that the "true" count of the profile represents the
-                        // loop iterations and the "false" count the early exit
-                        continue;
-                    }
-                    return false;
-                }
-            } finally {
-                if (counter != 0) {
-                    LoopNode.reportLoopCount(thisLib, counter);
-                }
-            }
-            return true;
-        }
-    }
-
-    @ExportMessage
-    public static class CompareKeysWithState {
-        @Specialization
-        static int compareSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
-                        @Shared("getNode") @Cached ObjectHashMap.GetNode getNode) {
-            int size = self.map.size();
-            int size2 = other.map.size();
-            if (size > size2) {
-                return 1;
-            }
-            MapCursor cursor = self.map.getEntries();
-            VirtualFrame frame = state == null ? null : PArguments.frameForCall(state);
-            int counter = 0;
-            try {
-                while (loopProfile.profile(advance(cursor))) {
-                    if (CompilerDirectives.hasNextTier()) {
-                        counter++;
-                    }
-                    if (earlyExitProfile.profile(getNode.get(frame, other.map, getDictKey(cursor)) != null)) {
-                        continue;
-                    }
-                    return 1;
-                }
-            } finally {
-                if (counter != 0) {
-                    LoopNode.reportLoopCount(thisLib, counter);
-                }
-            }
-            if (size == size2) {
-                return 0;
-            } else {
-                return -1;
-            }
-        }
-
-        @Specialization
-        static int compareGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile,
-                        @Shared("selfEntriesLoopExit") @Cached LoopConditionProfile earlyExitProfile,
-                        @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            int size = self.map.size();
-            int length = lib.length(other);
-            if (size > length) {
-                return 1;
-            }
-            MapCursor cursor = self.map.getEntries();
-            int counter = 0;
-            try {
-                while (loopProfile.inject(advance(cursor))) {
-                    if (CompilerDirectives.hasNextTier()) {
-                        counter++;
-                    }
-                    if (earlyExitProfile.profile(lib.hasKeyWithState(other, getKey(cursor), state))) {
-                        continue;
-                    }
-                    return 1;
-                }
-            } finally {
-                if (counter != 0) {
-                    LoopNode.reportLoopCount(thisLib, counter);
-                }
-            }
-            if (size == length) {
-                return 0;
-            } else {
-                return -1;
-            }
-        }
     }
 
     @ExportMessage
@@ -472,24 +323,9 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage xor(HashingStorage other,
-                    @CachedLibrary("this") HashingStorageLibrary selfLib,
-                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary otherLib) {
-        HashingStorage a = selfLib.diff(this, other);
-        HashingStorage b = otherLib.diff(other, this);
-        return selfLib.union(a, b);
-    }
-
-    @ExportMessage
     @Override
     public HashingStorageIterable<Object> keys() {
         return map.keys();
-    }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> reverseKeys() {
-        return map.reverseKeys();
     }
 
     protected void setValueForAllKeys(VirtualFrame frame, Object value, PutNode putNode, ConditionProfile hasFrame, LoopConditionProfile loopProfile) {
