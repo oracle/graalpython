@@ -511,8 +511,12 @@ public class Unparser implements SSTreeVisitor<Void> {
             appendStr("...");
             return null;
         }
-        if (node.kind != null) {
-            appendStr(node.kind);
+        if (node.kind instanceof String) {
+            appendStr((String) node.kind);
+        } else if (node.kind instanceof byte[]) {
+            // This conversion of byte[] -> String might not be correct, but CPython crashes in this
+            // case so nobody cares and also "kind" should only be 'u' or b'u' if present.
+            appendStr(new String((byte[]) node.kind));
         }
         appendConstantValue(node.value);
         return null;

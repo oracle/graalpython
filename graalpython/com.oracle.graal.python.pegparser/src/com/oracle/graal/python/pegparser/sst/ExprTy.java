@@ -384,9 +384,9 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Constant extends ExprTy {
         public final ConstantValue value;
-        public final String kind;   // nullable
+        public final Object kind;   // nullable
 
-        public Constant(ConstantValue value, String kind, SourceRange sourceRange) {
+        public Constant(ConstantValue value, Object kind, SourceRange sourceRange) {
             super(sourceRange);
             assert value != null;
             this.value = value;

@@ -263,7 +263,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         appendConstantValue(sb, node.value);
         if (node.kind != null) {
             sb.append(" Kind: ");
-            appendEscapedString(sb, node.kind);
+            // parser always returns a j.l.String, never a byte[]
+            appendEscapedString(sb, (String) node.kind);
         }
         return sb.toString();
     }
@@ -806,7 +807,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String> {
         return visitFunctionOrAsyncFunction(node, node.name, node.args, node.body, node.decoratorList, node.returns, node.typeComment);
     }
 
-    private String visitFunctionOrAsyncFunction(SSTNode node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment) {
+    private String visitFunctionOrAsyncFunction(SSTNode node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment) {
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node));
         level++;
