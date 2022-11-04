@@ -164,7 +164,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final TruffleString T_GRAALPYTHON_ID = tsLiteral(J_GRAALPYTHON_ID);
     public static final String ID = "python";
     public static final String NAME = "Python";
-    public static final String IMPLEMENTATION_NAME = "GraalVM Python";
+    public static final String IMPLEMENTATION_NAME = "GraalPy";
     public static final int MAJOR = 3;
     public static final int MINOR = 8;
     public static final int MICRO = 5;
