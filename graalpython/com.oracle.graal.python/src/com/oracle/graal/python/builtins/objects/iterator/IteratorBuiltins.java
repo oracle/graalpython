@@ -311,7 +311,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         public Object lengthHint(PBigRangeIterator self) {
-            return factory().createInt(self, self.getRemainingLength());
+            return factory().createInt(self.getRemainingLength());
         }
 
         @Specialization(guards = "!self.isExhausted()")
