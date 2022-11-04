@@ -63,7 +63,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,7 +80,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class LocalsStorage extends HashingStorage {
     /* This won't be the real (materialized) frame but a clone of it. */
     protected final MaterializedFrame frame;
-    private int len = -1;
 
     public LocalsStorage(FrameDescriptor fd) {
         this.frame = Truffle.getRuntime().createMaterializedFrame(PythonUtils.EMPTY_OBJECT_ARRAY, fd);
@@ -111,26 +109,35 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    @Override
-    public int length() {
-        if (this.len == -1) {
-            CompilerDirectives.transferToInterpreter();
-            calculateLength();
-        }
-        return this.len;
-    }
-
-    @TruffleBoundary
-    private void calculateLength() {
-        FrameDescriptor fd = this.frame.getFrameDescriptor();
-        int size = fd.getNumberOfSlots();
-        for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-            Object identifier = fd.getSlotName(slot);
-            if (!isUserFrameSlot(identifier) || getValue(slot) == null) {
-                size--;
+    @ImportStatic(PGuards.class)
+    static class Length {
+        @Specialization(guards = "desc == self.frame.getFrameDescriptor()", limit = "1")
+        @ExplodeLoop
+        static int getLengthCached(LocalsStorage self,
+                        @Shared("desc") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
+            int size = desc.getNumberOfSlots();
+            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
+                Object identifier = desc.getSlotName(slot);
+                if (!isUserFrameSlot(identifier) || self.getValue(slot) == null) {
+                    size--;
+                }
             }
+            return size;
         }
-        this.len = size;
+
+        @Specialization(replaces = "getLengthCached")
+        static int getLength(LocalsStorage self) {
+            FrameDescriptor desc = self.frame.getFrameDescriptor();
+            int size = desc.getNumberOfSlots();
+            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
+                Object identifier = desc.getSlotName(slot);
+                if (!isUserFrameSlot(identifier) || self.getValue(slot) == null) {
+                    size--;
+                }
+            }
+            return size;
+        }
+
     }
 
     @SuppressWarnings("unused")
@@ -197,9 +204,10 @@ public final class LocalsStorage extends HashingStorage {
 
     @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
+                    @CachedLibrary("this") HashingStorageLibrary thisLib,
                     @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage result = generalize(lib, key instanceof TruffleString, length() + 1);
+        HashingStorage result = generalize(thisLib, key instanceof TruffleString, thisLib.length(this) + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(result, key, value, state);
         } else {
@@ -209,9 +217,10 @@ public final class LocalsStorage extends HashingStorage {
 
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
+                    @CachedLibrary("this") HashingStorageLibrary thisLib,
                     @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage result = generalize(lib, true, length() - 1);
+        HashingStorage result = generalize(thisLib, true, thisLib.length(this) - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(result, key, state);
         } else {
@@ -250,7 +259,7 @@ public final class LocalsStorage extends HashingStorage {
         @ExplodeLoop
         static HashingStorage cached(LocalsStorage self, HashingStorage other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                        @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
+                        @Shared("desc") @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
             HashingStorage result = other;
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);
