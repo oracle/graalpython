@@ -60,6 +60,8 @@
 #define CYTHON_USE_UNICODE_WRITER 0
 #define CYTHON_USE_EXC_INFO_STACK 0
 #define CYTHON_FAST_THREAD_STATE 0
+#define CYTHON_PROFILE 0
+#define CYTHON_TRACE 0
 
 /* Enable GNU extensions on systems that have them. */
 #ifndef _GNU_SOURCE
