@@ -43,10 +43,10 @@ package com.oracle.graal.python.nodes.generator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageTransferItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -55,56 +55,47 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class DictConcatNode extends ExpressionNode {
 
     @Children final ExpressionNode[] mappables;
-    @Children final HashingStorageGetItem[] getDictItemNodes;
 
     @Child private PRaiseNode raiseNode;
 
     protected DictConcatNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
-        if (mappablesNodes.length > 0) {
-            this.getDictItemNodes = new HashingStorageGetItem[mappablesNodes.length - 1];
-        } else {
-            this.getDictItemNodes = null;
-        }
     }
 
     @ExplodeLoop
     @Specialization
     public Object concat(VirtualFrame frame,
-                    @Cached HashingStorageSetItem setItem,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+                    @Cached HashingStorageGetIterator getIterator,
+                    @Cached HashingStorageIteratorNext iterNext,
+                    @Cached HashingStorageTransferItem transferItem) {
         // TODO support mappings in general
         PDict first = null;
         PDict other;
-        for (int i = 0; i < mappables.length; i++) {
-            ExpressionNode n = mappables[i];
+        for (ExpressionNode n : mappables) {
             if (first == null) {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                if (getDictItemNodes[i] == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getDictItemNodes[i] = insert(HashingStorageGetItemNodeGen.create());
-                }
-                addAllToDict(frame, first, other, getDictItemNodes[i], setItem, hlib);
+                addAllToDict(frame, first, other, getIterator, iterNext, transferItem);
             }
         }
         return first;
     }
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other,
-                    HashingStorageGetItem getItem, HashingStorageSetItem setItem, HashingStorageLibrary hlib) {
+                    HashingStorageGetIterator getIterator,
+                    HashingStorageIteratorNext iterNext,
+                    HashingStorageTransferItem transferItem) {
         HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage otherStorage = other.getDictStorage();
-        for (Object key : hlib.keys(otherStorage)) {
-            Object value = getItem.execute(frame, otherStorage, key);
-            dictStorage = setItem.execute(frame, dictStorage, key, value);
+        HashingStorageIterator itOther = getIterator.execute(otherStorage);
+        while (iterNext.execute(otherStorage, itOther)) {
+            dictStorage = transferItem.execute(frame, otherStorage, itOther, dictStorage);
         }
         dict.setDictStorage(dictStorage);
     }

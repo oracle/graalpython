@@ -59,10 +59,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNative
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -71,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
-import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -88,7 +89,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -182,24 +182,28 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     public abstract static class PySetNextEntryNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
-        Object nextEntry(VirtualFrame frame, PSet set, long pos,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("set.getDictStorage()") HashingStorageLibrary lib,
+        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "1")
+        Object nextEntrySet(VirtualFrame frame, PSet set, long pos,
+                        @Shared("size") @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext itNext,
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached LoopConditionProfile loopProfile,
-                        @Cached PyObjectHashNode hashNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return next(frame, (int) pos, set.getDictStorage(), lib, loopProfile, hashNode, transformExceptionToNativeNode, factory());
+            return next((int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, transformExceptionToNativeNode, factory());
         }
 
-        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
-        Object nextEntry(VirtualFrame frame, PFrozenSet set, long pos,
-                        @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("set.getDictStorage()") HashingStorageLibrary lib,
+        @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "1")
+        Object nextEntryFrozenSet(VirtualFrame frame, PFrozenSet set, long pos,
+                        @Shared("size") @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext itNext,
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached LoopConditionProfile loopProfile,
-                        @Cached PyObjectHashNode hashNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return next(frame, (int) pos, set.getDictStorage(), lib, loopProfile, hashNode, transformExceptionToNativeNode, factory());
+            return next((int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile, transformExceptionToNativeNode, factory());
         }
 
         @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(frame, set, sizeNode)"}, limit = "1")
@@ -217,7 +221,7 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"})
-        public Object nextEntry(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object pos,
+        public Object nextEntryAnyset(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object pos,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
@@ -233,16 +237,20 @@ public final class PythonCextSetBuiltins extends PythonBuiltins {
             return sizeNode.execute(frame, set);
         }
 
-        private Object next(VirtualFrame frame, int pos, HashingStorage storage, HashingStorageLibrary lib, LoopConditionProfile loopProfile, PyObjectHashNode hashNode,
-                        TransformExceptionToNativeNode transformExceptionToNativeNode, PythonObjectFactory factory) {
+        private Object next(int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
+                        HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
+                        LoopConditionProfile loopProfile, TransformExceptionToNativeNode transformExceptionToNativeNode, PythonObjectFactory factory) {
             try {
-                HashingStorageIterator<DictEntry> it = lib.entries(storage).iterator();
-                DictEntry e = null;
+                HashingStorageIterator it = getIterator.execute(storage);
                 loopProfile.profileCounted(pos);
                 for (int i = 0; loopProfile.inject(i <= pos); i++) {
-                    e = it.next();
+                    if (!itNext.execute(storage, it)) {
+                        return getContext().getNativeNull();
+                    }
                 }
-                return factory.createTuple(new Object[]{e.key, hashNode.execute(frame, e.key)});
+                Object key = itKey.execute(storage, it);
+                long hash = itKeyHash.execute(storage, it);
+                return factory.createTuple(new Object[]{key, hash});
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();

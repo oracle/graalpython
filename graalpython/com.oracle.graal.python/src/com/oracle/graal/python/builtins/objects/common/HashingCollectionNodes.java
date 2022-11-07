@@ -46,6 +46,10 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -69,7 +73,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -116,10 +119,13 @@ public abstract class HashingCollectionNodes {
         @Specialization(guards = "!isEconomicMapStorage(map)")
         static HashingStorage doGeneric(VirtualFrame frame, HashingStorage map, Object value,
                         @Cached HashingStorageSetItem setItem,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            HashingStorageLibrary.HashingStorageIterable<Object> iter = lib.keys(map);
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext itNext,
+                        @Cached HashingStorageIteratorKey itKey) {
+            HashingStorageIterator it = getIterator.execute(map);
             HashingStorage storage = map;
-            for (Object key : iter) {
+            while (itNext.execute(map, it)) {
+                Object key = itKey.execute(storage, it);
                 storage = setItem.execute(frame, storage, key, value);
             }
             return storage;

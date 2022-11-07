@@ -64,9 +64,12 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -104,7 +107,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -349,11 +351,14 @@ public class PartialBuiltins extends PythonBuiltins {
         }
 
         private static void reprKwArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, PyObjectStrAsTruffleStringNode strNode,
-                        HashingStorageLibrary lib, HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
+                        HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageIteratorNext, HashingStorageIteratorKey hashingStorageIteratorKey,
+                        HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
             final PDict kwDict = partial.getKw();
             if (kwDict != null) {
-                final HashingStorage storage = kwDict.getDictStorage();
-                for (Object key : lib.keys(storage)) {
+                HashingStorage storage = kwDict.getDictStorage();
+                HashingStorageIterator it = getHashingStorageIterator.execute(storage);
+                while (hashingStorageIteratorNext.execute(storage, it)) {
+                    Object key = hashingStorageIteratorKey.execute(storage, it);
                     final Object value = getItem.execute(frame, storage, key);
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, strNode.execute(frame, key));
@@ -370,7 +375,9 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached GetClassNode classNode,
                         @Cached TypeNodes.GetNameNode nameNode,
                         @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetIterator getHashingStorageIterator,
+                        @Cached HashingStorageIteratorNext hashingStorageIteratorNext,
+                        @Cached HashingStorageIteratorKey hashingStorageIteratorKey,
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
@@ -386,7 +393,9 @@ public class PartialBuiltins extends PythonBuiltins {
                 appendStringNode.execute(sb, T_LPAREN);
                 appendStringNode.execute(sb, reprNode.execute(frame, partial.getFn()));
                 reprArgs(frame, partial, sb, reprNode, appendStringNode);
-                reprKwArgs(frame, partial, sb, reprNode, strNode, lib, getItem, appendStringNode);
+                reprKwArgs(frame, partial, sb, reprNode, strNode,
+                                getHashingStorageIterator, hashingStorageIteratorNext, hashingStorageIteratorKey,
+                                getItem, appendStringNode);
                 appendStringNode.execute(sb, T_RPAREN);
                 return toStringNode.execute(sb);
             } finally {

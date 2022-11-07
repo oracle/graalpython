@@ -80,6 +80,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -108,8 +109,11 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -645,16 +649,29 @@ public abstract class TypeNodes {
                 @Override
                 @SuppressWarnings("unchecked")
                 public Iterator<PythonAbstractClass> iterator() {
-                    final HashingStorageIterator<Object> storageIt = HashingStorageLibrary.getUncached().keys(dict.getDictStorage()).iterator();
+                    final HashingStorageNodes.HashingStorageIterator it = HashingStorageGetIterator.executeUncached(dict.getDictStorage());
+                    Boolean[] hasNext = new Boolean[1];
+
                     return new Iterator<>() {
                         @Override
                         public boolean hasNext() {
-                            return storageIt.hasNext();
+                            if (hasNext[0] == null) {
+                                hasNext[0] = HashingStorageIteratorNext.executeUncached(dict.getDictStorage(), it);
+                            }
+                            return hasNext[0];
                         }
 
                         @Override
                         public PythonAbstractClass next() {
-                            return (PythonAbstractClass) storageIt.next();
+                            if (hasNext[0] == null) {
+                                hasNext[0] = HashingStorageIteratorNext.executeUncached(dict.getDictStorage(), it);
+                            }
+                            if (!hasNext[0]) {
+                                throw new NoSuchElementException();
+                            }
+                            PythonAbstractClass result = (PythonAbstractClass) HashingStorageIteratorValue.executeUncached(dict.getDictStorage(), it);
+                            hasNext[0] = null;
+                            return result;
                         }
                     };
                 }
@@ -663,9 +680,9 @@ public abstract class TypeNodes {
                 @TruffleBoundary
                 public Object[] toArray() {
                     Object[] result = new Object[size()];
-                    Iterator<Object> keys = HashingStorageLibrary.getUncached().keys(dict.getDictStorage()).iterator();
-                    for (int i = 0; i < result.length; i++) {
-                        result[i] = keys.next();
+                    int i = 0;
+                    for (PythonAbstractClass item : this) {
+                        result[i++] = item;
                     }
                     return result;
                 }

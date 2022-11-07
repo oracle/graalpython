@@ -1243,3 +1243,12 @@ def test_eq_side_effects():
 #     test_iter(lambda d: d.keys())
 #     test_iter(lambda d: d.values())
 #     test_iter(lambda d: d.items())
+
+def test_dict_values_eq():
+    # Regression test: dict_values should not override __eq__
+    d1 = {1: 1, 2: 2}
+    d2 = {1: 1, 2: 2, 3: 3}
+    assert d1.values() != d2.values()
+
+    d1 = {1: 1, 2: 2, 4: 4}
+    assert d1.values() != d1.values()

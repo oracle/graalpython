@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
@@ -36,10 +35,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetReverseIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
@@ -48,12 +44,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesView)
 public final class DictValuesBuiltins extends PythonBuiltins {
@@ -103,30 +96,6 @@ public final class DictValuesBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetReverseIterator getReverseIter) {
             HashingStorage storage = self.getWrappedDict().getDictStorage();
             return factory().createDictValueIterator(getReverseIter.execute(storage), storage, lenNode.execute(storage));
-        }
-    }
-
-    @Builtin(name = J___EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
-        static boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
-                        @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary libSelf,
-                        @Cached HashingStorageGetItem getItemOther) {
-
-            final HashingStorage storage = other.getWrappedDict().getDictStorage();
-            for (Object selfKey : libSelf.keys(self.getWrappedDict().getDictStorage())) {
-                if (!getItemOther.hasKey(frame, storage, selfKey)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static PNotImplemented doGeneric(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

@@ -64,14 +64,6 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
         this.storage = storage;
     }
 
-    public HashingStorageIterable<Object> items() {
-        return HashingStorageLibrary.getUncached().values(getDictStorage());
-    }
-
-    public HashingStorageIterable<Object> keys() {
-        return HashingStorageLibrary.getUncached().keys(getDictStorage());
-    }
-
     public HashingStorageIterable<DictEntry> entries() {
         return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
