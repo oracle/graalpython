@@ -40,10 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
+import static com.oracle.graal.python.util.TimeUtils.SEC_TO_US;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -51,14 +58,18 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -83,17 +94,13 @@ import com.oracle.truffle.api.object.HiddenKey;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
-
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
     private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
 
-    private static final HiddenKey signalQueueKey = new HiddenKey("signalQueue");
-    private final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
-    private static final HiddenKey signalSemaKey = new HiddenKey("signalQueue");
-    private final Semaphore signalSema = new Semaphore(0);
+    private static final HiddenKey signalModuleDataKey = new HiddenKey("signalModuleData");
+    private final ModuleData moduleData = new ModuleData();
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -105,6 +112,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         addBuiltinConstant("SIG_DFL", Signals.SIG_DFL);
         addBuiltinConstant("SIG_IGN", Signals.SIG_IGN);
+        addBuiltinConstant("ITIMER_REAL", 0);
+        addBuiltinConstant("ITIMER_VIRTUAL", 1);
+        addBuiltinConstant("ITIMER_PROF", 2);
         for (int i = 0; i < Signals.signalNames.length; i++) {
             String name = Signals.signalNames[i];
             if (name != null) {
@@ -118,15 +128,14 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
 
         PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
-        signalModule.setAttribute(signalQueueKey, signalQueue);
-        signalModule.setAttribute(signalSemaKey, signalSema);
+        signalModule.setAttribute(signalModuleDataKey, moduleData);
 
         core.getContext().registerAsyncAction(() -> {
-            SignalTriggerAction poll = signalQueue.poll();
+            SignalTriggerAction poll = moduleData.signalQueue.poll();
             try {
                 while (poll == null) {
-                    signalSema.acquire();
-                    poll = signalQueue.poll();
+                    moduleData.signalSema.acquire();
+                    poll = moduleData.signalQueue.poll();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -270,21 +279,19 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
                         @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached ReadAttributeFromObjectNode readQueueNode,
-                        @Cached ReadAttributeFromObjectNode readSemaNode) {
-            return signal(self, asSizeNode.executeExact(frame, signal), handler, readQueueNode, readSemaNode);
+                        @Cached ReadAttributeFromObjectNode readModuleDataNode) {
+            return signal(self, asSizeNode.executeExact(frame, signal), handler, readModuleDataNode);
         }
 
         @TruffleBoundary
-        private Object signal(PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readQueueNode, ReadAttributeFromObjectNode readSemaNode) {
-            ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
-            Semaphore semaphore = getSemaphore(self, readSemaNode);
+        private Object signal(PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readModuleDataNode) {
+            ModuleData moduleData = getModuleData(self, readModuleDataNode);
             SignalHandler oldHandler;
             SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
             try {
                 oldHandler = Signals.setSignalHandler(signum, () -> {
-                    queue.add(signalTrigger);
-                    semaphore.release();
+                    moduleData.signalQueue.add(signalTrigger);
+                    moduleData.signalSema.release();
                 });
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
@@ -292,26 +299,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             Object result = handlerToPython(oldHandler, signum);
             signalHandlers.put(signum, handler);
             return result;
-        }
-
-        @SuppressWarnings("unchecked")
-        private static ConcurrentLinkedDeque<SignalTriggerAction> getQueue(PythonModule self, ReadAttributeFromObjectNode readNode) {
-            Object queueObject = readNode.execute(self, signalQueueKey);
-            if (queueObject instanceof ConcurrentLinkedDeque) {
-                ConcurrentLinkedDeque<SignalTriggerAction> queue = (ConcurrentLinkedDeque<SignalTriggerAction>) queueObject;
-                return queue;
-            } else {
-                throw new IllegalStateException("the signal trigger queue was modified!");
-            }
-        }
-
-        private static Semaphore getSemaphore(PythonModule self, ReadAttributeFromObjectNode readNode) {
-            Object semaphore = readNode.execute(self, signalSemaKey);
-            if (semaphore instanceof Semaphore) {
-                return (Semaphore) semaphore;
-            } else {
-                throw new IllegalStateException("the signal trigger semaphore was modified!");
-            }
         }
     }
 
@@ -342,6 +329,93 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return SignalModuleBuiltinsClinicProviders.RaiseSignalNodeClinicProviderGen.INSTANCE;
         }
     }
+
+    @Builtin(name = "setitimer", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "which", "seconds", "interval"})
+    @ArgumentClinic(name = "which", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class SetitimerNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.SetitimerNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doIt(VirtualFrame frame, PythonModule self, int which, Object seconds, Object interval,
+                        @Cached ReadAttributeFromObjectNode readModuleDataNode,
+                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
+            ModuleData moduleData = getModuleData(self, readModuleDataNode);
+            long usDelay = toMicroseconds(frame, seconds, timeFromObjectNode);
+            long usInterval = toMicroseconds(frame, interval, timeFromObjectNode);
+            if (which != 0) {
+                throw raiseOSError(frame, OSErrorEnum.EINVAL);
+            }
+            long oldDelay = 0;
+            long oldInterval = 0;
+            if (moduleData.itimerFuture != null) {
+                oldDelay = moduleData.itimerFuture.getDelay(TimeUnit.MICROSECONDS);
+                oldInterval = moduleData.itimerInterval;
+                moduleData.itimerFuture.cancel(false);
+                moduleData.itimerFuture = null;
+            }
+            if (usDelay != 0) {
+                setitimer(moduleData, usDelay, usInterval);
+            }
+            return factory().createTuple(new Object[]{oldDelay / (double) SEC_TO_US, oldInterval / (double) SEC_TO_US});
+        }
+
+        private static long toMicroseconds(VirtualFrame frame, Object obj, PyTimeFromObjectNode timeFromObjectNode) {
+            if (obj == PNone.NO_VALUE) {
+                return 0;
+            }
+            return timeFromObjectNode.execute(frame, obj, RoundType.CEILING, SEC_TO_US);
+        }
+
+        @TruffleBoundary
+        private void setitimer(ModuleData moduleData, long usDelay, long usInterval) {
+            moduleData.itimerInterval = usInterval;
+            Runnable r = () -> Signals.raiseSignal("ALRM");
+            ScheduledExecutorService itimerService = getItimerService(moduleData);
+            if (usInterval == 0) {
+                moduleData.itimerFuture = itimerService.schedule(r, usDelay, TimeUnit.MICROSECONDS);
+            } else {
+                moduleData.itimerFuture = itimerService.scheduleAtFixedRate(r, usDelay, usInterval, TimeUnit.MICROSECONDS);
+            }
+        }
+
+        @TruffleBoundary
+        private ScheduledExecutorService getItimerService(ModuleData moduleData) {
+            if (moduleData.itimerService == null) {
+                ScheduledExecutorService itimerService = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                    Thread t = Executors.defaultThreadFactory().newThread(runnable);
+                    t.setDaemon(true);
+                    return t;
+                });
+                moduleData.itimerService = itimerService;
+                getContext().registerAtexitHook(ctx -> itimerService.shutdown());
+            }
+            return moduleData.itimerService;
+        }
+
+    }
+
+    private static ModuleData getModuleData(PythonModule self, ReadAttributeFromObjectNode readNode) {
+        Object obj = readNode.execute(self, signalModuleDataKey);
+        if (obj instanceof ModuleData) {
+            return (ModuleData) obj;
+        } else {
+            throw new IllegalStateException("the signal module was not initialized properly!");
+        }
+    }
+
+    private static class ModuleData {
+        final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
+        final Semaphore signalSema = new Semaphore(0);
+        ScheduledExecutorService itimerService;
+        ScheduledFuture<?> itimerFuture;
+        long itimerInterval;
+    }
+
 }
 
 // Checkstyle: stop
@@ -394,6 +468,11 @@ final class Signals {
     @TruffleBoundary
     synchronized static void scheduleAlarm(long seconds) {
         new Thread(new Alarm(seconds)).start();
+    }
+
+    @TruffleBoundary
+    static void raiseSignal(String name) {
+        sun.misc.Signal.raise(new sun.misc.Signal(name));
     }
 
     static class PythonSignalHandler implements sun.misc.SignalHandler {

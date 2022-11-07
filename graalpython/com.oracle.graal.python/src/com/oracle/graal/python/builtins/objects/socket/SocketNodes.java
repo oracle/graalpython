@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -515,8 +516,7 @@ public abstract class SocketNodes {
         @Specialization(guards = "!isNone(seconds)")
         long parse(VirtualFrame frame, Object seconds,
                         @Cached PyTimeFromObjectNode timeFromObjectNode) {
-            // TODO timeout rounding mode
-            long timeout = timeFromObjectNode.execute(frame, seconds, TimeUtils.SEC_TO_NS);
+            long timeout = timeFromObjectNode.execute(frame, seconds, RoundType.TIMEOUT, TimeUtils.SEC_TO_NS);
             if (timeout < 0) {
                 throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }
