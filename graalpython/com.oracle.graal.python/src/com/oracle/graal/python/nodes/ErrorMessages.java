@@ -89,6 +89,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARRAY_OUT_OF_BOUNDS = tsLiteral("array index out of range");
     public static final TruffleString ARRAY_SIZE_TOO_LARGE = tsLiteral("array size too large");
     public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
+    public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
     public static final TruffleString ATTEMPTING_READ_FROM_OFFSET_D = tsLiteral("Attempting to read from offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMPTING_WRITE_OFFSET_D = tsLiteral("Attempting to write to offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMP_TO_RELEASE_RECURSIVE_LOCK = tsLiteral("attempt to release recursive lock not owned by thread");
@@ -798,6 +799,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNKNOWN_ATTR = tsLiteral("Unknown attribute: '%s'");
     public static final TruffleString UNKNOWN_ENCODING = tsLiteral("unknown encoding %s");
     public static final TruffleString UNKNOWN_ERROR_HANDLER = tsLiteral("unknown error handler name '%s'");
+    public static final TruffleString UNKNOWN_F_VALUE_CONVERSION_KIND = tsLiteral("unknown f-value conversion kind");
     public static final TruffleString UNKNOWN_FORMAT_CODE = tsLiteral("Unknown format code '%c' for object of type '%s'");
     public static final TruffleString UNKNOWN_OPCODE = tsLiteral("unknown opcode");
     public static final TruffleString UNKNOWN_S_TYPE = tsLiteral("unknown %s type");

@@ -2097,9 +2097,18 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
         env.update(self.subject.getBuildEnv())
 
-        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
+        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them,
+        # besides keeping custom sysroot, since our toolchain forwards to the system headers
         for var in ["CC", "CFLAGS", "LDFLAGS"]:
-            env.pop(var, None)
+            value = env.pop(var, None)
+            if value and "--sysroot" in value:
+                seen_sysroot = False
+                for element in shlex.split(value):
+                    if element == "--sysroot":
+                        seen_sysroot = True
+                    elif seen_sysroot:
+                        env[var] = f"--sysroot {element}"
+                        break
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):

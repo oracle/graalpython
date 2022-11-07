@@ -72,7 +72,7 @@ public class TestErrorCallbackImpl implements ErrorCallback {
     }
 
     @Override
-    public void warnDeprecation(SourceRange sourceRange, String message) {
+    public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
         warnings.add(new Error(ErrorType.Syntax, sourceRange, message));
     }
 

@@ -103,7 +103,7 @@ class Field(NamedTuple):
 
     @property
     def convertor(self):
-        if self.type.python == 'identifier':
+        if self.type.python in ('identifier', 'string'):
             return f'obj2{self.type.python}'
         if self.is_sequence:
             assert self.type.java.endswith('[]')
@@ -209,8 +209,10 @@ def convert_field_name(name: str) -> str:
 def get_java_type_for_field(field: asdl.Field, java_name: str) -> str:
     if field.type == 'int':
         type_name = 'boolean' if java_name.startswith('is') else 'int'
-    elif field.type in ('string', 'identifier'):
+    elif field.type == 'identifier':
         type_name = 'String'
+    elif field.type == 'string':
+        type_name = 'Object'        # either String or byte[]
     elif field.type == 'constant':
         type_name = 'ConstantValue'
     else:

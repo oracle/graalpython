@@ -1067,8 +1067,8 @@ public class CompilerTests extends PythonTests {
         }
 
         @Override
-        public void warnDeprecation(SourceRange sourceRange, String message) {
-            throw new AssertionError("Unexpected warning: " + message);
+        public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
+            throw new AssertionError("Unexpected " + warningType + " warning: " + message);
         }
     }
 

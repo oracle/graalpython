@@ -217,8 +217,8 @@ public class ParserTestBase {
             }
 
             @Override
-            public void warnDeprecation(SourceRange sourceRange, String message) {
-                fail("Unexpected deprecation warning");
+            public void onWarning(WarningType warningType, SourceRange sourceRange, String message) {
+                fail("Unexpected " + warningType + " warning");
             }
 
             @Override

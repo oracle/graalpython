@@ -310,9 +310,15 @@ class Sst2ObjGenerator(Generator):
         if f.is_sequence:
             emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, seq2List(node.{f.name.java}));')
         elif f.is_nullable:
-            emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNullable(node.{f.name.java}));')
+            if f.type.python == 'string':
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNullableStringOrByteArray(node.{f.name.java}));')
+            else:
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNullable(node.{f.name.java}));')
         else:
-            emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNonNull(node.{f.name.java}));')
+            if f.type.python == 'string':
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNonNullStringOrByteArray(node.{f.name.java}));')
+            else:
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNonNull(node.{f.name.java}));')
 
 
 class Obj2Sst2Generator(Generator):

@@ -50,6 +50,7 @@ import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.FExprParser;
 import com.oracle.graal.python.pegparser.PythonStringFactory;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
@@ -1213,7 +1214,7 @@ public abstract class StringLiteralUtils {
     }
 
     public static void warnInvalidEscapeSequence(ErrorCallback errorCallback, SourceRange sourceRange, char nextChar) {
-        errorCallback.warnDeprecation(sourceRange, "invalid escape sequence '\\%c'", nextChar);
+        errorCallback.onWarning(WarningType.Deprecation, sourceRange, "invalid escape sequence '\\%c'", nextChar);
     }
 
     private static final String UNICODE_ERROR = "(unicode error) 'unicodeescape' codec can't decode bytes in position %d-%d:";

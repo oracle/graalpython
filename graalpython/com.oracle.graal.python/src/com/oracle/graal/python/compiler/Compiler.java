@@ -139,6 +139,7 @@ import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
 import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -149,10 +150,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
+import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
@@ -165,9 +168,11 @@ import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy.Constant;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -1106,6 +1111,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Call node) {
         SourceRange savedLocation = setLocation(node);
+        checkCaller(node.func);
         try {
             // n.b.: we do things completely different from python for calls
             OpCodes op = CALL_FUNCTION_VARARGS;
@@ -1198,6 +1204,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Compare node) {
         SourceRange savedLocation = setLocation(node);
+        checkCompare(node);
         try {
             node.left.accept(this);
             if (node.comparators.length == 1) {
@@ -1324,8 +1331,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                     oparg = FormatOptions.FVC_NONE;
                     break;
                 default:
-                    // TODO GR-40162 raise SystemError
-                    throw new IllegalStateException("Unknown format conversion");
+                    errorCallback.onError(ErrorType.System, node.getSourceRange(), "Unrecognized conversion character %d", node.conversion);
+                    throw shouldNotReachHere("Error callback did not throw an exception");
             }
             if (node.formatSpec != null) {
                 node.formatSpec.accept(this);
@@ -1629,6 +1636,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Subscript node) {
         SourceRange savedLocation = setLocation(node);
+        if (node.context == ExprContextTy.Load) {
+            checkSubscripter(node.value);
+            checkIndex(node.value, node.slice);
+        }
         try {
             node.value.accept(this);
             node.slice.accept(this);
@@ -2011,9 +2022,23 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    private static boolean isNonEmptyTuple(ExprTy expr) {
+        if (expr instanceof ExprTy.Tuple) {
+            ExprTy.Tuple tuple = (ExprTy.Tuple) expr;
+            return tuple.elements != null && tuple.elements.length > 0;
+        }
+        if (expr instanceof ExprTy.Constant) {
+            ConstantValue cv = ((ExprTy.Constant) expr).value;
+            return cv.kind == Kind.TUPLE && cv.getTupleElements().length > 0;
+        }
+        return false;
+    }
+
     @Override
     public Void visit(StmtTy.Assert node) {
-        // TODO warn when test is a tuple
+        if (isNonEmptyTuple(node.test)) {
+            warn(node, "assertion is always true, perhaps remove parentheses?");
+        }
         if (optimizationLevel > 0) {
             return null;
         }
@@ -2423,6 +2448,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void jumpIf(ExprTy test, Block next, boolean jumpIfTrue) {
         // TODO Optimize for various test types, such as short-circuit operators
         // See compiler_jump_if in CPython
+        if (test instanceof ExprTy.Compare) {
+            checkCompare((ExprTy.Compare) test);
+        }
         test.accept(this);
         if (jumpIfTrue) {
             addConditionalJump(POP_AND_JUMP_IF_TRUE, next);
@@ -3387,6 +3415,134 @@ public class Compiler implements SSTreeVisitor<Void> {
         setLocation(node);
         addOp(NOP);
         return null;
+    }
+
+    // Equivalent of compiler_warn()
+    private void warn(SSTNode node, String message, Object... arguments) {
+        errorCallback.onWarning(WarningType.Syntax, node.getSourceRange(), message, arguments);
+    }
+
+    private void checkCompare(ExprTy.Compare node) {
+        boolean left = checkIsArg(node.left);
+        int n = node.ops == null ? 0 : node.ops.length;
+        for (int i = 0; i < n; ++i) {
+            CmpOpTy op = node.ops[i];
+            boolean right = checkIsArg(node.comparators[i]);
+            if (op == CmpOpTy.Is || op == CmpOpTy.IsNot) {
+                if (!right || !left) {
+                    warn(node, op == CmpOpTy.Is ? "\"is\" with a literal. Did you mean \"==\"?" : "\"is not\" with a literal. Did you mean \"!=\"?");
+                }
+            }
+            left = right;
+        }
+    }
+
+    private static boolean checkIsArg(ExprTy e) {
+        if (e instanceof ExprTy.Constant) {
+            ConstantValue.Kind kind = ((Constant) e).value.kind;
+            return kind == Kind.NONE || kind == Kind.BOOLEAN || kind == Kind.ELLIPSIS;
+        }
+        return true;
+    }
+
+    private static PythonBuiltinClassType inferType(ExprTy e) {
+        if (e instanceof ExprTy.Tuple) {
+            return PythonBuiltinClassType.PTuple;
+        }
+        if (e instanceof ExprTy.List || e instanceof ExprTy.ListComp) {
+            return PythonBuiltinClassType.PList;
+        }
+        if (e instanceof ExprTy.Dict || e instanceof ExprTy.DictComp) {
+            return PythonBuiltinClassType.PDict;
+        }
+        if (e instanceof ExprTy.Set || e instanceof ExprTy.SetComp) {
+            return PythonBuiltinClassType.PSet;
+        }
+        if (e instanceof ExprTy.GeneratorExp) {
+            return PythonBuiltinClassType.PGenerator;
+        }
+        if (e instanceof ExprTy.Lambda) {
+            return PythonBuiltinClassType.PFunction;
+        }
+        if (e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
+            return PythonBuiltinClassType.PString;
+        }
+        if (e instanceof ExprTy.Constant) {
+            switch (((ExprTy.Constant) e).value.kind) {
+                case NONE:
+                    return PythonBuiltinClassType.PNone;
+                case ELLIPSIS:
+                    return PythonBuiltinClassType.PEllipsis;
+                case BOOLEAN:
+                    return PythonBuiltinClassType.Boolean;
+                case DOUBLE:
+                    return PythonBuiltinClassType.PFloat;
+                case COMPLEX:
+                    return PythonBuiltinClassType.PComplex;
+                case LONG:
+                case BIGINTEGER:
+                    return PythonBuiltinClassType.PInt;
+                case RAW:
+                    return PythonBuiltinClassType.PString;
+                case BYTES:
+                    return PythonBuiltinClassType.PBytes;
+                case TUPLE:
+                    return PythonBuiltinClassType.PTuple;
+                case FROZENSET:
+                    return PythonBuiltinClassType.PFrozenSet;
+                default:
+                    throw shouldNotReachHere("Invalid ConstantValue kind: " + ((ExprTy.Constant) e).value.kind);
+            }
+        }
+        return null;
+    }
+
+    private void checkCaller(ExprTy e) {
+        if (e instanceof ExprTy.Constant || e instanceof ExprTy.Tuple || e instanceof ExprTy.List || e instanceof ExprTy.ListComp || e instanceof ExprTy.Dict || e instanceof ExprTy.DictComp ||
+                        e instanceof ExprTy.Set || e instanceof ExprTy.SetComp || e instanceof ExprTy.GeneratorExp || e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
+            warn(e, "'%s' object is not callable; perhaps you missed a comma?", inferType(e).getName());
+        }
+    }
+
+    private void checkSubscripter(ExprTy e) {
+        if (e instanceof ExprTy.Constant) {
+            switch (((ExprTy.Constant) e).value.kind) {
+                case NONE:
+                case ELLIPSIS:
+                case BOOLEAN:
+                case LONG:
+                case BIGINTEGER:
+                case DOUBLE:
+                case COMPLEX:
+                case FROZENSET:
+                    break;
+                default:
+                    return;
+            }
+        } else if (!(e instanceof ExprTy.Set || e instanceof ExprTy.SetComp || e instanceof ExprTy.GeneratorExp || e instanceof ExprTy.Lambda)) {
+            return;
+        }
+        warn(e, "'%s' object is not subscriptable; perhaps you missed a comma?", inferType(e).getName());
+    }
+
+    private void checkIndex(ExprTy e, ExprTy s) {
+        PythonBuiltinClassType indexType = inferType(s);
+        if (indexType == null || indexType == PythonBuiltinClassType.Boolean || indexType == PythonBuiltinClassType.PInt || indexType == PythonBuiltinClassType.PSlice) {
+            return;
+        }
+        if (e instanceof ExprTy.Constant) {
+            switch (((ExprTy.Constant) e).value.kind) {
+                case RAW:
+                case BYTES:
+                case TUPLE:
+                    break;
+                default:
+                    return;
+            }
+        } else if (!(e instanceof ExprTy.Tuple || e instanceof ExprTy.List || e instanceof ExprTy.ListComp || e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue)) {
+            return;
+        }
+        warn(e, "%s indices must be integers or slices, not %s; perhaps you missed a comma?", inferType(e).getName(), indexType.getName());
     }
 
     public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
