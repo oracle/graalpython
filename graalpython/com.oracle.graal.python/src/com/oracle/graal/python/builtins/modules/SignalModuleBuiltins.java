@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -80,6 +82,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -102,6 +105,10 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey signalModuleDataKey = new HiddenKey("signalModuleData");
     private final ModuleData moduleData = new ModuleData();
 
+    private static final int ITIMER_REAL = 0;
+    private static final int ITIMER_VIRTUAL = 1;
+    private static final int ITIMER_PROF = 2;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SignalModuleBuiltinsFactory.getFactories();
@@ -112,9 +119,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         addBuiltinConstant("SIG_DFL", Signals.SIG_DFL);
         addBuiltinConstant("SIG_IGN", Signals.SIG_IGN);
-        addBuiltinConstant("ITIMER_REAL", 0);
-        addBuiltinConstant("ITIMER_VIRTUAL", 1);
-        addBuiltinConstant("ITIMER_PROF", 2);
+        addBuiltinConstant("ITIMER_REAL", ITIMER_REAL);
+        addBuiltinConstant("ITIMER_VIRTUAL", ITIMER_VIRTUAL);
+        addBuiltinConstant("ITIMER_PROF", ITIMER_PROF);
         for (int i = 0; i < Signals.signalNames.length; i++) {
             String name = Signals.signalNames[i];
             if (name != null) {
@@ -347,21 +354,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             ModuleData moduleData = getModuleData(self, readModuleDataNode);
             long usDelay = toMicroseconds(frame, seconds, timeFromObjectNode);
             long usInterval = toMicroseconds(frame, interval, timeFromObjectNode);
-            if (which != 0) {
+            if (which != ITIMER_REAL) {
                 throw raiseOSError(frame, OSErrorEnum.EINVAL);
             }
-            long oldDelay = 0;
-            long oldInterval = 0;
-            if (moduleData.itimerFuture != null) {
-                oldDelay = moduleData.itimerFuture.getDelay(TimeUnit.MICROSECONDS);
-                oldInterval = moduleData.itimerInterval;
-                moduleData.itimerFuture.cancel(false);
-                moduleData.itimerFuture = null;
-            }
-            if (usDelay != 0) {
-                setitimer(moduleData, usDelay, usInterval);
-            }
-            return factory().createTuple(new Object[]{oldDelay / (double) SEC_TO_US, oldInterval / (double) SEC_TO_US});
+            PTuple resultTuple = GetitimerNode.createResultTuple(factory(), moduleData);
+            setitimer(moduleData, usDelay, usInterval);
+            return resultTuple;
         }
 
         private static long toMicroseconds(VirtualFrame frame, Object obj, PyTimeFromObjectNode timeFromObjectNode) {
@@ -373,6 +371,14 @@ public class SignalModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void setitimer(ModuleData moduleData, long usDelay, long usInterval) {
+            if (moduleData.itimerFuture != null) {
+                moduleData.itimerFuture.cancel(false);
+                moduleData.itimerFuture = null;
+                moduleData.itimerInterval = 0;
+            }
+            if (usDelay == 0) {
+                return;
+            }
             moduleData.itimerInterval = usInterval;
             Runnable r = () -> Signals.raiseSignal("ALRM");
             ScheduledExecutorService itimerService = getItimerService(moduleData);
@@ -396,7 +402,45 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             }
             return moduleData.itimerService;
         }
+    }
 
+    @Builtin(name = "getitimer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, parameterNames = {"$self", "which"})
+    @ArgumentClinic(name = "which", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class GetitimerNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.GetitimerNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doIt(VirtualFrame frame, PythonModule self, int which,
+                        @Cached ReadAttributeFromObjectNode readModuleDataNode) {
+            ModuleData moduleData = getModuleData(self, readModuleDataNode);
+            if (which != ITIMER_REAL) {
+                throw raiseOSError(frame, OSErrorEnum.EINVAL);
+            }
+            return createResultTuple(factory(), moduleData);
+        }
+
+        static PTuple createResultTuple(PythonObjectFactory factory, ModuleData moduleData) {
+            long oldInterval = moduleData.itimerInterval;
+            long oldDelay = getOldDelay(moduleData);
+            return factory.createTuple(new Object[]{oldDelay / (double) SEC_TO_US, oldInterval / (double) SEC_TO_US});
+        }
+
+        @TruffleBoundary
+        static long getOldDelay(ModuleData moduleData) {
+            if (moduleData.itimerFuture == null) {
+                return 0;
+            }
+            long delay = moduleData.itimerFuture.getDelay(TimeUnit.MICROSECONDS);
+            if (delay < 0) {
+                return 0;
+            }
+            return delay;
+        }
     }
 
     private static ModuleData getModuleData(PythonModule self, ReadAttributeFromObjectNode readNode) {
