@@ -113,7 +113,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_DECORATOR_LIST, seq2List(node.decoratorList));
         o.setAttribute(AstState.T_F_RETURNS, visitNullable(node.returns));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -126,7 +126,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_DECORATOR_LIST, seq2List(node.decoratorList));
         o.setAttribute(AstState.T_F_RETURNS, visitNullable(node.returns));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -164,7 +164,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         PythonObject o = factory.createPythonObject(state.clsAssign);
         o.setAttribute(AstState.T_F_TARGETS, seq2List(node.targets));
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -197,7 +197,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_ITER, visitNonNull(node.iter));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -209,7 +209,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         o.setAttribute(AstState.T_F_ITER, visitNonNull(node.iter));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
         o.setAttribute(AstState.T_F_ORELSE, seq2List(node.orElse));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -239,7 +239,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         PythonObject o = factory.createPythonObject(state.clsWith);
         o.setAttribute(AstState.T_F_ITEMS, seq2List(node.items));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -249,7 +249,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         PythonObject o = factory.createPythonObject(state.clsAsyncWith);
         o.setAttribute(AstState.T_F_ITEMS, seq2List(node.items));
         o.setAttribute(AstState.T_F_BODY, seq2List(node.body));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -531,7 +531,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
     public Object visit(ExprTy.Constant node) {
         PythonObject o = factory.createPythonObject(state.clsConstant);
         o.setAttribute(AstState.T_F_VALUE, visitNonNull(node.value));
-        o.setAttribute(AstState.T_F_KIND, visitNullable(node.kind));
+        o.setAttribute(AstState.T_F_KIND, visitNullableStringOrByteArray(node.kind));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -740,7 +740,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         PythonObject o = factory.createPythonObject(state.clsArgTy);
         o.setAttribute(AstState.T_F_ARG, visitNonNull(node.arg));
         o.setAttribute(AstState.T_F_ANNOTATION, visitNullable(node.annotation));
-        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullable(node.typeComment));
+        o.setAttribute(AstState.T_F_TYPE_COMMENT, visitNullableStringOrByteArray(node.typeComment));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -854,7 +854,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
     public Object visit(TypeIgnoreTy.TypeIgnore node) {
         PythonObject o = factory.createPythonObject(state.clsTypeIgnore);
         o.setAttribute(AstState.T_F_LINENO, visitNonNull(node.lineNo));
-        o.setAttribute(AstState.T_F_TAG, visitNonNull(node.tag));
+        o.setAttribute(AstState.T_F_TAG, visitNonNullStringOrByteArray(node.tag));
         return o;
     }
 }

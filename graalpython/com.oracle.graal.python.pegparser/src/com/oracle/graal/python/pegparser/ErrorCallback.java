@@ -43,15 +43,18 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public interface ErrorCallback {
-    public enum ErrorType {
+    enum ErrorType {
         Generic,
         Indentation,
         Tab,
-        Print,
-        Exec,
         Encoding,
-        Warning,
         Value,
+        Syntax,
+        System
+    }
+
+    enum WarningType {
+        Deprecation,
         Syntax
     }
 
@@ -59,7 +62,7 @@ public interface ErrorCallback {
 
     void onError(ErrorType errorType, SourceRange sourceRange, String message);
 
-    void warnDeprecation(SourceRange sourceRange, String message);
+    void onWarning(WarningType warningType, SourceRange sourceRange, String message);
 
     default void onError(ErrorType errorType, SourceRange sourceRange, String message, Object... arguments) {
         onError(errorType, sourceRange, String.format(message, arguments));
@@ -69,7 +72,7 @@ public interface ErrorCallback {
         onError(ErrorType.Generic, sourceRange, String.format(message, arguments));
     }
 
-    default void warnDeprecation(SourceRange sourceRange, String message, Object... arguments) {
-        warnDeprecation(sourceRange, String.format(message, arguments));
+    default void onWarning(WarningType warningType, SourceRange sourceRange, String message, Object... arguments) {
+        onWarning(warningType, sourceRange, String.format(message, arguments));
     }
 }

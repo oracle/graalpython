@@ -16,6 +16,7 @@ import java.util.EnumSet;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 
 /**
  * This class is intentionally kept very close to CPython's tokenizer.c and tokenizer.h files. The
@@ -490,9 +491,8 @@ public class Tokenizer {
         return createToken(Token.Kind.ERRORTOKEN);
     }
 
-    // TODO: parser_warn
-    private void parserWarn(@SuppressWarnings("unused") String warning) {
-        // TODO
+    private void parserWarn(String warning) {
+        errorCallback.onWarning(WarningType.Deprecation, getCurrentTokenRange(false), warning);
     }
 
     /**
@@ -517,10 +517,10 @@ public class Tokenizer {
     private Token verifyEndOfNumber(int c, String kind) {
         /*
          * Emit a deprecation warning only if the numeric literal is immediately followed by one of
-         * keywords which can occurr after a numeric literal in valid code: "and", "else", "for",
+         * keywords which can occur after a numeric literal in valid code: "and", "else", "for",
          * "if", "in", "is" and "or". It allows to gradually deprecate existing valid code without
          * adding warning before error in most cases of invalid numeric literal (which would be
-         * confusiong and break existing tests). Raise a syntax error with slighly better message
+         * confusing and break existing tests). Raise a syntax error with slightly better message
          * than plain "invalid syntax" if the numeric literal is immediately followed by other
          * keyword or identifier.
          */
@@ -539,6 +539,8 @@ public class Tokenizer {
             oneBack();
         } else if (c == 'o') {
             r = lookahead('r');
+        } else if (c == 'n') {
+            r = lookahead('o', 't');
         }
         if (r) {
             oneBack();
@@ -1368,20 +1370,24 @@ public class Tokenizer {
         if (kind == Token.Kind.ENDMARKER) {
             return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(currentLineNumber, -1, currentLineNumber, -1), extraData);
         }
-        int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
-        int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
+        return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, getCurrentTokenRange(kind == Token.Kind.STRING), extraData);
+    }
+
+    private SourceRange getCurrentTokenRange(boolean multiLineString) {
+        int lineStart = multiLineString ? multiLineStartIndex : lineStartIndex;
+        int lineno = multiLineString ? firstLineNumber : currentLineNumber;
         int endLineno = currentLineNumber;
         int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
         int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
-        lineno += srcStartLine;
-        endLineno += srcStartLine;
         if (lineno == 1) {
             colOffset += srcStartColumn;
         }
         if (endLineno == 1) {
             endColOffset += srcStartColumn;
         }
-        return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(lineno, colOffset, endLineno, endColOffset), extraData);
+        lineno += srcStartLine;
+        endLineno += srcStartLine;
+        return new SourceRange(lineno, colOffset, endLineno, endColOffset);
     }
 
     public String getTokenString(Token tok) {

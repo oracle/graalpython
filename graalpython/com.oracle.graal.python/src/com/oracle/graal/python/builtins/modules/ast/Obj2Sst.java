@@ -214,7 +214,7 @@ final class Obj2Sst extends Obj2SstBase {
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_FUNCTIONDEF, this::obj2StmtTy, StmtTy[]::new);
         ExprTy[] decoratorList = lookupAndConvertSequence(obj, AstState.T_F_DECORATOR_LIST, AstState.T_C_FUNCTIONDEF, this::obj2ExprTy, ExprTy[]::new);
         ExprTy returns = lookupAndConvert(obj, AstState.T_F_RETURNS, AstState.T_C_FUNCTIONDEF, this::obj2ExprTy, false);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_FUNCTIONDEF, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_FUNCTIONDEF, this::obj2string, false);
         return new StmtTy.FunctionDef(name, args, body, decoratorList, returns, typeComment, sourceRange);
     }
 
@@ -224,7 +224,7 @@ final class Obj2Sst extends Obj2SstBase {
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2StmtTy, StmtTy[]::new);
         ExprTy[] decoratorList = lookupAndConvertSequence(obj, AstState.T_F_DECORATOR_LIST, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2ExprTy, ExprTy[]::new);
         ExprTy returns = lookupAndConvert(obj, AstState.T_F_RETURNS, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2ExprTy, false);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCFUNCTIONDEF, this::obj2string, false);
         return new StmtTy.AsyncFunctionDef(name, args, body, decoratorList, returns, typeComment, sourceRange);
     }
 
@@ -250,7 +250,7 @@ final class Obj2Sst extends Obj2SstBase {
     StmtTy.Assign obj2Assign(Object obj, SourceRange sourceRange) {
         ExprTy[] targets = lookupAndConvertSequence(obj, AstState.T_F_TARGETS, AstState.T_C_ASSIGN, this::obj2ExprTy, ExprTy[]::new);
         ExprTy value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_C_ASSIGN, this::obj2ExprTy, true);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASSIGN, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASSIGN, this::obj2string, false);
         return new StmtTy.Assign(targets, value, typeComment, sourceRange);
     }
 
@@ -274,7 +274,7 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy iter = lookupAndConvert(obj, AstState.T_F_ITER, AstState.T_C_FOR, this::obj2ExprTy, true);
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_FOR, this::obj2StmtTy, StmtTy[]::new);
         StmtTy[] orElse = lookupAndConvertSequence(obj, AstState.T_F_ORELSE, AstState.T_C_FOR, this::obj2StmtTy, StmtTy[]::new);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_FOR, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_FOR, this::obj2string, false);
         return new StmtTy.For(target, iter, body, orElse, typeComment, sourceRange);
     }
 
@@ -283,7 +283,7 @@ final class Obj2Sst extends Obj2SstBase {
         ExprTy iter = lookupAndConvert(obj, AstState.T_F_ITER, AstState.T_C_ASYNCFOR, this::obj2ExprTy, true);
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_ASYNCFOR, this::obj2StmtTy, StmtTy[]::new);
         StmtTy[] orElse = lookupAndConvertSequence(obj, AstState.T_F_ORELSE, AstState.T_C_ASYNCFOR, this::obj2StmtTy, StmtTy[]::new);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCFOR, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCFOR, this::obj2string, false);
         return new StmtTy.AsyncFor(target, iter, body, orElse, typeComment, sourceRange);
     }
 
@@ -304,14 +304,14 @@ final class Obj2Sst extends Obj2SstBase {
     StmtTy.With obj2With(Object obj, SourceRange sourceRange) {
         WithItemTy[] items = lookupAndConvertSequence(obj, AstState.T_F_ITEMS, AstState.T_C_WITH, this::obj2WithItemTy, WithItemTy[]::new);
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_WITH, this::obj2StmtTy, StmtTy[]::new);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_WITH, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_WITH, this::obj2string, false);
         return new StmtTy.With(items, body, typeComment, sourceRange);
     }
 
     StmtTy.AsyncWith obj2AsyncWith(Object obj, SourceRange sourceRange) {
         WithItemTy[] items = lookupAndConvertSequence(obj, AstState.T_F_ITEMS, AstState.T_C_ASYNCWITH, this::obj2WithItemTy, WithItemTy[]::new);
         StmtTy[] body = lookupAndConvertSequence(obj, AstState.T_F_BODY, AstState.T_C_ASYNCWITH, this::obj2StmtTy, StmtTy[]::new);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCWITH, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_C_ASYNCWITH, this::obj2string, false);
         return new StmtTy.AsyncWith(items, body, typeComment, sourceRange);
     }
 
@@ -590,7 +590,7 @@ final class Obj2Sst extends Obj2SstBase {
 
     ExprTy.Constant obj2Constant(Object obj, SourceRange sourceRange) {
         ConstantValue value = lookupAndConvert(obj, AstState.T_F_VALUE, AstState.T_C_CONSTANT, this::obj2ConstantValue, true);
-        String kind = lookupAndConvert(obj, AstState.T_F_KIND, AstState.T_C_CONSTANT, this::obj2String, false);
+        Object kind = lookupAndConvert(obj, AstState.T_F_KIND, AstState.T_C_CONSTANT, this::obj2string, false);
         return new ExprTy.Constant(value, kind, sourceRange);
     }
 
@@ -801,7 +801,7 @@ final class Obj2Sst extends Obj2SstBase {
     ArgTy obj2ArgTy(Object obj) {
         String arg = lookupAndConvert(obj, AstState.T_F_ARG, AstState.T_T_ARG, this::obj2identifier, true);
         ExprTy annotation = lookupAndConvert(obj, AstState.T_F_ANNOTATION, AstState.T_T_ARG, this::obj2ExprTy, false);
-        String typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_T_ARG, this::obj2String, false);
+        Object typeComment = lookupAndConvert(obj, AstState.T_F_TYPE_COMMENT, AstState.T_T_ARG, this::obj2string, false);
         int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_T_ARG, true);
         int colOffset = lookupAndConvertInt(obj, AstState.T_F_COL_OFFSET, AstState.T_T_ARG, true);
         int endLineno = lookupAndConvertInt(obj, AstState.T_F_END_LINENO, AstState.T_T_ARG, false);
@@ -941,7 +941,7 @@ final class Obj2Sst extends Obj2SstBase {
 
     TypeIgnoreTy.TypeIgnore obj2TypeIgnore(Object obj) {
         int lineNo = lookupAndConvertInt(obj, AstState.T_F_LINENO, AstState.T_C_TYPEIGNORE, true);
-        String tag = lookupAndConvert(obj, AstState.T_F_TAG, AstState.T_C_TYPEIGNORE, this::obj2String, true);
+        Object tag = lookupAndConvert(obj, AstState.T_F_TAG, AstState.T_C_TYPEIGNORE, this::obj2string, true);
         SourceRange sourceRange = SourceRange.ARTIFICIAL_RANGE;
         return new TypeIgnoreTy.TypeIgnore(lineNo, tag, sourceRange);
     }

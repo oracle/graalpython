@@ -195,12 +195,28 @@ abstract class Obj2SstBase {
         return obj2int(o) != 0;
     }
 
-    String obj2String(Object obj) {     // TODO support str and bytes
-        // TODO if (!PyUnicode_CheckExact(obj) && !PyBytes_CheckExact(obj))
+    // Equivalent of obj2ast_string().
+    // The ASDL "string" type represents either "str" or "bytes" python types.
+    // CPython just checks the type and keeps it as a python object in the AST.
+    // We need to convert the value to a Java type: j.l.String or byte[].
+    Object obj2string(Object obj) {
         if (obj == PNone.NONE) {
             return null;
         }
-        return CastToJavaStringNode.getUncached().execute(obj);
+        if (PyBytesCheckExactNode.getUncached().execute(obj)) {
+            PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getUncached();
+            PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getUncached();
+            Object buf = acquireLib.acquireReadonly(obj);
+            try {
+                return accessLib.getCopiedByteArray(buf);
+            } finally {
+                accessLib.release(buf);
+            }
+        }
+        if (PyUnicodeCheckExactNode.getUncached().execute(obj)) {
+            return CastToJavaStringNode.getUncached().execute(obj);
+        }
+        throw raiseTypeError(ErrorMessages.AST_STRING_MUST_BE_OF_TYPE_STR);
     }
 
     String obj2identifier(Object obj) {

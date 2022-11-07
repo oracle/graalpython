@@ -55,9 +55,9 @@ public abstract class TypeIgnoreTy extends SSTNode {
 
     public static final class TypeIgnore extends TypeIgnoreTy {
         public final int lineNo;
-        public final String tag;
+        public final Object tag;
 
-        public TypeIgnore(int lineNo, String tag, SourceRange sourceRange) {
+        public TypeIgnore(int lineNo, Object tag, SourceRange sourceRange) {
             super(sourceRange);
             this.lineNo = lineNo;
             assert tag != null;

@@ -50,9 +50,9 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 public final class ArgTy extends SSTNode {
     public final String arg;
     public final ExprTy annotation;   // nullable
-    public final String typeComment;   // nullable
+    public final Object typeComment;   // nullable
 
-    public ArgTy(String arg, ExprTy annotation, String typeComment, SourceRange sourceRange) {
+    public ArgTy(String arg, ExprTy annotation, Object typeComment, SourceRange sourceRange) {
         super(sourceRange);
         assert arg != null;
         this.arg = arg;
