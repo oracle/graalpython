@@ -151,7 +151,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "pos < size(frame, dict, sizeNode)", limit = "1")
-        Object run(VirtualFrame frame, PDict dict, int pos,
+        Object run(@SuppressWarnings("unused") VirtualFrame frame, PDict dict, int pos,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
                         @Cached HashingStorageGetIterator getIterator,
                         @Cached HashingStorageIteratorNext itNext,

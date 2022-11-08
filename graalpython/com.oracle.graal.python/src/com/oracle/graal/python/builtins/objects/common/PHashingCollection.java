@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.truffle.api.object.Shape;
@@ -62,9 +60,5 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
     public final void setDictStorage(HashingStorage storage) {
         assert storage == this.storage || !(this instanceof PFrozenSet) : "frozenSet is unmodifiable";
         this.storage = storage;
-    }
-
-    public HashingStorageIterable<DictEntry> entries() {
-        return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
 }

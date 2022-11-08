@@ -121,6 +121,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1501,13 +1506,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @Cached SetDictNode setDict,
                             @Cached AsPythonObjectNode asPythonObjectNode,
                             @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached HashingStorageGetIterator getIterator,
+                            @Cached HashingStorageIteratorNext itNext,
+                            @Cached HashingStorageIteratorKey itKey,
+                            @Cached HashingStorageIteratorValue itValue,
                             @Cached IsBuiltinClassProfile isPrimitiveDictProfile) {
                 Object value = asPythonObjectNode.execute(nativeValue);
                 if (isBuiltinDict(isPrimitiveDictProfile, value)) {
                     // special and fast case: commit items and change store
                     PDict d = (PDict) value;
-                    for (HashingStorage.DictEntry entry : d.entries()) {
-                        writeAttrNode.execute(object, entry.getKey(), entry.getValue());
+                    HashingStorage storage = d.getDictStorage();
+                    HashingStorageIterator it = getIterator.execute(storage);
+                    while (itNext.execute(storage, it)) {
+                        writeAttrNode.execute(object, itKey.execute(storage, it), itValue.execute(storage, it));
                     }
                     PDict existing = getDict.execute(object);
                     if (existing != null) {
