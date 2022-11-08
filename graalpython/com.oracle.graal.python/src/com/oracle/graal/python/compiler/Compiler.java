@@ -185,7 +185,6 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -2868,12 +2867,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else if (value instanceof ExprTy.UnaryOp) {
             patterMatchValueUnaryOp((ExprTy.UnaryOp) value);
         } else if (value instanceof ExprTy.BinOp) {
-            try {
-                patternMatchValueBinOp((ExprTy.BinOp) value);
-            } catch (Throwable t) {
-                ExceptionUtils.printPythonLikeStackTrace();
-                throw t;
-            }
+            patternMatchValueBinOp((ExprTy.BinOp) value);
         } else {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "patterns may only match literals and attribute lookups");
         }
