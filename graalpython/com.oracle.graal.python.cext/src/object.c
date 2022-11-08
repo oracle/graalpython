@@ -212,7 +212,8 @@ PyObject * PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwar
         Py_DECREF(kwnames);
     }
 
-    return _Py_CheckFunctionResult(callable, result, NULL);
+    //return _Py_CheckFunctionResult(callable, result, NULL);
+    return result;
 }
 
 #define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')

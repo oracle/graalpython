@@ -1,0 +1,10 @@
+diff --git a/scipy/__init__.py b/scipy/__init__.py
+index f4af2ad8e..de3025b3c 100644
+--- a/scipy/__init__.py
++++ b/scipy/__init__.py
+@@ -157,4 +157,4 @@ else:
+     del PytestTester
+ 
+     # This makes "from scipy import fft" return scipy.fft, not np.fft
+-    del fft
++    # del fft

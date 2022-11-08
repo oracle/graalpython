@@ -216,6 +216,7 @@ graalpython/com.oracle.graal.python.cext/src/mystrtoul.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/sliceobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/unicodeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h,python.copyright
 graalpython/com.oracle.graal.python.frozen/freeze_modules.py,python.copyright
 graalpython/com.oracle.graal.python.jni/src/ctx_tracker.c,hpy.copyright

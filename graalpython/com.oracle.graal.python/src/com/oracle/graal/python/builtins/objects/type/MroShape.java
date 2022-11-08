@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASICSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SLOTNAMES__;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -223,6 +224,7 @@ public final class MroShape {
                 // We ignore difference for special attributes that should not influence the MRO
                 // lookup results
                 diff.remove(T___BASICSIZE__);
+                diff.remove(T___SLOTNAMES__);
                 if (diff.size() > 0) {
                     HashSet<String> sDiff = new HashSet<>(diff.size());
                     for (Object o : diff) {
