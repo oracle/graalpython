@@ -55,6 +55,15 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
+/**
+ * Represents an unbound builtin method. Corresponds to python types:
+ * <ul>
+ * <li>{@code method_descriptor} - Used for unbound methods on a type. Example:
+ * {@code str.startswith}
+ * <li>{@code wrapper_descriptor} - Used for unbound slot methods on a type. Example:
+ * {@code str.__str__}
+ * </ul>
+ */
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
