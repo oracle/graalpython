@@ -339,7 +339,9 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | CannotCastException e) {
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (CannotCastException e) {
                 // I think we can just assume that there won't be more than
                 // Integer.MAX_VALUE arguments.
                 throw CompilerDirectives.shouldNotReachHere();
