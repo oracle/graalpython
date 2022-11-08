@@ -64,7 +64,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags._Py_TPFLAGS_MATCH_SELF;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -266,13 +266,13 @@ public abstract class TypeNodes {
                     break;
                 case PFrozenSet:
                 case PSet:
-                    result = DEFAULT | HAVE_GC | BASETYPE | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF;
                     break;
                 case Boolean:
-                    result = DEFAULT | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | LONG_SUBCLASS | MATCH_SELF;
                     break;
                 case PBytes:
-                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS | MATCH_SELF;
                     break;
                 case PFunction:
                 case PBuiltinFunction:
@@ -311,7 +311,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | SEQUENCE;
                     break;
                 case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | MAPPING;
+                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | MATCH_SELF | MAPPING;
                     break;
                 case PDefaultDict:
                     result = DEFAULT | HAVE_GC | BASETYPE | MAPPING;
@@ -320,16 +320,16 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
                     break;
                 case PList:
-                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | MATCH_SELF | SEQUENCE;
                     break;
                 case PInt:
-                    result = DEFAULT | BASETYPE | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | LONG_SUBCLASS | MATCH_SELF;
                     break;
                 case PString:
-                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | MATCH_SELF;
                     break;
                 case PTuple:
-                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | MATCH_SELF | SEQUENCE;
                     break;
                 case PRange:
                     result = DEFAULT | SEQUENCE;
@@ -339,7 +339,7 @@ public abstract class TypeNodes {
                     break;
                 case PByteArray:
                 case PFloat:
-                    result = DEFAULT | BASETYPE | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | MATCH_SELF;
                     break;
                 default:
                     // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,

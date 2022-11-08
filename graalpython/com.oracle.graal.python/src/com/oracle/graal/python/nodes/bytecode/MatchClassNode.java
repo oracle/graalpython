@@ -63,7 +63,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags._Py_TPFLAGS_MATCH_SELF;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -114,7 +114,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                 // soon as they redefine it.
                 e.expectAttributeError(isClassProfile);
                 matchArgs = factory.createEmptyTuple();
-                matchSelf = (getTypeFlagsNode.execute(type) & _Py_TPFLAGS_MATCH_SELF) != 0;
+                matchSelf = (getTypeFlagsNode.execute(type) & MATCH_SELF) != 0;
             }
             int allowed = matchSelf ? 1 : tupleSizeNode.execute(matchArgs);
             if (allowed < nargs) {
