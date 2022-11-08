@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
@@ -543,45 +545,55 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     public static GetAttrWrapper createGetAttrWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new GetAttrWrapper(method);
     }
 
     public static UnaryFuncWrapper createUnaryFuncWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new UnaryFuncWrapper(method);
     }
 
     public static BinaryFuncWrapper createBinaryFuncWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
         return new BinaryFuncWrapper(method);
     }
 
     public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
+        assert !(setAttrMethod instanceof PNone) && !(setAttrMethod instanceof PNotImplemented);
         return new SetAttrWrapper(setAttrMethod);
     }
 
     public static InitWrapper createInitWrapper(Object setInitMethod) {
+        assert !(setInitMethod instanceof PNone) && !(setInitMethod instanceof PNotImplemented);
         return new InitWrapper(setInitMethod);
     }
 
-    public static VarargWrapper createVarargWrapper(Object setInitMethod) {
-        return new VarargWrapper(setInitMethod);
+    public static VarargWrapper createVarargWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new VarargWrapper(method);
     }
 
-    public static VarargKeywordWrapper createVarargKeywordWrapper(Object setInitMethod) {
-        return new VarargKeywordWrapper(setInitMethod);
+    public static VarargKeywordWrapper createVarargKeywordWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new VarargKeywordWrapper(method);
     }
 
     /**
      * Wraps CPython's {@code ternaryfunc} slots.
      */
-    public static TernaryFunctionWrapper createTernaryFunctionWrapper(Object setTernaryMethod) {
-        return new TernaryFunctionWrapper(setTernaryMethod);
+    public static TernaryFunctionWrapper createTernaryFunctionWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new TernaryFunctionWrapper(method);
     }
 
-    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {
-        return new SsizeargfuncWrapper(ssizeArgMethod, newRef);
+    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object method, boolean newRef) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new SsizeargfuncWrapper(method, newRef);
     }
 
-    public static LenfuncWrapper createLenfuncWrapper(Object lenfuncMethod) {
-        return new LenfuncWrapper(lenfuncMethod);
+    public static LenfuncWrapper createLenfuncWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new LenfuncWrapper(method);
     }
 }

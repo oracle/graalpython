@@ -217,6 +217,39 @@ class EnvBuilder:
                 if not os.path.exists(dest):
                     os.symlink(tool_path, dest)
 
+        self._wrap_gfortran(context)
+
+    def _which_gfortran(self, context):
+        wrapper_path = os.path.join(context.bin_path, "gfortran")
+        extensions = [".bat", ".exe"] if sys.platform == "win32" else [""]
+        for p in os.environ.get("PATH", "").split(";" if sys.platform == "win32" else ":"):
+            if p != wrapper_path:
+                for ext in extensions:
+                    gfortran = os.path.join(p, "gfortran{}".format(ext))
+                    if os.path.exists(gfortran):
+                        return gfortran
+        return None
+
+    def _wrap_gfortran(self, context):
+        gfortran = self._which_gfortran(context)
+        if gfortran:
+            script = os.path.join(context.bin_path, "gfortran")
+            logger.warning("gfortran compiler found: {}, creating wrapper: {}".format(gfortran, script))
+            if sys.platform == 'win32':
+                script += ".bat"
+
+            with open(script, "w") as f:
+                if sys.platform != "win32":
+                    f.write("#!/bin/sh\n")
+                f.write("{} -shared -fPIC".format(gfortran))
+                if sys.platform == "win32":
+                    f.write(" %*")
+                else:
+                    f.write(" \"$@\"")
+
+            if sys.platform != "win32":
+                os.chmod(script, 0o777)
+
     def _patch_shebang(self, context):
         # Truffle change: we need to patch the pip/pip3 (and maybe other)
         # launchers on Darwin because the shebang tries to invoke our

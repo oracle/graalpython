@@ -87,6 +87,7 @@ SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--l
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
 
+
 def _get_core_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-graalpython")
 
@@ -230,12 +231,12 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
-    '''
+    """
     Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
 
     Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
     in the arguments array, then we append filter that includes all GraalPython junit tests.
-    '''
+    """
     args = []
     skip_leak_tests = False
     if "--regex" not in ars:
@@ -254,14 +255,15 @@ def punittest(ars):
                        "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
                        "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
 
-        if not all([# test leaks with Python code only
-                run_leak_launcher(common_args + ["--code", "pass", ]),
-                # test leaks when some C module code is involved
-                run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
-                # test leaks with shared engine Python code only
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-                # test leaks with shared engine when some C module code is involved
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+        if not all([
+            # test leaks with Python code only
+            run_leak_launcher(common_args + ["--code", "pass", ]),
+            # test leaks when some C module code is involved
+            run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
+            # test leaks with shared engine Python code only
+            run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+            # test leaks with shared engine when some C module code is involved
+            run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
         ]):
             mx.abort(1)
 
@@ -412,7 +414,8 @@ def _fetch_tags_for_platform(parsed_args, platform):
             out = mx.OutputCapture()
             mx.run(['file', tarfile], out=out)
             if 'HTML' in out.data:
-                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) to continue.' % (url, d), default='y'):
+                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) '
+                                     'to continue.' % (url, d), default='y'):
                     sys.exit(1)
             os.mkdir(platform)
             mx.run(['tar', 'xf', tarfile, '-C', platform])
@@ -507,6 +510,12 @@ def update_unittest_tags(args):
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 
+GINSTALL_GATE_PACKAGES = {
+    "numpy": "numpy",
+    "scipy": "scipy",
+    "scikit_learn": "sklearn",
+}
+
 
 class GraalPythonTags(object):
     junit = 'python-junit'
@@ -518,6 +527,7 @@ class GraalPythonTags(object):
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
+    ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
@@ -553,12 +563,16 @@ def python_gate(args):
     return mx.command_function("gate")(args)
 
 
-python_gate.__doc__ = 'Custom gates are %s' % ", ".join([getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")])
+python_gate.__doc__ = 'Custom gates are %s' % ", ".join([
+    getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")
+])
 
 
 def find_eclipse():
     pardir = os.path.abspath(os.path.join(SUITE.dir, ".."))
-    for f in [os.path.join(SUITE.dir, f) for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f) for f in os.listdir(pardir)]:
+    for f in [os.path.join(SUITE.dir, f)
+              for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f)
+                                                 for f in os.listdir(pardir)]:
         if os.path.basename(f) == "eclipse" and os.path.isdir(f):
             mx.log("Automatically choosing %s for Eclipse" % f)
             eclipse_exe = os.path.join(f, "eclipse")
@@ -569,7 +583,7 @@ def find_eclipse():
 
 @contextlib.contextmanager
 def set_env(**environ):
-    "Temporarily set the process environment variables"
+    """Temporarily set the process environment variables"""
     old_environ = dict(os.environ)
     os.environ.update(environ)
     try:
@@ -620,6 +634,7 @@ def python_managed_gvm(_=None):
     launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
+
 
 def python_enterprise_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
@@ -789,6 +804,63 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
 
 
+def get_venv_env(env_dir):
+    env = os.environ.copy()
+    path = os.environ.get("PATH", '')
+    env.update(**{
+        'VIRTUAL_ENV': env_dir,
+        'PATH': ":".join([os.path.join(env_dir, 'bin'), path]),
+    })
+    if 'PYTHONHOME' in env:
+        del env['PYTHONHOME']
+    return env
+
+
+def prepare_graalpy_venv(python_binary, packages=None, env_path=None, args=None):
+    if args is None:
+        args = []
+    if packages is None:
+        packages = []
+    if isinstance(packages, dict):
+        packages = list(packages.keys())
+    assert isinstance(packages, (tuple, set, list)), "packages arg must be a tuple, set or list"
+    env_dir = os.path.realpath(env_path if env_path else tempfile.mkdtemp())
+    mx.log("using graalpython venv: {}".format(env_dir))
+    mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
+    mx.log("installing the following packages: {}".format(", ".join(packages)))
+    for p in packages:
+        mx.run(["graalpy", "-m", "ginstall"] + args + ["install", p], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    return env_dir
+
+
+def run_with_venv(cmd, env_dir, **kwargs):
+    assert isinstance(cmd, list), "cmd argument must be a list"
+    kwargs['env'] = get_venv_env(env_dir)
+    mx.run(cmd, **kwargs)
+
+
+def run_ginstall(python_binary, args=None):
+    if args is None:
+        args = []
+    env_dir = prepare_graalpy_venv(python_binary, packages=GINSTALL_GATE_PACKAGES, args=args)
+    import_packages = '"{}"'.format(';'.join(["import {}".format(n) for p, n in GINSTALL_GATE_PACKAGES.items()]))
+    run_with_venv(["graalpy", "-c", import_packages], env_dir, nonZeroIsFatal=True)
+
+
+def is_bash_launcher(launcher_path):
+    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+        return re.match(r'^#!.*bash', launcher.readline())
+
+
+def patch_batch_launcher(launcher_path, jvm_args):
+    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+        lines = launcher.readlines()
+    assert re.match(r'^#!.*bash', lines[0]), "expected a bash launcher"
+    lines.insert(-1, 'jvm_args+=(%s)\n' % jvm_args)
+    with open(launcher_path, 'w') as launcher:
+        launcher.writelines(lines)
+
+
 def run_hpy_unittests(python_binary, args=None, include_native=True):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
@@ -902,6 +974,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
             run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True)
+
+    with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall]) as task:
+        if task:
+            run_ginstall(python_gvm(), args=["--quiet"])
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
@@ -1441,7 +1517,7 @@ def _python_checkpatchfiles():
         checked = set()
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
-            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0"
+            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache"
         ]
         for line in content.split("\n"):
             if os.stat(line).st_size == 0:
@@ -1461,7 +1537,8 @@ def _python_checkpatchfiles():
                     data_license = data["info"]["license"]
                     if data_license not in allowed_licenses:
                         mx.abort(("The license for the original project %r is %r. We cannot include " +
-                                  "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
+                                  "a patch for it. Allowed licenses are: %r.") % (
+                            package_name, data_license, allowed_licenses))
                 except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:

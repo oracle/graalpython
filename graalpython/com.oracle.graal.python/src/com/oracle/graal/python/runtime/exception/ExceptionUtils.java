@@ -223,7 +223,7 @@ public final class ExceptionUtils {
             // for the original exception.
             // In case of ordinary PExceptions, when WithJavaStacktrace is > 1, they have a
             // synthetic cause that carries the stacktrace created at the same place.
-            if (exception.getCause() != null && exception.getCause().getStackTrace().length != 0) {
+            if (exception != null && exception.getCause() != null && exception.getCause().getStackTrace().length != 0) {
                 exception.getCause().printStackTrace();
             }
         }

@@ -79,4 +79,18 @@ public final class PContextVar extends PythonBuiltinObject {
         PContextVarsContext current = state.getContextVarsContext();
         current.contextVarValues = current.contextVarValues.withEntry(new Hamt.Entry(this, getHash(), value));
     }
+
+    public Object get(PythonContext.PythonThreadState state, Object defaultValue) {
+        Object result = getValue(state);
+        if (result != null) {
+            return result;
+        }
+        if (defaultValue != PContextVar.NO_DEFAULT) {
+            return defaultValue;
+        }
+        if (def != PContextVar.NO_DEFAULT) {
+            return def;
+        }
+        return null;
+    }
 }
