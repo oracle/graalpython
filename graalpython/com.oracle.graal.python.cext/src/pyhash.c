@@ -40,7 +40,10 @@
  */
 #include "capi.h"
 
-Py_hash_t _Py_HashDouble(double value) {
+Py_hash_t _Py_HashDouble(PyObject *inst, double value) {
+    if (!Py_IS_FINITE(value)) {
+        return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), inst);
+    }
     return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), value);
 }
 
@@ -61,14 +64,23 @@ Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
 }
 
 /* taken from CPython */
-Py_hash_t _Py_HashPointer(void *p) {
-    Py_hash_t x;
+Py_hash_t
+_Py_HashPointerRaw(const void *p)
+{
     size_t y = (size_t)p;
     /* bottom 3 or 4 bits are likely to be 0; rotate y by 4 to avoid
        excessive hash collisions for dicts and sets */
     y = (y >> 4) | (y << (8 * SIZEOF_VOID_P - 4));
-    x = (Py_hash_t)y;
-    if (x == -1)
+    return (Py_hash_t)y;
+}
+
+/* taken from CPython */
+Py_hash_t
+_Py_HashPointer(const void *p)
+{
+    Py_hash_t x = _Py_HashPointerRaw(p);
+    if (x == -1) {
         x = -2;
+    }
     return x;
 }
