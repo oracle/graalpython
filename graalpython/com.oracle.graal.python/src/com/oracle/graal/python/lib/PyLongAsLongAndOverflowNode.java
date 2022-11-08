@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -82,12 +84,20 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         return x ? 1 : 0;
     }
 
+    @Specialization
+    static long doNativePointer(PythonNativeVoidPtr object) {
+        return object.getNativePointer();
+    }
+
     // TODO When we implement casting native longs, this should cast them instead of calling their
     // __index__
-    @Specialization(guards = "!canBeInteger(object)")
+    @Fallback
     long doObject(VirtualFrame frame, Object object,
                     @Cached PyNumberIndexNode indexNode,
                     @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
-        return recursive.execute(frame, indexNode.execute(frame, object));
+        Object result = indexNode.execute(frame, object);
+        // PyNumberIndexNode guarantees that the result is a builtin integer
+        assert PyLongCheckExactNode.canBeBuiltinInt(result);
+        return recursive.execute(frame, result);
     }
 }
