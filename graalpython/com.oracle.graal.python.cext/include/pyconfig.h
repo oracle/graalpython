@@ -62,6 +62,8 @@
 #define CYTHON_FAST_THREAD_STATE 0
 #define CYTHON_PROFILE 0
 #define CYTHON_TRACE 0
+// This s a workaround for a Cython bug that it uses a macro that CPython already removed
+#define _Py_DEC_REFTOTAL
 
 /* Enable GNU extensions on systems that have them. */
 #ifndef _GNU_SOURCE
