@@ -97,8 +97,11 @@ import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMACompressor;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMADecompressor;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -126,8 +129,8 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -248,7 +251,7 @@ public class LZMANodes {
         }
     }
 
-    protected abstract static class ForEachOption extends HashingStorageLibrary.ForEachNode<OptionsState> {
+    protected abstract static class ForEachOption extends HashingStorageForEachCallback<OptionsState> {
 
         private static int getOptionIndex(TruffleString key, OptionsState s, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < s.optnames.length; i++) {
@@ -259,27 +262,24 @@ public class LZMANodes {
             return -1;
         }
 
-        protected abstract OptionsState executeOptionState(Object key, OptionsState s);
-
         @Override
-        public OptionsState execute(Object key, OptionsState s) {
-            return executeOptionState(key, s);
-        }
+        public abstract OptionsState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, OptionsState s);
 
         @Specialization
-        OptionsState doit(Object key, OptionsState s,
+        OptionsState doit(Frame frame, HashingStorage storage, HashingStorageIterator it, OptionsState s,
+                        @Cached HashingStorageIteratorKey itKey,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached ConditionProfile errProfile,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PRaiseNode raise,
                         @Cached TruffleString.EqualNode equalNode) {
-            TruffleString skey = strNode.execute(null, key);
+            Object key = itKey.execute(storage, it);
+            TruffleString skey = strNode.execute(frame, key);
             int idx = getOptionIndex(skey, s, equalNode);
             if (errProfile.profile(idx == -1)) {
                 throw raise.raise(ValueError, ErrorMessages.INVALID_FILTER_SPECIFIED_FOR_FILTER, s.filterType);
             }
-            // TODO: channel the frame through the for each node
             long l = toLong.execute(getItem.execute(s.dictStorage, skey));
             if (errProfile.profile(l < 0)) {
                 throw raise.raise(OverflowError, ErrorMessages.CANT_CONVERT_NEG_INT_TO_UNSIGNED);
@@ -395,7 +395,7 @@ public class LZMANodes {
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached GetOptionsDict getOptionsDict,
                         @Cached HashingStorageGetItem getItem,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageForEach forEachNode) {
             HashingStorage dict = getOptionsDict.execute(frame, spec);
             Object idObj = getItem.execute(dict, T_ID);
             long id = toLong.execute(idObj);
@@ -428,7 +428,7 @@ public class LZMANodes {
                     throw raise(ValueError, INVALID_FILTER, id);
             }
             options[0] = id;
-            hlib.forEach(dict, getOptions, state);
+            forEachNode.execute(frame, dict, getOptions, state);
             return options;
         }
     }
