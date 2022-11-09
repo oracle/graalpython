@@ -137,7 +137,7 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
 
     @GenerateUncached
     @ImportStatic(SpecialMethodSlot.class)
-    static abstract class PyObjectSizeGenericNode extends Node {
+    abstract static class PyObjectSizeGenericNode extends Node {
         abstract int execute(Frame frame, Object object);
 
         protected abstract Object executeObject(Frame frame, Object object);

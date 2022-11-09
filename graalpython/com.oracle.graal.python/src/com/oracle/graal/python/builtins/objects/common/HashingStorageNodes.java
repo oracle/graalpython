@@ -86,7 +86,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public class HashingStorageNodes {
 
-    public static abstract class HashingStorageGuards {
+    public abstract static class HashingStorageGuards {
         private HashingStorageGuards() {
         }
 
@@ -105,7 +105,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageGetItemWithHash extends Node {
+    public abstract static class HashingStorageGetItemWithHash extends Node {
         public abstract Object execute(Frame frame, HashingStorage self, Object key, long keyHash);
 
         @Specialization
@@ -140,7 +140,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageGetItem extends Node {
+    public abstract static class HashingStorageGetItem extends Node {
         public static boolean hasKeyUncached(HashingStorage storage, Object key) {
             return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key) != null;
         }
@@ -200,12 +200,12 @@ public class HashingStorageNodes {
         }
     }
 
-    static abstract class SpecializedSetStringKey extends Node {
+    abstract static class SpecializedSetStringKey extends Node {
         public abstract void execute(HashingStorage self, TruffleString key, Object value);
     }
 
     @GenerateUncached
-    static abstract class HashingStorageToEconomicMap extends Node {
+    abstract static class HashingStorageToEconomicMap extends Node {
         abstract EconomicMapStorage execute(HashingStorage storage);
 
         @Specialization
@@ -258,7 +258,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public static abstract class HashingStorageSetItemWithHash extends Node {
+    public abstract static class HashingStorageSetItemWithHash extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
         public static HashingStorageSetItemWithHash create() {
@@ -355,7 +355,7 @@ public class HashingStorageNodes {
      */
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public static abstract class HashingStorageSetItem extends Node {
+    public abstract static class HashingStorageSetItem extends Node {
         static final int DOM_SIZE_THRESHOLD = DynamicObjectStorage.SIZE_THRESHOLD;
 
         public static HashingStorageSetItem create() {
@@ -465,7 +465,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageDelItem extends Node {
+    public abstract static class HashingStorageDelItem extends Node {
         public static void executeUncached(HashingStorage self, Object key, PHashingCollection toUpdate) {
             HashingStorageDelItemNodeGen.getUncached().executeWithAsserts(null, self, key, false, toUpdate);
         }
@@ -577,7 +577,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageLen extends Node {
+    public abstract static class HashingStorageLen extends Node {
         public static int executeUncached(HashingStorage dictStorage) {
             return HashingStorageLenNodeGen.getUncached().execute(dictStorage);
         }
@@ -613,7 +613,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageClear extends Node {
+    public abstract static class HashingStorageClear extends Node {
         public abstract HashingStorage execute(HashingStorage storage);
 
         @Specialization
@@ -636,7 +636,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageCopy extends Node {
+    public abstract static class HashingStorageCopy extends Node {
         public static HashingStorageCopy getUncached() {
             return HashingStorageCopyNodeGen.getUncached();
         }
@@ -711,7 +711,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageGetIterator extends Node {
+    public abstract static class HashingStorageGetIterator extends Node {
         public static HashingStorageIterator executeUncached(HashingStorage storage) {
             return HashingStorageGetIteratorNodeGen.getUncached().execute(storage);
         }
@@ -758,7 +758,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageGetReverseIterator extends Node {
+    public abstract static class HashingStorageGetReverseIterator extends Node {
         public final HashingStorageIterator execute(HashingStorage storage) {
             HashingStorageIterator result = executeImpl(storage);
             assert result.isReverse;
@@ -809,7 +809,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageIteratorNext extends Node {
+    public abstract static class HashingStorageIteratorNext extends Node {
         public static boolean executeUncached(HashingStorage storage, HashingStorageIterator it) {
             return HashingStorageIteratorNextNodeGen.getUncached().execute(storage, it);
         }
@@ -937,7 +937,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageIteratorValue extends Node {
+    public abstract static class HashingStorageIteratorValue extends Node {
         public static Object executeUncached(HashingStorage storage, HashingStorageIterator it) {
             return HashingStorageIteratorValueNodeGen.getUncached().execute(storage, it);
         }
@@ -973,7 +973,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageIteratorKey extends Node {
+    public abstract static class HashingStorageIteratorKey extends Node {
         public static Object executeUncached(HashingStorage storage, HashingStorageIterator it) {
             return HashingStorageIteratorKeyNodeGen.getUncached().execute(storage, it);
         }
@@ -1009,7 +1009,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageIteratorKeyHash extends Node {
+    public abstract static class HashingStorageIteratorKeyHash extends Node {
         public abstract long execute(HashingStorage storage, HashingStorageIterator it);
 
         @Specialization
@@ -1044,7 +1044,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageEq extends Node {
+    public abstract static class HashingStorageEq extends Node {
         public abstract boolean execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization
@@ -1116,7 +1116,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageForEach extends Node {
+    public abstract static class HashingStorageForEach extends Node {
         @SuppressWarnings("unchecked")
         public final <T> T execute(Frame frame, HashingStorage storage, HashingStorageForEachCallback<T> callback, T accumulator) {
             CompilerAsserts.partialEvaluationConstant(callback);
@@ -1162,7 +1162,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageXorCallback extends HashingStorageForEachCallback<ResultAndOther> {
+    public abstract static class HashingStorageXorCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
         public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
@@ -1186,7 +1186,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageXor extends Node {
+    public abstract static class HashingStorageXor extends Node {
         public abstract HashingStorage execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization
@@ -1210,7 +1210,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageIntersectCallback extends HashingStorageForEachCallback<ResultAndOther> {
+    public abstract static class HashingStorageIntersectCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
         public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
@@ -1236,7 +1236,7 @@ public class HashingStorageNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageIntersect extends Node {
+    public abstract static class HashingStorageIntersect extends Node {
         public abstract HashingStorage execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization
@@ -1252,7 +1252,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageDiffCallback extends HashingStorageForEachCallback<ResultAndOther> {
+    public abstract static class HashingStorageDiffCallback extends HashingStorageForEachCallback<ResultAndOther> {
 
         @Override
         public abstract ResultAndOther execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
@@ -1279,7 +1279,7 @@ public class HashingStorageNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageDiff extends Node {
+    public abstract static class HashingStorageDiff extends Node {
         public abstract HashingStorage execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization
@@ -1298,7 +1298,7 @@ public class HashingStorageNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageCompareKeysCallback extends HashingStorageForEachCallback<HashingStorage> {
+    public abstract static class HashingStorageCompareKeysCallback extends HashingStorageForEachCallback<HashingStorage> {
 
         @Override
         public abstract HashingStorage execute(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage);
@@ -1320,7 +1320,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageCompareKeys extends Node {
+    public abstract static class HashingStorageCompareKeys extends Node {
         public abstract int execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization(guards = "aStorage == bStorage")
@@ -1358,7 +1358,7 @@ public class HashingStorageNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageAreDisjointCallback extends HashingStorageForEachCallback<HashingStorage> {
+    public abstract static class HashingStorageAreDisjointCallback extends HashingStorageForEachCallback<HashingStorage> {
 
         @Override
         public abstract HashingStorage execute(Frame frame, HashingStorage aStorage, HashingStorageIterator it, HashingStorage bStorage);
@@ -1381,7 +1381,7 @@ public class HashingStorageNodes {
 
     @GenerateUncached
     @ImportStatic({PGuards.class})
-    public static abstract class HashingStorageAreDisjoint extends Node {
+    public abstract static class HashingStorageAreDisjoint extends Node {
         public abstract boolean execute(Frame frame, HashingStorage a, HashingStorage b);
 
         @Specialization
@@ -1406,7 +1406,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageTransferItem extends HashingStorageForEachCallback<HashingStorage> {
+    public abstract static class HashingStorageTransferItem extends HashingStorageForEachCallback<HashingStorage> {
         @Override
         public abstract HashingStorage execute(Frame frame, HashingStorage src, HashingStorageIterator it, HashingStorage destStorage);
 
@@ -1441,7 +1441,7 @@ public class HashingStorageNodes {
     }
 
     @GenerateUncached
-    public static abstract class HashingStorageAddAllToOther extends Node {
+    public abstract static class HashingStorageAddAllToOther extends Node {
         public static HashingStorageAddAllToOther getUncached() {
             return HashingStorageAddAllToOtherNodeGen.getUncached();
         }

@@ -125,7 +125,7 @@ public final class LocalsStorage extends HashingStorage {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    static abstract class GetItemNode extends Node {
+    abstract static class GetItemNode extends Node {
         /**
          * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
          * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.

@@ -126,7 +126,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @GenerateUncached
     @ImportStatic(DynamicObjectStorage.class)
-    public static abstract class LengthNode extends Node {
+    public abstract static class LengthNode extends Node {
 
         public abstract int execute(DynamicObjectStorage storage);
 
@@ -179,7 +179,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     @SuppressWarnings("unused")
     @ImportStatic({PGuards.class, DynamicObjectStorage.class})
     @GenerateUncached
-    static abstract class GetItemNode extends Node {
+    abstract static class GetItemNode extends Node {
         /**
          * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
          * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
@@ -290,7 +290,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
-    static abstract class ClearNode extends Node {
+    abstract static class ClearNode extends Node {
         public abstract HashingStorage execute(HashingStorage receiver);
 
         @Specialization(guards = "!isPythonObject(receiver.getStore())")
@@ -359,7 +359,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @GenerateUncached
-    public static abstract class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
+    public abstract static class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
         @Specialization
         static void doIt(HashingStorage self, TruffleString key, Object value,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,

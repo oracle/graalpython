@@ -144,7 +144,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     // Extracted into a node shared between PDict/PSet specializations to reduce the footprint
     @GenerateUncached
-    static abstract class ExecutePositionalStarargsDictStorageNode extends Node {
+    abstract static class ExecutePositionalStarargsDictStorageNode extends Node {
         abstract Object[] execute(HashingStorage storage);
 
         @Specialization

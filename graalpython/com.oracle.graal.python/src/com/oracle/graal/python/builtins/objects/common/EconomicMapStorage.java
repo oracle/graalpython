@@ -169,7 +169,7 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @GenerateUncached
-    public static abstract class EconomicMapSetStringKey extends SpecializedSetStringKey {
+    public abstract static class EconomicMapSetStringKey extends SpecializedSetStringKey {
         @Specialization
         static void doIt(HashingStorage self, TruffleString key, Object value,
                         @Cached PyObjectHashNode hashNode,

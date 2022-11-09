@@ -1456,7 +1456,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
 
             @GenerateUncached
-            static abstract class EachSubclassAdd extends HashingStorageForEachCallback<Set<PythonAbstractClass>> {
+            abstract static class EachSubclassAdd extends HashingStorageForEachCallback<Set<PythonAbstractClass>> {
 
                 @Override
                 public abstract Set<PythonAbstractClass> execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);

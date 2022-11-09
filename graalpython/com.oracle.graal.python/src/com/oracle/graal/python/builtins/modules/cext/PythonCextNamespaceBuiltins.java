@@ -68,7 +68,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
@@ -101,7 +100,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
             return impl(storage, getIterator, itNext, itKey, itValue, dyLib, transformExceptionToNativeNode);
         }
 
-        private TruffleObject impl(HashingStorage storage, HashingStorageGetIterator getIterator, HashingStorageIteratorNext itNext,
+        private Object impl(HashingStorage storage, HashingStorageGetIterator getIterator, HashingStorageIteratorNext itNext,
                         HashingStorageIteratorKey itKey, HashingStorageIteratorValue itValue,
                         DynamicObjectLibrary dyLib, TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
