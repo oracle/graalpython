@@ -40,36 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-
-@ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
     public static final EmptyStorage INSTANCE = new EmptyStorage();
 
     // Singleton
     private EmptyStorage() {
     }
-
-    @Override
-    @ExportMessage
-    Object forEachUntyped(@SuppressWarnings("unused") ForEachNode<Object> node, Object arg) {
-        return arg;
-    }
-
-    private static final Iterator<Object> KEYS_ITERATOR = new Iterator<Object>() {
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
-
-        @Override
-        public Object next() {
-            throw new NoSuchElementException();
-        }
-    };
 }

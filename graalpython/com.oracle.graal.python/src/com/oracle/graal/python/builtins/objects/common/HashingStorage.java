@@ -44,18 +44,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.Iterator;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -64,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -83,39 +75,14 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ExportLibrary(HashingStorageLibrary.class)
 public abstract class HashingStorage {
-    @ValueType
-    public static final class DictEntry {
-        public final Object key;
-        public final Object value;
-
-        protected DictEntry(Object key, Object value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public Object getKey() {
-            return key;
-        }
-
-        public Object getValue() {
-            return value;
-        }
-    }
-
     public abstract static class InitNode extends PNodeWithContext implements IndirectCallNode {
 
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
@@ -244,98 +211,9 @@ public abstract class HashingStorage {
         }
     }
 
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
-    Object forEachUntyped(ForEachNode<Object> node, Object arg) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.injectInto");
-    }
-
-    private static final class AbortIteration extends ControlFlowException {
-        private static final long serialVersionUID = 1L;
-        private static final AbortIteration INSTANCE = new AbortIteration();
-    }
-
-    @GenerateUncached
-    protected abstract static class TestKeyValueEqual extends InjectIntoNode {
-        @Specialization
-        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
-                        @Cached PRaiseNode raise,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Cached HashingStorageGetItem getItemOther,
-                        @Cached HashingStorageGetItem getItemSelf) {
-            HashingStorage self = accumulator[0];
-            HashingStorage other = accumulator[1];
-            // TODO: channel the frame through the InjectIntoNode node
-            Object otherValue = getItemOther.execute(null, other, key);
-            if (otherValue == null) {
-                throw AbortIteration.INSTANCE;
-            }
-            Object selfValue = getItemSelf.execute(null, self, key);
-            if (selfValue == null) {
-                throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.DICT_CHANGED_DURING_COMPARISON);
-            }
-            if (eqNode.execute(null, selfValue, otherValue)) {
-                return accumulator;
-            } else {
-                throw AbortIteration.INSTANCE;
-            }
-        }
-    }
-
     public final HashingStorage union(HashingStorage other, HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther) {
         HashingStorage newStore = copyNode.execute(this);
         return addAllToOther.execute(null, other, newStore);
-    }
-
-    protected static final class ValuesIterator implements Iterator<Object> {
-        private final Iterator<DictEntry> entriesIterator;
-
-        ValuesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageGetItem getItem) {
-            this.entriesIterator = new EntriesIterator(self, keysIterator, getItem);
-        }
-
-        protected Iterator<DictEntry> getIterator() {
-            return entriesIterator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return entriesIterator.hasNext();
-        }
-
-        @Override
-        public Object next() {
-            return entriesIterator.next().getValue();
-        }
-    }
-
-    protected static final class EntriesIterator implements Iterator<DictEntry> {
-        private final HashingStorageIterator<Object> keysIterator;
-        private final HashingStorage self;
-        private final HashingStorageGetItem getItem;
-
-        EntriesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageGetItem getItem) {
-            this.self = self;
-            this.getItem = getItem;
-            this.keysIterator = keysIterator;
-        }
-
-        protected HashingStorageIterator<Object> getKeysIterator() {
-            return keysIterator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return keysIterator.hasNext();
-        }
-
-        @Override
-        public DictEntry next() {
-            Object key = keysIterator.next();
-            Object value = getItem.execute(null, self, key);
-            return new DictEntry(key, value);
-        }
     }
 
     /**

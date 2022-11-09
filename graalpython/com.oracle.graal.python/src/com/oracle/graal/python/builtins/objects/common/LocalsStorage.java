@@ -43,11 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -67,12 +63,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@ExportLibrary(HashingStorageLibrary.class)
 public final class LocalsStorage extends HashingStorage {
     /* This won't be the real (materialized) frame but a clone of it. */
     final MaterializedFrame frame;
@@ -207,117 +200,7 @@ public final class LocalsStorage extends HashingStorage {
         }
     }
 
-    @ExportMessage
-    @TruffleBoundary
-    @Override
-    public Object forEachUntyped(ForEachNode<Object> node, Object arg) {
-        Object result = arg;
-        FrameDescriptor fd = this.frame.getFrameDescriptor();
-        for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-            Object identifier = fd.getSlotName(slot);
-            if (isUserFrameSlot(identifier)) {
-                Object value = getValue(slot);
-                if (value != null) {
-                    result = node.execute(identifier, result);
-                }
-            }
-        }
-        return result;
-    }
-
     public HashingStorage copy() {
         return new LocalsStorage(this.frame);
-    }
-
-    protected abstract static class AbstractLocalsIterator implements Iterator<Object> {
-        protected final MaterializedFrame frame;
-        protected final int size;
-        protected int index;
-
-        AbstractLocalsIterator(MaterializedFrame frame) {
-            this.frame = frame;
-            this.size = frame.getFrameDescriptor().getNumberOfSlots();
-        }
-
-        public final int getState() {
-            return index;
-        }
-
-        public final void setState(int state) {
-            index = state;
-        }
-
-        @Override
-        @TruffleBoundary
-        public final Object next() {
-            if (hasNext()) {
-                int slot = index;
-                loadNext();
-                return frame.getFrameDescriptor().getSlotName(slot);
-            }
-            throw new NoSuchElementException();
-        }
-
-        @TruffleBoundary
-        protected final boolean loadNext() {
-            while (nextIndex()) {
-                Object identifier = frame.getFrameDescriptor().getSlotName(index);
-                if (isUserFrameSlot(identifier)) {
-                    Object nextValue = getValue(this.frame, index);
-                    if (nextValue != null) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        protected abstract boolean nextIndex();
-    }
-
-    private static final class LocalsIterator extends AbstractLocalsIterator {
-
-        LocalsIterator(MaterializedFrame frame) {
-            super(frame);
-            index = -1;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (index == -1) {
-                return loadNext();
-            }
-            return index < size;
-        }
-
-        @Override
-        protected boolean nextIndex() {
-            index++;
-            return index < size;
-        }
-
-    }
-
-    private static final class ReverseLocalsIterator extends AbstractLocalsIterator {
-
-        ReverseLocalsIterator(MaterializedFrame frame) {
-            super(frame);
-            index = size;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (index == size) {
-                return loadNext();
-            }
-            return index >= 0;
-        }
-
-        @Override
-        protected boolean nextIndex() {
-            index--;
-            return index >= 0;
-        }
-
     }
 }

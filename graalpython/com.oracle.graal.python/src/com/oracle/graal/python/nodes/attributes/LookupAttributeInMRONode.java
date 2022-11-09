@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGuards;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
@@ -235,7 +235,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         } else {
             dict = GetDictIfExistsNode.getUncached().execute(klass);
         }
-        if (dict != null && HashingStorageLibrary.getUncached().hasSideEffect(dict.getDictStorage())) {
+        if (dict != null && HashingStorageGuards.mayHaveSideEffects(dict)) {
             return null;
         }
         MroSequenceStorage mro = getMro(klass);

@@ -67,12 +67,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -93,12 +95,12 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -205,7 +207,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         }
 
         @ImportStatic(PGuards.class)
-        abstract static class ForEachNSRepr extends HashingStorageLibrary.ForEachNode<NSReprState> {
+        abstract static class ForEachNSRepr extends HashingStorageForEachCallback<NSReprState> {
             private final int limit;
 
             protected ForEachNSRepr(int limit) {
@@ -229,37 +231,28 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             }
 
             @Override
-            public abstract NSReprState execute(Object key, NSReprState state);
+            public abstract NSReprState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, NSReprState state);
 
             @Specialization
-            public static NSReprState doPStringKey(PString key, NSReprState state,
+            public static NSReprState doPStringKey(HashingStorage storage, HashingStorageIterator it, NSReprState state,
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToTruffleStringNode castStrKey,
                             @Cached CastToTruffleStringNode castStrValue,
                             @Cached PRaiseNode raiseNode,
-                            @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-                return doStringKey(castStrKey.execute(key), state, valueReprNode, castStrValue, raiseNode, getItem);
-            }
-
-            @Specialization
-            public static NSReprState doStringKey(TruffleString key, NSReprState state,
-                            @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
-                            @Cached CastToTruffleStringNode castStr,
-                            @Cached PRaiseNode raiseNode,
-                            @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-                TruffleString valueReprString = getReprString(getItem.execute(state.dictStorage, key), valueReprNode, castStr, raiseNode);
-                appendItem(state, key, valueReprString);
+                            @Cached HashingStorageIteratorKey itKey,
+                            @Cached HashingStorageGetItem getItem) {
+                Object keyObj = itKey.execute(storage, it);
+                if (PGuards.isString(keyObj)) {
+                    TruffleString key = castStrKey.execute(keyObj);
+                    TruffleString valueReprString = getReprString(getItem.execute(state.dictStorage, key), valueReprNode, castStrValue, raiseNode);
+                    appendItem(state, key, valueReprString);
+                }
                 return state;
             }
 
             @CompilerDirectives.TruffleBoundary
             private static void appendItem(NSReprState state, TruffleString key, TruffleString valueReprString) {
                 state.items.add(Pair.create(key, valueReprString));
-            }
-
-            @Specialization(guards = "!isString(key)")
-            public static NSReprState doNonStringKey(@SuppressWarnings("unused") Object key, NSReprState state) {
-                return state;
             }
         }
 
@@ -270,7 +263,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached("create(3)") ForEachNSRepr consumerNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached HashingStorageForEach forEachNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             final Object klass = getClassNode.execute(ns);
@@ -278,7 +271,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             appendStringNode.execute(sb, name);
             appendStringNode.execute(sb, T_LPAREN);
-            PythonContext ctxt = PythonContext.get(lib);
+            PythonContext ctxt = PythonContext.get(forEachNode);
             if (!ctxt.reprEnter(ns)) {
                 appendStringNode.execute(sb, T_RECURSE);
                 return toStringNode.execute(sb);
@@ -286,7 +279,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             try {
                 HashingStorage dictStorage = getDict.execute(ns).getDictStorage();
                 final NSReprState state = new NSReprState(dictStorage);
-                lib.forEach(dictStorage, consumerNode, state);
+                forEachNode.execute(null, dictStorage, consumerNode, state);
                 state.appendToTruffleStringBuilder(sb, appendStringNode);
                 appendStringNode.execute(sb, T_RPAREN);
                 return toStringNode.execute(sb);

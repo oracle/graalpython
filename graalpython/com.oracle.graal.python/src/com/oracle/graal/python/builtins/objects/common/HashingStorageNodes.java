@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
-import com.oracle.graal.python.builtins.objects.common.MapNodes.SetIteratorState;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -99,11 +98,9 @@ public class HashingStorageNodes {
             return wrapper.getDictStorage() instanceof EconomicMapStorage;
         }
 
-        /**
-         * Quick check if given key object may override builtin side-effects free __hash__.
-         */
-        public static boolean keyMayHaveSideEffectingHash(Object key) {
-            return !(key instanceof TruffleString);
+        public static boolean mayHaveSideEffects(PHashingCollection wrapper) {
+            HashingStorage s = wrapper.getDictStorage();
+            return !(s instanceof EconomicMapStorage && ((EconomicMapStorage) s).map.hasSideEffect());
         }
     }
 

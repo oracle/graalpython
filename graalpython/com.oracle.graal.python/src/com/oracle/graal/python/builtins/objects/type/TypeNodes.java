@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -1735,7 +1734,6 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
                         @Cached PyDictDelItem delItemNamespace,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,

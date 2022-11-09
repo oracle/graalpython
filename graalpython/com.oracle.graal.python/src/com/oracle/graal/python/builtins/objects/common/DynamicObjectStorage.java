@@ -41,16 +41,11 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -72,8 +67,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -89,7 +82,6 @@ import com.oracle.truffle.object.ShapeImpl;
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
  * cause the appropriate <it>attribute final</it> assumptions to be invalidated.
  */
-@ExportLibrary(HashingStorageLibrary.class)
 public final class DynamicObjectStorage extends HashingStorage {
     public static final int SIZE_THRESHOLD = 100;
     public static final int EXPLODE_LOOP_SIZE_LIMIT = 16;
@@ -130,10 +122,6 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     protected static Object[] keyArray(Shape shape) {
         return ((ShapeImpl) shape).getKeyArray();
-    }
-
-    protected static List<Object> keyList(Shape shape) {
-        return shape.getKeyList();
     }
 
     @GenerateUncached
@@ -300,58 +288,6 @@ public final class DynamicObjectStorage extends HashingStorage {
         return notDunderDict && propertyCount > SIZE_THRESHOLD;
     }
 
-    @ExportMessage
-    static class ForEachUntyped {
-        @Specialization(guards = {"cachedShape == self.store.getShape()", "keys.length < EXPLODE_LOOP_SIZE_LIMIT"}, limit = "2")
-        @ExplodeLoop
-        static Object cachedLen(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            Object result = firstValue;
-            for (int i = 0; i < keys.length; i++) {
-                Object key = keys[i];
-                result = runNode(self, key, result, readNode, node);
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "cachedLen", guards = {"cachedShape == self.store.getShape()"}, limit = "3")
-        static Object cachedKeys(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            Object result = firstValue;
-            for (int i = 0; i < keys.length; i++) {
-                Object key = keys[i];
-                result = runNode(self, key, result, readNode, node);
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "cachedKeys")
-        static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            return cachedKeys(self, node, firstValue, self.store.getShape(), keyArray(self), readNode);
-        }
-
-        private static Object runNode(DynamicObjectStorage self, Object key, Object acc, ReadAttributeFromDynamicObjectNode readNode, ForEachNode<Object> node) {
-            if (key instanceof TruffleString) {
-                Object value = readNode.execute(self.store, key);
-                if (value != PNone.NO_VALUE) {
-                    return node.execute(key, acc);
-                }
-            }
-            if (isJavaString(key)) {
-                Object value = readNode.execute(self.store, toTruffleStringUncached((String) key));
-                if (value != PNone.NO_VALUE) {
-                    return node.execute(key, acc);
-                }
-            }
-            return acc;
-        }
-    }
-
     @ImportStatic(PGuards.class)
     @GenerateUncached
     static abstract class ClearNode extends Node {
@@ -419,146 +355,6 @@ public final class DynamicObjectStorage extends HashingStorage {
                 dylib.put(copy, key, dylib.getOrDefault(receiver.store, key, PNone.NO_VALUE));
             }
             return new DynamicObjectStorage(copy);
-        }
-    }
-
-    private abstract static class AbstractKeysIterator implements Iterator<Object> {
-        private final DynamicObject store;
-        private final ReadAttributeFromDynamicObjectNode readNode;
-        private Object next = null;
-
-        public AbstractKeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            this.store = store;
-            this.readNode = readNode;
-        }
-
-        protected abstract boolean hasNextKey();
-
-        protected abstract Object nextKey();
-
-        @TruffleBoundary
-        @Override
-        public boolean hasNext() {
-            while (next == null && hasNextKey()) {
-                Object key = nextKey();
-                Object value = readNode.execute(store, key);
-                if (value != PNone.NO_VALUE) {
-                    next = key;
-                }
-            }
-            return next != null;
-        }
-
-        @Override
-        public Object next() {
-            hasNext(); // find the next value
-            if (next != null) {
-                Object returnValue = next;
-                next = null;
-                return returnValue;
-            } else {
-                throw new NoSuchElementException();
-            }
-        }
-    }
-
-    private static final class KeysIterator extends AbstractKeysIterator {
-        private final Iterator<Object> keyIter;
-
-        public KeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            super(store, readNode);
-            this.keyIter = getIter(keyList(store.getShape()));
-        }
-
-        @TruffleBoundary
-        private static Iterator<Object> getIter(List<Object> keyList) {
-            return keyList.iterator();
-        }
-
-        @Override
-        protected boolean hasNextKey() {
-            return keyIter.hasNext();
-        }
-
-        @Override
-        protected Object nextKey() {
-            return keyIter.next();
-        }
-    }
-
-    private static final class ReverseKeysIterator extends AbstractKeysIterator {
-        private final List<Object> keyList;
-        private int index;
-
-        public ReverseKeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            super(store, readNode);
-            keyList = keyList(store.getShape());
-            this.index = keyList.size() - 1;
-        }
-
-        @Override
-        protected boolean hasNextKey() {
-            return index >= 0;
-        }
-
-        @Override
-        protected Object nextKey() {
-            return keyList.get(index--);
-        }
-    }
-
-    protected static final class EntriesIterator implements Iterator<DictEntry> {
-        private final List<Object> keyList;
-        private final DynamicObject store;
-        private final ReadAttributeFromDynamicObjectNode readNode;
-        private DictEntry next = null;
-        private int state;
-        private final int size;
-
-        public EntriesIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            this.keyList = keyList(store.getShape());
-            this.store = store;
-            this.readNode = readNode;
-            this.state = 0;
-            this.size = getListSize();
-        }
-
-        public int getState() {
-            return state;
-        }
-
-        public void setState(int state) {
-            this.state = state;
-        }
-
-        @TruffleBoundary
-        private int getListSize() {
-            return this.keyList.size();
-        }
-
-        @Override
-        @TruffleBoundary
-        public boolean hasNext() {
-            while (next == null && state < size) {
-                Object key = keyList.get(state++);
-                Object value = readNode.execute(store, key);
-                if (value != PNone.NO_VALUE) {
-                    next = new DictEntry(key, value);
-                }
-            }
-            return next != null;
-        }
-
-        @Override
-        public DictEntry next() {
-            hasNext(); // find the next value
-            if (next != null) {
-                DictEntry returnValue = next;
-                next = null;
-                return returnValue;
-            } else {
-                throw new NoSuchElementException();
-            }
         }
     }
 

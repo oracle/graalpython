@@ -43,10 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -59,7 +56,6 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 /**
  * Generic dictionary/set backing storage implementation.
@@ -246,19 +242,6 @@ public final class ObjectHashMap {
         hasSideEffectingKeys = true;
     }
 
-    public Object forEachUntyped(ForEachNode<Object> node, Object argIn, LoopConditionProfile loopProfile) {
-        Object arg = argIn;
-        loopProfile.profileCounted(usedHashes);
-        LoopNode.reportLoopCount(node, usedHashes);
-        for (int i = 0; loopProfile.inject(i < usedHashes); i++) {
-            Object key = getKey(i);
-            if (key != null) {
-                arg = node.execute(key, arg);
-            }
-        }
-        return arg;
-    }
-
     public void clear() {
         size = 0;
         usedHashes = 0;
@@ -278,90 +261,12 @@ public final class ObjectHashMap {
         return result;
     }
 
-    public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new KeysIteratorWrapper());
-    }
-
-    public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new ReverseKeysIteratorWrapper());
-    }
-
     public MapCursor getEntries() {
         return new MapCursor();
     }
 
     public boolean hasSideEffect() {
         return hasSideEffectingKeys;
-    }
-
-    final class KeysIteratorWrapper implements Iterator<Object> {
-        private int index;
-
-        public KeysIteratorWrapper() {
-            moveToNextValue();
-        }
-
-        private void moveToNextValue() {
-            while (index < usedHashes && getValue(index) == null) {
-                index++;
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index < usedHashes;
-        }
-
-        @Override
-        public Object next() {
-            assert hasNext();
-            Object result = getKey(index++);
-            moveToNextValue();
-            return result;
-        }
-
-        public int getState() {
-            return index;
-        }
-
-        public void setState(int state) {
-            index = state;
-        }
-    }
-
-    public final class ReverseKeysIteratorWrapper implements Iterator<Object> {
-        private int index = usedHashes - 1;
-
-        public ReverseKeysIteratorWrapper() {
-            moveToNextValue();
-        }
-
-        private void moveToNextValue() {
-            while (index >= 0 && getValue(index) == null) {
-                index--;
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index >= 0;
-        }
-
-        @Override
-        public Object next() {
-            assert hasNext();
-            Object result = getKey(index--);
-            moveToNextValue();
-            return result;
-        }
-
-        public int getState() {
-            return index;
-        }
-
-        public void setState(int state) {
-            index = state;
-        }
     }
 
     @CompilerDirectives.ValueType

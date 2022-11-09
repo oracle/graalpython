@@ -45,7 +45,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
@@ -57,16 +56,12 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
-@ExportLibrary(HashingStorageLibrary.class)
 public class EconomicMapStorage extends HashingStorage {
 
     public static EconomicMapStorage create() {
@@ -91,8 +86,8 @@ public class EconomicMapStorage extends HashingStorage {
         this(4, false);
     }
 
-    private EconomicMapStorage(ObjectHashMap original) {
-        this.map = original.copy();
+    public EconomicMapStorage(ObjectHashMap original, boolean copy) {
+        this.map = copy ? original.copy() : original;
     }
 
     public static EconomicMapStorage create(LinkedHashMap<String, Object> map) {
@@ -103,15 +98,6 @@ public class EconomicMapStorage extends HashingStorage {
 
     public int length() {
         return map.size();
-    }
-
-    @ExportMessage
-    protected static boolean hasSideEffect(EconomicMapStorage self) {
-        return self.map.hasSideEffect();
-    }
-
-    protected static void convertToSideEffectMap(EconomicMapStorage self) {
-        self.map.setSideEffectingKeysFlag();
     }
 
     static boolean advance(MapCursor cursor) {
@@ -130,19 +116,12 @@ public class EconomicMapStorage extends HashingStorage {
         return cursor.getValue();
     }
 
-    @ExportMessage
-    Object forEachUntyped(ForEachNode<Object> node, Object arg,
-                    @CachedLibrary("this") HashingStorageLibrary thisLib,
-                    @Cached LoopConditionProfile loopProfile) {
-        return map.forEachUntyped(node, arg, loopProfile);
-    }
-
     void clear() {
         map.clear();
     }
 
     public HashingStorage copy() {
-        return new EconomicMapStorage(this.map);
+        return new EconomicMapStorage(this.map, true);
     }
 
     protected void setValueForAllKeys(VirtualFrame frame, Object value, PutNode putNode, ConditionProfile hasFrame, LoopConditionProfile loopProfile) {

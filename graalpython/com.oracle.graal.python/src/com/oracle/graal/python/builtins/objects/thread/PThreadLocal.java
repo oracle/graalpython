@@ -48,7 +48,6 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -67,7 +66,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -107,14 +105,13 @@ public final class PThreadLocal extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
-        List<String> keys = getLocalAttributes(hlib);
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        List<String> keys = getLocalAttributes();
         return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
     }
 
     @TruffleBoundary
-    private List<String> getLocalAttributes(HashingStorageLibrary hlib) {
+    private List<String> getLocalAttributes() {
         PDict localDict = getThreadLocalDict();
         List<String> keys = new ArrayList<>();
         if (localDict != null) {
