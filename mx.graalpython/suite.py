@@ -766,6 +766,7 @@ suite = {
         "GRAALPYTHON_GRAALVM_SUPPORT": {
             "native": True,
             "platformDependent": True,
+            "fileListPurpose": 'native-image-resources',
             "description": "GraalVM Python support distribution for the GraalVM",
             "distDependencies": [
                 "GRAALPYTHON_JNI",
@@ -799,6 +800,7 @@ suite = {
         "GRAALPYTHON_GRAALVM_LICENSES": {
             "native": True,
             "platformDependent": True,
+            "fileListPurpose": 'native-image-resources',
             "description": "GraalVM Python support distribution for the GraalVM license files",
             "layout": {
                 "LICENSE_GRAALPY.txt": "file:LICENSE",
