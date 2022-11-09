@@ -51,7 +51,6 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -332,7 +331,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
             return cachedKeys(self, node, firstValue, self.store.getShape(), keyArray(self), readNode);
         }
 
@@ -421,12 +420,6 @@ public final class DynamicObjectStorage extends HashingStorage {
             }
             return new DynamicObjectStorage(copy);
         }
-    }
-
-    @ExportMessage
-    public HashingStorageIterable<Object> keys(
-                    @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-        return new HashingStorageIterable<>(new KeysIterator(store, readNode));
     }
 
     private abstract static class AbstractKeysIterator implements Iterator<Object> {

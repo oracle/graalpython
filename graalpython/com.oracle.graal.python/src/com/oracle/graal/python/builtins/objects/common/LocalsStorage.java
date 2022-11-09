@@ -48,7 +48,6 @@ import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -228,12 +227,6 @@ public final class LocalsStorage extends HashingStorage {
 
     public HashingStorage copy() {
         return new LocalsStorage(this.frame);
-    }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new LocalsIterator(this.frame));
     }
 
     protected abstract static class AbstractLocalsIterator implements Iterator<Object> {

@@ -46,7 +46,6 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.DictKey;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
@@ -144,12 +143,6 @@ public class EconomicMapStorage extends HashingStorage {
 
     public HashingStorage copy() {
         return new EconomicMapStorage(this.map);
-    }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> keys() {
-        return map.keys();
     }
 
     protected void setValueForAllKeys(VirtualFrame frame, Object value, PutNode putNode, ConditionProfile hasFrame, LoopConditionProfile loopProfile) {

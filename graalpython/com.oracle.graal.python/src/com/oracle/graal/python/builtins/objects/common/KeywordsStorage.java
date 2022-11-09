@@ -46,7 +46,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -192,12 +191,6 @@ public class KeywordsStorage extends HashingStorage {
     public HashingStorage copy() {
         // this storage is unmodifiable; just reuse it
         return this;
-    }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new KeysIterator(this));
     }
 
     private abstract static class AbstractKeysIterator implements Iterator<Object> {

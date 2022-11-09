@@ -44,7 +44,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -73,10 +72,4 @@ public class EmptyStorage extends HashingStorage {
             throw new NoSuchElementException();
         }
     };
-
-    @Override
-    @ExportMessage
-    public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(KEYS_ITERATOR);
-    }
 }

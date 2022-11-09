@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
@@ -91,7 +90,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -253,13 +251,6 @@ public abstract class HashingStorage {
         throw new AbstractMethodError("HashingStorage.injectInto");
     }
 
-    @SuppressWarnings({"unused", "static-method"})
-    @ExportMessage
-    HashingStorageIterable<Object> keys() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError("HashingStorage.keys");
-    }
-
     private static final class AbortIteration extends ControlFlowException {
         private static final long serialVersionUID = 1L;
         private static final AbortIteration INSTANCE = new AbortIteration();
@@ -295,11 +286,6 @@ public abstract class HashingStorage {
     public final HashingStorage union(HashingStorage other, HashingStorageCopy copyNode, HashingStorageAddAllToOther addAllToOther) {
         HashingStorage newStore = copyNode.execute(this);
         return addAllToOther.execute(null, other, newStore);
-    }
-
-    @ExportMessage
-    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib, @Cached HashingStorageGetItem getItem) {
-        return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), getItem));
     }
 
     protected static final class ValuesIterator implements Iterator<Object> {
