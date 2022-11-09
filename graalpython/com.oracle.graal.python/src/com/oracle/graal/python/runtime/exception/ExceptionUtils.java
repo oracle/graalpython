@@ -100,12 +100,14 @@ public final class ExceptionUtils {
     }
 
     private static int getLineno(Frame frame) {
-        FrameDescriptor fd = frame.getFrameDescriptor();
         int lineno = -1;
-        if (fd.getInfo() instanceof FrameInfo) {
-            FrameInfo frameInfo = (FrameInfo) fd.getInfo();
-            int bci = frameInfo.getBci(frame);
-            lineno = frameInfo.getRootNode().bciToLine(bci);
+        if (frame != null) {
+            FrameDescriptor fd = frame.getFrameDescriptor();
+            if (fd.getInfo() instanceof FrameInfo) {
+                FrameInfo frameInfo = (FrameInfo) fd.getInfo();
+                int bci = frameInfo.getBci(frame);
+                lineno = frameInfo.getRootNode().bciToLine(bci);
+            }
         }
         return lineno;
     }
