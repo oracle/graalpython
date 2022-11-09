@@ -165,6 +165,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.IntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
@@ -2664,8 +2665,9 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString doPInt(PInt self,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            int intMaxStrDigits = PythonContext.get(this).getIntMaxStrDigits();
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached IntValueProfile maxDigitsProfile) {
+            int intMaxStrDigits = maxDigitsProfile.profile(PythonContext.get(this).getIntMaxStrDigits());
             /*
              * Approximate pre-check for the number of digits. It's done as a prevention for DoS
              * attacks, because CPython's conversion algorithm has bad complexity. Java's is

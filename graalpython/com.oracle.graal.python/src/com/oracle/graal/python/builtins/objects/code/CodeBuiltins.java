@@ -249,7 +249,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @Builtin(name = "co_lines", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CoLinesNode extends PythonUnaryBuiltinNode {
-        private static class IteratorData {
+        private static final class IteratorData {
             int start = 0;
             int line = -1;
         }

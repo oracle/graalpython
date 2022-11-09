@@ -59,7 +59,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private boolean abstractClass;
 
     // Needs to maintain the order. It would make sense to use weakrefs, but CPython doesn't do that
-    private final Set<PythonAbstractClass> subClasses = new LinkedHashSet<>();
+    private final LinkedHashSet<PythonAbstractClass> subClasses = new LinkedHashSet<>();
     @CompilationFinal private Shape instanceShape;
     private TruffleString name;
     private TruffleString qualName;
@@ -334,7 +334,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
-    final Set<PythonAbstractClass> getSubClasses() {
+    final LinkedHashSet<PythonAbstractClass> getSubClasses() {
         return subClasses;
     }
 

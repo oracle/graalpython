@@ -43,8 +43,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LLVM_LANGUAGE;
@@ -677,7 +677,7 @@ public final class PythonContext extends Python3Core {
     private final ChildContextData childContextData;
     private final SharedMultiprocessingData sharedMultiprocessingData;
 
-    @CompilationFinal private boolean codecsInitialized;
+    private boolean codecsInitialized;
     private final List<Object> codecSearchPath = new ArrayList<>();
     private final Map<TruffleString, PTuple> codecSearchCache = new HashMap<>();
     private final Map<TruffleString, Object> codecErrorRegistry = new HashMap<>();

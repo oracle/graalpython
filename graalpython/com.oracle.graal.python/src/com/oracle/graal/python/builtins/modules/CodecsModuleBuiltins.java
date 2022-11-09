@@ -931,8 +931,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     private static void ensureRegistryInitialized(PythonContext context) {
-        if (!context.isCodecsInitialized()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !context.isCodecsInitialized())) {
             AbstractImportNode.importModule(T_ENCODINGS);
             context.markCodecsInitialized();
         }
