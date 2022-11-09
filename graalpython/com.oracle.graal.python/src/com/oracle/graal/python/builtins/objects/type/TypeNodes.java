@@ -73,6 +73,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.subtractExact;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,6 +113,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
@@ -1728,6 +1731,10 @@ public abstract class TypeNodes {
                         @Cached HashingStorage.InitNode initNode,
                         @Cached HashingStorageGetItem getItemGlobals,
                         @Cached HashingStorageGetItem getItemNamespace,
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext itNext,
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Cached HashingStorageIteratorValue itValue,
                         @Cached PyDictDelItem delItemNamespace,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
@@ -1745,13 +1752,17 @@ public abstract class TypeNodes {
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
 
-                for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
-                    Object setName = getSetNameNode.execute(entry.value);
+                HashingStorage storage = namespace.getDictStorage();
+                HashingStorageIterator it = getIterator.execute(storage);
+                while (itNext.execute(storage, it)) {
+                    Object value = itValue.execute(storage, it);
+                    Object setName = getSetNameNode.execute(value);
                     if (setName != PNone.NO_VALUE) {
+                        Object key = itKey.execute(storage, it);
                         try {
-                            callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
+                            callSetNameNode.execute(frame, setName, value, newType, key);
                         } catch (PException e) {
-                            throw raise.raise(PythonBuiltinClassType.RuntimeError, e.getEscapedException(), ErrorMessages.ERROR_CALLING_SET_NAME, entry.value, entry.key, newType);
+                            throw raise.raise(PythonBuiltinClassType.RuntimeError, e.getEscapedException(), ErrorMessages.ERROR_CALLING_SET_NAME, value, key, newType);
                         }
                     }
                 }

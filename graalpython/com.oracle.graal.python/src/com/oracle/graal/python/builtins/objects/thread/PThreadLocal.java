@@ -50,6 +50,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -114,10 +118,12 @@ public final class PThreadLocal extends PythonBuiltinObject {
         PDict localDict = getThreadLocalDict();
         List<String> keys = new ArrayList<>();
         if (localDict != null) {
-            for (HashingStorage.DictEntry e : hlib.entries(localDict.getDictStorage())) {
-                Object key = assertNoJavaString(e.getKey());
+            final HashingStorage storage = localDict.getDictStorage();
+            HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
+            while (HashingStorageIteratorNext.executeUncached(storage, it)) {
+                Object key = assertNoJavaString(HashingStorageIteratorKey.executeUncached(storage, it));
                 if (key instanceof TruffleString) {
-                    TruffleString strKey = (TruffleString) e.getKey();
+                    TruffleString strKey = (TruffleString) key;
                     keys.add(strKey.toJavaStringUncached());
                 }
             }
