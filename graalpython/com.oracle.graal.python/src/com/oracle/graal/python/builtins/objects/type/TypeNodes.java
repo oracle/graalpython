@@ -73,7 +73,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.subtractExact;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -108,17 +107,17 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1864,9 +1863,13 @@ public abstract class TypeNodes {
         @Specialization
         protected PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @Cached HashingStorageGetItem getHashingStorageItem,
-                        @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStorageLib,
+                        @Cached HashingStorageGetIterator getHashingStorageIterator,
+                        @Cached HashingStorageIteratorNext hashingStorageItNext,
+                        @Cached HashingStorageIteratorKey hashingStorageItKey,
+                        @Cached HashingStorageIteratorKeyHash hashingStorageItKeyHash,
+                        @Cached HashingStorageIteratorValue hashingStorageItValue,
                         @Cached("create(T___DICT__)") LookupAttributeInMRONode getDictAttrNode,
                         @Cached("create(T___WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
@@ -1924,7 +1927,9 @@ public abstract class TypeNodes {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(frame, pythonClass, namespace, setHashingStorageItem, hashingStorageLib, slots, qualnameSet, constructAndRaiseNode, factory, raise, isValidNode, equalNode,
+            copyDictSlots(frame, pythonClass, namespace, setHashingStorageItem,
+                            getHashingStorageIterator, hashingStorageItNext, hashingStorageItKey, hashingStorageItKeyHash, hashingStorageItValue,
+                            slots, qualnameSet, constructAndRaiseNode, factory, raise, isValidNode, equalNode,
                             codePointLengthNode, getOrCreateDictNode);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
@@ -2226,15 +2231,19 @@ public abstract class TypeNodes {
             return castToStringNode;
         }
 
-        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageSetItem setHashingStorageItem, HashingStorageLibrary hashingStorageLib, Object[] slots,
+        private void copyDictSlots(VirtualFrame frame, PythonClass pythonClass, PDict namespace, HashingStorageSetItemWithHash setHashingStorageItem,
+                        HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageItNext, HashingStorageIteratorKey hashingStorageItKey,
+                        HashingStorageIteratorKeyHash hashingStorageItKeyHash, HashingStorageIteratorValue hashingStorageItValue, Object[] slots,
                         boolean[] qualnameSet, PConstructAndRaiseNode constructAndRaiseNode, PythonObjectFactory factory, PRaiseNode raise, IsValidNode isValidNode,
                         EqualNode equalNode, CodePointLengthNode codePointLengthNode, GetOrCreateDictNode getOrCreateDictNode) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
-            for (DictEntry entry : hashingStorageLib.entries(namespace.getDictStorage())) {
-                Object keyObj = entry.getKey();
-                Object value = entry.getValue();
+            HashingStorage namespaceStorage = namespace.getDictStorage();
+            HashingStorageIterator it = getHashingStorageIterator.execute(namespaceStorage);
+            while (hashingStorageItNext.execute(namespaceStorage, it)) {
+                Object keyObj = hashingStorageItKey.execute(namespaceStorage, it);
+                Object value = hashingStorageItValue.execute(namespaceStorage, it);
                 if (keyObj instanceof TruffleString) {
                     TruffleString key = (TruffleString) keyObj;
                     if (equalNode.execute(T___SLOTS__, key, TS_ENCODING)) {
@@ -2300,7 +2309,8 @@ public abstract class TypeNodes {
                 // Creates DynamicObjectStorage which ignores non-string keys
                 typeDict = getOrCreateDictNode.execute(pythonClass);
                 // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
-                HashingStorage updatedStore = setHashingStorageItem.execute(frame, typeDict.getDictStorage(), keyObj, value);
+                long keyHash = hashingStorageItKeyHash.execute(namespaceStorage, it);
+                HashingStorage updatedStore = setHashingStorageItem.execute(frame, typeDict.getDictStorage(), keyObj, keyHash, value);
                 typeDict.setDictStorage(updatedStore);
             }
         }

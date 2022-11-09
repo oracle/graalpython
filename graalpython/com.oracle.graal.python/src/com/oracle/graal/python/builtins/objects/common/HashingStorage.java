@@ -298,7 +298,7 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib, @Cached HashingStorageGetItem getItem) {
         return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), getItem));
     }
 
@@ -322,11 +322,6 @@ public abstract class HashingStorage {
         public Object next() {
             return entriesIterator.next().getValue();
         }
-    }
-
-    @ExportMessage
-    public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("getItem") @Cached HashingStorageGetItem getItem) {
-        return new HashingStorageIterable<>(new EntriesIterator(this, lib.keys(this).iterator(), getItem));
     }
 
     protected static final class EntriesIterator implements Iterator<DictEntry> {

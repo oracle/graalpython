@@ -514,12 +514,6 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    @ExportMessage
-    public HashingStorageIterable<DictEntry> entries(
-                    @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-        return new HashingStorageIterable<>(new EntriesIterator(store, readNode));
-    }
-
     protected static final class EntriesIterator implements Iterator<DictEntry> {
         private final List<Object> keyList;
         private final DynamicObject store;

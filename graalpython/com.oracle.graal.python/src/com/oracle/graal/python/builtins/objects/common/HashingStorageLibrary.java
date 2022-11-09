@@ -164,15 +164,6 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public abstract HashingStorageIterable<Object> values(HashingStorage self);
 
-    /**
-     * This method can be used to iterate over the key-value pairs of a store. Due to the nature of
-     * Java iterators being an interface and the different storage strategies, this may be slow and
-     * should be used with caution.
-     *
-     * @return an iterator over the keys-value pairs in this store.
-     */
-    public abstract HashingStorageIterable<HashingStorage.DictEntry> entries(HashingStorage self);
-
     static final LibraryFactory<HashingStorageLibrary> FACTORY = LibraryFactory.resolve(HashingStorageLibrary.class);
 
     public static LibraryFactory<HashingStorageLibrary> getFactory() {
