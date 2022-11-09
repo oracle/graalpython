@@ -118,12 +118,15 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
@@ -216,6 +219,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -1452,27 +1456,25 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
 
             @GenerateUncached
-            static final class EachSubclassAdd extends HashingStorageLibrary.ForEachNode<SubclassAddState> {
-
-                private static final EachSubclassAdd UNCACHED = new EachSubclassAdd();
+            static abstract class EachSubclassAdd extends HashingStorageForEachCallback<Set<PythonAbstractClass>> {
 
                 @Override
-                public SubclassAddState execute(Object key, SubclassAddState s) {
-                    setAdd(s.subclasses, (PythonClass) s.getItemNode.execute(null, s.storage, key));
-                    return s;
+                public abstract Set<PythonAbstractClass> execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses);
+
+                @Specialization
+                public Set<PythonAbstractClass> doIt(Frame frame, HashingStorage storage, HashingStorageIterator it, Set<PythonAbstractClass> subclasses,
+                                @Cached HashingStorageIteratorKey itKey,
+                                @Cached HashingStorageIteratorKeyHash itKeyHash,
+                                @Cached HashingStorageGetItemWithHash getItemNode) {
+                    long hash = itKeyHash.execute(storage, it);
+                    Object key = itKey.execute(storage, it);
+                    setAdd(subclasses, (PythonClass) getItemNode.execute(frame, storage, key, hash));
+                    return subclasses;
                 }
 
                 @TruffleBoundary
                 protected static void setAdd(Set<PythonAbstractClass> set, PythonClass cls) {
                     set.add(cls);
-                }
-
-                static EachSubclassAdd create() {
-                    return new EachSubclassAdd();
-                }
-
-                static EachSubclassAdd getUncached() {
-                    return UNCACHED;
                 }
             }
 
@@ -1481,12 +1483,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @Cached GetSubclassesNode getSubclassesNode,
                             @Cached EachSubclassAdd eachNode,
                             @CachedLibrary("value") PythonNativeWrapperLibrary lib,
-                            @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
-                            @Cached HashingStorageGetItem getItem) {
+                            @Cached HashingStorageForEach forEachNode) {
                 PDict dict = (PDict) lib.getDelegate(value);
                 HashingStorage storage = dict.getDictStorage();
                 Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
-                hashLib.forEach(storage, eachNode, new SubclassAddState(storage, getItem, subclasses));
+                forEachNode.execute(null, storage, eachNode, subclasses);
             }
 
             @Specialization(guards = "eq(MD_DEF, key)")
