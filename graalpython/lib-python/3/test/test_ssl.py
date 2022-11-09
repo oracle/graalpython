@@ -2604,6 +2604,18 @@ class ThreadedEchoServer(threading.Thread):
                             sys.stdout.write(" server: read %r (%s), sending back %r (%s)...\n"
                                              % (msg, ctype, msg.lower(), ctype))
                         self.write(msg.lower())
+                # Begin Truffle change
+                except (ConnectionResetError, ConnectionAbortedError):
+                    # XXX: OpenSSL 1.1.1 sometimes raises ConnectionResetError
+                    # when connection is not shut down gracefully.
+                    if self.server.chatty and support.verbose:
+                        sys.stdout.write(
+                            " Connection reset by peer: {}\n".format(
+                                self.addr)
+                        )
+                    self.close()
+                    self.running = False
+                # End Truffle change
                 except OSError as e:
                     # handles SSLError and socket errors
                     if self.server.chatty and support.verbose:
