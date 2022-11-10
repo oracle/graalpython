@@ -2666,17 +2666,25 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString doPInt(PInt self,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached IntValueProfile maxDigitsProfile) {
-            int intMaxStrDigits = maxDigitsProfile.profile(PythonContext.get(this).getIntMaxStrDigits());
+                        @Cached IntValueProfile maxDigitsProfile,
+                        @Cached IntValueProfile maxDigitsBitLengthProfile) {
+            PythonContext context = PythonContext.get(this);
+            int intMaxStrDigits = maxDigitsProfile.profile(context.getIntMaxStrDigits());
             /*
              * Approximate pre-check for the number of digits. It's done as a prevention for DoS
              * attacks, because CPython's conversion algorithm has bad complexity. Java's is
-             * probably better, but we need to be compatible. CPython has different pre-check based
-             * on internals of their representation.
+             * probably better, but we need to be compatible. CPython has a different pre-check
+             * based on internals of their representation.
+             *
+             * Their check in longobject.c:long_to_decimal_string_internal uses their internal
+             * length, which is the number of 30 bit chunks, in a special formula.
+             *
+             * Our check compares the bit length reported by BigInteger against a precomputed bit
+             * length of a smallest positive number that is over the limit.
              */
             if (intMaxStrDigits > 0) {
                 int bitLength = positiveBitLength(self);
-                if (Math.floor(bitLength * DECIMAL_DIGITS_PER_BIT + 1) > intMaxStrDigits) {
+                if (bitLength >= maxDigitsBitLengthProfile.profile(context.getMinIntBitLengthOverLimit())) {
                     throw raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
                 }
             }

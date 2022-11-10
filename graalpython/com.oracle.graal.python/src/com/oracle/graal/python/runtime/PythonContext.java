@@ -94,6 +94,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -683,6 +684,8 @@ public final class PythonContext extends Python3Core {
     private final Map<TruffleString, Object> codecErrorRegistry = new HashMap<>();
 
     private int intMaxStrDigits;
+    private int minIntBitLengthOverLimit;
+    private static final double LOG2_10 = Math.log(10) / Math.log(2);
 
     // the full module name for package imports
     private TruffleString pyPackageContext;
@@ -721,8 +724,32 @@ public final class PythonContext extends Python3Core {
         return intMaxStrDigits;
     }
 
+    /**
+     * Returns cached bit length of a smallest positive number that is over the intMaxStrDigits
+     * limit
+     */
+    public int getMinIntBitLengthOverLimit() {
+        return minIntBitLengthOverLimit;
+    }
+
     public void setIntMaxStrDigits(int intMaxStrDigits) {
         this.intMaxStrDigits = intMaxStrDigits;
+        this.minIntBitLengthOverLimit = computeMinIntBitLengthOverLimit(intMaxStrDigits);
+    }
+
+    @TruffleBoundary
+    private static int computeMinIntBitLengthOverLimit(int limit) {
+        /*
+         * Let L be the limit. Smallest positive number over the limit is 10 ^ L. Its bit length is
+         * floor(log2(10 ^ L)) + 1. That is equivalent to floor(L * log2(10)) + 1;
+         */
+        double bitLength = Math.floor(limit * LOG2_10) + 1;
+        if (MathGuards.fitInt(bitLength)) {
+            return (int) bitLength;
+        } else {
+            // The number wouldn't be representable as BigInteger, so there's no practical limit
+            return Integer.MAX_VALUE;
+        }
     }
 
     public static final class ChildContextData {
@@ -1482,7 +1509,7 @@ public final class PythonContext extends Python3Core {
         if (!ImageInfo.inImageBuildtimeCode()) {
             initializeHashSecret();
         }
-        intMaxStrDigits = getOption(PythonOptions.IntMaxStrDigits);
+        setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
