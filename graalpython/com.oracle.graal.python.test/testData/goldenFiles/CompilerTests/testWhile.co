@@ -1,6 +1,7 @@
 Disassembly of <module>:
   1:6   -   1:11  >>    0 LOAD_FALSE_B                                                             can quicken
-  1:0   -   1:17        1 POP_AND_JUMP_IF_FALSE             6    (to 7)                            generalizes: 0
-  1:0   -   1:17        5 JUMP_BACKWARD                     5    (to 0)
-  1:0   -   1:17  >>    7 LOAD_NONE
-  1:0   -   1:17        8 RETURN_VALUE
+  1:0   -   1:17        1 POP_AND_JUMP_IF_FALSE             7    (to 8)                            generalizes: 0
+  1:13  -   1:17        5 NOP
+  1:13  -   1:17        6 JUMP_BACKWARD                     6    (to 0)
+  1:13  -   1:17  >>    8 LOAD_NONE
+  1:13  -   1:17        9 RETURN_VALUE

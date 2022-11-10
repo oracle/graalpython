@@ -154,7 +154,7 @@ public final class DictBuiltins extends PythonBuiltins {
     // setdefault(key[, default])
     @Builtin(name = "setdefault", minNumOfPositionalArgs = 2, parameterNames = {"self", "key", "default"})
     @GenerateNodeFactory
-    public abstract static class SetDefaultNode extends PythonBuiltinNode {
+    public abstract static class SetDefaultNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame)", limit = "3")
         public static Object setDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,

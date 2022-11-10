@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -52,11 +52,6 @@ _sre_ascii_iscased(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    if (PyFloat_Check(arg)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     character = _PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
@@ -89,11 +84,6 @@ _sre_unicode_iscased(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    if (PyFloat_Check(arg)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     character = _PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
@@ -126,11 +116,6 @@ _sre_ascii_tolower(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    if (PyFloat_Check(arg)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     character = _PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
@@ -163,11 +148,6 @@ _sre_unicode_tolower(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    if (PyFloat_Check(arg)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     character = _PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
@@ -189,14 +169,15 @@ PyDoc_STRVAR(_sre_SRE_Pattern_match__doc__,
 "Matches zero or more characters at the beginning of the string.");
 
 #define _SRE_SRE_PATTERN_MATCH_METHODDEF    \
-    {"match", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_match, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_match__doc__},
+    {"match", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_match, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_match__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_match_impl(PatternObject *self, PyObject *string,
-                            Py_ssize_t pos, Py_ssize_t endpos);
+_sre_SRE_Pattern_match_impl(PatternObject *self, PyTypeObject *cls,
+                            PyObject *string, Py_ssize_t pos,
+                            Py_ssize_t endpos);
 
 static PyObject *
-_sre_SRE_Pattern_match(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_match(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
@@ -216,14 +197,9 @@ _sre_SRE_Pattern_match(PatternObject *self, PyObject *const *args, Py_ssize_t na
         goto skip_optional_pos;
     }
     if (args[1]) {
-        if (PyFloat_Check(args[1])) {
-            PyErr_SetString(PyExc_TypeError,
-                            "integer argument expected, got float" );
-            goto exit;
-        }
         {
             Py_ssize_t ival = -1;
-            PyObject *iobj = PyNumber_Index(args[1]);
+            PyObject *iobj = _PyNumber_Index(args[1]);
             if (iobj != NULL) {
                 ival = PyLong_AsSsize_t(iobj);
                 Py_DECREF(iobj);
@@ -237,14 +213,9 @@ _sre_SRE_Pattern_match(PatternObject *self, PyObject *const *args, Py_ssize_t na
             goto skip_optional_pos;
         }
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -255,7 +226,7 @@ _sre_SRE_Pattern_match(PatternObject *self, PyObject *const *args, Py_ssize_t na
         endpos = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_match_impl(self, string, pos, endpos);
+    return_value = _sre_SRE_Pattern_match_impl(self, cls, string, pos, endpos);
 
 exit:
     return return_value;
@@ -268,14 +239,15 @@ PyDoc_STRVAR(_sre_SRE_Pattern_fullmatch__doc__,
 "Matches against all of the string.");
 
 #define _SRE_SRE_PATTERN_FULLMATCH_METHODDEF    \
-    {"fullmatch", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_fullmatch, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_fullmatch__doc__},
+    {"fullmatch", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_fullmatch, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_fullmatch__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_fullmatch_impl(PatternObject *self, PyObject *string,
-                                Py_ssize_t pos, Py_ssize_t endpos);
+_sre_SRE_Pattern_fullmatch_impl(PatternObject *self, PyTypeObject *cls,
+                                PyObject *string, Py_ssize_t pos,
+                                Py_ssize_t endpos);
 
 static PyObject *
-_sre_SRE_Pattern_fullmatch(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_fullmatch(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
@@ -295,14 +267,9 @@ _sre_SRE_Pattern_fullmatch(PatternObject *self, PyObject *const *args, Py_ssize_
         goto skip_optional_pos;
     }
     if (args[1]) {
-        if (PyFloat_Check(args[1])) {
-            PyErr_SetString(PyExc_TypeError,
-                            "integer argument expected, got float" );
-            goto exit;
-        }
         {
             Py_ssize_t ival = -1;
-            PyObject *iobj = PyNumber_Index(args[1]);
+            PyObject *iobj = _PyNumber_Index(args[1]);
             if (iobj != NULL) {
                 ival = PyLong_AsSsize_t(iobj);
                 Py_DECREF(iobj);
@@ -316,14 +283,9 @@ _sre_SRE_Pattern_fullmatch(PatternObject *self, PyObject *const *args, Py_ssize_
             goto skip_optional_pos;
         }
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -334,7 +296,7 @@ _sre_SRE_Pattern_fullmatch(PatternObject *self, PyObject *const *args, Py_ssize_
         endpos = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_fullmatch_impl(self, string, pos, endpos);
+    return_value = _sre_SRE_Pattern_fullmatch_impl(self, cls, string, pos, endpos);
 
 exit:
     return return_value;
@@ -349,14 +311,15 @@ PyDoc_STRVAR(_sre_SRE_Pattern_search__doc__,
 "Return None if no position in the string matches.");
 
 #define _SRE_SRE_PATTERN_SEARCH_METHODDEF    \
-    {"search", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_search, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_search__doc__},
+    {"search", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_search, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_search__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_search_impl(PatternObject *self, PyObject *string,
-                             Py_ssize_t pos, Py_ssize_t endpos);
+_sre_SRE_Pattern_search_impl(PatternObject *self, PyTypeObject *cls,
+                             PyObject *string, Py_ssize_t pos,
+                             Py_ssize_t endpos);
 
 static PyObject *
-_sre_SRE_Pattern_search(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_search(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
@@ -376,14 +339,9 @@ _sre_SRE_Pattern_search(PatternObject *self, PyObject *const *args, Py_ssize_t n
         goto skip_optional_pos;
     }
     if (args[1]) {
-        if (PyFloat_Check(args[1])) {
-            PyErr_SetString(PyExc_TypeError,
-                            "integer argument expected, got float" );
-            goto exit;
-        }
         {
             Py_ssize_t ival = -1;
-            PyObject *iobj = PyNumber_Index(args[1]);
+            PyObject *iobj = _PyNumber_Index(args[1]);
             if (iobj != NULL) {
                 ival = PyLong_AsSsize_t(iobj);
                 Py_DECREF(iobj);
@@ -397,14 +355,9 @@ _sre_SRE_Pattern_search(PatternObject *self, PyObject *const *args, Py_ssize_t n
             goto skip_optional_pos;
         }
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -415,7 +368,7 @@ _sre_SRE_Pattern_search(PatternObject *self, PyObject *const *args, Py_ssize_t n
         endpos = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_search_impl(self, string, pos, endpos);
+    return_value = _sre_SRE_Pattern_search_impl(self, cls, string, pos, endpos);
 
 exit:
     return return_value;
@@ -455,14 +408,9 @@ _sre_SRE_Pattern_findall(PatternObject *self, PyObject *const *args, Py_ssize_t 
         goto skip_optional_pos;
     }
     if (args[1]) {
-        if (PyFloat_Check(args[1])) {
-            PyErr_SetString(PyExc_TypeError,
-                            "integer argument expected, got float" );
-            goto exit;
-        }
         {
             Py_ssize_t ival = -1;
-            PyObject *iobj = PyNumber_Index(args[1]);
+            PyObject *iobj = _PyNumber_Index(args[1]);
             if (iobj != NULL) {
                 ival = PyLong_AsSsize_t(iobj);
                 Py_DECREF(iobj);
@@ -476,14 +424,9 @@ _sre_SRE_Pattern_findall(PatternObject *self, PyObject *const *args, Py_ssize_t 
             goto skip_optional_pos;
         }
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -509,14 +452,15 @@ PyDoc_STRVAR(_sre_SRE_Pattern_finditer__doc__,
 "For each match, the iterator returns a match object.");
 
 #define _SRE_SRE_PATTERN_FINDITER_METHODDEF    \
-    {"finditer", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_finditer, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_finditer__doc__},
+    {"finditer", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_finditer, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_finditer__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_finditer_impl(PatternObject *self, PyObject *string,
-                               Py_ssize_t pos, Py_ssize_t endpos);
+_sre_SRE_Pattern_finditer_impl(PatternObject *self, PyTypeObject *cls,
+                               PyObject *string, Py_ssize_t pos,
+                               Py_ssize_t endpos);
 
 static PyObject *
-_sre_SRE_Pattern_finditer(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_finditer(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
@@ -536,14 +480,9 @@ _sre_SRE_Pattern_finditer(PatternObject *self, PyObject *const *args, Py_ssize_t
         goto skip_optional_pos;
     }
     if (args[1]) {
-        if (PyFloat_Check(args[1])) {
-            PyErr_SetString(PyExc_TypeError,
-                            "integer argument expected, got float" );
-            goto exit;
-        }
         {
             Py_ssize_t ival = -1;
-            PyObject *iobj = PyNumber_Index(args[1]);
+            PyObject *iobj = _PyNumber_Index(args[1]);
             if (iobj != NULL) {
                 ival = PyLong_AsSsize_t(iobj);
                 Py_DECREF(iobj);
@@ -557,14 +496,9 @@ _sre_SRE_Pattern_finditer(PatternObject *self, PyObject *const *args, Py_ssize_t
             goto skip_optional_pos;
         }
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -575,7 +509,7 @@ _sre_SRE_Pattern_finditer(PatternObject *self, PyObject *const *args, Py_ssize_t
         endpos = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_finditer_impl(self, string, pos, endpos);
+    return_value = _sre_SRE_Pattern_finditer_impl(self, cls, string, pos, endpos);
 
 exit:
     return return_value;
@@ -587,14 +521,15 @@ PyDoc_STRVAR(_sre_SRE_Pattern_scanner__doc__,
 "\n");
 
 #define _SRE_SRE_PATTERN_SCANNER_METHODDEF    \
-    {"scanner", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_scanner, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_scanner__doc__},
+    {"scanner", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_scanner, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_scanner__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_scanner_impl(PatternObject *self, PyObject *string,
-                              Py_ssize_t pos, Py_ssize_t endpos);
+_sre_SRE_Pattern_scanner_impl(PatternObject *self, PyTypeObject *cls,
+                              PyObject *string, Py_ssize_t pos,
+                              Py_ssize_t endpos);
 
 static PyObject *
-_sre_SRE_Pattern_scanner(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_scanner(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"string", "pos", "endpos", NULL};
@@ -614,14 +549,9 @@ _sre_SRE_Pattern_scanner(PatternObject *self, PyObject *const *args, Py_ssize_t 
         goto skip_optional_pos;
     }
     if (args[1]) {
-        if (PyFloat_Check(args[1])) {
-            PyErr_SetString(PyExc_TypeError,
-                            "integer argument expected, got float" );
-            goto exit;
-        }
         {
             Py_ssize_t ival = -1;
-            PyObject *iobj = PyNumber_Index(args[1]);
+            PyObject *iobj = _PyNumber_Index(args[1]);
             if (iobj != NULL) {
                 ival = PyLong_AsSsize_t(iobj);
                 Py_DECREF(iobj);
@@ -635,14 +565,9 @@ _sre_SRE_Pattern_scanner(PatternObject *self, PyObject *const *args, Py_ssize_t 
             goto skip_optional_pos;
         }
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -653,7 +578,7 @@ _sre_SRE_Pattern_scanner(PatternObject *self, PyObject *const *args, Py_ssize_t 
         endpos = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_scanner_impl(self, string, pos, endpos);
+    return_value = _sre_SRE_Pattern_scanner_impl(self, cls, string, pos, endpos);
 
 exit:
     return return_value;
@@ -691,14 +616,9 @@ _sre_SRE_Pattern_split(PatternObject *self, PyObject *const *args, Py_ssize_t na
     if (!noptargs) {
         goto skip_optional_pos;
     }
-    if (PyFloat_Check(args[1])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[1]);
+        PyObject *iobj = _PyNumber_Index(args[1]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -722,14 +642,14 @@ PyDoc_STRVAR(_sre_SRE_Pattern_sub__doc__,
 "Return the string obtained by replacing the leftmost non-overlapping occurrences of pattern in string by the replacement repl.");
 
 #define _SRE_SRE_PATTERN_SUB_METHODDEF    \
-    {"sub", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_sub, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_sub__doc__},
+    {"sub", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_sub, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_sub__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_sub_impl(PatternObject *self, PyObject *repl,
-                          PyObject *string, Py_ssize_t count);
+_sre_SRE_Pattern_sub_impl(PatternObject *self, PyTypeObject *cls,
+                          PyObject *repl, PyObject *string, Py_ssize_t count);
 
 static PyObject *
-_sre_SRE_Pattern_sub(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_sub(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"repl", "string", "count", NULL};
@@ -749,14 +669,9 @@ _sre_SRE_Pattern_sub(PatternObject *self, PyObject *const *args, Py_ssize_t narg
     if (!noptargs) {
         goto skip_optional_pos;
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -767,7 +682,7 @@ _sre_SRE_Pattern_sub(PatternObject *self, PyObject *const *args, Py_ssize_t narg
         count = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_sub_impl(self, repl, string, count);
+    return_value = _sre_SRE_Pattern_sub_impl(self, cls, repl, string, count);
 
 exit:
     return return_value;
@@ -780,14 +695,15 @@ PyDoc_STRVAR(_sre_SRE_Pattern_subn__doc__,
 "Return the tuple (new_string, number_of_subs_made) found by replacing the leftmost non-overlapping occurrences of pattern with the replacement repl.");
 
 #define _SRE_SRE_PATTERN_SUBN_METHODDEF    \
-    {"subn", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_subn, METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_subn__doc__},
+    {"subn", (PyCFunction)(void(*)(void))_sre_SRE_Pattern_subn, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Pattern_subn__doc__},
 
 static PyObject *
-_sre_SRE_Pattern_subn_impl(PatternObject *self, PyObject *repl,
-                           PyObject *string, Py_ssize_t count);
+_sre_SRE_Pattern_subn_impl(PatternObject *self, PyTypeObject *cls,
+                           PyObject *repl, PyObject *string,
+                           Py_ssize_t count);
 
 static PyObject *
-_sre_SRE_Pattern_subn(PatternObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+_sre_SRE_Pattern_subn(PatternObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"repl", "string", "count", NULL};
@@ -807,14 +723,9 @@ _sre_SRE_Pattern_subn(PatternObject *self, PyObject *const *args, Py_ssize_t nar
     if (!noptargs) {
         goto skip_optional_pos;
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -825,7 +736,7 @@ _sre_SRE_Pattern_subn(PatternObject *self, PyObject *const *args, Py_ssize_t nar
         count = ival;
     }
 skip_optional_pos:
-    return_value = _sre_SRE_Pattern_subn_impl(self, repl, string, count);
+    return_value = _sre_SRE_Pattern_subn_impl(self, cls, repl, string, count);
 
 exit:
     return return_value;
@@ -889,11 +800,6 @@ _sre_compile(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject
         goto exit;
     }
     pattern = args[0];
-    if (PyFloat_Check(args[1])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     flags = _PyLong_AsInt(args[1]);
     if (flags == -1 && PyErr_Occurred()) {
         goto exit;
@@ -903,14 +809,9 @@ _sre_compile(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject
         goto exit;
     }
     code = args[2];
-    if (PyFloat_Check(args[3])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[3]);
+        PyObject *iobj = _PyNumber_Index(args[3]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -1185,15 +1086,19 @@ PyDoc_STRVAR(_sre_SRE_Scanner_match__doc__,
 "\n");
 
 #define _SRE_SRE_SCANNER_MATCH_METHODDEF    \
-    {"match", (PyCFunction)_sre_SRE_Scanner_match, METH_NOARGS, _sre_SRE_Scanner_match__doc__},
+    {"match", (PyCFunction)(void(*)(void))_sre_SRE_Scanner_match, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Scanner_match__doc__},
 
 static PyObject *
-_sre_SRE_Scanner_match_impl(ScannerObject *self);
+_sre_SRE_Scanner_match_impl(ScannerObject *self, PyTypeObject *cls);
 
 static PyObject *
-_sre_SRE_Scanner_match(ScannerObject *self, PyObject *Py_UNUSED(ignored))
+_sre_SRE_Scanner_match(ScannerObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    return _sre_SRE_Scanner_match_impl(self);
+    if (nargs) {
+        PyErr_SetString(PyExc_TypeError, "match() takes no arguments");
+        return NULL;
+    }
+    return _sre_SRE_Scanner_match_impl(self, cls);
 }
 
 PyDoc_STRVAR(_sre_SRE_Scanner_search__doc__,
@@ -1202,14 +1107,18 @@ PyDoc_STRVAR(_sre_SRE_Scanner_search__doc__,
 "\n");
 
 #define _SRE_SRE_SCANNER_SEARCH_METHODDEF    \
-    {"search", (PyCFunction)_sre_SRE_Scanner_search, METH_NOARGS, _sre_SRE_Scanner_search__doc__},
+    {"search", (PyCFunction)(void(*)(void))_sre_SRE_Scanner_search, METH_METHOD|METH_FASTCALL|METH_KEYWORDS, _sre_SRE_Scanner_search__doc__},
 
 static PyObject *
-_sre_SRE_Scanner_search_impl(ScannerObject *self);
+_sre_SRE_Scanner_search_impl(ScannerObject *self, PyTypeObject *cls);
 
 static PyObject *
-_sre_SRE_Scanner_search(ScannerObject *self, PyObject *Py_UNUSED(ignored))
+_sre_SRE_Scanner_search(ScannerObject *self, PyTypeObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
-    return _sre_SRE_Scanner_search_impl(self);
+    if (nargs) {
+        PyErr_SetString(PyExc_TypeError, "search() takes no arguments");
+        return NULL;
+    }
+    return _sre_SRE_Scanner_search_impl(self, cls);
 }
-/*[clinic end generated code: output=1adeddce58ae284c input=a9049054013a1b77]*/
+/*[clinic end generated code: output=ead5eb818b7771f8 input=a9049054013a1b77]*/

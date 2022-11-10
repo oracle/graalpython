@@ -42,7 +42,7 @@ def setUpModule():
     global candidate_locales
     # Issue #13441: Skip some locales (e.g. cs_CZ and hu_HU) on Solaris to
     # workaround a mbstowcs() bug. For example, on Solaris, the hu_HU locale uses
-    # the locale encoding ISO-8859-2, the thousauds separator is b'\xA0' and it is
+    # the locale encoding ISO-8859-2, the thousands separator is b'\xA0' and it is
     # decoded as U+30000020 (an invalid character) by mbstowcs().
     if sys.platform == 'sunos5':
         old_locale = locale.setlocale(locale.LC_ALL)
@@ -84,6 +84,10 @@ known_numerics = {
     # GraalPython patch: this is different on JVM:
     # 'ps_AF': ('\u066b', '\u066c'),
 }
+
+if sys.platform == 'win32':
+    # ps_AF doesn't work on Windows: see bpo-38324 (msg361830)
+    del known_numerics['ps_AF']
 
 class _LocaleTests(unittest.TestCase):
 

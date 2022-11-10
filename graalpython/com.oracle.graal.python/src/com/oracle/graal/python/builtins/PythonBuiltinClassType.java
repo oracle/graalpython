@@ -84,10 +84,16 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PArray("array", "array"),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
     PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),
+    /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     PBuiltinFunction("method_descriptor", Flags.PRIVATE_DERIVED_WODICT),
+    /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
     PBuiltinFunctionOrMethod("builtin_function_or_method", Flags.PRIVATE_DERIVED_WODICT),
+    /** See {@link com.oracle.graal.python.builtins.objects.function.PBuiltinFunction} */
     WrapperDescriptor(J_WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
+    /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
     MethodWrapper("method-wrapper", Flags.PRIVATE_DERIVED_WODICT),
+    /** See {@link com.oracle.graal.python.builtins.objects.method.PBuiltinMethod} */
+    PBuiltinMethod("builtin_method", Flags.PRIVATE_DERIVED_WODICT),
     PBuiltinClassMethod("classmethod_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     MemberDescriptor(J_MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
@@ -332,7 +338,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnpicklingError("UnpicklingError", "_pickle", Flags.EXCEPTION),
     SocketGAIError("gaierror", J__SOCKET, Flags.EXCEPTION),
     SocketHError("herror", J__SOCKET, Flags.EXCEPTION),
-    SocketTimeout("timeout", J__SOCKET, Flags.EXCEPTION),
     BinasciiError("Error", "binascii", Flags.EXCEPTION),
     BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
     SSLError("SSLError", J__SSL, Flags.EXCEPTION),
@@ -377,6 +382,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SyntaxWarning("SyntaxWarning", J_BUILTINS, Flags.EXCEPTION),
     UnicodeWarning("UnicodeWarning", J_BUILTINS, Flags.EXCEPTION),
     UserWarning("UserWarning", J_BUILTINS, Flags.EXCEPTION),
+    EncodingWarning("EncodingWarning", J_BUILTINS, Flags.EXCEPTION),
 
     // contextvars
     ContextVarsToken("Token", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
@@ -585,6 +591,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PythonObject.type = PythonClass;
         PythonObject.base = null;
 
+        PBuiltinMethod.base = PBuiltinFunctionOrMethod;
+
         Boolean.base = PInt;
 
         SystemExit.base = PBaseException;
@@ -631,7 +639,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         LZMAError.base = Exception;
         SocketGAIError.base = OSError;
         SocketHError.base = OSError;
-        SocketTimeout.base = OSError;
 
         SSLError.base = OSError;
         SSLZeroReturnError.base = SSLError;
@@ -676,6 +683,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SyntaxWarning.base = Warning;
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
+        EncodingWarning.base = Warning;
 
         PStatResult.base = PTuple;
         PTerminalSize.base = PTuple;

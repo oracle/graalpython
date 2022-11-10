@@ -43,6 +43,12 @@ package com.oracle.graal.python.builtins.objects.method;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FUNC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WRAPPED__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
@@ -57,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -71,6 +78,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
 public class DecoratedMethodBuiltins extends PythonBuiltins {
@@ -84,13 +92,36 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InitNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected PNone init(PDecoratedMethod self, Object callable) {
+        protected PNone init(VirtualFrame frame, PDecoratedMethod self, Object callable,
+                        @Cached PyObjectLookupAttr lookupModule,
+                        @Cached PyObjectSetAttr setModule,
+                        @Cached PyObjectLookupAttr lookupName,
+                        @Cached PyObjectSetAttr setName,
+                        @Cached PyObjectLookupAttr lookupQualname,
+                        @Cached PyObjectSetAttr setQualname,
+                        @Cached PyObjectLookupAttr lookupDoc,
+                        @Cached PyObjectSetAttr setDoc,
+                        @Cached PyObjectLookupAttr lookupAnnotations,
+                        @Cached PyObjectSetAttr setAnnotations) {
             self.setCallable(callable);
+            copyAttr(frame, callable, self, T___MODULE__, lookupModule, setModule);
+            copyAttr(frame, callable, self, T___NAME__, lookupName, setName);
+            copyAttr(frame, callable, self, T___QUALNAME__, lookupQualname, setQualname);
+            copyAttr(frame, callable, self, T___DOC__, lookupDoc, setDoc);
+            copyAttr(frame, callable, self, T___ANNOTATIONS__, lookupAnnotations, setAnnotations);
             return PNone.NONE;
+        }
+
+        private static void copyAttr(VirtualFrame frame, Object wrapped, Object wrapper, TruffleString name, PyObjectLookupAttr lookup, PyObjectSetAttr set) {
+            Object attr = lookup.execute(frame, wrapped, name);
+            if (attr != PNone.NO_VALUE) {
+                set.execute(frame, wrapper, name, attr);
+            }
         }
     }
 
     @Builtin(name = J___FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = J___WRAPPED__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FuncNode extends PythonUnaryBuiltinNode {
         @Specialization

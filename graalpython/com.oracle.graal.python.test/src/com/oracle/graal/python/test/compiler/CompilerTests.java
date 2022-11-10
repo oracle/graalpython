@@ -809,7 +809,7 @@ public class CompilerTests extends PythonTests {
         doTest(s);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchValueConst() {
         String source = "" +
                         "match 1:\n" +
@@ -818,7 +818,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchValue() {
         String source = "" +
                         "s = 1\n" +
@@ -828,7 +828,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchValueWithDefault() {
         String source = "" +
                         "s = 1\n" +
@@ -840,7 +840,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchSingletonBoolean() {
         String source = "" +
                         "match 1:\n" +
@@ -849,7 +849,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchSingletonNone() {
         String source = "" +
                         "match 1:\n" +
@@ -858,7 +858,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testGuard() {
         String source = "" +
                         "x = 1\n" +
@@ -868,7 +868,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchAs() {
         String source = "" +
                         "match 1:\n" +
@@ -877,7 +877,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchAs2() {
         String source = "" +
                         "match 1:\n" +
@@ -888,7 +888,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchAsDefault() {
         String source = "" +
                         "match 1:\n" +
@@ -899,7 +899,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchAsGuard() {
         String source = "" +
                         "match 1:\n" +
@@ -908,7 +908,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testWildcard() {
         String source = "" +
                         "match 1:\n" +
@@ -917,7 +917,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testSeq() {
         String source = "" +
                         "match (1):\n" +
@@ -926,7 +926,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testSeqWildcard() {
         String source = "" +
                         "match (1):\n" +
@@ -935,7 +935,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testSeqWildcardStar() {
         String source = "" +
                         "match (1):\n" +
@@ -944,7 +944,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testSeqWildcardSubscript() {
         String source = "" +
                         "match (1, 2):\n" +
@@ -953,7 +953,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testSeqWildcardStarSubscript() {
         String source = "" +
                         "match (1, 2, 3):\n" +
@@ -962,7 +962,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchClass() {
         String source = "" +
                         "match 1:\n" +
@@ -985,9 +985,7 @@ public class CompilerTests extends PythonTests {
         checkSyntaxErrorMessage("def f(**kwargs:(lambda __debug__:0)): pass", "cannot assign to __debug__");
         checkSyntaxErrorMessage("def f(**__debug__): pass", "cannot assign to __debug__");
         checkSyntaxErrorMessage("def f(*xx, __debug__): pass", "cannot assign to __debug__");
-        // @Test skip until 3.10
-        // checkSyntaxErrorMessage("match 1:\n\tcase 1 as __debug__:\n\t\tpass", "cannot assign to
-        // __debug__");
+        checkSyntaxErrorMessage("match 1:\n\tcase 1 as __debug__:\n\t\tpass", "cannot assign to __debug__");
     }
 
     @Test
@@ -999,7 +997,7 @@ public class CompilerTests extends PythonTests {
 
     @Test
     public void testRepeatedKwArg() {
-        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "keyword argument repeated");
+        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "keyword argument repeated: k1");
     }
 
     @Test

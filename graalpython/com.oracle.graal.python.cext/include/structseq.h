@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -24,7 +24,7 @@ typedef struct PyStructSequence_Desc {
     int n_in_sequence;
 } PyStructSequence_Desc;
 
-extern char* PyStructSequence_UnnamedField;
+extern const char * const PyStructSequence_UnnamedField;
 
 #ifndef Py_LIMITED_API
 PyAPI_FUNC(void) PyStructSequence_InitType(PyTypeObject *type,

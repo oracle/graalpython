@@ -86,7 +86,9 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public static final int IDX_LINENO = 2;
     public static final int IDX_OFFSET = 3;
     public static final int IDX_TEXT = 4;
-    public static final int IDX_PRINT_FILE_AND_LINE = 5;
+    public static final int IDX_END_LINENO = 5;
+    public static final int IDX_END_OFFSET = 6;
+    public static final int IDX_PRINT_FILE_AND_LINE = 7;
     public static final int SYNTAX_ERR_NUM_ATTRS = IDX_PRINT_FILE_AND_LINE + 1;
 
     public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args, factory) -> new Object[SYNTAX_ERR_NUM_ATTRS];
@@ -185,14 +187,9 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
-            Object msg = null;
-            Object filename = null;
-            Object lineno = null;
-            Object offset = null;
-            Object text = null;
-            Object printFileAndLine = null;
+            Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
             if (args.length >= 1) {
-                msg = args[0];
+                attrs[IDX_MSG] = args[0];
             }
             if (args.length == 2) {
                 PTuple info = constructTupleNode.execute(frame, args[1]);
@@ -202,19 +199,19 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
                 }
 
-                filename = getItemNode.execute(storage, 0);
-                lineno = getItemNode.execute(storage, 1);
-                offset = getItemNode.execute(storage, 2);
-                text = getItemNode.execute(storage, 3);
+                attrs[IDX_FILENAME] = getItemNode.execute(storage, 0);
+                attrs[IDX_LINENO] = getItemNode.execute(storage, 1);
+                attrs[IDX_OFFSET] = getItemNode.execute(storage, 2);
+                attrs[IDX_TEXT] = getItemNode.execute(storage, 3);
 
                 // Issue #21669: Custom error for 'print' & 'exec' as statements
                 // Only applies to SyntaxError instances, not to subclasses such
                 // as TabError or IndentationError (see issue #31161)
-                if (PGuards.isString(text)) {
-                    msg = reportMissingParentheses(msg, castToJavaStringNode.execute(text));
+                if (PGuards.isString(attrs[IDX_TEXT])) {
+                    attrs[IDX_MSG] = reportMissingParentheses(attrs[IDX_MSG], castToJavaStringNode.execute(attrs[IDX_TEXT]));
                 }
             }
-            self.setExceptionAttributes(new Object[]{msg, filename, lineno, offset, text, printFileAndLine});
+            self.setExceptionAttributes(attrs);
             return PNone.NONE;
         }
     }
@@ -266,6 +263,26 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             return attrNode.execute(self, value, IDX_TEXT, SYNTAX_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "end_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end lineno")
+    @GenerateNodeFactory
+    public abstract static class SyntaxErrorEndLineNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_END_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
+        }
+    }
+
+    @Builtin(name = "end_offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end offset")
+    @GenerateNodeFactory
+    public abstract static class SyntaxErrorEndColumnNode extends PythonBuiltinNode {
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_END_OFFSET, SYNTAX_ERROR_ATTR_FACTORY);
         }
     }
 

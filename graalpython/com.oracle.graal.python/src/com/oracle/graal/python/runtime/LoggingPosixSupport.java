@@ -801,6 +801,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void unsetenv(Object name,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("unsetenv", "%s", name);
+        try {
+            lib.unsetenv(delegate, name);
+        } catch (PosixException e) {
+            throw logException("unsetenv", e);
+        }
+    }
+
+    @ExportMessage
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("mmapWriteBytes", "%s, %d, %d", mmap, index, length);

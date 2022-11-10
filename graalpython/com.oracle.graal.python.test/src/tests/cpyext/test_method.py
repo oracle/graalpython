@@ -67,13 +67,43 @@ class TestMethod(object):
             static PyObject* notNull(PyObject *obj) {
                 if (obj == NULL)
                     Py_RETURN_NONE;
+                Py_INCREF(obj);
                 return obj;
             }
+            static PyObject* arrayToTuple(PyObject *const *args, Py_ssize_t nargs) {
+                PyObject *argTuple = PyTuple_New(nargs);
+                if (!argTuple)
+                    return NULL;
+                for (int i = 0; i < nargs; i++)
+                    PyTuple_SET_ITEM(argTuple, i, args[i]);
+                return argTuple;
+            }
+            static PyObject* keywordsToDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames) {
+                if (kwnames == NULL)
+                    Py_RETURN_NONE;
+                PyObject *kwargs = PyDict_New();
+                if (!kwargs)
+                    return NULL;
+                for (int i = 0; i < PyTuple_GET_SIZE(kwnames); i++) {
+                    if (PyDict_SetItem(kwargs, PyTuple_GET_ITEM(kwnames, i), args[nargs + i]) < 0)
+                        return NULL;
+                }
+                return kwargs;
+            }
             static PyObject* meth_args(PyObject *self, PyObject *args) {
-                return Py_BuildValue("OO", notNull(self), notNull(args));
+                return Py_BuildValue("NN", notNull(self), notNull(args));
             }
             static PyObject* meth_kwargs(PyObject *self, PyObject *args, PyObject *kwargs) {
-                return Py_BuildValue("OOO", notNull(self), notNull(args), notNull(kwargs));
+                return Py_BuildValue("NNN", notNull(self), notNull(args), notNull(kwargs));
+            }
+            static PyObject* meth_fastcall(PyObject *self, PyObject *const *args, Py_ssize_t nargs) {
+                return Py_BuildValue("NN", notNull(self), arrayToTuple(args, nargs));
+            }
+            static PyObject* meth_fastcall_keywords(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames) {
+                return Py_BuildValue("NNN", notNull(self), arrayToTuple(args, nargs), keywordsToDict(args, nargs, kwnames));
+            }
+            static PyObject* meth_method(PyObject *self, PyObject *cls, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames) {
+                return Py_BuildValue("NNNN", notNull(self), notNull(cls), arrayToTuple(args, nargs), keywordsToDict(args, nargs, kwnames));
             }
             """,
             tp_methods="""
@@ -82,45 +112,70 @@ class TestMethod(object):
             {"meth_noargs", meth_args, METH_NOARGS, ""},
             {"meth_varargs", meth_args, METH_VARARGS, ""},
             {"meth_varargs_keywords", (PyCFunction)meth_kwargs, METH_VARARGS | METH_KEYWORDS, ""},
+            {"meth_fastcall", (PyCFunction)meth_fastcall, METH_FASTCALL, ""},
+            {"meth_fastcall_keywords", (PyCFunction)meth_fastcall_keywords, METH_FASTCALL | METH_KEYWORDS, ""},
+            {"meth_method", (PyCFunction)meth_method, METH_FASTCALL | METH_KEYWORDS | METH_METHOD, ""},
             // class methods
             {"meth_class_o", meth_args, METH_CLASS | METH_O, ""},
             {"meth_class_noargs", meth_args, METH_CLASS | METH_NOARGS, ""},
             {"meth_class_varargs", meth_args, METH_CLASS | METH_VARARGS, ""},
             {"meth_class_varargs_keywords", (PyCFunction)meth_kwargs, METH_CLASS | METH_VARARGS | METH_KEYWORDS, ""},
+            {"meth_class_fastcall", (PyCFunction)meth_fastcall, METH_CLASS | METH_FASTCALL, ""},
+            {"meth_class_fastcall_keywords", (PyCFunction)meth_fastcall_keywords, METH_CLASS | METH_FASTCALL | METH_KEYWORDS, ""},
+            {"meth_class_method", (PyCFunction)meth_method, METH_CLASS | METH_FASTCALL | METH_KEYWORDS | METH_METHOD, ""},
             // static methods
             {"meth_static_o", meth_args, METH_STATIC | METH_O, ""},
             {"meth_static_noargs", meth_args, METH_STATIC | METH_NOARGS, ""},
             {"meth_static_varargs", meth_args, METH_STATIC | METH_VARARGS, ""},
-            {"meth_static_varargs_keywords", (PyCFunction)meth_kwargs, METH_STATIC | METH_VARARGS | METH_KEYWORDS, ""}
+            {"meth_static_varargs_keywords", (PyCFunction)meth_kwargs, METH_STATIC | METH_VARARGS | METH_KEYWORDS, ""},
+            {"meth_static_fastcall", (PyCFunction)meth_fastcall, METH_STATIC | METH_FASTCALL, ""},
+            {"meth_static_fastcall_keywords", (PyCFunction)meth_fastcall_keywords, METH_STATIC | METH_FASTCALL | METH_KEYWORDS, ""}
             """,
         )
+        
+        class TestMethodsSubclass(TestMethods):
+            pass
 
-        obj = TestMethods()
+        obj = TestMethodsSubclass()
         # instance methods
         assert obj.meth_o(1) == (obj, 1)
         assert obj.meth_noargs() == (obj, None)
         assert obj.meth_varargs(1, 2, 3) == (obj, (1, 2, 3))
         assert obj.meth_varargs_keywords(1, 2, 3, a=1, b=2) == (obj, (1, 2, 3), {'a': 1, 'b': 2})
+        assert obj.meth_fastcall(1, 2, 3) == (obj, (1, 2, 3))
+        assert obj.meth_fastcall_keywords(1, 2, 3, a=1, b=2) == (obj, (1, 2, 3), {'a': 1, 'b': 2})
+        assert obj.meth_method(1, 2, 3, a=1, b=2) == (obj, TestMethods, (1, 2, 3), {'a': 1, 'b': 2})
         # class methods
-        assert obj.meth_class_o(1) == (TestMethods, 1)
-        assert obj.meth_class_noargs() == (TestMethods, None)
-        assert obj.meth_class_varargs(1, 2, 3) == (TestMethods, (1, 2, 3))
-        assert obj.meth_class_varargs_keywords(1, 2, 3, a=1, b=2) == (TestMethods, (1, 2, 3), {'a': 1, 'b': 2})
+        assert obj.meth_class_o(1) == (TestMethodsSubclass, 1)
+        assert obj.meth_class_noargs() == (TestMethodsSubclass, None)
+        assert obj.meth_class_varargs(1, 2, 3) == (TestMethodsSubclass, (1, 2, 3))
+        assert obj.meth_class_varargs_keywords(1, 2, 3, a=1, b=2) == (TestMethodsSubclass, (1, 2, 3), {'a': 1, 'b': 2})
+        assert obj.meth_class_fastcall(1, 2, 3) == (TestMethodsSubclass, (1, 2, 3))
+        assert obj.meth_class_fastcall_keywords(1, 2, 3, a=1, b=2) == (TestMethodsSubclass, (1, 2, 3), {'a': 1, 'b': 2})
+        assert obj.meth_class_method(1, 2, 3, a=1, b=2) == (TestMethodsSubclass, TestMethods, (1, 2, 3), {'a': 1, 'b': 2})
         # static methods
         assert obj.meth_static_o(1) == (None, 1)
         assert obj.meth_static_noargs() == (None, None)
         assert obj.meth_static_varargs(1, 2, 3) == (None, (1, 2, 3))
         assert obj.meth_static_varargs_keywords(1, 2, 3, a=1, b=2) == (None, (1, 2, 3), {'a': 1, 'b': 2})
+        assert obj.meth_static_fastcall(1, 2, 3) == (None, (1, 2, 3))
+        assert obj.meth_static_fastcall_keywords(1, 2, 3, a=1, b=2) == (None, (1, 2, 3), {'a': 1, 'b': 2})
 
         assert_raises(TypeError, obj.meth_noargs, 1)
         assert_raises(TypeError, obj.meth_o)
         assert_raises(TypeError, obj.meth_o, 1, 2)
+        assert_raises(TypeError, obj.meth_varargs, 1, 2, a=1)
+        assert_raises(TypeError, obj.meth_fastcall, 1, 2, a=1)
         assert_raises(TypeError, obj.meth_class_noargs, 1)
         assert_raises(TypeError, obj.meth_class_o)
         assert_raises(TypeError, obj.meth_class_o, 1, 2)
+        assert_raises(TypeError, obj.meth_class_varargs, 1, 2, a=1)
+        assert_raises(TypeError, obj.meth_class_fastcall, 1, 2, a=1)
         assert_raises(TypeError, obj.meth_static_noargs, 1)
         assert_raises(TypeError, obj.meth_static_o)
         assert_raises(TypeError, obj.meth_static_o, 1, 2)
+        assert_raises(TypeError, obj.meth_static_varargs, 1, 2, a=1)
+        assert_raises(TypeError, obj.meth_static_fastcall, 1, 2, a=1)
 
 
 class TestPyMethod(CPyExtTestCase):

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -46,8 +46,9 @@ Py_GetBuildInfo(void)
     const char *revision = _Py_gitversion();
     const char *sep = *revision ? ":" : "";
     const char *gitid = _Py_gitidentifier();
-    if (!(*gitid))
-        gitid = "default";
+    if (!(*gitid)) {
+        gitid = "main";
+    }
     PyOS_snprintf(buildinfo, sizeof(buildinfo),
                   "%s%s%s, %.20s, %.9s", gitid, sep, revision,
                   DATE, TIME);

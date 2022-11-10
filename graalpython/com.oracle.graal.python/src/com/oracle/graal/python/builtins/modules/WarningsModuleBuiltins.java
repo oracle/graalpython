@@ -114,7 +114,6 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1057,25 +1056,19 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     @NodeInfo(shortName = "warnings_warn_explicit")
     @Builtin(name = J_WARN_EXPLICIT, minNumOfPositionalArgs = 5, //
                     parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals", "source"}, declaresExplicitSelf = true)
+    @ArgumentClinic(name = "lineno", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class WarnExplicitBuiltinNode extends PythonBuiltinNode {
+    abstract static class WarnExplicitBuiltinNode extends PythonClinicBuiltinNode {
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
-                        Object ln, Object module, Object registry, Object globals, Object source,
+                        int lineno, Object module, Object registry, Object globals, Object source,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached CastToJavaIntLossyNode castLong,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             TruffleString filename;
             try {
                 filename = castStr.execute(flname);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "warn_explicit()", 3, "str", flname);
-            }
-            int lineno;
-            try {
-                lineno = castLong.execute(ln);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
             }
             PDict globalsDict;
             if (globals instanceof PNone) {
@@ -1093,6 +1086,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                             globalsDict,
                             source == PNone.NO_VALUE ? null : source);
             return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return WarningsModuleBuiltinsClinicProviders.WarnExplicitBuiltinNodeClinicProviderGen.INSTANCE;
         }
     }
 

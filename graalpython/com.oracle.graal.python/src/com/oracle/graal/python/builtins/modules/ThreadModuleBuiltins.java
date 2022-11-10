@@ -48,6 +48,7 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -69,12 +70,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -284,16 +287,25 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "interrupt_main", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "interrupt_main()\n" +
+    @Builtin(name = "interrupt_main", parameterNames = {"signum"}, doc = "interrupt_main()\n" +
                     "\n" +
                     "Raise a KeyboardInterrupt in the main thread.\n" +
                     "A subthread can use this function to interrupt the main thread.")
+    @ArgumentClinic(name = "signum", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "SIGINT")
     @GenerateNodeFactory
-    abstract static class InterruptMainThreadNode extends PythonUnaryBuiltinNode {
+    abstract static class InterruptMainThreadNode extends PythonUnaryClinicBuiltinNode {
+        static final int SIGINT = 2;
+
         @Specialization
-        Object getCount(@SuppressWarnings("unused") PythonModule self) {
+        @SuppressWarnings("unused")
+        Object getCount(@SuppressWarnings("unused") int signum) {
             // TODO: implement me
             return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ThreadModuleBuiltinsClinicProviders.InterruptMainThreadNodeClinicProviderGen.INSTANCE;
         }
     }
 }

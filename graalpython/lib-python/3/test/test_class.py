@@ -445,7 +445,7 @@ class ClassTests(unittest.TestCase):
         del testme.cardinal
         self.assertCallStack([('__delattr__', (testme, "cardinal"))])
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def testDel(self):
         x = []
 
@@ -530,7 +530,7 @@ class ClassTests(unittest.TestCase):
             # In debug mode, printed XXX undetected error and
             #  raises AttributeError
             I()
-        except AttributeError as x:
+        except AttributeError:
             pass
         else:
             self.fail("attribute error for I.__init__ got masked")

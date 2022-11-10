@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.str;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMPTY_ATTR_IN_FORMAT_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CONVERSION;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_RBRACE_BEFORE_END_OF_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_AFTER_FORMAT_CONVERSION;
 import static com.oracle.graal.python.nodes.ErrorMessages.FORMAT_STR_CONTAINS_POS_FIELDS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_CONVERSION;
@@ -50,12 +51,11 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.ONLY_S_AND_S_AMY_FOLLOW_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.RECURSION_DEPTH_EXCEEDED;
 import static com.oracle.graal.python.nodes.ErrorMessages.REPLACEMENT_INDEX_S_OUT_OF_RANGE;
-import static com.oracle.graal.python.nodes.ErrorMessages.SINGLE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.SWITCHING_FROM_AUTOMATIC_TO_MANUAL_NUMBERING;
 import static com.oracle.graal.python.nodes.ErrorMessages.SWITCHING_FROM_MANUAL_TO_AUTOMATIC_NUMBERING;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_S_IN_FIELD_NAME;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNMATCHED_S;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -132,14 +132,14 @@ public final class TemplateFormatter {
                 boolean markupFollows = true;
                 if (c == '}') {
                     if (atEnd || s.charAt(i) != '}') {
-                        throw PRaiseNode.raiseUncached(node, ValueError, SINGLE_S, "'}'");
+                        throw PRaiseNode.raiseUncached(node, ValueError, SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING);
                     }
                     i += 1;
                     markupFollows = false;
                 }
                 if (c == '{') {
                     if (atEnd) {
-                        throw PRaiseNode.raiseUncached(node, ValueError, SINGLE_S, "'{'");
+                        throw PRaiseNode.raiseUncached(node, ValueError, SINGLE_RBRACE_ENCOUNTERED_IN_FORMAT_STRING);
                     }
                     if (s.charAt(i) == '{') {
                         i += 1;
@@ -147,7 +147,7 @@ public final class TemplateFormatter {
                     }
                 }
                 // Attach literal data, ending with { or }
-                out.append(s.substring(lastLiteral, i - 1));
+                out.append(s, lastLiteral, i - 1);
                 if (!markupFollows) {
                     if (this.parserList != null) {
                         int endLiteral = i - 1;
@@ -182,7 +182,7 @@ public final class TemplateFormatter {
                     i += 1;
                 }
                 if (nested > 0) {
-                    throw PRaiseNode.raiseUncached(node, ValueError, UNMATCHED_S, "'{'");
+                    throw PRaiseNode.raiseUncached(node, ValueError, EXPECTED_RBRACE_BEFORE_END_OF_STRING);
                 }
                 Object rendered = renderField(node, fieldStart, i, recursive, level, formatNode, getItemNode);
                 out.append(rendered);

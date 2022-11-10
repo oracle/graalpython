@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EncodingWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRWPair;
@@ -56,8 +57,9 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WARNINGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
@@ -85,18 +87,23 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -211,7 +218,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
             PBytesIO bytesIO = factory().createBytesIO(cls);
-            bytesIO.setBuf(factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
+            bytesIO.setBuf(factory().createByteArray(PythonUtils.EMPTY_BYTE_ARRAY));
             return bytesIO;
         }
     }
@@ -470,6 +477,30 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
         public static boolean isAnyNotNone(Object encoding, Object errors, Object newline) {
             return encoding != PNone.NONE || errors != PNone.NONE || newline != PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "text_encoding", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"encoding", "stacklevel"})
+    @ArgumentClinic(name = "stacklevel", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "2")
+    @GenerateNodeFactory
+    abstract static class TextEncodingNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        Object textEncoding(VirtualFrame frame, @SuppressWarnings("unused") PNone encoding, int stacklevel,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            if (PythonContext.get(this).getOption(PythonOptions.WarnDefaultEncodingFlag)) {
+                warnNode.warnEx(frame, EncodingWarning, ErrorMessages.WARN_ENCODING_ARGUMENT_NOT_SPECIFIED, stacklevel);
+            }
+            return T_LOCALE;
+        }
+
+        @Fallback
+        static Object textEncoding(Object encoding, @SuppressWarnings("unused") Object stacklevel) {
+            return encoding;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IOModuleBuiltinsClinicProviders.TextEncodingNodeClinicProviderGen.INSTANCE;
         }
     }
 }

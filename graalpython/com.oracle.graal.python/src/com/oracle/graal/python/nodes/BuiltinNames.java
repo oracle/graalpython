@@ -47,6 +47,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class BuiltinNames {
     // special strings
     public static final String J_LAMBDA_NAME = "<lambda>";
+    public static final TruffleString T_LAMBDA_NAME = tsLiteral(J_LAMBDA_NAME);
 
     // special arg names
     public static final TruffleString T_SELF = tsLiteral("self");
@@ -226,6 +227,9 @@ public abstract class BuiltinNames {
     public static final String J_ENCODE = "encode";
     public static final TruffleString T_ENCODE = tsLiteral(J_ENCODE);
 
+    public static final String J_ENCODINGS = "encodings";
+    public static final TruffleString T_ENCODINGS = tsLiteral(J_ENCODINGS);
+
     public static final String J_DECODE = "decode";
     public static final TruffleString T_DECODE = tsLiteral(J_DECODE);
 
@@ -317,6 +321,9 @@ public abstract class BuiltinNames {
     public static final TruffleString T__CODECS = tsLiteral(J__CODECS);
 
     public static final String J__STRING = "_string";
+
+    public static final String J_LOCALE = "locale";
+    public static final TruffleString T_LOCALE = tsLiteral(J_LOCALE);
 
     public static final String J__CODECS_TRUFFLE = "_codecs_truffle";
     public static final TruffleString T__CODECS_TRUFFLE = tsLiteral(J__CODECS_TRUFFLE);

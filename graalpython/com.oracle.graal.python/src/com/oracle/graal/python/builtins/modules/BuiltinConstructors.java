@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ZIP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_GETSET_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_WRAPPER_DESCRIPTOR;
@@ -71,6 +72,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_D_ARGUME
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_JOIN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
@@ -83,14 +86,18 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.DeprecationWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.addExact;
+import static com.oracle.graal.python.util.PythonUtils.multiplyExact;
+import static com.oracle.graal.python.util.PythonUtils.negateExact;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.subtractExact;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -136,6 +143,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
@@ -172,6 +180,7 @@ import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -216,6 +225,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -783,30 +793,42 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PythonObject reversed(@SuppressWarnings("unused") Object cls, PIntRange range,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+                        @Cached BranchProfile overflowProfile) {
             int lstart = range.getIntStart();
-            int lstop = range.getIntStop();
             int lstep = range.getIntStep();
-            int ulen = lenOfRangeNode.executeInt(lstart, lstop, lstep);
-            int new_stop = lstart - lstep;
-            int new_start = new_stop + ulen * lstep;
+            int ulen = range.getIntLength();
+            try {
+                int new_stop = subtractExact(lstart, lstep);
+                int new_start = addExact(new_stop, multiplyExact(ulen, lstep));
+                return factory().createIntRangeIterator(new_start, new_stop, negateExact(lstep), ulen);
+            } catch (OverflowException e) {
+                overflowProfile.enter();
+                return handleOverflow(lstart, lstep, ulen);
+            }
+        }
 
-            return factory().createIntRangeIterator(new_start, -lstep, ulen);
+        @TruffleBoundary
+        private PBigRangeIterator handleOverflow(int lstart, int lstep, int ulen) {
+            BigInteger bstart = BigInteger.valueOf(lstart);
+            BigInteger bstep = BigInteger.valueOf(lstep);
+            BigInteger blen = BigInteger.valueOf(ulen);
+            BigInteger new_stop = bstart.subtract(bstep);
+            BigInteger new_start = new_stop.add(blen.multiply(bstep));
+
+            return factory().createBigRangeIterator(new_start, new_stop, bstep.negate(), blen);
         }
 
         @Specialization
         @TruffleBoundary
-        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+        public PythonObject reversed(@SuppressWarnings("unused") Object cls, PBigRange range) {
             BigInteger lstart = range.getBigIntegerStart();
-            BigInteger lstop = range.getBigIntegerStop();
             BigInteger lstep = range.getBigIntegerStep();
-            BigInteger ulen = lenOfRangeNode.execute(lstart, lstop, lstep);
+            BigInteger ulen = range.getBigIntegerLength();
 
             BigInteger new_stop = lstart.subtract(lstep);
             BigInteger new_start = new_stop.add(ulen.multiply(lstep));
 
-            return factory().createBigRangeIterator(new_start, lstep.negate(), ulen);
+            return factory().createBigRangeIterator(new_start, new_stop, lstep.negate(), ulen);
         }
 
         @Specialization
@@ -985,6 +1007,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
         @Child private LookupAndCallUnaryNode callIntNode;
+        @Child private PyIndexCheckNode indexCheckNode;
         @Child private WarnNode warnNode;
 
         public final Object executeWith(VirtualFrame frame, Object number) {
@@ -996,9 +1019,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object stringToIntInternal(String num, int base) {
+        private static Object stringToIntInternal(String num, int base, PythonContext context) {
             try {
-                BigInteger bi = asciiToBigInteger(num, base);
+                BigInteger bi = asciiToBigInteger(num, base, context);
                 if (bi == null) {
                     return null;
                 }
@@ -1020,7 +1043,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
             notSimpleDecimalLiteralProfile.enter();
-            Object value = stringToIntInternal(number, base);
+            Object value = stringToIntInternal(number, base, getContext());
             if (value == null) {
                 invalidValueProfile.enter();
                 if (callReprNode == null) {
@@ -1071,7 +1094,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         // Adapted from Jython
-        private static BigInteger asciiToBigInteger(String str, int possibleBase) throws NumberFormatException {
+        private static BigInteger asciiToBigInteger(String str, int possibleBase, PythonContext context) throws NumberFormatException {
             CompilerAsserts.neverPartOfCompilation();
             int base = possibleBase;
             int b = 0;
@@ -1160,6 +1183,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             s = s.replace("_", "");
 
+            checkMaxDigits(context, s.length(), base);
+
             BigInteger bi;
             if (sign == '-') {
                 bi = new BigInteger("-" + s, base);
@@ -1171,6 +1196,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw new NumberFormatException("Obsolete octal int literal");
             }
             return bi;
+        }
+
+        private static void checkMaxDigits(PythonContext context, int digits, int base) {
+            if (digits > SysModuleBuiltins.INT_MAX_STR_DIGITS_THRESHOLD && Integer.bitCount(base) != 1) {
+                Integer maxDigits = context.getIntMaxStrDigits();
+                if (maxDigits > 0 && digits > maxDigits) {
+                    throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D, maxDigits, digits);
+                }
+            }
         }
 
         /**
@@ -1432,7 +1466,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // the case when the result is NO_VALUE (i.e. the object does not provide __index__)
             // is handled in createIntGeneric
             if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, J___INDEX__, result);
             }
             return result;
         }
@@ -1442,7 +1476,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callTruncNode = insert(LookupAndCallUnaryNode.create(T___TRUNC__));
             }
-            return callTruncNode.executeObject(frame, obj);
+            Object result = callTruncNode.executeObject(frame, obj);
+            if (result != PNone.NO_VALUE) {
+                getWarnNode().warnEx(frame, DeprecationWarning, ErrorMessages.WARN_DELEGATION_OF_INT_TO_TRUNC_IS_DEPRECATED, 1);
+                if (getIndexCheckNode().execute(result)) {
+                    return callIndex(frame, result);
+                } else {
+                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, J___TRUNC__, result);
+                }
+            }
+            return result;
         }
 
         private Object callInt(VirtualFrame frame, Object object) {
@@ -1455,6 +1498,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, T___INT__, result);
             }
             return result;
+        }
+
+        private PyIndexCheckNode getIndexCheckNode() {
+            if (indexCheckNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                indexCheckNode = insert(PyIndexCheckNode.create());
+            }
+            return indexCheckNode;
         }
 
         private WarnNode getWarnNode() {
@@ -2044,7 +2095,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     "closure"}, constructsClass = PythonBuiltinClassType.PFunction, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
-        private static final TruffleString T_LAMBDA = tsLiteral("<lambda>");
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs,
@@ -2056,14 +2106,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(T_LAMBDA, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
         public PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
                         @SuppressWarnings("unused") @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(T_LAMBDA, code, globals, null);
+            return factory().createFunction(T_LAMBDA_NAME, code, globals, null);
         }
 
         @Specialization
@@ -2507,7 +2557,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, numOfPositionalOnlyArgs = 17, parameterNames = {
                     "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring", "constants", "names", "varnames", "filename", "name", "firstlineno",
-                    "lnotab", "freevars", "cellvars"})
+                    "linetable", "freevars", "cellvars"})
     @ArgumentClinic(name = "argcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
@@ -2525,14 +2575,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
                         PTuple varnames, TruffleString filename, TruffleString name,
-                        int firstlineno, PBytes lnotab,
+                        int firstlineno, PBytes linetable,
                         PTuple freevars, PTuple cellvars,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
-            byte[] lnotabBytes = bufferLib.getCopiedByteArray(lnotab);
+            byte[] linetableBytes = bufferLib.getCopiedByteArray(linetable);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             TruffleString[] namesArr = objectArrayToTruffleStringArray(getObjectArrayNode.execute(names), castToTruffleStringNode);
@@ -2545,7 +2595,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
                             filename, name, firstlineno,
-                            lnotabBytes);
+                            linetableBytes);
         }
 
         @Fallback
@@ -2554,7 +2604,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
                         Object varnames, Object filename, Object name,
-                        Object firstlineno, Object lnotab,
+                        Object firstlineno, Object linetable,
                         Object freevars, Object cellvars) {
             throw raise(TypeError, ErrorMessages.INVALID_ARGS, "code");
         }

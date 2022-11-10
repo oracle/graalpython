@@ -40,9 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import java.util.List;
+
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
-import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -70,23 +71,24 @@ public final class PythonCextMethodBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 8, parameterNames = {"method_def_ptr", "name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
+    @Builtin(name = "PyCMethod_New", minNumOfPositionalArgs = 9, parameterNames = {"method_def_ptr", "name", "cfunc", "flags", "wrapper", "self", "module", "cls", "doc"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class PyCFunctionNewExMethod extends PythonClinicBuiltinNode {
+    abstract static class PyCMethodNew extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextMethodBuiltinsClinicProviders.PyCFunctionNewExMethodClinicProviderGen.INSTANCE;
+            return PythonCextMethodBuiltinsClinicProviders.PyCMethodNewClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
+        Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object clsO, Object doc,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PythonCextBuiltins.CFunctionNewExMethodNode cFunctionNewExMethodNode,
                         @Cached CExtNodes.ToNewRefNode newRefNode) {
             Object self = asPythonObjectNode.execute(selfO);
             Object module = asPythonObjectNode.execute(moduleO);
-            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, doc, factory());
+            Object cls = asPythonObjectNode.execute(clsO);
+            Object func = cFunctionNewExMethodNode.execute(methodDefPtr, name, methObj, flags, wrapper, self, module, cls, doc, factory());
             return newRefNode.execute(func);
         }
     }

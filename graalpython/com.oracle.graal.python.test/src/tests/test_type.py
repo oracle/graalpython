@@ -437,3 +437,9 @@ def test_slots_no_instance_layout_conflict():
     except TypeError:
         raised = True
     assert not raised
+
+
+def test_call_not_function():
+    class Callable:
+        __call__ = dict
+    assert Callable()(a=1) == {'a': 1}

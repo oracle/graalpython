@@ -45,7 +45,6 @@ def find_lib(name):
 class MachOTest(unittest.TestCase):
     @unittest.skipUnless(sys.platform == "darwin", 'OSX-specific test')
     def test_find(self):
-
         # On Mac OS 11, system dylibs are only present in the shared cache,
         # so symlinks like libpthread.dylib -> libSystem.B.dylib will not
         # be resolved by dyld_find

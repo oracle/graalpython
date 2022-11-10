@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -104,7 +103,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -399,17 +397,21 @@ public class GraalHPyMemberAccessNodes {
     @Builtin(name = "hpy_member_write_read_only", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"})
     protected abstract static class HPyReadOnlyMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyReadOnlyMemberNode.class.getAnnotation(Builtin.class);
+        private final TruffleString propertyName;
+
+        protected HPyReadOnlyMemberNode(TruffleString propertyName) {
+            this.propertyName = propertyName;
+        }
 
         @Specialization
         @SuppressWarnings("unused")
-        static Object doGeneric(Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.READONLY_ATTRIBUTE);
+        Object doGeneric(Object self, Object value) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
-            RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true),
+            RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create(propertyName)), true),
                             GraalHPyMemberAccessNodes.class, builtin.name());
             int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);

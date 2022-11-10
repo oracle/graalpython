@@ -237,20 +237,19 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "range.getIntStep() > 0")
+        @Specialization
         static PNone listRange(PList list, PIntRange range) {
             clearStorage(list);
             int start = range.getIntStart();
-            int stop = range.getIntStop();
             int step = range.getIntStep();
             int len = range.getIntLength();
-            int[] ary = new int[len];
-            int idx = 0;
-            for (int i = start; i < stop; i += step) {
-                ary[idx] = i;
-                idx++;
+            int[] array = new int[len];
+            int value = start;
+            for (int i = 0; i < len; i++) {
+                array[i] = value;
+                value += step;
             }
-            list.setSequenceStorage(new IntSequenceStorage(ary));
+            list.setSequenceStorage(new IntSequenceStorage(array));
             return PNone.NONE;
         }
 
@@ -266,7 +265,7 @@ public class ListBuiltins extends PythonBuiltins {
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PIntRangeIterator range = (PIntRangeIterator) iterable.getIterator();
-            final int estimatedMaxLen = range.getLength();
+            final int estimatedMaxLen = range.getRemainingLength();
             int realLen = 0;
             if (estimatedMaxLen > 0) {
                 Object value = null;
@@ -815,8 +814,8 @@ public class ListBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage s = self.getSequenceStorage();
             for (int i = 0; i < lenNode.execute(s); i++) {
-                Object object = getItemNode.execute(s, i);
-                if (eqNode.execute(frame, value, object)) {
+                Object seqItem = getItemNode.execute(s, i);
+                if (eqNode.execute(frame, seqItem, value)) {
                     count++;
                 }
             }

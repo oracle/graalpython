@@ -207,6 +207,7 @@ declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
+declare_type(PyCMethod_Type, builtin_method, PyCMethodObject);
 declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
 // tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
 // PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
@@ -319,6 +320,9 @@ PyObject* _Py_EllipsisObjectReference;
 PyObject* _Py_NoneStructReference;
 PyObject* _Py_NotImplementedStructReference;
 
+PyObject* _PyTruffle_Zero;
+PyObject* _PyTruffle_One;
+
 static void initialize_globals() {
     // register native NULL
     wrapped_null = polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
@@ -336,9 +340,8 @@ static void initialize_globals() {
     _Py_TrueStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
     _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
 
-    // long zero, long one
-    _PyLong_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_Zero", SRC_CS));
-    _PyLong_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_One", SRC_CS));
+    _PyTruffle_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 0, 1);
+    _PyTruffle_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_FromLongLong", SRC_CS), 1, 1);
 }
 
 static void initialize_bufferprocs() {

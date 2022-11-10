@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -73,7 +74,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         if (name instanceof HiddenKey || !PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, name), this);
         }
     }
 

@@ -166,12 +166,12 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyEval_EvalCodeEx", minNumOfPositionalArgs = 9, needsFrame = true)
+    @Builtin(name = "PyEval_EvalCodeEx", minNumOfPositionalArgs = 8, needsFrame = true)
     @GenerateNodeFactory
     abstract static class PyEvalEvalCodeEx extends PythonBuiltinNode {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object codeWrapper, Object globalsWrapper, Object localsWrapper,
-                        Object argumentArrayPtr, Object kwnamesPtr, Object keywordArrayPtr, Object defaultValueArrayPtr,
+                        Object argumentArrayPtr, Object kwsPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureWrapper,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
                         @Cached CExtNodes.AsPythonObjectNode codeAsPythonObjectNode,
@@ -200,24 +200,18 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
                 // CPython also just accesses the object as tuple without further checks.
                 closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
             }
-            Object[] keywordNames = unwrapArray(kwnamesPtr, ptrLib, elementToJavaNode);
-            Object[] keywordArguments = unwrapArray(keywordArrayPtr, ptrLib, elementToJavaNode);
+            Object[] kws = unwrapArray(kwsPtr, ptrLib, elementToJavaNode);
 
-            // The two arrays 'kwnamesPtr' and 'keywordArrayPtr' are expected to have the same size.
-            if (keywordNames.length != keywordArguments.length) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-
-            PKeyword[] keywords = PKeyword.create(keywordNames.length);
-            for (int i = 0; i < keywordNames.length; i++) {
-                TruffleString keywordName = castToStringNode.execute(keywordNames[i]);
-                keywords[i] = new PKeyword(keywordName, keywordArguments[i]);
+            PKeyword[] keywords = PKeyword.create(kws.length / 2);
+            for (int i = 0; i < kws.length / 2; i += 2) {
+                TruffleString keywordName = castToStringNode.execute(kws[i]);
+                keywords[i] = new PKeyword(keywordName, kws[i + 1]);
             }
 
             // prepare Python frame arguments
             Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
             Signature signature = getSignatureNode.execute(code);
-            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
+            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
             if (!(locals instanceof PNone)) {

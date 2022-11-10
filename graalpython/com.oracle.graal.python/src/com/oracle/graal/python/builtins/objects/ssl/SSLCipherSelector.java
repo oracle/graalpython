@@ -60,7 +60,7 @@ import com.oracle.truffle.api.nodes.Node;
 public class SSLCipherSelector {
     private static final SSLCipher[] TLS3_CIPHER_SUITES = new SSLCipher[]{
                     SSLCipher.TLS_AES_256_GCM_SHA384, SSLCipher.TLS_CHACHA20_POLY1305_SHA256,
-                    SSLCipher.TLS_AES_128_GCM_SHA256, SSLCipher.TLS_AES_128_CCM_SHA256};
+                    SSLCipher.TLS_AES_128_GCM_SHA256};
 
     @TruffleBoundary
     public static SSLCipher[] selectCiphers(Node node, String cipherList) {

@@ -144,22 +144,27 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
+    /////// PyIndex ///////
+
+    @Builtin(name = "PyIndex_Check", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyIndexCheckNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object check(Object obj,
+                        @Cached com.oracle.graal.python.lib.PyIndexCheckNode checkNode) {
+            return checkNode.execute(obj) ? 1 : 0;
+        }
+    }
+
     /////// PyNumber ///////
 
     @Builtin(name = "PyNumber_Check", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     abstract static class PyNumberCheckNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object check(VirtualFrame frame, Object obj,
-                        @Cached com.oracle.graal.python.lib.PyNumberCheckNode checkNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return checkNode.execute(frame, obj);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return getContext().getNativeNull();
-            }
+        Object check(Object obj,
+                        @Cached com.oracle.graal.python.lib.PyNumberCheckNode checkNode) {
+            return checkNode.execute(obj) ? 1 : 0;
         }
     }
 

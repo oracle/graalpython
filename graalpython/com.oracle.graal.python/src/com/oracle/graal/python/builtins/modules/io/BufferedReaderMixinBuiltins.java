@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -137,7 +139,12 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 /* Non-blocking stream would have blocked. Special return code! */
                 return BLOCKED;
             }
-            int n = asSizeNode.executeExact(frame, res, ValueError);
+            int n;
+            try {
+                n = asSizeNode.executeExact(frame, res, ValueError);
+            } catch (PException e) {
+                throw raise(frame, OSError, e, ErrorMessages.RAW_READINTO_FAILED);
+            }
             if (osError.profile(n < 0 || n > len)) {
                 throw raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
             }

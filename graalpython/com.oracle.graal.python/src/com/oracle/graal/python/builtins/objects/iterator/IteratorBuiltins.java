@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -69,6 +68,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -215,7 +215,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             return stopIteration(self);
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private Object nextDictValue(PDictView.PBaseDictIterator<?> self) {
             return self.next(factory());
         }
@@ -306,13 +306,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PIntRangeIterator self) {
-            return self.getLength();
+            return self.getRemainingLength();
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public static int lengthHint(VirtualFrame frame, PBigRangeIterator self,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
-            return asSizeNode.executeExact(frame, self.getLen());
+        public Object lengthHint(PBigRangeIterator self) {
+            return factory().createInt(self.getRemainingLength());
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -432,22 +431,20 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PIntRangeIterator self,
-                        @Cached LenOfRangeNode length) {
-            int start = self.getReduceStart();
-            int stop = self.getReduceStop();
-            int step = self.getReduceStep();
-            int len = length.executeInt(start, stop, step);
+        public Object reduce(VirtualFrame frame, PIntRangeIterator self) {
+            int start = self.getStart();
+            int stop = self.getStop();
+            int step = self.getStep();
+            int len = self.getLen();
             return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), PythonContext.get(this));
         }
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PBigRangeIterator self,
-                        @Cached LenOfRangeNode length) {
-            PInt start = self.getReduceStart();
-            PInt stop = self.getReduceStop(factory());
-            PInt step = self.getReduceStep();
-            PInt len = factory().createInt(length.execute(start.getValue(), stop.getValue(), step.getValue()));
+        public Object reduce(VirtualFrame frame, PBigRangeIterator self) {
+            PInt start = self.getStart();
+            PInt stop = self.getStop();
+            PInt step = self.getStep();
+            PInt len = self.getLen();
             return reduceInternal(frame, factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), PythonContext.get(this));
         }
 
@@ -499,7 +496,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public static Object reduce(PBigRangeIterator self, Object index,
                         @Cached CastToJavaBigIntegerNode castToJavaBigIntegerNode) {
             BigInteger idx = castToJavaBigIntegerNode.execute(index);
@@ -510,7 +507,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(guards = "!isPBigRangeIterator(self)")
         public static Object reduce(VirtualFrame frame, PBuiltinIterator self, Object index,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             int idx = asSizeNode.executeExact(frame, index);
@@ -519,6 +516,10 @@ public class IteratorBuiltins extends PythonBuiltins {
             }
             self.index = idx;
             return PNone.NONE;
+        }
+
+        protected static boolean isPBigRangeIterator(Object obj) {
+            return obj instanceof PBigRangeIterator;
         }
     }
 }

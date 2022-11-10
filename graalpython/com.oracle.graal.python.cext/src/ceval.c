@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,6 +109,12 @@ PyEval_EvalCode(PyObject *co, PyObject *globals, PyObject *locals)
                       NULL, NULL);
 }
 
+typedef PyObject *(*eval_code_ex_fun_t)(PyObject *_co, PyObject *globals, PyObject *locals,
+                  PyObject *const *args,
+                  PyObject *const *kws,
+                  PyObject *const *defs,
+                  PyObject *kwdefs, PyObject *closure);
+UPCALL_TYPED_ID(PyEval_EvalCodeEx, eval_code_ex_fun_t);
 PyObject *
 PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                   PyObject *const *args, int argcount,
@@ -116,39 +122,21 @@ PyEval_EvalCodeEx(PyObject *_co, PyObject *globals, PyObject *locals,
                   PyObject *const *defs, int defcount,
                   PyObject *kwdefs, PyObject *closure)
 {
-    return _PyEval_EvalCodeWithName(_co, globals, locals,
-                                    args, argcount,
-                                    kws, kws != NULL ? kws + 1 : NULL,
-                                    kwcount, 2,
-                                    defs, defcount,
-                                    kwdefs, closure,
-                                    NULL, NULL);
-}
-
-typedef PyObject *(*eval_code_ex_fun_t)(PyObject *_co, PyObject *globals, PyObject *locals,
-                  PyObject *const *args,
-                  PyObject *const *kwnames,
-                  PyObject *const *kwargs,
-                  PyObject *const *defs,
-                  PyObject *kwdefs, PyObject *closure);
-UPCALL_TYPED_ID(PyEval_EvalCodeEx, eval_code_ex_fun_t);
-PyObject *
-_PyEval_EvalCodeWithName(PyObject *_co, PyObject *globals, PyObject *locals,
-           PyObject *const *args, Py_ssize_t argcount,
-           PyObject *const *kwnames, PyObject *const *kwargs,
-           Py_ssize_t kwcount, int kwstep,
-           PyObject *const *defs, Py_ssize_t defcount,
-           PyObject *kwdefs, PyObject *closure,
-           PyObject *name, PyObject *qualname)
-{
     if (globals == NULL) {
         PyErr_SetString(PyExc_SystemError, "PyEval_EvalCodeEx: NULL globals");
         return NULL;
     }
-    /* TODO(fa): do not ignore 'name' and 'qualname' */
     return _jls_PyEval_EvalCodeEx(native_to_java(_co), native_to_java(globals), native_to_java(locals != NULL ? locals : Py_None),
                                   polyglot_from_PyObjectPtr_array(args, argcount),
-                                  polyglot_from_PyObjectPtr_array(kwnames, kwcount), polyglot_from_PyObjectPtr_array(kwargs, kwcount),
+                                  polyglot_from_PyObjectPtr_array(kws, kwcount * 2),
                                   polyglot_from_PyObjectPtr_array(defs, defcount),
                                   native_to_java(kwdefs), native_to_java(closure));
 }
+
+#undef Py_EnterRecursiveCall
+int Py_EnterRecursiveCall(const char *where) {
+    return 0;
+}
+
+#undef Py_LeaveRecursiveCall
+void Py_LeaveRecursiveCall(void) {}

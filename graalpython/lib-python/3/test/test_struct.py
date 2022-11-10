@@ -1,12 +1,16 @@
 from collections import abc
 import array
+import gc
 import math
 import operator
 import unittest
 import struct
 import sys
+import weakref
 
 from test import support
+from test.support import import_helper
+from test.support.script_helper import assert_python_ok
 
 ISBIGENDIAN = sys.byteorder == "big"
 
@@ -416,7 +420,7 @@ class StructTest(unittest.TestCase):
         self.assertEqual(s.unpack_from(buffer=test_string, offset=2),
                          (b'cd01',))
 
-    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalpy=False)
     def test_pack_into(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -445,7 +449,7 @@ class StructTest(unittest.TestCase):
         self.assertRaises((TypeError, struct.error), struct.pack_into, b'', sb,
                           None)
 
-    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalpy=False)
     def test_pack_into_fn(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -469,7 +473,7 @@ class StructTest(unittest.TestCase):
         self.assertRaises((ValueError, struct.error), pack_into, small_buf, 2,
                           test_string)
 
-    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalpy=False)
     def test_unpack_with_buffer(self):
         # SF bug 1563759: struct.unpack doesn't support buffer protocol objects
         data1 = array.array('B', b'\x12\x34\x56\x78')
@@ -522,7 +526,7 @@ class StructTest(unittest.TestCase):
             self.assertTrue(struct.unpack('>?', c)[0])
 
     @support.impl_detail(msg="not yet supported: sys.maxsize difference Java -> C, does not overflow defined as "
-                             "Integer.MAX_VALUE < size_t size", graalvm=False)
+                             "Integer.MAX_VALUE < size_t size", graalpy=False)
     def test_count_overflow(self):
         hugecount = '{}b'.format(sys.maxsize+1)
         self.assertRaises(struct.error, struct.calcsize, hugecount)
@@ -657,6 +661,51 @@ class StructTest(unittest.TestCase):
         s2 = struct.Struct(s.format.encode())
         self.assertEqual(s2.format, s.format)
 
+    def test_struct_cleans_up_at_runtime_shutdown(self):
+        code = """if 1:
+            import struct
+
+            class C:
+                def __init__(self):
+                    self.pack = struct.pack
+                def __del__(self):
+                    self.pack('I', -42)
+
+            struct.x = C()
+            """
+        rc, stdout, stderr = assert_python_ok("-c", code)
+        self.assertEqual(rc, 0)
+        self.assertEqual(stdout.rstrip(), b"")
+        self.assertIn(b"Exception ignored in:", stderr)
+        self.assertIn(b"C.__del__", stderr)
+
+    def test__struct_reference_cycle_cleaned_up(self):
+        # Regression test for python/cpython#94207.
+
+        # When we create a new struct module, trigger use of its cache,
+        # and then delete it ...
+        _struct_module = import_helper.import_fresh_module("_struct")
+        module_ref = weakref.ref(_struct_module)
+        _struct_module.calcsize("b")
+        del _struct_module
+
+        # Then the module should have been garbage collected.
+        gc.collect()
+        self.assertIsNone(
+            module_ref(), "_struct module was not garbage collected")
+
+    @support.cpython_only
+    def test__struct_types_immutable(self):
+        # See https://github.com/python/cpython/issues/94254
+
+        Struct = struct.Struct
+        unpack_iterator = type(struct.iter_unpack("b", b'x'))
+        for cls in (Struct, unpack_iterator):
+            with self.subTest(cls=cls):
+                with self.assertRaises(TypeError):
+                    cls.x = 1
+
+
     def test_issue35714(self):
         # Embedded null characters should not be allowed in format strings.
         for s in '\0', '2\0i', b'\0':
@@ -690,6 +739,10 @@ class UnpackIteratorTest(unittest.TestCase):
             s.iter_unpack(b"")
         with self.assertRaises(struct.error):
             s.iter_unpack(b"12")
+
+    def test_uninstantiable(self):
+        iter_unpack_type = type(struct.Struct(">ibcp").iter_unpack(b""))
+        self.assertRaises(TypeError, iter_unpack_type)
 
     def test_iterate(self):
         s = struct.Struct('>IB')

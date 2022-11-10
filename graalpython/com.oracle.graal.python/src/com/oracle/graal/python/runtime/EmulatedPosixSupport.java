@@ -208,7 +208,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -238,6 +237,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -1885,6 +1885,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         } else {
             environ.putIfAbsent(nameStr, valueStr);
         }
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public void unsetenv(Object name) {
+        String nameStr = pathToJavaString(name);
+        environ.remove(nameStr);
     }
 
     @ExportMessage

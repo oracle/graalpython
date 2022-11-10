@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -59,17 +59,17 @@ typedef struct {
 
 typedef struct SRE_REPEAT_T {
     Py_ssize_t count;
-    SRE_CODE* pattern; /* points to REPEAT operator arguments */
-    void* last_ptr; /* helper to check for infinite loops */
+    const SRE_CODE* pattern; /* points to REPEAT operator arguments */
+    const void* last_ptr; /* helper to check for infinite loops */
     struct SRE_REPEAT_T *prev; /* points to previous repeat context */
 } SRE_REPEAT;
 
 typedef struct {
     /* string pointers */
-    void* ptr; /* current position (also end of current slice) */
-    void* beginning; /* start of original string */
-    void* start; /* start of current slice */
-    void* end; /* end of original string */
+    const void* ptr; /* current position (also end of current slice) */
+    const void* beginning; /* start of original string */
+    const void* start; /* start of current slice */
+    const void* end; /* end of original string */
     /* attributes for the match object */
     PyObject* string;
     Py_buffer buffer;
@@ -79,7 +79,7 @@ typedef struct {
     /* registers */
     Py_ssize_t lastindex;
     Py_ssize_t lastmark;
-    void** mark;
+    const void** mark;
     int match_all;
     int must_advance;
     /* dynamically allocated stuff */
@@ -94,6 +94,7 @@ typedef struct {
     PyObject_HEAD
     PyObject* pattern;
     SRE_STATE state;
+    int executing;
 } ScannerObject;
 
 #endif

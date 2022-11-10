@@ -40,26 +40,42 @@
  */
 #include "capi.h"
 
+/* undefine macro trampoline to PyCFunction_NewEx */
+#undef PyCFunction_New
+/* undefine macro trampoline to PyCMethod_New */
+#undef PyCFunction_NewEx
+
 typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
+PyObject *PyCFunction_New(PyMethodDef *ml, PyObject *self) {
+    return PyCFunction_NewEx(ml, self, NULL);
+}
 
-typedef PyObject* (*PyCFunction_NewEx_fun_t)(PyMethodDef* methodDef,
+PyObject *PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
+    return PyCMethod_New(ml, self, module, NULL);
+}
+
+PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
+PyTypeObject PyCMethod_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_method", &PyCFunction_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
+
+typedef PyObject* (*PyCMethod_New_fun_t)(PyMethodDef* methodDef,
                                                     void* name,
                                                     void* methObj, 
                                                     int flags, 
                                                     int wrapper,
                                                     void* self,
                                                     void* module, 
+                                                    void* cls,
                                                     const char* doc);
-UPCALL_TYPED_ID(PyCFunction_NewEx, PyCFunction_NewEx_fun_t);
-PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    return _jls_PyCFunction_NewEx(ml,
+UPCALL_TYPED_ID(PyCMethod_New, PyCMethod_New_fun_t);
+PyObject* PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *cls) {
+    return _jls_PyCMethod_New(ml,
                                                polyglot_from_string(ml->ml_name, SRC_CS),
                                                function_pointer_to_java(ml->ml_meth),
                                                ml->ml_flags,
                                                get_method_flags_wrapper(ml->ml_flags),
                                                native_to_java(self),
                                                native_to_java(module),
+                                               native_to_java((PyObject*)cls),
                                                ml->ml_doc);
 }

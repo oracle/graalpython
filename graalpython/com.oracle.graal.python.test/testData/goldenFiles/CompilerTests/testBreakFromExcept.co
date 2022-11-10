@@ -3,34 +3,35 @@ Disassembly of <module>:
   1:15  -   1:17        2 LOAD_BYTE_O                       10
   1:9   -   1:18        4 CALL_FUNCTION                     1
   1:0   -   4:36        6 GET_ITER
-  1:0   -   4:36  >>    7 FOR_ITER                          49   (to 56)
+  1:0   -   4:36  >>    7 FOR_ITER                          50   (to 57)
   1:4   -   1:5         9 STORE_NAME                        1    (i)
-  3:4   -   3:5        11 LOAD_BYTE_I                       1                                      can quicken
-  3:8   -   3:9        13 LOAD_BYTE_I                       0                                      can quicken
-  3:4   -   3:9        15 BINARY_OP                         8    (TRUEDIV)                         generalizes: 13, 11
-  3:4   -   3:9        17 POP_TOP
-  3:4   -   3:9        18 JUMP_FORWARD                      36   (to 54)
-  3:4   -   3:9        20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
-  4:9   -   4:21       21 LOAD_NAME                         2    (RuntimeError)
-  4:2   -   4:36       23 MATCH_EXC_OR_JUMP                 30   (to 53)
-  4:2   -   4:36       27 UNWRAP_EXC
-  4:2   -   4:36       28 STORE_NAME                        3    (e)
-  4:31  -   4:36       30 LOAD_NONE
-  4:31  -   4:36       31 STORE_NAME                        3    (e)
-  4:31  -   4:36       33 DELETE_NAME                       3    (e)
-  4:31  -   4:36       35 POP_EXCEPT
-  4:31  -   4:36       36 POP_TOP
-  4:31  -   4:36       37 JUMP_FORWARD                      19   (to 56)
-  4:31  -   4:36       39 LOAD_NONE
-  4:31  -   4:36       40 STORE_NAME                        3    (e)
-  4:31  -   4:36       42 DELETE_NAME                       3    (e)
-  4:31  -   4:36       44 POP_EXCEPT
-  4:31  -   4:36       45 JUMP_FORWARD                      9    (to 54)
-  4:31  -   4:36       47 LOAD_NONE                                                               (exc handler 30 - 39; stack: 2)
-  4:31  -   4:36       48 STORE_NAME                        3    (e)
-  4:31  -   4:36       50 DELETE_NAME                       3    (e)
-  4:31  -   4:36       52 END_EXC_HANDLER
-  4:31  -   4:36  >>   53 END_EXC_HANDLER                                                         (exc handler 21 - 30; stack: 2 | exc handler 39 - 53; stack: 2)
-  4:31  -   4:36  >>   54 JUMP_BACKWARD                     47   (to 7)
-  4:31  -   4:36  >>   56 LOAD_NONE
-  4:31  -   4:36       57 RETURN_VALUE
+  2:2   -   4:36       11 NOP
+  3:4   -   3:5        12 LOAD_BYTE_I                       1                                      can quicken
+  3:8   -   3:9        14 LOAD_BYTE_I                       0                                      can quicken
+  3:4   -   3:9        16 BINARY_OP                         8    (TRUEDIV)                         generalizes: 14, 12
+  3:4   -   3:9        18 POP_TOP
+  3:4   -   3:9        19 JUMP_FORWARD                      36   (to 55)
+  3:4   -   3:9        21 PUSH_EXC_INFO                                                           (exc handler 12 - 21; stack: 1)
+  4:9   -   4:21       22 LOAD_NAME                         2    (RuntimeError)
+  4:2   -   4:36       24 MATCH_EXC_OR_JUMP                 30   (to 54)
+  4:2   -   4:36       28 UNWRAP_EXC
+  4:2   -   4:36       29 STORE_NAME                        3    (e)
+  4:31  -   4:36       31 LOAD_NONE
+  4:31  -   4:36       32 STORE_NAME                        3    (e)
+  4:31  -   4:36       34 DELETE_NAME                       3    (e)
+  4:31  -   4:36       36 POP_EXCEPT
+  4:31  -   4:36       37 POP_TOP
+  4:31  -   4:36       38 JUMP_FORWARD                      19   (to 57)
+  4:31  -   4:36       40 LOAD_NONE
+  4:31  -   4:36       41 STORE_NAME                        3    (e)
+  4:31  -   4:36       43 DELETE_NAME                       3    (e)
+  4:31  -   4:36       45 POP_EXCEPT
+  4:31  -   4:36       46 JUMP_FORWARD                      9    (to 55)
+  4:31  -   4:36       48 LOAD_NONE                                                               (exc handler 31 - 40; stack: 2)
+  4:31  -   4:36       49 STORE_NAME                        3    (e)
+  4:31  -   4:36       51 DELETE_NAME                       3    (e)
+  4:31  -   4:36       53 END_EXC_HANDLER
+  4:31  -   4:36  >>   54 END_EXC_HANDLER                                                         (exc handler 22 - 31; stack: 2 | exc handler 40 - 54; stack: 2)
+  4:31  -   4:36  >>   55 JUMP_BACKWARD                     48   (to 7)
+  4:31  -   4:36  >>   57 LOAD_NONE
+  4:31  -   4:36       58 RETURN_VALUE

@@ -523,6 +523,10 @@ int32_t call_setenv(char *name, char *value, int overwrite) {
     return setenv(name, value, overwrite);
 }
 
+int32_t call_unsetenv(char *name) {
+    return unsetenv(name);
+}
+
 // See comment in NFiPosixSupport.execv() for the description of arguments
 void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
     // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array

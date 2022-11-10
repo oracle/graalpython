@@ -101,7 +101,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethMethodRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
@@ -2060,6 +2063,36 @@ public abstract class CExtNodes {
     }
 
     /**
+     * Converts for native signature:
+     * {@code PyObject* meth_method(PyObject* self, PyTypeObject* defining_class, PyObject* const* args, Py_ssize_t nargs, PyObject* kwnames)}.
+     * Used with {@code METH_FASTCALL | METH_KEYWORDS | METH_METHOD} flags.
+     */
+    public abstract static class MethodArgsToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 5)"})
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode2,
+                        @Cached ToBorrowedRefNode toSulongNode4) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+            dest[destOffset + 3] = args[argsOffset + 3];
+            dest[destOffset + 4] = toSulongNode4.execute(args[argsOffset + 4]);
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 5)"})
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, 5, args.length - argsOffset);
+        }
+
+        public static MethodArgsToSulongNode create() {
+            return CExtNodesFactory.MethodArgsToSulongNodeGen.create();
+        }
+    }
+
+    /**
      * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc},
      * {@code ssizeargfunc}, and {@code getter}.
      */
@@ -2101,7 +2134,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, 3, args.length - argsOffset);
         }
 
         public static TernaryFirstThirdToSulongNode create() {
@@ -2169,7 +2202,7 @@ public abstract class CExtNodes {
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
         static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, args.length - argsOffset);
+            throw raiseNode.raise(TypeError, ErrorMessages.INVALID_ARGS_FOR_METHOD, 3, args.length - argsOffset);
         }
 
         public static TernaryFirstSecondToSulongNode create() {
@@ -3874,7 +3907,7 @@ public abstract class CExtNodes {
                      * similar. We ignore that for now since the size will usually be very small
                      * and/or we could also use a Truffle buffer object.
                      */
-                    Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWMALLOC, mSize);
+                    Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWCALLOC, 1, mSize);
                     writeNativeMemberNode.execute(module, moduleWrapper, MD_STATE.getMemberNameJavaString(), moduleStatePtr);
                 }
 
@@ -4031,10 +4064,16 @@ public abstract class CExtNodes {
                 return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);
             } else if (CExtContext.isMethO(flags)) {
                 return new MethORoot(language, name, isStatic, PExternalFunctionWrapper.O);
-            } else if (CExtContext.isMethKeywords(flags)) {
+            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
                 return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
             } else if (CExtContext.isMethVarargs(flags)) {
                 return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
+            } else if (CExtContext.isMethMethod(flags)) {
+                return new MethMethodRoot(language, name, isStatic, PExternalFunctionWrapper.METHOD);
+            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
+                return new MethFastcallWithKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL_WITH_KEYWORDS);
+            } else if (CExtContext.isMethFastcall(flags)) {
+                return new MethFastcallRoot(language, name, isStatic, PExternalFunctionWrapper.FASTCALL);
             }
             throw new IllegalStateException("illegal method flags");
         }

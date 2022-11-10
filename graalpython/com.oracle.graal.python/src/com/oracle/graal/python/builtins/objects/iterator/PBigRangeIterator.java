@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,14 +49,16 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PBigRangeIterator extends PBuiltinIterator {
     private final PInt start;
+    private final PInt stop;
     private final PInt step;
     private final PInt len;
 
     private BigInteger longIndex;
 
-    public PBigRangeIterator(Object clazz, Shape instanceShape, PInt start, PInt step, PInt len) {
+    public PBigRangeIterator(Object clazz, Shape instanceShape, PInt start, PInt stop, PInt step, PInt len) {
         super(clazz, instanceShape);
         this.start = start;
+        this.stop = stop;
         this.step = step;
         this.len = len;
 
@@ -64,7 +66,7 @@ public final class PBigRangeIterator extends PBuiltinIterator {
     }
 
     @TruffleBoundary
-    public BigInteger getLength() {
+    public BigInteger getRemainingLength() {
         return this.len.subtract(this.longIndex);
     }
 
@@ -84,24 +86,16 @@ public final class PBigRangeIterator extends PBuiltinIterator {
         return start;
     }
 
-    public PInt getLen() {
-        return len;
+    public PInt getStop() {
+        return stop;
     }
 
     public PInt getStep() {
         return step;
     }
 
-    public PInt getReduceStart() {
-        return start;
-    }
-
-    public PInt getReduceStop(PythonObjectFactory factory) {
-        return factory.createInt(start.add(len.multiply(step)));
-    }
-
-    public PInt getReduceStep() {
-        return step;
+    public PInt getLen() {
+        return len;
     }
 
     public PInt getLongIndex(PythonObjectFactory factory) {

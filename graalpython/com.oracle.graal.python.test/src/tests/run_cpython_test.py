@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -84,5 +84,6 @@ class TestLoader(unittest.TestLoader):
 
 # We would normmally just pass the loader to the main, but there are tests for the framework itself (test_unittest)
 # that interact weirdly with non-default loaders
-unittest.defaultTestLoader = TestLoader()
-unittest.main(module=None, testLoader=unittest.defaultTestLoader)
+if __name__ == '__main__':
+    unittest.defaultTestLoader = TestLoader()
+    unittest.main(module=None, testLoader=unittest.defaultTestLoader)

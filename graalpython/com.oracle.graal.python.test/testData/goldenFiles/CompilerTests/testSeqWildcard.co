@@ -1,13 +1,14 @@
 Disassembly of <module>:
   1:7   -   1:8         0 LOAD_BYTE_O                       1
   2:2   -   3:8         2 MATCH_SEQUENCE
-  2:2   -   3:8         3 POP_AND_JUMP_IF_FALSE             16   (to 19)
+  2:2   -   3:8         3 POP_AND_JUMP_IF_FALSE             17   (to 20)
   2:2   -   3:8         7 GET_LEN
   2:2   -   3:8         8 LOAD_BYTE_O                       1
   2:2   -   3:8        10 BINARY_OP                         12   (EQ)                              can quicken
-  2:2   -   3:8        12 POP_AND_JUMP_IF_FALSE             7    (to 19)                           generalizes: 10
+  2:2   -   3:8        12 POP_AND_JUMP_IF_FALSE             8    (to 20)                           generalizes: 10
   2:2   -   3:8        16 POP_TOP
-  3:4   -   3:8        17 JUMP_FORWARD                      3    (to 20)
-  2:2   -   3:8   >>   19 POP_TOP
-  2:2   -   3:8   >>   20 LOAD_NONE
-  2:2   -   3:8        21 RETURN_VALUE
+  3:4   -   3:8        17 NOP
+  3:4   -   3:8        18 JUMP_FORWARD                      3    (to 21)
+  2:2   -   3:8   >>   20 POP_TOP
+  2:2   -   3:8   >>   21 LOAD_NONE
+  2:2   -   3:8        22 RETURN_VALUE

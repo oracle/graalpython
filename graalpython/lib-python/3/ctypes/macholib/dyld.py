@@ -10,7 +10,6 @@ try:
     from _ctypes import _dyld_shared_cache_contains_path
 except ImportError:
     def _dyld_shared_cache_contains_path(*args):
-        print("dyld_shared_cached_contains_path not implemented")
         raise NotImplementedError
 
 __all__ = [

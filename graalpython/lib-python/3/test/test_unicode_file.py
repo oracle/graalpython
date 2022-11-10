@@ -2,15 +2,18 @@
 # We don't test many operations on files other than
 # that their names can be used with Unicode characters.
 import os, glob, time, shutil
+import sys
 import unicodedata
 
 import unittest
-from test.support import (run_unittest, rmtree, change_cwd, impl_detail,
-    TESTFN_ENCODING, TESTFN_UNICODE, TESTFN_UNENCODABLE, create_empty_file)
+from test.support import impl_detail
+from test.support.os_helper import (rmtree, change_cwd, TESTFN_UNICODE,
+    TESTFN_UNENCODABLE, create_empty_file)
+
 
 if not os.path.supports_unicode_filenames:
     try:
-        TESTFN_UNICODE.encode(TESTFN_ENCODING)
+        TESTFN_UNICODE.encode(sys.getfilesystemencoding())
     except (UnicodeError, TypeError):
         # Either the file system encoding is None, or the file name
         # cannot be encoded in the file system encoding.
@@ -117,13 +120,13 @@ class TestUnicodeFiles(unittest.TestCase):
 
     # The 'test' functions are unittest entry points, and simply call our
     # _test functions with each of the filename combinations we wish to test
-    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     def test_single_files(self):
         self._test_single(TESTFN_UNICODE)
         if TESTFN_UNENCODABLE is not None:
             self._test_single(TESTFN_UNENCODABLE)
 
-    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
+    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
     def test_directories(self):
         # For all 'equivalent' combinations:
         #  Make dir with encoded, chdir with unicode, checkdir with encoded
@@ -135,8 +138,6 @@ class TestUnicodeFiles(unittest.TestCase):
             self._do_directory(TESTFN_UNENCODABLE+ext,
                                TESTFN_UNENCODABLE+ext)
 
-def test_main():
-    run_unittest(__name__)
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

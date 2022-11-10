@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EncodingWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -54,6 +55,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALE;
 import static com.oracle.graal.python.nodes.ErrorMessages.COULD_NOT_DETERMINE_DEFAULT_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_CHARACTER;
@@ -74,6 +76,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -92,6 +95,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -771,13 +776,20 @@ public abstract class TextIOWrapperNodes {
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.EqualNode equalNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             self.setOK(false);
             self.setDetached(false);
             // encoding and newline are processed through arguments clinic and safe to cast.
             TruffleString encoding = encodingArg == PNone.NONE ? null : (TruffleString) encodingArg;
             TruffleString newline = newlineArg == PNone.NONE ? null : (TruffleString) newlineArg;
-            if (encoding != null) {
+            if (encoding == null) {
+                if (PythonContext.get(this).getOption(PythonOptions.WarnDefaultEncodingFlag)) {
+                    warnNode.warnEx(frame, EncodingWarning, ErrorMessages.WARN_ENCODING_ARGUMENT_NOT_SPECIFIED, 1);
+                }
+            } else if (equalNode.execute(T_LOCALE, encoding, TS_ENCODING)) {
+                encoding = null;
+            } else {
                 if (indexOfCodePointNode.execute(encoding, 0, 0, codePointLengthNode.execute(encoding, TS_ENCODING), TS_ENCODING) != -1) {
                     throw raiseNode.raise(ValueError, EMBEDDED_NULL_CHARACTER);
                 }

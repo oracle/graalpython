@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -440,7 +441,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     public abstract static class GetPreferredEncoding extends PNodeWithContext {
 
         public static final TruffleString T_GETPREFERREDENCODING = tsLiteral("getpreferredencoding");
-        public static final TruffleString T_LOCALE = tsLiteral("locale");
 
         public abstract TruffleString execute(Frame frame);
 
@@ -449,7 +449,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode) {
 
-            Object locale = AbstractImportNode.importModule(T_LOCALE);
+            Object locale = AbstractImportNode.importModule(BuiltinNames.T_LOCALE);
             Object e = callMethodNode.execute(frame, locale, T_GETPREFERREDENCODING);
             return strNode.execute(frame, e);
         }

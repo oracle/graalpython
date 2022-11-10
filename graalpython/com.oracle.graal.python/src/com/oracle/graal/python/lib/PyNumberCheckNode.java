@@ -51,7 +51,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -63,11 +62,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyNumberCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object object);
-
-    public final boolean execute(Object object) {
-        return execute(null, object);
-    }
+    public abstract boolean execute(Object object);
 
     @Specialization
     static boolean doString(@SuppressWarnings("unused") TruffleString object) {

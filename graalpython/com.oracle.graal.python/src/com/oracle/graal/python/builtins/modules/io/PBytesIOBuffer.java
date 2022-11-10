@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,8 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -52,14 +51,12 @@ import com.oracle.truffle.api.object.Shape;
 public final class PBytesIOBuffer extends PythonBuiltinObject {
 
     private final PBytesIO source;
-    protected final PBytes delegate;
-    protected final SequenceStorage bufferStorage;
+    protected final PByteArray delegate;
 
     public PBytesIOBuffer(Object cls, Shape instanceShape, PBytesIO source) {
         super(cls, instanceShape);
         this.source = source;
         this.delegate = source.getBuf();
-        this.bufferStorage = delegate.getSequenceStorage();
     }
 
     public PBytesIO getSource() {
@@ -74,6 +71,6 @@ public final class PBytesIOBuffer extends PythonBuiltinObject {
 
     @ExportMessage
     Object acquire(@SuppressWarnings("unused") int flags) {
-        return bufferStorage;
+        return delegate.getSequenceStorage();
     }
 }

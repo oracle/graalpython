@@ -64,7 +64,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
-import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateAndPrepareForFloat;
+import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -192,8 +192,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private TruffleString doFormat(double self, TruffleString formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString);
-            FloatFormatter formatter = new FloatFormatter(getRaiseNode(), validateAndPrepareForFloat(getRaiseNode(), spec, "float"));
+            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, InternalFormat.Spec.NONE, '>');
+            FloatFormatter formatter = new FloatFormatter(getRaiseNode(), validateForFloat(getRaiseNode(), spec, "float"));
             formatter.format(self);
             return formatter.pad().getResult();
         }

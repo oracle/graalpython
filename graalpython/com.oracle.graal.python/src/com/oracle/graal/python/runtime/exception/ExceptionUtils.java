@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +53,10 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -62,15 +67,15 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 
 public final class ExceptionUtils {
     private ExceptionUtils() {
@@ -80,19 +85,31 @@ public final class ExceptionUtils {
     public static void printPythonLikeStackTrace() {
         CompilerAsserts.neverPartOfCompilation("printPythonLikeStackTrace is a debug method");
         final ArrayList<String> stack = new ArrayList<>();
-        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
-            public Frame visitFrame(FrameInstance frameInstance) {
-                RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
-                RootNode rootNode = target.getRootNode();
-                Node location = frameInstance.getCallNode();
-                if (location == null) {
-                    location = rootNode;
-                }
-                appendStackLine(stack, location, rootNode, true);
-                return null;
+        Truffle.getRuntime().iterateFrames((FrameInstanceVisitor<Frame>) frameInstance -> {
+            RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+            RootNode rootNode = target.getRootNode();
+            Node location = frameInstance.getCallNode();
+            if (location == null) {
+                location = rootNode;
             }
+            int lineno = getLineno(frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY));
+            appendStackLine(stack, location, rootNode, true, lineno);
+            return null;
         });
         printStack(stack);
+    }
+
+    private static int getLineno(Frame frame) {
+        int lineno = -1;
+        if (frame != null) {
+            FrameDescriptor fd = frame.getFrameDescriptor();
+            if (fd.getInfo() instanceof FrameInfo) {
+                FrameInfo frameInfo = (FrameInfo) fd.getInfo();
+                int bci = frameInfo.getBci(frame);
+                lineno = frameInfo.getRootNode().bciToLine(bci);
+            }
+        }
+        return lineno;
     }
 
     /**
@@ -106,7 +123,8 @@ public final class ExceptionUtils {
             for (TruffleStackTraceElement frame : stackTrace) {
                 Node location = frame.getLocation();
                 RootNode rootNode = frame.getTarget().getRootNode();
-                appendStackLine(stack, location, rootNode, false);
+                int lineno = getLineno(frame.getFrame());
+                appendStackLine(stack, location, rootNode, false, lineno);
             }
             printStack(stack);
         }
@@ -122,26 +140,36 @@ public final class ExceptionUtils {
         }
     }
 
-    private static void appendStackLine(ArrayList<String> stack, Node location, RootNode rootNode, boolean evenWithoutSource) {
+    private static void appendStackLine(ArrayList<String> stack, Node location, RootNode rootNode, boolean evenWithoutSource, int lineno) {
+        if (rootNode instanceof TopLevelExceptionHandler) {
+            return;
+        }
         StringBuilder sb = new StringBuilder();
         SourceSection sourceSection = location != null ? location.getEncapsulatingSourceSection() : null;
-        String rootName = rootNode.getName();
         if (sourceSection != null) {
-            sb.append("  ");
-            String path = sourceSection.getSource().getPath();
-            if (path != null) {
-                sb.append("File ");
-            }
-            sb.append('"');
-            sb.append(sourceSection.getSource().getName());
+            sb.append("  File \"");
+            Source source = sourceSection.getSource();
+            sb.append(source.getPath() != null ? source.getPath() : source.getName());
             sb.append("\", line ");
-            sb.append(sourceSection.getStartLine());
+            sb.append(lineno > 0 ? lineno : sourceSection.getStartLine());
             sb.append(", in ");
+            sb.append(rootNode.getName());
         } else if (evenWithoutSource) {
-            sb.append("unknown location in ");
+            if (rootNode instanceof BuiltinFunctionRootNode) {
+                sb.append("  Builtin function ");
+                sb.append(rootNode.getName());
+                sb.append(" (node class ");
+                sb.append(((BuiltinFunctionRootNode) rootNode).getFactory().getNodeClass().getName());
+                sb.append(")");
+            } else {
+                sb.append("  Builtin root ");
+                sb.append(rootNode.getName());
+                sb.append(" (class ");
+                sb.append(rootNode.getClass().getName());
+                sb.append(")");
+            }
         }
-        if (sourceSection != null || evenWithoutSource) {
-            sb.append(rootName);
+        if (sb.length() > 0) {
             stack.add(sb.toString());
         }
     }

@@ -2,33 +2,48 @@
 
 import sys
 from test import support
+from test.support import os_helper
 from test.support import script_helper
 import unittest
 
 class EOFTestCase(unittest.TestCase):
-    def test_EOFC(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
-
-        expect = "EOL while scanning string literal (<string>, line 1)"
-        try:
-            eval("""'this is a test\
-            """)
-        except SyntaxError as msg:
-            self.assertEqual(str(msg), expect)
-        else:
-            raise support.TestFailed
+    def test_EOF_single_quote(self):
+        expect = "unterminated string literal (detected at line 1) (<string>, line 1)"
+        for quote in ("'", "\""):
+            try:
+                eval(f"""{quote}this is a test\
+                """)
+            except SyntaxError as msg:
+                self.assertEqual(str(msg), expect)
+                self.assertEqual(msg.offset, 1)
+            else:
+                raise support.TestFailed
 
     def test_EOFS(self):
         # TODO GR-39439: the error messages changed between 3.8 and 3.10
         if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
             self.skipTest("due to changed error messages between 3.8 and 3.10")
 
-        expect = ("EOF while scanning triple-quoted string literal "
-                  "(<string>, line 1)")
+        expect = ("unterminated triple-quoted string literal (detected at line 1) (<string>, line 1)")
         try:
             eval("""'''this is a test""")
+        except SyntaxError as msg:
+            self.assertEqual(str(msg), expect)
+            self.assertEqual(msg.offset, 1)
+        else:
+            raise support.TestFailed
+
+    def test_EOFS_with_file(self):
+        expect = ("(<string>, line 1)")
+        with os_helper.temp_dir() as temp_dir:
+            file_name = script_helper.make_script(temp_dir, 'foo', """'''this is \na \ntest""")
+            rc, out, err = script_helper.assert_python_failure(file_name)
+        self.assertIn(b'unterminated triple-quoted string literal (detected at line 3)', err)
+
+    def test_eof_with_line_continuation(self):
+        expect = "unexpected EOF while parsing (<string>, line 1)"
+        try:
+            compile('"\\xhh" \\',  '<string>', 'exec', dont_inherit=True)
         except SyntaxError as msg:
             self.assertEqual(str(msg), expect)
         else:
@@ -47,14 +62,18 @@ class EOFTestCase(unittest.TestCase):
     @unittest.skipIf(not sys.executable, "sys.executable required")
     def test_line_continuation_EOF_from_file_bpo2180(self):
         """Ensure tok_nextc() does not add too many ending newlines."""
-        with support.temp_dir() as temp_dir:
+        with os_helper.temp_dir() as temp_dir:
             file_name = script_helper.make_script(temp_dir, 'foo', '\\')
             rc, out, err = script_helper.assert_python_failure(file_name)
             self.assertIn(b'unexpected EOF while parsing', err)
+            self.assertIn(b'line 1', err)
+            self.assertIn(b'\\', err)
 
             file_name = script_helper.make_script(temp_dir, 'foo', 'y = 6\\')
             rc, out, err = script_helper.assert_python_failure(file_name)
             self.assertIn(b'unexpected EOF while parsing', err)
+            self.assertIn(b'line 1', err)
+            self.assertIn(b'y = 6\\', err)
 
 if __name__ == "__main__":
     unittest.main()

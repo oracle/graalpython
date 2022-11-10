@@ -205,6 +205,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.openFlags);
         addConstants(PosixConstants.waitOptions);
         addConstants(PosixConstants.accessMode);
+        addConstants(PosixConstants.exitStatus);
         addConstants(PosixConstants.rtld);
 
         addConstant(PosixConstants.SEEK_DATA);
@@ -390,6 +391,40 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     throw raise(ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
                 }
             }
+        }
+    }
+
+    @Builtin(name = "unsetenv", minNumOfPositionalArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversionClass = FsConverterNode.class)
+    @GenerateNodeFactory
+    public abstract static class UnsetenvNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.UnsetenvNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone putenv(VirtualFrame frame, PBytes nameBytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            byte[] name = toBytesNode.execute(nameBytes);
+            Object nameOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), name));
+            auditNode.audit("os.unsetenv", nameBytes);
+            try {
+                posixLib.unsetenv(getPosixSupport(), nameOpaque);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        private Object checkNull(Object value) {
+            if (value == null) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
+            return value;
         }
     }
 
@@ -2079,11 +2114,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
-        @Specialization
+        @Specialization(guards = "size >= 0")
         PBytes urandom(int size) {
             byte[] bytes = new byte[size];
             nextBytes(getContext().getSecureRandom(), bytes);
             return factory().createBytes(bytes);
+        }
+
+        @Specialization(guards = "size < 0")
+        Object urandomNeg(int size) {
+            throw raise(ValueError, ErrorMessages.NEG_ARG_NOT_ALLOWED);
         }
 
         @TruffleBoundary

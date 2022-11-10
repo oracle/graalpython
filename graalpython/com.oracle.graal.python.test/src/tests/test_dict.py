@@ -991,13 +991,27 @@ def test_decorated_method_dict():
 
     cm = classmethod(A.f)
     cm.x = 42
-    assert cm.__dict__ == {'x': 42}
+    assert cm.__dict__ == {
+        '__module__': 'tests.test_dict',
+        '__name__': 'f',
+        '__qualname__': 'test_decorated_method_dict.<locals>.A.f',
+        '__doc__': None,
+        '__annotations__': {},
+        'x': 42,
+    }
     cm.__dict__ = {1:1}
     assert cm.__dict__ == {1:1}
 
     sm = staticmethod(A.f)
     sm.x = 42
-    assert sm.__dict__ == {'x': 42}
+    assert sm.__dict__ == {
+        '__module__': 'tests.test_dict',
+        '__name__': 'f',
+        '__qualname__': 'test_decorated_method_dict.<locals>.A.f',
+        '__doc__': None,
+        '__annotations__': {},
+        'x': 42,
+    }
     sm.__dict__ = {1:1}
     assert sm.__dict__ == {1:1}
 

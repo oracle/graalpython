@@ -254,6 +254,17 @@ public abstract class PythonBufferAccessLibrary extends Library {
     }
 
     /**
+     * Get a {@code byte[]} copy of a range of the buffer contents.
+     */
+    public final byte[] getCopyOfRange(Object receiver, int from, int to) {
+        int len = to - from;
+        assert len >= 0;
+        byte[] newBuf = new byte[len];
+        readIntoByteArray(receiver, from, newBuf, 0, len);
+        return newBuf;
+    }
+
+    /**
      * Get a byte array representing the buffer contents. Avoid copying it if possible. The caller
      * must take into account that the byte array size is different from the buffer size - it is
      * necessary to obtain the buffer size using {@link #getBufferLength(Object)}. Do not write into

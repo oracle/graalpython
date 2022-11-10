@@ -86,9 +86,14 @@ public class MethodDescriptorBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"!isPNone(instance)"})
+        @Specialization(guards = {"!isPNone(instance)", "!self.needsDeclaringType()"})
         protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
             return factory().createBuiltinMethod(instance, self);
+        }
+
+        @Specialization(guards = {"!isPNone(instance)", "self.needsDeclaringType()"})
+        protected PBuiltinMethod doBuiltinMethodWithDeclaringClass(PBuiltinFunction self, Object instance, Object klass) {
+            return factory().createBuiltinMethod(instance, self, self.getEnclosingType());
         }
 
         @Specialization

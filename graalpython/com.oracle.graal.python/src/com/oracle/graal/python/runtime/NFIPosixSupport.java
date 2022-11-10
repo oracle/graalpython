@@ -70,7 +70,6 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -90,6 +89,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -203,6 +203,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getsid("(sint64):sint64"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
+        call_unsetenv("([sint8]):sint32"),
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32"),
         call_execv("([sint8], [sint64], sint32):void"),
         call_system("([sint8]):sint32"),
@@ -1074,6 +1075,15 @@ public final class NFIPosixSupport extends PosixSupport {
     public void setenv(Object name, Object value, boolean overwrite,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int res = invokeNode.callInt(this, PosixNativeFunction.call_setenv, pathToCString(name), pathToCString(value), overwrite ? 1 : 0);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public void unsetenv(Object name,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_unsetenv, pathToCString(name));
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }

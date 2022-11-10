@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -267,5 +267,5 @@ if sys.version_info.minor >= 7:
             
             assert_bases(A, 'a', TypeError, "can only assign tuple to A.__bases__, not str")
             assert_bases(A, (B, 'a'), TypeError, "A.__bases__ must be tuple of classes, not 'str'")
-            assert_bases(dict, (B,), TypeError, "can't set attributes of built-in/extension type 'dict'")
+            assert_bases(dict, (B,), TypeError, "cannot set '__bases__' attribute of immutable type 'dict'")
         

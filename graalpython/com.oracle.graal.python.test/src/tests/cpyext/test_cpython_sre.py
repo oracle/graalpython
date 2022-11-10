@@ -48,7 +48,7 @@ class TestSRE:
         if GRAALPYTHON:
             import _cpython_sre
             # just ensure that we are providing all symbols
-            expected = {'CODESIZE', 'MAGIC', 'MAXGROUPS', 'MAXREPEAT', '__doc__', '__loader__', '__name__', '__package__', '__spec__', 'ascii_iscased', 'ascii_tolower', 'compile', 'copyright', 'getcodesize', 'unicode_iscased', 'unicode_tolower'}
+            expected = {'CODESIZE', 'MAGIC', 'MAXGROUPS', 'MAXREPEAT', '__loader__', '__name__', '__package__', '__spec__', 'ascii_iscased', 'ascii_tolower', 'compile', 'copyright', 'getcodesize', 'unicode_iscased', 'unicode_tolower'}
             actual = set(_cpython_sre.__dict__.keys())
             for expected_item in expected:
                 assert expected_item in actual, "_cpython_sre module is missing symbol '%s'" % expected_item

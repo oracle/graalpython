@@ -814,7 +814,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeInt(c.getFlags());
                     writeBytes(c.getCodestring());
                     writeInt(c.getFirstLineNo());
-                    byte[] lnotab = c.getLnotab();
+                    byte[] lnotab = c.getLinetable();
                     if (lnotab == null) {
                         lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
                     }

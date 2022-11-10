@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -25,7 +25,14 @@ PyAPI_FUNC(int) PyObject_AsFileDescriptor(PyObject *);
    If non-NULL, this is different than the default encoding for strings
 */
 PyAPI_DATA(const char *) Py_FileSystemDefaultEncoding;
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03060000
+PyAPI_DATA(const char *) Py_FileSystemDefaultEncodeErrors;
+#endif
 PyAPI_DATA(int) Py_HasFileSystemDefaultEncoding;
+
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03070000
+PyAPI_DATA(int) Py_UTF8Mode;
+#endif
 
 /* A routine to check if a file descriptor can be select()-ed. */
 #ifdef _MSC_VER

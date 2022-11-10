@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -26,7 +26,7 @@ typedef struct {
 PyAPI_DATA(PyTypeObject) PyFloat_Type;
 
 #define PyFloat_Check(op) PyObject_TypeCheck(op, &PyFloat_Type)
-#define PyFloat_CheckExact(op) (Py_TYPE(op) == &PyFloat_Type)
+#define PyFloat_CheckExact(op) Py_IS_TYPE(op, &PyFloat_Type)
 
 #ifdef Py_NAN
 #define Py_RETURN_NAN return PyFloat_FromDouble(Py_NAN)
@@ -93,15 +93,6 @@ PyAPI_FUNC(int) _PyFloat_Pack2(double x, unsigned char *p, int le);
 PyAPI_FUNC(int) _PyFloat_Pack4(double x, unsigned char *p, int le);
 PyAPI_FUNC(int) _PyFloat_Pack8(double x, unsigned char *p, int le);
 
-/* Needed for the old way for marshal to store a floating point number.
-   Returns the string length copied into p, -1 on error.
- */
-PyAPI_FUNC(int) _PyFloat_Repr(double x, char *p, size_t len);
-
-/* Used to get the important decimal digits of a double */
-PyAPI_FUNC(int) _PyFloat_Digits(char *buf, double v, int *signum);
-PyAPI_FUNC(void) _PyFloat_DigitsInit(void);
-
 /* The unpack routines read 2, 4 or 8 bytes, starting at p.  le is a bool
  * argument, true if the string is in little-endian format (exponent
  * last, at p+1, p+3 or p+7), false if big-endian (exponent first, at p).
@@ -113,9 +104,6 @@ PyAPI_FUNC(void) _PyFloat_DigitsInit(void);
 PyAPI_FUNC(double) _PyFloat_Unpack2(const unsigned char *p, int le);
 PyAPI_FUNC(double) _PyFloat_Unpack4(const unsigned char *p, int le);
 PyAPI_FUNC(double) _PyFloat_Unpack8(const unsigned char *p, int le);
-
-/* free list api */
-PyAPI_FUNC(int) PyFloat_ClearFreeList(void);
 
 PyAPI_FUNC(void) _PyFloat_DebugMallocStats(FILE* out);
 

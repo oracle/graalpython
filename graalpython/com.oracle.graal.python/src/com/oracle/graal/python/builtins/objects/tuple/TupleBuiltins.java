@@ -178,8 +178,8 @@ public class TupleBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
-                Object object = getItemNode.execute(tupleStore, i);
-                if (eqNode.execute(frame, value, object)) {
+                Object seqItem = getItemNode.execute(tupleStore, i);
+                if (eqNode.execute(frame, seqItem, value)) {
                     count++;
                 }
             }

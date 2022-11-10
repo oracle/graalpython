@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.test.grammar;
 
+import static com.oracle.graal.python.test.PythonTests.assertLastLineError;
 import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
@@ -162,7 +163,7 @@ public class ArgumentsTests {
 
     @Test
     public void kwargsDuplicate() {
-        assertLastLineErrorContains("TypeError: foo() got multiple values for keyword argument 'd'", "\n" +
+        assertLastLineErrorContains("TypeError: __main__.foo() got multiple values for keyword argument 'd'", "\n" +
                         "def foo(**kwargs):\n" +
                         "  print(kwargs)\n" +
                         "foo(a=1, **{'b': 2, 'c': 3}, d=4, **{'d': 5})\n");
@@ -276,9 +277,7 @@ public class ArgumentsTests {
         String source = mkEmptyFunc("a, b, **kw");
         assertPrints("", call(source, "a=1,b=2"));
         assertPrints("", call(source, "a=1,b=2,c=3"));
-        // TODO
-        // assertLastLineError("SyntaxError: keyword argument repeated", call(source, "a=1, b=2,
-        // a=3"));
+        assertLastLineError("SyntaxError: keyword argument repeated: a", call(source, "a=1, b=2, a=3"));
         assertLastLineErrorContains("TypeError", call(source, "1, b=2, a=3"));
     }
 
@@ -364,9 +363,7 @@ public class ArgumentsTests {
         assertPrints("", call(source, "a=1"));
         assertPrints("", call(source, "a=1, b=2"));
         assertPrints("", call(source, "a=1, b=2, c=3"));
-        // TODO
-        // assertLastLineError("SyntaxError: keyword argument repeated", call(source,
-        // "a=1,b=2,a=3"));
+        assertLastLineError("SyntaxError: keyword argument repeated: a", call(source, "a=1,b=2,a=3"));
         assertLastLineErrorContains("TypeError", call(source, "1, b=2"));
         assertLastLineErrorContains("TypeError", call(source, "1"));
     }

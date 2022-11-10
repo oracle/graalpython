@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,22 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PBytesIO extends PythonBuiltinObject {
-    private PBytes buf;
+    private PByteArray buf;
     private int pos;
     private int stringSize;
+    private boolean escaped;
     private final BufferLifecycleManager exports;
 
     public PBytesIO(Object cls, Shape instanceShape) {
@@ -60,11 +67,11 @@ public final class PBytesIO extends PythonBuiltinObject {
         return buf != null;
     }
 
-    public PBytes getBuf() {
+    public PByteArray getBuf() {
         return buf;
     }
 
-    public void setBuf(PBytes buf) {
+    public void setBuf(PByteArray buf) {
         this.buf = buf;
     }
 
@@ -90,5 +97,59 @@ public final class PBytesIO extends PythonBuiltinObject {
 
     public int getExports() {
         return exports.getExports().get();
+    }
+
+    public void checkExports(PNodeWithRaise raise) {
+        if (getExports() != 0) {
+            throw raise.raise(BufferError, ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED);
+        }
+    }
+
+    /**
+     * @see #unshareIfNecessary
+     */
+    public void markEscaped() {
+        escaped = true;
+    }
+
+    /**
+     * CPython has an optimization that it mutates the internal bytes object if its refcount is 1
+     * (so the mutation cannot be observed by others). We don't have refcounts, so we at least try
+     * to remember if the current buffer has never been escaped this object. Then we can can return
+     * it without copying the first time the program asks for the whole contents. So that a sequence
+     * of writes followed by one getvalue call doesn't have to copy the whole buffer at the end.
+     */
+    public void unshareIfNecessary(PythonBufferAccessLibrary bufferLib, PythonObjectFactory factory) {
+        if (escaped || getExports() != 0) {
+            buf = factory.createByteArray(bufferLib.getCopiedByteArray(buf));
+            escaped = false;
+        }
+    }
+
+    public void unshareAndResize(PythonBufferAccessLibrary bufferLib, PythonObjectFactory factory, int size, boolean truncate) {
+        int origLength = bufferLib.getBufferLength(getBuf());
+        int alloc;
+        if (truncate && size < origLength / 2) {
+            /* Major downsize; resize down to exact size. */
+            alloc = size;
+        } else if (size < origLength) {
+            /* Within allocated size; quick exit */
+            unshareIfNecessary(bufferLib, factory);
+            return;
+        } else if (size <= origLength * 1.125) {
+            /* Moderate upsize; overallocate similar to list_resize() */
+            alloc = size + (size >> 3) + (size < 9 ? 3 : 6);
+            // Handle overflow
+            if (alloc < size) {
+                alloc = size;
+            }
+        } else {
+            /* Major upsize; resize up to exact size */
+            alloc = size;
+        }
+        byte[] newBuf = new byte[alloc];
+        bufferLib.readIntoByteArray(getBuf(), 0, newBuf, 0, Math.min(stringSize, size));
+        setBuf(factory.createByteArray(newBuf));
+        escaped = false;
     }
 }

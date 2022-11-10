@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -98,7 +98,7 @@ PyAPI_FUNC(PyObject *) PyDescr_NewGetSet(PyTypeObject *,
 #ifndef Py_LIMITED_API
 PyAPI_FUNC(PyObject *) PyDescr_NewWrapper(PyTypeObject *,
                                                 struct wrapperbase *, void *);
-#define PyDescr_IsData(d) (Py_TYPE(d)->tp_descr_set != NULL)
+PyAPI_FUNC(int) PyDescr_IsData(PyObject *);
 #endif
 
 PyAPI_FUNC(PyObject *) PyDictProxy_New(PyObject *);

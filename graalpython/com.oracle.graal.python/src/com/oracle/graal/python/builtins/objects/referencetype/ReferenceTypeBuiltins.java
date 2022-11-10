@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -198,6 +199,12 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         boolean eq(PReferenceType self, PReferenceType other) {
             return self == other;
         }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object eq(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     // ref.__ne__
@@ -213,6 +220,12 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getObject() == null || other.getObject() == null")
         boolean ne(PReferenceType self, PReferenceType other) {
             return self != other;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object eq(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

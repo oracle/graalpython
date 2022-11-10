@@ -178,12 +178,14 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             maxNumPosArgs = 1;
         }
         int posOnlyArgs = builtin.numOfPositionalOnlyArgs();
+        if (parameterNames.length == 0) {
+            // Unnamed arguments shall be positional-only
+            posOnlyArgs = maxNumPosArgs;
+        }
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by signature
             maxNumPosArgs++;
-            if (posOnlyArgs > 0) {
-                posOnlyArgs++;
-            }
+            posOnlyArgs++;
         }
 
         if (maxNumPosArgs > 0) {

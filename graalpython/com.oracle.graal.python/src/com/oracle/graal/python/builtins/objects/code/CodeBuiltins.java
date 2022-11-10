@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.objectArrayToTruffleStringArray;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,8 +49,13 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.compiler.OpCodes;
+import com.oracle.graal.python.compiler.SourceMap;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -224,17 +230,55 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
+    // They are not the same, but we don't really implement either properly
     @Builtin(name = "co_lnotab", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "co_linetable", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetLNoTabNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetLineTableNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            byte[] lnotab = self.getLnotab();
-            if (lnotab == null) {
+            byte[] linetable = self.getLinetable();
+            if (linetable == null) {
                 // TODO: this is for the moment undefined (see co_code)
-                lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
+                linetable = PythonUtils.EMPTY_BYTE_ARRAY;
             }
-            return factory().createBytes(lnotab);
+            return factory().createBytes(linetable);
+        }
+    }
+
+    @Builtin(name = "co_lines", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CoLinesNode extends PythonUnaryBuiltinNode {
+        private static final class IteratorData {
+            int start = 0;
+            int line = -1;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object lines(PCode self) {
+            PTuple tuple;
+            if (self.getRootNode() instanceof PBytecodeRootNode) {
+                CodeUnit co = ((PBytecodeRootNode) self.getRootNode()).getCodeUnit();
+                SourceMap map = co.getSourceMap();
+                List<PTuple> lines = new ArrayList<>();
+                if (map != null && map.startLineMap.length > 0) {
+                    IteratorData data = new IteratorData();
+                    data.line = map.startLineMap[0];
+                    co.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
+                        int nextStart = bci + op.length();
+                        if (map.startLineMap[bci] != data.line || nextStart == co.code.length) {
+                            lines.add(factory().createTuple(new int[]{data.start, nextStart, data.line}));
+                            data.line = map.startLineMap[bci];
+                            data.start = nextStart;
+                        }
+                    });
+                }
+                tuple = factory().createTuple(lines.toArray());
+            } else {
+                tuple = factory().createEmptyTuple();
+            }
+            return PyObjectGetIter.getUncached().execute(null, tuple);
         }
     }
 
@@ -377,7 +421,7 @@ public class CodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self",
                     "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
-                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_lnotab"})
+                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_linetable"})
     @ArgumentClinic(name = "co_argcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
@@ -393,7 +437,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "co_cellvars", conversion = ArgumentClinic.ClinicConversion.Tuple)
     @ArgumentClinic(name = "co_filename", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
     @ArgumentClinic(name = "co_name", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = VALUE_EMPTY_TSTRING, useDefaultForNone = true)
-    @ArgumentClinic(name = "co_lnotab", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_linetable", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonClinicBuiltinNode {
         @Override
@@ -430,7 +474,7 @@ public class CodeBuiltins extends PythonBuiltins {
                                 coFilename.isEmpty() ? self.co_filename() : coFilename,
                                 coName.isEmpty() ? self.co_name() : coName,
                                 coFirstlineno == -1 ? self.co_firstlineno() : coFirstlineno,
-                                PGuards.isNone(coLnotab) ? self.getLnotab() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
+                                PGuards.isNone(coLnotab) ? self.getLinetable() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {
                 if (!PGuards.isNone(coCode)) {
                     bufferLib.release(coCode, frame, this);

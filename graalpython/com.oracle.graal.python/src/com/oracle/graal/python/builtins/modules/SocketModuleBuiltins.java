@@ -160,6 +160,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         addBuiltinConstant("SocketType", PythonBuiltinClassType.PSocket);
         addBuiltinConstant("error", PythonBuiltinClassType.OSError);
+        addBuiltinConstant("timeout", PythonBuiltinClassType.TimeoutError);
         addBuiltinConstant("has_ipv6", true);
 
         addConstant(PosixConstants.SOL_SOCKET);

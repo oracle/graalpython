@@ -39,25 +39,24 @@
 
 import sys, unittest
 
-# TODO skip until 3.10
-# @unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
-# def test_guard():
-#     def f(x, g):
-#         match x:
-#             case x if g == 1:
-#                 return 42
-#             case _:
-#                 return 0
-#
-#     assert f(1, 1) == 42
-#     assert f(1, 2) == 0
-#
-#     def f(x):
-#         match x:
-#             case x as g if g == 1:
-#                 42
-#             case _:
-#                 0
-#
-#     assert f(1) == 42
-#     assert f(2) == 0
+@unittest.skipIf(sys.version_info.minor < 10, "Requires Python 3.10+")
+def test_guard():
+    def f(x, g):
+        match x:
+            case x if g == 1:
+                return 42
+            case _:
+                return 0
+
+    assert f(1, 1) == 42
+    assert f(1, 2) == 0
+
+    def f(x):
+        match x:
+            case x as g if g == 1:
+                return 42
+            case _:
+                return 0
+
+    assert f(1) == 42
+    assert f(2) == 0

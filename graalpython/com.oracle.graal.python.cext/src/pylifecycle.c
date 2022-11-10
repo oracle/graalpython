@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,9 @@
  */
 #include "capi.h"
 
-UPCALL_ID(PyTruffle_FatalError);
-void _Py_NO_RETURN Py_FatalError(const char *msg) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_FatalError, polyglot_from_string(msg, SRC_CS), -1);
+UPCALL_ID(PyTruffle_FatalErrorFunc);
+void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
+	UPCALL_CEXT_VOID(_jls_PyTruffle_FatalErrorFunc, func != NULL? polyglot_from_string(func, SRC_CS): NULL, polyglot_from_string(msg, SRC_CS), -1);
 	/* If the above upcall returns, then we just fall through to the 'abort' call. */
 	abort();
 }
