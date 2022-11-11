@@ -46,6 +46,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.EconomicMapSetStringKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageDelItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetIteratorNodeGen;
@@ -54,10 +56,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageIteratorValueNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemNodeGen;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageAddAllToOtherNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageCopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
@@ -373,9 +373,6 @@ public class HashingStorageNodes {
             return execute(null, self, key, value);
         }
 
-        // TODO: version that takes PHashingCollection? Not great for loops.
-        // TODO: Add these execute methods to "Result of method call ignored" inspection in IDE and
-        // review the results
         public abstract HashingStorage execute(Frame frame, HashingStorage self, Object key, Object value);
 
         @Specialization
@@ -631,7 +628,7 @@ public class HashingStorageNodes {
         }
 
         @Fallback
-        static HashingStorage empty(HashingStorage self) {
+        static HashingStorage empty(@SuppressWarnings("unused") HashingStorage self) {
             return EmptyStorage.INSTANCE;
         }
     }
@@ -699,7 +696,7 @@ public class HashingStorageNodes {
 
         /**
          * Captures internal state of the iterator such that it can be iterated and then restored
-         * back to that state again by {@link SetIteratorState}.
+         * back to that state and eventually iterated again.
          */
         public int getState() {
             return index;
@@ -899,7 +896,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "it.isReverse")
-        static boolean keywordsReverse(KeywordsStorage self, HashingStorageIterator it) {
+        static boolean keywordsReverse(@SuppressWarnings("unused") KeywordsStorage self, HashingStorageIterator it) {
             return --it.index >= 0;
         }
 
@@ -946,12 +943,12 @@ public class HashingStorageNodes {
         public abstract Object execute(HashingStorage storage, HashingStorageIterator it);
 
         @Specialization
-        static Object economicMap(EconomicMapStorage self, HashingStorageIterator it) {
+        static Object economicMap(@SuppressWarnings("unused") EconomicMapStorage self, HashingStorageIterator it) {
             return it.currentValue;
         }
 
         @Specialization
-        static Object dom(DynamicObjectStorage self, HashingStorageIterator it) {
+        static Object dom(@SuppressWarnings("unused") DynamicObjectStorage self, HashingStorageIterator it) {
             return it.currentValue;
         }
 
@@ -987,7 +984,7 @@ public class HashingStorageNodes {
         }
 
         @Specialization
-        static TruffleString dom(DynamicObjectStorage self, HashingStorageIterator it) {
+        static TruffleString dom(@SuppressWarnings("unused") DynamicObjectStorage self, HashingStorageIterator it) {
             return (TruffleString) it.domKeys[it.index];
         }
 
@@ -1111,10 +1108,6 @@ public class HashingStorageNodes {
         public abstract T execute(Frame frame, HashingStorage storage, HashingStorageIterator it, T accumulator);
     }
 
-    public abstract static class HashingStorageInjectInto extends HashingStorageForEachCallback<HashingStorage[]> {
-        public abstract HashingStorage[] execute(Frame frame, HashingStorage storage, HashingStorageIterator it, HashingStorage[] accumulator);
-    }
-
     @GenerateUncached
     @ImportStatic({PGuards.class})
     public abstract static class HashingStorageForEach extends Node {
@@ -1233,7 +1226,7 @@ public class HashingStorageNodes {
     }
 
     /**
-     * Keeps the values from {@code b}.
+     * In case the key is in both, this keeps the value from {@code b}.
      */
     @GenerateUncached
     @ImportStatic({PGuards.class})

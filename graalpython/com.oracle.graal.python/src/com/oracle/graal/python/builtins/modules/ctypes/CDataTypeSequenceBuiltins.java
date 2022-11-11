@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -130,7 +131,8 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
             PDict dict = factory().createDict(new PKeyword[]{new PKeyword(T__LENGTH_, length), new PKeyword(T__TYPE_, itemtype)});
             PTuple tuple = factory().createTuple(new Object[]{PyCArray});
             result = callNode.execute(frame, PyCArrayType, name, tuple, dict);
-            setItem.execute(frame, ctypes.cache, key, result);
+            HashingStorage newStorage = setItem.execute(frame, ctypes.cache, key, result);
+            assert newStorage == ctypes.cache;
             return result;
         }
 

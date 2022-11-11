@@ -805,7 +805,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (item != null) {
                 value = (long) item;
             }
-            HashingStorageSetItem.executeUncached(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString(), value + 1);
+            HashingStorage newStorage = HashingStorageSetItem.executeUncached(nativeMemberStore, MA_VERSION_TAG.getMemberNameTruffleString(), value + 1);
+            assert newStorage == nativeMemberStore;
             return value;
         }
 
@@ -1620,7 +1621,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
                         logGeneric(key);
                         TruffleString tKey = fromJavaStringNode.execute(key, TS_ENCODING);
-                        setItem.execute(null, ((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(writeKnownNativeMemberNode)), tKey, value);
+                        DynamicObjectStorage storage = ((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(writeKnownNativeMemberNode));
+                        HashingStorage newStorage = setItem.execute(null, storage, tKey, value);
+                        assert newStorage == storage;
                     } else {
                         throw UnknownIdentifierException.create(key);
                     }

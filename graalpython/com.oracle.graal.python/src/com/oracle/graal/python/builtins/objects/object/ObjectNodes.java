@@ -686,7 +686,8 @@ public abstract class ObjectNodes {
                                 TruffleString name = toStringNode.execute(o);
                                 Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
-                                    setHashingStorageItem.execute(frame, slotsStorage, name, value);
+                                    HashingStorage newStorage = setHashingStorageItem.execute(frame, slotsStorage, name, value);
+                                    assert newStorage == slotsStorage;
                                     haveSlots = true;
                                 }
                             } catch (CannotCastException cce) {

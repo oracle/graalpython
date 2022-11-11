@@ -211,7 +211,8 @@ public class PDict extends PHashingCollection {
         boolean mustRelease = gil.acquire();
         Object pKey = convertNodeKey.executeConvert(key);
         try {
-            setItem.execute(null, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
+            HashingStorage newStorage = setItem.execute(null, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
+            self.setDictStorage(newStorage);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
             throw UnsupportedTypeException.create(new Object[]{pKey}, "keys for Python arrays must be hashable");

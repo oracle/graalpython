@@ -21,6 +21,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -163,7 +164,8 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                     if (hasPairsHook) {
                         listStorage.insertItem(listStorage.length(), factory.createTuple(PythonBuiltinClassType.PTuple, tupleInstanceShape, new Object[]{key, val}));
                     } else {
-                        HashingStorageSetItem.executeUncached(mapStorage, key, val);
+                        HashingStorage newStorage = HashingStorageSetItem.executeUncached(mapStorage, key, val);
+                        assert newStorage == mapStorage;
                     }
 
                     /* skip whitespace before } or , */

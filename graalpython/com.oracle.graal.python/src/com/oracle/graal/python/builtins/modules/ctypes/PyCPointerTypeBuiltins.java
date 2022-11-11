@@ -244,7 +244,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(self, getRaiseNode());
             PyCPointerType_SetProto(dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
-            setItem.execute(dict.getDictStorage(), T__TYPE_, type);
+            dict.setDictStorage(setItem.execute(dict.getDictStorage(), T__TYPE_, type));
             return PNone.NONE;
         }
 
