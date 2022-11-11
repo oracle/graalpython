@@ -47,6 +47,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");
+    public static final TruffleString P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN = tsLiteral("%p() accepts %d positional sub-pattern%s (%d given)");
     public static final TruffleString AF_UNIX_NOT_SUPPORTED = tsLiteral("%s(): AF_UNIX is not supported");
     public static final TruffleString AF_UNIX_PATH_TOO_LONG = tsLiteral("%s(): AF_UNIX path too long");
     public static final TruffleString ARRAY_ITEM_MUST_BE_UNICODE = tsLiteral("array item must be unicode character");
@@ -88,6 +89,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ARRAY_OUT_OF_BOUNDS = tsLiteral("array index out of range");
     public static final TruffleString ARRAY_SIZE_TOO_LARGE = tsLiteral("array size too large");
     public static final TruffleString AST_IDENTIFIER_MUST_BE_OF_TYPE_STR = tsLiteral("AST identifier must be of type str");
+    public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
     public static final TruffleString ATTEMPTING_READ_FROM_OFFSET_D = tsLiteral("Attempting to read from offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMPTING_WRITE_OFFSET_D = tsLiteral("Attempting to write to offset %d but object '%s' has no associated native space.");
     public static final TruffleString ATTEMP_TO_RELEASE_RECURSIVE_LOCK = tsLiteral("attempt to release recursive lock not owned by thread");
@@ -139,6 +141,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BYTE_MUST_BE_IN_RANGE = tsLiteral("byte must be in range(0, 256)");
     public static final TruffleString C_ARG_NOT_IN_RANGE = tsLiteral("%%c arg not in range(0x%s)");
     public static final TruffleString CALL_STACK_NOT_DEEP_ENOUGH = tsLiteral("call stack is not deep enough");
+    public static final TruffleString CALLED_MATCH_PAT_MUST_BE_TYPE = tsLiteral("called match pattern must be a type");
     public static final TruffleString CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P = tsLiteral("calling argument converter failed; expected %d but got %d parameters.");
     public static final TruffleString CALLING_ARG_CONVERTER_FAIL_INCOMPATIBLE_PARAMS = tsLiteral("calling argument converter failed; incompatible parameters '%s'");
     public static final TruffleString CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = tsLiteral("calling argument converter failed; unexpected return value %s");
@@ -334,12 +337,15 @@ public abstract class ErrorMessages {
     public static final TruffleString FUNC_TAKES_EXACTLY_D_ARGS = tsLiteral("function takes exaclty %d arguments (%d given)");
     public static final TruffleString FUNC_S_MUST_BE_S_NOT_P = tsLiteral("%s() %s must be %s, not %p");
     public static final TruffleString GENERATOR_EXPR_MUST_BE_PARENTHESIZED = tsLiteral("Generator expression must be parenthesized");
+    public static final TruffleString GCD_FOR_NATIVE_NOT_SUPPORTED = tsLiteral("gcd for native objects is not yet supported on GraalPy");
     public static final TruffleString GENERATOR_IGNORED_EXIT = tsLiteral("generator ignored GeneratorExit");
     public static final TruffleString GENERATOR_RAISED_STOPITER = tsLiteral("generator raised StopIteration");
     public static final TruffleString GENERATOR_ALREADY_EXECUTING = tsLiteral("generator already executing");
     public static final TruffleString GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING = tsLiteral("getattr(): attribute name must be string");
     public static final TruffleString GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = tsLiteral("getting the source is not supported for '%p'");
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
+    public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
+    public static final TruffleString P_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
@@ -472,6 +478,8 @@ public abstract class ErrorMessages {
     public static final TruffleString LOST_SYSSTDOUT = tsLiteral("lost sys.stdout");
     public static final TruffleString LENGTH_SHOULD_NOT_BE_NEG = tsLiteral("length should not be negative");
     public static final TruffleString MAKE_ENCODER_ARG_1_MUST_BE_DICT = tsLiteral("make_encoder() argument 1 must be dict or None, not %p");
+    public static final TruffleString MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P = tsLiteral("__match_args__ elements must be strings (got %p)");
+    public static final TruffleString P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P = tsLiteral("%p.__match_args__ must be a tuple (got %p)");
     public static final TruffleString MATCH_AS_MUST_SPECIFY_A_TARGET_NAME_IF_A_PATTERN_IS_GIVEN = tsLiteral("MatchAs must specify a target name if a pattern is given");
     public static final TruffleString MATCH_CLASS_CLS_FIELD_CAN_ONLY_CONTAIN_NAME_OR_ATTRIBUTE_NODES = tsLiteral("MatchClass cls field can only contain Name or Attribute nodes.");
     public static final TruffleString MATCH_CLASS_DOESNT_HAVE_THE_SAME_NUMBER_OF_KEYWORD_ATTRIBUTES_AS_PATTERNS = tsLiteral(
@@ -776,6 +784,7 @@ public abstract class ErrorMessages {
     public static final TruffleString UNKNOWN_ATTR = tsLiteral("Unknown attribute: '%s'");
     public static final TruffleString UNKNOWN_ENCODING = tsLiteral("unknown encoding %s");
     public static final TruffleString UNKNOWN_ERROR_HANDLER = tsLiteral("unknown error handler name '%s'");
+    public static final TruffleString UNKNOWN_F_VALUE_CONVERSION_KIND = tsLiteral("unknown f-value conversion kind");
     public static final TruffleString UNKNOWN_FORMAT_CODE = tsLiteral("Unknown format code '%c' for object of type '%s'");
     public static final TruffleString UNKNOWN_OPCODE = tsLiteral("unknown opcode");
     public static final TruffleString UNKNOWN_S_TYPE = tsLiteral("unknown %s type");
@@ -851,6 +860,7 @@ public abstract class ErrorMessages {
     public static final TruffleString TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = tsLiteral("type '%s' takes at least one argument");
     public static final TruffleString S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at least %d arguments (%d given)");
     public static final TruffleString S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = tsLiteral("%s() takes at most %d arguments (%d given)");
+    public static final TruffleString S_TAKES_AT_MOST_ONE_KEYWORD_ARGUMENT_D_GIVEN = tsLiteral("%s() takes at most 1 keyword argument (%d given)");
     public static final TruffleString S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S = tsLiteral("%p constructor takes at most %d positional argument%s");
     public static final TruffleString P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S = tsLiteral("%p got multiple values for argument '%s'");
     public static final TruffleString RES_O_O_RANGE = tsLiteral("%s result out of range");
@@ -1009,6 +1019,8 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
     public static final TruffleString EXPECTING_VALUE = tsLiteral("Expecting value");
     public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
+    public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("\"zip() argument %d is longer than argument%s%d\",");
+    public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("\"zip() argument %d is shorter than argument%s%d\",");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

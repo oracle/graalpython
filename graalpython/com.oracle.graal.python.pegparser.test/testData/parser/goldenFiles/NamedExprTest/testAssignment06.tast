@@ -1,10 +1,16 @@
-Module[0, 22]
-    NamedExpr[1, 21]
-        Target: Name[1, 2] Value: "z" Store
+Input:
+------
+(z := (y := (x := 0)))
+
+Output:
+-------
+Module[1:0-1:22]
+    NamedExpr[1:1-1:21]
+        Target: Name[1:1-1:2] Value: "z" Store
         Value: 
-            NamedExpr[7, 20]
-                Target: Name[7, 8] Value: "y" Store
+            NamedExpr[1:7-1:20]
+                Target: Name[1:7-1:8] Value: "y" Store
                 Value: 
-                    NamedExpr[13, 19]
-                        Target: Name[13, 14] Value: "x" Store
-                        Value: LONG[18, 19] Value: 0
+                    NamedExpr[1:13-1:19]
+                        Target: Name[1:13-1:14] Value: "x" Store
+                        Value: LONG[1:18-1:19] Value: 0

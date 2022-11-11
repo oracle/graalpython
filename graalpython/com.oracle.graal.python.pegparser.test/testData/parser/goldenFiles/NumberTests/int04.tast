@@ -1,8 +1,14 @@
-Module[0, 7]
-    Compare[0, 7]
-        LHS: Name[0, 1] Value: "h"
+Input:
+------
+h == -1
+
+Output:
+-------
+Module[1:0-1:7]
+    Compare[1:0-1:7]
+        LHS: Name[1:0-1:1] Value: "h"
         Op: Eq
         RHS: 
-            UnaryOp[5, 7]
+            UnaryOp[1:5-1:7]
                 Op: USub
-                Value: LONG[6, 7] Value: 1
+                Value: LONG[1:6-1:7] Value: 1

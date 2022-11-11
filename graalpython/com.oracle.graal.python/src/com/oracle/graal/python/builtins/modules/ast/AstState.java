@@ -410,7 +410,10 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("mod = Module(stmt* body, type_ignore* type_ignores)\n" +
+                        "    | Interactive(stmt* body)\n" +
+                        "    | Expression(expr body)\n" +
+                        "    | FunctionType(expr* argtypes, expr returns)")
         );
 
         // ModTy.Module
@@ -418,7 +421,7 @@ final class AstState {
                         tsa(T_F_BODY, T_F_TYPE_IGNORES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Module(stmt* body, type_ignore* type_ignores)")
         );
 
         // ModTy.Interactive
@@ -426,7 +429,7 @@ final class AstState {
                         tsa(T_F_BODY),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Interactive(stmt* body)")
         );
 
         // ModTy.Expression
@@ -434,7 +437,7 @@ final class AstState {
                         tsa(T_F_BODY),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Expression(expr body)")
         );
 
         // ModTy.FunctionType
@@ -442,7 +445,7 @@ final class AstState {
                         tsa(T_F_ARGTYPES, T_F_RETURNS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("FunctionType(expr* argtypes, expr returns)")
         );
 
         // StmtTy
@@ -450,7 +453,32 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("") // TODO docstring
+                        ts("stmt = FunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)\n" +
+                        "     | AsyncFunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)\n" +
+                        "     | ClassDef(identifier name, expr* bases, keyword* keywords, stmt* body, expr* decorator_list)\n" +
+                        "     | Return(expr? value)\n" +
+                        "     | Delete(expr* targets)\n" +
+                        "     | Assign(expr* targets, expr value, string? type_comment)\n" +
+                        "     | AugAssign(expr target, operator op, expr value)\n" +
+                        "     | AnnAssign(expr target, expr annotation, expr? value, int simple)\n" +
+                        "     | For(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)\n" +
+                        "     | AsyncFor(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)\n" +
+                        "     | While(expr test, stmt* body, stmt* orelse)\n" +
+                        "     | If(expr test, stmt* body, stmt* orelse)\n" +
+                        "     | With(withitem* items, stmt* body, string? type_comment)\n" +
+                        "     | AsyncWith(withitem* items, stmt* body, string? type_comment)\n" +
+                        "     | Match(expr subject, match_case* cases)\n" +
+                        "     | Raise(expr? exc, expr? cause)\n" +
+                        "     | Try(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)\n" +
+                        "     | Assert(expr test, expr? msg)\n" +
+                        "     | Import(alias* names)\n" +
+                        "     | ImportFrom(identifier? module, alias* names, int? level)\n" +
+                        "     | Global(identifier* names)\n" +
+                        "     | Nonlocal(identifier* names)\n" +
+                        "     | Expr(expr value)\n" +
+                        "     | Pass\n" +
+                        "     | Break\n" +
+                        "     | Continue")
         );
 
         // StmtTy.FunctionDef
@@ -458,7 +486,7 @@ final class AstState {
                         tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_RETURNS, T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("FunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)")
         );
 
         // StmtTy.AsyncFunctionDef
@@ -466,7 +494,7 @@ final class AstState {
                         tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_RETURNS, T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("AsyncFunctionDef(identifier name, arguments args, stmt* body, expr* decorator_list, expr? returns, string? type_comment)")
         );
 
         // StmtTy.ClassDef
@@ -474,7 +502,7 @@ final class AstState {
                         tsa(T_F_NAME, T_F_BASES, T_F_KEYWORDS, T_F_BODY, T_F_DECORATOR_LIST),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("ClassDef(identifier name, expr* bases, keyword* keywords, stmt* body, expr* decorator_list)")
         );
 
         // StmtTy.Return
@@ -482,7 +510,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(T_F_VALUE),
-                        ts("") // TODO docstring
+                        ts("Return(expr? value)")
         );
 
         // StmtTy.Delete
@@ -490,7 +518,7 @@ final class AstState {
                         tsa(T_F_TARGETS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Delete(expr* targets)")
         );
 
         // StmtTy.Assign
@@ -498,7 +526,7 @@ final class AstState {
                         tsa(T_F_TARGETS, T_F_VALUE, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("Assign(expr* targets, expr value, string? type_comment)")
         );
 
         // StmtTy.AugAssign
@@ -506,7 +534,7 @@ final class AstState {
                         tsa(T_F_TARGET, T_F_OP, T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("AugAssign(expr target, operator op, expr value)")
         );
 
         // StmtTy.AnnAssign
@@ -514,7 +542,7 @@ final class AstState {
                         tsa(T_F_TARGET, T_F_ANNOTATION, T_F_VALUE, T_F_SIMPLE),
                         null,
                         tsa(T_F_VALUE),
-                        ts("") // TODO docstring
+                        ts("AnnAssign(expr target, expr annotation, expr? value, int simple)")
         );
 
         // StmtTy.For
@@ -522,7 +550,7 @@ final class AstState {
                         tsa(T_F_TARGET, T_F_ITER, T_F_BODY, T_F_ORELSE, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("For(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)")
         );
 
         // StmtTy.AsyncFor
@@ -530,7 +558,7 @@ final class AstState {
                         tsa(T_F_TARGET, T_F_ITER, T_F_BODY, T_F_ORELSE, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("AsyncFor(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)")
         );
 
         // StmtTy.While
@@ -538,7 +566,7 @@ final class AstState {
                         tsa(T_F_TEST, T_F_BODY, T_F_ORELSE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("While(expr test, stmt* body, stmt* orelse)")
         );
 
         // StmtTy.If
@@ -546,7 +574,7 @@ final class AstState {
                         tsa(T_F_TEST, T_F_BODY, T_F_ORELSE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("If(expr test, stmt* body, stmt* orelse)")
         );
 
         // StmtTy.With
@@ -554,7 +582,7 @@ final class AstState {
                         tsa(T_F_ITEMS, T_F_BODY, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("With(withitem* items, stmt* body, string? type_comment)")
         );
 
         // StmtTy.AsyncWith
@@ -562,7 +590,7 @@ final class AstState {
                         tsa(T_F_ITEMS, T_F_BODY, T_F_TYPE_COMMENT),
                         null,
                         tsa(T_F_TYPE_COMMENT),
-                        ts("") // TODO docstring
+                        ts("AsyncWith(withitem* items, stmt* body, string? type_comment)")
         );
 
         // StmtTy.Match
@@ -570,7 +598,7 @@ final class AstState {
                         tsa(T_F_SUBJECT, T_F_CASES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Match(expr subject, match_case* cases)")
         );
 
         // StmtTy.Raise
@@ -578,7 +606,7 @@ final class AstState {
                         tsa(T_F_EXC, T_F_CAUSE),
                         null,
                         tsa(T_F_EXC, T_F_CAUSE),
-                        ts("") // TODO docstring
+                        ts("Raise(expr? exc, expr? cause)")
         );
 
         // StmtTy.Try
@@ -586,7 +614,7 @@ final class AstState {
                         tsa(T_F_BODY, T_F_HANDLERS, T_F_ORELSE, T_F_FINALBODY),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Try(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)")
         );
 
         // StmtTy.Assert
@@ -594,7 +622,7 @@ final class AstState {
                         tsa(T_F_TEST, T_F_MSG),
                         null,
                         tsa(T_F_MSG),
-                        ts("") // TODO docstring
+                        ts("Assert(expr test, expr? msg)")
         );
 
         // StmtTy.Import
@@ -602,7 +630,7 @@ final class AstState {
                         tsa(T_F_NAMES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Import(alias* names)")
         );
 
         // StmtTy.ImportFrom
@@ -610,7 +638,7 @@ final class AstState {
                         tsa(T_F_MODULE, T_F_NAMES, T_F_LEVEL),
                         null,
                         tsa(T_F_MODULE, T_F_LEVEL),
-                        ts("") // TODO docstring
+                        ts("ImportFrom(identifier? module, alias* names, int? level)")
         );
 
         // StmtTy.Global
@@ -618,7 +646,7 @@ final class AstState {
                         tsa(T_F_NAMES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Global(identifier* names)")
         );
 
         // StmtTy.Nonlocal
@@ -626,7 +654,7 @@ final class AstState {
                         tsa(T_F_NAMES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Nonlocal(identifier* names)")
         );
 
         // StmtTy.Expr
@@ -634,7 +662,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Expr(expr value)")
         );
 
         // StmtTy.Pass
@@ -642,7 +670,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Pass")
         );
 
         // StmtTy.Break
@@ -650,7 +678,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Break")
         );
 
         // StmtTy.Continue
@@ -658,7 +686,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Continue")
         );
 
         // ExprTy
@@ -666,7 +694,33 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("") // TODO docstring
+                        ts("expr = BoolOp(boolop op, expr* values)\n" +
+                        "     | NamedExpr(expr target, expr value)\n" +
+                        "     | BinOp(expr left, operator op, expr right)\n" +
+                        "     | UnaryOp(unaryop op, expr operand)\n" +
+                        "     | Lambda(arguments args, expr body)\n" +
+                        "     | IfExp(expr test, expr body, expr orelse)\n" +
+                        "     | Dict(expr* keys, expr* values)\n" +
+                        "     | Set(expr* elts)\n" +
+                        "     | ListComp(expr elt, comprehension* generators)\n" +
+                        "     | SetComp(expr elt, comprehension* generators)\n" +
+                        "     | DictComp(expr key, expr value, comprehension* generators)\n" +
+                        "     | GeneratorExp(expr elt, comprehension* generators)\n" +
+                        "     | Await(expr value)\n" +
+                        "     | Yield(expr? value)\n" +
+                        "     | YieldFrom(expr value)\n" +
+                        "     | Compare(expr left, cmpop* ops, expr* comparators)\n" +
+                        "     | Call(expr func, expr* args, keyword* keywords)\n" +
+                        "     | FormattedValue(expr value, int conversion, expr? format_spec)\n" +
+                        "     | JoinedStr(expr* values)\n" +
+                        "     | Constant(constant value, string? kind)\n" +
+                        "     | Attribute(expr value, identifier attr, expr_context ctx)\n" +
+                        "     | Subscript(expr value, expr slice, expr_context ctx)\n" +
+                        "     | Starred(expr value, expr_context ctx)\n" +
+                        "     | Name(identifier id, expr_context ctx)\n" +
+                        "     | List(expr* elts, expr_context ctx)\n" +
+                        "     | Tuple(expr* elts, expr_context ctx)\n" +
+                        "     | Slice(expr? lower, expr? upper, expr? step)")
         );
 
         // ExprTy.BoolOp
@@ -674,7 +728,7 @@ final class AstState {
                         tsa(T_F_OP, T_F_VALUES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("BoolOp(boolop op, expr* values)")
         );
 
         // ExprTy.NamedExpr
@@ -682,7 +736,7 @@ final class AstState {
                         tsa(T_F_TARGET, T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("NamedExpr(expr target, expr value)")
         );
 
         // ExprTy.BinOp
@@ -690,7 +744,7 @@ final class AstState {
                         tsa(T_F_LEFT, T_F_OP, T_F_RIGHT),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("BinOp(expr left, operator op, expr right)")
         );
 
         // ExprTy.UnaryOp
@@ -698,7 +752,7 @@ final class AstState {
                         tsa(T_F_OP, T_F_OPERAND),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("UnaryOp(unaryop op, expr operand)")
         );
 
         // ExprTy.Lambda
@@ -706,7 +760,7 @@ final class AstState {
                         tsa(T_F_ARGS, T_F_BODY),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Lambda(arguments args, expr body)")
         );
 
         // ExprTy.IfExp
@@ -714,7 +768,7 @@ final class AstState {
                         tsa(T_F_TEST, T_F_BODY, T_F_ORELSE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("IfExp(expr test, expr body, expr orelse)")
         );
 
         // ExprTy.Dict
@@ -722,7 +776,7 @@ final class AstState {
                         tsa(T_F_KEYS, T_F_VALUES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Dict(expr* keys, expr* values)")
         );
 
         // ExprTy.Set
@@ -730,7 +784,7 @@ final class AstState {
                         tsa(T_F_ELTS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Set(expr* elts)")
         );
 
         // ExprTy.ListComp
@@ -738,7 +792,7 @@ final class AstState {
                         tsa(T_F_ELT, T_F_GENERATORS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("ListComp(expr elt, comprehension* generators)")
         );
 
         // ExprTy.SetComp
@@ -746,7 +800,7 @@ final class AstState {
                         tsa(T_F_ELT, T_F_GENERATORS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("SetComp(expr elt, comprehension* generators)")
         );
 
         // ExprTy.DictComp
@@ -754,7 +808,7 @@ final class AstState {
                         tsa(T_F_KEY, T_F_VALUE, T_F_GENERATORS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("DictComp(expr key, expr value, comprehension* generators)")
         );
 
         // ExprTy.GeneratorExp
@@ -762,7 +816,7 @@ final class AstState {
                         tsa(T_F_ELT, T_F_GENERATORS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("GeneratorExp(expr elt, comprehension* generators)")
         );
 
         // ExprTy.Await
@@ -770,7 +824,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Await(expr value)")
         );
 
         // ExprTy.Yield
@@ -778,7 +832,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(T_F_VALUE),
-                        ts("") // TODO docstring
+                        ts("Yield(expr? value)")
         );
 
         // ExprTy.YieldFrom
@@ -786,7 +840,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("YieldFrom(expr value)")
         );
 
         // ExprTy.Compare
@@ -794,7 +848,7 @@ final class AstState {
                         tsa(T_F_LEFT, T_F_OPS, T_F_COMPARATORS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Compare(expr left, cmpop* ops, expr* comparators)")
         );
 
         // ExprTy.Call
@@ -802,7 +856,7 @@ final class AstState {
                         tsa(T_F_FUNC, T_F_ARGS, T_F_KEYWORDS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Call(expr func, expr* args, keyword* keywords)")
         );
 
         // ExprTy.FormattedValue
@@ -810,7 +864,7 @@ final class AstState {
                         tsa(T_F_VALUE, T_F_CONVERSION, T_F_FORMAT_SPEC),
                         null,
                         tsa(T_F_FORMAT_SPEC),
-                        ts("") // TODO docstring
+                        ts("FormattedValue(expr value, int conversion, expr? format_spec)")
         );
 
         // ExprTy.JoinedStr
@@ -818,7 +872,7 @@ final class AstState {
                         tsa(T_F_VALUES),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("JoinedStr(expr* values)")
         );
 
         // ExprTy.Constant
@@ -826,7 +880,7 @@ final class AstState {
                         tsa(T_F_VALUE, T_F_KIND),
                         null,
                         tsa(T_F_KIND),
-                        ts("") // TODO docstring
+                        ts("Constant(constant value, string? kind)")
         );
 
         // ExprTy.Attribute
@@ -834,7 +888,7 @@ final class AstState {
                         tsa(T_F_VALUE, T_F_ATTR, T_F_CTX),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Attribute(expr value, identifier attr, expr_context ctx)")
         );
 
         // ExprTy.Subscript
@@ -842,7 +896,7 @@ final class AstState {
                         tsa(T_F_VALUE, T_F_SLICE, T_F_CTX),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Subscript(expr value, expr slice, expr_context ctx)")
         );
 
         // ExprTy.Starred
@@ -850,7 +904,7 @@ final class AstState {
                         tsa(T_F_VALUE, T_F_CTX),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Starred(expr value, expr_context ctx)")
         );
 
         // ExprTy.Name
@@ -858,7 +912,7 @@ final class AstState {
                         tsa(T_F_ID, T_F_CTX),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Name(identifier id, expr_context ctx)")
         );
 
         // ExprTy.List
@@ -866,7 +920,7 @@ final class AstState {
                         tsa(T_F_ELTS, T_F_CTX),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("List(expr* elts, expr_context ctx)")
         );
 
         // ExprTy.Tuple
@@ -874,7 +928,7 @@ final class AstState {
                         tsa(T_F_ELTS, T_F_CTX),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Tuple(expr* elts, expr_context ctx)")
         );
 
         // ExprTy.Slice
@@ -882,7 +936,7 @@ final class AstState {
                         tsa(T_F_LOWER, T_F_UPPER, T_F_STEP),
                         null,
                         tsa(T_F_LOWER, T_F_UPPER, T_F_STEP),
-                        ts("") // TODO docstring
+                        ts("Slice(expr? lower, expr? upper, expr? step)")
         );
 
         // ExprContextTy
@@ -890,7 +944,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("expr_context = Load | Store | Del")
         );
 
         // ExprContextTy.Load
@@ -898,7 +952,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Load")
         );
         singletonLoad = factory.createSingleton(clsLoad);
 
@@ -907,7 +961,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Store")
         );
         singletonStore = factory.createSingleton(clsStore);
 
@@ -916,7 +970,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Del")
         );
         singletonDel = factory.createSingleton(clsDel);
 
@@ -925,7 +979,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("boolop = And | Or")
         );
 
         // BoolOpTy.And
@@ -933,7 +987,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("And")
         );
         singletonAnd = factory.createSingleton(clsAnd);
 
@@ -942,7 +996,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Or")
         );
         singletonOr = factory.createSingleton(clsOr);
 
@@ -951,7 +1005,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("operator = Add | Sub | Mult | MatMult | Div | Mod | Pow | LShift | RShift | BitOr | BitXor | BitAnd | FloorDiv")
         );
 
         // OperatorTy.Add
@@ -959,7 +1013,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Add")
         );
         singletonAdd = factory.createSingleton(clsAdd);
 
@@ -968,7 +1022,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Sub")
         );
         singletonSub = factory.createSingleton(clsSub);
 
@@ -977,7 +1031,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Mult")
         );
         singletonMult = factory.createSingleton(clsMult);
 
@@ -986,7 +1040,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("MatMult")
         );
         singletonMatMult = factory.createSingleton(clsMatMult);
 
@@ -995,7 +1049,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Div")
         );
         singletonDiv = factory.createSingleton(clsDiv);
 
@@ -1004,7 +1058,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Mod")
         );
         singletonMod = factory.createSingleton(clsMod);
 
@@ -1013,7 +1067,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Pow")
         );
         singletonPow = factory.createSingleton(clsPow);
 
@@ -1022,7 +1076,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("LShift")
         );
         singletonLShift = factory.createSingleton(clsLShift);
 
@@ -1031,7 +1085,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("RShift")
         );
         singletonRShift = factory.createSingleton(clsRShift);
 
@@ -1040,7 +1094,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("BitOr")
         );
         singletonBitOr = factory.createSingleton(clsBitOr);
 
@@ -1049,7 +1103,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("BitXor")
         );
         singletonBitXor = factory.createSingleton(clsBitXor);
 
@@ -1058,7 +1112,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("BitAnd")
         );
         singletonBitAnd = factory.createSingleton(clsBitAnd);
 
@@ -1067,7 +1121,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("FloorDiv")
         );
         singletonFloorDiv = factory.createSingleton(clsFloorDiv);
 
@@ -1076,7 +1130,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("unaryop = Invert | Not | UAdd | USub")
         );
 
         // UnaryOpTy.Invert
@@ -1084,7 +1138,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Invert")
         );
         singletonInvert = factory.createSingleton(clsInvert);
 
@@ -1093,7 +1147,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Not")
         );
         singletonNot = factory.createSingleton(clsNot);
 
@@ -1102,7 +1156,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("UAdd")
         );
         singletonUAdd = factory.createSingleton(clsUAdd);
 
@@ -1111,7 +1165,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("USub")
         );
         singletonUSub = factory.createSingleton(clsUSub);
 
@@ -1120,7 +1174,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("cmpop = Eq | NotEq | Lt | LtE | Gt | GtE | Is | IsNot | In | NotIn")
         );
 
         // CmpOpTy.Eq
@@ -1128,7 +1182,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Eq")
         );
         singletonEq = factory.createSingleton(clsEq);
 
@@ -1137,7 +1191,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("NotEq")
         );
         singletonNotEq = factory.createSingleton(clsNotEq);
 
@@ -1146,7 +1200,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Lt")
         );
         singletonLt = factory.createSingleton(clsLt);
 
@@ -1155,7 +1209,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("LtE")
         );
         singletonLtE = factory.createSingleton(clsLtE);
 
@@ -1164,7 +1218,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Gt")
         );
         singletonGt = factory.createSingleton(clsGt);
 
@@ -1173,7 +1227,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("GtE")
         );
         singletonGtE = factory.createSingleton(clsGtE);
 
@@ -1182,7 +1236,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("Is")
         );
         singletonIs = factory.createSingleton(clsIs);
 
@@ -1191,7 +1245,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("IsNot")
         );
         singletonIsNot = factory.createSingleton(clsIsNot);
 
@@ -1200,7 +1254,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("In")
         );
         singletonIn = factory.createSingleton(clsIn);
 
@@ -1209,7 +1263,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("NotIn")
         );
         singletonNotIn = factory.createSingleton(clsNotIn);
 
@@ -1218,7 +1272,7 @@ final class AstState {
                         tsa(T_F_TARGET, T_F_ITER, T_F_IFS, T_F_IS_ASYNC),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("comprehension(expr target, expr iter, expr* ifs, int is_async)")
         );
 
         // ExceptHandlerTy
@@ -1226,7 +1280,7 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("") // TODO docstring
+                        ts("excepthandler = ExceptHandler(expr? type, identifier? name, stmt* body)")
         );
 
         // ExceptHandlerTy.ExceptHandler
@@ -1234,7 +1288,7 @@ final class AstState {
                         tsa(T_F_TYPE, T_F_NAME, T_F_BODY),
                         null,
                         tsa(T_F_TYPE, T_F_NAME),
-                        ts("") // TODO docstring
+                        ts("ExceptHandler(expr? type, identifier? name, stmt* body)")
         );
 
         // ArgumentsTy
@@ -1242,7 +1296,7 @@ final class AstState {
                         tsa(T_F_POSONLYARGS, T_F_ARGS, T_F_VARARG, T_F_KWONLYARGS, T_F_KW_DEFAULTS, T_F_KWARG, T_F_DEFAULTS),
                         null,
                         tsa(T_F_VARARG, T_F_KWARG),
-                        ts("") // TODO docstring
+                        ts("arguments(arg* posonlyargs, arg* args, arg? vararg, arg* kwonlyargs, expr* kw_defaults, arg? kwarg, expr* defaults)")
         );
 
         // ArgTy
@@ -1250,7 +1304,7 @@ final class AstState {
                         tsa(T_F_ARG, T_F_ANNOTATION, T_F_TYPE_COMMENT),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_ANNOTATION, T_F_TYPE_COMMENT, T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("") // TODO docstring
+                        ts("arg(identifier arg, expr? annotation, string? type_comment)")
         );
 
         // KeywordTy
@@ -1258,7 +1312,7 @@ final class AstState {
                         tsa(T_F_ARG, T_F_VALUE),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_ARG, T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("") // TODO docstring
+                        ts("keyword(identifier? arg, expr value)")
         );
 
         // AliasTy
@@ -1266,7 +1320,7 @@ final class AstState {
                         tsa(T_F_NAME, T_F_ASNAME),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(T_F_ASNAME, T_F_END_LINENO, T_F_END_COL_OFFSET),
-                        ts("") // TODO docstring
+                        ts("alias(identifier name, identifier? asname)")
         );
 
         // WithItemTy
@@ -1274,7 +1328,7 @@ final class AstState {
                         tsa(T_F_CONTEXT_EXPR, T_F_OPTIONAL_VARS),
                         null,
                         tsa(T_F_OPTIONAL_VARS),
-                        ts("") // TODO docstring
+                        ts("withitem(expr context_expr, expr? optional_vars)")
         );
 
         // MatchCaseTy
@@ -1282,7 +1336,7 @@ final class AstState {
                         tsa(T_F_PATTERN, T_F_GUARD, T_F_BODY),
                         null,
                         tsa(T_F_GUARD),
-                        ts("") // TODO docstring
+                        ts("match_case(pattern pattern, expr? guard, stmt* body)")
         );
 
         // PatternTy
@@ -1290,7 +1344,14 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("pattern = MatchValue(expr value)\n" +
+                        "        | MatchSingleton(constant value)\n" +
+                        "        | MatchSequence(pattern* patterns)\n" +
+                        "        | MatchMapping(expr* keys, pattern* patterns, identifier? rest)\n" +
+                        "        | MatchClass(expr cls, pattern* patterns, identifier* kwd_attrs, pattern* kwd_patterns)\n" +
+                        "        | MatchStar(identifier? name)\n" +
+                        "        | MatchAs(pattern? pattern, identifier? name)\n" +
+                        "        | MatchOr(pattern* patterns)")
         );
 
         // PatternTy.MatchValue
@@ -1298,7 +1359,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("MatchValue(expr value)")
         );
 
         // PatternTy.MatchSingleton
@@ -1306,7 +1367,7 @@ final class AstState {
                         tsa(T_F_VALUE),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("MatchSingleton(constant value)")
         );
 
         // PatternTy.MatchSequence
@@ -1314,7 +1375,7 @@ final class AstState {
                         tsa(T_F_PATTERNS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("MatchSequence(pattern* patterns)")
         );
 
         // PatternTy.MatchMapping
@@ -1322,7 +1383,7 @@ final class AstState {
                         tsa(T_F_KEYS, T_F_PATTERNS, T_F_REST),
                         null,
                         tsa(T_F_REST),
-                        ts("") // TODO docstring
+                        ts("MatchMapping(expr* keys, pattern* patterns, identifier? rest)")
         );
 
         // PatternTy.MatchClass
@@ -1330,7 +1391,7 @@ final class AstState {
                         tsa(T_F_CLS, T_F_PATTERNS, T_F_KWD_ATTRS, T_F_KWD_PATTERNS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("MatchClass(expr cls, pattern* patterns, identifier* kwd_attrs, pattern* kwd_patterns)")
         );
 
         // PatternTy.MatchStar
@@ -1338,7 +1399,7 @@ final class AstState {
                         tsa(T_F_NAME),
                         null,
                         tsa(T_F_NAME),
-                        ts("") // TODO docstring
+                        ts("MatchStar(identifier? name)")
         );
 
         // PatternTy.MatchAs
@@ -1346,7 +1407,7 @@ final class AstState {
                         tsa(T_F_PATTERN, T_F_NAME),
                         null,
                         tsa(T_F_PATTERN, T_F_NAME),
-                        ts("") // TODO docstring
+                        ts("MatchAs(pattern? pattern, identifier? name)")
         );
 
         // PatternTy.MatchOr
@@ -1354,7 +1415,7 @@ final class AstState {
                         tsa(T_F_PATTERNS),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("MatchOr(pattern* patterns)")
         );
 
         // TypeIgnoreTy
@@ -1362,7 +1423,7 @@ final class AstState {
                         tsa(),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("type_ignore = TypeIgnore(int lineno, string tag)")
         );
 
         // TypeIgnoreTy.TypeIgnore
@@ -1370,7 +1431,7 @@ final class AstState {
                         tsa(T_F_LINENO, T_F_TAG),
                         null,
                         tsa(),
-                        ts("") // TODO docstring
+                        ts("TypeIgnore(int lineno, string tag)")
         );
     }
 

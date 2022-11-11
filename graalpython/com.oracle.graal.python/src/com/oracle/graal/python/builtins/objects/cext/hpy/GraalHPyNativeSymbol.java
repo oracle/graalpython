@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
+import java.util.HashMap;
+
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
@@ -183,34 +185,40 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_GET_HPYFUNC_RELEASEBUFFERPROC_TYPEID("graal_hpy_get_HPyFunc_releasebufferproc_typeid"),
     GRAAL_HPY_GET_HPYFUNC_DESTROYFUNC_TYPEID("graal_hpy_get_HPyFunc_destroyfunc_typeid");
 
-    private final TruffleString name;
+    private final String name;
+    private final TruffleString tsName;
 
     private GraalHPyNativeSymbol(String name) {
-        this.name = toTruffleStringUncached(name);
+        this.name = name;
+        this.tsName = toTruffleStringUncached(name);
     }
 
     @Override
-    public TruffleString getName() {
+    public String getName() {
         return name;
     }
 
+    @Override
+    public TruffleString getTsName() {
+        return tsName;
+    }
+
     @CompilationFinal(dimensions = 1) private static final GraalHPyNativeSymbol[] VALUES = values();
+    private static final HashMap<String, GraalHPyNativeSymbol> MAP = new HashMap<>();
 
     public static GraalHPyNativeSymbol[] getValues() {
         return VALUES;
     }
 
-    @ExplodeLoop
-    public static GraalHPyNativeSymbol getByName(TruffleString name, TruffleString.EqualNode eqNode) {
-        for (int i = 0; i < VALUES.length; i++) {
-            if (eqNode.execute(VALUES[i].name, name, TS_ENCODING)) {
-                return VALUES[i];
-            }
-        }
-        return null;
+    public static GraalHPyNativeSymbol getByName(String name) {
+        CompilerAsserts.neverPartOfCompilation();
+        return MAP.get(name);
     }
 
-    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
-        return getByName(name, eqNode) != null;
+    static {
+        for (var symbol : VALUES) {
+            assert !MAP.containsKey(symbol.name);
+            MAP.put(symbol.name, symbol);
+        }
     }
 }

@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -164,6 +165,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -270,7 +272,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             try {
                 CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(null, context, T_EMPTY_STRING, T_EMPTY_STRING);
                 handle = new DLHandler(cApiContext.getLLVMLibrary(), 0, J_EMPTY_STRING, true);
-                setCtypeLLVMHelpers(this, context, handle);
+                setCtypeLLVMHelpers(this, handle);
             } catch (ApiInitException e) {
                 throw e.reraise(PConstructAndRaiseNode.getUncached(), null);
             } catch (ImportException e) {
@@ -294,11 +296,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return memcpyFunction;
     }
 
-    private static void setCtypeLLVMHelpers(CtypesModuleBuiltins ctypesModuleBuiltins, PythonContext context, DLHandler h) {
+    private static void setCtypeLLVMHelpers(CtypesModuleBuiltins ctypesModuleBuiltins, DLHandler h) {
         try {
             InteropLibrary lib = InteropLibrary.getUncached(h.library);
-            ctypesModuleBuiltins.strlenFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_STRLEN.getName().toJavaStringUncached());
-            ctypesModuleBuiltins.memcpyFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_MEMCPY.getName().toJavaStringUncached());
+            ctypesModuleBuiltins.strlenFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_STRLEN.getName());
+            ctypesModuleBuiltins.memcpyFunction = lib.readMember(h.library, NativeCAPISymbol.FUN_MEMCPY.getName());
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -339,14 +341,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     protected static final class NativeFunction implements TruffleObject {
         final Object sym;
         final long adr;
-        final TruffleString name;
+        final String name;
 
         Object function;
         TruffleString signature;
 
         final boolean isManaged;
 
-        NativeFunction(Object sym, long adr, TruffleString name, boolean isManaged) {
+        NativeFunction(Object sym, long adr, String name, boolean isManaged) {
             this.sym = sym;
             this.adr = adr;
             this.name = name;
@@ -848,14 +850,14 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected Object ctypes_dlsym(VirtualFrame frame, DLHandler handle, Object n, PythonContext context, PythonObjectFactory factory, PythonBuiltinClassType error,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached CastToTruffleStringNode asString,
+                        @Cached CastToJavaStringNode asString,
                         @CachedLibrary(limit = "1") InteropLibrary ilib) {
-            TruffleString name = asString.execute(n);
+            String name = asString.execute(n);
             if (handle == null || handle.isClosed) {
                 throw raise(error, T_DL_ERROR);
             }
             try {
-                Object sym = ilib.readMember(handle.library, name.toJavaStringUncached());
+                Object sym = ilib.readMember(handle.library, name);
                 boolean isManaged = handle.isManaged;
                 long adr = isManaged ? hashNode.execute(frame, sym) : ilib.asPointer(sym);
                 sym = isManaged ? CallLLVMFunction.create(sym, ilib) : sym;
@@ -873,7 +875,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dlsym", minNumOfPositionalArgs = 1)
+    @Builtin(name = "dlsym", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     protected abstract static class DlSymNode extends PythonBinaryBuiltinNode {
 
@@ -1068,7 +1070,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         return ptr;
     }
 
-    @Builtin(name = "call_function", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "call_function", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CallFunctionNode extends PythonTernaryBuiltinNode {
 
@@ -1118,7 +1120,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @Builtin(name = "call_cdeclfunction", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CallCdeclfunctionNode extends PythonTernaryBuiltinNode {
 
@@ -1352,7 +1354,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         protected static Object getFunction(NativeFunction pProc, String signature, PythonContext context) throws Exception {
-            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, pProc.name.toJavaStringUncached()).build();
+            Source source = Source.newBuilder(J_NFI_LANGUAGE, signature, pProc.name).build();
             Object nfiSignature = context.getEnv().parseInternal(source).call();
             return SignatureLibrary.getUncached().bind(nfiSignature, pProc.sym);
         }
@@ -1732,6 +1734,22 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object src, Object ctype);
 
         @Specialization
+        static Object cast(PythonNativeVoidPtr ptr, PythonNativeVoidPtr src, Object ctype,
+                        @Cached PyTypeCheck pyTypeCheck,
+                        @Cached CallNode callNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+            cast_check_pointertype(ctype, raiseNode, pyTypeCheck, pyTypeStgDictNode, isTypeNode, getClassNode, getNameNode, codePointAtIndexNode);
+            CDataObject result = (CDataObject) callNode.execute(ctype);
+            result.b_ptr = PtrValue.nativePointer(ptr.getPointerObject());
+            return result;
+        }
+
+        @Specialization
         static Object cast(CDataObject ptr, CDataObject src, Object ctype,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
@@ -1885,11 +1903,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         protected static NativeFunction create(DLHandler handle, PythonContext context) {
-            TruffleString name = NativeCAPISymbol.FUN_MEMSET.getName();
+            String name = NativeCAPISymbol.FUN_MEMSET.getName();
             Object sym, f;
             long adr;
             try {
-                sym = InteropLibrary.getUncached().readMember(handle.library, name.toJavaStringUncached());
+                sym = InteropLibrary.getUncached().readMember(handle.library, name);
                 adr = InteropLibrary.getUncached().asPointer(sym);
                 f = new MemMoveFunction(sym);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -1963,11 +1981,11 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         protected static NativeFunction create(DLHandler handle, PythonContext context) {
-            TruffleString name = NativeCAPISymbol.FUN_MEMSET.getName();
+            String name = NativeCAPISymbol.FUN_MEMSET.getName();
             Object sym, f;
             long adr;
             try {
-                sym = InteropLibrary.getUncached().readMember(handle.library, name.toJavaStringUncached());
+                sym = InteropLibrary.getUncached().readMember(handle.library, name);
                 adr = InteropLibrary.getUncached().asPointer(sym);
                 f = new MemSetFunction(sym);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {

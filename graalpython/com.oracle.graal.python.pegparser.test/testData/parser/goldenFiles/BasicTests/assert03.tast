@@ -1,17 +1,24 @@
-Module[0, 47]
-    FunctionDef[0, 47]
+Input:
+------
+def avg():
+    assert len != 0, getMessage(len)
+
+Output:
+-------
+Module[1:0-2:36]
+    FunctionDef[1:0-2:36]
         Name:avg
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of avg ----
-        Assert[15, 47]
+        Assert[2:4-2:36]
             Test: 
-                Compare[22, 30]
-                    LHS: Name[22, 25] Value: "len"
+                Compare[2:11-2:19]
+                    LHS: Name[2:11-2:14] Value: "len"
                     Op: NotEq
-                    RHS: LONG[29, 30] Value: 0
+                    RHS: LONG[2:18-2:19] Value: 0
             Msg: 
-                Call[32, 47]
-                    Target: Name[32, 42] Value: "getMessage"
+                Call[2:21-2:36]
+                    Target: Name[2:21-2:31] Value: "getMessage"
                     Args:
-                        Name[43, 46] Value: "len"
+                        Name[2:32-2:35] Value: "len"
         ---- End of avg function ----

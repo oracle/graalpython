@@ -1,16 +1,24 @@
-Module[0, 36]
-    FunctionDef[0, 36]
+Input:
+------
+def fn():
+  with open('x'):
+    pass
+
+Output:
+-------
+Module[1:0-3:8]
+    FunctionDef[1:0-3:8]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        With[12, 36]
+        With[2:2-3:8]
             Items:
-                WithItemTy[17, 26]
+                WithItemTy[2:7-2:16]
                     ContextExpr: 
-                        Call[17, 26]
-                            Target: Name[17, 21] Value: "open"
+                        Call[2:7-2:16]
+                            Target: Name[2:7-2:11] Value: "open"
                             Args:
-                                RAW[22, 25] Value: "x"
+                                RAW[2:12-2:15] Value: "x"
             Body:
-                Pass[32, 36]
+                Pass[3:4-3:8]
         ---- End of fn function ----

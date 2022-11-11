@@ -1,48 +1,61 @@
-Module[0, 139]
-    Match[0, 139]
-        Subject: Name[6, 7] Value: "a"
+Input:
+------
+match a:
+    case {} | {**b}:
+        pass
+    case {x.y: 42 | 'abc' as z}:
+        pass
+    case {True: y, 1-2j: False, **z}:
+        pass
+
+
+Output:
+-------
+Module[1:0-7:12]
+    Match[1:0-7:12]
+        Subject: Name[1:6-1:7] Value: "a"
         Cases:
-            MatchCaseTy[13, 42]
+            MatchCaseTy[2:4-3:12]
                 Pattern: 
-                    MatchOr[18, 28]
+                    MatchOr[2:9-2:19]
                         Patterns:
-                            MatchMapping[18, 20]
-                            MatchMapping[23, 28]
+                            MatchMapping[2:9-2:11]
+                            MatchMapping[2:14-2:19]
                                 Rest: b
                 Body:
-                    Pass[38, 42]
-            MatchCaseTy[47, 88]
+                    Pass[3:8-3:12]
+            MatchCaseTy[4:4-5:12]
                 Pattern: 
-                    MatchMapping[52, 74]
+                    MatchMapping[4:9-4:31]
                         Keys:
-                            Attribute[53, 56] 
-                                Receiver: Name[53, 54] Value: "x"
+                            Attribute[4:10-4:13] 
+                                Receiver: Name[4:10-4:11] Value: "x"
                                 Attr: y
                         Patterns:
-                            MatchAs[58, 73]
+                            MatchAs[4:15-4:30]
                                 Pattern: 
-                                    MatchOr[58, 68]
+                                    MatchOr[4:15-4:25]
                                         Patterns:
-                                            MatchValue[58, 60]
-                                                Value: LONG[58, 60] Value: 42
-                                            MatchValue[63, 68]
-                                                Value: RAW[63, 68] Value: "abc"
+                                            MatchValue[4:15-4:17]
+                                                Value: LONG[4:15-4:17] Value: 42
+                                            MatchValue[4:20-4:25]
+                                                Value: RAW[4:20-4:25] Value: "abc"
                                 Name: z
                 Body:
-                    Pass[84, 88]
-            MatchCaseTy[93, 139]
+                    Pass[5:8-5:12]
+            MatchCaseTy[6:4-7:12]
                 Pattern: 
-                    MatchMapping[98, 125]
+                    MatchMapping[6:9-6:36]
                         Keys:
-                            BOOLEAN[99, 103] Value: true
-                            BinOp[108, 112]
+                            BOOLEAN[6:10-6:14] Value: true
+                            BinOp[6:19-6:23]
                                 Op: Sub
-                                LHS: LONG[108, 109] Value: 1
-                                RHS: COMPLEX[110, 112] Value: 0.00000+2.00000j
+                                LHS: LONG[6:19-6:20] Value: 1
+                                RHS: COMPLEX[6:21-6:23] Value: 0.00000+2.00000j
                         Patterns:
-                            MatchAs[105, 106]
+                            MatchAs[6:16-6:17]
                                 Name: y
-                            MatchSingleton[114, 119], value: false
+                            MatchSingleton[6:25-6:30], value: false
                         Rest: z
                 Body:
-                    Pass[135, 139]
+                    Pass[7:8-7:12]

@@ -1,3 +1,9 @@
-Module[0, 2]
-    List[0, 2]
+Input:
+------
+[]
+
+Output:
+-------
+Module[1:0-1:2]
+    List[1:0-1:2]
         Values:

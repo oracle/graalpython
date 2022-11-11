@@ -1,3 +1,9 @@
-Module[0, 39]
-    Import[0, 39]
+Input:
+------
+import encodings.aliases.something as a
+
+Output:
+-------
+Module[1:0-1:39]
+    Import[1:0-1:39]
         encodings.aliases.something as a

@@ -1,4 +1,10 @@
-Module[0, 38]
-    ImportFrom[0, 38] Level 0 sys.path
+Input:
+------
+from sys.path import dirname, basename
+
+Output:
+-------
+Module[1:0-1:38]
+    ImportFrom[1:0-1:38] Level 0 sys.path
         dirname
         basename

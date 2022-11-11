@@ -43,26 +43,30 @@ package com.oracle.graal.python.compiler;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
 import com.oracle.graal.python.pegparser.sst.ArgTy;
 import com.oracle.graal.python.pegparser.sst.ArgumentsTy;
+import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
-import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
+import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import com.oracle.graal.python.pegparser.sst.PatternTy;
-import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
-import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
+import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -502,47 +506,90 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     @Override
     public Void visit(ExprTy.Constant node) {
-        switch (node.value.kind) {
+        // equivalent of case Constant_kind in append_ast_expr
+        if (node.value.kind == Kind.ELLIPSIS) {
+            appendStr("...");
+            return null;
+        }
+        if (node.kind instanceof String) {
+            appendStr((String) node.kind);
+        } else if (node.kind instanceof byte[]) {
+            // This conversion of byte[] -> String might not be correct, but CPython crashes in this
+            // case so nobody cares and also "kind" should only be 'u' or b'u' if present.
+            appendStr(new String((byte[]) node.kind));
+        }
+        appendConstantValue(node.value);
+        return null;
+    }
+
+    private void appendConstantValue(ConstantValue value) {
+        switch (value.kind) {
             case LONG:
-                builder.appendLongNumberUncached(node.value.getLong());
-                return null;
+                builder.appendLongNumberUncached(value.getLong());
+                break;
             case DOUBLE:
                 FloatFormatter f = new FloatFormatter(null, FloatBuiltins.StrNode.spec);
                 f.setMinFracDigits(1);
-                TruffleString result = f.format(node.value.getDouble()).getResult();
+                TruffleString result = f.format(value.getDouble()).getResult();
                 appendStr(result);
-                return null;
+                break;
             case BOOLEAN:
-                appendStr(node.value.getBoolean() ? "True" : "False");
-                return null;
+                appendStr(value.getBoolean() ? "True" : "False");
+                break;
             case RAW:
-                appendStr(StringNodes.StringReprNode.getUncached().execute(node.value.getRaw(TruffleString.class)));
-                return null;
+                appendStr(StringNodes.StringReprNode.getUncached().execute(value.getRaw(TruffleString.class)));
+                break;
             case BIGINTEGER:
-                appendStr(node.value.getBigInteger().toString());
-                return null;
+                appendStr(value.getBigInteger().toString());
+                break;
             case NONE:
                 appendStr("None");
-                return null;
+                break;
             case BYTES:
-                byte[] bytes = node.value.getBytes();
+                byte[] bytes = value.getBytes();
                 BytesUtils.reprLoop(builder, bytes, bytes.length, TruffleStringBuilder.AppendCodePointNode.getUncached());
-                return null;
+                break;
             case COMPLEX:
-                double[] num = node.value.getComplex();
+                double[] num = value.getComplex();
                 ComplexFormatter formatter = new ComplexFormatter(null, new Spec(-1, Spec.NONE));
                 formatter.format(num[0], num[1]);
                 appendStr(formatter.pad().getResult());
-                return null;
+                break;
             case ELLIPSIS:
-                appendStr("...");
-                return null;
-            case ARBITRARY_PYTHON_OBJECT:
-                // TODO GR-40165: what are these? I don't think we emit them
-                throw new IllegalStateException("Object literals not supported when unparsing");
+                appendStr("Ellipsis");
+                break;
+            case TUPLE:
+                appendTuple(value.getTupleElements());
+                break;
+            case FROZENSET:
+                appendFrozenset(value.getFrozensetElements());
+                break;
             default:
                 throw new IllegalStateException("unknown constant kind");
         }
+    }
+
+    private void appendTuple(ConstantValue[] values) {
+        appendStr("(");
+        for (int i = 0; i < values.length; ++i) {
+            appendStrIf(i > 0, ", ");
+            appendConstantValue(values[i]);
+        }
+        appendStrIf(values.length == 1, ",");
+        appendStr(")");
+    }
+
+    private void appendFrozenset(ConstantValue[] values) {
+        appendStr("frozenset(");
+        if (values.length > 0) {
+            appendStr("{");
+            for (int i = 0; i < values.length; ++i) {
+                appendStrIf(i > 0, ", ");
+                appendConstantValue(values[i]);
+            }
+            appendStr("}");
+        }
+        appendStr(")");
     }
 
     @Override
@@ -605,8 +652,7 @@ public class Unparser implements SSTreeVisitor<Void> {
                     conversion = "!s";
                     break;
                 default:
-                    // TODO GR-40162 raise SystemError
-                    throw new IllegalStateException("unknown f-value conversion kind");
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, ErrorMessages.UNKNOWN_F_VALUE_CONVERSION_KIND);
             }
             appendStr(conversion);
         }

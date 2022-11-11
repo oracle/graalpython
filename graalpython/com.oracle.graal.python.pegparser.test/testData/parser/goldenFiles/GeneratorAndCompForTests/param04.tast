@@ -1,13 +1,21 @@
-Module[0, 41]
-    FunctionDef[0, 41]
+Input:
+------
+def fn(*arg):
+  for p in arg:
+    yield p
+
+Output:
+-------
+Module[1:0-3:11]
+    FunctionDef[1:0-3:11]
         Name:fn
-        ArgumentsTy[0, 0]
-            VarArg: ArgTy[8, 11] arg
+        ArgumentsTy[1:0-1:0]
+            VarArg: ArgTy[1:8-1:11] arg
         ---- Function body of fn ----
-        For[16, 41]
-            Target: Name[20, 21] Value: "p" Store
-            Iter: Name[25, 28] Value: "arg"
+        For[2:2-3:11]
+            Target: Name[2:6-2:7] Value: "p" Store
+            Iter: Name[2:11-2:14] Value: "arg"
             Body:
-                Yield[34, 41]
-                    Name[40, 41] Value: "p"
+                Yield[3:4-3:11]
+                    Name[3:10-3:11] Value: "p"
         ---- End of fn function ----

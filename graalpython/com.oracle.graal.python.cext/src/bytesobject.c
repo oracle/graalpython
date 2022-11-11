@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,7 @@
 // taken from CPython "Objects/bytesobject.c"
 #define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE, sizeof(char));
+PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, PyBytesObject_SIZE, sizeof(char));
 
 typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
 

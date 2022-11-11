@@ -39,6 +39,16 @@
 
 import unittest
 import _ast
+import ast
+import sys
+
+
+class BytesSubclass(bytes):
+    pass
+
+
+class StrSubclass(str):
+    pass
 
 
 class AstTest(unittest.TestCase):
@@ -122,6 +132,54 @@ class AstTest(unittest.TestCase):
         self.assertEqual(1, Node(a=1).a)
         with self.assertRaisesRegex(TypeError, "must be string"):
             Node(1)
+
+    def test_bytes_constant_kind(self):
+        src = "x = u'abc'"
+        tree = ast.parse(src)
+        tree.body[0].value.kind = b'u'
+        compile(tree, '<string>', 'exec')   # nothing to assert, it just must not crash/throw
+
+        with self.assertRaisesRegex(TypeError, "AST string must be of type str"):
+            tree.body[0].value.kind = BytesSubclass(b'u')
+            compile(tree, '<string>', 'exec')
+        with self.assertRaisesRegex(TypeError, "AST string must be of type str"):
+            tree.body[0].value.kind = StrSubclass('u')
+            compile(tree, '<string>', 'exec')
+
+    def test_bytes_type_comment(self):
+        src = "x = 42 # type: int"
+        tree = ast.parse(src, type_comments=True)
+        tree.body[0].type_comment = b'int'
+        compile(tree, '<string>', 'exec')   # nothing to assert, it just must not crash/throw
+
+        with self.assertRaisesRegex(TypeError, "AST string must be of type str"):
+            tree.body[0].type_comment = BytesSubclass(b'int')
+            compile(tree, '<string>', 'exec')
+        with self.assertRaisesRegex(TypeError, "AST string must be of type str"):
+            tree.body[0].type_comment = StrSubclass('int')
+            compile(tree, '<string>', 'exec')
+
+    def test_bytes_type_ignore(self):
+        src = "x = 42 # type: ignore abc"
+        tree = ast.parse(src, type_comments=True)
+        tree.type_ignores[0].tag = b' abc'
+        compile(tree, '<string>', 'exec')   # nothing to assert, it just must not crash/throw
+
+        with self.assertRaisesRegex(TypeError, "AST string must be of type str"):
+            tree.type_ignores[0].tag = BytesSubclass(b' abc')
+            compile(tree, '<string>', 'exec')
+        with self.assertRaisesRegex(TypeError, "AST string must be of type str"):
+            tree.type_ignores[0].tag = StrSubclass(' abc')
+            compile(tree, '<string>', 'exec')
+
+    @unittest.skipIf(sys.implementation.name == 'cpython', "CPython crashes")
+    def test_unparse_bytes_constant_kind(self):
+        src = "from __future__ import annotations\ndef f(x: u'abc' = 42): pass"
+        tree = ast.parse(src)
+        tree.body[1].args.args[0].annotation.kind = b'u'
+        vars = {}
+        exec(compile(tree, '<string>', 'exec'), vars)
+        self.assertEqual("u'abc'", vars['f'].__annotations__['x'])
 
 
 if __name__ == '__main__':

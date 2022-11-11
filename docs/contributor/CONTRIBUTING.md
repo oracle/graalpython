@@ -166,13 +166,9 @@ To run the Python standard library tests, you can use the following:
 
 Note that we use "tag files", small `.txt` files that select which tests to run,
 so we only run tests that we know should pass. To run a subset of those tests,
-use the following command. However, the way we run those tests is by spawning a
-sub-process for every stdlib tests, to avoid interference while our
-implementation isn't quite ready, so you have to put the flags somewhere else to
-debug. You can see `-debug-java` and `--inspect` below, to debug in Java
-debugger or Chromium, respectively.
+use the following command:
 
-    mx python-run-cpython-unittest [-debug-java] [--inspect] NAME-OF-CPYTHON-UNITTEST
+    mx [-d] python-run-cpython-unittest [--inspect] NAME-OF-CPYTHON-UNITTEST
 
 A tag file can be regenerated with
 

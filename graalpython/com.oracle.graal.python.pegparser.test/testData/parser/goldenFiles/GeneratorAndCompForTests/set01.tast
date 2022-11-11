@@ -1,13 +1,19 @@
-Module[0, 25]
-    SetComp[0, 25]
-        Element: BinOp[1, 5]
+Input:
+------
+{x**y for x in range(20)}
+
+Output:
+-------
+Module[1:0-1:25]
+    SetComp[1:0-1:25]
+        Element: BinOp[1:1-1:5]
             Op: Pow
-            LHS: Name[1, 2] Value: "x"
-            RHS: Name[4, 5] Value: "y"
-        ComprehensionTy[6, 24]
-            Target: Name[10, 11] Value: "x" Store
+            LHS: Name[1:1-1:2] Value: "x"
+            RHS: Name[1:4-1:5] Value: "y"
+        ComprehensionTy[1:6-1:24]
+            Target: Name[1:10-1:11] Value: "x" Store
             Iterator: 
-                Call[15, 24]
-                    Target: Name[15, 20] Value: "range"
+                Call[1:15-1:24]
+                    Target: Name[1:15-1:20] Value: "range"
                     Args:
-                        LONG[21, 23] Value: 20
+                        LONG[1:21-1:23] Value: 20

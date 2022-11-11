@@ -1,15 +1,21 @@
-Module[0, 37]
-    FunctionDef[0, 37]
+Input:
+------
+def name(p1, p2=None, /, *, kw): pass
+
+Output:
+-------
+Module[1:0-1:37]
+    FunctionDef[1:0-1:37]
         Name:name
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             PosOnlyArgs:
-                ArgTy[9, 11] p1
-                ArgTy[13, 15] p2
+                ArgTy[1:9-1:11] p1
+                ArgTy[1:13-1:15] p2
             KwOnlyArgs:
-                ArgTy[28, 30] kw
+                ArgTy[1:28-1:30] kw
             Defaults:
-                NONE[16, 20] Value: null
+                NONE[1:16-1:20] Value: null
             KwDefaults:
         ---- Function body of name ----
-        Pass[33, 37]
+        Pass[1:33-1:37]
         ---- End of name function ----

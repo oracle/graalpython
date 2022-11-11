@@ -1,10 +1,16 @@
-Module[0, 19]
-    FunctionDef[0, 19]
+Input:
+------
+def f(): x += yield
+
+Output:
+-------
+Module[1:0-1:19]
+    FunctionDef[1:0-1:19]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
-        AugAssign[9, 19]
+        AugAssign[1:9-1:19]
             Op: Add
-            LHS: Name[9, 10] Value: "x" Store
-            RHS: Yield[14, 19]
+            LHS: Name[1:9-1:10] Value: "x" Store
+            RHS: Yield[1:14-1:19]
         ---- End of f function ----

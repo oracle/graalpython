@@ -1,4 +1,10 @@
-Module[0, 4]
-    Set[0, 4]
+Input:
+------
+{2,}
+
+Output:
+-------
+Module[1:0-1:4]
+    Set[1:0-1:4]
         Values:
-            LONG[1, 2] Value: 2
+            LONG[1:1-1:2] Value: 2

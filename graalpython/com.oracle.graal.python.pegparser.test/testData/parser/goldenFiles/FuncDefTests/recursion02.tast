@@ -1,25 +1,34 @@
-Module[0, 94]
-    FunctionDef[0, 94]
+Input:
+------
+def outer():
+  def recursionInner(arg):
+    return recursionInner(arg + 1)
+  recursionInner(0)
+
+Output:
+-------
+Module[1:0-4:19]
+    FunctionDef[1:0-4:19]
         Name:outer
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
-        FunctionDef[15, 74]
+        FunctionDef[2:2-3:34]
             Name:recursionInner
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
                 Args:
-                    ArgTy[34, 37] arg
+                    ArgTy[2:21-2:24] arg
             ---- Function body of recursionInner ----
-            Return[44, 74] 
-                Call[51, 74]
-                    Target: Name[51, 65] Value: "recursionInner"
+            Return[3:4-3:34] 
+                Call[3:11-3:34]
+                    Target: Name[3:11-3:25] Value: "recursionInner"
                     Args:
-                        BinOp[66, 73]
+                        BinOp[3:26-3:33]
                             Op: Add
-                            LHS: Name[66, 69] Value: "arg"
-                            RHS: LONG[72, 73] Value: 1
+                            LHS: Name[3:26-3:29] Value: "arg"
+                            RHS: LONG[3:32-3:33] Value: 1
             ---- End of recursionInner function ----
-        Call[77, 94]
-            Target: Name[77, 91] Value: "recursionInner"
+        Call[4:2-4:19]
+            Target: Name[4:2-4:16] Value: "recursionInner"
             Args:
-                LONG[92, 93] Value: 0
+                LONG[4:17-4:18] Value: 0
         ---- End of outer function ----

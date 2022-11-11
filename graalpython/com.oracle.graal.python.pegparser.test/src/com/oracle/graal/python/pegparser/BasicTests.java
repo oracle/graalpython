@@ -1024,6 +1024,11 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void testInteractiveEmpty() {
+        checkSyntaxErrorMessage("", "invalid syntax", InputType.SINGLE);
+    }
+
+    @Test
     public void testUnclosedParentheses() {
         checkSyntaxErrorMessage("print(", "'(' was never closed");
     }

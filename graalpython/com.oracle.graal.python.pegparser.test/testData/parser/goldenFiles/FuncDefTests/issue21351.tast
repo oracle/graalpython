@@ -1,46 +1,64 @@
-Module[0, 207]
-    FunctionDef[0, 110]
+Input:
+------
+def outer():
+    var = None
+    def toInternal(obj):
+        nonlocal var
+        x = 10
+    return toInternal
+
+fnc = outer()
+c = fnc.__code__
+
+print("free > ", c.co_freevars)
+print("cell > ", c.co_cellvars)
+
+
+Output:
+-------
+Module[1:0-12:31]
+    FunctionDef[1:0-6:21]
         Name:outer
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
-        Assign[17, 27]
-            LHS: Name[17, 20] Value: "var" Store
-            RHS: NONE[23, 27] Value: null
-        FunctionDef[32, 88]
+        Assign[2:4-2:14]
+            LHS: Name[2:4-2:7] Value: "var" Store
+            RHS: NONE[2:10-2:14] Value: null
+        FunctionDef[3:4-5:14]
             Name:toInternal
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
                 Args:
-                    ArgTy[47, 50] obj
+                    ArgTy[3:19-3:22] obj
             ---- Function body of toInternal ----
-            Nonlocal[61, 73]: var 
-            Assign[82, 88]
-                LHS: Name[82, 83] Value: "x" Store
-                RHS: LONG[86, 88] Value: 10
+            Nonlocal[4:8-4:20]: var 
+            Assign[5:8-5:14]
+                LHS: Name[5:8-5:9] Value: "x" Store
+                RHS: LONG[5:12-5:14] Value: 10
             ---- End of toInternal function ----
-        Return[93, 110] Name[100, 110] Value: "toInternal"
+        Return[6:4-6:21] Name[6:11-6:21] Value: "toInternal"
         ---- End of outer function ----
-    Assign[112, 125]
-        LHS: Name[112, 115] Value: "fnc" Store
+    Assign[8:0-8:13]
+        LHS: Name[8:0-8:3] Value: "fnc" Store
         RHS: 
-            Call[118, 125]
-                Target: Name[118, 123] Value: "outer"
-    Assign[126, 142]
-        LHS: Name[126, 127] Value: "c" Store
+            Call[8:6-8:13]
+                Target: Name[8:6-8:11] Value: "outer"
+    Assign[9:0-9:16]
+        LHS: Name[9:0-9:1] Value: "c" Store
         RHS: 
-            Attribute[130, 133] 
-                Receiver: Name[130, 133] Value: "fnc"
+            Attribute[9:4-9:16] 
+                Receiver: Name[9:4-9:7] Value: "fnc"
                 Attr: __code__
-    Call[144, 175]
-        Target: Name[144, 149] Value: "print"
+    Call[11:0-11:31]
+        Target: Name[11:0-11:5] Value: "print"
         Args:
-            RAW[150, 159] Value: "free > "
-            Attribute[161, 162] 
-                Receiver: Name[161, 162] Value: "c"
+            RAW[11:6-11:15] Value: "free > "
+            Attribute[11:17-11:30] 
+                Receiver: Name[11:17-11:18] Value: "c"
                 Attr: co_freevars
-    Call[176, 207]
-        Target: Name[176, 181] Value: "print"
+    Call[12:0-12:31]
+        Target: Name[12:0-12:5] Value: "print"
         Args:
-            RAW[182, 191] Value: "cell > "
-            Attribute[193, 194] 
-                Receiver: Name[193, 194] Value: "c"
+            RAW[12:6-12:15] Value: "cell > "
+            Attribute[12:17-12:30] 
+                Receiver: Name[12:17-12:18] Value: "c"
                 Attr: co_cellvars

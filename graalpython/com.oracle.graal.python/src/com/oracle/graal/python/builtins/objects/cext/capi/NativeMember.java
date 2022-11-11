@@ -44,11 +44,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberTyp
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import com.oracle.graal.python.nodes.StringLiterals;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum NativeMember {
@@ -79,6 +79,8 @@ public enum NativeMember {
     TP_BASE("tp_base", OBJECT),
     TP_BASES("tp_bases", OBJECT),
     TP_MRO("tp_mro", OBJECT),
+    TP_CACHE("tp_cache", OBJECT),
+    TP_WEAKLIST("tp_weaklist", OBJECT),
     TP_BASICSIZE("tp_basicsize", PRIMITIVE),
     TP_ITEMSIZE("tp_itemsize", PRIMITIVE),
     TP_DICTOFFSET("tp_dictoffset", PRIMITIVE),
@@ -95,22 +97,32 @@ public enum NativeMember {
     TP_AS_BUFFER("tp_as_buffer"),
     TP_AS_SEQUENCE("tp_as_sequence"),
     TP_AS_MAPPING("tp_as_mapping"),
+    TP_AS_ASYNC("tp_as_async"),
     TP_GETATTR("tp_getattr"),
     TP_SETATTR("tp_setattr"),
     TP_GETATTRO("tp_getattro"),
     TP_SETATTRO("tp_setattro"),
+    TP_DESCR_GET("tp_descr_get"),
+    TP_DESCR_SET("tp_descr_set"),
     TP_ITER("tp_iter"),
     TP_ITERNEXT("tp_iternext"),
     TP_NEW("tp_new"),
     TP_INIT("tp_init"),
+    TP_FINALIZE("tp_finalize"),
     TP_DICT("tp_dict", OBJECT),
     TP_STR("tp_str"),
     TP_REPR("tp_repr"),
     TP_TRAVERSE("tp_traverse"),
     TP_CLEAR("tp_clear"),
+    TP_METHODS("tp_methods"),
+    TP_MEMBERS("tp_members"),
+    TP_GETSET("tp_getset"),
+    TP_IS_GC("tp_is_gc"),
     _BASE("_base"),
+    TP_VERSION_TAG("tp_version_tag", PRIMITIVE),
     TP_VECTORCALL_OFFSET("tp_vectorcall_offset", PRIMITIVE),
     TP_CALL("tp_call"),
+    TP_VECTORCALL("tp_vectorcall"),
 
     // PySequenceMethods
     SQ_ITEM("sq_item"),
@@ -295,17 +307,17 @@ public enum NativeMember {
     private final String jMemberName;
     private final TruffleString tMemberName;
     private final NativeMemberType type;
+    private final NativeCAPISymbol getter;
 
     private NativeMember(String name) {
-        this.jMemberName = name;
-        this.tMemberName = toTruffleStringUncached(name);
-        this.type = POINTER;
+        this(name, POINTER);
     }
 
     private NativeMember(String name, NativeMemberType type) {
         this.jMemberName = name;
         this.tMemberName = toTruffleStringUncached(name);
         this.type = type;
+        this.getter = NativeCAPISymbol.getByName(StringLiterals.J_GET_ + name);
     }
 
     public TruffleString getMemberNameTruffleString() {
@@ -321,6 +333,14 @@ public enum NativeMember {
         return type;
     }
 
+    public NativeCAPISymbol getGetterFunctionName() {
+        if (getter == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere("no getter for native member " + jMemberName);
+        }
+        return getter;
+    }
+
     @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
 
     public static NativeMember byName(String name) {
@@ -330,20 +350,6 @@ public enum NativeMember {
             }
         }
         return null;
-    }
-
-    @ExplodeLoop
-    public static NativeMember byName(TruffleString name, TruffleString.EqualNode eqNode) {
-        for (NativeMember nativeMember : VALUES) {
-            if (eqNode.execute(nativeMember.tMemberName, name, TS_ENCODING)) {
-                return nativeMember;
-            }
-        }
-        return null;
-    }
-
-    public static boolean isValid(TruffleString name, TruffleString.EqualNode eqNode) {
-        return byName(name, eqNode) != null;
     }
 
     public static boolean isValid(String name) {

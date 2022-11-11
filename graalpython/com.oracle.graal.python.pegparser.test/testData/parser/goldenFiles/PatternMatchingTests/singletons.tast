@@ -1,16 +1,27 @@
-Module[0, 72]
-    Match[0, 72]
-        Subject: Name[6, 7] Value: "a"
+Input:
+------
+match a:
+    case None:
+        pass
+    case True | False:
+        pass
+
+
+Output:
+-------
+Module[1:0-5:12]
+    Match[1:0-5:12]
+        Subject: Name[1:6-1:7] Value: "a"
         Cases:
-            MatchCaseTy[13, 36]
-                Pattern: MatchSingleton[18, 22], value: null
+            MatchCaseTy[2:4-3:12]
+                Pattern: MatchSingleton[2:9-2:13], value: null
                 Body:
-                    Pass[32, 36]
-            MatchCaseTy[41, 72]
+                    Pass[3:8-3:12]
+            MatchCaseTy[4:4-5:12]
                 Pattern: 
-                    MatchOr[46, 58]
+                    MatchOr[4:9-4:21]
                         Patterns:
-                            MatchSingleton[46, 50], value: true
-                            MatchSingleton[53, 58], value: false
+                            MatchSingleton[4:9-4:13], value: true
+                            MatchSingleton[4:16-4:21], value: false
                 Body:
-                    Pass[68, 72]
+                    Pass[5:8-5:12]

@@ -1,16 +1,23 @@
-Module[0, 47]
-    FunctionDef[0, 47]
+Input:
+------
+def foo(par1, par2 = 22): 
+  return par1 * par2
+
+Output:
+-------
+Module[1:0-2:20]
+    FunctionDef[1:0-2:20]
         Name:foo
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 12] par1
-                ArgTy[14, 18] par2
+                ArgTy[1:8-1:12] par1
+                ArgTy[1:14-1:18] par2
             Defaults:
-                LONG[21, 23] Value: 22
+                LONG[1:21-1:23] Value: 22
         ---- Function body of foo ----
-        Return[29, 47] 
-            BinOp[36, 47]
+        Return[2:2-2:20] 
+            BinOp[2:9-2:20]
                 Op: Mult
-                LHS: Name[36, 40] Value: "par1"
-                RHS: Name[43, 47] Value: "par2"
+                LHS: Name[2:9-2:13] Value: "par1"
+                RHS: Name[2:16-2:20] Value: "par2"
         ---- End of foo function ----

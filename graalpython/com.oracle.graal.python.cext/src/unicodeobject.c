@@ -1,46 +1,11 @@
-/*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
- * The Universal Permissive License (UPL), Version 1.0
- *
- * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or
- * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
- *
- * (a) the Software, and
- *
- * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
- * is contributed by such licensors),
- *
- * without restriction, including without limitation the rights to copy, create
- * derivative works of, display, perform, and distribute the Software and make,
- * use, sell, offer for sale, import, export, have made, and have sold the
- * Software and the Larger Work(s), and to sublicense the foregoing rights on
- * either these or other terms.
- *
- * This license is subject to the following condition:
- *
- * The above copyright notice and either this complete permission notice or at a
- * minimum a reference to the UPL must be included in all copies or substantial
- * portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #include "capi.h"
 
-PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
+PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF, sizeof(PyUnicodeObject));
 
 POLYGLOT_DECLARE_TYPE(wchar_t);
 POLYGLOT_DECLARE_TYPE(Py_UCS1);
@@ -638,6 +603,71 @@ PyObject * PyUnicode_Replace(PyObject *str, PyObject *substr, PyObject *replstr,
             *_to++ = (to_type) *_iter++;                \
     } while (0)
 
+
+static Py_UCS4*
+as_ucs4(PyObject *string, Py_UCS4 *target, Py_ssize_t targetsize,
+        int copy_null)
+{
+    int kind;
+    void *data;
+    Py_ssize_t len, targetlen;
+    if (PyUnicode_READY(string) == -1)
+        return NULL;
+    kind = PyUnicode_KIND(string);
+    data = PyUnicode_DATA(string);
+    len = PyUnicode_GET_LENGTH(string);
+    targetlen = len;
+    if (copy_null)
+        targetlen++;
+    if (!target) {
+        target = PyMem_New(Py_UCS4, targetlen);
+        if (!target) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+    }
+    else {
+        if (targetsize < targetlen) {
+            PyErr_Format(PyExc_SystemError,
+                         "string is longer than the buffer");
+            if (copy_null && 0 < targetsize)
+                target[0] = 0;
+            return NULL;
+        }
+    }
+    if (kind == PyUnicode_1BYTE_KIND) {
+        Py_UCS1 *start = (Py_UCS1 *) data;
+        _PyUnicode_CONVERT_BYTES(Py_UCS1, Py_UCS4, start, start + len, target);
+    }
+    else if (kind == PyUnicode_2BYTE_KIND) {
+        Py_UCS2 *start = (Py_UCS2 *) data;
+        _PyUnicode_CONVERT_BYTES(Py_UCS2, Py_UCS4, start, start + len, target);
+    }
+    else {
+        assert(kind == PyUnicode_4BYTE_KIND);
+        memcpy(target, data, len * sizeof(Py_UCS4));
+    }
+    if (copy_null)
+        target[len] = 0;
+    return target;
+}
+
+Py_UCS4*
+PyUnicode_AsUCS4(PyObject *string, Py_UCS4 *target, Py_ssize_t targetsize,
+                 int copy_null)
+{
+    if (target == NULL || targetsize < 0) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return as_ucs4(string, target, targetsize, copy_null);
+}
+
+Py_UCS4*
+PyUnicode_AsUCS4Copy(PyObject *string)
+{
+    return as_ucs4(string, NULL, 0, 1);
+}
 
 /* used from Java only to decode a native unicode object */
 void* native_unicode_as_string(PyObject *string) {

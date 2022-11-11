@@ -1,8 +1,17 @@
-Module[0, 26]
-    Try[0, 3]
+Input:
+------
+try:
+  pass
+except:
+  pass
+
+Output:
+-------
+Module[1:0-4:6]
+    Try[1:0-4:6]
         Body:
-            Pass[7, 11]
+            Pass[2:2-2:6]
         Except:
-            ExceptHandler[12, 18]
+            ExceptHandler[3:0-4:6]
                 Body:
-                    Pass[22, 26]
+                    Pass[4:2-4:6]

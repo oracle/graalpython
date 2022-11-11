@@ -212,7 +212,8 @@ PyObject * PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwar
         Py_DECREF(kwnames);
     }
 
-    return _Py_CheckFunctionResult(callable, result, NULL);
+    //return _Py_CheckFunctionResult(callable, result, NULL);
+    return result;
 }
 
 #define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')
@@ -847,3 +848,11 @@ _PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs,
     *p_kwnames = kwnames;
     return 0;
 }
+
+
+typedef void (*call_debugtrace_t)(void);
+UPCALL_TYPED_ID(PyTruffle_DebugTrace, call_debugtrace_t);
+void PyTruffle_DebugTrace(void) {
+    _jls_PyTruffle_DebugTrace();
+}
+

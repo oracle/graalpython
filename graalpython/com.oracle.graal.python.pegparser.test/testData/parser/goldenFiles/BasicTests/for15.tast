@@ -1,16 +1,25 @@
-Module[0, 87]
-    FunctionDef[0, 87]
+Input:
+------
+def formatyear():
+        for (i, row) in something:
+            pass
+        return 10
+
+Output:
+-------
+Module[1:0-4:17]
+    FunctionDef[1:0-4:17]
         Name:formatyear
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of formatyear ----
-        For[26, 69]
+        For[2:8-3:16]
             Target: 
-                Tuple[30, 38] Context: Store
+                Tuple[2:12-2:20] Context: Store
                     Values:
-                        Name[31, 32] Value: "i" Store
-                        Name[34, 37] Value: "row" Store
-            Iter: Name[42, 51] Value: "something"
+                        Name[2:13-2:14] Value: "i" Store
+                        Name[2:16-2:19] Value: "row" Store
+            Iter: Name[2:24-2:33] Value: "something"
             Body:
-                Pass[65, 69]
-        Return[78, 87] LONG[85, 87] Value: 10
+                Pass[3:12-3:16]
+        Return[4:8-4:17] LONG[4:15-4:17] Value: 10
         ---- End of formatyear function ----

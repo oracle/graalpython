@@ -13,6 +13,8 @@ A primary goal of the GraalVM Python runtime is to support SciPy and its constit
 At this point, the Python runtime is made available for experimentation and curious end-users.
 See [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
+>Note: The GraalVM Python runtime is currently considered experimental and not yet available for Windows AMD64.
+
 ## Installing Python
 
 The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://github.com/oracle/graal/blob/master/docs/reference-manual/graalvm-updater.md), `gu`, tool:

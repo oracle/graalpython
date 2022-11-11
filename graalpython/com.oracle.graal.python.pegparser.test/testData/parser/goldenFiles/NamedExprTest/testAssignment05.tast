@@ -1,7 +1,13 @@
-Module[0, 11]
-    Tuple[0, 11]
+Input:
+------
+(x := 1, 2)
+
+Output:
+-------
+Module[1:0-1:11]
+    Tuple[1:0-1:11]
         Values:
-            NamedExpr[1, 7]
-                Target: Name[1, 2] Value: "x" Store
-                Value: LONG[6, 7] Value: 1
-            LONG[9, 10] Value: 2
+            NamedExpr[1:1-1:7]
+                Target: Name[1:1-1:2] Value: "x" Store
+                Value: LONG[1:6-1:7] Value: 1
+            LONG[1:9-1:10] Value: 2

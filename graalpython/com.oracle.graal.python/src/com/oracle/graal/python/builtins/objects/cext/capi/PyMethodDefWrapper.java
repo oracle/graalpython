@@ -44,9 +44,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -62,6 +65,8 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -216,11 +221,29 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
             } else if (object instanceof PBuiltinFunction) {
                 return getMethFromBuiltinFunction((PBuiltinFunction) object, key, toSulongNode);
             }
-            return toSulongNode.execute(object);
+            return createFunctionWrapper(object, toSulongNode);
+        }
+
+        @TruffleBoundary
+        private static Object createFunctionWrapper(PythonObject object, ToSulongNode toSulongNode) {
+            int flags = getFlags(object, null);
+            PythonNativeWrapper wrapper;
+            if (CExtContext.isMethNoArgs(flags)) {
+                wrapper = PyProcsWrapper.createUnaryFuncWrapper(object);
+            } else if (CExtContext.isMethO(flags)) {
+                wrapper = PyProcsWrapper.createBinaryFuncWrapper(object);
+            } else if (CExtContext.isMethVarargs(flags) && CExtContext.isMethKeywords(flags)) {
+                wrapper = PyProcsWrapper.createVarargKeywordWrapper(object);
+            } else if (CExtContext.isMethVarargs(flags)) {
+                wrapper = PyProcsWrapper.createVarargWrapper(object);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
+            }
+            return toSulongNode.execute(wrapper);
         }
 
         @Specialization(guards = {"eq(J_ML_FLAGS, key)"})
-        static Object getFlags(PythonObject object, @SuppressWarnings("unused") String key) {
+        static int getFlags(PythonObject object, @SuppressWarnings("unused") String key) {
             if (object instanceof PBuiltinFunction) {
                 return ((PBuiltinFunction) object).getFlags();
             } else if (object instanceof PBuiltinMethod) {
@@ -298,15 +321,14 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
+    boolean hasNativeType() {
+        return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
+    Object getNativeType(
+                    @Cached GetLLVMType getLLVMType) {
+        return getLLVMType.execute(LLVMType.PyMethodDef);
     }
 }

@@ -1,14 +1,22 @@
-Module[0, 30]
-    FunctionDef[0, 30]
+Input:
+------
+def foo(a, b): 
+  return a + b
+
+
+Output:
+-------
+Module[1:0-2:14]
+    FunctionDef[1:0-2:14]
         Name:foo
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 9] a
-                ArgTy[11, 12] b
+                ArgTy[1:8-1:9] a
+                ArgTy[1:11-1:12] b
         ---- Function body of foo ----
-        Return[18, 30] 
-            BinOp[25, 30]
+        Return[2:2-2:14] 
+            BinOp[2:9-2:14]
                 Op: Add
-                LHS: Name[25, 26] Value: "a"
-                RHS: Name[29, 30] Value: "b"
+                LHS: Name[2:9-2:10] Value: "a"
+                RHS: Name[2:13-2:14] Value: "b"
         ---- End of foo function ----

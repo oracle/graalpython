@@ -1,57 +1,72 @@
-Module[0, 141]
-    Match[0, 141]
-        Subject: Name[6, 7] Value: "a"
+Input:
+------
+match a:
+    case 'abc':
+        pass
+    case 42 | -42:
+        pass
+    case -1 + 4j | 0 - 1j:
+        pass
+    case -1j | 0j:
+        pass
+
+
+Output:
+-------
+Module[1:0-9:12]
+    Match[1:0-9:12]
+        Subject: Name[1:6-1:7] Value: "a"
         Cases:
-            MatchCaseTy[13, 37]
+            MatchCaseTy[2:4-3:12]
                 Pattern: 
-                    MatchValue[18, 23]
-                        Value: RAW[18, 23] Value: "abc"
+                    MatchValue[2:9-2:14]
+                        Value: RAW[2:9-2:14] Value: "abc"
                 Body:
-                    Pass[33, 37]
-            MatchCaseTy[42, 69]
+                    Pass[3:8-3:12]
+            MatchCaseTy[4:4-5:12]
                 Pattern: 
-                    MatchOr[47, 55]
+                    MatchOr[4:9-4:17]
                         Patterns:
-                            MatchValue[47, 49]
-                                Value: LONG[47, 49] Value: 42
-                            MatchValue[52, 55]
+                            MatchValue[4:9-4:11]
+                                Value: LONG[4:9-4:11] Value: 42
+                            MatchValue[4:14-4:17]
                                 Value: 
-                                    UnaryOp[52, 55]
+                                    UnaryOp[4:14-4:17]
                                         Op: USub
-                                        Value: LONG[53, 55] Value: 42
+                                        Value: LONG[4:15-4:17] Value: 42
                 Body:
-                    Pass[65, 69]
-            MatchCaseTy[74, 109]
+                    Pass[5:8-5:12]
+            MatchCaseTy[6:4-7:12]
                 Pattern: 
-                    MatchOr[79, 95]
+                    MatchOr[6:9-6:25]
                         Patterns:
-                            MatchValue[79, 86]
+                            MatchValue[6:9-6:16]
                                 Value: 
-                                    BinOp[79, 86]
+                                    BinOp[6:9-6:16]
                                         Op: Add
                                         LHS: 
-                                            UnaryOp[79, 81]
+                                            UnaryOp[6:9-6:11]
                                                 Op: USub
-                                                Value: LONG[80, 81] Value: 1
-                                        RHS: COMPLEX[84, 86] Value: 0.00000+4.00000j
-                            MatchValue[89, 95]
+                                                Value: LONG[6:10-6:11] Value: 1
+                                        RHS: COMPLEX[6:14-6:16] Value: 0.00000+4.00000j
+                            MatchValue[6:19-6:25]
                                 Value: 
-                                    BinOp[89, 95]
+                                    BinOp[6:19-6:25]
                                         Op: Sub
-                                        LHS: LONG[89, 90] Value: 0
-                                        RHS: COMPLEX[93, 95] Value: 0.00000+1.00000j
+                                        LHS: LONG[6:19-6:20] Value: 0
+                                        RHS: COMPLEX[6:23-6:25] Value: 0.00000+1.00000j
                 Body:
-                    Pass[105, 109]
-            MatchCaseTy[114, 141]
+                    Pass[7:8-7:12]
+            MatchCaseTy[8:4-9:12]
                 Pattern: 
-                    MatchOr[119, 127]
+                    MatchOr[8:9-8:17]
                         Patterns:
-                            MatchValue[119, 122]
+                            MatchValue[8:9-8:12]
                                 Value: 
-                                    UnaryOp[119, 122]
+                                    UnaryOp[8:9-8:12]
                                         Op: USub
-                                        Value: COMPLEX[120, 122] Value: 0.00000+1.00000j
-                            MatchValue[125, 127]
-                                Value: COMPLEX[125, 127] Value: 0.00000+0.00000j
+                                        Value: COMPLEX[8:10-8:12] Value: 0.00000+1.00000j
+                            MatchValue[8:15-8:17]
+                                Value: COMPLEX[8:15-8:17] Value: 0.00000+0.00000j
                 Body:
-                    Pass[137, 141]
+                    Pass[9:8-9:12]

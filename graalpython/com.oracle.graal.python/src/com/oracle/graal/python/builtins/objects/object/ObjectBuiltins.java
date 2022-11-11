@@ -136,12 +136,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -271,6 +271,9 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object method = profile.profile(lookup.execute(type));
             if (method instanceof PBuiltinFunction) {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
+                return !builtinNodeFactoryClass.isInstance(factory);
+            } else if (method instanceof PBuiltinMethod) {
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinMethod) method).getFunction().getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
             } else if (method instanceof BuiltinMethodDescriptor) {
                 return !((BuiltinMethodDescriptor) method).isSameFactory(builtinNodeFactoryClass);

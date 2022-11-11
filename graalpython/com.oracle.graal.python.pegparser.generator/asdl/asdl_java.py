@@ -206,28 +206,28 @@ class AstStateGenerator(Generator):
     def visit_abstract_class(self, c: model.AbstractClass, emitter: java_file.Emitter):
         emitter.println()
         emitter.println(f'// {c.name.java}')
-        self.emit_make_type(emitter, c.name, None, (), c.attributes)
+        self.emit_make_type(emitter, c.name, None, (), c.attributes, c.doc)
         for t in c.inner_classes:
             self.visit(t, emitter)
 
     def visit_concrete_class(self, c: model.ConcreteClass, emitter: java_file.Emitter):
         emitter.println()
         emitter.println(f'// {c.full_name}')
-        self.emit_make_type(emitter, c.name, c.outer_name, c.fields, c.attributes)
+        self.emit_make_type(emitter, c.name, c.outer_name, c.fields, c.attributes, c.doc)
 
     def visit_enum(self, c: model.Enum, emitter: java_file.Emitter):
         emitter.println()
         emitter.println(f'// {c.name.java}')
-        self.emit_make_type(emitter, c.name, None, (), ())
+        self.emit_make_type(emitter, c.name, None, (), (), c.doc)
         for m in c.members:
             emitter.println()
             emitter.println(f'// {c.name.java}.{m.java}')
-            self.emit_make_type(emitter, m, c.name, (), ())
+            self.emit_make_type(emitter, m, c.name, (), (), m.python)
             emitter.println(f'{m.singleton_field} = factory.createSingleton({m.cls_field});')
 
     @staticmethod
     def emit_make_type(emitter: java_file.Emitter, name: model.Name, base_class: Optional[model.Name],
-                       fields: Tuple[model.Field, ...], attributes: Tuple[model.Field, ...]):
+                       fields: Tuple[model.Field, ...], attributes: Tuple[model.Field, ...], doc: str):
         base = base_class.cls_field if base_class else 'clsAst'
         with emitter.start_call(f'{name.cls_field} = factory.makeType({name.ts_literal}, {base},'):
             f = ', '.join(f.name.ts_literal for f in fields)
@@ -239,7 +239,10 @@ class AstStateGenerator(Generator):
                 emitter.println('null,')
             o = ', '.join(a.name.ts_literal for a in fields + attributes if a.is_optional)
             emitter.println(f'tsa({o}),')
-            emitter.println(f'ts("") // TODO docstring')    # TODO docstring
+            if '\n' in doc:
+                emitter.print_block('ts("' + '\\n" +\n"'.join(doc.split('\n')) + '")')
+            else:
+                emitter.println(f'ts("{doc}")')
 
 
 class Sst2ObjGenerator(Generator):
@@ -307,9 +310,15 @@ class Sst2ObjGenerator(Generator):
         if f.is_sequence:
             emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, seq2List(node.{f.name.java}));')
         elif f.is_nullable:
-            emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNullable(node.{f.name.java}));')
+            if f.type.python == 'string':
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNullableStringOrByteArray(node.{f.name.java}));')
+            else:
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNullable(node.{f.name.java}));')
         else:
-            emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNonNull(node.{f.name.java}));')
+            if f.type.python == 'string':
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNonNullStringOrByteArray(node.{f.name.java}));')
+            else:
+                emitter.println(f'o.setAttribute({f.name.ts_literal_qn}, visitNonNull(node.{f.name.java}));')
 
 
 class Obj2Sst2Generator(Generator):
@@ -385,7 +394,7 @@ class Obj2Sst2Generator(Generator):
             for a in attributes:
                 self.visit_field(a, class_name, emitter)
             names = ', '.join(a.name.java for a in attributes)
-            emitter.println(f'SourceRange sourceRange = new SourceRange(0, 0, {names});')
+            emitter.println(f'SourceRange sourceRange = new SourceRange({names});')
         else:
             emitter.println(f'SourceRange sourceRange = SourceRange.ARTIFICIAL_RANGE;')
 

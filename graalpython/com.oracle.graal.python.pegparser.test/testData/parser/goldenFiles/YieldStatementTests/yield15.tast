@@ -1,16 +1,25 @@
-Module[0, 48]
-    FunctionDef[0, 48]
+Input:
+------
+def f():
+    for x in range(30):
+        yield x
+
+
+Output:
+-------
+Module[1:0-3:15]
+    FunctionDef[1:0-3:15]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
-        For[13, 48]
-            Target: Name[17, 18] Value: "x" Store
+        For[2:4-3:15]
+            Target: Name[2:8-2:9] Value: "x" Store
             Iter: 
-                Call[22, 31]
-                    Target: Name[22, 27] Value: "range"
+                Call[2:13-2:22]
+                    Target: Name[2:13-2:18] Value: "range"
                     Args:
-                        LONG[28, 30] Value: 30
+                        LONG[2:19-2:21] Value: 30
             Body:
-                Yield[41, 48]
-                    Name[47, 48] Value: "x"
+                Yield[3:8-3:15]
+                    Name[3:14-3:15] Value: "x"
         ---- End of f function ----

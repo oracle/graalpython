@@ -1,12 +1,19 @@
-Module[0, 34]
-    AsyncFunctionDef[0, 34]
+Input:
+------
+async def f():
+ async with 1: pass
+
+Output:
+-------
+Module[1:0-2:19]
+    AsyncFunctionDef[1:0-2:19]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
-        AsyncWith[16, 34]
+        AsyncWith[2:1-2:19]
             Items:
-                WithItemTy[27, 28]
-                    ContextExpr: LONG[27, 28] Value: 1
+                WithItemTy[2:12-2:13]
+                    ContextExpr: LONG[2:12-2:13] Value: 1
             Body:
-                Pass[30, 34]
+                Pass[2:15-2:19]
         ---- End of f function ----

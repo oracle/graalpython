@@ -1,28 +1,39 @@
-Module[0, 81]
-    FunctionDef[0, 81]
+Input:
+------
+def gen(x):
+   while x:
+     if x == 1:
+       continue
+     x = x-1
+     yield x
+
+Output:
+-------
+Module[1:0-6:12]
+    FunctionDef[1:0-6:12]
         Name:gen
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 9] x
+                ArgTy[1:8-1:9] x
         ---- Function body of gen ----
-        While[15, 81]
-            Condition: Name[21, 22] Value: "x"
+        While[2:3-6:12]
+            Condition: Name[2:9-2:10] Value: "x"
             Body:
-                If[29, 55]
+                If[3:5-4:15]
                     Test: 
-                        Compare[32, 38]
-                            LHS: Name[32, 33] Value: "x"
+                        Compare[3:8-3:14]
+                            LHS: Name[3:8-3:9] Value: "x"
                             Op: Eq
-                            RHS: LONG[37, 38] Value: 1
+                            RHS: LONG[3:13-3:14] Value: 1
                     Then:
-                        Continue[47, 55]
-                Assign[61, 68]
-                    LHS: Name[61, 62] Value: "x" Store
+                        Continue[4:7-4:15]
+                Assign[5:5-5:12]
+                    LHS: Name[5:5-5:6] Value: "x" Store
                     RHS: 
-                        BinOp[65, 68]
+                        BinOp[5:9-5:12]
                             Op: Sub
-                            LHS: Name[65, 66] Value: "x"
-                            RHS: LONG[67, 68] Value: 1
-                Yield[74, 81]
-                    Name[80, 81] Value: "x"
+                            LHS: Name[5:9-5:10] Value: "x"
+                            RHS: LONG[5:11-5:12] Value: 1
+                Yield[6:5-6:12]
+                    Name[6:11-6:12] Value: "x"
         ---- End of gen function ----

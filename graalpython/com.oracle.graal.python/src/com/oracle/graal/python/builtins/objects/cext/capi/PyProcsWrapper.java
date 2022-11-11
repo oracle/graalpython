@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
@@ -60,7 +61,6 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -134,7 +134,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class GetAttrWrapper extends PyProcsWrapper {
+    static final class GetAttrWrapper extends PyProcsWrapper {
 
         public GetAttrWrapper(Object delegate) {
             super(delegate);
@@ -143,11 +143,9 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached ToNewRefNode toNewRefNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached IsBuiltinClassProfile errProfile,
-                        @Cached AddRefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -157,11 +155,10 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     throw ArityException.create(2, 2, arguments.length);
                 }
                 try {
-                    return incRefNode.inc(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
+                    return toNewRefNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
                 } catch (PException e) {
-                    e.expectAttributeError(errProfile);
                     transformExceptionToNativeNode.execute(null, e);
-                    return toSulongNode.execute(PythonContext.get(gil).getNativeNull());
+                    return PythonContext.get(gil).getNativeNull().getPtr();
                 }
             } finally {
                 gil.release(mustRelease);
@@ -170,7 +167,77 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class SetAttrWrapper extends PyProcsWrapper {
+    static final class BinaryFuncWrapper extends PyProcsWrapper {
+
+        public BinaryFuncWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        protected Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached CallBinaryMethodNode executeNode,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, 2, arguments.length);
+                }
+                try {
+                    return toNewRefNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return PythonContext.get(gil).getNativeNull().getPtr();
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class UnaryFuncWrapper extends PyProcsWrapper {
+
+        public UnaryFuncWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        protected Object execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached CallUnaryMethodNode executeNode,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                /*
+                 * Accept a second argumenthere, since these functions are sometimes called using
+                 * METH_O with a "NULL" value.
+                 */
+                if (arguments.length > 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(1, 2, arguments.length);
+                }
+                try {
+                    return toNewRefNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0])));
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return PythonContext.get(gil).getNativeNull().getPtr();
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class SetAttrWrapper extends PyProcsWrapper {
 
         public SetAttrWrapper(Object delegate) {
             super(delegate);
@@ -205,7 +272,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class InitWrapper extends PyProcsWrapper {
+    static final class InitWrapper extends PyProcsWrapper {
 
         public InitWrapper(Object delegate) {
             super(delegate);
@@ -247,6 +314,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length != 3")
             static int error(@SuppressWarnings("unused") InitWrapper self, Object[] arguments) throws ArityException {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, 3, arguments.length);
             }
 
@@ -254,7 +322,102 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class TernaryFunctionWrapper extends PyProcsWrapper {
+    static final class VarargWrapper extends PyProcsWrapper {
+
+        public VarargWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage(name = "execute")
+        static class Execute {
+
+            @Specialization(guards = "arguments.length == 2")
+            static Object init(VarargWrapper self, Object[] arguments,
+                            @CachedLibrary("self") PythonNativeWrapperLibrary lib,
+                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached ExecutePositionalStarargsNode posStarargsNode,
+                            @Cached CallVarargsMethodNode callNode,
+                            @Cached ToJavaNode toJavaNode,
+                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                try {
+                    try {
+                        // convert args
+                        Object receiver = toJavaNode.execute(arguments[0]);
+                        Object starArgs = toJavaNode.execute(arguments[1]);
+
+                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        return toNewRefNode.execute(callNode.execute(null, lib.getDelegate(self), pArgs, PKeyword.EMPTY_KEYWORDS));
+                    } catch (PException e) {
+                        transformExceptionToNativeNode.execute(null, e);
+                        return PythonContext.get(gil).getNativeNull().getPtr();
+                    }
+                } finally {
+                    gil.release(mustRelease);
+                }
+            }
+
+            @Specialization(guards = "arguments.length != 2")
+            static int error(@SuppressWarnings("unused") VarargWrapper self, Object[] arguments) throws ArityException {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, 2, arguments.length);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class VarargKeywordWrapper extends PyProcsWrapper {
+
+        public VarargKeywordWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage(name = "execute")
+        static class Execute {
+
+            @Specialization(guards = "arguments.length == 3")
+            static Object init(VarargKeywordWrapper self, Object[] arguments,
+                            @CachedLibrary("self") PythonNativeWrapperLibrary lib,
+                            @Cached ToNewRefNode toNewRefNode,
+                            @Cached ExecutePositionalStarargsNode posStarargsNode,
+                            @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                            @Cached CallVarargsMethodNode callNode,
+                            @Cached ToJavaNode toJavaNode,
+                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                try {
+                    try {
+                        // convert args
+                        Object receiver = toJavaNode.execute(arguments[0]);
+                        Object starArgs = toJavaNode.execute(arguments[1]);
+                        Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                        Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
+                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                        return toNewRefNode.execute(callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray));
+                    } catch (PException e) {
+                        transformExceptionToNativeNode.execute(null, e);
+                        return PythonContext.get(gil).getNativeNull().getPtr();
+                    }
+                } finally {
+                    gil.release(mustRelease);
+                }
+            }
+
+            @Specialization(guards = "arguments.length != 3")
+            static int error(@SuppressWarnings("unused") VarargKeywordWrapper self, Object[] arguments) throws ArityException {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(3, 3, arguments.length);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class TernaryFunctionWrapper extends PyProcsWrapper {
 
         public TernaryFunctionWrapper(Object delegate) {
             super(delegate);
@@ -270,7 +433,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                             @Cached ExpandKeywordStarargsNode expandKwargsNode,
                             @Cached CallVarargsMethodNode callNode,
                             @Cached ToJavaNode toJavaNode,
-                            @Cached ToNewRefNode toSulongNode,
+                            @Cached ToNewRefNode toNewRefNode,
                             @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
@@ -285,10 +448,10 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         Object result = callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
-                        return toSulongNode.execute(result);
+                        return toNewRefNode.execute(result);
                     } catch (PException e) {
                         transformExceptionToNativeNode.execute(null, e);
-                        return PythonContext.get(gil).getNativeNull();
+                        return PythonContext.get(gil).getNativeNull().getPtr();
                     }
                 } finally {
                     gil.release(mustRelease);
@@ -297,6 +460,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "arguments.length != 3")
             static Object error(@SuppressWarnings("unused") TernaryFunctionWrapper self, Object[] arguments) throws ArityException {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, 3, arguments.length);
             }
 
@@ -304,7 +468,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class SsizeargfuncWrapper extends PyProcsWrapper {
+    static final class SsizeargfuncWrapper extends PyProcsWrapper {
 
         private final boolean newRef;
 
@@ -321,7 +485,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToSulongNode nullToSulongNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
@@ -335,7 +498,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     return newRef ? toNewRefNode.execute(result) : toSulongNode.execute(result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
-                    return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
+                    return PythonContext.get(toJavaNode).getNativeNull().getPtr();
                 }
             } finally {
                 gil.release(mustRelease);
@@ -344,7 +507,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    static class LenfuncWrapper extends PyProcsWrapper {
+    static final class LenfuncWrapper extends PyProcsWrapper {
 
         public LenfuncWrapper(Object delegate) {
             super(delegate);
@@ -356,7 +519,6 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached CallUnaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToSulongNode nullToSulongNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaIntLossyNode castLossy,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -374,7 +536,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                     return (long) len;
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
-                    return nullToSulongNode.execute(PythonContext.get(nullToSulongNode).getNativeNull());
+                    return PythonContext.get(toJavaNode).getNativeNull().getPtr();
                 }
             } finally {
                 gil.release(mustRelease);
@@ -382,30 +544,56 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         }
     }
 
-    public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
-        return new GetAttrWrapper(getAttrMethod);
+    public static GetAttrWrapper createGetAttrWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new GetAttrWrapper(method);
+    }
+
+    public static UnaryFuncWrapper createUnaryFuncWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new UnaryFuncWrapper(method);
+    }
+
+    public static BinaryFuncWrapper createBinaryFuncWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new BinaryFuncWrapper(method);
     }
 
     public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
+        assert !(setAttrMethod instanceof PNone) && !(setAttrMethod instanceof PNotImplemented);
         return new SetAttrWrapper(setAttrMethod);
     }
 
     public static InitWrapper createInitWrapper(Object setInitMethod) {
+        assert !(setInitMethod instanceof PNone) && !(setInitMethod instanceof PNotImplemented);
         return new InitWrapper(setInitMethod);
+    }
+
+    public static VarargWrapper createVarargWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new VarargWrapper(method);
+    }
+
+    public static VarargKeywordWrapper createVarargKeywordWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new VarargKeywordWrapper(method);
     }
 
     /**
      * Wraps CPython's {@code ternaryfunc} slots.
      */
-    public static TernaryFunctionWrapper createTernaryFunctionWrapper(Object setTernaryMethod) {
-        return new TernaryFunctionWrapper(setTernaryMethod);
+    public static TernaryFunctionWrapper createTernaryFunctionWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new TernaryFunctionWrapper(method);
     }
 
-    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {
-        return new SsizeargfuncWrapper(ssizeArgMethod, newRef);
+    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object method, boolean newRef) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new SsizeargfuncWrapper(method, newRef);
     }
 
-    public static LenfuncWrapper createLenfuncWrapper(Object lenfuncMethod) {
-        return new LenfuncWrapper(lenfuncMethod);
+    public static LenfuncWrapper createLenfuncWrapper(Object method) {
+        assert !(method instanceof PNone) && !(method instanceof PNotImplemented);
+        return new LenfuncWrapper(method);
     }
 }

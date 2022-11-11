@@ -12,9 +12,9 @@ Disassembly of <module>:
   3:4   -   3:9        18 JUMP_FORWARD                      36   (to 54)
   3:4   -   3:9        20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
   4:9   -   4:21       21 LOAD_NAME                         2    (RuntimeError)
-  4:2   -   4:8        23 MATCH_EXC_OR_JUMP                 30   (to 53)
-  4:2   -   4:8        27 UNWRAP_EXC
-  4:2   -   4:8        28 STORE_NAME                        3    (e)
+  4:2   -   4:36       23 MATCH_EXC_OR_JUMP                 30   (to 53)
+  4:2   -   4:36       27 UNWRAP_EXC
+  4:2   -   4:36       28 STORE_NAME                        3    (e)
   4:31  -   4:36       30 LOAD_NONE
   4:31  -   4:36       31 STORE_NAME                        3    (e)
   4:31  -   4:36       33 DELETE_NAME                       3    (e)

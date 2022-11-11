@@ -1,22 +1,35 @@
-Module[0, 81]
-    FunctionDef[0, 72]
+Input:
+------
+def outer ():
+    def inner():
+        print(x )
+
+    x = 12
+    inner()
+
+outer()
+
+Output:
+-------
+Module[1:0-8:7]
+    FunctionDef[1:0-6:11]
         Name:outer
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
-        FunctionDef[18, 48]
+        FunctionDef[2:4-3:17]
             Name:inner
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of inner ----
-            Call[39, 48]
-                Target: Name[39, 44] Value: "print"
+            Call[3:8-3:17]
+                Target: Name[3:8-3:13] Value: "print"
                 Args:
-                    Name[45, 46] Value: "x"
+                    Name[3:14-3:15] Value: "x"
             ---- End of inner function ----
-        Assign[54, 60]
-            LHS: Name[54, 55] Value: "x" Store
-            RHS: LONG[58, 60] Value: 12
-        Call[65, 72]
-            Target: Name[65, 70] Value: "inner"
+        Assign[5:4-5:10]
+            LHS: Name[5:4-5:5] Value: "x" Store
+            RHS: LONG[5:8-5:10] Value: 12
+        Call[6:4-6:11]
+            Target: Name[6:4-6:9] Value: "inner"
         ---- End of outer function ----
-    Call[74, 81]
-        Target: Name[74, 79] Value: "outer"
+    Call[8:0-8:7]
+        Target: Name[8:0-8:5] Value: "outer"

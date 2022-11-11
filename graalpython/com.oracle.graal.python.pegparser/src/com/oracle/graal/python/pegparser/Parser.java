@@ -46,9 +46,11 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.*;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 @SuppressWarnings({"all", "cast"})
@@ -613,12 +615,12 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_276_ID = 1496;
     private static final int _TMP_277_ID = 1497;
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule) {
-        super(tokenizer, factory, fexprParser, errorCb, startRule);
+    public Parser(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);
     }
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule) {
-        super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule);
+    public Parser(String source, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {
+        super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);
     }
 
     // file: statements? $
@@ -650,7 +652,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = factory.createModule(a, startToken.sourceRange.withEnd(endToken.sourceRange));
+                _res = makeModule(a, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FILE_ID, _res);
                 return (ModTy)_res;
             }
@@ -753,6 +755,7 @@ public final class Parser extends AbstractParser {
             _res = (ModTy)cache.getResult(_mark, FUNC_TYPE_ID);
             return (ModTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '(' type_expressions? ')' '->' expression NEWLINE* $
             if (errorIndicator) {
                 return null;
@@ -780,9 +783,11 @@ public final class Parser extends AbstractParser {
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
             {
-                // TODO: node.action: _PyAST_FunctionType ( a , b , p -> arena )
-                ruleNotImplemented("_PyAST_FunctionType ( a , b , p -> arena )");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createFunctionType(a, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, FUNC_TYPE_ID, _res);
                 return (ModTy)_res;
             }
@@ -1161,9 +1166,7 @@ public final class Parser extends AbstractParser {
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
             {
-                // TODO: node.action: _PyPegen_interactive_exit ( p )
-                ruleNotImplemented("_PyPegen_interactive_exit ( p )");
-                _res = null;
+                _res = interactiveExit();
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 return (StmtTy[])_res;
             }
@@ -1282,7 +1285,11 @@ public final class Parser extends AbstractParser {
                 (e = star_expressions_rule()) != null  // star_expressions
             )
             {
-                _res = factory.createExpression(e);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createExpression(e, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -2114,6 +2121,7 @@ public final class Parser extends AbstractParser {
             _res = (StmtTy)cache.getResult(_mark, YIELD_STMT_ID);
             return (StmtTy)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // yield_expr
             if (errorIndicator) {
                 return null;
@@ -2123,7 +2131,11 @@ public final class Parser extends AbstractParser {
                 (y = yield_expr_rule()) != null  // yield_expr
             )
             {
-                _res = factory.createExpression(y);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createExpression(y, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, YIELD_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3496,7 +3508,11 @@ public final class Parser extends AbstractParser {
                 (f = finally_block_rule()) != null  // finally_block
             )
             {
-                _res = factory.createTry(b, null, null, f, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createTry(b, null, null, f, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, TRY_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3526,7 +3542,11 @@ public final class Parser extends AbstractParser {
                 ((f = _tmp_64_rule()) != null || true)  // finally_block?
             )
             {
-                _res = factory.createTry(b, ex, el, f, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createTry(b, ex, el, f, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, TRY_STMT_ID, _res);
                 return (StmtTy)_res;
             }
@@ -3590,7 +3610,11 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                _res = factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
                 return (ExceptHandlerTy)_res;
             }
@@ -3611,7 +3635,11 @@ public final class Parser extends AbstractParser {
                 (b = block_rule()) != null  // block
             )
             {
-                _res = factory.createExceptHandler(null, null, b, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createExceptHandler(null, null, b, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
                 return (ExceptHandlerTy)_res;
             }
@@ -6784,7 +6812,11 @@ public final class Parser extends AbstractParser {
                 ((b = annotation_rule()) != null || true)  // annotation?
             )
             {
-                _res = factory.createArgument(((ExprTy.Name) a).id, b, null, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createArgument(((ExprTy.Name) a).id, b, null, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, PARAM_ID, _res);
                 return (ArgTy)_res;
             }
@@ -9952,7 +9984,11 @@ public final class Parser extends AbstractParser {
                 (b = name_token()) != null  // NAME
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Load, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -10023,7 +10059,11 @@ public final class Parser extends AbstractParser {
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
-                _res = factory.createSubscript(a, b, ExprContextTy.Load, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createSubscript(a, b, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11076,7 +11116,7 @@ public final class Parser extends AbstractParser {
                 if (endToken == null) {
                     return null;
                 }
-                _res = checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, false, startToken.sourceRange.withEnd(endToken.sourceRange)));
+                _res = checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, true, startToken.sourceRange.withEnd(endToken.sourceRange)));
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
                 return (ComprehensionTy)_res;
             }
@@ -11823,7 +11863,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Store, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -11849,7 +11893,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContextTy.Store, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createSubscript(a, b, ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12083,7 +12131,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Store, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12109,7 +12161,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContextTy.Store, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createSubscript(a, b, ExprContextTy.Store, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12188,7 +12244,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Del, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Del, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12214,7 +12274,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(false)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContextTy.Del, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createSubscript(a, b, ExprContextTy.Del, startToken.sourceRange.withEnd(endToken.sourceRange));
                 cache.putResult(_mark, DEL_TARGET_ID, _res);
                 return (ExprTy)_res;
             }
@@ -12397,7 +12461,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(true)
             )
             {
-                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Load, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -12422,7 +12490,11 @@ public final class Parser extends AbstractParser {
                 genLookahead_t_lookahead_rule(true)
             )
             {
-                _res = factory.createSubscript(a, b, ExprContextTy.Load, startToken.sourceRange);
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    return null;
+                }
+                _res = factory.createSubscript(a, b, ExprContextTy.Load, startToken.sourceRange.withEnd(endToken.sourceRange));
                 return (ExprTy)_res;
             }
             reset(_mark);

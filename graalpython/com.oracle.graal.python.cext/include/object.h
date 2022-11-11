@@ -300,6 +300,11 @@ Code can use PyType_HasFeature(type_ob, flag_value) to test whether the
 given type object has a specified feature.
 */
 
+#ifndef Py_LIMITED_API
+/* Set if instances of the type object are treated as sequences for pattern matching */
+#define Py_TPFLAGS_SEQUENCE (1 << 5)
+#endif
+
 /* Set if the type object is dynamically allocated */
 #define Py_TPFLAGS_HEAPTYPE (1UL << 9)
 
@@ -336,6 +341,11 @@ given type object has a specified feature.
 
 /* Type is abstract and cannot be instantiated */
 #define Py_TPFLAGS_IS_ABSTRACT (1UL << 20)
+
+// This undocumented flag gives certain built-ins their unique pattern-matching
+// behavior, which allows a single positional subpattern to match against the
+// subject itself (rather than a mapped attribute on it):
+#define _Py_TPFLAGS_MATCH_SELF (1UL << 22)
 
 /* These flags are used to determine if a type is a subclass. */
 #define Py_TPFLAGS_LONG_SUBCLASS        (1UL << 24)
@@ -766,6 +776,8 @@ PyAPI_FUNC(void) _PyTrash_thread_destroy_chain(void);
 #  include  "cpython/object.h"
 #  undef Py_CPYTHON_OBJECT_H
 #endif
+
+PyAPI_FUNC(void) _PyTruffle_DebugTrace(void);
 
 #ifdef __cplusplus
 }

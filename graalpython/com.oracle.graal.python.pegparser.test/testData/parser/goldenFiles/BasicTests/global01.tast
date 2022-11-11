@@ -1,29 +1,43 @@
-Module[0, 137]
-    Assign[0, 5]
-        LHS: Name[0, 1] Value: "c" Store
-        RHS: LONG[4, 5] Value: 0
-    FunctionDef[25, 109]
+Input:
+------
+c = 0 # global variable
+
+def add():
+    global c
+    c = c + 2 # increment by 2
+    print('Inside add():', c)
+
+add()
+print('In main:', c)
+
+Output:
+-------
+Module[1:0-9:20]
+    Assign[1:0-1:5]
+        LHS: Name[1:0-1:1] Value: "c" Store
+        RHS: LONG[1:4-1:5] Value: 0
+    FunctionDef[3:0-6:29]
         Name:add
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of add ----
-        Global[40, 48]: c 
-        Assign[53, 62]
-            LHS: Name[53, 54] Value: "c" Store
+        Global[4:4-4:12]: c 
+        Assign[5:4-5:13]
+            LHS: Name[5:4-5:5] Value: "c" Store
             RHS: 
-                BinOp[57, 62]
+                BinOp[5:8-5:13]
                     Op: Add
-                    LHS: Name[57, 58] Value: "c"
-                    RHS: LONG[61, 62] Value: 2
-        Call[84, 109]
-            Target: Name[84, 89] Value: "print"
+                    LHS: Name[5:8-5:9] Value: "c"
+                    RHS: LONG[5:12-5:13] Value: 2
+        Call[6:4-6:29]
+            Target: Name[6:4-6:9] Value: "print"
             Args:
-                RAW[90, 105] Value: "Inside add():"
-                Name[107, 108] Value: "c"
+                RAW[6:10-6:25] Value: "Inside add():"
+                Name[6:27-6:28] Value: "c"
         ---- End of add function ----
-    Call[111, 116]
-        Target: Name[111, 114] Value: "add"
-    Call[117, 137]
-        Target: Name[117, 122] Value: "print"
+    Call[8:0-8:5]
+        Target: Name[8:0-8:3] Value: "add"
+    Call[9:0-9:20]
+        Target: Name[9:0-9:5] Value: "print"
         Args:
-            RAW[123, 133] Value: "In main:"
-            Name[135, 136] Value: "c"
+            RAW[9:6-9:16] Value: "In main:"
+            Name[9:18-9:19] Value: "c"

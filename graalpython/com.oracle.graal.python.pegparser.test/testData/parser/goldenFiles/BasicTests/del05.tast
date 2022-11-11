@@ -1,6 +1,12 @@
-Module[0, 8]
-    Delete[0, 8]
+Input:
+------
+del a[i]
+
+Output:
+-------
+Module[1:0-1:8]
+    Delete[1:0-1:8]
         Targets:
-            Subscript[4, 5] Context: Del
-                Slice: Name[6, 7] Value: "i"
-                Value: Name[4, 5] Value: "a"
+            Subscript[1:4-1:8] Context: Del
+                Slice: Name[1:6-1:7] Value: "i"
+                Value: Name[1:4-1:5] Value: "a"

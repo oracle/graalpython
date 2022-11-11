@@ -40,6 +40,27 @@
  */
 #include "capi.h"
 
+
+typedef struct arrayobject {
+    PyObject_VAR_HEAD
+    char *ob_item;
+    Py_ssize_t allocated;
+    const struct arraydescr *ob_descr;
+    PyObject *weakreflist; /* List of weak references */
+    int ob_exports;  /* Number of exported buffers */
+} arrayobject;
+
+PyTypeObject Arraytype = PY_TRUFFLE_TYPE("array", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_SEQUENCE, sizeof(arrayobject));
+
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t index;
+    arrayobject *ao;
+    PyObject* (*getitem)(struct arrayobject *, Py_ssize_t);
+} arrayiterobject;
+
+PyTypeObject PyArrayIter_Type = PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
+
 void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
 void *PY_SYS;
@@ -175,6 +196,8 @@ declare_type(PyBytes_Type, bytes, PyBytesObject);
 declare_type(PyDict_Type, dict, PyDictObject);
 declare_type(PyTuple_Type, tuple, PyTupleObject);
 declare_type(PyList_Type, list, PyListObject);
+declare_type(Arraytype, array, arrayobject);
+declare_type(PyArrayIter_Type, arrayiterator, arrayiterobject);
 declare_type(PyComplex_Type, complex, PyComplexObject);
 declare_type(PyModule_Type, module, PyModuleObject);
 declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
@@ -257,6 +280,7 @@ REGISTER_BASIC_TYPE(uint8_t);
 REGISTER_BASIC_TYPE(Py_complex);
 REGISTER_BASIC_TYPE(char_t);
 REGISTER_BASIC_TYPE(PyObject);
+REGISTER_BASIC_TYPE(PyMethodDef);
 REGISTER_BASIC_TYPE(PyTypeObject);
 REGISTER_BASIC_TYPE(float_t);
 REGISTER_BASIC_TYPE(double_t);
@@ -313,8 +337,8 @@ static void initialize_globals() {
     _Py_FalseStructReference = (void*) UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
 
     // long zero, long one
-    _PyLong_Zero = (PyObject *)&_Py_FalseStruct;
-    _PyLong_One = (PyObject *)&_Py_TrueStruct;
+    _PyLong_Zero = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_Zero", SRC_CS));
+    _PyLong_One = (void*) UPCALL_CEXT_O(polyglot_from_string("PyLong_One", SRC_CS));
 }
 
 static void initialize_bufferprocs() {
@@ -384,92 +408,40 @@ PyObject* to_sulong(void *o) {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
 }
 
-/** to be used from Java code only; reads native 'ob_type' field */
-PyTypeObject* get_ob_type(PyObject* obj) {
-    return native_type_to_java(obj->ob_type);
+/** to be used from Java code only; reads native fields */
+#define TYPE_FIELD_GETTER(RECEIVER, NAME) \
+PyTypeObject* get_##NAME(RECEIVER obj) {                   \
+    return native_type_to_java(obj->NAME);          \
+}
+#define OBJECT_FIELD_GETTER(RECEIVER, NAME) \
+PyObject* get_##NAME(RECEIVER obj) {                   \
+    return native_to_java((PyObject*) obj->NAME);          \
+}
+#define PRIMITIVE_FIELD_GETTER(RECEIVER, RESULT, NAME) \
+RESULT get_##NAME(RECEIVER obj) {                      \
+    return obj->NAME;                                  \
 }
 
-/** to be used from Java code only; reads native 'ob_refcnt' field */
-Py_ssize_t get_ob_refcnt(PyObject* obj) {
-    return obj->ob_refcnt;
-}
+TYPE_FIELD_GETTER(PyObject*, ob_type)
+PRIMITIVE_FIELD_GETTER(PyObject*, Py_ssize_t, ob_refcnt)
+OBJECT_FIELD_GETTER(PyTypeObject*, tp_dict)
+OBJECT_FIELD_GETTER(PyTypeObject*, tp_base)
+OBJECT_FIELD_GETTER(PyTypeObject*, tp_bases)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, const char*, tp_name)
+OBJECT_FIELD_GETTER(PyTypeObject*, tp_mro)
+OBJECT_FIELD_GETTER(PyTypeObject*, tp_subclasses)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_vectorcall_offset)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_dictoffset)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_weaklistoffset)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_itemsize)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, Py_ssize_t, tp_basicsize)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, allocfunc, tp_alloc)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, destructor, tp_dealloc)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, freefunc, tp_free)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, PyBufferProcs*, tp_as_buffer)
+PRIMITIVE_FIELD_GETTER(PyTypeObject*, unsigned long, tp_flags)
 
-/** to be used from Java code only; reads native 'tp_dict' field */
-PyObject* get_tp_dict(PyTypeObject* obj) {
-    return native_to_java(obj->tp_dict);
-}
 
-/** to be used from Java code only; reads native 'tp_base' field */
-PyObject* get_tp_base(PyTypeObject* obj) {
-    return native_to_java((PyObject*) obj->tp_base);
-}
-
-/** to be used from Java code only; reads native 'tp_bases' field */
-PyObject* get_tp_bases(PyTypeObject* obj) {
-    return native_to_java(obj->tp_bases);
-}
-
-/** to be used from Java code only; reads native 'tp_name' field */
-const char* get_tp_name(PyTypeObject* obj) {
-    return obj->tp_name;
-}
-
-/** to be used from Java code only; reads native 'tp_mro' field */
-PyObject* get_tp_mro(PyTypeObject* obj) {
-    return native_to_java(obj->tp_mro);
-}
-
-/** to be used from Java code only; reads native 'tp_subclasses' field */
-PyObject* get_tp_subclasses(PyTypeObject* obj) {
-    return native_to_java(obj->tp_subclasses);
-}
-
-/** to be used from Java code only; reads native 'tp_dictoffset' field */
-Py_ssize_t get_tp_dictoffset(PyTypeObject* obj) {
-    return obj->tp_dictoffset;
-}
-
-/** to be used from Java code only; reads native 'tp_weaklistoffset' field */
-Py_ssize_t get_tp_weaklistoffset(PyTypeObject* obj) {
-    return obj->tp_weaklistoffset;
-}
-
-/** to be used from Java code only; reads native 'tp_itemsize' field */
-Py_ssize_t get_tp_itemsize(PyTypeObject* obj) {
-    return obj->tp_itemsize;
-}
-
-/** to be used from Java code only; reads native 'tp_basicsize' field */
-Py_ssize_t get_tp_basicsize(PyTypeObject* obj) {
-    return obj->tp_basicsize;
-}
-
-/** to be used from Java code only; reads native 'tp_alloc' field */
-allocfunc get_tp_alloc(PyTypeObject* obj) {
-    return obj->tp_alloc;
-}
-
-/** to be used from Java code only; reads native 'tp_dealloc' field */
-destructor get_tp_dealloc(PyTypeObject* obj) {
-    return obj->tp_dealloc;
-}
-
-/** to be used from Java code only; reads native 'tp_free' field */
-freefunc get_tp_free(PyTypeObject* obj) {
-    return obj->tp_free;
-}
-
-/** to be used from Java code only; reads native 'tp_as_buffer' field */
-PyBufferProcs* get_tp_as_buffer(PyTypeObject* obj) {
-    return obj->tp_as_buffer;
-}
-
-/** to be used from Java code only; reads native 'tp_flags' field */
-unsigned long get_tp_flags(PyTypeObject* obj) {
-    return obj->tp_flags;
-}
-
-POLYGLOT_DECLARE_TYPE(PyMethodDef);
 /**
  * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
  * returns a typed pointer that can be used as interop array.

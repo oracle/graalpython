@@ -435,6 +435,9 @@ public abstract class SpecialMethodNames {
     public static final String J___CLASS_GETITEM__ = "__class_getitem__";
     public static final TruffleString T___CLASS_GETITEM__ = tsLiteral(J___CLASS_GETITEM__);
 
+    public static final String J___MATCH_ARGS = "__match_args__";
+    public static final TruffleString T___MATCH_ARGS = tsLiteral(J___MATCH_ARGS);
+
     public static final String J_FILENO = "fileno";
     public static final TruffleString T_FILENO = tsLiteral(J_FILENO);
 

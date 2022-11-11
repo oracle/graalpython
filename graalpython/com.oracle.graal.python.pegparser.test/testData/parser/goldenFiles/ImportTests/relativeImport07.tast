@@ -1,3 +1,9 @@
-Module[0, 23]
-    ImportFrom[0, 23] Level 3 pkg
+Input:
+------
+from ...pkg import name
+
+Output:
+-------
+Module[1:0-1:23]
+    ImportFrom[1:0-1:23] Level 3 pkg
         name

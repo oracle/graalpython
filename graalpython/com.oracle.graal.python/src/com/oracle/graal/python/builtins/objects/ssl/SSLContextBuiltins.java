@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -82,6 +83,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -586,7 +588,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         @Cached("createCertDirKey()") PBytes certDirKey,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
 
-            PythonModule posix = getCore().lookupBuiltinModule(T_POSIX);
+            PythonModule posix;
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                posix = getCore().lookupBuiltinModule(T_NT);
+            } else {
+                posix = getCore().lookupBuiltinModule(T_POSIX);
+            }
             PDict environ = (PDict) getAttribute.executeObject(frame, posix);
             HashingStorage storage = environ.getDictStorage();
 

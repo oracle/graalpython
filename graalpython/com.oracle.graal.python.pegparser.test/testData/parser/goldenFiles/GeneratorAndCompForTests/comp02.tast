@@ -1,57 +1,67 @@
-Module[0, 203]
-    FunctionDef[0, 203]
+Input:
+------
+def mro(cls, abcs=None):
+    for base in abcs:
+        if not any(issubclass(b, base) for b in cls.__bases__):
+            abstract_bases.append(base)
+    other = [mro(base, abcs=abcs) for base in other]
+
+Output:
+-------
+Module[1:0-5:52]
+    FunctionDef[1:0-5:52]
         Name:mro
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 11] cls
-                ArgTy[13, 17] abcs
+                ArgTy[1:8-1:11] cls
+                ArgTy[1:13-1:17] abcs
             Defaults:
-                NONE[18, 22] Value: null
+                NONE[1:18-1:22] Value: null
         ---- Function body of mro ----
-        For[29, 150]
-            Target: Name[33, 37] Value: "base" Store
-            Iter: Name[41, 45] Value: "abcs"
+        For[2:4-4:39]
+            Target: Name[2:8-2:12] Value: "base" Store
+            Iter: Name[2:16-2:20] Value: "abcs"
             Body:
-                If[55, 150]
+                If[3:8-4:39]
                     Test: 
-                        UnaryOp[58, 109]
+                        UnaryOp[3:11-3:62]
                             Op: Not
-                            Value: Call[62, 109]
-                                Target: Name[62, 65] Value: "any"
+                            Value: Call[3:15-3:62]
+                                Target: Name[3:15-3:18] Value: "any"
                                 Args:
-                                    GeneratorExp[65, 109]
+                                    GeneratorExp[3:18-3:62]
                                         Element: 
-                                            Call[66, 85]
-                                                Target: Name[66, 76] Value: "issubclass"
+                                            Call[3:19-3:38]
+                                                Target: Name[3:19-3:29] Value: "issubclass"
                                                 Args:
-                                                    Name[77, 78] Value: "b"
-                                                    Name[80, 84] Value: "base"
-                                        ComprehensionTy[86, 108]
-                                            Target: Name[90, 91] Value: "b" Store
+                                                    Name[3:30-3:31] Value: "b"
+                                                    Name[3:33-3:37] Value: "base"
+                                        ComprehensionTy[3:39-3:61]
+                                            Target: Name[3:43-3:44] Value: "b" Store
                                             Iterator: 
-                                                Attribute[95, 98] 
-                                                    Receiver: Name[95, 98] Value: "cls"
+                                                Attribute[3:48-3:61] 
+                                                    Receiver: Name[3:48-3:51] Value: "cls"
                                                     Attr: __bases__
                     Then:
-                        Call[123, 150]
+                        Call[4:12-4:39]
                             Target: 
-                                Attribute[123, 137] 
-                                    Receiver: Name[123, 137] Value: "abstract_bases"
+                                Attribute[4:12-4:33] 
+                                    Receiver: Name[4:12-4:26] Value: "abstract_bases"
                                     Attr: append
                             Args:
-                                Name[145, 149] Value: "base"
-        Assign[155, 203]
-            LHS: Name[155, 160] Value: "other" Store
+                                Name[4:34-4:38] Value: "base"
+        Assign[5:4-5:52]
+            LHS: Name[5:4-5:9] Value: "other" Store
             RHS: 
-                ListComp[163, 203]
-                    Element: Call[164, 184]
-                        Target: Name[164, 167] Value: "mro"
+                ListComp[5:12-5:52]
+                    Element: Call[5:13-5:33]
+                        Target: Name[5:13-5:16] Value: "mro"
                         Args:
-                            Name[168, 172] Value: "base"
+                            Name[5:17-5:21] Value: "base"
                         KWArgs:
-                            KeywordTy[174, 183]
-                                abcs: Name[179, 183] Value: "abcs"
-                    ComprehensionTy[185, 202]
-                        Target: Name[189, 193] Value: "base" Store
-                        Iterator: Name[197, 202] Value: "other"
+                            KeywordTy[5:23-5:32]
+                                abcs: Name[5:28-5:32] Value: "abcs"
+                    ComprehensionTy[5:34-5:51]
+                        Target: Name[5:38-5:42] Value: "base" Store
+                        Iterator: Name[5:46-5:51] Value: "other"
         ---- End of mro function ----

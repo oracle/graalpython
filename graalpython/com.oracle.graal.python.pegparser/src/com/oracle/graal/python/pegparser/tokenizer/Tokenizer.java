@@ -16,6 +16,7 @@ import java.util.EnumSet;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.pegparser.ErrorCallback;
+import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 
 /**
  * This class is intentionally kept very close to CPython's tokenizer.c and tokenizer.h files. The
@@ -49,7 +50,8 @@ public class Tokenizer {
     public enum Flag {
         EXEC_INPUT,
         INTERACTIVE,
-        TYPE_COMMENT
+        TYPE_COMMENT,
+        ASYNC_HACKS
     }
 
     /**
@@ -116,9 +118,6 @@ public class Tokenizer {
     private final int[] parensLineNumberStack = new int[MAXLEVEL];
     /** {@code tok_state->parencolstack} */
     private final int[] parensColumnsStack = new int[MAXLEVEL];
-    /** {@code tok_state->filename} */
-    // TODO
-    @SuppressWarnings("unused") private final String filename = null;
     /** {@code tok_state->altindstack} */
     private final int[] altIndentationStack = new int[MAXINDENT];
     /** {@code tok_state->cont_line} */
@@ -130,6 +129,8 @@ public class Tokenizer {
     private int multiLineStartIndex = 0;
     /** {@code tok_state->type_comments} */
     private final boolean lookForTypeComments;
+    /** {@code tok_state->async_hacks} */
+    private final boolean asyncHacks;
     /** {@code tok_state->async_def} */
     private boolean insideAsyncDef = false;
     /** {@code tok_state->async_def_indent} */
@@ -139,15 +140,61 @@ public class Tokenizer {
     private boolean readNewline = false;
     /** {@code tok_state->interactive_underflow} */
     public boolean reportIncompleteSourceIfInteractive = true;
-
+    private final int srcStartLine;
+    private final int srcStartColumn;
     // error_ret
 
-    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags) {
+    private Tokenizer(ErrorCallback errorCallback, int[] codePointsInput, EnumSet<Flag> flags, SourceRange inputSourceRange) {
         this.errorCallback = errorCallback;
         this.codePointsInput = codePointsInput;
         this.execInput = flags.contains(Flag.EXEC_INPUT);
         this.interactive = flags.contains(Flag.INTERACTIVE);
         this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
+        this.asyncHacks = flags.contains(Flag.ASYNC_HACKS);
+        if (inputSourceRange != null) {
+            srcStartLine = inputSourceRange.startLine - 1;    // lines use 1-base indexing
+            srcStartColumn = inputSourceRange.startColumn - 1;    // account for extra '(' in the
+                                                                  // string
+        } else {
+            srcStartLine = 0;
+            srcStartColumn = 0;
+        }
+    }
+
+    /**
+     * Copy constructor used to look ahead if there is a 'def' after 'async'.
+     */
+    private Tokenizer(Tokenizer t) {
+        errorCallback = t.errorCallback;
+        execInput = t.execInput;
+        codePointsInput = t.codePointsInput;
+        nextCharIndex = t.nextCharIndex;
+        interactive = t.interactive;
+        tokenStart = t.tokenStart;
+        done = t.done;
+        currentIndentIndex = t.currentIndentIndex;
+        System.arraycopy(t.indentationStack, 0, indentationStack, 0, indentationStack.length);
+        atBeginningOfLine = t.atBeginningOfLine;
+        pendingIndents = t.pendingIndents;
+        currentLineNumber = t.currentLineNumber;
+        firstLineNumber = t.firstLineNumber;
+        parensNestingLevel = t.parensNestingLevel;
+        System.arraycopy(t.parensStack, 0, parensStack, 0, parensStack.length);
+        System.arraycopy(t.parensLineNumberStack, 0, parensLineNumberStack, 0, parensLineNumberStack.length);
+        System.arraycopy(t.parensColumnsStack, 0, parensColumnsStack, 0, parensColumnsStack.length);
+        System.arraycopy(t.altIndentationStack, 0, altIndentationStack, 0, altIndentationStack.length);
+        inContinuationLine = t.inContinuationLine;
+        lineStartIndex = t.lineStartIndex;
+        multiLineStartIndex = t.multiLineStartIndex;
+        lookForTypeComments = t.lookForTypeComments;
+        asyncHacks = t.asyncHacks;
+        insideAsyncDef = t.insideAsyncDef;
+        indentationOfAsyncDef = t.indentationOfAsyncDef;
+        asyncDefFollowedByNewline = t.asyncDefFollowedByNewline;
+        readNewline = t.readNewline;
+        reportIncompleteSourceIfInteractive = t.reportIncompleteSourceIfInteractive;
+        srcStartLine = t.srcStartLine;
+        srcStartColumn = t.srcStartColumn;
     }
 
     /**
@@ -315,7 +362,7 @@ public class Tokenizer {
         int sourceStart = getSourceStart(code);
         Charset fileEncoding = detectEncoding(sourceStart, code);
         int[] codePointsInput = charsToCodePoints(fileEncoding.decode(ByteBuffer.wrap(code, sourceStart, code.length)).array());
-        return new Tokenizer(errorCallback, codePointsInput, flags);
+        return new Tokenizer(errorCallback, codePointsInput, flags, null);
     }
 
     private static int[] charsToCodePoints(char[] chars) {
@@ -342,11 +389,11 @@ public class Tokenizer {
      * Equivalent of {@code PyTokenizer_FromUTF8}. No charset decoding is performed, BOM or coding
      * spec comment are ignored,
      */
-    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags) {
+    public static Tokenizer fromString(ErrorCallback errorCallback, String code, EnumSet<Flag> flags, SourceRange inputSourceRange) {
         if (code.length() > 0 && code.charAt(0) == '\\') {
             System.out.println("Creating tokenizer for *" + code + "*");
         }
-        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags);
+        return new Tokenizer(errorCallback, charsToCodePoints(code.toCharArray()), flags, inputSourceRange);
     }
 
     // PyTokenizer_FromFile
@@ -444,9 +491,8 @@ public class Tokenizer {
         return createToken(Token.Kind.ERRORTOKEN);
     }
 
-    // TODO: parser_warn
-    private void parserWarn(@SuppressWarnings("unused") String warning) {
-        // TODO
+    private void parserWarn(String warning) {
+        errorCallback.onWarning(WarningType.Deprecation, getCurrentTokenRange(false), warning);
     }
 
     /**
@@ -471,10 +517,10 @@ public class Tokenizer {
     private Token verifyEndOfNumber(int c, String kind) {
         /*
          * Emit a deprecation warning only if the numeric literal is immediately followed by one of
-         * keywords which can occurr after a numeric literal in valid code: "and", "else", "for",
+         * keywords which can occur after a numeric literal in valid code: "and", "else", "for",
          * "if", "in", "is" and "or". It allows to gradually deprecate existing valid code without
          * adding warning before error in most cases of invalid numeric literal (which would be
-         * confusiong and break existing tests). Raise a syntax error with slighly better message
+         * confusing and break existing tests). Raise a syntax error with slightly better message
          * than plain "invalid syntax" if the numeric literal is immediately followed by other
          * keyword or identifier.
          */
@@ -493,6 +539,8 @@ public class Tokenizer {
             oneBack();
         } else if (c == 'o') {
             r = lookahead('r');
+        } else if (c == 'n') {
+            r = lookahead('o', 't');
         }
         if (r) {
             oneBack();
@@ -862,14 +910,21 @@ public class Tokenizer {
                         if (nonascii && ((errMsg = verifyIdentifier(tokenString)) != null)) {
                             return createToken(Token.Kind.ERRORTOKEN, errMsg);
                         }
-                        // we never do the async hacks that cpython has as of 3.10
-                        if (tokenString.equals("async")) {
-                            return createToken(Token.Kind.ASYNC);
+                        if (!asyncHacks || insideAsyncDef) {
+                            if (tokenString.equals("async")) {
+                                return createToken(Token.Kind.ASYNC);
+                            }
+                            if (tokenString.equals("await")) {
+                                return createToken(Token.Kind.AWAIT);
+                            }
+                        } else if (tokenString.equals("async")) {
+                            Token t = new Tokenizer(this).next();
+                            if (t.type == Token.Kind.NAME && getTokenString(t).equals("def")) {
+                                insideAsyncDef = true;
+                                indentationOfAsyncDef = currentIndentIndex;
+                                return createToken(Token.Kind.ASYNC);
+                            }
                         }
-                        if (tokenString.equals("await")) {
-                            return createToken(Token.Kind.AWAIT);
-                        }
-
                         return createToken(Token.Kind.NAME);
                     }
 
@@ -1313,24 +1368,36 @@ public class Tokenizer {
 
     private Token createToken(int kind, Object extraData) {
         if (kind == Token.Kind.ENDMARKER) {
-            return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, currentLineNumber, -1, currentLineNumber, -1), extraData);
+            return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, new SourceRange(currentLineNumber, -1, currentLineNumber, -1), extraData);
         }
-        int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
-        int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
+        return new Token(kind, parensNestingLevel, tokenStart, nextCharIndex, getCurrentTokenRange(kind == Token.Kind.STRING), extraData);
+    }
+
+    private SourceRange getCurrentTokenRange(boolean multiLineString) {
+        int lineStart = multiLineString ? multiLineStartIndex : lineStartIndex;
+        int lineno = multiLineString ? firstLineNumber : currentLineNumber;
         int endLineno = currentLineNumber;
         int colOffset = (tokenStart >= lineStart) ? (tokenStart - lineStart) : -1;
         int endColOffset = (nextCharIndex >= lineStartIndex) ? (nextCharIndex - lineStartIndex) : -1;
-        return new Token(kind, parensNestingLevel, new SourceRange(tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset), extraData);
+        if (lineno == 1) {
+            colOffset += srcStartColumn;
+        }
+        if (endLineno == 1) {
+            endColOffset += srcStartColumn;
+        }
+        lineno += srcStartLine;
+        endLineno += srcStartLine;
+        return new SourceRange(lineno, colOffset, endLineno, endColOffset);
     }
 
     public String getTokenString(Token tok) {
         String s;
-        if (tok.sourceRange.startOffset >= codePointsInput.length) {
+        if (tok.startOffset >= codePointsInput.length) {
             return "";
-        } else if (tok.sourceRange.endOffset >= codePointsInput.length) {
-            s = new String(codePointsInput, tok.sourceRange.startOffset, codePointsInput.length - tok.sourceRange.startOffset);
+        } else if (tok.endOffset >= codePointsInput.length) {
+            s = new String(codePointsInput, tok.startOffset, codePointsInput.length - tok.startOffset);
         } else {
-            s = new String(codePointsInput, tok.sourceRange.startOffset, tok.sourceRange.endOffset - tok.sourceRange.startOffset);
+            s = new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
         }
         if (s.indexOf('\r') >= 0) {
             s = s.replaceAll("\r\n", "\n");
@@ -1343,7 +1410,7 @@ public class Tokenizer {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
         sb.append(token.typeName());
-        sb.append(" [").append(token.sourceRange.startOffset).append(", ").append(token.sourceRange.endOffset).append("]");
+        sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.sourceRange.startLine).append(", ").append(token.sourceRange.startColumn);
         sb.append(") (").append(token.sourceRange.endLine).append(", ").append(token.sourceRange.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
@@ -1351,7 +1418,7 @@ public class Tokenizer {
     }
 
     public SourceRange extendRangeToCurrentPosition(SourceRange rangeStart) {
-        return rangeStart.withEnd(nextCharIndex, currentLineNumber, nextCharIndex - lineStartIndex);
+        return rangeStart.withEnd(currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
     /**

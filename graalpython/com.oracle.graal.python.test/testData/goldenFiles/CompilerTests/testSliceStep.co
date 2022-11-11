@@ -4,5 +4,5 @@ Disassembly of <module>:
   1:4   -   1:5         4 LOAD_BYTE_O                       9
   1:6   -   1:7         6 LOAD_BYTE_O                       2
   1:2   -   1:7         8 BUILD_SLICE                       3
-  1:0   -   1:1        10 BINARY_SUBSCR
-  1:0   -   1:1        11 RETURN_VALUE
+  1:0   -   1:8        10 BINARY_SUBSCR
+  1:0   -   1:8        11 RETURN_VALUE

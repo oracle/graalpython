@@ -73,7 +73,7 @@ public final class PythonCextSliceBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "PySlice_New", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PySlice_New", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     public abstract static class PySliceNewNode extends PythonTernaryBuiltinNode {

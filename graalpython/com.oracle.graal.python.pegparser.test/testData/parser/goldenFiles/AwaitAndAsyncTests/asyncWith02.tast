@@ -1,16 +1,23 @@
-Module[0, 47]
-    AsyncFunctionDef[0, 47]
+Input:
+------
+async def f():
+ async with a as b, c as d: pass
+
+Output:
+-------
+Module[1:0-2:32]
+    AsyncFunctionDef[1:0-2:32]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
-        AsyncWith[16, 47]
+        AsyncWith[2:1-2:32]
             Items:
-                WithItemTy[27, 33]
-                    ContextExpr: Name[27, 28] Value: "a"
-                    OptionalVars: Name[32, 33] Value: "b" Store
-                WithItemTy[35, 41]
-                    ContextExpr: Name[35, 36] Value: "c"
-                    OptionalVars: Name[40, 41] Value: "d" Store
+                WithItemTy[2:12-2:18]
+                    ContextExpr: Name[2:12-2:13] Value: "a"
+                    OptionalVars: Name[2:17-2:18] Value: "b" Store
+                WithItemTy[2:20-2:26]
+                    ContextExpr: Name[2:20-2:21] Value: "c"
+                    OptionalVars: Name[2:25-2:26] Value: "d" Store
             Body:
-                Pass[43, 47]
+                Pass[2:28-2:32]
         ---- End of f function ----

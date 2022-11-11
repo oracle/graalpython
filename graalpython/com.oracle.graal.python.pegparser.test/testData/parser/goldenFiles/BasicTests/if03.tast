@@ -1,5 +1,11 @@
-Module[0, 19]
-    IfExp[0, 19]
-        Test: BOOLEAN[6, 11] Value: false
-        Then: LONG[0, 2] Value: 10
-        Else: LONG[17, 19] Value: 11
+Input:
+------
+10 if False else 11
+
+Output:
+-------
+Module[1:0-1:19]
+    IfExp[1:0-1:19]
+        Test: BOOLEAN[1:6-1:11] Value: false
+        Then: LONG[1:0-1:2] Value: 10
+        Else: LONG[1:17-1:19] Value: 11

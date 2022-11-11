@@ -128,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
 import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
+import com.oracle.graal.python.builtins.objects.itertools.PPairwise;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
@@ -578,7 +579,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PMethod createBuiltinMethod(Object self, PFunction function) {
-        return createMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
+        return createMethod(PythonBuiltinClassType.PBuiltinFunctionOrMethod, self, function);
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object cls, Object self, PBuiltinFunction function) {
@@ -586,7 +587,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
-        return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
+        return createBuiltinMethod(PythonBuiltinClassType.PBuiltinFunctionOrMethod, self, function);
     }
 
     public final PFunction createFunction(TruffleString name, PCode code, PythonObject globals, PCell[] closure) {
@@ -608,24 +609,38 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, int numDefaults, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, 0, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, flags, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, 0, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type, defaults, kw, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, flags, callTarget));
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
+                        callTarget));
+    }
+
+    public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
     }
 
     public final PBuiltinFunction createWrapperDescriptor(TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
                         callTarget));
+    }
+
+    public final PBuiltinFunction createBuiltinFunction(PBuiltinFunction function, Object klass) {
+        PythonBuiltinClassType type = (PythonBuiltinClassType) function.getInitialPythonClass();
+        return trace(new PBuiltinFunction(type, type.getInstanceShape(getLanguage()), function.getName(), klass,
+                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget()));
     }
 
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, TruffleString name, Object type) {
@@ -1067,8 +1082,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMap(cls, getShape(cls)));
     }
 
-    public final PZip createZip(Object cls, Object[] iterables) {
-        return trace(new PZip(cls, getShape(cls), iterables));
+    public final PZip createZip(Object cls, Object[] iterables, boolean strict) {
+        return trace(new PZip(cls, getShape(cls), iterables, strict));
     }
 
     public final PForeignArrayIterator createForeignArrayIterator(Object iterable) {
@@ -1221,6 +1236,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PIslice createIslice(Object cls) {
         return trace(new PIslice(cls, getShape(cls)));
+    }
+
+    public final PPairwise createPairwise(Object cls) {
+        return trace(new PPairwise(cls, getShape(cls)));
     }
 
     public final PPermutations createPermutations(Object cls) {

@@ -18,9 +18,9 @@ Disassembly of foo:
   4:6   -   4:11       18 JUMP_FORWARD                      39   (to 57)
   4:6   -   4:11       20 PUSH_EXC_INFO                                                           (exc handler 11 - 20; stack: 1)
   5:11  -   5:23       21 LOAD_GLOBAL                       1    (RuntimeError)
-  5:4   -   5:10       23 MATCH_EXC_OR_JUMP                 33   (to 56)
-  5:4   -   5:10       27 UNWRAP_EXC
-  5:4   -   5:10       28 STORE_FAST                        1    (e)
+  5:4   -   5:43       23 MATCH_EXC_OR_JUMP                 33   (to 56)
+  5:4   -   5:43       27 UNWRAP_EXC
+  5:4   -   5:43       28 STORE_FAST                        1    (e)
   5:42  -   5:43       30 LOAD_GLOBAL                       2    (a)
   5:35  -   5:43       32 LOAD_NONE
   5:35  -   5:43       33 STORE_FAST                        1    (e)

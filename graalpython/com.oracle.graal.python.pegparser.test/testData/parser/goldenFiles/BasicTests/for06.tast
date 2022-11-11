@@ -1,39 +1,57 @@
-Module[0, 125]
-    Assign[0, 5]
-        LHS: Name[0, 1] Value: "x" Store
-        RHS: LONG[4, 5] Value: 0
-    FunctionDef[6, 119]
+Input:
+------
+x = 0
+def fn():
+  for x in range(3):
+    x = 4
+    if x == 1:
+      print('jedna')
+      break
+    else:
+      print(x)
+
+fn()
+
+
+
+Output:
+-------
+Module[1:0-11:4]
+    Assign[1:0-1:5]
+        LHS: Name[1:0-1:1] Value: "x" Store
+        RHS: LONG[1:4-1:5] Value: 0
+    FunctionDef[2:0-9:14]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        For[18, 119]
-            Target: Name[22, 23] Value: "x" Store
+        For[3:2-9:14]
+            Target: Name[3:6-3:7] Value: "x" Store
             Iter: 
-                Call[27, 35]
-                    Target: Name[27, 32] Value: "range"
+                Call[3:11-3:19]
+                    Target: Name[3:11-3:16] Value: "range"
                     Args:
-                        LONG[33, 34] Value: 3
+                        LONG[3:17-3:18] Value: 3
             Body:
-                Assign[41, 46]
-                    LHS: Name[41, 42] Value: "x" Store
-                    RHS: LONG[45, 46] Value: 4
-                If[51, 119]
+                Assign[4:4-4:9]
+                    LHS: Name[4:4-4:5] Value: "x" Store
+                    RHS: LONG[4:8-4:9] Value: 4
+                If[5:4-9:14]
                     Test: 
-                        Compare[54, 60]
-                            LHS: Name[54, 55] Value: "x"
+                        Compare[5:7-5:13]
+                            LHS: Name[5:7-5:8] Value: "x"
                             Op: Eq
-                            RHS: LONG[59, 60] Value: 1
+                            RHS: LONG[5:12-5:13] Value: 1
                     Then:
-                        Call[68, 82]
-                            Target: Name[68, 73] Value: "print"
+                        Call[6:6-6:20]
+                            Target: Name[6:6-6:11] Value: "print"
                             Args:
-                                RAW[74, 81] Value: "jedna"
-                        Break[89, 94]
+                                RAW[6:12-6:19] Value: "jedna"
+                        Break[7:6-7:11]
                     Else:
-                        Call[111, 119]
-                            Target: Name[111, 116] Value: "print"
+                        Call[9:6-9:14]
+                            Target: Name[9:6-9:11] Value: "print"
                             Args:
-                                Name[117, 118] Value: "x"
+                                Name[9:12-9:13] Value: "x"
         ---- End of fn function ----
-    Call[121, 125]
-        Target: Name[121, 123] Value: "fn"
+    Call[11:0-11:4]
+        Target: Name[11:0-11:2] Value: "fn"

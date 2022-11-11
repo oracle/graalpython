@@ -25,6 +25,11 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -64,10 +69,6 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 /**
  * CPython wraps built-in types' slots so the C can take the direct arguments. The slot wrappers for
  * binary and ternay functions (wrap_unaryfunc, wrap_binaryfunc_r, wrap_ternaryfunc,
@@ -79,6 +80,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
  * execute method we want and cares about swapping arguments back if needed.
  */
 public final class BuiltinFunctionRootNode extends PRootNode {
+    public static final TruffleString T_DOLLAR_DECL_TYPE = tsLiteral("$decl_type");
     private static final TruffleString T_DOLLAR_CLS = tsLiteral("$cls");
     private static final TruffleString T_DOLLAR_SELF = tsLiteral("$self");
 
@@ -168,13 +170,20 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                             " vs " + builtin.maxNumOfPositionalArgs() + " - " + factory.toString();
         }
 
-        if (!declaresExplicitSelf) {
-            // if we don't take the explicit self, we still need to accept it by signature
-            maxNumPosArgs++;
-        } else if (constructsClass && maxNumPosArgs == 0) {
+        assert validateBuiltin(factory, builtin);
+
+        if (constructsClass && maxNumPosArgs == 0) {
             // we have this convention to always declare the cls argument without setting the num
             // args
             maxNumPosArgs = 1;
+        }
+        int posOnlyArgs = builtin.numOfPositionalOnlyArgs();
+        if (!declaresExplicitSelf) {
+            // if we don't take the explicit self, we still need to accept it by signature
+            maxNumPosArgs++;
+            if (posOnlyArgs > 0) {
+                posOnlyArgs++;
+            }
         }
 
         if (maxNumPosArgs > 0) {
@@ -182,8 +191,16 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
                 // " + factory);
                 parameterNames = new TruffleString[maxNumPosArgs];
-                parameterNames[0] = constructsClass ? T_DOLLAR_CLS : T_DOLLAR_SELF;
-                for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
+                int i = 0;
+                if (constructsClass) {
+                    if (!declaresExplicitSelf) {
+                        parameterNames[i++] = T_DOLLAR_DECL_TYPE;
+                    }
+                    parameterNames[i++] = T_DOLLAR_CLS;
+                } else {
+                    parameterNames[i++] = T_DOLLAR_SELF;
+                }
+                for (int p = 'a'; i < parameterNames.length; i++, p++) {
                     parameterNames[i] = TruffleString.fromCodePointUncached(p, TS_ENCODING);
                 }
             } else {
@@ -194,13 +211,45 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
                     parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
                     PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
-                    parameterNames[0] = constructsClass ? T_DOLLAR_CLS : T_DOLLAR_SELF;
+                    parameterNames[0] = constructsClass ? T_DOLLAR_DECL_TYPE : T_DOLLAR_SELF;
                 }
             }
         }
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
-        return new Signature(builtin, parameterNames);
+        return new Signature(posOnlyArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
+                        builtin.varArgsMarker(), parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
+    }
+
+    private static boolean validateBuiltin(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
+        Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
+        if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 1);
+        } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 2);
+        } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 3);
+        } else if (PythonQuaternaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            validateBuiltinForArity(builtin, nodeClass, 4);
+        } else if (PythonVarargsBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            assert builtin.takesVarArgs() : "PythonVararagsBuiltin subclass must take varargs, builtin " + nodeClass.getName();
+            assert builtin.takesVarKeywordArgs() : "PythonVararagsBuiltin subclass must take varkwargs, builtin " + nodeClass.getName();
+        }
+        return true;
+    }
+
+    private static void validateBuiltinForArity(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, int arity) {
+        int minNumPosArgs = builtin.minNumOfPositionalArgs();
+        int maxNumPosArgs = builtin.maxNumOfPositionalArgs();
+        if (builtin.parameterNames().length > 0) {
+            assert builtin.parameterNames().length == arity : "Mismatch in parameter list length and arity for n-ary builtin " + nodeClass.getName();
+            maxNumPosArgs = builtin.parameterNames().length;
+        } else if (maxNumPosArgs == -1) {
+            maxNumPosArgs = minNumPosArgs;
+        }
+        assert minNumPosArgs <= arity && minNumPosArgs <= maxNumPosArgs : "Invalid number of min arguments for a n-ary builtin " + nodeClass.getName();
+        assert maxNumPosArgs == arity : "Invalid number of max arguments for a n-ary builtin " + nodeClass.getName();
+        assert !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() : "Invalid varargs declaration for a n-ary builtin " + nodeClass.getName();
     }
 
     // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)

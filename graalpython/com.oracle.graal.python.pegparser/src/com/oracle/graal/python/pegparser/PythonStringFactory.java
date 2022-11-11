@@ -43,8 +43,8 @@ package com.oracle.graal.python.pegparser;
 /**
  * Used by the parser to construct run-time representation of string literals. In the graalpython
  * interpreter, strings are represented by {@code TruffleString}. This interface allows the use of
- * the parser (e.g. in tools such as an IDE) without the dependency on Truffle - the
- * {@link DefaultStringFactoryImpl} class is an implementation that uses {@link String} for the
+ * the parser (e.g. in tools such as an IDE) without the dependency on Truffle - see
+ * {@code DefaultStringFactoryImpl} in tests as an example that uses {@link String} for the
  * representation of python string literals. Note thought that this is not entirely correct since
  * {@link String} is not capable of distinguishing a SMP codepoint from a pair of corresponding
  * surrogates, which in Python are different: {@code '\U00010400' != '\uD801\uDC00'}.

@@ -1,50 +1,67 @@
-Module[0, 216]
-    FunctionDef[0, 149]
+Input:
+------
+def mydecorator(delta):
+    def wrap(fn):
+        def wrapped_f(*args):
+            return fn(*args) + delta
+        return wrapped_f
+    return wrap
+
+@mydecorator(3)
+def getNumber():
+    return 1
+
+print(getNumber())
+
+Output:
+-------
+Module[1:0-12:18]
+    FunctionDef[1:0-6:15]
         Name:mydecorator
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[16, 21] delta
+                ArgTy[1:16-1:21] delta
         ---- Function body of mydecorator ----
-        FunctionDef[28, 133]
+        FunctionDef[2:4-5:24]
             Name:wrap
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
                 Args:
-                    ArgTy[37, 39] fn
+                    ArgTy[2:13-2:15] fn
             ---- Function body of wrap ----
-            FunctionDef[50, 108]
+            FunctionDef[3:8-4:36]
                 Name:wrapped_f
-                ArgumentsTy[0, 0]
-                    VarArg: ArgTy[65, 69] args
+                ArgumentsTy[1:0-1:0]
+                    VarArg: ArgTy[3:23-3:27] args
                 ---- Function body of wrapped_f ----
-                Return[84, 108] 
-                    BinOp[91, 108]
+                Return[4:12-4:36] 
+                    BinOp[4:19-4:36]
                         Op: Add
                         LHS: 
-                            Call[91, 100]
-                                Target: Name[91, 93] Value: "fn"
+                            Call[4:19-4:28]
+                                Target: Name[4:19-4:21] Value: "fn"
                                 Args:
-                                    Starred[94, 99]
+                                    Starred[4:22-4:27]
                                          Context: Load
-                                         Expr: Name[95, 99] Value: "args"
-                        RHS: Name[103, 108] Value: "delta"
+                                         Expr: Name[4:23-4:27] Value: "args"
+                        RHS: Name[4:31-4:36] Value: "delta"
                 ---- End of wrapped_f function ----
-            Return[117, 133] Name[124, 133] Value: "wrapped_f"
+            Return[5:8-5:24] Name[5:15-5:24] Value: "wrapped_f"
             ---- End of wrap function ----
-        Return[138, 149] Name[145, 149] Value: "wrap"
+        Return[6:4-6:15] Name[6:11-6:15] Value: "wrap"
         ---- End of mydecorator function ----
-    FunctionDef[167, 196]
+    FunctionDef[9:0-10:12]
         Name:getNumber
         Decorators:
-        Call[152, 166]
-            Target: Name[152, 163] Value: "mydecorator"
+        Call[8:1-8:15]
+            Target: Name[8:1-8:12] Value: "mydecorator"
             Args:
-                LONG[164, 165] Value: 3
-        ArgumentsTy[0, 0]
+                LONG[8:13-8:14] Value: 3
+        ArgumentsTy[1:0-1:0]
         ---- Function body of getNumber ----
-        Return[188, 196] LONG[195, 196] Value: 1
+        Return[10:4-10:12] LONG[10:11-10:12] Value: 1
         ---- End of getNumber function ----
-    Call[198, 216]
-        Target: Name[198, 203] Value: "print"
+    Call[12:0-12:18]
+        Target: Name[12:0-12:5] Value: "print"
         Args:
-            Call[204, 215]
-                Target: Name[204, 213] Value: "getNumber"
+            Call[12:6-12:17]
+                Target: Name[12:6-12:15] Value: "getNumber"

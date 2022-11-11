@@ -1,10 +1,18 @@
-Module[0, 29]
-    FunctionDef[0, 29]
+Input:
+------
+def fn():
+  yield 1
+  yield 2
+
+Output:
+-------
+Module[1:0-3:9]
+    FunctionDef[1:0-3:9]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        Yield[12, 19]
-            LONG[18, 19] Value: 1
-        Yield[22, 29]
-            LONG[28, 29] Value: 2
+        Yield[2:2-2:9]
+            LONG[2:8-2:9] Value: 1
+        Yield[3:2-3:9]
+            LONG[3:8-3:9] Value: 2
         ---- End of fn function ----

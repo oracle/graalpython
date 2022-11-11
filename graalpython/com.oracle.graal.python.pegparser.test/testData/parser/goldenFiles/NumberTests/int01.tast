@@ -1,2 +1,8 @@
-Module[0, 1]
-    LONG[0, 1] Value: 1
+Input:
+------
+1
+
+Output:
+-------
+Module[1:0-1:1]
+    LONG[1:0-1:1] Value: 1

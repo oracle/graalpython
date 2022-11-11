@@ -928,6 +928,25 @@ class SysModuleTest(unittest.TestCase):
         out = out.decode('ascii', 'replace').rstrip()
         self.assertEqual(out, 'mbcs replace')
 
+    def test_orig_argv(self):
+        code = textwrap.dedent('''
+            import sys
+            print(sys.argv)
+            print(sys.orig_argv)
+        ''')
+        args = [sys.executable, '-I', '-X', 'utf8', '-c', code, 'arg']
+        proc = subprocess.run(args, check=True, capture_output=True, text=True)
+        expected = [
+            repr(['-c', 'arg']),  # sys.argv
+            repr(args),  # sys.orig_argv
+        ]
+        self.assertEqual(proc.stdout.rstrip().splitlines(), expected,
+                         proc)
+
+    def test_module_names(self):
+        self.assertIsInstance(sys.stdlib_module_names, frozenset)
+        for name in sys.stdlib_module_names:
+            self.assertIsInstance(name, str)
 
 @test.support.cpython_only
 class UnraisableHookTest(unittest.TestCase):

@@ -677,13 +677,13 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "difference_update", minNumOfPositionalArgs = 1, takesVarArgs = true)
+    @Builtin(name = "difference_update", minNumOfPositionalArgs = 1, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class DifferenceUpdateNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(other)")
         @SuppressWarnings("unused")
-        static PNone doSet(VirtualFrame frame, PSet self, PNone other) {
+        static PNone doNone(VirtualFrame frame, PSet self, PNone other) {
             return PNone.NONE;
         }
 

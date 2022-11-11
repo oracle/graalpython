@@ -1,31 +1,44 @@
-Module[0, 105]
-    FunctionDef[0, 105]
+Input:
+------
+def gen(x): 
+  while x: 
+    if x == 10: 
+      break 
+    x = x - 1 
+    yield x 
+  else: 
+    yield 100
+
+Output:
+-------
+Module[1:0-8:13]
+    FunctionDef[1:0-8:13]
         Name:gen
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 9] x
+                ArgTy[1:8-1:9] x
         ---- Function body of gen ----
-        While[15, 105]
-            Condition: Name[21, 22] Value: "x"
+        While[2:2-8:13]
+            Condition: Name[2:8-2:9] Value: "x"
             Body:
-                If[29, 53]
+                If[3:4-4:11]
                     Test: 
-                        Compare[32, 39]
-                            LHS: Name[32, 33] Value: "x"
+                        Compare[3:7-3:14]
+                            LHS: Name[3:7-3:8] Value: "x"
                             Op: Eq
-                            RHS: LONG[37, 39] Value: 10
+                            RHS: LONG[3:12-3:14] Value: 10
                     Then:
-                        Break[48, 53]
-                Assign[59, 68]
-                    LHS: Name[59, 60] Value: "x" Store
+                        Break[4:6-4:11]
+                Assign[5:4-5:13]
+                    LHS: Name[5:4-5:5] Value: "x" Store
                     RHS: 
-                        BinOp[63, 68]
+                        BinOp[5:8-5:13]
                             Op: Sub
-                            LHS: Name[63, 64] Value: "x"
-                            RHS: LONG[67, 68] Value: 1
-                Yield[74, 81]
-                    Name[80, 81] Value: "x"
+                            LHS: Name[5:8-5:9] Value: "x"
+                            RHS: LONG[5:12-5:13] Value: 1
+                Yield[6:4-6:11]
+                    Name[6:10-6:11] Value: "x"
             Else:
-                Yield[96, 105]
-                    LONG[102, 105] Value: 100
+                Yield[8:4-8:13]
+                    LONG[8:10-8:13] Value: 100
         ---- End of gen function ----

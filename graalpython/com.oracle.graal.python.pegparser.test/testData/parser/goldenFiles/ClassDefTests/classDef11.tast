@@ -1,43 +1,58 @@
-Module[0, 282]
-    FunctionDef[0, 282]
+Input:
+------
+def make_named_tuple_class(name, fields):
+    class named_tuple(tuple):
+        __name__ = name
+        n_sequence_fields = len(fields)
+        fields = fields
+        def __repr__(self):
+            sb = name
+            for f in fields:
+                pass
+    return named_tuple
+
+Output:
+-------
+Module[1:0-10:22]
+    FunctionDef[1:0-10:22]
         Name:make_named_tuple_class
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[27, 31] name
-                ArgTy[33, 39] fields
+                ArgTy[1:27-1:31] name
+                ArgTy[1:33-1:39] fields
         ---- Function body of make_named_tuple_class ----
-        ClassDef[46, 259] named_tuple
+        ClassDef[2:4-9:20] named_tuple
             Bases:
-                Name[64, 69] Value: "tuple"
+                Name[2:22-2:27] Value: "tuple"
             ---- Class body of named_tuple ----
-            Assign[80, 95]
-                LHS: Name[80, 88] Value: "__name__" Store
-                RHS: Name[91, 95] Value: "name"
-            Assign[104, 135]
-                LHS: Name[104, 121] Value: "n_sequence_fields" Store
+            Assign[3:8-3:23]
+                LHS: Name[3:8-3:16] Value: "__name__" Store
+                RHS: Name[3:19-3:23] Value: "name"
+            Assign[4:8-4:39]
+                LHS: Name[4:8-4:25] Value: "n_sequence_fields" Store
                 RHS: 
-                    Call[124, 135]
-                        Target: Name[124, 127] Value: "len"
+                    Call[4:28-4:39]
+                        Target: Name[4:28-4:31] Value: "len"
                         Args:
-                            Name[128, 134] Value: "fields"
-            Assign[144, 159]
-                LHS: Name[144, 150] Value: "fields" Store
-                RHS: Name[153, 159] Value: "fields"
-            FunctionDef[168, 259]
+                            Name[4:32-4:38] Value: "fields"
+            Assign[5:8-5:23]
+                LHS: Name[5:8-5:14] Value: "fields" Store
+                RHS: Name[5:17-5:23] Value: "fields"
+            FunctionDef[6:8-9:20]
                 Name:__repr__
-                ArgumentsTy[0, 0]
+                ArgumentsTy[1:0-1:0]
                     Args:
-                        ArgTy[181, 185] self
+                        ArgTy[6:21-6:25] self
                 ---- Function body of __repr__ ----
-                Assign[200, 209]
-                    LHS: Name[200, 202] Value: "sb" Store
-                    RHS: Name[205, 209] Value: "name"
-                For[222, 259]
-                    Target: Name[226, 227] Value: "f" Store
-                    Iter: Name[231, 237] Value: "fields"
+                Assign[7:12-7:21]
+                    LHS: Name[7:12-7:14] Value: "sb" Store
+                    RHS: Name[7:17-7:21] Value: "name"
+                For[8:12-9:20]
+                    Target: Name[8:16-8:17] Value: "f" Store
+                    Iter: Name[8:21-8:27] Value: "fields"
                     Body:
-                        Pass[255, 259]
+                        Pass[9:16-9:20]
                 ---- End of __repr__ function ----
             ---- End of named_tuple class ----
-        Return[264, 282] Name[271, 282] Value: "named_tuple"
+        Return[10:4-10:22] Name[10:11-10:22] Value: "named_tuple"
         ---- End of make_named_tuple_class function ----

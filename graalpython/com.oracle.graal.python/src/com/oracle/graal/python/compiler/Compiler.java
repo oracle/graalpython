@@ -67,8 +67,10 @@ import static com.oracle.graal.python.compiler.OpCodes.END_EXC_HANDLER;
 import static com.oracle.graal.python.compiler.OpCodes.EXIT_WITH;
 import static com.oracle.graal.python.compiler.OpCodes.FORMAT_VALUE;
 import static com.oracle.graal.python.compiler.OpCodes.FOR_ITER;
+import static com.oracle.graal.python.compiler.OpCodes.FROZENSET_FROM_LIST;
 import static com.oracle.graal.python.compiler.OpCodes.GET_AWAITABLE;
 import static com.oracle.graal.python.compiler.OpCodes.GET_ITER;
+import static com.oracle.graal.python.compiler.OpCodes.GET_LEN;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_FROM;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_NAME;
 import static com.oracle.graal.python.compiler.OpCodes.IMPORT_STAR;
@@ -103,7 +105,10 @@ import static com.oracle.graal.python.compiler.OpCodes.LOAD_STRING;
 import static com.oracle.graal.python.compiler.OpCodes.LOAD_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_CLASS;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_SEQUENCE;
+import static com.oracle.graal.python.compiler.OpCodes.NOP;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_TRUE;
 import static com.oracle.graal.python.compiler.OpCodes.POP_EXCEPT;
@@ -113,6 +118,7 @@ import static com.oracle.graal.python.compiler.OpCodes.PUSH_EXC_INFO;
 import static com.oracle.graal.python.compiler.OpCodes.RAISE_VARARGS;
 import static com.oracle.graal.python.compiler.OpCodes.RESUME_YIELD;
 import static com.oracle.graal.python.compiler.OpCodes.RETURN_VALUE;
+import static com.oracle.graal.python.compiler.OpCodes.ROT_N;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_THREE;
 import static com.oracle.graal.python.compiler.OpCodes.ROT_TWO;
 import static com.oracle.graal.python.compiler.OpCodes.SEND;
@@ -133,22 +139,26 @@ import static com.oracle.graal.python.compiler.OpCodes.UNWRAP_EXC;
 import static com.oracle.graal.python.compiler.OpCodes.YIELD_VALUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
-import com.oracle.graal.python.pegparser.FExprParser;
+import com.oracle.graal.python.pegparser.ErrorCallback.WarningType;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.Parser;
-import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.AliasTy;
@@ -158,12 +168,15 @@ import com.oracle.graal.python.pegparser.sst.BoolOpTy;
 import com.oracle.graal.python.pegparser.sst.CmpOpTy;
 import com.oracle.graal.python.pegparser.sst.ComprehensionTy;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ConstantValue.Kind;
 import com.oracle.graal.python.pegparser.sst.ExceptHandlerTy;
 import com.oracle.graal.python.pegparser.sst.ExprContextTy;
 import com.oracle.graal.python.pegparser.sst.ExprTy;
+import com.oracle.graal.python.pegparser.sst.ExprTy.Constant;
 import com.oracle.graal.python.pegparser.sst.KeywordTy;
 import com.oracle.graal.python.pegparser.sst.MatchCaseTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
+import com.oracle.graal.python.pegparser.sst.OperatorTy;
 import com.oracle.graal.python.pegparser.sst.PatternTy;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
@@ -172,6 +185,7 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -193,6 +207,13 @@ public class Compiler implements SSTreeVisitor<Void> {
     CompilationUnit unit;
     List<CompilationUnit> stack = new ArrayList<>();
     private boolean interactive;
+
+    private static class PatternContext {
+        ArrayList<String> stores;
+        boolean allowIrrefutable;
+        ArrayList<Block> failPop;
+        int onTop;
+    }
 
     public enum Flags {
     }
@@ -468,14 +489,14 @@ public class Compiler implements SSTreeVisitor<Void> {
          * 2^16 conditionals it most likely wouldn't compile anyway, so there's not much harm if
          * there's some false sharing of profiles.
          */
-        byte[] follwingArgs = new byte[2];
-        ByteArraySupport.littleEndian().putShort(follwingArgs, 0, (short) profileIndex);
-        addOp(code, target, follwingArgs);
+        byte[] followingArgs = new byte[2];
+        ByteArraySupport.littleEndian().putShort(followingArgs, 0, (short) profileIndex);
+        addOp(code, target, followingArgs);
     }
 
-    private void addOp(OpCodes code, Block target, byte[] follwingArgs) {
+    private void addOp(OpCodes code, Block target, byte[] followingArgs) {
         Block b = unit.currentBlock;
-        Instruction insn = new Instruction(code, 0, follwingArgs, target, unit.currentLocation);
+        Instruction insn = new Instruction(code, 0, followingArgs, target, unit.currentLocation);
         b.instr.add(insn);
         pushOp(insn);
     }
@@ -1092,6 +1113,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Call node) {
         SourceRange savedLocation = setLocation(node);
+        checkCaller(node.func);
         try {
             // n.b.: we do things completely different from python for calls
             OpCodes op = CALL_FUNCTION_VARARGS;
@@ -1184,6 +1206,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Compare node) {
         SourceRange savedLocation = setLocation(node);
+        checkCompare(node);
         try {
             node.left.accept(this);
             if (node.comparators.length == 1) {
@@ -1218,34 +1241,50 @@ public class Compiler implements SSTreeVisitor<Void> {
     public Void visit(ExprTy.Constant node) {
         SourceRange savedLocation = setLocation(node);
         try {
-            switch (node.value.kind) {
-                case ARBITRARY_PYTHON_OBJECT:
-                    // TODO GR-40165: the code object being compiled must not be shared
-                    return addOp(LOAD_CONST, addObject(unit.constants, node.value.getArbitraryPythonObject()));
-                case NONE:
-                    return addOp(LOAD_NONE);
-                case ELLIPSIS:
-                    return addOp(LOAD_ELLIPSIS);
-                case BOOLEAN:
-                    return addOp(node.value.getBoolean() ? LOAD_TRUE : LOAD_FALSE);
-                case LONG:
-                    return addLoadNumber(node.value.getLong());
-                case DOUBLE:
-                    return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits(node.value.getDouble())));
-                case COMPLEX:
-                    return addOp(LOAD_COMPLEX, addObject(unit.constants, node.value.getComplex()));
-                case BIGINTEGER:
-                    return addOp(LOAD_BIGINT, addObject(unit.constants, node.value.getBigInteger()));
-                case RAW:
-                    return addOp(LOAD_STRING, addObject(unit.constants, node.value.getRaw(TruffleString.class)));
-                case BYTES:
-                    return addOp(LOAD_BYTES, addObject(unit.constants, node.value.getBytes()));
-                default:
-                    throw new IllegalStateException("Unknown constant kind " + node.value.kind);
-            }
+            return addConstant(node.value);
         } finally {
             setLocation(savedLocation);
         }
+    }
+
+    private Void addConstant(ConstantValue value) {
+        switch (value.kind) {
+            case NONE:
+                return addOp(LOAD_NONE);
+            case ELLIPSIS:
+                return addOp(LOAD_ELLIPSIS);
+            case BOOLEAN:
+                return addOp(value.getBoolean() ? LOAD_TRUE : LOAD_FALSE);
+            case LONG:
+                return addLoadNumber(value.getLong());
+            case DOUBLE:
+                return addOp(LOAD_DOUBLE, addObject(unit.primitiveConstants, Double.doubleToRawLongBits(value.getDouble())));
+            case COMPLEX:
+                return addOp(LOAD_COMPLEX, addObject(unit.constants, value.getComplex()));
+            case BIGINTEGER:
+                return addOp(LOAD_BIGINT, addObject(unit.constants, value.getBigInteger()));
+            case RAW:
+                return addOp(LOAD_STRING, addObject(unit.constants, value.getRaw(TruffleString.class)));
+            case BYTES:
+                return addOp(LOAD_BYTES, addObject(unit.constants, value.getBytes()));
+            case TUPLE:
+                addConstantList(value.getTupleElements());
+                return addOp(TUPLE_FROM_LIST);
+            case FROZENSET:
+                addConstantList(value.getFrozensetElements());
+                return addOp(FROZENSET_FROM_LIST);
+            default:
+                throw new IllegalStateException("Unknown constant kind " + value.kind);
+        }
+    }
+
+    private void addConstantList(ConstantValue[] values) {
+        Collector collector = new Collector(CollectionBits.KIND_LIST, 0);
+        for (ConstantValue v : values) {
+            addConstant(v);
+            collector.appendItem();
+        }
+        collector.finishCollection();
     }
 
     private Void addLoadNumber(long value) {
@@ -1294,8 +1333,8 @@ public class Compiler implements SSTreeVisitor<Void> {
                     oparg = FormatOptions.FVC_NONE;
                     break;
                 default:
-                    // TODO GR-40162 raise SystemError
-                    throw new IllegalStateException("Unknown format conversion");
+                    errorCallback.onError(ErrorType.System, node.getSourceRange(), "Unrecognized conversion character %d", node.conversion);
+                    throw shouldNotReachHere("Error callback did not throw an exception");
             }
             if (node.formatSpec != null) {
                 node.formatSpec.accept(this);
@@ -1599,6 +1638,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(ExprTy.Subscript node) {
         SourceRange savedLocation = setLocation(node);
+        if (node.context == ExprContextTy.Load) {
+            checkSubscripter(node.value);
+            checkIndex(node.value, node.slice);
+        }
         try {
             node.value.accept(this);
             node.slice.accept(this);
@@ -1977,9 +2020,23 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    private static boolean isNonEmptyTuple(ExprTy expr) {
+        if (expr instanceof ExprTy.Tuple) {
+            ExprTy.Tuple tuple = (ExprTy.Tuple) expr;
+            return tuple.elements != null && tuple.elements.length > 0;
+        }
+        if (expr instanceof ExprTy.Constant) {
+            ConstantValue cv = ((ExprTy.Constant) expr).value;
+            return cv.kind == Kind.TUPLE && cv.getTupleElements().length > 0;
+        }
+        return false;
+    }
+
     @Override
     public Void visit(StmtTy.Assert node) {
-        // TODO warn when test is a tuple
+        if (isNonEmptyTuple(node.test)) {
+            warn(node, "assertion is always true, perhaps remove parentheses?");
+        }
         if (optimizationLevel > 0) {
             return null;
         }
@@ -2389,6 +2446,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     private void jumpIf(ExprTy test, Block next, boolean jumpIfTrue) {
         // TODO Optimize for various test types, such as short-circuit operators
         // See compiler_jump_if in CPython
+        if (test instanceof ExprTy.Compare) {
+            checkCompare((ExprTy.Compare) test);
+        }
         test.accept(this);
         if (jumpIfTrue) {
             addConditionalJump(POP_AND_JUMP_IF_TRUE, next);
@@ -2434,52 +2494,513 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Match node) {
         setLocation(node);
-        return emitNotImplemented("match");
+        PatternContext pc = new PatternContext();
+        node.subject.accept(this);
+        Block end = new Block();
+        assert node.cases.length > 0;
+        boolean hasDefault = node.cases.length > 1 && wildcardCheck(node.cases[node.cases.length - 1].pattern);
+        int lastIdx = hasDefault ? node.cases.length - 2 : node.cases.length - 1;
+        for (int i = 0; i <= lastIdx; i++) {
+            MatchCaseTy c = node.cases[i];
+            setLocation(c);
+
+            // Only copy the subject if we're *not* on the last case:
+            if (i < lastIdx) {
+                addOp(DUP_TOP);
+            }
+            pc.stores = new ArrayList<>();
+            // Irrefutable cases must be either guarded, last, or both:
+            pc.allowIrrefutable = c.guard != null || i == node.cases.length - 1;
+            pc.failPop = null;
+            pc.onTop = 0;
+
+            visit(c.pattern, pc);
+
+            // Store all of the captured names (they're on the stack).
+            for (String name : pc.stores) {
+                addNameOp(name, ExprContextTy.Store);
+            }
+            if (c.guard != null) {
+                ensureFailPop(i, pc);
+                jumpIf(c.guard, pc.failPop.get(0), false);
+            }
+
+            // Pop the subject off, we're done with it:
+            if (i < lastIdx) {
+                addOp(POP_TOP);
+            }
+            visitBody(c.body, false);
+            addOp(JUMP_FORWARD, end);
+            // If the pattern fails to match, we want the line number of the
+            // cleanup to be associated with the failed pattern, not the last line
+            // of the body
+            setLocation(c);
+            emitAndResetFailPop(pc);
+        }
+        if (hasDefault) {
+            MatchCaseTy c = node.cases[node.cases.length - 1];
+            setLocation(c);
+            if (node.cases.length == 1) {
+                // No matches. Done with the subject:
+                addOp(POP_TOP);
+            } else {
+                // Show line coverage for default case (it doesn't create bytecode)
+                addOp(NOP);
+            }
+            if (c.guard != null) {
+                jumpIf(c.guard, end, false);
+            }
+            visitBody(c.body, false);
+        }
+        unit.useNextBlock(end);
+        return null;
+    }
+
+    private boolean wildcardCheck(PatternTy pattern) {
+        return pattern instanceof PatternTy.MatchAs && ((PatternTy.MatchAs) pattern).name == null;
+    }
+
+    private boolean wildcardStarCheck(PatternTy pattern) {
+        return pattern instanceof PatternTy.MatchStar && ((PatternTy.MatchStar) pattern).name == null;
+    }
+
+    public Void visit(PatternTy pattern, PatternContext pc) {
+        if (pattern instanceof PatternTy.MatchAs) {
+            return visit((PatternTy.MatchAs) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchMapping) {
+            return visit((PatternTy.MatchMapping) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchSingleton) {
+            return visit((PatternTy.MatchSingleton) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchClass) {
+            return visit((PatternTy.MatchClass) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchOr) {
+            return visit((PatternTy.MatchOr) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchSequence) {
+            return visit((PatternTy.MatchSequence) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchStar) {
+            return visit((PatternTy.MatchStar) pattern, pc);
+        } else if (pattern instanceof PatternTy.MatchValue) {
+            return visit((PatternTy.MatchValue) pattern, pc);
+        } else {
+            throw new IllegalStateException("unknown PatternTy type " + pattern.getClass());
+        }
+    }
+
+    public Void visit(PatternTy.MatchStar node, PatternContext pc) {
+        patternHelperStoreName(node.name, pc);
+        return null;
+    }
+
+    public Void visit(PatternTy.MatchSequence node, PatternContext pc) {
+        int size = lengthOrZero(node.patterns);
+        int star = -1;
+        boolean onlyWildcard = true;
+        boolean starWildcard = false;
+
+        // Find a starred name, if it exists. There may be at most one:
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = node.patterns[i];
+            if (pattern instanceof PatternTy.MatchStar) {
+                if (star >= 0) {
+                    errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "multiple starred names in sequence pattern");
+                }
+                starWildcard = wildcardStarCheck(pattern);
+                onlyWildcard &= starWildcard;
+                star = i;
+                continue;
+            }
+            onlyWildcard &= wildcardCheck(pattern);
+        }
+
+        // We need to keep the subject on top during the sequence and length checks:
+        pc.onTop++;
+        addOp(MATCH_SEQUENCE);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        if (star < 0) {
+            // No star: len(subject) == size
+            addOp(GET_LEN);
+            addLoadNumber(size);
+            addCompareOp(CmpOpTy.Eq);
+            jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        } else if (size > 1) {
+            // Star: len(subject) >= size - 1
+            addOp(GET_LEN);
+            addLoadNumber(size - 1);
+            addCompareOp(CmpOpTy.GtE);
+            jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        }
+        // Whatever comes next should consume the subject:
+        pc.onTop--;
+        if (onlyWildcard) {
+            // Patterns like: [] / [_] / [_, _] / [*_] / [_, *_] / [_, _, *_] / etc.
+            addOp(POP_TOP);
+        } else if (starWildcard) {
+            patternHelperSequenceSubscr(node.patterns, star, pc);
+        } else {
+            patternHelperSequenceUnpack(node.patterns, star, pc);
+        }
+        return null;
+    }
+
+    // Like pattern_helper_sequence_unpack, but uses BINARY_SUBSCR instead of
+    // UNPACK_SEQUENCE / UNPACK_EX. This is more efficient for patterns with a
+    // starred wildcard like [first, *_] / [first, *_, last] / [*_, last] / etc.
+    private void patternHelperSequenceSubscr(PatternTy[] patterns, int star, PatternContext pc) {
+        // We need to keep the subject around for extracting elements:
+        pc.onTop++;
+        int size = lengthOrZero(patterns);
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = patterns[i];
+            if (wildcardCheck(pattern)) {
+                continue;
+            }
+            if (i == star) {
+                assert wildcardStarCheck(pattern);
+                continue;
+            }
+            addOp(DUP_TOP);
+            if (i < star) {
+                addLoadNumber(i);
+            } else {
+                // The subject may not support negative indexing! Compute a
+                // nonnegative index:
+                addOp(GET_LEN);
+                addLoadNumber(size - i);
+                addOp(BINARY_OP, BinaryOps.SUB.ordinal());
+            }
+            addOp(BINARY_SUBSCR);
+            patternSubpattern(pattern, pc);
+        }
+        // Pop the subject, we're done with it:
+        pc.onTop--;
+        addOp(POP_TOP);
+    }
+
+    // Like compiler_pattern, but turn off checks for irrefutability.
+    private void patternSubpattern(PatternTy pattern, PatternContext pc) {
+        boolean allowIrrefutable = pc.allowIrrefutable;
+        pc.allowIrrefutable = true;
+        visit(pattern, pc);
+        pc.allowIrrefutable = allowIrrefutable;
+    }
+
+    private void patternHelperSequenceUnpack(PatternTy[] patterns, int star, PatternContext pc) {
+        patternUnpackHelper(patterns);
+        int size = lengthOrZero(patterns);
+        // We've now got a bunch of new subjects on the stack. They need to remain
+        // there after each subpattern match:
+        pc.onTop += size;
+        for (int i = 0; i < size; i++) {
+            // One less item to keep track of each time we loop through:
+            pc.onTop--;
+            patternSubpattern(patterns[i], pc);
+        }
+    }
+
+    private void patternUnpackHelper(PatternTy[] patterns) {
+        int n = lengthOrZero(patterns);
+        boolean seenStar = false;
+        for (int i = 0; i < n; i++) {
+            PatternTy pattern = patterns[i];
+            if (pattern instanceof PatternTy.MatchStar) {
+                if (seenStar) {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple starred expressions in sequence pattern");
+                }
+                seenStar = true;
+                int countAfter = n - i - 1;
+                if (countAfter != (byte) countAfter) {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many expressions in star-unpacking sequence pattern");
+                }
+                addOp(UNPACK_EX, i, new byte[]{(byte) countAfter});
+            }
+        }
+        if (!seenStar) {
+            addOp(UNPACK_SEQUENCE, n);
+        }
+    }
+
+    private int lengthOrZero(Object[] p) {
+        return p == null ? 0 : p.length;
+    }
+
+    public Void visit(PatternTy.MatchAs node, PatternContext pc) {
+        if (node.pattern == null) {
+            if (!pc.allowIrrefutable) {
+                if (node.name != null) {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "name capture '%s' makes remaining patterns unreachable", node.name);
+                }
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "wildcard makes remaining patterns unreachable");
+            }
+            patternHelperStoreName(node.name, pc);
+            return null;
+        }
+        // Need to make a copy for (possibly) storing later:
+        pc.onTop++;
+        addOp(DUP_TOP);
+        visit(node.pattern, pc);
+        pc.onTop--;
+        patternHelperStoreName(node.name, pc);
+        return null;
+    }
+
+    private void patternHelperStoreName(String n, PatternContext pc) {
+        if (n == null) {
+            addOp(POP_TOP);
+            return;
+        }
+        checkForbiddenName(n, ExprContextTy.Store);
+        // Can't assign to the same name twice:
+        if (pc.stores.contains(n)) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name '%s' in pattern", n);
+        }
+        // Rotate this object underneath any items we need to preserve:
+        pc.stores.add(n);
+        addOp(ROT_N, pc.onTop + pc.stores.size());
+    }
+
+    public Void visit(PatternTy.MatchClass node, PatternContext pc) {
+        PatternTy[] patterns = node.patterns;
+        String[] kwdAttrs = node.kwdAttrs;
+        PatternTy[] kwdPatterns = node.kwdPatterns;
+        int nargs = lengthOrZero(patterns);
+        int nattrs = lengthOrZero(kwdAttrs);
+        int nKwdPatterns = lengthOrZero(kwdPatterns);
+        if (nattrs != nKwdPatterns) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "kwd_attrs (%d) / kwd_patterns (%d) length mismatch in class pattern", nattrs, nKwdPatterns);
+        }
+        if (Integer.MAX_VALUE < nargs + nattrs - 1) {
+            String id = node.cls instanceof ExprTy.Name ? ((ExprTy.Name) node.cls).id : node.cls.toString();
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many sub-patterns in class pattern %s", id);
+
+        }
+        if (nattrs > 0) {
+            validateKwdAttrs(kwdAttrs, kwdPatterns);
+            setLocation(node);
+        }
+
+        node.cls.accept(this);
+        TruffleString[] attrNames = new TruffleString[nattrs];
+        for (int i = 0; i < nattrs; i++) {
+            attrNames[i] = toTruffleStringUncached(kwdAttrs[i]);
+        }
+        addOp(LOAD_CONST, addObject(unit.constants, attrNames));
+        addOp(MATCH_CLASS, nargs);
+
+        // TOS is now a tuple of (nargs + nattrs) attributes. Preserve it:
+        pc.onTop++;
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        for (int i = 0; i < nargs + nattrs; i++) {
+            PatternTy pattern;
+            if (i < nargs) {
+                // Positional:
+                pattern = patterns[i];
+            } else {
+                // Keyword:
+                pattern = kwdPatterns[i - nargs];
+            }
+            wildcardCheck(pattern);
+            // Get the i-th attribute, and match it against the i-th pattern:
+            addOp(DUP_TOP);
+            addLoadNumber(i);
+            addOp(BINARY_SUBSCR);
+            patternSubpattern(pattern, pc);
+        }
+        // Pop the tuple of attributes:
+        pc.onTop--;
+        addOp(POP_TOP);
+        return null;
+    }
+
+    private void validateKwdAttrs(String[] attrs, PatternTy[] patterns) {
+        // Any errors will point to the pattern rather than the arg name as the
+        // parser is only supplying identifiers rather than Name or keyword nodes
+        int nattrs = lengthOrZero(attrs);
+        for (int i = 0; i < nattrs; i++) {
+            String attr = attrs[i];
+            setLocation(patterns[i]);
+            checkForbiddenName(attr, ExprContextTy.Store);
+            for (int j = i + 1; j < nattrs; j++) {
+                String other = attrs[j];
+                if (attr.equals(other)) {
+                    setLocation(patterns[i]);
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "attribute name repeated in class pattern: `%s`", attr);
+                }
+            }
+        }
+    }
+
+    public Void visit(PatternTy.MatchMapping node, PatternContext pc) {
+        return emitNotImplemented("match mapping");
+    }
+
+    public Void visit(PatternTy.MatchOr node, PatternContext pc) {
+        return emitNotImplemented("match or");
+    }
+
+    public Void visit(PatternTy.MatchSingleton node, PatternContext pc) {
+        setLocation(node);
+        switch (node.value.kind) {
+            case BOOLEAN:
+                if (node.value.getBoolean()) {
+                    addOp(LOAD_TRUE);
+                } else {
+                    addOp(LOAD_FALSE);
+                }
+                break;
+            case NONE:
+                addOp(LOAD_NONE);
+                break;
+            default:
+                throw new IllegalStateException("wrong MatchSingleton value kind " + node.value.kind);
+        }
+        addCompareOp(CmpOpTy.Is);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        return null;
+    }
+
+    public Void visit(PatternTy.MatchValue node, PatternContext pc) {
+        setLocation(node);
+        ExprTy value = node.value;
+        if (value instanceof ExprTy.Constant || value instanceof ExprTy.Attribute) {
+            node.value.accept(this);
+        } else if (value instanceof ExprTy.UnaryOp) {
+            patterMatchValueUnaryOp((ExprTy.UnaryOp) value);
+        } else if (value instanceof ExprTy.BinOp) {
+            try {
+                patternMatchValueBinOp((ExprTy.BinOp) value);
+            } catch (Throwable t) {
+                ExceptionUtils.printPythonLikeStackTrace();
+                throw t;
+            }
+        } else {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "patterns may only match literals and attribute lookups");
+        }
+        addCompareOp(CmpOpTy.Eq);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        return null;
+    }
+
+    private void patterMatchValueUnaryOp(ExprTy.UnaryOp unaryOp) {
+        assert unaryOp.op == UnaryOpTy.USub;
+        assert unaryOp.operand instanceof ExprTy.Constant : unaryOp.operand;
+        SourceRange savedLocation = setLocation(unaryOp);
+        try {
+            unaryOp.operand.accept(this);
+            addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
+        } finally {
+            setLocation(savedLocation);
+        }
+    }
+
+    private void patternMatchValueBinOp(ExprTy.BinOp binOp) {
+        assert (binOp.left instanceof ExprTy.UnaryOp || binOp.left instanceof ExprTy.Constant) && binOp.right instanceof ExprTy.Constant : binOp.left + " " + binOp.right;
+        assert binOp.op == OperatorTy.Sub || binOp.op == OperatorTy.Add;
+        SourceRange savedLocation = setLocation(binOp);
+        try {
+            if (binOp.left instanceof ExprTy.UnaryOp) {
+                patterMatchValueUnaryOp((ExprTy.UnaryOp) binOp.left);
+            } else {
+                binOp.left.accept(this);
+            }
+            binOp.right.accept(this);
+            switch (binOp.op) {
+                case Add:
+                    addOp(BINARY_OP, BinaryOps.ADD.ordinal());
+                    break;
+                case Sub:
+                    addOp(BINARY_OP, BinaryOps.SUB.ordinal());
+                    break;
+                default:
+                    throw new IllegalStateException("wrong constant BinOp operator " + binOp.op);
+            }
+        } finally {
+            setLocation(savedLocation);
+        }
+    }
+
+    private void jumpToFailPop(OpCodes op, PatternContext pc) {
+        // Pop any items on the top of the stack, plus any objects we were going to capture on
+        // success:
+        int pops = pc.onTop + (pc.stores == null ? 0 : pc.stores.size());
+        ensureFailPop(pops, pc);
+        addConditionalJump(op, pc.failPop.get(pops));
+        unit.useNextBlock(new Block());
+    }
+
+    private void ensureFailPop(int n, PatternContext pc) {
+        int size = n + 1;
+        if (pc.failPop != null && size <= pc.failPop.size()) {
+            return;
+        }
+        if (pc.failPop == null) {
+            pc.failPop = new ArrayList<>();
+        }
+        while (pc.failPop.size() < size) {
+            Block b = new Block();
+            pc.failPop.add(b);
+        }
+    }
+
+    private void emitAndResetFailPop(PatternContext pc) {
+        if (pc.failPop == null) {
+            unit.useNextBlock(new Block());
+            return;
+        }
+        Collections.reverse(pc.failPop);
+        Iterator<Block> it = pc.failPop.iterator();
+        while (it.hasNext()) {
+            Block b = it.next();
+            unit.useNextBlock(b);
+            it.remove();
+            if (it.hasNext()) {
+                addOp(POP_TOP);
+            }
+        }
     }
 
     @Override
     public Void visit(MatchCaseTy node) {
-        return emitNotImplemented("case");
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
-    public Void visit(PatternTy.MatchAs node) {
-        return emitNotImplemented("match as");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchClass node) {
-        return emitNotImplemented("match class");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchMapping node) {
-        return emitNotImplemented("match mapping");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchOr node) {
-        return emitNotImplemented("match or");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchSequence node) {
-        return emitNotImplemented("match sequence");
+    public Void visit(PatternTy.MatchValue node) {
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
     public Void visit(PatternTy.MatchSingleton node) {
-        return emitNotImplemented("match singleton");
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchAs node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchClass node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchMapping node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchOr node) {
+        throw new IllegalStateException("should not reach here");
+    }
+
+    @Override
+    public Void visit(PatternTy.MatchSequence node) {
+        throw new IllegalStateException("should not reach here");
     }
 
     @Override
     public Void visit(PatternTy.MatchStar node) {
         return emitNotImplemented("match star");
-    }
-
-    @Override
-    public Void visit(PatternTy.MatchValue node) {
-        return emitNotImplemented("match value");
     }
 
     @Override
@@ -2888,16 +3409,143 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
-        NodeFactory nodeFactory = new NodeFactory();
-        PythonStringFactoryImpl stringFactory = new PythonStringFactoryImpl();
-        FExprParser fexpParser = new FExprParser() {
-            @Override
-            public ExprTy parse(String code, SourceRange sourceRange) {
-                // TODO use sourceRange.startXXX to adjust the locations of the expression nodes
-                return (ExprTy) new Parser(new ParserTokenizer(errorCb, code, InputType.FSTRING, false), nodeFactory, this, stringFactory, errorCb, InputType.FSTRING).parse();
+    // Equivalent of compiler_warn()
+    private void warn(SSTNode node, String message, Object... arguments) {
+        errorCallback.onWarning(WarningType.Syntax, node.getSourceRange(), message, arguments);
+    }
+
+    private void checkCompare(ExprTy.Compare node) {
+        boolean left = checkIsArg(node.left);
+        int n = node.ops == null ? 0 : node.ops.length;
+        for (int i = 0; i < n; ++i) {
+            CmpOpTy op = node.ops[i];
+            boolean right = checkIsArg(node.comparators[i]);
+            if (op == CmpOpTy.Is || op == CmpOpTy.IsNot) {
+                if (!right || !left) {
+                    warn(node, op == CmpOpTy.Is ? "\"is\" with a literal. Did you mean \"==\"?" : "\"is not\" with a literal. Did you mean \"!=\"?");
+                }
             }
-        };
-        return new Parser(new ParserTokenizer(errorCb, src, inputType, interactiveTerminal), nodeFactory, fexpParser, stringFactory, errorCb, inputType);
+            left = right;
+        }
+    }
+
+    private static boolean checkIsArg(ExprTy e) {
+        if (e instanceof ExprTy.Constant) {
+            ConstantValue.Kind kind = ((Constant) e).value.kind;
+            return kind == Kind.NONE || kind == Kind.BOOLEAN || kind == Kind.ELLIPSIS;
+        }
+        return true;
+    }
+
+    private static PythonBuiltinClassType inferType(ExprTy e) {
+        if (e instanceof ExprTy.Tuple) {
+            return PythonBuiltinClassType.PTuple;
+        }
+        if (e instanceof ExprTy.List || e instanceof ExprTy.ListComp) {
+            return PythonBuiltinClassType.PList;
+        }
+        if (e instanceof ExprTy.Dict || e instanceof ExprTy.DictComp) {
+            return PythonBuiltinClassType.PDict;
+        }
+        if (e instanceof ExprTy.Set || e instanceof ExprTy.SetComp) {
+            return PythonBuiltinClassType.PSet;
+        }
+        if (e instanceof ExprTy.GeneratorExp) {
+            return PythonBuiltinClassType.PGenerator;
+        }
+        if (e instanceof ExprTy.Lambda) {
+            return PythonBuiltinClassType.PFunction;
+        }
+        if (e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
+            return PythonBuiltinClassType.PString;
+        }
+        if (e instanceof ExprTy.Constant) {
+            switch (((ExprTy.Constant) e).value.kind) {
+                case NONE:
+                    return PythonBuiltinClassType.PNone;
+                case ELLIPSIS:
+                    return PythonBuiltinClassType.PEllipsis;
+                case BOOLEAN:
+                    return PythonBuiltinClassType.Boolean;
+                case DOUBLE:
+                    return PythonBuiltinClassType.PFloat;
+                case COMPLEX:
+                    return PythonBuiltinClassType.PComplex;
+                case LONG:
+                case BIGINTEGER:
+                    return PythonBuiltinClassType.PInt;
+                case RAW:
+                    return PythonBuiltinClassType.PString;
+                case BYTES:
+                    return PythonBuiltinClassType.PBytes;
+                case TUPLE:
+                    return PythonBuiltinClassType.PTuple;
+                case FROZENSET:
+                    return PythonBuiltinClassType.PFrozenSet;
+                default:
+                    throw shouldNotReachHere("Invalid ConstantValue kind: " + ((ExprTy.Constant) e).value.kind);
+            }
+        }
+        return null;
+    }
+
+    private void checkCaller(ExprTy e) {
+        if (e instanceof ExprTy.Constant || e instanceof ExprTy.Tuple || e instanceof ExprTy.List || e instanceof ExprTy.ListComp || e instanceof ExprTy.Dict || e instanceof ExprTy.DictComp ||
+                        e instanceof ExprTy.Set || e instanceof ExprTy.SetComp || e instanceof ExprTy.GeneratorExp || e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue) {
+            warn(e, "'%s' object is not callable; perhaps you missed a comma?", inferType(e).getName());
+        }
+    }
+
+    private void checkSubscripter(ExprTy e) {
+        if (e instanceof ExprTy.Constant) {
+            switch (((ExprTy.Constant) e).value.kind) {
+                case NONE:
+                case ELLIPSIS:
+                case BOOLEAN:
+                case LONG:
+                case BIGINTEGER:
+                case DOUBLE:
+                case COMPLEX:
+                case FROZENSET:
+                    break;
+                default:
+                    return;
+            }
+        } else if (!(e instanceof ExprTy.Set || e instanceof ExprTy.SetComp || e instanceof ExprTy.GeneratorExp || e instanceof ExprTy.Lambda)) {
+            return;
+        }
+        warn(e, "'%s' object is not subscriptable; perhaps you missed a comma?", inferType(e).getName());
+    }
+
+    private void checkIndex(ExprTy e, ExprTy s) {
+        PythonBuiltinClassType indexType = inferType(s);
+        if (indexType == null || indexType == PythonBuiltinClassType.Boolean || indexType == PythonBuiltinClassType.PInt || indexType == PythonBuiltinClassType.PSlice) {
+            return;
+        }
+        if (e instanceof ExprTy.Constant) {
+            switch (((ExprTy.Constant) e).value.kind) {
+                case RAW:
+                case BYTES:
+                case TUPLE:
+                    break;
+                default:
+                    return;
+            }
+        } else if (!(e instanceof ExprTy.Tuple || e instanceof ExprTy.List || e instanceof ExprTy.ListComp || e instanceof ExprTy.JoinedStr || e instanceof ExprTy.FormattedValue)) {
+            return;
+        }
+        warn(e, "%s indices must be integers or slices, not %s; perhaps you missed a comma?", inferType(e).getName(), indexType.getName());
+    }
+
+    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, boolean interactiveTerminal) {
+        EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
+        if (interactiveTerminal) {
+            flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
+        }
+        return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
+    }
+
+    public static Parser createParser(String src, ErrorCallback errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {
+        return new Parser(src, new PythonStringFactoryImpl(), errorCb, inputType, flags, featureVersion);
     }
 }

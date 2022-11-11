@@ -2820,6 +2820,27 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "bit_count", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class BitCountNode extends PythonBuiltinNode {
+        @Specialization
+        static int bitCount(int i) {
+            return Integer.bitCount(Math.abs(i));
+        }
+
+        @Specialization
+        static int bitCount(long l) {
+            return Long.bitCount(Math.abs(l));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static int bitCount(PInt i) {
+            return i.getValue().abs().bitCount();
+        }
+    }
+
     @Builtin(name = "bit_length", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)

@@ -1,9 +1,17 @@
-Module[0, 42]
-    FunctionDef[0, 42]
+Input:
+------
+def fn():
+  "This is a doc"
+  yield "neco"
+
+Output:
+-------
+Module[1:0-3:14]
+    FunctionDef[1:0-3:14]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        RAW[12, 27] Value: "This is a doc"
-        Yield[30, 42]
-            RAW[36, 42] Value: "neco"
+        RAW[2:2-2:17] Value: "This is a doc"
+        Yield[3:2-3:14]
+            RAW[3:8-3:14] Value: "neco"
         ---- End of fn function ----

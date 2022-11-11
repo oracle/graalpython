@@ -1,2 +1,8 @@
-Module[0, 6]
-    RAW[0, 6] Value: "ahoj"
+Input:
+------
+'ahoj'
+
+Output:
+-------
+Module[1:0-1:6]
+    RAW[1:0-1:6] Value: "ahoj"

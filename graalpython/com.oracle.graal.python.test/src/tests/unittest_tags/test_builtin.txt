@@ -57,6 +57,12 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_bad_iterable
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_pickle
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_pickle_strict
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_pickle_strict_fail
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_strict
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_strict_error_handling
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_strict_error_handling_stopiteration
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_zip_strict_iterators
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_no_stdout_fileno
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty_non_ascii

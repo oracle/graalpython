@@ -1,14 +1,23 @@
-Module[0, 40]
-    Match[0, 40]
+Input:
+------
+match a, *b:
+    case None:
+        pass
+
+
+Output:
+-------
+Module[1:0-3:12]
+    Match[1:0-3:12]
         Subject: 
-            Tuple[6, 11]
+            Tuple[1:6-1:11]
                 Values:
-                    Name[6, 7] Value: "a"
-                    Starred[9, 11]
+                    Name[1:6-1:7] Value: "a"
+                    Starred[1:9-1:11]
                          Context: Load
-                         Expr: Name[10, 11] Value: "b"
+                         Expr: Name[1:10-1:11] Value: "b"
         Cases:
-            MatchCaseTy[17, 40]
-                Pattern: MatchSingleton[22, 26], value: null
+            MatchCaseTy[2:4-3:12]
+                Pattern: MatchSingleton[2:9-2:13], value: null
                 Body:
-                    Pass[36, 40]
+                    Pass[3:8-3:12]

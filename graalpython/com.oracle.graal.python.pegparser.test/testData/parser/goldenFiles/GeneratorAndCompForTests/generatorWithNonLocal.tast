@@ -1,56 +1,75 @@
-Module[0, 247]
-    FunctionDef[0, 247]
+Input:
+------
+def b_func():
+  exec_gen = False
+  def _inner_func():
+    def doit():
+      nonlocal exec_gen
+      exec_gen = True
+      return [1]
+    for A in doit():
+      for C in Y:
+        yield A
+  gen = _inner_func()
+  Y = [1, 2]
+  list(gen)
+  return gen
+
+Output:
+-------
+Module[1:0-14:12]
+    FunctionDef[1:0-14:12]
         Name:b_func
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of b_func ----
-        Assign[16, 32]
-            LHS: Name[16, 24] Value: "exec_gen" Store
-            RHS: BOOLEAN[27, 32] Value: false
-        FunctionDef[35, 187]
+        Assign[2:2-2:18]
+            LHS: Name[2:2-2:10] Value: "exec_gen" Store
+            RHS: BOOLEAN[2:13-2:18] Value: false
+        FunctionDef[3:2-10:15]
             Name:_inner_func
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of _inner_func ----
-            FunctionDef[58, 132]
+            FunctionDef[4:4-7:16]
                 Name:doit
-                ArgumentsTy[0, 0]
+                ArgumentsTy[1:0-1:0]
                 ---- Function body of doit ----
-                Nonlocal[76, 93]: exec_gen 
-                Assign[100, 115]
-                    LHS: Name[100, 108] Value: "exec_gen" Store
-                    RHS: BOOLEAN[111, 115] Value: true
-                Return[122, 132] 
-                    List[129, 132]
+                Nonlocal[5:6-5:23]: exec_gen 
+                Assign[6:6-6:21]
+                    LHS: Name[6:6-6:14] Value: "exec_gen" Store
+                    RHS: BOOLEAN[6:17-6:21] Value: true
+                Return[7:6-7:16] 
+                    List[7:13-7:16]
                         Values:
-                            LONG[130, 131] Value: 1
+                            LONG[7:14-7:15] Value: 1
                 ---- End of doit function ----
-            For[137, 187]
-                Target: Name[141, 142] Value: "A" Store
+            For[8:4-10:15]
+                Target: Name[8:8-8:9] Value: "A" Store
                 Iter: 
-                    Call[146, 152]
-                        Target: Name[146, 150] Value: "doit"
+                    Call[8:13-8:19]
+                        Target: Name[8:13-8:17] Value: "doit"
                 Body:
-                    For[160, 187]
-                        Target: Name[164, 165] Value: "C" Store
-                        Iter: Name[169, 170] Value: "Y"
+                    For[9:6-10:15]
+                        Target: Name[9:10-9:11] Value: "C" Store
+                        Iter: Name[9:15-9:16] Value: "Y"
                         Body:
-                            Yield[180, 187]
-                                Name[186, 187] Value: "A"
+                            Yield[10:8-10:15]
+                                Name[10:14-10:15] Value: "A"
             ---- End of _inner_func function ----
-        Assign[190, 209]
-            LHS: Name[190, 193] Value: "gen" Store
+        Assign[11:2-11:21]
+            LHS: Name[11:2-11:5] Value: "gen" Store
             RHS: 
-                Call[196, 209]
-                    Target: Name[196, 207] Value: "_inner_func"
-        Assign[212, 222]
-            LHS: Name[212, 213] Value: "Y" Store
+                Call[11:8-11:21]
+                    Target: Name[11:8-11:19] Value: "_inner_func"
+        Assign[12:2-12:12]
+            LHS: Name[12:2-12:3] Value: "Y" Store
             RHS: 
-                List[216, 222]
+                List[12:6-12:12]
                     Values:
-                        LONG[217, 218] Value: 1
-                        LONG[220, 221] Value: 2
-        Call[225, 234]
-            Target: Name[225, 229] Value: "list"
+                        LONG[12:7-12:8] Value: 1
+                        LONG[12:10-12:11] Value: 2
+        Call[13:2-13:11]
+            Target: Name[13:2-13:6] Value: "list"
             Args:
-                Name[230, 233] Value: "gen"
-        Return[237, 247] Name[244, 247] Value: "gen"
+                Name[13:7-13:10] Value: "gen"
+        Return[14:2-14:12] Name[14:9-14:12] Value: "gen"
         ---- End of b_func function ----

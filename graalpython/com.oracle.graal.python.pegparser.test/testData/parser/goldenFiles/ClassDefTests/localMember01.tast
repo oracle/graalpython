@@ -1,26 +1,39 @@
-Module[0, 148]
-    FunctionDef[0, 148]
+Input:
+------
+def fn():
+    a_local_var = "a local var"
+
+    def f():
+        class C(object):
+            a_local_var = a_local_var
+
+        return C.a_local_var
+
+Output:
+-------
+Module[1:0-8:28]
+    FunctionDef[1:0-8:28]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        Assign[14, 41]
-            LHS: Name[14, 25] Value: "a_local_var" Store
-            RHS: RAW[28, 41] Value: "a local var"
-        FunctionDef[47, 148]
+        Assign[2:4-2:31]
+            LHS: Name[2:4-2:15] Value: "a_local_var" Store
+            RHS: RAW[2:18-2:31] Value: "a local var"
+        FunctionDef[4:4-8:28]
             Name:f
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of f ----
-            ClassDef[64, 118] C
+            ClassDef[5:8-6:37] C
                 Bases:
-                    Name[72, 78] Value: "object"
+                    Name[5:16-5:22] Value: "object"
                 ---- Class body of C ----
-                Assign[93, 118]
-                    LHS: Name[93, 104] Value: "a_local_var" Store
-                    RHS: Name[107, 118] Value: "a_local_var"
+                Assign[6:12-6:37]
+                    LHS: Name[6:12-6:23] Value: "a_local_var" Store
+                    RHS: Name[6:26-6:37] Value: "a_local_var"
                 ---- End of C class ----
-            Return[128, 148] 
-                Attribute[135, 136] 
-                    Receiver: Name[135, 136] Value: "C"
+            Return[8:8-8:28] 
+                Attribute[8:15-8:28] 
+                    Receiver: Name[8:15-8:16] Value: "C"
                     Attr: a_local_var
             ---- End of f function ----
         ---- End of fn function ----

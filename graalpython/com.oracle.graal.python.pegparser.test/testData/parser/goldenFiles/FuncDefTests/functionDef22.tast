@@ -1,29 +1,42 @@
-Module[0, 89]
-    FunctionDef[0, 74]
+Input:
+------
+def test():
+  a = 1;
+  def fn1(): pass
+  def fn2(): pass
+  return locals()
+
+print(test())
+
+
+Output:
+-------
+Module[1:0-7:13]
+    FunctionDef[1:0-5:17]
         Name:test
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of test ----
-        Assign[14, 19]
-            LHS: Name[14, 15] Value: "a" Store
-            RHS: LONG[18, 19] Value: 1
-        FunctionDef[23, 38]
+        Assign[2:2-2:7]
+            LHS: Name[2:2-2:3] Value: "a" Store
+            RHS: LONG[2:6-2:7] Value: 1
+        FunctionDef[3:2-3:17]
             Name:fn1
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of fn1 ----
-            Pass[34, 38]
+            Pass[3:13-3:17]
             ---- End of fn1 function ----
-        FunctionDef[41, 56]
+        FunctionDef[4:2-4:17]
             Name:fn2
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of fn2 ----
-            Pass[52, 56]
+            Pass[4:13-4:17]
             ---- End of fn2 function ----
-        Return[59, 74] 
-            Call[66, 74]
-                Target: Name[66, 72] Value: "locals"
+        Return[5:2-5:17] 
+            Call[5:9-5:17]
+                Target: Name[5:9-5:15] Value: "locals"
         ---- End of test function ----
-    Call[76, 89]
-        Target: Name[76, 81] Value: "print"
+    Call[7:0-7:13]
+        Target: Name[7:0-7:5] Value: "print"
         Args:
-            Call[82, 88]
-                Target: Name[82, 86] Value: "test"
+            Call[7:6-7:12]
+                Target: Name[7:6-7:10] Value: "test"

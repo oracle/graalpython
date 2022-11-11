@@ -1,19 +1,26 @@
-Module[0, 59]
-    FunctionDef[0, 59]
+Input:
+------
+def avg(marks):
+    assert len(marks) != 0,"List is empty."
+
+Output:
+-------
+Module[1:0-2:43]
+    FunctionDef[1:0-2:43]
         Name:avg
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 13] marks
+                ArgTy[1:8-1:13] marks
         ---- Function body of avg ----
-        Assert[20, 59]
+        Assert[2:4-2:43]
             Test: 
-                Compare[27, 42]
+                Compare[2:11-2:26]
                     LHS: 
-                        Call[27, 37]
-                            Target: Name[27, 30] Value: "len"
+                        Call[2:11-2:21]
+                            Target: Name[2:11-2:14] Value: "len"
                             Args:
-                                Name[31, 36] Value: "marks"
+                                Name[2:15-2:20] Value: "marks"
                     Op: NotEq
-                    RHS: LONG[41, 42] Value: 0
-            Msg: RAW[43, 59] Value: "List is empty."
+                    RHS: LONG[2:25-2:26] Value: 0
+            Msg: RAW[2:27-2:43] Value: "List is empty."
         ---- End of avg function ----

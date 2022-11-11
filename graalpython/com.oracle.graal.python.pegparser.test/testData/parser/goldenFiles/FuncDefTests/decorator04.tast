@@ -1,14 +1,22 @@
-Module[0, 46]
-    FunctionDef[0, 46]
+Input:
+------
+def outer():
+  @decorator1
+  def inner(): pass
+
+Output:
+-------
+Module[1:0-3:19]
+    FunctionDef[1:0-3:19]
         Name:outer
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of outer ----
-        FunctionDef[29, 46]
+        FunctionDef[3:2-3:19]
             Name:inner
             Decorators:
-            Name[16, 26] Value: "decorator1"
-            ArgumentsTy[0, 0]
+            Name[2:3-2:13] Value: "decorator1"
+            ArgumentsTy[1:0-1:0]
             ---- Function body of inner ----
-            Pass[42, 46]
+            Pass[3:15-3:19]
             ---- End of inner function ----
         ---- End of outer function ----

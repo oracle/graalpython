@@ -1,24 +1,31 @@
-Module[0, 78]
-    FunctionDef[0, 78]
+Input:
+------
+def fn(files, dirs):
+  a = [join(dir, file) for dir in dirs for file in files]
+
+Output:
+-------
+Module[1:0-2:57]
+    FunctionDef[1:0-2:57]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[7, 12] files
-                ArgTy[14, 18] dirs
+                ArgTy[1:7-1:12] files
+                ArgTy[1:14-1:18] dirs
         ---- Function body of fn ----
-        Assign[23, 78]
-            LHS: Name[23, 24] Value: "a" Store
+        Assign[2:2-2:57]
+            LHS: Name[2:2-2:3] Value: "a" Store
             RHS: 
-                ListComp[27, 78]
-                    Element: Call[28, 43]
-                        Target: Name[28, 32] Value: "join"
+                ListComp[2:6-2:57]
+                    Element: Call[2:7-2:22]
+                        Target: Name[2:7-2:11] Value: "join"
                         Args:
-                            Name[33, 36] Value: "dir"
-                            Name[38, 42] Value: "file"
-                    ComprehensionTy[44, 59]
-                        Target: Name[48, 51] Value: "dir" Store
-                        Iterator: Name[55, 59] Value: "dirs"
-                    ComprehensionTy[60, 77]
-                        Target: Name[64, 68] Value: "file" Store
-                        Iterator: Name[72, 77] Value: "files"
+                            Name[2:12-2:15] Value: "dir"
+                            Name[2:17-2:21] Value: "file"
+                    ComprehensionTy[2:23-2:38]
+                        Target: Name[2:27-2:30] Value: "dir" Store
+                        Iterator: Name[2:34-2:38] Value: "dirs"
+                    ComprehensionTy[2:39-2:56]
+                        Target: Name[2:43-2:47] Value: "file" Store
+                        Iterator: Name[2:51-2:56] Value: "files"
         ---- End of fn function ----

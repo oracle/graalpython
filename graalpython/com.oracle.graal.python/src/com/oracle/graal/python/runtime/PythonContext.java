@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
@@ -42,6 +43,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -184,6 +186,8 @@ public final class PythonContext extends Python3Core {
     private static String getJniSoExt() {
         if (getPythonOS() == PLATFORM_DARWIN) {
             return ".dylib";
+        } else if (getPythonOS() == PLATFORM_WIN32) {
+            return ".dll";
         }
         return ".so";
     }
@@ -1289,7 +1293,15 @@ public final class PythonContext extends Python3Core {
             try {
                 secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
             } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+                if (getPythonOS() == PLATFORM_WIN32) {
+                    try {
+                        secureRandom = SecureRandom.getInstanceStrong();
+                    } catch (NoSuchAlgorithmException e2) {
+                        throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e2);
+                    }
+                } else {
+                    throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+                }
             }
         }
         return secureRandom;
@@ -2341,10 +2353,12 @@ public final class PythonContext extends Python3Core {
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleString toolchainId = toTruffleStringUncached(toolchain.getIdentifier());
 
-            // only use '.dylib' if we are on 'Darwin-native'
+            // only use '.dylib'/'.pyd' if we are on 'Darwin-native'/'Win32-native'
             TruffleString soExt;
             if (getPythonOS() == PLATFORM_DARWIN && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
                 soExt = T_EXT_DYLIB;
+            } else if (getPythonOS() == PLATFORM_WIN32 && T_NATIVE.equalsUncached(toolchainId, TS_ENCODING)) {
+                soExt = T_EXT_PYD;
             } else {
                 soExt = T_EXT_SO;
             }

@@ -396,10 +396,14 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     public static long longValueExact(BigInteger x) throws OverflowException {
-        if (!fitsIn(x, MIN_LONG, MAX_LONG)) {
+        if (!bigIntegerFitsInLong(x)) {
             throw OverflowException.INSTANCE;
         }
         return longValue(x);
+    }
+
+    public static boolean bigIntegerFitsInLong(BigInteger x) {
+        return fitsIn(x, MIN_LONG, MAX_LONG);
     }
 
     public PInt max(PInt val) {

@@ -25,14 +25,12 @@
 from __future__ import print_function
 
 import contextlib
-import datetime
+import fnmatch
 import getpass
 import glob
 import itertools
 import json
 import os
-import pathlib
-import platform
 import re
 import shlex
 import shutil
@@ -91,6 +89,7 @@ DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
+
 
 def _get_core_home():
     return os.path.join(SUITE.dir, "graalpython", "lib-graalpython")
@@ -235,12 +234,12 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
-    '''
+    """
     Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
 
     Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
     in the arguments array, then we append filter that includes all GraalPython junit tests.
-    '''
+    """
     args = []
     skip_leak_tests = False
     if "--regex" not in ars:
@@ -259,14 +258,15 @@ def punittest(ars):
                        "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
                        "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
 
-        if not all([# test leaks with Python code only
-                run_leak_launcher(common_args + ["--code", "pass", ]),
-                # test leaks when some C module code is involved
-                run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
-                # test leaks with shared engine Python code only
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
-                # test leaks with shared engine when some C module code is involved
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+        if not all([
+            # test leaks with Python code only
+            run_leak_launcher(common_args + ["--code", "pass", ]),
+            # test leaks when some C module code is involved
+            run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
+            # test leaks with shared engine Python code only
+            run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+            # test leaks with shared engine when some C module code is involved
+            run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
         ]):
             mx.abort(1)
 
@@ -295,28 +295,57 @@ def compare_unittests(args):
     mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/compare_unittests.py", "-v"] + args)
 
 
-def run_cpython_test(args):
-    interp_args = []
-    globs = []
-    test_args = []
-    for arg in args:
-        if arg.startswith("-"):
-            if not globs:
-                interp_args.append(arg)
-            else:
-                test_args.append(arg)
-        else:
-            globs.append(arg)
+def run_cpython_test(raw_args):
+    test_args = ['-v']
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('--gvm', dest='vm', action='store_const', const='gvm')
+    parser.add_argument('--svm', dest='vm', action='store_const', const='svm')
+    parser.add_argument('-k', dest='tags', nargs='*')
+    parser.add_argument('globs', nargs='+')
+    args, rest_args = parser.parse_known_args(raw_args)
     testfiles = []
-    for g in globs:
-        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
-    interp_args.insert(0, "--python.CAPI=%s" % _get_capi_home())
-    env = os.environ.copy()
-    delete_bad_env_keys(env)
-    with _dev_pythonhome_context():
-        mx.run([python_gvm()] + ['--vm.ea'] + interp_args + [
-            os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-        ] + test_args + testfiles, env=env)
+    for g in args.globs:
+        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", f"{g}.py"))
+        testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", g, "__init__.py"))
+    if not args.all:
+        test_tags = get_test_tags(args.globs)
+        if args.tags:
+            user_tags = [tag if '*' in tag else f'*{tag}*' for tag in args.tags]
+            test_tags = [tag for tag in test_tags if any(fnmatch.fnmatch(tag.replace('*', ''), user_tag) for user_tag in user_tags)]
+        if not test_tags:
+            sys.exit("No tags matched")
+    else:
+        test_tags = args.tags
+    for tag in test_tags or ():
+        test_args += ['-k', tag]
+
+    python_args = rest_args + [
+        os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
+    ] + test_args + testfiles
+    if args.vm:
+        env = os.environ.copy()
+        delete_bad_env_keys(env)
+        vm = python_gvm() if args.vm == 'gvm' else python_svm()
+        with _dev_pythonhome_context():
+            mx.run([vm, '--vm.ea', f'--python.CAPI={_get_capi_home()}'] + python_args, env=env)
+    else:
+        do_run_python(python_args)
+
+
+def get_test_tags(globs):
+    sys.path += ["graalpython/com.oracle.graal.python.test/src/tests", "graalpython/lib-python/3"]
+    os.environ['ENABLE_CPYTHON_TAGGED_UNITTESTS'] = 'true'
+    try:
+        import test_tagged_unittests
+        collected = []
+        for name, tags in test_tagged_unittests.collect_working_tests():
+            if any(fnmatch.fnmatch(name, g) for g in globs):
+                collected += tags
+        return collected
+    finally:
+        del os.environ['ENABLE_CPYTHON_TAGGED_UNITTESTS']
 
 
 def retag_unittests(args):
@@ -388,7 +417,8 @@ def _fetch_tags_for_platform(parsed_args, platform):
             out = mx.OutputCapture()
             mx.run(['file', tarfile], out=out)
             if 'HTML' in out.data:
-                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) to continue.' % (url, d), default='y'):
+                if not mx.ask_yes_no('Download failed! please download %s manually to %s and type (y) '
+                                     'to continue.' % (url, d), default='y'):
                     sys.exit(1)
             os.mkdir(platform)
             mx.run(['tar', 'xf', tarfile, '-C', platform])
@@ -483,16 +513,24 @@ def update_unittest_tags(args):
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py", "test_ssl_java_integration.py"]
 
+GINSTALL_GATE_PACKAGES = {
+    "numpy": "numpy",
+    "scipy": "scipy",
+    "scikit_learn": "sklearn",
+}
+
 
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
+    unittest_cpython = 'python-unittest-cpython'
     unittest_sandboxed = 'python-unittest-sandboxed'
     unittest_multi = 'python-unittest-multi-context'
     unittest_jython = 'python-unittest-jython'
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_posix = 'python-unittest-posix'
+    ginstall = 'python-ginstall'
     tagged = 'python-tagged-unittest'
     tagged_sandboxed = 'python-tagged-unittest-sandboxed'
     svmunit = 'python-svm-unittest'
@@ -504,6 +542,7 @@ class GraalPythonTags(object):
     svm = 'python-svm'
     native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
+    windows = 'python-windows-smoketests'
 
 
 def python_gate(args):
@@ -527,12 +566,16 @@ def python_gate(args):
     return mx.command_function("gate")(args)
 
 
-python_gate.__doc__ = 'Custom gates are %s' % ", ".join([getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")])
+python_gate.__doc__ = 'Custom gates are %s' % ", ".join([
+    getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")
+])
 
 
 def find_eclipse():
     pardir = os.path.abspath(os.path.join(SUITE.dir, ".."))
-    for f in [os.path.join(SUITE.dir, f) for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f) for f in os.listdir(pardir)]:
+    for f in [os.path.join(SUITE.dir, f)
+              for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f)
+                                                 for f in os.listdir(pardir)]:
         if os.path.basename(f) == "eclipse" and os.path.isdir(f):
             mx.log("Automatically choosing %s for Eclipse" % f)
             eclipse_exe = os.path.join(f, "eclipse")
@@ -543,7 +586,7 @@ def find_eclipse():
 
 @contextlib.contextmanager
 def set_env(**environ):
-    "Temporarily set the process environment variables"
+    """Temporarily set the process environment variables"""
     old_environ = dict(os.environ)
     os.environ.update(environ)
     try:
@@ -576,6 +619,8 @@ def _graalvm_home(*, envfile, extra_dy=""):
 def _join_bin(home, name):
     if sys.platform == "darwin" and not re.search("Contents/Home/?$", home):
         return os.path.join(home, "Contents", "Home", "bin", name)
+    elif sys.platform == "win32":
+        return os.path.join(home, "bin", f"{name}.cmd")
     else:
         return os.path.join(home, "bin", name)
 
@@ -592,6 +637,7 @@ def python_managed_gvm(_=None):
     launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
+
 
 def python_enterprise_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
@@ -727,35 +773,30 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         args += [_graalpytest_driver(), "-v"]
 
     if mx_gate.get_jacoco_agent_args():
-        if is_bash_launcher(python_binary):
-            agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
-            # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
-            # with the arguments
-            basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-            launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpy').resolve())
-            launcher_path_bak = launcher_path + ".bak"
-            shutil.copy(launcher_path, launcher_path_bak)
-            try:
-                patch_batch_launcher(launcher_path, agent_args)
-                # jacoco only dumps the data on exit, and when we run all our unittests
-                # at once it generates so much data we run out of heap space
-                for testfile in testfiles:
-                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env, cwd=cwd,
-                           out=out, err=err)
-            finally:
-                shutil.move(launcher_path_bak, launcher_path)
-        else:
-            # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
-            def graalvm_vm_arg(java_arg):
-                assert java_arg[0] == "-"
-                return "--vm." + java_arg[1:]
-            agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
+        env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+        # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
+        def graalvm_vm_arg(java_arg):
+            if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
+                with open(java_arg[1:], "r") as f:
+                    java_arg = f.read()
+            assert java_arg[0] == "-", java_arg
+            return shlex.quote(f'--vm.{java_arg[1:]}')
+        agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
-            # jacoco only dumps the data on exit, and when we run all our unittests
-            # at once it generates so much data we run out of heap space
-            for testfile in testfiles:
-                mx.run([python_binary, "--jvm", agent_args] + args + [testfile],
-                       nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+        # with the arguments. We also disable compilation, it hardly helps for this use case
+        original_launcher = os.path.abspath(os.path.realpath(python_binary))
+        bash_launcher = f'{original_launcher}.sh'
+        with open(bash_launcher, "w") as f:
+            f.write("#!/bin/sh\n")
+            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
+            f.write(f'exec {original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
+        os.chmod(bash_launcher, 0o775)
+
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        for testfile in testfiles:
+            mx.run([bash_launcher] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
     else:
         if javaAsserts:
             args += ['-ea']
@@ -765,6 +806,49 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         if lock:
             lock.release()
         return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+
+
+def get_venv_env(env_dir):
+    env = os.environ.copy()
+    path = os.environ.get("PATH", '')
+    env.update(**{
+        'VIRTUAL_ENV': env_dir,
+        'PATH': ":".join([os.path.join(env_dir, 'bin'), path]),
+    })
+    if 'PYTHONHOME' in env:
+        del env['PYTHONHOME']
+    return env
+
+
+def prepare_graalpy_venv(python_binary, packages=None, env_path=None, args=None):
+    if args is None:
+        args = []
+    if packages is None:
+        packages = []
+    if isinstance(packages, dict):
+        packages = list(packages.keys())
+    assert isinstance(packages, (tuple, set, list)), "packages arg must be a tuple, set or list"
+    env_dir = os.path.realpath(env_path if env_path else tempfile.mkdtemp())
+    mx.log("using graalpython venv: {}".format(env_dir))
+    mx.run([python_binary, "-m", "venv", env_dir], nonZeroIsFatal=True)
+    mx.log("installing the following packages: {}".format(", ".join(packages)))
+    for p in packages:
+        mx.run(["graalpy", "-m", "ginstall"] + args + ["install", p], nonZeroIsFatal=True, env=get_venv_env(env_dir))
+    return env_dir
+
+
+def run_with_venv(cmd, env_dir, **kwargs):
+    assert isinstance(cmd, list), "cmd argument must be a list"
+    kwargs['env'] = get_venv_env(env_dir)
+    mx.run(cmd, **kwargs)
+
+
+def run_ginstall(python_binary, args=None):
+    if args is None:
+        args = []
+    env_dir = prepare_graalpy_venv(python_binary, packages=GINSTALL_GATE_PACKAGES, args=args)
+    import_packages = '"{}"'.format(';'.join(["import {}".format(n) for p, n in GINSTALL_GATE_PACKAGES.items()]))
+    run_with_venv(["graalpy", "-c", import_packages], env_dir, nonZeroIsFatal=True)
 
 
 def is_bash_launcher(launcher_path):
@@ -868,19 +952,20 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
-                mx.log("Running tests with CPython")
-                exe = os.environ.get("PYTHON3_HOME", None)
-                if exe:
-                    exe = os.path.join(exe, "python")
-                else:
-                    exe = "python3"
-                env = os.environ.copy()
-                env['PYTHONHASHSEED'] = '0'
-                test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(test_args, nonZeroIsFatal=True, env=env)
             mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True)
+            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+
+    with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
+        if task:
+            exe = os.environ.get("PYTHON3_HOME", None)
+            if exe:
+                exe = os.path.join(exe, "python")
+            else:
+                exe = "python3"
+            env = os.environ.copy()
+            env['PYTHONHASHSEED'] = '0'
+            test_args = [exe, _graalpytest_driver(), "-v", "graalpython/com.oracle.graal.python.test/src/tests"]
+            mx.run(test_args, nonZeroIsFatal=True, env=env)
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
@@ -888,11 +973,15 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True)
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
             run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"], javaAsserts=True)
+
+    with Task('GraalPython ginstall', tasks, tags=[GraalPythonTags.ginstall]) as task:
+        if task:
+            run_ginstall(python_gvm(), args=["--quiet"])
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
@@ -909,7 +998,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            run_tagged_unittests(python_svm())
+            # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
+            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -944,6 +1034,16 @@ def graalpython_gate_runner(args, tasks):
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
             assert "Using preinitialized context." in out.data
+
+    with Task('GraalPy win32 smoketests', tasks, tags=[GraalPythonTags.windows]) as task:
+        if task:
+            punittest(["--no-leak-tests", "--regex", r'(com\.oracle\.truffle\.tck\.tests)|(graal\.python\.test\.(advance\.Benchmark|basic|builtin|decorator|generator|interop|util))'])
+            svm_image = python_svm()
+            out = mx.OutputCapture()
+            mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            success = "\n".join(["win32"])
+            if success not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
@@ -1421,7 +1521,7 @@ def _python_checkpatchfiles():
         checked = set()
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
-            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0"
+            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache"
         ]
         for line in content.split("\n"):
             if os.stat(line).st_size == 0:
@@ -1441,7 +1541,8 @@ def _python_checkpatchfiles():
                     data_license = data["info"]["license"]
                     if data_license not in allowed_licenses:
                         mx.abort(("The license for the original project %r is %r. We cannot include " +
-                                  "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
+                                  "a patch for it. Allowed licenses are: %r.") % (
+                            package_name, data_license, allowed_licenses))
                 except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:
@@ -1617,7 +1718,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
     ],
-    priority=5,
+    priority=6,  # Higher than 'GraalVM Python' to help defining the main
     stability="experimental",
 ))
 
@@ -1787,7 +1888,11 @@ def python_coverage(args):
 
     if args.jacoco:
         jacoco_args = [
-            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+            '--jacoco-omit-excluded',
+            '--jacoco-generic-paths',
+            '--jacoco-omit-src-gen',
+            '--jacocout', 'coverage',
+            '--jacoco-format', 'lcov',
         ]
         jacoco_gates = (
             GraalPythonTags.junit,
@@ -1796,59 +1901,53 @@ def python_coverage(args):
             GraalPythonTags.unittest_jython,
             GraalPythonTags.tagged,
         )
-        mx.run_mx(jacoco_args + [
+        mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
             '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
-            '--jacocout', 'html',
-        ])
-        if mx.get_env("SONAR_HOST_URL", None):
-            mx.run_mx(jacoco_args + [
-                'sonarqube-upload',
-                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
-                '-Dsonar.projectKey=com.oracle.graalvm.python',
-                '-Dsonar.projectName=GraalVM - Python',
-                '--exclude-generated',
-            ])
-        mx.run_mx(jacoco_args + [
-            'coverage-upload',
+        ] + jacoco_args)
+        mx.run_mx([
+            '--strict-compliance',
+            '--kill-with-sigquit',
+            'jacocoreport',
+            '--format', 'lcov',
+            '--omit-excluded',
+            'coverage',
+            '--generic-paths',
+            '--exclude-src-gen',
         ])
     if args.truffle:
         executable = python_gvm()
+        file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
         variants = [
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
-            {"tagged": True},
+            # {"tagged": True},
         ]
-        outputlcov = "coverage.lcov"
-        if os.path.exists(outputlcov):
-            os.unlink(outputlcov)
-        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
-        prefix = os.path.join(SUITE.dir, "graalpython")
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
-            for pattern in ["py"]:
-                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$UUID$.lcov" % (variant_str, pattern))
-                if os.path.exists(outfile):
-                    os.unlink(outfile)
-                extra_args = [
-                    "--experimental-options",
-                    "--coverage",
-                    "--coverage.TrackInternal",
-                    "--coverage.FilterFile=*/lib-*/*.%s" % pattern,
-                    "--coverage.Output=lcov",
-                    "--coverage.OutputFile=%s" % outfile,
-                ]
-                env = os.environ.copy()
-                env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
-                env['ENABLE_THREADED_GRAALPYTEST'] = "false"
-                if kwds.pop("tagged", False):
-                    run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
-                else:
-                    run_python_unittests(executable, env=env, javaAsserts=True, **kwds)
+            outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
+            if os.path.exists(outfile):
+                os.unlink(outfile)
+            extra_args = [
+                "--experimental-options",
+                "--llvm.lazyParsing=false",
+                "--coverage",
+                "--coverage.TrackInternal",
+                f"--coverage.FilterFile={file_filter}",
+                "--coverage.Output=lcov",
+                f"--coverage.OutputFile={outfile}",
+            ]
+            env = os.environ.copy()
+            env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+            env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+            if kwds.pop("tagged", False):
+                run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
+            else:
+                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
@@ -1870,7 +1969,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     compile(f.read(), fullname, 'exec')
                 except BaseException as e:
                     print('Could not compile', fullname, e)
-            """.format(os.path.join(prefix, "lib-python")))
+            """.format(os.path.join(SUITE.dir, "graalpython", "lib-python")))
             f.flush()
             lcov_file = 'zero.lcov'
             try:
@@ -1884,41 +1983,51 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     executable,
                     "-S",
                     "--experimental-options",
+                    "--llvm.lazyParsing=false",
                     "--python.PosixModuleBackend=java",
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=%s/*.py" % prefix,
+                    f"--coverage.FilterFile={file_filter}",
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=" + lcov_file,
                     f.name
                 ])
 
         home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
+        suite_dir = SUITE.dir
+        if suite_dir.endswith("/"):
+            suite_dir = suite_dir[:-1]
+        suite_parent = os.path.dirname(SUITE.dir)
+        if not suite_parent.endswith("/"):
+            suite_parent = f"{suite_parent}/"
         # merge all generated lcov files
+        outputlcov = "lcov.info"
+        if os.path.exists(outputlcov):
+            os.unlink(outputlcov)
+        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov") and os.path.getsize(f):
-                # Normalize lib-graalpython path
                 with open(f) as lcov_file:
                     lcov = lcov_file.read()
-                lcov = lcov.replace(home_launcher, prefix)
+                # Normalize graalpython paths to be relative to a graalpython checkout
+                lcov = lcov.replace(home_launcher, "graalpython/graalpython").replace(suite_dir, "graalpython").replace(suite_parent, "")
+                # link our generated include paths back to the sources
+                lcov = lcov.replace("graalpython/graalpython/include/", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
                 cmdargs += ["-a", f]
 
+        # actually run the merge command
         mx.run(cmdargs)
-        primary = mx.primary_suite()
-        info = primary.vc.parent_info(primary.dir)
-        rev = primary.vc.parent(primary.dir)
-        coverage_dir = '{}-truffle-coverage_{}_{}'.format(
-            primary.name,
-            datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
-            rev[:7],
-        )
-        mx.run(["/usr/bin/env", "genhtml", "--prefix", prefix, "--ignore-errors", "source", "-o", coverage_dir, outputlcov])
-        if args.truffle_upload_url:
-            if not args.truffle_upload_url.endswith("/"):
-                args.truffle_upload_url = args.truffle_upload_url + "/"
-            mx.run(["scp", "-r", coverage_dir, args.truffle_upload_url])
+
+    # upload coverage data
+    out = mx.OutputCapture()
+    mx.run_mx(['sversions', '--print-repositories', '--json'], out=out)
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as f:
+        f.write(out.data)
+        f.flush()
+        print(f"Associated data", out.data, sep="\n")
+        mx.run(['coverage-uploader.py', '--associated-repos', f.name])
 
 
 def python_build_watch(args):
@@ -2069,9 +2178,18 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
         env.update(self.subject.getBuildEnv())
 
-        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
+        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them,
+        # besides keeping custom sysroot, since our toolchain forwards to the system headers
         for var in ["CC", "CFLAGS", "LDFLAGS"]:
-            env.pop(var, None)
+            value = env.pop(var, None)
+            if value and "--sysroot" in value:
+                seen_sysroot = False
+                for element in shlex.split(value):
+                    if element == "--sysroot":
+                        seen_sysroot = True
+                    elif seen_sysroot:
+                        env[var] = f"--sysroot {element}"
+                        break
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
@@ -2458,7 +2576,7 @@ mx.update_commands(SUITE, {
     'python-unittests': [python3_unittests, ''],
     'python-compare-unittests': [compare_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
-    'python-run-cpython-unittest': [run_cpython_test, 'test-name'],
+    'python-run-cpython-unittest': [run_cpython_test, '[-k TEST_PATTERN] [--gvm] [--svm] [--all] TESTS'],
     'python-update-unittest-tags': [update_unittest_tags, ''],
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],

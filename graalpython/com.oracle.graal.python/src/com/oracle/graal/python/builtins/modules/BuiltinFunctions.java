@@ -99,6 +99,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import com.oracle.graal.python.PythonFileDetector;
@@ -235,6 +236,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.sst.ModTy;
@@ -861,7 +863,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected PCode createAndCheckCode(VirtualFrame frame, Object source) {
-            PCode code = getCompileNode().compile(frame, source, T_STRING_SOURCE, getMode(), -1);
+            PCode code = getCompileNode().compile(frame, source, T_STRING_SOURCE, getMode(), -1, -1);
             assertNoFreeVars(code);
             return code;
         }
@@ -1035,7 +1037,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final int PyCF_COMPILE_MASK = PyCF_ONLY_AST | PyCF_ALLOW_TOP_LEVEL_AWAIT | PyCF_TYPE_COMMENTS | PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT;
 
         private static final TruffleString T_SINGLE = tsLiteral("single");
-        private static final TruffleString T_FUNC_EVAL = tsLiteral("func_eval");
+        private static final TruffleString T_FUNC_TYPE = tsLiteral("func_type");
 
         /**
          * Decides whether this node should attempt to map the filename to a URI for the benefit of
@@ -1054,16 +1056,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             this.lstrip = false;
         }
 
-        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwOptimize) {
-            return (PCode) executeInternal(frame, source, filename, mode, 0, false, kwOptimize);
+        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwOptimize, int featureVersion) {
+            return (PCode) executeInternal(frame, source, filename, mode, 0, false, kwOptimize, featureVersion);
         }
 
-        protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwFlags, Object kwDontInherit, Object kwOptimize);
+        protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+                        Object featureVersion);
 
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        Object compile(TruffleString expression, TruffleString filename, TruffleString mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
+        Object compile(TruffleString expression, TruffleString filename, TruffleString mode, int kwFlags, Object kwDontInherit, int kwOptimize, int featureVersion) {
             checkFlags(kwFlags);
             checkOptimize(kwOptimize, kwOptimize);
             checkSource(expression);
@@ -1086,7 +1089,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 pm = ParserMode.Eval;
             } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
                 pm = ParserMode.Statement;
-            } else if (mode.equalsUncached(T_FUNC_EVAL, TS_ENCODING)) {
+            } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
                 if ((kwFlags & PyCF_ONLY_AST) == 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
                 }
@@ -1124,7 +1127,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                 RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, false);
+
+                EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
+                if ((kwFlags & PyCF_TYPE_COMMENTS) != 0) {
+                    flags.add(AbstractParser.Flags.TYPE_COMMENTS);
+                }
+                if (featureVersion < 0) {
+                    featureVersion = PythonLanguage.MINOR;
+                }
+                if (featureVersion < 7) {
+                    flags.add(AbstractParser.Flags.ASYNC_HACKS);
+                }
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, flags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 errorCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
@@ -1155,7 +1169,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        Object generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+        Object generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize, Object kwFeatureVersion,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToTruffleStringNode castStr,
@@ -1210,16 +1224,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 checkOptimize(optimize, kwOptimize);
             }
+            int featureVersion = -1;
+            if (kwFeatureVersion != PNone.NO_VALUE) {
+                try {
+                    featureVersion = castInt.execute(kwFeatureVersion);
+                } catch (CannotCastException e) {
+                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
+                }
+            }
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
-                // TODO _PyAST_Validate
                 Source source = PythonUtils.createFakeSource();
                 RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null);
                 return wrapRootCallTarget(rootCallTarget);
             }
             TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);
             checkSource(source);
-            return compile(source, filename, mode, flags, kwDontInherit, optimize);
+            return compile(source, filename, mode, flags, kwDontInherit, optimize, featureVersion);
         }
 
         private PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {
@@ -1667,7 +1688,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
                     throw raise(PythonErrorType.ValueError, ErrorMessages.ARG_IS_EMPTY_SEQ, getName());
                 } else {
-                    currentValue = defaultVal;
+                    return defaultVal;
                 }
             }
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);

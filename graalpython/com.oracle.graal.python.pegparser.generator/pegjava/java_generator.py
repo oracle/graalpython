@@ -189,7 +189,7 @@ ACTION_MAPPINGS = {
     'CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )': (1, 'checkVersion(5, "Async with statements are", factory.createAsyncWith(a, b, newTypeComment(tc), $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotation syntax is" , _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) )': (1, 'checkVersion(6, "Variable annotation syntax is", factory.createAnnAssignment(setExprContext(a, ExprContextTy.Store), b, (ExprTy) c, true, $RANGE))'),
     'CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )': (1, 'checkVersion(6, "Variable annotations syntax is", factory.createAnnAssignment(a, b, (ExprTy) c, false, $RANGE))'),
-    'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )': (1, 'checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, false, $RANGE))'),
+    'CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )': (1, 'checkVersion(6, "Async comprehensions are", factory.createComprehension(a, b, c, true, $RANGE))'),
     'RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , a -> end_lineno , - 1 , "\':\' expected after dictionary key" )' : (1, 'this.raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, a, "\':\' expected after dictionary key")'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.DEL_TARGETS,a)'),
     'RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )': (1, 'this.raiseSyntaxErrorInvalidTarget(TargetsType.FOR_TARGETS,a)'),
@@ -218,13 +218,14 @@ ACTION_MAPPINGS = {
     '_PyAST_Delete ( a , EXTRA )': (1, 'factory.createDelete(a, $RANGE)'),
     '_PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , a ) ) , EXTRA )': (1, 'factory.createDict(extractKeys(a), extractValues(a), $RANGE)'),
     '_PyAST_DictComp ( a -> key , a -> value , b , EXTRA )': (1, 'factory.createDictComprehension(a, b, $RANGE)'),
-    '_PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )': (1, 'factory.createExceptHandler(null, null, b, $LOC)'),
-    '_PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )': (1, 'factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, $LOC)'),
-    '_PyAST_Expr ( e , EXTRA )': (1, 'factory.createExpression(e)'),
-    '_PyAST_Expr ( y , EXTRA )': (1, 'factory.createExpression(y)'),
+    '_PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )': (1, 'factory.createExceptHandler(null, null, b, $RANGE)'),
+    '_PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )': (1, 'factory.createExceptHandler(e, t != null ? ((ExprTy.Name) t).id : null, b, $RANGE)'),
+    '_PyAST_Expr ( e , EXTRA )': (1, 'factory.createExpression(e, $RANGE)'),
+    '_PyAST_Expr ( y , EXTRA )': (1, 'factory.createExpression(y, $RANGE)'),
     '_PyAST_Expression ( a , p -> arena )': (1, 'factory.createExpressionModule(a, $RANGE)'),
     '_PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFor(t, ex, b, el, newTypeComment(tc), $RANGE)'),
     '_PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createFunctionDef(((ExprTy.Name) n).id, params == null ? factory.emptyArguments() : params, b, (ExprTy) a, newTypeComment((Token) tc), $RANGE)'),
+    '_PyAST_FunctionType ( a , b , p -> arena )': (1, 'factory.createFunctionType(a, b, $RANGE)'),
     '_PyAST_GeneratorExp ( a , b , EXTRA )': (1, 'factory.createGenerator(a, b, $RANGE)'),
     '_PyAST_Global ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )': (1, 'factory.createGlobal(extractNames(a), $RANGE)'),
     '_PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )': (2, 'factory.createIf(a, b, new StmtTy[] {c}, $RANGE)'),
@@ -247,8 +248,8 @@ ACTION_MAPPINGS = {
     '_PyAST_Slice ( a , b , c , EXTRA )': (1, 'factory.createSlice(a, b, c, $RANGE)'),
     '_PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA )': (1, 'factory.createStarred(this.setExprContext(a, ExprContextTy.Store), ExprContextTy.Store, $RANGE)'),
     '_PyAST_Starred ( a , Load , EXTRA )': (3, 'factory.createStarred(a, ExprContextTy.Load, $RANGE)'),
-    '_PyAST_Try ( b , NULL , NULL , f , EXTRA )': (1, 'factory.createTry(b, null, null, f, $LOC)'),
-    '_PyAST_Try ( b , ex , el , f , EXTRA )': (1, 'factory.createTry(b, ex, el, f, $LOC)'),
+    '_PyAST_Try ( b , NULL , NULL , f , EXTRA )': (1, 'factory.createTry(b, null, null, f, $RANGE)'),
+    '_PyAST_Try ( b , ex , el , f , EXTRA )': (1, 'factory.createTry(b, ex, el, f, $RANGE)'),
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )': (2, 'factory.createTuple(this.insertInFront(a, b), ExprContextTy.Load, $RANGE)'),
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )': (1, 'factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, $RANGE)'),
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )': (2, 'factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, $RANGE)'),
@@ -259,7 +260,7 @@ ACTION_MAPPINGS = {
     '_PyAST_YieldFrom ( a , EXTRA )': (1, 'factory.createYield(a, true, $RANGE)'),
     '_PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )': (2, 'factory.createAlias(((ExprTy.Name) a).id, b == null ? null : ((ExprTy.Name) b).id, $RANGE)'),
     '_PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA )': (1, 'factory.createArgument(((ExprTy.Name) a).id, null, null, $RANGE)'),
-    '_PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )': (1, 'factory.createArgument(((ExprTy.Name) a).id, b, null, $LOC)'),
+    '_PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )': (1, 'factory.createArgument(((ExprTy.Name) a).id, b, null, $RANGE)'),
     '_PyAST_comprehension ( a , b , c , 0 , p -> arena )': (1, 'factory.createComprehension(a, b, c, false, $RANGE)'),
     '_PyAST_withitem ( e , NULL , p -> arena )': (1, 'factory.createWithItem(e, null, $RANGE)'),
     '_PyAST_withitem ( e , t , p -> arena )': (1, 'factory.createWithItem(e, t, $RANGE)'),
@@ -272,6 +273,7 @@ ACTION_MAPPINGS = {
     '_PyPegen_collect_call_seqs ( p , a , b , EXTRA )': (1, 'this.collectCallSequences(a, b, $RANGE)'),
     '_PyPegen_concatenate_strings ( p , a )': (1, 'this.concatenateStrings(a)'),
     '_PyPegen_function_def_decorators ( p , d , f )': (1, 'factory.createFunctionDefWithDecorators(f,d)'),
+    '_PyPegen_interactive_exit ( p )': (1, 'interactiveExit()'),
     '_PyPegen_join_names_with_dot ( p , a , b )': (1, 'this.joinNamesWithDot(a,b)'),
     '_PyPegen_join_sequences ( p , a , b )': (1, 'this.join(a,b)'),
     '_PyPegen_key_value_pair ( p , NULL , a )': (1, 'new KeyValuePair(null,a)'),
@@ -284,7 +286,7 @@ ACTION_MAPPINGS = {
     '_PyPegen_make_arguments ( p , NULL , NULL , a , b , c )': (2, 'factory.createArguments(null, null, a, b, c)'),
     'CHECK_VERSION ( arguments_ty , 8 , "Positional-only parameters are" , _PyPegen_make_arguments ( p , NULL , a , NULL , b , c ) )': (2, 'checkVersion(8, "Positional-only parameters are", factory.createArguments(null, a, null, b, c))'),
     'CHECK_VERSION ( arguments_ty , 8 , "Positional-only parameters are" , _PyPegen_make_arguments ( p , a , NULL , b , c , d ) )': (2, 'checkVersion(8, "Positional-only parameters are", factory.createArguments(a, null, b, c, d))'),
-    '_PyPegen_make_module ( p , a )': (1, 'factory.createModule(a, $RANGE)'),
+    '_PyPegen_make_module ( p , a )': (1, 'makeModule(a, $RANGE)'),
     '_PyPegen_name_default_pair ( p , a , c , NULL )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, null, a.getSourceRange()), c)'),
     '_PyPegen_name_default_pair ( p , a , c , tc )': (4, 'new NameDefaultPair(factory.createArgument(a.arg, a.annotation, newTypeComment(tc), a.getSourceRange()), c)'),
     '_PyPegen_nonparen_genexp_in_call ( p , a , b )': (1, 'nonparenGenexpInCall(a, b)'),
@@ -343,13 +345,6 @@ ACTION_MAPPINGS = {
     '_PyAST_MatchClass ( cls , patterns , CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , CHECK ( asdl_expr_seq * , _PyPegen_get_pattern_keys ( p , keywords ) ) ) ) , CHECK ( asdl_pattern_seq * , _PyPegen_get_patterns ( p , keywords ) ) , EXTRA )': (1, 'factory.createMatchClass(cls, patterns, extractNames(extractKeys(keywords)), extractPatterns(keywords), $RANGE)'),
     '_PyPegen_key_pattern_pair ( p , arg , value )': (1, 'new KeyPatternPair(arg, value)'),
     'RAISE_SYNTAX_ERROR_KNOWN_RANGE ( PyPegen_first_item ( a , pattern_ty ) , PyPegen_last_item ( a , pattern_ty ) , "positional patterns follow keyword patterns" )': (1, 'raiseSyntaxErrorKnownRange(a[0], a[a.length - 1], "positional patterns follow keyword patterns")'),
-
-    # TODO
-    # Interactive mode:
-    '_PyPegen_interactive_exit ( p )': (1, '@_PyPegen_interactive_exit ( p )'),
-    #
-    # compile(..., mode='func_type') - used by ast module only
-    '_PyAST_FunctionType ( a , b , p -> arena )': (1, '@_PyAST_FunctionType ( a , b , p -> arena )'),
 }
 
 # Maps pattern to (n, replacement), where:
@@ -361,10 +356,10 @@ ACTION_MAPPINGS = {
 #     the given matched group and then shortcuts described above are expanded before the action is written
 #     to Parser.java
 ACTION_MAPPINGS_RE = {
-    r'_PyAST_Attribute \( a , b -> v \. Name \. id , (\w+) , EXTRA \)': (5, 'factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.\\1, $LOC)'),
+    r'_PyAST_Attribute \( a , b -> v \. Name \. id , (\w+) , EXTRA \)': (5, 'factory.createGetAttribute(a, ((ExprTy.Name) b).id, ExprContextTy.\\1, $RANGE)'),
     r'_PyAST_BinOp \( a , (\w+) , b , EXTRA \)': (12, 'factory.createBinaryOp(OperatorTy.\\1, a, b, $RANGE)'),
     r'_PyAST_List \( a , (\w+) , EXTRA \)': (3, 'factory.createList(a, ExprContextTy.\\1, $RANGE)'),
-    r'_PyAST_Subscript \( a , b , (\w+) , EXTRA \)': (5, 'factory.createSubscript(a, b, ExprContextTy.\\1, $LOC)'),
+    r'_PyAST_Subscript \( a , b , (\w+) , EXTRA \)': (5, 'factory.createSubscript(a, b, ExprContextTy.\\1, $RANGE)'),
     r'_PyAST_Tuple \( a , (\w+) , EXTRA \)': (4, 'factory.createTuple(a, ExprContextTy.\\1, $RANGE)'),
     r'_PyAST_UnaryOp \( (\w+) , (\w+) , EXTRA \)': (6, 'factory.createUnaryOp(UnaryOpTy.\\1, \\2, $RANGE)'),
     r'_PyPegen_augoperator \( p , (\w+) \)': (12, 'OperatorTy.\\1'),
@@ -422,9 +417,11 @@ LICENSE = '''/*
 
 IMPORTS = '''
 import com.oracle.graal.python.pegparser.sst.*;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 '''
 
@@ -919,14 +916,14 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ErrorCallback errorCb, InputType startRule) {" % className)
+        self.print("public %s(String source, SourceRange sourceRange, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory, fexprParser, errorCb, startRule);")
+            self.print("super(source, sourceRange, stringFactory, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         self.print()
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule) {" % className)
+        self.print("public %s(String source, PythonStringFactory<?> stringFactory, ErrorCallback errorCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory, fexprParser, stringFactory, errorCb, startRule);")
+            self.print("super(source, null, stringFactory, errorCb, startRule, flags, featureVersion);")
         self.print("}")
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         while self.todo:
@@ -1167,15 +1164,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
     def emit_action(self, node: Alt) -> None:
         action = str(node.action)
-        if action[0] == '@':
-            # TODO remove once all actions are translated to Java
-            self.print(f"// TODO: node.action: {action[1:]}")
-            x = action[1:].replace('"', '\\"')
-            self.print(f'ruleNotImplemented("{x}");')
-            self.print(f"_res = null;")
-        else:
-            self.print(f"_res = {action};")
-
+        self.print(f"_res = {action};")
         self.printDebug(
             f'''debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "{str(node).replace('"', "'")}");'''
         )

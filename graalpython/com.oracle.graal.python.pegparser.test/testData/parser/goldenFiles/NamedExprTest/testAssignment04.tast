@@ -1,9 +1,15 @@
-Module[0, 19]
-    NamedExpr[1, 18]
-        Target: Name[1, 5] Value: "info" Store
+Input:
+------
+(info := (1, 2, 3))
+
+Output:
+-------
+Module[1:0-1:19]
+    NamedExpr[1:1-1:18]
+        Target: Name[1:1-1:5] Value: "info" Store
         Value: 
-            Tuple[9, 18]
+            Tuple[1:9-1:18]
                 Values:
-                    LONG[10, 11] Value: 1
-                    LONG[13, 14] Value: 2
-                    LONG[16, 17] Value: 3
+                    LONG[1:10-1:11] Value: 1
+                    LONG[1:13-1:14] Value: 2
+                    LONG[1:16-1:17] Value: 3

@@ -1,12 +1,18 @@
-Module[0, 34]
-    FunctionDef[0, 34]
+Input:
+------
+def name(p1, p2, /, p_or_kw): pass
+
+Output:
+-------
+Module[1:0-1:34]
+    FunctionDef[1:0-1:34]
         Name:name
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[20, 27] p_or_kw
+                ArgTy[1:20-1:27] p_or_kw
             PosOnlyArgs:
-                ArgTy[9, 11] p1
-                ArgTy[13, 15] p2
+                ArgTy[1:9-1:11] p1
+                ArgTy[1:13-1:15] p2
         ---- Function body of name ----
-        Pass[30, 34]
+        Pass[1:30-1:34]
         ---- End of name function ----

@@ -102,7 +102,7 @@ public class AtomsTests extends ParserTestBase {
     @Test
     public void atomFString() throws Exception {
         checkTreeResult("f'a{b!r}'");
-        checkError("f'a{b!g}'", "Generic[2:9]:f-string: invalid conversion character: expected 's', 'r', or 'a'");
+        checkError("f'a{b!g}'", "Generic[1:2-1:9]:f-string: invalid conversion character: expected 's', 'r', or 'a'");
     }
 
     @Test
@@ -121,7 +121,7 @@ public class AtomsTests extends ParserTestBase {
 
     @Test
     public void atomMixedBytesString() throws Exception {
-        checkError("b\"a\" f'aa'", "Generic[0:10]:cannot mix bytes and nonbytes literals");
+        checkError("b\"a\" f'aa'", "Generic[1:0-1:10]:cannot mix bytes and nonbytes literals");
     }
 
     @Test
@@ -177,5 +177,10 @@ public class AtomsTests extends ParserTestBase {
     @Test
     public void atomEllipsis() throws Exception {
         checkTreeResult("...");
+    }
+
+    @Test
+    public void atomUnicodeStringPrefix() throws Exception {
+        checkTreeResult("(u'abc', u'abc' 'def', 'abc' u'def', f'{u\"abc\"}' 'def')");
     }
 }

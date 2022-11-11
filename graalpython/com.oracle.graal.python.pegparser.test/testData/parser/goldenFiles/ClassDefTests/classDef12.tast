@@ -1,67 +1,87 @@
-Module[0, 415]
-    FunctionDef[0, 415]
+Input:
+------
+def fn():
+    def get_nested_class():
+        method_and_var = "var"
+        class Test(object):
+            def method_and_var(self):
+                return "method"
+            def test(self):
+                return method_and_var
+            def actual_global(self):
+                return str("global")
+            def str(self):
+                return str(self)
+        return Test()
+    t = get_nested_class()
+
+
+Output:
+-------
+Module[1:0-14:26]
+    FunctionDef[1:0-14:26]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        FunctionDef[14, 388]
+        FunctionDef[2:4-13:21]
             Name:get_nested_class
-            ArgumentsTy[0, 0]
+            ArgumentsTy[1:0-1:0]
             ---- Function body of get_nested_class ----
-            Assign[46, 68]
-                LHS: Name[46, 60] Value: "method_and_var" Store
-                RHS: RAW[63, 68] Value: "var"
-            ClassDef[77, 366] Test
+            Assign[3:8-3:30]
+                LHS: Name[3:8-3:22] Value: "method_and_var" Store
+                RHS: RAW[3:25-3:30] Value: "var"
+            ClassDef[4:8-12:32] Test
                 Bases:
-                    Name[88, 94] Value: "object"
+                    Name[4:19-4:25] Value: "object"
                 ---- Class body of Test ----
-                FunctionDef[109, 166]
+                FunctionDef[5:12-6:31]
                     Name:method_and_var
-                    ArgumentsTy[0, 0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
-                            ArgTy[128, 132] self
+                            ArgTy[5:31-5:35] self
                     ---- Function body of method_and_var ----
-                    Return[151, 166] RAW[158, 166] Value: "method"
+                    Return[6:16-6:31] RAW[6:23-6:31] Value: "method"
                     ---- End of method_and_var function ----
-                FunctionDef[179, 232]
+                FunctionDef[7:12-8:37]
                     Name:test
-                    ArgumentsTy[0, 0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
-                            ArgTy[188, 192] self
+                            ArgTy[7:21-7:25] self
                     ---- Function body of test ----
-                    Return[211, 232] Name[218, 232] Value: "method_and_var"
+                    Return[8:16-8:37] Name[8:23-8:37] Value: "method_and_var"
                     ---- End of test function ----
-                FunctionDef[245, 306]
+                FunctionDef[9:12-10:36]
                     Name:actual_global
-                    ArgumentsTy[0, 0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
-                            ArgTy[263, 267] self
+                            ArgTy[9:30-9:34] self
                     ---- Function body of actual_global ----
-                    Return[286, 306] 
-                        Call[293, 306]
-                            Target: Name[293, 296] Value: "str"
+                    Return[10:16-10:36] 
+                        Call[10:23-10:36]
+                            Target: Name[10:23-10:26] Value: "str"
                             Args:
-                                RAW[297, 305] Value: "global"
+                                RAW[10:27-10:35] Value: "global"
                     ---- End of actual_global function ----
-                FunctionDef[319, 366]
+                FunctionDef[11:12-12:32]
                     Name:str
-                    ArgumentsTy[0, 0]
+                    ArgumentsTy[1:0-1:0]
                         Args:
-                            ArgTy[327, 331] self
+                            ArgTy[11:20-11:24] self
                     ---- Function body of str ----
-                    Return[350, 366] 
-                        Call[357, 366]
-                            Target: Name[357, 360] Value: "str"
+                    Return[12:16-12:32] 
+                        Call[12:23-12:32]
+                            Target: Name[12:23-12:26] Value: "str"
                             Args:
-                                Name[361, 365] Value: "self"
+                                Name[12:27-12:31] Value: "self"
                     ---- End of str function ----
                 ---- End of Test class ----
-            Return[375, 388] 
-                Call[382, 388]
-                    Target: Name[382, 386] Value: "Test"
+            Return[13:8-13:21] 
+                Call[13:15-13:21]
+                    Target: Name[13:15-13:19] Value: "Test"
             ---- End of get_nested_class function ----
-        Assign[393, 415]
-            LHS: Name[393, 394] Value: "t" Store
+        Assign[14:4-14:26]
+            LHS: Name[14:4-14:5] Value: "t" Store
             RHS: 
-                Call[397, 415]
-                    Target: Name[397, 413] Value: "get_nested_class"
+                Call[14:8-14:26]
+                    Target: Name[14:8-14:24] Value: "get_nested_class"
         ---- End of fn function ----

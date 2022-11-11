@@ -47,9 +47,6 @@ import java.math.BigInteger;
  * represented by {@code PyObject *} and therefore can be any python object. To enable AST/PCode
  * sharing between contexts and to keep the parser independent of graalpy, the parser does not
  * produce Python values, but Java equivalents.
- *
- * However, we still need to support python objects ({@link Kind#ARBITRARY_PYTHON_OBJECT}) because
- * the user can use the ast module to create/modify the tree.
  */
 public final class ConstantValue {
 
@@ -113,9 +110,14 @@ public final class ConstantValue {
         return type.cast(value);
     }
 
-    public Object getArbitraryPythonObject() {
-        assert kind == Kind.ARBITRARY_PYTHON_OBJECT;
-        return value;
+    public ConstantValue[] getTupleElements() {
+        assert kind == Kind.TUPLE;
+        return (ConstantValue[]) value;
+    }
+
+    public ConstantValue[] getFrozensetElements() {
+        assert kind == Kind.FROZENSET;
+        return (ConstantValue[]) value;
     }
 
     public static ConstantValue ofBigInteger(BigInteger v) {
@@ -150,18 +152,15 @@ public final class ConstantValue {
         return new ConstantValue(o, Kind.RAW);
     }
 
-    public static ConstantValue ofArbitraryPythonObject(Object o) {
-        assert Kind.ARBITRARY_PYTHON_OBJECT.checkValueType(o);
-        return new ConstantValue(o, Kind.ARBITRARY_PYTHON_OBJECT);
+    public static ConstantValue ofTuple(ConstantValue[] values) {
+        return new ConstantValue(values, Kind.TUPLE);
+    }
+
+    public static ConstantValue ofFrozenset(ConstantValue[] values) {
+        return new ConstantValue(values, Kind.FROZENSET);
     }
 
     public enum Kind {
-        ARBITRARY_PYTHON_OBJECT() {
-            @Override
-            boolean checkValueType(Object value) {
-                return value != null;
-            }
-        },
         NONE() {
             @Override
             boolean checkValueType(Object value) {
@@ -215,6 +214,18 @@ public final class ConstantValue {
             @Override
             boolean checkValueType(Object value) {
                 return value instanceof byte[];
+            }
+        },
+        TUPLE() {
+            @Override
+            boolean checkValueType(Object value) {
+                return value instanceof ConstantValue[];
+            }
+        },
+        FROZENSET() {
+            @Override
+            boolean checkValueType(Object value) {
+                return value instanceof ConstantValue[];
             }
         };
 

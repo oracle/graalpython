@@ -1,9 +1,16 @@
-Module[0, 28]
-    FunctionDef[0, 28]
+Input:
+------
+def fn():
+  import sys, math
+
+Output:
+-------
+Module[1:0-2:18]
+    FunctionDef[1:0-2:18]
         Name:fn
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of fn ----
-        Import[12, 28]
+        Import[2:2-2:18]
             sys
             math
         ---- End of fn function ----

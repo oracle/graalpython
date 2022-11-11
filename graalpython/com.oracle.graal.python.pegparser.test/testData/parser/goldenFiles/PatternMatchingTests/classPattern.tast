@@ -1,67 +1,82 @@
-Module[0, 164]
-    Match[0, 164]
-        Subject: Name[6, 7] Value: "a"
+Input:
+------
+match a:
+    case A.B():
+        pass
+    case A(True):
+        pass
+    case A(42 | -4+2j as x,) :
+        pass
+    case A.B(a1=_,) | A(42, a1='abc'):
+        pass
+
+
+Output:
+-------
+Module[1:0-9:12]
+    Match[1:0-9:12]
+        Subject: Name[1:6-1:7] Value: "a"
         Cases:
-            MatchCaseTy[13, 37]
+            MatchCaseTy[2:4-3:12]
                 Pattern: 
-                    MatchClass[18, 23]
+                    MatchClass[2:9-2:14]
                         Cls: 
-                            Attribute[18, 21] 
-                                Receiver: Name[18, 19] Value: "A"
+                            Attribute[2:9-2:12] 
+                                Receiver: Name[2:9-2:10] Value: "A"
                                 Attr: B
                 Body:
-                    Pass[33, 37]
-            MatchCaseTy[42, 68]
+                    Pass[3:8-3:12]
+            MatchCaseTy[4:4-5:12]
                 Pattern: 
-                    MatchClass[47, 54]
-                        Cls: Name[47, 48] Value: "A"
+                    MatchClass[4:9-4:16]
+                        Cls: Name[4:9-4:10] Value: "A"
                         Patterns:
-                            MatchSingleton[49, 53], value: true
+                            MatchSingleton[4:11-4:15], value: true
                 Body:
-                    Pass[64, 68]
-            MatchCaseTy[73, 112]
+                    Pass[5:8-5:12]
+            MatchCaseTy[6:4-7:12]
                 Pattern: 
-                    MatchClass[78, 97]
-                        Cls: Name[78, 79] Value: "A"
+                    MatchClass[6:9-6:28]
+                        Cls: Name[6:9-6:10] Value: "A"
                         Patterns:
-                            MatchAs[80, 95]
+                            MatchAs[6:11-6:26]
                                 Pattern: 
-                                    MatchOr[80, 90]
+                                    MatchOr[6:11-6:21]
                                         Patterns:
-                                            MatchValue[80, 82]
-                                                Value: LONG[80, 82] Value: 42
-                                            MatchValue[85, 90]
+                                            MatchValue[6:11-6:13]
+                                                Value: LONG[6:11-6:13] Value: 42
+                                            MatchValue[6:16-6:21]
                                                 Value: 
-                                                    BinOp[85, 90]
+                                                    BinOp[6:16-6:21]
                                                         Op: Add
                                                         LHS: 
-                                                            UnaryOp[85, 87]
+                                                            UnaryOp[6:16-6:18]
                                                                 Op: USub
-                                                                Value: LONG[86, 87] Value: 4
-                                                        RHS: COMPLEX[88, 90] Value: 0.00000+2.00000j
+                                                                Value: LONG[6:17-6:18] Value: 4
+                                                        RHS: COMPLEX[6:19-6:21] Value: 0.00000+2.00000j
                                 Name: x
                 Body:
-                    Pass[108, 112]
-            MatchCaseTy[117, 164]
+                    Pass[7:8-7:12]
+            MatchCaseTy[8:4-9:12]
                 Pattern: 
-                    MatchOr[122, 150]
+                    MatchOr[8:9-8:37]
                         Patterns:
-                            MatchClass[122, 132]
+                            MatchClass[8:9-8:19]
                                 Cls: 
-                                    Attribute[122, 125] 
-                                        Receiver: Name[122, 123] Value: "A"
+                                    Attribute[8:9-8:12] 
+                                        Receiver: Name[8:9-8:10] Value: "A"
                                         Attr: B
                                 KwdAttrs: a1
                                 KwdPatterns:
-                                    MatchAs[129, 130]
-                            MatchClass[135, 150]
-                                Cls: Name[135, 136] Value: "A"
+                                    MatchAs[8:16-8:17]
+                            MatchClass[8:22-8:37]
+                                Cls: Name[8:22-8:23] Value: "A"
                                 Patterns:
-                                    MatchValue[137, 139]
-                                        Value: LONG[137, 139] Value: 42
+                                    MatchValue[8:24-8:26]
+                                        Value: LONG[8:24-8:26] Value: 42
                                 KwdAttrs: a1
                                 KwdPatterns:
-                                    MatchValue[144, 149]
-                                        Value: RAW[144, 149] Value: "abc"
+                                    MatchValue[8:31-8:36]
+                                        Value: RAW[8:31-8:36] Value: "abc"
                 Body:
-                    Pass[160, 164]
+                    Pass[9:8-9:12]

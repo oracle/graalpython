@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
+
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
@@ -124,6 +126,8 @@ import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSetItemNodeGen;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -317,6 +321,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ListNodes.AppendNode> NODE_LIST_APPEND = ListNodes.AppendNode::create;
     private static final SetNodes.AddNode UNCACHED_SET_ADD = SetNodes.AddNode.getUncached();
     private static final NodeSupplier<SetNodes.AddNode> NODE_SET_ADD = SetNodes.AddNode::create;
+    private static final PyObjectSizeNode UNCACHED_SIZE = PyObjectSizeNode.getUncached();
+    private static final NodeSupplier<PyObjectSizeNode> NODE_SIZE = PyObjectSizeNode::create;
+    private static final NodeSupplier<GetTPFlagsNode> NODE_TP_FLAGS = GetTPFlagsNode::create;
+    private static final GetTPFlagsNode UNCACHED_TP_FLAGS = GetTPFlagsNode.getUncached();
     private static final KwargsMergeNode UNCACHED_KWARGS_MERGE = KwargsMergeNode.getUncached();
     private static final NodeSupplier<KwargsMergeNode> NODE_KWARGS_MERGE = KwargsMergeNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
@@ -361,6 +369,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<IntBuiltins.NegNode> NODE_INT_NEG = IntBuiltins.NegNode::create;
     private static final NodeSupplier<IntBuiltins.PowNode> NODE_INT_POW = IntBuiltins.PowNode::create;
     private static final NodeSupplier<FloatBuiltins.PowNode> NODE_FLOAT_POW = FloatBuiltins.PowNode::create;
+    private static final NodeSupplier<HashingStorageFromListSequenceStorageNode> NODE_HASHING_STORAGE_FROM_SEQUENCE = HashingStorageFromListSequenceStorageNode::create;
+    private static final NodeSupplier<MatchClassNode> NODE_MATCH_CLASS = MatchClassNode::create;
 
     private static final IntNodeFunction<UnaryOpNode> UNARY_OP_FACTORY = (int op) -> {
         switch (op) {
@@ -1406,6 +1416,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeTupleFromList(virtualFrame, stackTop);
                         break;
                     }
+                    case OpCodesConstants.FROZENSET_FROM_LIST: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        bytecodeFrozensetFromList(virtualFrame, stackTop, beginBci, localNodes);
+                        break;
+                    }
                     case OpCodesConstants.KWARGS_DICT_MERGE: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         stackTop = bytecodeKwargsMerge(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
@@ -1593,6 +1608,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(stackTop, virtualFrame.getObject(stackTop - 1));
                         virtualFrame.setObject(stackTop - 1, virtualFrame.getObject(stackTop - 2));
                         virtualFrame.setObject(stackTop - 2, top);
+                        break;
+                    }
+                    case OpCodesConstants.ROT_N: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        bytcodeRotN(virtualFrame, stackTop, oparg);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_SEQUENCE: {
+                        stackTop = bytecodeCheckSeq(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_CLASS: {
+                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                        stackTop = bytecodeMatchClass(virtualFrame, useCachedNodes, stackTop, oparg, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.GET_LEN: {
+                        stackTop = bytecodeGetLen(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.DUP_TOP:
@@ -2220,6 +2253,56 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             }
         }
+    }
+
+    @BytecodeInterpreterSwitch
+    @ExplodeLoop
+    private void bytcodeRotN(VirtualFrame virtualFrame, int stackTop, int oparg) {
+        CompilerAsserts.partialEvaluationConstant(oparg);
+        if (oparg > 1) {
+            Object top = virtualFrame.getObject(stackTop);
+            int i = 0;
+            for (; i < oparg - 1; i++) {
+                virtualFrame.setObject(stackTop - i, virtualFrame.getObject(stackTop - i - 1));
+            }
+            virtualFrame.setObject(stackTop - i, top);
+        }
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeCheckSeq(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
+        Object seq = virtualFrame.getObject(stackTop);
+        GetTPFlagsNode flagsNode = insertChildNode(localNodes, bci, UNCACHED_TP_FLAGS, GetTPFlagsNodeGen.class, NODE_TP_FLAGS, useCachedNodes);
+        boolean res = (flagsNode.execute(seq) & Py_TPFLAGS_SEQUENCE) != 0;
+        virtualFrame.setObject(++stackTop, res);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeMatchClass(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int oparg, int bci, Node[] localNodes) {
+        TruffleString[] names = (TruffleString[]) virtualFrame.getObject(stackTop--);
+        Object type = virtualFrame.getObject(stackTop);
+        Object subject = virtualFrame.getObject(stackTop - 1);
+
+        MatchClassNode matchClassNode = insertChildNode(localNodes, bci, MatchClassNodeGen.class, NODE_MATCH_CLASS);
+        Object attrs = matchClassNode.execute(virtualFrame, subject, type, oparg, names);
+
+        if (attrs != null) {
+            virtualFrame.setObject(stackTop, true);
+            virtualFrame.setObject(stackTop - 1, attrs);
+        } else {
+            virtualFrame.setObject(stackTop, false);
+        }
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeGetLen(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
+        Object seq = virtualFrame.getObject(stackTop);
+        PyObjectSizeNode sizeNode = insertChildNode(localNodes, bci, UNCACHED_SIZE, PyObjectSizeNodeGen.class, NODE_SIZE, useCachedNodes);
+        Object s = sizeNode.execute(virtualFrame, seq);
+        virtualFrame.setObject(++stackTop, s);
+        return stackTop;
     }
 
     @BytecodeInterpreterSwitch
@@ -2922,10 +3005,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private boolean bytecodePopCondition(VirtualFrame virtualFrame, int stackTop, Node[] localNodes, int bci, boolean useCachedNodes) {
         PyObjectIsTrueNode isTrue = insertChildNode(localNodes, bci, UNCACHED_OBJECT_IS_TRUE, PyObjectIsTrueNodeGen.class, NODE_OBJECT_IS_TRUE, useCachedNodes);
         Object cond;
-        try {
+        if (virtualFrame.isObject(stackTop)) {
             cond = virtualFrame.getObject(stackTop);
-        } catch (FrameSlotTypeException e) {
-            // This should only happen when quickened concurrently in multi-context mode
+        } else {
+            // Can happen when multiple code paths produce different types
             cond = generalizePopCondition(virtualFrame, stackTop, bci);
         }
         virtualFrame.setObject(stackTop, null);
@@ -4475,6 +4558,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (!virtualFrame.isObject(stackTop) || !virtualFrame.isObject(stackTop - 2)) {
             generalizeInputs(bci);
             generalizeFrameSlot(virtualFrame, stackTop);
+            generalizeFrameSlot(virtualFrame, stackTop - 2);
         }
         bytecode[bci] = OpCodesConstants.STORE_SUBSCR_OOO;
         return bytecodeStoreSubscrOOO(virtualFrame, stackTop, bci, localNodes, useCachedNodes, bciSlot);
@@ -5322,6 +5406,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeTupleFromList(VirtualFrame virtualFrame, int stackTop) {
         PList list = (PList) virtualFrame.getObject(stackTop);
         Object result = factory.createTuple(list.getSequenceStorage());
+        virtualFrame.setObject(stackTop, result);
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeFrozensetFromList(VirtualFrame virtualFrame, int stackTop, int nodeIndex, Node[] localNodes) {
+        PList list = (PList) virtualFrame.getObject(stackTop);
+        HashingStorageFromListSequenceStorageNode node = insertChildNode(localNodes, nodeIndex, HashingStorageFromListSequenceStorageNodeGen.class, NODE_HASHING_STORAGE_FROM_SEQUENCE);
+        Object result = factory.createFrozenSet(node.execute(virtualFrame, list.getSequenceStorage()));
         virtualFrame.setObject(stackTop, result);
     }
 

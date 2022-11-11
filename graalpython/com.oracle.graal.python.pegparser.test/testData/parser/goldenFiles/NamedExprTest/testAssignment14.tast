@@ -1,42 +1,49 @@
-Module[0, 57]
-    While[0, 57]
+Input:
+------
+while a > (d := x // a**(n-1)):
+   a = ((n-1)*a + d) // n
+
+Output:
+-------
+Module[1:0-2:25]
+    While[1:0-2:25]
         Condition: 
-            Compare[6, 30]
-                LHS: Name[6, 7] Value: "a"
+            Compare[1:6-1:30]
+                LHS: Name[1:6-1:7] Value: "a"
                 Op: Gt
                 RHS: 
-                    NamedExpr[11, 29]
-                        Target: Name[11, 12] Value: "d" Store
+                    NamedExpr[1:11-1:29]
+                        Target: Name[1:11-1:12] Value: "d" Store
                         Value: 
-                            BinOp[16, 29]
+                            BinOp[1:16-1:29]
                                 Op: FloorDiv
-                                LHS: Name[16, 17] Value: "x"
+                                LHS: Name[1:16-1:17] Value: "x"
                                 RHS: 
-                                    BinOp[21, 29]
+                                    BinOp[1:21-1:29]
                                         Op: Pow
-                                        LHS: Name[21, 22] Value: "a"
+                                        LHS: Name[1:21-1:22] Value: "a"
                                         RHS: 
-                                            BinOp[25, 28]
+                                            BinOp[1:25-1:28]
                                                 Op: Sub
-                                                LHS: Name[25, 26] Value: "n"
-                                                RHS: LONG[27, 28] Value: 1
+                                                LHS: Name[1:25-1:26] Value: "n"
+                                                RHS: LONG[1:27-1:28] Value: 1
         Body:
-            Assign[35, 57]
-                LHS: Name[35, 36] Value: "a" Store
+            Assign[2:3-2:25]
+                LHS: Name[2:3-2:4] Value: "a" Store
                 RHS: 
-                    BinOp[39, 57]
+                    BinOp[2:7-2:25]
                         Op: FloorDiv
                         LHS: 
-                            BinOp[40, 51]
+                            BinOp[2:8-2:19]
                                 Op: Add
                                 LHS: 
-                                    BinOp[40, 47]
+                                    BinOp[2:8-2:15]
                                         Op: Mult
                                         LHS: 
-                                            BinOp[41, 44]
+                                            BinOp[2:9-2:12]
                                                 Op: Sub
-                                                LHS: Name[41, 42] Value: "n"
-                                                RHS: LONG[43, 44] Value: 1
-                                        RHS: Name[46, 47] Value: "a"
-                                RHS: Name[50, 51] Value: "d"
-                        RHS: Name[56, 57] Value: "n"
+                                                LHS: Name[2:9-2:10] Value: "n"
+                                                RHS: LONG[2:11-2:12] Value: 1
+                                        RHS: Name[2:14-2:15] Value: "a"
+                                RHS: Name[2:18-2:19] Value: "d"
+                        RHS: Name[2:24-2:25] Value: "n"

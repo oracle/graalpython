@@ -1,15 +1,22 @@
-Module[0, 31]
-    With[0, 31]
+Input:
+------
+with A() as a, B() as b:
+  pass
+
+Output:
+-------
+Module[1:0-2:6]
+    With[1:0-2:6]
         Items:
-            WithItemTy[5, 13]
+            WithItemTy[1:5-1:13]
                 ContextExpr: 
-                    Call[5, 8]
-                        Target: Name[5, 6] Value: "A"
-                OptionalVars: Name[12, 13] Value: "a" Store
-            WithItemTy[15, 23]
+                    Call[1:5-1:8]
+                        Target: Name[1:5-1:6] Value: "A"
+                OptionalVars: Name[1:12-1:13] Value: "a" Store
+            WithItemTy[1:15-1:23]
                 ContextExpr: 
-                    Call[15, 18]
-                        Target: Name[15, 16] Value: "B"
-                OptionalVars: Name[22, 23] Value: "b" Store
+                    Call[1:15-1:18]
+                        Target: Name[1:15-1:16] Value: "B"
+                OptionalVars: Name[1:22-1:23] Value: "b" Store
         Body:
-            Pass[27, 31]
+            Pass[2:2-2:6]

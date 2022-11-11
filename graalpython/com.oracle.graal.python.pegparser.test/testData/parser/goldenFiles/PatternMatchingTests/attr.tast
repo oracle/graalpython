@@ -1,25 +1,34 @@
-Module[0, 48]
-    Match[0, 48]
-        Subject: Name[6, 7] Value: "a"
+Input:
+------
+match a:
+    case x.y: pass
+    case x.y.z: pass
+
+
+Output:
+-------
+Module[1:0-3:20]
+    Match[1:0-3:20]
+        Subject: Name[1:6-1:7] Value: "a"
         Cases:
-            MatchCaseTy[13, 27]
+            MatchCaseTy[2:4-2:18]
                 Pattern: 
-                    MatchValue[18, 21]
+                    MatchValue[2:9-2:12]
                         Value: 
-                            Attribute[18, 21] 
-                                Receiver: Name[18, 19] Value: "x"
+                            Attribute[2:9-2:12] 
+                                Receiver: Name[2:9-2:10] Value: "x"
                                 Attr: y
                 Body:
-                    Pass[23, 27]
-            MatchCaseTy[32, 48]
+                    Pass[2:14-2:18]
+            MatchCaseTy[3:4-3:20]
                 Pattern: 
-                    MatchValue[37, 42]
+                    MatchValue[3:9-3:14]
                         Value: 
-                            Attribute[37, 42] 
+                            Attribute[3:9-3:14] 
                                 Receiver: 
-                                    Attribute[37, 40] 
-                                        Receiver: Name[37, 38] Value: "x"
+                                    Attribute[3:9-3:12] 
+                                        Receiver: Name[3:9-3:10] Value: "x"
                                         Attr: y
                                 Attr: z
                 Body:
-                    Pass[44, 48]
+                    Pass[3:16-3:20]

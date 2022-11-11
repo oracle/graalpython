@@ -1,7 +1,13 @@
-Module[0, 8]
-    Assign[0, 8]
-        LHS: Name[0, 1] Value: "t" Store
+Input:
+------
+t = (2,)
+
+Output:
+-------
+Module[1:0-1:8]
+    Assign[1:0-1:8]
+        LHS: Name[1:0-1:1] Value: "t" Store
         RHS: 
-            Tuple[4, 8]
+            Tuple[1:4-1:8]
                 Values:
-                    LONG[5, 6] Value: 2
+                    LONG[1:5-1:6] Value: 2

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -59,18 +59,17 @@ suboffsets_buf = '''\
     short s3[2][2] = {{259, 346}, {191, 925}};
     short s4[2][2] = {{260, 347}, {192, 926}};
     void* ptr_buf[2][2] = {{s1, s2}, {s3, s4}};
-    Py_buffer buffer = {
-            ptr_buf,
-            NULL,
-            2 * 2 * 2 * 2 * sizeof(short),
-            sizeof(short),
-            1,
-            ndim,
-            "h",
-            shape,
-            strides,
-            suboffsets,
-    };
+    void fill_buffer(Py_buffer* buffer) {
+        buffer->buf = ptr_buf;
+        buffer->len = 2 * 2 * 2 * 2 * sizeof(short);
+        buffer->itemsize = sizeof(short);
+        buffer->readonly = 1;
+        buffer->ndim = ndim;
+        buffer->format = "h";
+        buffer->shape = shape;
+        buffer->strides = strides;
+        buffer->suboffsets =suboffsets;
+    }
     '''
 
 
@@ -115,6 +114,8 @@ class TestPyMemoryView(CPyExtTestCase):
         ),
         code=suboffsets_buf + '''
             static PyObject* test_read(PyObject *key, PyObject* expected) {
+                Py_buffer buffer;
+                fill_buffer(&buffer);
                 PyObject *mv = PyMemoryView_FromBuffer(&buffer);
                 if (!mv)
                     return NULL;
@@ -251,6 +252,8 @@ class TestPyMemoryView(CPyExtTestCase):
         ],
         code=suboffsets_buf + '''
             static PyObject* test_read(PyObject* expected) {
+                Py_buffer buffer;
+                fill_buffer(&buffer);
                 PyObject *mv = PyMemoryView_FromBuffer(&buffer);
                 if (!mv)
                     return NULL;
@@ -277,6 +280,8 @@ class TestPyMemoryView(CPyExtTestCase):
         ],
         code=suboffsets_buf + '''
             static PyObject* test_read(PyObject* order, PyObject* expected) {
+                Py_buffer buffer;
+                fill_buffer(&buffer);
                 PyObject *mv = PyMemoryView_FromBuffer(&buffer);
                 if (!mv)
                     return NULL;

@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -63,6 +62,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -98,12 +98,37 @@ public final class LocalsStorage extends HashingStorage {
         return null;
     }
 
-    public int length() {
-        if (this.len == -1) {
-            CompilerDirectives.transferToInterpreter();
-            calculateLength();
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    abstract static class LengthNode extends Node {
+        public abstract int execute(LocalsStorage self);
+
+        @Specialization(guards = "desc == self.frame.getFrameDescriptor()", limit = "1")
+        @ExplodeLoop
+        static int getLengthCached(LocalsStorage self,
+                        @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
+            int size = desc.getNumberOfSlots();
+            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
+                Object identifier = desc.getSlotName(slot);
+                if (!isUserFrameSlot(identifier) || self.getValue(slot) == null) {
+                    size--;
+                }
+            }
+            return size;
         }
-        return this.len;
+
+        @Specialization(replaces = "getLengthCached")
+        static int getLength(LocalsStorage self) {
+            FrameDescriptor desc = self.frame.getFrameDescriptor();
+            int size = desc.getNumberOfSlots();
+            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
+                Object identifier = desc.getSlotName(slot);
+                if (!isUserFrameSlot(identifier) || self.getValue(slot) == null) {
+                    size--;
+                }
+            }
+            return size;
+        }
     }
 
     @TruffleBoundary

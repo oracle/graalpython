@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
+package com.oracle.graal.python.builtins.objects.itertools;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-public class ParseTreePrinter {
-    public static void main(String[] args) throws IOException {
-        for (String arg : args) {
-            byte[] bytes = Files.readAllBytes(Paths.get(arg));
-            ParserTokenizer tokenizer = new ParserTokenizer(null, bytes, InputType.FILE, false);
-            Parser parser = new Parser(tokenizer, new NodeFactory(), null, null, InputType.FILE);
-            Object result = parser.parse();
-            System.out.println("Result of parsing " + arg + ": " + result);
-        }
+public final class PPairwise extends PythonBuiltinObject {
+
+    private Object iterable;
+    private Object old;
+
+    public PPairwise(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
+    }
+
+    public void setIterable(Object it) {
+        this.iterable = it;
+    }
+
+    public Object getIterable() {
+        return iterable;
+    }
+
+    public Object getOld() {
+        return old;
+    }
+
+    public void setOld(Object old) {
+        this.old = old;
     }
 }

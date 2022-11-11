@@ -59,9 +59,9 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] body;   // nullable
         public final ExprTy[] decoratorList;   // nullable
         public final ExprTy returns;   // nullable
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, SourceRange sourceRange) {
+        public FunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
@@ -85,9 +85,9 @@ public abstract class StmtTy extends SSTNode {
         public final StmtTy[] body;   // nullable
         public final ExprTy[] decoratorList;   // nullable
         public final ExprTy returns;   // nullable
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, String typeComment, SourceRange sourceRange) {
+        public AsyncFunctionDef(String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
@@ -159,9 +159,9 @@ public abstract class StmtTy extends SSTNode {
     public static final class Assign extends StmtTy {
         public final ExprTy[] targets;   // nullable
         public final ExprTy value;
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public Assign(ExprTy[] targets, ExprTy value, String typeComment, SourceRange sourceRange) {
+        public Assign(ExprTy[] targets, ExprTy value, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             this.targets = targets;
             assert value != null;
@@ -223,9 +223,9 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy iter;
         public final StmtTy[] body;   // nullable
         public final StmtTy[] orElse;   // nullable
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public For(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, SourceRange sourceRange) {
+        public For(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             assert target != null;
             this.target = target;
@@ -247,9 +247,9 @@ public abstract class StmtTy extends SSTNode {
         public final ExprTy iter;
         public final StmtTy[] body;   // nullable
         public final StmtTy[] orElse;   // nullable
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public AsyncFor(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, String typeComment, SourceRange sourceRange) {
+        public AsyncFor(ExprTy target, ExprTy iter, StmtTy[] body, StmtTy[] orElse, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             assert target != null;
             this.target = target;
@@ -307,9 +307,9 @@ public abstract class StmtTy extends SSTNode {
     public static final class With extends StmtTy {
         public final WithItemTy[] items;   // nullable
         public final StmtTy[] body;   // nullable
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public With(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+        public With(WithItemTy[] items, StmtTy[] body, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             this.items = items;
             this.body = body;
@@ -325,9 +325,9 @@ public abstract class StmtTy extends SSTNode {
     public static final class AsyncWith extends StmtTy {
         public final WithItemTy[] items;   // nullable
         public final StmtTy[] body;   // nullable
-        public final String typeComment;   // nullable
+        public final Object typeComment;   // nullable
 
-        public AsyncWith(WithItemTy[] items, StmtTy[] body, String typeComment, SourceRange sourceRange) {
+        public AsyncWith(WithItemTy[] items, StmtTy[] body, Object typeComment, SourceRange sourceRange) {
             super(sourceRange);
             this.items = items;
             this.body = body;

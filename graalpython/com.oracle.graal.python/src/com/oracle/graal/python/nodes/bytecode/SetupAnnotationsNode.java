@@ -43,13 +43,17 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -85,11 +89,22 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
     abstract static class SetupAnnotationsFromDictOrModuleNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Object locals);
 
+        @Specialization
+        static void doModule(PythonModule locals,
+                        @Cached ReadAttributeFromObjectNode read,
+                        @Cached WriteAttributeToObjectNode write,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            Object annotations = read.execute(locals, T___ANNOTATIONS__);
+            if (annotations == PNone.NO_VALUE) {
+                write.execute(locals, T___ANNOTATIONS__, factory.createDict());
+            }
+        }
+
         @Specialization(guards = "isBuiltinDict(locals)")
         static void doBuiltinDict(VirtualFrame frame, PDict locals,
                         @Cached PyDictGetItem getItem,
                         @Cached PyDictSetItem setItem,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             Object annotations = getItem.execute(frame, locals, T___ANNOTATIONS__);
             if (annotations == null) {
                 setItem.execute(frame, locals, T___ANNOTATIONS__, factory.createDict());
@@ -101,7 +116,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
                         @Cached PyObjectGetItem getItem,
                         @Cached PyObjectSetItem setItem,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached PythonObjectFactory factory) {
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             try {
                 getItem.execute(frame, locals, T___ANNOTATIONS__);
             } catch (PException e) {

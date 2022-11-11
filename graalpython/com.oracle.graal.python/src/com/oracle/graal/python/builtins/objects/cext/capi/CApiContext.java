@@ -40,13 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_GET_;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LLVM_LANGUAGE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_GET_;
-import static com.oracle.graal.python.nodes.StringLiterals.T_TYPE_ID;
+import static com.oracle.graal.python.nodes.StringLiterals.J_TYPE_ID;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 import java.io.IOException;
@@ -878,6 +876,7 @@ public final class CApiContext extends CExtContext {
         Py_ssize_t,
         Py_complex,
         PyObject,
+        PyMethodDef,
         PyTypeObject,
         PyObject_ptr_t,
         char_ptr_t,
@@ -897,13 +896,14 @@ public final class CApiContext extends CExtContext {
         Py_ssize_ptr_t,
         PyThreadState;
 
-        public static NativeCAPISymbol getGetterFunctionName(LLVMType llvmType) {
-            CompilerAsserts.neverPartOfCompilation();
-            TruffleString getterFunctionName = cat(T_GET_, toTruffleStringUncached(llvmType.name()), T_TYPE_ID);
-            if (!NativeCAPISymbol.isValid(getterFunctionName, TruffleString.EqualNode.getUncached())) {
-                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + getterFunctionName);
+        private final NativeCAPISymbol getter = NativeCAPISymbol.getByName(J_GET_ + name() + J_TYPE_ID);
+
+        public NativeCAPISymbol getGetterFunctionName() {
+            if (getter == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("no getter for LLVMType " + name());
             }
-            return NativeCAPISymbol.getByName(getterFunctionName, TruffleString.EqualNode.getUncached());
+            return getter;
         }
 
         public static boolean isPointer(LLVMType llvmType) {

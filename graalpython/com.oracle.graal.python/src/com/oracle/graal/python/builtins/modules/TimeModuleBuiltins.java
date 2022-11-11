@@ -301,6 +301,21 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "tzset")
+    @GenerateNodeFactory
+    public abstract static class TzSetNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public Object tzset() {
+            String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
+            if (tzEnv == null) {
+                tzEnv = "";
+            }
+            TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
+            return PNone.NONE;
+        }
+    }
+
     // time.localtime([seconds])
     @Builtin(name = "localtime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
@@ -720,6 +735,19 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     break;
                 }
                 s = s + format.substring(lastc, i);
+
+                // Glibc provides some extensions for conversion specifications. (These extensions
+                // are not specified in POSIX.1-2001, but a few other systems provide similar
+                // features.) Between the '%' character and the conversion specifier character, an
+                // optional flag and field width may be specified. (These precede the E or O
+                // modifiers, if present.)
+                // - (dash) Do not pad a numeric result string.
+                boolean pad = true;
+                if (i < format.length() - 1 && format.charAt(i + 1) == '-') {
+                    pad = false;
+                    i++;
+                }
+
                 i++;
                 switch (format.charAt(i)) {
                     case 'a':
@@ -747,11 +775,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                     case 'd':
                         // day of month (01-31)
-                        s = s + format("%02d", date[TM_MDAY]);
+                        s = s + (pad ? format("%02d", date[TM_MDAY]) : format("%d", date[TM_MDAY]));
                         break;
                     case 'H':
                         // hour (00-23)
-                        s = s + format("%02d", date[TM_HOUR]);
+                        s = s + (pad ? format("%02d", date[TM_HOUR]) : format("%d", date[TM_HOUR]));
                         break;
                     case 'I':
                         // hour (01-12)
@@ -759,19 +787,19 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         if (j == 0) {
                             j = 12;  // midnight or noon
                         }
-                        s = s + format("%02d", j);
+                        s = s + (pad ? format("%02d", j) : format("%d", j));
                         break;
                     case 'j':
                         // day of year (001-366)
-                        s = s + format("%03d", date[TM_YDAY]);
+                        s = s + (pad ? format("%03d", date[TM_YDAY]) : format("%d", date[TM_YDAY]));
                         break;
                     case 'm':
                         // month (01-12)
-                        s = s + format("%02d", date[TM_MON]);
+                        s = s + (pad ? format("%02d", date[TM_MON]) : format("%d", date[TM_MON]));
                         break;
                     case 'M':
                         // minute (00-59)
-                        s = s + format("%02d", date[TM_MIN]);
+                        s = s + (pad ? format("%02d", date[TM_MIN]) : format("%d", date[TM_MIN]));
                         break;
                     case 'p':
                         // AM/PM
@@ -785,7 +813,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         break;
                     case 'S':
                         // seconds (00-61)
-                        s = s + format("%02d", date[TM_SEC]);
+                        s = s + (pad ? format("%02d", date[TM_SEC]) : format("%d", date[TM_SEC]));
                         break;
                     case 'U':
                         // week of year (sunday is first day) (00-53). all days in
@@ -804,7 +832,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
                         }
-                        s = s + format("%02d", j);
+                        s = s + (pad ? format("%02d", j) : format("%d", j));
                         break;
                     case 'w':
                         // weekday as decimal (0=Sunday-6)
@@ -829,7 +857,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         if (cal.get(Calendar.MONTH) == Calendar.JANUARY && j >= 52) {
                             j = 0;
                         }
-                        s = s + format("%02d", j);
+                        s = s + (pad ? format("%02d", j) : format("%d", j));
                         break;
                     case 'x':
                         // TBD: A note about %x and %X. Python's time.strftime()

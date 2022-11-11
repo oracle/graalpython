@@ -29,6 +29,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMAT_MAP;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVEPREFIX;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_REMOVESUFFIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_STARTSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ENDSWITH;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
@@ -2713,5 +2715,56 @@ public final class StringBuiltins extends PythonBuiltins {
             return end < 0 ? 0 : end;
         }
         return endIn;
+    }
+
+    @Builtin(name = J_REMOVEPREFIX, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"self", "prefix"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "prefix", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class RemovePrefixNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.RemovePrefixNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        TruffleString remove(VirtualFrame frame, TruffleString self, TruffleString prefix,
+                        @Cached StartsWithNode startsWith,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode) {
+            int prefixLen = codePointLengthNode.execute(prefix, TS_ENCODING);
+            if (startsWith.executeBoolean(frame, self, prefix, 0, prefixLen)) {
+                int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
+                return substringNode.execute(self, prefixLen, selfLen - prefixLen, TS_ENCODING, false);
+            }
+            return self;
+        }
+    }
+
+    @Builtin(name = J_REMOVESUFFIX, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"self", "suffix"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "suffix", conversion = ArgumentClinic.ClinicConversion.TString)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class RemoveSuffixNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.RemovePrefixNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        TruffleString remove(VirtualFrame frame, TruffleString self, TruffleString suffix,
+                        @Cached EndsWithNode endsWith,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached ConditionProfile profile) {
+            int selfLen = codePointLengthNode.execute(self, TS_ENCODING);
+            if (profile.profile(endsWith.executeBoolean(frame, self, suffix, 0, selfLen))) {
+                int suffixLen = codePointLengthNode.execute(suffix, TS_ENCODING);
+                return substringNode.execute(self, 0, selfLen - suffixLen, TS_ENCODING, false);
+            }
+            return self;
+        }
     }
 }

@@ -588,6 +588,45 @@ class TestModsupport(CPyExtTestCase):
         code='''
         static int do_call(PyObject* argTuple, char *format, ...) {
             int result = 0;
+            va_list va;
+            va_start(va, format);
+            result = PyArg_VaParse(argTuple, "OiO", va);
+            va_end(va);
+            return result;
+        }
+
+        static PyObject* wrap_PyArg_VaParse(PyObject* argTuple) {
+            PyObject* out0 = NULL;
+            int out1 = 0;
+            PyObject* out2 = NULL;
+            PyObject* res = NULL;
+            Py_INCREF(argTuple);
+            if (do_call(argTuple, "OiO", &out0, &out1, &out2) == 0) {
+                return NULL;
+            }
+            Py_DECREF(argTuple);
+            Py_XINCREF(out0);
+            Py_XINCREF(out2);
+            res = PyTuple_Pack(3, out0, PyLong_FromLong(out1), out2);
+            Py_XINCREF(res);
+            return res;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_VaParse",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_and_kwd_valist = CPyExtFunction(
+        lambda args: args[0],
+        lambda: (
+            ((b'hello', 1, b'world'),),
+        ),
+        code='''
+        static int do_call(PyObject* argTuple, char *format, ...) {
+            int result = 0;
             char *kwnames[] = { "a", "b", "c", NULL };
             va_list va;
             va_start(va, format);

@@ -1,17 +1,24 @@
-Module[0, 61]
-    FunctionDef[0, 61]
+Input:
+------
+def _method(*args, **keywords):
+    cls_or_self, *rest = args
+
+Output:
+-------
+Module[1:0-2:29]
+    FunctionDef[1:0-2:29]
         Name:_method
-        ArgumentsTy[0, 0]
-            VarArg: ArgTy[13, 17] args
-            Kwarg: ArgTy[21, 29] keywords
+        ArgumentsTy[1:0-1:0]
+            VarArg: ArgTy[1:13-1:17] args
+            Kwarg: ArgTy[1:21-1:29] keywords
         ---- Function body of _method ----
-        Assign[36, 61]
+        Assign[2:4-2:29]
             LHS: 
-                Tuple[36, 54] Context: Store
+                Tuple[2:4-2:22] Context: Store
                     Values:
-                        Name[36, 47] Value: "cls_or_self" Store
-                        Starred[49, 54]
+                        Name[2:4-2:15] Value: "cls_or_self" Store
+                        Starred[2:17-2:22]
                              Context: Store
-                             Expr: Name[50, 54] Value: "rest" Store
-            RHS: Name[57, 61] Value: "args"
+                             Expr: Name[2:18-2:22] Value: "rest" Store
+            RHS: Name[2:25-2:29] Value: "args"
         ---- End of _method function ----

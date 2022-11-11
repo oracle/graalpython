@@ -1,8 +1,14 @@
-Module[0, 21]
-    FunctionDef[0, 21]
+Input:
+------
+def f(): yield from 1
+
+Output:
+-------
+Module[1:0-1:21]
+    FunctionDef[1:0-1:21]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
-        YieldFrom[9, 21]
-            LONG[20, 21] Value: 1
+        YieldFrom[1:9-1:21]
+            LONG[1:20-1:21] Value: 1
         ---- End of f function ----

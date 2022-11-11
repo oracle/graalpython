@@ -1,15 +1,25 @@
-Module[0, 72]
-    ClassDef[0, 72] A
+Input:
+------
+class A:
+    @classmethod
+    def method(self, string:str):
+        pass
+
+
+Output:
+-------
+Module[1:0-4:12]
+    ClassDef[1:0-4:12] A
         ---- Class body of A ----
-        FunctionDef[30, 72]
+        FunctionDef[3:4-4:12]
             Name:method
             Decorators:
-            Name[14, 25] Value: "classmethod"
-            ArgumentsTy[0, 0]
+            Name[2:5-2:16] Value: "classmethod"
+            ArgumentsTy[1:0-1:0]
                 Args:
-                    ArgTy[41, 45] self
-                    ArgTy[47, 53] string
+                    ArgTy[3:15-3:19] self
+                    ArgTy[3:21-3:31] string
             ---- Function body of method ----
-            Pass[68, 72]
+            Pass[4:8-4:12]
             ---- End of method function ----
         ---- End of A class ----

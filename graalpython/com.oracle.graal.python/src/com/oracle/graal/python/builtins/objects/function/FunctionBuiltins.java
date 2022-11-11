@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DEFAULTS__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_TRUFFLE_SOURCE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionDefaultsN
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.util.PythonUtils;
@@ -88,6 +91,21 @@ public class FunctionBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FunctionBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = J___GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @SuppressWarnings("unused")
+    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = {"!isPNone(instance)"})
+        protected PMethod doMethod(PFunction self, Object instance, Object klass) {
+            return factory().createMethod(instance, self);
+        }
+
+        @Specialization
+        protected static Object doFunction(PFunction self, PNone instance, Object klass) {
+            return self;
+        }
     }
 
     @Builtin(name = J___REPR__, minNumOfPositionalArgs = 1)
@@ -205,7 +223,9 @@ public class FunctionBuiltins extends PythonBuiltins {
             HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
             while (HashingStorageIteratorNext.executeUncached(storage, it)) {
                 Object key = assertNoJavaString(HashingStorageIteratorKey.executeUncached(storage, it));
-                if (!(key instanceof TruffleString)) {
+                if (key instanceof PString) {
+                    key = ((PString) key).getValueUncached();
+                } else if (!(key instanceof TruffleString)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
                 }
                 keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));

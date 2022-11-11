@@ -79,24 +79,18 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(def)")
-        Object get(VirtualFrame frame, PContextVar self, PNone def) {
-            return get(frame, self, PContextVar.NO_DEFAULT);
+        Object get(PContextVar self, @SuppressWarnings("unused") PNone def) {
+            return get(self, PContextVar.NO_DEFAULT);
         }
 
         @Specialization(guards = "!isNoValue(def)")
-        Object get(VirtualFrame frame, PContextVar self, Object def) {
+        Object get(PContextVar self, Object def) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            Object value = self.getValue(threadState);
+            Object value = self.get(threadState, def);
             if (value != null) {
                 return value;
             }
-            if (def != PContextVar.NO_DEFAULT) {
-                return def;
-            }
-            if (self.getDefault() != PContextVar.NO_DEFAULT) {
-                return self.getDefault();
-            }
-            throw raise(LookupError, new Object[]{self});
+            throw raise(LookupError);
         }
     }
 

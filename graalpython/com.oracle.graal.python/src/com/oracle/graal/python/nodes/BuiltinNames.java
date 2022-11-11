@@ -269,10 +269,14 @@ public abstract class BuiltinNames {
 
     public static final TruffleString T_LOCALS = tsLiteral("locals");
 
+    public static final String J_REMOVEPREFIX = "removeprefix";
+    public static final String J_REMOVESUFFIX = "removesuffix";
+
     public static final String J_REPR = "repr";
     public static final TruffleString T_REPR = tsLiteral(J_REPR);
 
     public static final String J_ZIP = "zip";
+    public static final TruffleString T_ZIP = tsLiteral("zip");
 
     public static final String J_COMPILE = "compile";
     public static final TruffleString T_COMPILE = tsLiteral(J_COMPILE);
@@ -356,6 +360,9 @@ public abstract class BuiltinNames {
 
     public static final String J_POSIX = "posix";
     public static final TruffleString T_POSIX = tsLiteral(J_POSIX);
+
+    public static final String J_NT = "nt";
+    public static final TruffleString T_NT = tsLiteral(J_NT);
 
     public static final String J_ARRAY = "array";
     public static final TruffleString T_ARRAY = tsLiteral(J_ARRAY);

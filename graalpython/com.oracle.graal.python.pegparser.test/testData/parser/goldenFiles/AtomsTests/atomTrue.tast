@@ -1,2 +1,8 @@
-Module[0, 4]
-    BOOLEAN[0, 4] Value: true
+Input:
+------
+True
+
+Output:
+-------
+Module[1:0-1:4]
+    BOOLEAN[1:0-1:4] Value: true

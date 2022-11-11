@@ -1,0 +1,17 @@
+Disassembly of <module>:
+  1:6   -   1:7         0 LOAD_BYTE_O                       1
+  2:3   -   3:8         2 DUP_TOP
+  2:8   -   2:9         3 LOAD_BYTE_O                       1
+  2:8   -   2:9         5 BINARY_OP                         12   (EQ)                              can quicken
+  2:8   -   2:9         7 POP_AND_JUMP_IF_FALSE             13   (to 20)                           generalizes: 5
+  2:8   -   2:9        11 ROT_N                             1
+  2:8   -   2:9        13 STORE_NAME                        0    (x)
+  3:7   -   3:8        15 LOAD_NAME                         0    (x)
+  3:7   -   3:8        17 POP_TOP
+  3:7   -   3:8        18 JUMP_FORWARD                      7    (to 25)
+  2:3   -   3:8   >>   20 POP_TOP
+  4:3   -   5:8        21 NOP
+  5:7   -   5:8        22 LOAD_NAME                         0    (x)
+  5:7   -   5:8        24 POP_TOP
+  5:7   -   5:8   >>   25 LOAD_NONE
+  5:7   -   5:8        26 RETURN_VALUE

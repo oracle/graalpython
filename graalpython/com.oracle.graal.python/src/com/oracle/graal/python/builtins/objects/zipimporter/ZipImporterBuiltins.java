@@ -519,7 +519,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (canNotFind.profile(md == null)) {
                 throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANT_FIND_MODULE, fullname);
             }
-            PCode code = compileNode.compile(frame, md.code, md.path, T_EXEC, -1);
+            PCode code = compileNode.compile(frame, md.code, md.path, T_EXEC, -1, -1);
             return code;
         }
 

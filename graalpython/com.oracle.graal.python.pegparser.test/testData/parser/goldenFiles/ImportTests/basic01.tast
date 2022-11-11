@@ -1,3 +1,9 @@
-Module[0, 10]
-    Import[0, 10]
+Input:
+------
+import sys
+
+Output:
+-------
+Module[1:0-1:10]
+    Import[1:0-1:10]
         sys

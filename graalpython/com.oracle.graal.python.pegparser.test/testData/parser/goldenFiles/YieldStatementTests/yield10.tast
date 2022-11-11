@@ -1,9 +1,15 @@
-Module[0, 24]
-    FunctionDef[0, 24]
+Input:
+------
+def f(): return; yield 1
+
+Output:
+-------
+Module[1:0-1:24]
+    FunctionDef[1:0-1:24]
         Name:f
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
         ---- Function body of f ----
-        Return[9, 15]
-        Yield[17, 24]
-            LONG[23, 24] Value: 1
+        Return[1:9-1:15]
+        Yield[1:17-1:24]
+            LONG[1:23-1:24] Value: 1
         ---- End of f function ----

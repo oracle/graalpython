@@ -1,32 +1,46 @@
-Module[0, 147]
-    Assign[0, 9]
-        LHS: Name[0, 5] Value: "iters" Store
-        RHS: LONG[8, 9] Value: 0
-    While[10, 147]
+Input:
+------
+iters = 0
+while iters < 40:
+    while iters < 10:
+        if False:
+            break
+        iters += 1
+    else:
+        iters += 1
+        break
+
+Output:
+-------
+Module[1:0-9:13]
+    Assign[1:0-1:9]
+        LHS: Name[1:0-1:5] Value: "iters" Store
+        RHS: LONG[1:8-1:9] Value: 0
+    While[2:0-9:13]
         Condition: 
-            Compare[16, 26]
-                LHS: Name[16, 21] Value: "iters"
+            Compare[2:6-2:16]
+                LHS: Name[2:6-2:11] Value: "iters"
                 Op: Lt
-                RHS: LONG[24, 26] Value: 40
+                RHS: LONG[2:14-2:16] Value: 40
         Body:
-            While[32, 147]
+            While[3:4-9:13]
                 Condition: 
-                    Compare[38, 48]
-                        LHS: Name[38, 43] Value: "iters"
+                    Compare[3:10-3:20]
+                        LHS: Name[3:10-3:15] Value: "iters"
                         Op: Lt
-                        RHS: LONG[46, 48] Value: 10
+                        RHS: LONG[3:18-3:20] Value: 10
                 Body:
-                    If[58, 85]
-                        Test: BOOLEAN[61, 66] Value: false
+                    If[4:8-5:17]
+                        Test: BOOLEAN[4:11-4:16] Value: false
                         Then:
-                            Break[80, 85]
-                    AugAssign[94, 104]
+                            Break[5:12-5:17]
+                    AugAssign[6:8-6:18]
                         Op: Add
-                        LHS: Name[94, 99] Value: "iters" Store
-                        RHS: LONG[103, 104] Value: 1
+                        LHS: Name[6:8-6:13] Value: "iters" Store
+                        RHS: LONG[6:17-6:18] Value: 1
                 Else:
-                    AugAssign[123, 133]
+                    AugAssign[8:8-8:18]
                         Op: Add
-                        LHS: Name[123, 128] Value: "iters" Store
-                        RHS: LONG[132, 133] Value: 1
-                    Break[142, 147]
+                        LHS: Name[8:8-8:13] Value: "iters" Store
+                        RHS: LONG[8:17-8:18] Value: 1
+                    Break[9:8-9:13]

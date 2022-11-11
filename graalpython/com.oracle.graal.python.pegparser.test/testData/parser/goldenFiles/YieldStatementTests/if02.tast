@@ -1,23 +1,35 @@
-Module[0, 72]
-    FunctionDef[0, 72]
+Input:
+------
+def gen(c, b):
+  if c:
+    b=1
+  if b:
+    yield 12
+  else:
+    yield 13
+
+Output:
+-------
+Module[1:0-7:12]
+    FunctionDef[1:0-7:12]
         Name:gen
-        ArgumentsTy[0, 0]
+        ArgumentsTy[1:0-1:0]
             Args:
-                ArgTy[8, 9] c
-                ArgTy[11, 12] b
+                ArgTy[1:8-1:9] c
+                ArgTy[1:11-1:12] b
         ---- Function body of gen ----
-        If[17, 30]
-            Test: Name[20, 21] Value: "c"
+        If[2:2-3:7]
+            Test: Name[2:5-2:6] Value: "c"
             Then:
-                Assign[27, 30]
-                    LHS: Name[27, 28] Value: "b" Store
-                    RHS: LONG[29, 30] Value: 1
-        If[33, 72]
-            Test: Name[36, 37] Value: "b"
+                Assign[3:4-3:7]
+                    LHS: Name[3:4-3:5] Value: "b" Store
+                    RHS: LONG[3:6-3:7] Value: 1
+        If[4:2-7:12]
+            Test: Name[4:5-4:6] Value: "b"
             Then:
-                Yield[43, 51]
-                    LONG[49, 51] Value: 12
+                Yield[5:4-5:12]
+                    LONG[5:10-5:12] Value: 12
             Else:
-                Yield[64, 72]
-                    LONG[70, 72] Value: 13
+                Yield[7:4-7:12]
+                    LONG[7:10-7:12] Value: 13
         ---- End of gen function ----

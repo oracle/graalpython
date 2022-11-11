@@ -43,5 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
-    TruffleString getName();
+    String getName();
+
+    TruffleString getTsName();
 }

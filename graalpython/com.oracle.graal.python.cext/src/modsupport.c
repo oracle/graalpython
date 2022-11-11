@@ -219,11 +219,11 @@ int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
 }
 
 int PyArg_VaParse(PyObject *args, const char *format, va_list va) {
-    return _PyArg_VaParseTupleAndKeywords_SizeT(PyTuple_Pack(1, args), NULL, format, NULL, va);
+    return _PyArg_VaParseTupleAndKeywords_SizeT(args, NULL, format, NULL, va);
 }
 
 int _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va) {
-    return _PyArg_VaParseTupleAndKeywords_SizeT(PyTuple_Pack(1, args), NULL, format, NULL, va);
+    return _PyArg_VaParseTupleAndKeywords_SizeT(args, NULL, format, NULL, va);
 }
 
 NO_INLINE

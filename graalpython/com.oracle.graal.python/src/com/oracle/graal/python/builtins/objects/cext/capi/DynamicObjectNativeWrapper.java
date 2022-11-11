@@ -155,6 +155,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -546,8 +547,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_INIT, key)")
         static Object doTpInit(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode) {
-            Object initFun = getAttrNode.execute(object, T___INIT__);
-            return PyProcsWrapper.createInitWrapper(initFun);
+            return PyProcsWrapper.createInitWrapper(getAttrNode.execute(object, T___INIT__));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
@@ -655,30 +655,36 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_ITER, key)")
         static Object doTpIter(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(lookupAttrNode.execute(object, T___ITER__));
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
+            Object method = lookupAttrNode.execute(object, T___ITER__);
+            if (method instanceof PNone) {
+                return toSulongNode.execute(method);
+            }
+            return PyProcsWrapper.createUnaryFuncWrapper(method);
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
         static Object doTpIternext(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(lookupAttrNode.execute(object, T___NEXT__));
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
+            Object method = lookupAttrNode.execute(object, T___NEXT__);
+            if (method instanceof PNone) {
+                return toSulongNode.execute(method);
+            }
+            return PyProcsWrapper.createUnaryFuncWrapper(method);
         }
 
         @Specialization(guards = "eq(TP_STR, key)")
         static Object doTpStr(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(lookupAttrNode.execute(object, T___STR__));
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
+            return PyProcsWrapper.createUnaryFuncWrapper(lookupAttrNode.execute(object, T___STR__));
         }
 
         @Specialization(guards = "eq(TP_REPR, key)")
         static Object doTpRepr(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(lookupAttrNode.execute(object, T___REPR__));
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode) {
+            return PyProcsWrapper.createUnaryFuncWrapper(lookupAttrNode.execute(object, T___REPR__));
         }
 
         @Specialization(guards = "eq(TP_DICT, key)")
@@ -1365,15 +1371,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     // just assert that we try to set the same flags; if there is a difference, this
                     // means we did not properly maintain our flag definition in
                     // TypeNodes.GetTypeFlagsNode.
-                    assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object);
+                    assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object, getTypeFlagsNode.execute(object), flags);
                 } else {
                     writeAttributeToObjectNode.execute(object, SpecialAttributeNames.T___FLAGS__, flags);
                 }
             }
 
             @TruffleBoundary
-            private static String flagsErrorMessage(PythonManagedClass object) {
-                return "type flags of " + object.getName() + " definitions are out of sync";
+            private static String flagsErrorMessage(PythonManagedClass object, long expected, long actual) {
+                return "type flags of " + object.getName() + " definitions are out of sync: expected " + expected + " vs. actual " + actual;
             }
 
             @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
@@ -1694,9 +1700,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                  * error.
                  */
                 converted = new Object[]{selfToJava.execute(arguments[0])};
+            } else if (function instanceof PBuiltinFunction && CExtContext.isMethVarargs(((PBuiltinFunction) function).getFlags()) && arguments.length == 2) {
+                converted = allToJavaNode.execute(arguments);
+                assert converted[1] instanceof PTuple;
+                SequenceStorage argsStorage = ((PTuple) converted[1]).getSequenceStorage();
+                Object[] wrapArgs = new Object[argsStorage.length() + 1];
+                wrapArgs[0] = converted[0];
+                PythonUtils.arraycopy(argsStorage.getInternalArray(), 0, wrapArgs, 1, argsStorage.length());
+                converted = wrapArgs;
             } else {
                 converted = allToJavaNode.execute(arguments);
             }
+
             Object result = executeNode.execute(function, converted);
 
             /*

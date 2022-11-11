@@ -1,4 +1,10 @@
-Module[0, 2]
-    UnaryOp[0, 2]
+Input:
+------
+-u
+
+Output:
+-------
+Module[1:0-1:2]
+    UnaryOp[1:0-1:2]
         Op: USub
-        Value: Name[1, 2] Value: "u"
+        Value: Name[1:1-1:2] Value: "u"
