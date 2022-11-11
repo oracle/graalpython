@@ -358,10 +358,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 Object[] unpackedRight = unpackForeignArray(right, lib, convert);
                 if (unpackedLeft != null && unpackedRight != null) {
                     Object[] result = Arrays.copyOf(unpackedLeft, unpackedLeft.length + unpackedRight.length);
-                    for (int i = 0, j = unpackedLeft.length; i < unpackedRight.length && j < result.length; i++, j++) {
-                        assert j < result.length;
-                        result[j] = unpackedRight[i];
-                    }
+                    System.arraycopy(unpackedRight, 0, result, unpackedLeft.length, unpackedRight.length);
                     return factory.createList(result);
                 }
             } finally {
@@ -438,11 +435,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     if (rightInt < 0) {
                         return factory.createList();
                     }
-                    Object[] repeatedData = new Object[Math.max(0, Math.multiplyExact(unpackForeignArray.length, rightInt > 0 ? rightInt : 0))];
+                    Object[] repeatedData = new Object[Math.multiplyExact(unpackForeignArray.length, rightInt)];
 
-                    // repeat data
-                    for (int i = 0; i < repeatedData.length; i++) {
-                        repeatedData[i] = unpackForeignArray[i % unpackForeignArray.length];
+                    for (int i = 0; i < rightInt; i++) {
+                        System.arraycopy(unpackForeignArray, 0, repeatedData, i * unpackForeignArray.length, unpackForeignArray.length);
                     }
 
                     return factory.createList(repeatedData);
