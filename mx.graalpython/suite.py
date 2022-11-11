@@ -139,10 +139,10 @@ suite = {
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
         },
-        "NETBEANS-LIB-PROFILER-GRAALPY": {
+        "NETBEANS-LIB-PROFILER": {
             "moduleName": "org.netbeans.modules.org-netbeans-lib-profiler",
-            "digest": "sha512:1de81a0340c0266b41ba774600346ac977910663016a0afa22859cf1eb9d9e507de4f66e3f51d5bd9575b1d1f083765ecb9b30c4d43adb201f68b83257e8a17d",
-            "sourceDigest": "sha512:92c50b8832e3a9afc93f9eaacdfc79cdf2487a74a9f5cf93c54bed50e904ef70ac6504018558d7183f074132c37fe57b21bc1e662a71c74c4201b75cdc5f8947",
+            "sha1" : "2bcd32411df5d9c5348c98cf7024ac8b76137868",
+            "sourceSha1" : "9943534904689dcf93d3bcaca8293583e9d56266",
             "maven": {
               "groupId": "org.netbeans.modules",
               "artifactId": "org-netbeans-lib-profiler",
@@ -426,7 +426,7 @@ suite = {
                 "com.oracle.graal.python",
                 "truffle:TRUFFLE_TCK",
                 "mx:JUNIT",
-                "NETBEANS-LIB-PROFILER-GRAALPY",
+                "NETBEANS-LIB-PROFILER",
             ],
             "requires": [
                 "java.management",
