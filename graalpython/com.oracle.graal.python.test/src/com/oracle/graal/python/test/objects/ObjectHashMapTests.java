@@ -43,6 +43,7 @@ package com.oracle.graal.python.test.objects;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,10 +57,12 @@ import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageForEachNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetReverseIteratorNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
@@ -289,7 +292,18 @@ public class ObjectHashMapTests {
         Collections.reverse(keysValuesReversed);
         assertArrayEquals(message, keysValuesReversed.toArray(), reverseKeysToArray(actual));
 
-        // TODO: test foreach node
+        EconomicMapStorage storage = new EconomicMapStorage(actual, false);
+        int[] size = new int[]{0};
+        HashingStorageForEachNodeGen.getUncached().execute(null, storage, new HashingStorageForEachCallback<Object>() {
+            @Override
+            public Object execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Object accumulator) {
+                Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+                assertTrue(key.toString(), expected.containsKey(key));
+                size[0]++;
+                return null;
+            }
+        }, null);
+        assertEquals(expected.size(), size[0]);
     }
 
     private static Object[] keysToArray(ObjectHashMap m) {
