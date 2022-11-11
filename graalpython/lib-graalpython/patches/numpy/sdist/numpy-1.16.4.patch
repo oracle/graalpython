@@ -226,6 +226,40 @@ index 52de312..4a8a4c4 100644
          ((PyVoidScalarObject *)ret)->descr =
              PyArray_DescrNewFromType(NPY_VOID);
          ((PyVoidScalarObject *)ret)->descr->elsize = (int) memu;
+@@ -3211,7 +3211,7 @@ static npy_hash_t
+ static npy_hash_t
+ @lname@_arrtype_hash(PyObject *obj)
+ {
+-    return _Py_HashDouble((double) ((Py@name@ScalarObject *)obj)->obval);
++    return _Py_HashDouble(Py_None, (double) ((Py@name@ScalarObject *)obj)->obval);
+ }
+ 
+ /* borrowed from complex_hash */
+@@ -3219,13 +3219,13 @@ static npy_hash_t
+ c@lname@_arrtype_hash(PyObject *obj)
+ {
+     npy_hash_t hashreal, hashimag, combined;
+-    hashreal = _Py_HashDouble((double)
++    hashreal = _Py_HashDouble(Py_None, (double)
+             (((PyC@name@ScalarObject *)obj)->obval).real);
+ 
+     if (hashreal == -1) {
+         return -1;
+     }
+-    hashimag = _Py_HashDouble((double)
++    hashimag = _Py_HashDouble(Py_None, (double)
+             (((PyC@name@ScalarObject *)obj)->obval).imag);
+     if (hashimag == -1) {
+         return -1;
+@@ -3241,7 +3241,7 @@ c@lname@_arrtype_hash(PyObject *obj)
+ static npy_hash_t
+ half_arrtype_hash(PyObject *obj)
+ {
+-    return _Py_HashDouble(npy_half_to_double(((PyHalfScalarObject *)obj)->obval));
++    return _Py_HashDouble(Py_None, npy_half_to_double(((PyHalfScalarObject *)obj)->obval));
+ }
+ 
+ static npy_hash_t
 diff --git a/numpy/core/src/multiarray/typeinfo.c b/numpy/core/src/multiarray/typeinfo.c
 index 14c4f27..c5a72b1 100644
 --- a/numpy/core/src/multiarray/typeinfo.c
