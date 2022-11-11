@@ -204,7 +204,7 @@ abstract class AccessForeignItemNodes {
             if (lib.isHashEntryReadable(object, key)) {
                 gil.release(true);
                 try {
-                    return lib.readHashValue(object, key);
+                    return getToPythonNode().executeConvert(lib.readHashValue(object, key));
                 } catch (UnsupportedMessageException | UnknownKeyException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 } finally {

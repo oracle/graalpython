@@ -60,7 +60,7 @@ def get_python_version():
     or '2.2'.
     """
     import sys
-    return sys.version[:3]
+    return ".".join(sys.version.split(".")[:2])
 
 
 def _get_posix_vars():
