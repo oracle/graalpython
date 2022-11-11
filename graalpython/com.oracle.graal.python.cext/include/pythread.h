@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,7 +8,6 @@
 #define Py_PYTHREAD_H
 
 typedef void *PyThread_type_lock;
-typedef void *PyThread_type_sema;
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +41,15 @@ PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock, int);
 #define WAIT_LOCK       1
 #define NOWAIT_LOCK     0
 
+#ifndef Py_LIMITED_API
+#ifdef HAVE_FORK
+/* Private function to reinitialize a lock at fork in the child process.
+   Reset the lock to the unlocked state.
+   Return 0 on success, return -1 on error. */
+PyAPI_FUNC(int) _PyThread_at_fork_reinit(PyThread_type_lock *lock);
+#endif  /* HAVE_FORK */
+#endif  /* !Py_LIMITED_API */
+
 /* PY_TIMEOUT_T is the integral type used to specify timeouts when waiting
    on a lock (see PyThread_acquire_lock_timed() below).
    PY_TIMEOUT_MAX is the highest usable value (in microseconds) of that
@@ -56,16 +64,16 @@ PyAPI_FUNC(int) PyThread_acquire_lock(PyThread_type_lock, int);
 #if defined(_POSIX_THREADS)
    /* PyThread_acquire_lock_timed() uses _PyTime_FromNanoseconds(us * 1000),
       convert microseconds to nanoseconds. */
-#  define PY_TIMEOUT_MAX (PY_LLONG_MAX / 1000)
+#  define PY_TIMEOUT_MAX (LLONG_MAX / 1000)
 #elif defined (NT_THREADS)
    /* In the NT API, the timeout is a DWORD and is expressed in milliseconds */
-#  if 0xFFFFFFFFLL * 1000 < PY_LLONG_MAX
+#  if 0xFFFFFFFFLL * 1000 < LLONG_MAX
 #    define PY_TIMEOUT_MAX (0xFFFFFFFFLL * 1000)
 #  else
-#    define PY_TIMEOUT_MAX PY_LLONG_MAX
+#    define PY_TIMEOUT_MAX LLONG_MAX
 #  endif
 #else
-#  define PY_TIMEOUT_MAX PY_LLONG_MAX
+#  define PY_TIMEOUT_MAX LLONG_MAX
 #endif
 
 

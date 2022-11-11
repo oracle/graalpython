@@ -583,7 +583,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object cls, Object self, PBuiltinFunction function) {
-        return trace(new PBuiltinMethod(cls, getShape(cls), self, function));
+        return trace(new PBuiltinMethod(cls, getShape(cls), self, function, null));
+    }
+
+    public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function, Object classObject) {
+        return trace(new PBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, getShape(PythonBuiltinClassType.PBuiltinMethod), self, function, classObject));
     }
 
     public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
@@ -1026,23 +1030,23 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PIntRangeIterator createIntRangeIterator(PIntRange fastRange) {
-        return createIntRangeIterator(fastRange.getIntStart(), fastRange.getIntStep(), fastRange.getIntLength());
+        return createIntRangeIterator(fastRange.getIntStart(), fastRange.getIntStop(), fastRange.getIntStep(), fastRange.getIntLength());
     }
 
-    public final PIntRangeIterator createIntRangeIterator(int start, int step, int len) {
-        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, step, len));
+    public final PIntRangeIterator createIntRangeIterator(int start, int stop, int step, int len) {
+        return trace(new PIntRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, stop, step, len));
     }
 
-    public final PBigRangeIterator createBigRangeIterator(PInt start, PInt step, PInt len) {
-        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, step, len));
+    public final PBigRangeIterator createBigRangeIterator(PInt start, PInt stop, PInt step, PInt len) {
+        return trace(new PBigRangeIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), start, stop, step, len));
     }
 
     public final PBigRangeIterator createBigRangeIterator(PBigRange longRange) {
-        return createBigRangeIterator(longRange.getPIntStart(), longRange.getPIntStep(), longRange.getPIntLength());
+        return createBigRangeIterator(longRange.getPIntStart(), longRange.getPIntStop(), longRange.getPIntStep(), longRange.getPIntLength());
     }
 
-    public final PBigRangeIterator createBigRangeIterator(BigInteger start, BigInteger step, BigInteger len) {
-        return createBigRangeIterator(createInt(start), createInt(step), createInt(len));
+    public final PBigRangeIterator createBigRangeIterator(BigInteger start, BigInteger stop, BigInteger step, BigInteger len) {
+        return createBigRangeIterator(createInt(start), createInt(stop), createInt(step), createInt(len));
     }
 
     public final PArrayIterator createArrayIterator(PArray array) {
@@ -1102,8 +1106,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct));
     }
 
-    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, lnotab, filename));
+    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, linetable, filename));
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, CodeUnit codeUnit) {
@@ -1111,9 +1115,9 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
-                    Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] lnotab) {
+                    Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
-                        filename, name, firstlineno, lnotab));
+                        filename, name, firstlineno, linetable));
     }
 
     public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, TruffleString filename) {

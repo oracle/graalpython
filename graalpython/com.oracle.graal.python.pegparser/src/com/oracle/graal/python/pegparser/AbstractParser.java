@@ -1042,25 +1042,25 @@ public abstract class AbstractParser {
      * RAISE_SYNTAX_ERROR
      */
     SSTNode raiseSyntaxError(String msg, Object... arguments) {
-        errorIndicator = true;
         Token errorToken = peekToken();
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
-        return null;
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is a token, where error begins
      */
-    SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorKnownLocation(Token errorToken, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, errorToken.sourceRange, msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msg, Object... argument) {
+    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SourceRange where, String msgIn, Object... argument) {
+        String msg = msgIn;
+        if (startRule == InputType.FSTRING) {
+            msg = "f-string: " + msgIn;
+        }
         errorIndicator = true;
         errorCb.onError(typeError, where, msg, argument);
         return null;
@@ -1069,64 +1069,50 @@ public abstract class AbstractParser {
     /**
      * RAISE_ERROR_KNOWN_LOCATION the first param is node, where error begins
      */
-    SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorKnownLocation(SSTNode where, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, where.getSourceRange(), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_LOCATION
      */
-    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType typeError, SSTNode where, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(typeError, where.getSourceRange(), msg, argument);
-        return null;
+    SSTNode raiseErrorKnownLocation(ErrorCallback.ErrorType errorType, SSTNode where, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(errorType, where.getSourceRange(), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(Token startToken, Token endToken, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorKnownRange(Token startToken, Token endToken, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startToken.sourceRange.withEnd(endToken.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, SSTNode endNode, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, SSTNode endNode, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endNode.getSourceRange()), msg, arguments);
     }
 
     /**
      * RAISE_ERROR_KNOWN_RANGE
      */
-    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, Token endToken, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorKnownRange(SSTNode startNode, Token endToken, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, startNode.getSourceRange().withEnd(endToken.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_STARTING_FROM
      */
-    SSTNode raiseSyntaxErrorStartingFrom(Token where, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorStartingFrom(Token where, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.sourceRange), msg, arguments);
     }
 
     /**
      * RAISE_SYNTAX_ERROR_STARTING_FROM
      */
-    SSTNode raiseSyntaxErrorStartingFrom(SSTNode where, String msg, Object... argument) {
-        errorIndicator = true;
-        errorCb.onError(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, argument);
-        return null;
+    SSTNode raiseSyntaxErrorStartingFrom(SSTNode where, String msg, Object... arguments) {
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Syntax, tokenizer.extendRangeToCurrentPosition(where.getSourceRange()), msg, arguments);
     }
 
     /**
@@ -1145,10 +1131,8 @@ public abstract class AbstractParser {
      * RAISE_INDENTATION_ERROR
      */
     SSTNode raiseIndentationError(String msg, Object... arguments) {
-        errorIndicator = true;
         Token errorToken = peekToken();
-        errorCb.onError(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
-        return null;
+        return raiseErrorKnownLocation(ErrorCallback.ErrorType.Indentation, errorToken.sourceRange, msg, arguments);
     }
 
     /**

@@ -26,6 +26,7 @@
 #define HPY_UNIVERSAL_CPY_TYPES_H
 
 #include "Python.h"
+#include "structmember.h"
 
 /* generally speaking, we can't #include Python.h, but there are a bunch of
  * types defined there that we need to use.  Here, we redefine all the types

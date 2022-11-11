@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -36,7 +36,6 @@ PyAPI_FUNC(void) _Py_NO_RETURN Py_Exit(int);
 
 /* Bootstrap __main__ (defined in Modules/main.c) */
 PyAPI_FUNC(int) Py_Main(int argc, wchar_t **argv);
-
 PyAPI_FUNC(int) Py_BytesMain(int argc, char **argv);
 
 /* In pathconfig.c */

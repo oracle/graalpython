@@ -138,8 +138,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -163,6 +161,7 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -176,6 +175,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -210,6 +210,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -255,6 +256,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static final long HASH_NAN = 0;
     public static final long HASH_IMAG = HASH_MULTIPLIER;
 
+    public static final int INT_DEFAULT_MAX_STR_DIGITS = 4300;
+    public static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
+
     public static final TruffleString T_CACHE_TAG = tsLiteral("cache_tag");
     public static final TruffleString T__MULTIARCH = tsLiteral("_multiarch");
 
@@ -294,17 +298,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "\n" +
                     "Flags provided through command line arguments or environment vars.",
                     // @formatter:on
-                    15,
+                    17,
                     new String[]{
                                     "debug", "inspect", "interactive", "optimize", "dont_write_bytecode",
                                     "no_user_site", "no_site", "ignore_environment", "verbose",
                                     "bytes_warning", "quiet", "hash_randomization", "isolated",
-                                    "dev_mode", "utf8_mode"},
+                                    "dev_mode", "utf8_mode", "warn_default_encoding", "int_max_str_digits"},
                     new String[]{
                                     "-d", "-i", "-i", "-O or -OO", "-B",
                                     "-s", "-S", "-E", "-v",
                                     "-b", "-q", "-R", "-I",
-                                    "-X dev", "-X utf8"},
+                                    "-X dev", "-X utf8", "-X warn_default_encoding", "-X int_max_str_digits"},
                     false);
 
     static final StructSequence.BuiltinTypeDescriptor FLOAT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
@@ -350,11 +354,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "A named tuple that holds information about Python's\n" +
                     "internal representation of integers.  The attributes are read only.",
                     // @formatter:on
-                    2,
+                    4,
                     new String[]{
-                                    "bits_per_digit", "sizeof_digit"},
+                                    "bits_per_digit", "sizeof_digit", "default_max_str_digits", "str_digits_check_threshold"},
                     new String[]{
-                                    "size of a digit in bits", "size in bytes of the C type used to represent a digit"});
+                                    "size of a digit in bits",
+                                    "size in bytes of the C type used to represent a digit",
+                                    "maximum string conversion digits limitation",
+                                    "minimum positive value for int_max_str_digits"});
 
     static final StructSequence.BuiltinTypeDescriptor HASH_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PHashInfo,
@@ -483,7 +490,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2,                          // FLT_RADIX
                         1                           // FLT_ROUNDS
         ));
-        addBuiltinConstant("int_info", factory.createStructSeq(INT_INFO_DESC, 32, 4));
+        addBuiltinConstant("int_info", factory.createStructSeq(INT_INFO_DESC, 32, 4, INT_DEFAULT_MAX_STR_DIGITS, INT_MAX_STR_DIGITS_THRESHOLD));
         addBuiltinConstant("hash_info", factory.createStructSeq(HASH_INFO_DESC,
                         64,                         // width
                         HASH_MODULUS,               // modulus
@@ -564,6 +571,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
+        sys.setAttribute(tsLiteral("platlibdir"), tsLiteral("lib"));
+
         if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
             sys.setAttribute(tsLiteral("settrace"), sys.getAttribute(tsLiteral("_settrace")));
             sys.setAttribute(tsLiteral("setprofile"), sys.getAttribute(tsLiteral("_setprofile")));
@@ -638,7 +647,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         0, // hash_randomization
                         PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
                         false, // dev_mode
-                        0 // utf8_mode
+                        0, // utf8_mode
+                        PInt.intValue(context.getOption(PythonOptions.WarnDefaultEncodingFlag)), // warn_default_encoding
+                        context.getOption(PythonOptions.IntMaxStrDigits) // int_max_str_digits
         ));
         sys.setAttribute(T___EXCEPTHOOK__, sys.getAttribute(T_EXCEPTHOOK));
         sys.setAttribute(T___UNRAISABLEHOOK__, sys.getAttribute(T_UNRAISABLEHOOK));
@@ -1846,6 +1857,31 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
             throw raiseSystemExit(code);
+        }
+    }
+
+    @Builtin(name = "get_int_max_str_digits")
+    @GenerateNodeFactory
+    abstract static class GetIntMaxStrDigits extends PythonBuiltinNode {
+        @Specialization
+        int get() {
+            return getContext().getIntMaxStrDigits();
+        }
+    }
+
+    @Builtin(name = "set_int_max_str_digits", minNumOfPositionalArgs = 1, parameterNames = {"maxdigits"})
+    @ArgumentClinic(name = "maxdigits", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class SetIntMaxStrDigits extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        Object set(int value) {
+            getContext().setIntMaxStrDigits(value);
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SysModuleBuiltinsClinicProviders.SetIntMaxStrDigitsClinicProviderGen.INSTANCE;
         }
     }
 }

@@ -53,30 +53,6 @@ def to_ulps(x):
     return n
 
 
-def ulp(x):
-    """Return the value of the least significant bit of a
-    float x, such that the first float bigger than x is x+ulp(x).
-    Then, given an expected result x and a tolerance of n ulps,
-    the result y should be such that abs(y-x) <= n * ulp(x).
-    The results from this function will only make sense on platforms
-    where native doubles are represented in IEEE 754 binary64 format.
-    """
-    x = abs(float(x))
-    if math.isnan(x) or math.isinf(x):
-        return x
-
-    # Find next float up from x.
-    n = struct.unpack('<q', struct.pack('<d', x))[0]
-    x_next = struct.unpack('<d', struct.pack('<q', n + 1))[0]
-    if math.isinf(x_next):
-        # Corner case: x was the largest finite float. Then it's
-        # not an exact power of two, so we can take the difference
-        # between x and the previous float.
-        x_prev = struct.unpack('<d', struct.pack('<q', n - 1))[0]
-        return x - x_prev
-    else:
-        return x_next - x
-
 # Here's a pure Python version of the math.factorial algorithm, for
 # documentation and comparison purposes.
 #
@@ -154,7 +130,7 @@ def parse_mtestfile(fname):
       id fn arg -> expected [flag]*
 
     """
-    with open(fname) as fp:
+    with open(fname, encoding="utf-8") as fp:
         for line in fp:
             # strip comments, and skip blank lines
             if '--' in line:
@@ -177,7 +153,7 @@ def parse_testfile(fname):
     Empty lines or lines starting with -- are ignored
     yields id, fn, arg_real, arg_imag, exp_real, exp_imag
     """
-    with open(fname) as fp:
+    with open(fname, encoding="utf-8") as fp:
         for line in fp:
             # skip comment lines and blank lines
             if line.startswith('--') or not line.strip():
@@ -239,6 +215,13 @@ def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
         return fail_msg
     else:
         return None
+
+class FloatLike:
+    def __init__(self, value):
+        self.value = value
+
+    def __float__(self):
+        return self.value
 
 class IntSubclass(int):
     pass
@@ -397,12 +380,14 @@ class MathTests(unittest.TestCase):
     def testCeil(self):
         self.assertRaises(TypeError, math.ceil)
         self.assertEqual(int, type(math.ceil(0.5)))
-        self.ftest('ceil(0.5)', math.ceil(0.5), 1)
-        self.ftest('ceil(1.0)', math.ceil(1.0), 1)
-        self.ftest('ceil(1.5)', math.ceil(1.5), 2)
-        self.ftest('ceil(-0.5)', math.ceil(-0.5), 0)
-        self.ftest('ceil(-1.0)', math.ceil(-1.0), -1)
-        self.ftest('ceil(-1.5)', math.ceil(-1.5), -1)
+        self.assertEqual(math.ceil(0.5), 1)
+        self.assertEqual(math.ceil(1.0), 1)
+        self.assertEqual(math.ceil(1.5), 2)
+        self.assertEqual(math.ceil(-0.5), 0)
+        self.assertEqual(math.ceil(-1.0), -1)
+        self.assertEqual(math.ceil(-1.5), -1)
+        self.assertEqual(math.ceil(0.0), 0)
+        self.assertEqual(math.ceil(-0.0), 0)
         #self.assertEqual(math.ceil(INF), INF)
         #self.assertEqual(math.ceil(NINF), NINF)
         #self.assertTrue(math.isnan(math.ceil(NAN)))
@@ -410,9 +395,14 @@ class MathTests(unittest.TestCase):
         class TestCeil:
             def __ceil__(self):
                 return 42
+        class FloatCeil(float):
+            def __ceil__(self):
+                return 42
         class TestNoCeil:
             pass
-        self.ftest('ceil(TestCeil())', math.ceil(TestCeil()), 42)
+        self.assertEqual(math.ceil(TestCeil()), 42)
+        self.assertEqual(math.ceil(FloatCeil()), 42)
+        self.assertEqual(math.ceil(FloatLike(42.5)), 43)
         self.assertRaises(TypeError, math.ceil, TestNoCeil())
 
         t = TestNoCeil()
@@ -468,6 +458,8 @@ class MathTests(unittest.TestCase):
             self.assertRaises(ValueError, math.cos, NINF)
         self.assertTrue(math.isnan(math.cos(NAN)))
 
+    @unittest.skipIf(sys.platform == 'win32' and platform.machine() in ('ARM', 'ARM64'),
+                    "Windows UCRT is off by 2 ULP this test requires accuracy within 1 ULP")
     def testCosh(self):
         self.assertRaises(TypeError, math.cosh)
         self.ftest('cosh(0)', math.cosh(0), 1)
@@ -501,21 +493,21 @@ class MathTests(unittest.TestCase):
 
     def testFactorial(self):
         self.assertEqual(math.factorial(0), 1)
-        self.assertEqual(math.factorial(0.0), 1)
         total = 1
         for i in range(1, 1000):
             total *= i
             self.assertEqual(math.factorial(i), total)
-            self.assertEqual(math.factorial(float(i)), total)
             self.assertEqual(math.factorial(i), py_factorial(i))
         self.assertRaises(ValueError, math.factorial, -1)
-        self.assertRaises(ValueError, math.factorial, -1.0)
         self.assertRaises(ValueError, math.factorial, -10**100)
-        self.assertRaises(ValueError, math.factorial, -1e100)
-        self.assertRaises(ValueError, math.factorial, math.pi)
 
     def testFactorialNonIntegers(self):
-        self.assertRaises(TypeError, math.factorial, decimal.Decimal(5.2))
+        self.assertRaises(TypeError, math.factorial, 5.0)
+        self.assertRaises(TypeError, math.factorial, 5.2)
+        self.assertRaises(TypeError, math.factorial, -1.0)
+        self.assertRaises(TypeError, math.factorial, -1e100)
+        self.assertRaises(TypeError, math.factorial, decimal.Decimal('5'))
+        self.assertRaises(TypeError, math.factorial, decimal.Decimal('5.2'))
         self.assertRaises(TypeError, math.factorial, "5")
 
     # Other implementations may place different upper bounds.
@@ -524,21 +516,17 @@ class MathTests(unittest.TestCase):
         # Currently raises OverflowError for inputs that are too large
         # to fit into a C long.
         self.assertRaises(OverflowError, math.factorial, 10**100)
-        self.assertRaises(OverflowError, math.factorial, 1e100)
+        self.assertRaises(TypeError, math.factorial, 1e100)
 
     def testFloor(self):
         self.assertRaises(TypeError, math.floor)
         self.assertEqual(int, type(math.floor(0.5)))
-        self.ftest('floor(0.5)', math.floor(0.5), 0)
-        self.ftest('floor(1.0)', math.floor(1.0), 1)
-        self.ftest('floor(1.5)', math.floor(1.5), 1)
-        self.ftest('floor(-0.5)', math.floor(-0.5), -1)
-        self.ftest('floor(-1.0)', math.floor(-1.0), -1)
-        self.ftest('floor(-1.5)', math.floor(-1.5), -2)
-        # pow() relies on floor() to check for integers
-        # This fails on some platforms - so check it here
-        self.ftest('floor(1.23e167)', math.floor(1.23e167), 1.23e167)
-        self.ftest('floor(-1.23e167)', math.floor(-1.23e167), -1.23e167)
+        self.assertEqual(math.floor(0.5), 0)
+        self.assertEqual(math.floor(1.0), 1)
+        self.assertEqual(math.floor(1.5), 1)
+        self.assertEqual(math.floor(-0.5), -1)
+        self.assertEqual(math.floor(-1.0), -1)
+        self.assertEqual(math.floor(-1.5), -2)
         #self.assertEqual(math.ceil(INF), INF)
         #self.assertEqual(math.ceil(NINF), NINF)
         #self.assertTrue(math.isnan(math.floor(NAN)))
@@ -546,9 +534,14 @@ class MathTests(unittest.TestCase):
         class TestFloor:
             def __floor__(self):
                 return 42
+        class FloatFloor(float):
+            def __floor__(self):
+                return 42
         class TestNoFloor:
             pass
-        self.ftest('floor(TestFloor())', math.floor(TestFloor()), 42)
+        self.assertEqual(math.floor(TestFloor()), 42)
+        self.assertEqual(math.floor(FloatFloor()), 42)
+        self.assertEqual(math.floor(FloatLike(41.9)), 41)
         self.assertRaises(TypeError, math.floor, TestNoFloor())
 
         t = TestNoFloor()
@@ -802,12 +795,76 @@ class MathTests(unittest.TestCase):
         # Verify scaling for extremely large values
         fourthmax = FLOAT_MAX / 4.0
         for n in range(32):
-            self.assertEqual(hypot(*([fourthmax]*n)), fourthmax * math.sqrt(n))
+            self.assertTrue(math.isclose(hypot(*([fourthmax]*n)),
+                                         fourthmax * math.sqrt(n)))
 
         # Verify scaling for extremely small values
         for exp in range(32):
             scale = FLOAT_MIN / 2.0 ** exp
             self.assertEqual(math.hypot(4*scale, 3*scale), 5*scale)
+
+    @requires_IEEE_754
+    @unittest.skipIf(HAVE_DOUBLE_ROUNDING,
+                     "hypot() loses accuracy on machines with double rounding")
+    def testHypotAccuracy(self):
+        # Verify improved accuracy in cases that were known to be inaccurate.
+        #
+        # The new algorithm's accuracy depends on IEEE 754 arithmetic
+        # guarantees, on having the usual ROUND HALF EVEN rounding mode, on
+        # the system not having double rounding due to extended precision,
+        # and on the compiler maintaining the specified order of operations.
+        #
+        # This test is known to succeed on most of our builds.  If it fails
+        # some build, we either need to add another skipIf if the cause is
+        # identifiable; otherwise, we can remove this test entirely.
+
+        hypot = math.hypot
+        Decimal = decimal.Decimal
+        high_precision = decimal.Context(prec=500)
+
+        for hx, hy in [
+            # Cases with a 1 ulp error in Python 3.7 compiled with Clang
+            ('0x1.10e89518dca48p+29', '0x1.1970f7565b7efp+30'),
+            ('0x1.10106eb4b44a2p+29', '0x1.ef0596cdc97f8p+29'),
+            ('0x1.459c058e20bb7p+30', '0x1.993ca009b9178p+29'),
+            ('0x1.378371ae67c0cp+30', '0x1.fbe6619854b4cp+29'),
+            ('0x1.f4cd0574fb97ap+29', '0x1.50fe31669340ep+30'),
+            ('0x1.494b2cdd3d446p+29', '0x1.212a5367b4c7cp+29'),
+            ('0x1.f84e649f1e46dp+29', '0x1.1fa56bef8eec4p+30'),
+            ('0x1.2e817edd3d6fap+30', '0x1.eb0814f1e9602p+29'),
+            ('0x1.0d3a6e3d04245p+29', '0x1.32a62fea52352p+30'),
+            ('0x1.888e19611bfc5p+29', '0x1.52b8e70b24353p+29'),
+
+            # Cases with 2 ulp error in Python 3.8
+            ('0x1.538816d48a13fp+29', '0x1.7967c5ca43e16p+29'),
+            ('0x1.57b47b7234530p+29', '0x1.74e2c7040e772p+29'),
+            ('0x1.821b685e9b168p+30', '0x1.677dc1c1e3dc6p+29'),
+            ('0x1.9e8247f67097bp+29', '0x1.24bd2dc4f4baep+29'),
+            ('0x1.b73b59e0cb5f9p+29', '0x1.da899ab784a97p+28'),
+            ('0x1.94a8d2842a7cfp+30', '0x1.326a51d4d8d8ap+30'),
+            ('0x1.e930b9cd99035p+29', '0x1.5a1030e18dff9p+30'),
+            ('0x1.1592bbb0e4690p+29', '0x1.a9c337b33fb9ap+29'),
+            ('0x1.1243a50751fd4p+29', '0x1.a5a10175622d9p+29'),
+            ('0x1.57a8596e74722p+30', '0x1.42d1af9d04da9p+30'),
+
+            # Cases with 1 ulp error in version fff3c28052e6b0
+            ('0x1.ee7dbd9565899p+29', '0x1.7ab4d6fc6e4b4p+29'),
+            ('0x1.5c6bfbec5c4dcp+30', '0x1.02511184b4970p+30'),
+            ('0x1.59dcebba995cap+30', '0x1.50ca7e7c38854p+29'),
+            ('0x1.768cdd94cf5aap+29', '0x1.9cfdc5571d38ep+29'),
+            ('0x1.dcf137d60262ep+29', '0x1.1101621990b3ep+30'),
+            ('0x1.3a2d006e288b0p+30', '0x1.e9a240914326cp+29'),
+            ('0x1.62a32f7f53c61p+29', '0x1.47eb6cd72684fp+29'),
+            ('0x1.d3bcb60748ef2p+29', '0x1.3f13c4056312cp+30'),
+            ('0x1.282bdb82f17f3p+30', '0x1.640ba4c4eed3ap+30'),
+            ('0x1.89d8c423ea0c6p+29', '0x1.d35dcfe902bc3p+29'),
+        ]:
+            x = float.fromhex(hx)
+            y = float.fromhex(hy)
+            with self.subTest(hx=hx, hy=hy, x=x, y=y):
+                with decimal.localcontext(high_precision):
+                    z = float((Decimal(x)**2 + Decimal(y)**2).sqrt())
+                self.assertEqual(hypot(x, y), z)
 
     def testDist(self):
         from decimal import Decimal as D
@@ -911,8 +968,8 @@ class MathTests(unittest.TestCase):
         for n in range(32):
             p = (fourthmax,) * n
             q = (0.0,) * n
-            self.assertEqual(dist(p, q), fourthmax * math.sqrt(n))
-            self.assertEqual(dist(q, p), fourthmax * math.sqrt(n))
+            self.assertTrue(math.isclose(dist(p, q), fourthmax * math.sqrt(n)))
+            self.assertTrue(math.isclose(dist(q, p), fourthmax * math.sqrt(n)))
 
         # Verify scaling for extremely small values
         for exp in range(32):
@@ -974,7 +1031,7 @@ class MathTests(unittest.TestCase):
             with self.subTest(value=value):
                 with self.assertRaises(TypeError):
                     math.isqrt(value)
-    
+
     def test_lcm(self):
         lcm = math.lcm
         self.assertEqual(lcm(0, 0), 0)
@@ -1018,7 +1075,7 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, lcm, 120, 84.0)
         self.assertRaises(TypeError, lcm, 120, 0, 84.0)
         self.assertEqual(lcm(MyIndexable(120), MyIndexable(84)), 840)
-        
+
     def testLdexp(self):
         self.assertRaises(TypeError, math.ldexp)
         self.ftest('ldexp(0,1)', math.ldexp(0,1), 0)
@@ -1490,17 +1547,21 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.trunc(-0.999999), -0)
         self.assertEqual(math.trunc(-100.999), -100)
 
-        class TestTrunc(object):
+        class TestTrunc:
             def __trunc__(self):
                 return 23
-
-        class TestNoTrunc(object):
+        class FloatTrunc(float):
+            def __trunc__(self):
+                return 23
+        class TestNoTrunc:
             pass
 
         self.assertEqual(math.trunc(TestTrunc()), 23)
+        self.assertEqual(math.trunc(FloatTrunc()), 23)
 
         self.assertRaises(TypeError, math.trunc)
         self.assertRaises(TypeError, math.trunc, 1, 2)
+        self.assertRaises(TypeError, math.trunc, FloatLike(23.5))
         self.assertRaises(TypeError, math.trunc, TestNoTrunc())
 
     def testIsfinite(self):
@@ -1722,16 +1783,22 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, prod)
         self.assertRaises(TypeError, prod, 42)
         self.assertRaises(TypeError, prod, ['a', 'b', 'c'])
-        self.assertRaises(TypeError, prod, ['a', 'b', 'c'], '')
-        self.assertRaises(TypeError, prod, [b'a', b'c'], b'')
+        self.assertRaises(TypeError, prod, ['a', 'b', 'c'], start='')
+        self.assertRaises(TypeError, prod, [b'a', b'c'], start=b'')
         values = [bytearray(b'a'), bytearray(b'b')]
-        self.assertRaises(TypeError, prod, values, bytearray(b''))
+        self.assertRaises(TypeError, prod, values, start=bytearray(b''))
         self.assertRaises(TypeError, prod, [[1], [2], [3]])
         self.assertRaises(TypeError, prod, [{2:3}])
-        self.assertRaises(TypeError, prod, [{2:3}]*2, {2:3})
-        self.assertRaises(TypeError, prod, [[1], [2], [3]], [])
+        self.assertRaises(TypeError, prod, [{2:3}]*2, start={2:3})
+        self.assertRaises(TypeError, prod, [[1], [2], [3]], start=[])
+
+        # Some odd cases
+        self.assertEqual(prod([2, 3], start='ab'), 'abababababab')
+        self.assertEqual(prod([2, 3], start=[1, 2]), [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2])
+        self.assertEqual(prod([], start={2: 3}), {2:3})
+
         with self.assertRaises(TypeError):
-            prod([10, 20], [30, 40])     # start is a keyword-only argument
+            prod([10, 20], 1)     # start is a keyword-only argument
 
         self.assertEqual(prod([0, 1, 2, 3]), 0)
         self.assertEqual(prod([1, 0, 2, 3]), 0)
@@ -2019,6 +2086,7 @@ class MathTests(unittest.TestCase):
         """
         self.assertEqual(x, y)
         self.assertEqual(math.copysign(1.0, x), math.copysign(1.0, y))
+
 
 class IsCloseTests(unittest.TestCase):
     isclose = math.isclose  # subclasses should override this

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeNodeGen;
@@ -158,7 +159,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         if (PythonContext.get(this).isInitialized()) {
-            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), klass);
         } else {
             return writeToDynamicStorageManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib, codePointLengthNode, codePointAtIndexNode);
         }
@@ -217,7 +218,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         if (PythonContext.get(this).isInitialized()) {
-            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), klass);
         } else {
             return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
         }

@@ -56,9 +56,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -146,27 +145,30 @@ public abstract class CallNode extends PNodeWithContext {
     @Specialization
     protected Object doType(VirtualFrame frame, PythonBuiltinClassType callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        Object call = callAttrGetterNode.execute(callableObject);
+        Object call = lookupCall.execute(frame, getClassNode.execute(callableObject), callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
     @Specialization(guards = "isPythonClass(callableObject)", replaces = "doType")
     protected Object doPythonClass(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        Object call = callAttrGetterNode.execute(callableObject);
+        Object call = lookupCall.execute(frame, getClassNode.execute(callableObject), callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
     @Specialization(guards = {"!isCallable(callableObject)", "!isForeignMethod(callableObject)"}, replaces = {"doType", "doPythonClass"})
     protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        Object call = callAttrGetterNode.execute(callableObject);
+        Object call = lookupCall.execute(frame, getClassNode.execute(callableObject), callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
@@ -239,17 +241,19 @@ public abstract class CallNode extends PNodeWithContext {
     @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+        return doObjectAndType(frame, callable, arguments, keywords, raise, getClassNode, lookupCall, callCallNode);
     }
 
     @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("lookupCall") @Cached("create(Call)") LookupInheritedSlotNode callAttrGetterNode,
+                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+        return doObjectAndType(frame, callable, arguments, keywords, raise, getClassNode, lookupCall, callCallNode);
     }
 
     @Specialization(replaces = {"doObjectAndType", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallBuiltinDirectCached",
@@ -259,8 +263,8 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Cached(parameters = "Call") LookupCallableSlotInMRONode callAttrGetterNode,
-                    @Cached GetClassNode getClassNode,
+                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupSpecialMethodSlotNode lookupCall,
                     @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
         if (callableObject instanceof PFunction) {
             return functionCall(frame, (PFunction) callableObject, arguments, keywords, dispatch, createArgs);
@@ -280,9 +284,10 @@ public abstract class CallNode extends PNodeWithContext {
         } else if (callableObject instanceof BoundDescriptor) {
             return doGeneric(frame, ((BoundDescriptor) callableObject).descriptor,
                             PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords,
-                            dispatch, createArgs, raise, callAttrGetterNode, getClassNode, callCallNode);
+                            dispatch, createArgs, raise, getClassNode, lookupCall, callCallNode);
         }
-        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(getClassNode.execute(callableObject)));
+        Object callableType = getClassNode.execute(callableObject);
+        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, lookupCall.execute(frame, callableType, callableObject));
     }
 
     protected static boolean isForeignMethod(Object object) {

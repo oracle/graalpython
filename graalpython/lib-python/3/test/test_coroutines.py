@@ -4,9 +4,12 @@ import inspect
 import pickle
 import sys
 import types
+import traceback
 import unittest
 import warnings
 from test import support
+from test.support import import_helper
+from test.support import warnings_helper
 from test.support.script_helper import assert_python_ok
 
 
@@ -1203,39 +1206,47 @@ class CoroutineTest(unittest.TestCase):
             def __aenter__(self):
                 pass
 
+        body_executed = None
         async def foo():
+            nonlocal body_executed
+            body_executed = False
             async with CM():
-                pass
+                body_executed = True
 
         with self.assertRaisesRegex(AttributeError, '__aexit__'):
             run_async(foo())
+        self.assertIs(body_executed, False)
 
     def test_with_3(self):
         class CM:
             def __aexit__(self):
                 pass
 
+        body_executed = None
         async def foo():
+            nonlocal body_executed
+            body_executed = False
             async with CM():
-                pass
+                body_executed = True
 
         with self.assertRaisesRegex(AttributeError, '__aenter__'):
             run_async(foo())
+        self.assertIs(body_executed, False)
 
     def test_with_4(self):
         class CM:
-            def __enter__(self):
-                pass
+            pass
 
-            def __exit__(self):
-                pass
-
+        body_executed = None
         async def foo():
+            nonlocal body_executed
+            body_executed = False
             async with CM():
-                pass
+                body_executed = True
 
-        with self.assertRaisesRegex(AttributeError, '__aexit__'):
+        with self.assertRaisesRegex(AttributeError, '__aenter__'):
             run_async(foo())
+        self.assertIs(body_executed, False)
 
     def test_with_5(self):
         # While this test doesn't make a lot of sense,
@@ -2109,13 +2120,36 @@ class CoroutineTest(unittest.TestCase):
             return 'end'
         self.assertEqual(run_async(run_gen()), ([], 'end'))
 
+    def test_stack_in_coroutine_throw(self):
+        # Regression test for https://github.com/python/cpython/issues/93592
+        async def a():
+            return await b()
+
+        async def b():
+            return await c()
+
+        @types.coroutine
+        def c():
+            try:
+                # traceback.print_stack()
+                yield len(traceback.extract_stack())
+            except ZeroDivisionError:
+                # traceback.print_stack()
+                yield len(traceback.extract_stack())
+
+        coro = a()
+        len_send = coro.send(None)
+        len_throw = coro.throw(ZeroDivisionError)
+        # before fixing, visible stack from throw would be shorter than from send.
+        self.assertEqual(len_send, len_throw)
+
 
 class CoroAsyncIOCompatTest(unittest.TestCase):
 
     def test_asyncio_1(self):
         # asyncio cannot be imported when Python is compiled without thread
         # support
-        asyncio = support.import_module('asyncio')
+        asyncio = import_helper.import_module('asyncio')
 
         class MyException(Exception):
             pass
@@ -2256,8 +2290,9 @@ class OriginTrackingTest(unittest.TestCase):
         try:
             warnings._warn_unawaited_coroutine = lambda coro: 1/0
             with support.catch_unraisable_exception() as cm, \
-                 support.check_warnings((r'coroutine .* was never awaited',
-                                         RuntimeWarning)):
+                 warnings_helper.check_warnings(
+                         (r'coroutine .* was never awaited',
+                          RuntimeWarning)):
                 # only store repr() to avoid keeping the coroutine alive
                 coro = corofn()
                 coro_repr = repr(coro)
@@ -2270,8 +2305,8 @@ class OriginTrackingTest(unittest.TestCase):
                 self.assertEqual(cm.unraisable.exc_type, ZeroDivisionError)
 
             del warnings._warn_unawaited_coroutine
-            with support.check_warnings((r'coroutine .* was never awaited',
-                                         RuntimeWarning)):
+            with warnings_helper.check_warnings(
+                    (r'coroutine .* was never awaited', RuntimeWarning)):
                 corofn()
                 support.gc_collect()
 

@@ -46,7 +46,7 @@ class SignalAndYieldFromTest(unittest.TestCase):
 
 class FinalizationTest(unittest.TestCase):
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_frame_resurrect(self):
         # A generator frame can be resurrected by a generator's finalization.
         def gen():
@@ -66,7 +66,7 @@ class FinalizationTest(unittest.TestCase):
         del frame
         support.gc_collect()
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_refcycle(self):
         # A generator caught in a refcycle gets finalized anyway.
         old_garbage = gc.garbage[:]
@@ -162,6 +162,14 @@ class GeneratorTest(unittest.TestCase):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
             with self.assertRaises((TypeError, pickle.PicklingError)):
                 pickle.dumps(g, proto)
+
+    def test_send_non_none_to_new_gen(self):
+        def f():
+            yield 1
+        g = f()
+        with self.assertRaises(TypeError):
+            g.send(0)
+        self.assertEqual(next(g), 1)
 
 
 class ExceptionTest(unittest.TestCase):
@@ -272,6 +280,32 @@ class ExceptionTest(unittest.TestCase):
         self.assertEqual(next(g), "done")
         self.assertEqual(sys.exc_info(), (None, None, None))
 
+    def test_except_throw_bad_exception(self):
+        class E(Exception):
+            def __new__(cls, *args, **kwargs):
+                return cls
+
+        def boring_generator():
+            yield
+
+        gen = boring_generator()
+
+        err_msg = 'should have returned an instance of BaseException'
+
+        with self.assertRaisesRegex(TypeError, err_msg):
+            gen.throw(E)
+
+        self.assertRaises(StopIteration, next, gen)
+
+        def generator():
+            with self.assertRaisesRegex(TypeError, err_msg):
+                yield
+
+        gen = generator()
+        next(gen)
+        with self.assertRaises(StopIteration):
+            gen.throw(E)
+
     def test_stopiteration_error(self):
         # See also PEP 479.
 
@@ -316,6 +350,154 @@ class ExceptionTest(unittest.TestCase):
             gen.send(StopIteration(2))
         self.assertIsInstance(cm.exception.value, StopIteration)
         self.assertEqual(cm.exception.value.value, 2)
+
+
+class GeneratorThrowTest(unittest.TestCase):
+
+    def test_exception_context_with_yield(self):
+        def f():
+            try:
+                raise KeyError('a')
+            except Exception:
+                yield
+
+        gen = f()
+        gen.send(None)
+        with self.assertRaises(ValueError) as cm:
+            gen.throw(ValueError)
+        context = cm.exception.__context__
+        self.assertEqual((type(context), context.args), (KeyError, ('a',)))
+
+    def test_exception_context_with_yield_inside_generator(self):
+        # Check that the context is also available from inside the generator
+        # with yield, as opposed to outside.
+        def f():
+            try:
+                raise KeyError('a')
+            except Exception:
+                try:
+                    yield
+                except Exception as exc:
+                    self.assertEqual(type(exc), ValueError)
+                    context = exc.__context__
+                    self.assertEqual((type(context), context.args),
+                        (KeyError, ('a',)))
+                    yield 'b'
+
+        gen = f()
+        gen.send(None)
+        actual = gen.throw(ValueError)
+        # This ensures that the assertions inside were executed.
+        self.assertEqual(actual, 'b')
+
+    def test_exception_context_with_yield_from(self):
+        def f():
+            yield
+
+        def g():
+            try:
+                raise KeyError('a')
+            except Exception:
+                yield from f()
+
+        gen = g()
+        gen.send(None)
+        with self.assertRaises(ValueError) as cm:
+            gen.throw(ValueError)
+        context = cm.exception.__context__
+        self.assertEqual((type(context), context.args), (KeyError, ('a',)))
+
+    def test_exception_context_with_yield_from_with_context_cycle(self):
+        # Check trying to create an exception context cycle:
+        # https://bugs.python.org/issue40696
+        has_cycle = None
+
+        def f():
+            yield
+
+        def g(exc):
+            nonlocal has_cycle
+            try:
+                raise exc
+            except Exception:
+                try:
+                    yield from f()
+                except Exception as exc:
+                    has_cycle = (exc is exc.__context__)
+            yield
+
+        exc = KeyError('a')
+        gen = g(exc)
+        gen.send(None)
+        gen.throw(exc)
+        # This also distinguishes from the initial has_cycle=None.
+        self.assertEqual(has_cycle, False)
+
+    def test_throw_after_none_exc_type(self):
+        def g():
+            try:
+                raise KeyError
+            except KeyError:
+                pass
+
+            try:
+                yield
+            except Exception:
+                raise RuntimeError
+
+        gen = g()
+        gen.send(None)
+        with self.assertRaises(RuntimeError) as cm:
+            gen.throw(ValueError)
+
+
+class GeneratorStackTraceTest(unittest.TestCase):
+
+    def check_stack_names(self, frame, expected):
+        names = []
+        while frame:
+            name = frame.f_code.co_name
+            # Stop checking frames when we get to our test helper.
+            if name.startswith('check_') or name.startswith('call_'):
+                break
+
+            names.append(name)
+            frame = frame.f_back
+
+        self.assertEqual(names, expected)
+
+    def check_yield_from_example(self, call_method):
+        def f():
+            self.check_stack_names(sys._getframe(), ['f', 'g'])
+            try:
+                yield
+            except Exception:
+                pass
+            self.check_stack_names(sys._getframe(), ['f', 'g'])
+
+        def g():
+            self.check_stack_names(sys._getframe(), ['g'])
+            yield from f()
+            self.check_stack_names(sys._getframe(), ['g'])
+
+        gen = g()
+        gen.send(None)
+        try:
+            call_method(gen)
+        except StopIteration:
+            pass
+
+    def test_send_with_yield_from(self):
+        def call_send(gen):
+            gen.send(None)
+
+        self.check_yield_from_example(call_send)
+
+    def test_throw_with_yield_from(self):
+        def call_throw(gen):
+            gen.throw(RuntimeError)
+
+        self.check_yield_from_example(call_throw)
 
 
 class YieldFromTests(unittest.TestCase):
@@ -735,7 +917,7 @@ And more, added later.
 >>> i.gi_running = 42
 Traceback (most recent call last):
   ...
-AttributeError: readonly attribute
+AttributeError: attribute 'gi_running' of 'generator' objects is not writable
 >>> def g():
 ...     yield me.gi_running
 >>> me = g()
@@ -783,7 +965,7 @@ Subject: Re: PEP 255: Simple Generators
 
 
 # XXX Truffle change: our random generator generates different numbers
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> while 1: # doctest: +SKIP
 ...     for s in sets:
 ...         print(" %s->%s" % (s, s.find()), end='')
@@ -1798,6 +1980,8 @@ True
 """
 
 coroutine_tests = """\
+>>> from test.support import gc_collect
+
 Sending a value into a started generator:
 
 >>> def f():
@@ -1862,22 +2046,21 @@ Traceback (most recent call last):
   ...
 SyntaxError: 'yield' outside function
 
-
-# XXX Truffle change: relax the message, CPython error messages are inconsistent and arbitrary here
->>> def f(): x = yield = y # doctest:+IGNORE_EXCEPTION_DETAIL
-Traceback (most recent call last):
-  ...
-SyntaxError: assignment to yield expression not possible
+# Pegen does not produce this error message yet
+# >>> def f(): x = yield = y
+# Traceback (most recent call last):
+#   ...
+# SyntaxError: assignment to yield expression not possible
 
 >>> def f(): (yield bar) = y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
-SyntaxError: cannot assign to yield expression
+SyntaxError: cannot assign to yield expression here. Maybe you meant '==' instead of '='?
 
 >>> def f(): (yield bar) += y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
-SyntaxError: cannot assign to yield expression
+SyntaxError: 'yield expression' is an illegal expression for augmented assignment
 
 
 Now check some throw() conditions:
@@ -2025,7 +2208,7 @@ And finalization:
 
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> del g # doctest: +SKIP
 exiting
 
@@ -2044,7 +2227,7 @@ GeneratorExit is not caught by except Exception:
 
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> del g # doctest: +SKIP
 finally
 
@@ -2067,7 +2250,7 @@ RuntimeError: generator ignored GeneratorExit
 Our ill-behaved code should be invoked during GC:
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     g = f()
 ...     next(g)
@@ -2186,7 +2369,7 @@ to test.
 
 
 # XXX Truffle change skip test requiring refcounting/finalization
-@support.impl_detail(graalvm=False)
+@support.impl_detail(graalpy=False)
 >>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     l = Leaker()
 ...     del l

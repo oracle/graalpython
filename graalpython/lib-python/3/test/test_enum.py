@@ -8,9 +8,10 @@ from collections import OrderedDict
 from enum import Enum, IntEnum, EnumMeta, Flag, IntFlag, unique, auto
 from io import StringIO
 from pickle import dumps, loads, PicklingError, HIGHEST_PROTOCOL
-from test import support
+from test.support import ALWAYS_EQ, check__all__, threading_helper
 from datetime import timedelta
 
+python_version = sys.version_info[:2]
 
 # for pickle tests
 try:
@@ -214,6 +215,18 @@ class TestEnum(unittest.TestCase):
                 set(['__class__', '__doc__', '__module__', 'name', 'value', 'invisible']),
                 )
 
+    def test_dir_on_sub_with_behavior_including_instance_dict_on_super(self):
+        # see issue40084
+        class SuperEnum(IntEnum):
+            def __new__(cls, value, description=""):
+                obj = int.__new__(cls, value)
+                obj._value_ = value
+                obj.description = description
+                return obj
+        class SubEnum(SuperEnum):
+            sample = 5
+        self.assertTrue({'description'} <= set(dir(SubEnum.sample)))
+
     def test_enum_in_enum_out(self):
         Season = self.Season
         self.assertIs(Season(Season.WINTER), Season.WINTER)
@@ -335,17 +348,38 @@ class TestEnum(unittest.TestCase):
         self.assertTrue(IntLogic.true)
         self.assertFalse(IntLogic.false)
 
-    def test_contains(self):
+    @unittest.skipIf(
+            python_version >= (3, 12),
+            '__contains__ now returns True/False for all inputs',
+            )
+    def test_contains_er(self):
         Season = self.Season
         self.assertIn(Season.AUTUMN, Season)
         with self.assertRaises(TypeError):
-            3 in Season
+            with self.assertWarns(DeprecationWarning):
+                3 in Season
         with self.assertRaises(TypeError):
-            'AUTUMN' in Season
-
+            with self.assertWarns(DeprecationWarning):
+                'AUTUMN' in Season
         val = Season(3)
         self.assertIn(val, Season)
+        #
+        class OtherEnum(Enum):
+            one = 1; two = 2
+        self.assertNotIn(OtherEnum.two, Season)
 
+    @unittest.skipIf(
+            python_version < (3, 12),
+            '__contains__ only works with enum memmbers before 3.12',
+            )
+    def test_contains_tf(self):
+        Season = self.Season
+        self.assertIn(Season.AUTUMN, Season)
+        self.assertTrue(3 in Season)
+        self.assertFalse('AUTUMN' in Season)
+        val = Season(3)
+        self.assertIn(val, Season)
+        #
         class OtherEnum(Enum):
             one = 1; two = 2
         self.assertNotIn(OtherEnum.two, Season)
@@ -445,12 +479,63 @@ class TestEnum(unittest.TestCase):
         self.assertEqual('{:<20}'.format(Season.SPRING),
                          '{:<20}'.format(str(Season.SPRING)))
 
-    def test_format_enum_custom(self):
+    def test_str_override_enum(self):
+        class EnumWithStrOverrides(Enum):
+            one = auto()
+            two = auto()
+
+            def __str__(self):
+                return 'Str!'
+        self.assertEqual(str(EnumWithStrOverrides.one), 'Str!')
+        self.assertEqual('{}'.format(EnumWithStrOverrides.one), 'Str!')
+
+    def test_format_override_enum(self):
+        class EnumWithFormatOverride(Enum):
+            one = 1.0
+            two = 2.0
+            def __format__(self, spec):
+                return 'Format!!'
+        self.assertEqual(str(EnumWithFormatOverride.one), 'EnumWithFormatOverride.one')
+        self.assertEqual('{}'.format(EnumWithFormatOverride.one), 'Format!!')
+
+    def test_str_and_format_override_enum(self):
+        class EnumWithStrFormatOverrides(Enum):
+            one = auto()
+            two = auto()
+            def __str__(self):
+                return 'Str!'
+            def __format__(self, spec):
+                return 'Format!'
+        self.assertEqual(str(EnumWithStrFormatOverrides.one), 'Str!')
+        self.assertEqual('{}'.format(EnumWithStrFormatOverrides.one), 'Format!')
+
+    def test_str_override_mixin(self):
+        class MixinEnumWithStrOverride(float, Enum):
+            one = 1.0
+            two = 2.0
+            def __str__(self):
+                return 'Overridden!'
+        self.assertEqual(str(MixinEnumWithStrOverride.one), 'Overridden!')
+        self.assertEqual('{}'.format(MixinEnumWithStrOverride.one), 'Overridden!')
+
+    def test_str_and_format_override_mixin(self):
+        class MixinWithStrFormatOverrides(float, Enum):
+            one = 1.0
+            two = 2.0
+            def __str__(self):
+                return 'Str!'
+            def __format__(self, spec):
+                return 'Format!'
+        self.assertEqual(str(MixinWithStrFormatOverrides.one), 'Str!')
+        self.assertEqual('{}'.format(MixinWithStrFormatOverrides.one), 'Format!')
+
+    def test_format_override_mixin(self):
         class TestFloat(float, Enum):
             one = 1.0
             two = 2.0
             def __format__(self, spec):
                 return 'TestFloat success!'
+        self.assertEqual(str(TestFloat.one), 'TestFloat.one')
         self.assertEqual('{}'.format(TestFloat.one), 'TestFloat success!')
 
     def assertFormatIsValue(self, spec, member):
@@ -499,6 +584,95 @@ class TestEnum(unittest.TestCase):
         self.assertFormatIsValue('{:^20}', Directional.WEST)
         self.assertFormatIsValue('{:>20}', Directional.WEST)
         self.assertFormatIsValue('{:<20}', Directional.WEST)
+
+    def test_object_str_override(self):
+        class Colors(Enum):
+            RED, GREEN, BLUE = 1, 2, 3
+            def __repr__(self):
+                return "test.%s" % (self._name_, )
+            __str__ = object.__str__
+        self.assertEqual(str(Colors.RED), 'test.RED')
+
+    def test_enum_str_override(self):
+        class MyStrEnum(Enum):
+            def __str__(self):
+                return 'MyStr'
+        class MyMethodEnum(Enum):
+            def hello(self):
+                return 'Hello!  My name is %s' % self.name
+        class Test1Enum(MyMethodEnum, int, MyStrEnum):
+            One = 1
+            Two = 2
+        self.assertTrue(Test1Enum._member_type_ is int)
+        self.assertEqual(str(Test1Enum.One), 'MyStr')
+        self.assertEqual(format(Test1Enum.One, ''), 'MyStr')
+        #
+        class Test2Enum(MyStrEnum, MyMethodEnum):
+            One = 1
+            Two = 2
+        self.assertEqual(str(Test2Enum.One), 'MyStr')
+        self.assertEqual(format(Test1Enum.One, ''), 'MyStr')
+
+    def test_inherited_data_type(self):
+        class HexInt(int):
+            __qualname__ = 'HexInt'
+            def __repr__(self):
+                return hex(self)
+        class MyEnum(HexInt, enum.Enum):
+            __qualname__ = 'MyEnum'
+            A = 1
+            B = 2
+            C = 3
+        self.assertEqual(repr(MyEnum.A), '<MyEnum.A: 0x1>')
+        globals()['HexInt'] = HexInt
+        globals()['MyEnum'] = MyEnum
+        test_pickle_dump_load(self.assertIs, MyEnum.A)
+        test_pickle_dump_load(self.assertIs, MyEnum)
+        #
+        class SillyInt(HexInt):
+            __qualname__ = 'SillyInt'
+            pass
+        class MyOtherEnum(SillyInt, enum.Enum):
+            __qualname__ = 'MyOtherEnum'
+            D = 4
+            E = 5
+            F = 6
+        self.assertIs(MyOtherEnum._member_type_, SillyInt)
+        globals()['SillyInt'] = SillyInt
+        globals()['MyOtherEnum'] = MyOtherEnum
+        test_pickle_dump_load(self.assertIs, MyOtherEnum.E)
+        test_pickle_dump_load(self.assertIs, MyOtherEnum)
+        #
+        class BrokenInt(int):
+            __qualname__ = 'BrokenInt'
+            def __new__(cls, value):
+                return int.__new__(cls, value)
+        class MyBrokenEnum(BrokenInt, Enum):
+            __qualname__ = 'MyBrokenEnum'
+            G = 7
+            H = 8
+            I = 9
+        self.assertIs(MyBrokenEnum._member_type_, BrokenInt)
+        self.assertIs(MyBrokenEnum(7), MyBrokenEnum.G)
+        globals()['BrokenInt'] = BrokenInt
+        globals()['MyBrokenEnum'] = MyBrokenEnum
+        test_pickle_exception(self.assertRaises, TypeError, MyBrokenEnum.G)
+        test_pickle_exception(self.assertRaises, PicklingError, MyBrokenEnum)
+
+    def test_too_many_data_types(self):
+        with self.assertRaisesRegex(TypeError, 'too many data types'):
+            class Huh(str, int, Enum):
+                One = 1
+
+        class MyStr(str):
+            def hello(self):
+                return 'hello, %s' % self
+        class MyInt(int):
+            def repr(self):
+                return hex(self)
+        with self.assertRaisesRegex(TypeError, 'too many data types'):
+            class Huh(MyStr, MyInt, Enum):
+                One = 1
 
     def test_hash(self):
         Season = self.Season
@@ -899,6 +1073,9 @@ class TestEnum(unittest.TestCase):
                 cyan = 4
                 magenta = 5
                 yellow = 6
+        with self.assertRaisesRegex(TypeError, "EvenMoreColor: cannot extend enumeration 'Color'"):
+            class EvenMoreColor(Color, IntEnum):
+                chartruese = 7
 
     def test_exclude_methods(self):
         class whatever(Enum):
@@ -1027,6 +1204,7 @@ class TestEnum(unittest.TestCase):
         class auto_enum(type(Enum)):
             def __new__(metacls, cls, bases, classdict):
                 temp = type(classdict)()
+                temp._cls_name = cls
                 names = set(classdict._member_names)
                 i = 0
                 for k in classdict._member_names:
@@ -1458,13 +1636,10 @@ class TestEnum(unittest.TestCase):
         self.assertEqual(list(map(int, Color)), [1, 2, 3])
 
     def test_equality(self):
-        class AlwaysEqual:
-            def __eq__(self, other):
-                return True
         class OrdinaryEnum(Enum):
             a = 1
-        self.assertEqual(AlwaysEqual(), OrdinaryEnum.a)
-        self.assertEqual(OrdinaryEnum.a, AlwaysEqual())
+        self.assertEqual(ALWAYS_EQ, OrdinaryEnum.a)
+        self.assertEqual(OrdinaryEnum.a, ALWAYS_EQ)
 
     def test_ordered_mixin(self):
         class OrderedEnum(Enum):
@@ -1711,6 +1886,17 @@ class TestEnum(unittest.TestCase):
                 def _generate_next_value_(name, start, count, last):
                     return name
 
+    def test_auto_order_wierd(self):
+        weird_auto = auto()
+        weird_auto.value = 'pathological case'
+        class Color(Enum):
+            red = weird_auto
+            def _generate_next_value_(name, start, count, last):
+                return name
+            blue = auto()
+        self.assertEqual(list(Color), [Color.red, Color.blue])
+        self.assertEqual(Color.red.value, 'pathological case')
+        self.assertEqual(Color.blue.value, 'blue')
 
     def test_duplicate_auto(self):
         class Dupes(Enum):
@@ -1718,6 +1904,18 @@ class TestEnum(unittest.TestCase):
             second = auto()
             third = auto()
         self.assertEqual([Dupes.first, Dupes.second, Dupes.third], list(Dupes))
+
+    def test_default_missing(self):
+        class Color(Enum):
+            RED = 1
+            GREEN = 2
+            BLUE = 3
+        try:
+            Color(7)
+        except ValueError as exc:
+            self.assertTrue(exc.__context__ is None)
+        else:
+            raise Exception('Exception not raised.')
 
     def test_missing(self):
         class Color(Enum):
@@ -1737,7 +1935,12 @@ class TestEnum(unittest.TestCase):
                     # trigger not found
                     return None
         self.assertIs(Color('three'), Color.blue)
-        self.assertRaises(ValueError, Color, 7)
+        try:
+            Color(7)
+        except ValueError as exc:
+            self.assertTrue(exc.__context__ is None)
+        else:
+            raise Exception('Exception not raised.')
         try:
             Color('bad return')
         except TypeError as exc:
@@ -1750,6 +1953,38 @@ class TestEnum(unittest.TestCase):
             self.assertTrue(isinstance(exc.__context__, ValueError))
         else:
             raise Exception('Exception not raised.')
+
+    def test_missing_exceptions_reset(self):
+        import weakref
+        #
+        class TestEnum(enum.Enum):
+            VAL1 = 'val1'
+            VAL2 = 'val2'
+        #
+        class Class1:
+            def __init__(self):
+                # Gracefully handle an exception of our own making
+                try:
+                    raise ValueError()
+                except ValueError:
+                    pass
+        #
+        class Class2:
+            def __init__(self):
+                # Gracefully handle an exception of Enum's making
+                try:
+                    TestEnum('invalid_value')
+                except ValueError:
+                    pass
+        # No strong refs here so these are free to die.
+        class_1_ref = weakref.ref(Class1())
+        class_2_ref = weakref.ref(Class2())
+        #
+        # The exception raised by Enum creates a reference loop and thus
+        # Class2 instances will stick around until the next gargage collection
+        # cycle, unlike Class1.
+        self.assertIs(class_1_ref(), None)
+        self.assertIs(class_2_ref(), None)
 
     def test_multiple_mixin(self):
         class MaxMixin:
@@ -1868,6 +2103,32 @@ class TestEnum(unittest.TestCase):
             REVERT_ALL = "REVERT_ALL"
             RETRY = "RETRY"
 
+    def test_multiple_mixin_inherited(self):
+        class MyInt(int):
+            def __new__(cls, value):
+                return super().__new__(cls, value)
+
+        class HexMixin:
+            def __repr__(self):
+                return hex(self)
+
+        class MyIntEnum(HexMixin, MyInt, enum.Enum):
+            pass
+
+        class Foo(MyIntEnum):
+            TEST = 1
+        self.assertTrue(isinstance(Foo.TEST, MyInt))
+        self.assertEqual(repr(Foo.TEST), "0x1")
+
+        class Fee(MyIntEnum):
+            TEST = 1
+            def __new__(cls, value):
+                value += 1
+                member = int.__new__(cls, value)
+                member._value_ = value
+                return member
+        self.assertEqual(Fee.TEST, 2)
+
     def test_empty_globals(self):
         # bpo-35717: sys._getframe(2).f_globals['__name__'] fails with KeyError
         # when using compile and exec because f_globals is empty
@@ -1876,6 +2137,22 @@ class TestEnum(unittest.TestCase):
         global_ns = {}
         local_ls = {}
         exec(code, global_ns, local_ls)
+
+    @unittest.skipUnless(
+            python_version == (3, 9),
+            'private variables are now normal attributes',
+            )
+    def test_warning_for_private_variables(self):
+        with self.assertWarns(DeprecationWarning):
+            class Private(Enum):
+                __corporal = 'Radar'
+        self.assertEqual(Private._Private__corporal.value, 'Radar')
+        try:
+            with self.assertWarns(DeprecationWarning):
+                class Private(Enum):
+                    __major_ = 'Hoolihan'
+        except ValueError:
+            pass
 
 
 class TestOrder(unittest.TestCase):
@@ -2013,6 +2290,11 @@ class TestFlag(unittest.TestCase):
         self.assertEqual(repr(~Open.AC), '<Open.CE: 524288>')
         self.assertEqual(repr(~(Open.RO | Open.CE)), '<Open.AC: 3>')
         self.assertEqual(repr(~(Open.WO | Open.CE)), '<Open.RW: 2>')
+
+    def test_format(self):
+        Perm = self.Perm
+        self.assertEqual(format(Perm.R, ''), 'Perm.R')
+        self.assertEqual(format(Perm.R | Perm.X, ''), 'Perm.R|X')
 
     def test_or(self):
         Perm = self.Perm
@@ -2162,19 +2444,42 @@ class TestFlag(unittest.TestCase):
         test_pickle_dump_load(self.assertIs, FlagStooges.CURLY|FlagStooges.MOE)
         test_pickle_dump_load(self.assertIs, FlagStooges)
 
-    def test_contains(self):
+    @unittest.skipIf(
+            python_version >= (3, 12),
+            '__contains__ now returns True/False for all inputs',
+            )
+    def test_contains_er(self):
         Open = self.Open
         Color = self.Color
         self.assertFalse(Color.BLACK in Open)
         self.assertFalse(Open.RO in Color)
         with self.assertRaises(TypeError):
-            'BLACK' in Color
+            with self.assertWarns(DeprecationWarning):
+                'BLACK' in Color
         with self.assertRaises(TypeError):
-            'RO' in Open
+            with self.assertWarns(DeprecationWarning):
+                'RO' in Open
         with self.assertRaises(TypeError):
-            1 in Color
+            with self.assertWarns(DeprecationWarning):
+                1 in Color
         with self.assertRaises(TypeError):
-            1 in Open
+            with self.assertWarns(DeprecationWarning):
+                1 in Open
+
+    @unittest.skipIf(
+            python_version < (3, 12),
+            '__contains__ only works with enum memmbers before 3.12',
+            )
+    def test_contains_tf(self):
+        Open = self.Open
+        Color = self.Color
+        self.assertFalse(Color.BLACK in Open)
+        self.assertFalse(Open.RO in Color)
+        self.assertFalse('BLACK' in Color)
+        self.assertFalse('RO' in Open)
+        self.assertTrue(1 in Color)
+        self.assertTrue(1 in Open)
+
 
     def test_member_contains(self):
         Perm = self.Perm
@@ -2219,12 +2524,13 @@ class TestFlag(unittest.TestCase):
             d = 4
             f = 6
         # Bizarre.c | Bizarre.d
-        self.assertRaisesRegex(ValueError, "5 is not a valid Bizarre", Bizarre, 5)
-        self.assertRaisesRegex(ValueError, "5 is not a valid Bizarre", Bizarre, 5)
-        self.assertRaisesRegex(ValueError, "2 is not a valid Bizarre", Bizarre, 2)
-        self.assertRaisesRegex(ValueError, "2 is not a valid Bizarre", Bizarre, 2)
-        self.assertRaisesRegex(ValueError, "1 is not a valid Bizarre", Bizarre, 1)
-        self.assertRaisesRegex(ValueError, "1 is not a valid Bizarre", Bizarre, 1)
+        name = "TestFlag.test_cascading_failure.<locals>.Bizarre"
+        self.assertRaisesRegex(ValueError, "5 is not a valid " + name, Bizarre, 5)
+        self.assertRaisesRegex(ValueError, "5 is not a valid " + name, Bizarre, 5)
+        self.assertRaisesRegex(ValueError, "2 is not a valid " + name, Bizarre, 2)
+        self.assertRaisesRegex(ValueError, "2 is not a valid " + name, Bizarre, 2)
+        self.assertRaisesRegex(ValueError, "1 is not a valid " + name, Bizarre, 1)
+        self.assertRaisesRegex(ValueError, "1 is not a valid " + name, Bizarre, 1)
 
     def test_duplicate_auto(self):
         class Dupes(Enum):
@@ -2283,7 +2589,7 @@ class TestFlag(unittest.TestCase):
         self.assertEqual(Color.ALL.value, 7)
         self.assertEqual(str(Color.BLUE), 'blue')
 
-    @support.reap_threads
+    @threading_helper.reap_threads
     def test_unique_composite(self):
         # override __eq__ to be identity only
         class TestFlag(Flag):
@@ -2313,13 +2619,49 @@ class TestFlag(unittest.TestCase):
                 threading.Thread(target=cycle_enum)
                 for _ in range(8)
                 ]
-        with support.start_threads(threads):
+        with threading_helper.start_threads(threads):
             pass
         # check that only 248 members were created
         self.assertFalse(
                 failed,
                 'at least one thread failed while creating composite members')
         self.assertEqual(256, len(seen), 'too many composite members created')
+
+    def test_init_subclass(self):
+        class MyEnum(Flag):
+            def __init_subclass__(cls, **kwds):
+                super().__init_subclass__(**kwds)
+                self.assertFalse(cls.__dict__.get('_test', False))
+                cls._test1 = 'MyEnum'
+        #
+        class TheirEnum(MyEnum):
+            def __init_subclass__(cls, **kwds):
+                super(TheirEnum, cls).__init_subclass__(**kwds)
+                cls._test2 = 'TheirEnum'
+        class WhoseEnum(TheirEnum):
+            def __init_subclass__(cls, **kwds):
+                pass
+        class NoEnum(WhoseEnum):
+            ONE = 1
+        self.assertEqual(TheirEnum.__dict__['_test1'], 'MyEnum')
+        self.assertEqual(WhoseEnum.__dict__['_test1'], 'MyEnum')
+        self.assertEqual(WhoseEnum.__dict__['_test2'], 'TheirEnum')
+        self.assertFalse(NoEnum.__dict__.get('_test1', False))
+        self.assertFalse(NoEnum.__dict__.get('_test2', False))
+        #
+        class OurEnum(MyEnum):
+            def __init_subclass__(cls, **kwds):
+                cls._test2 = 'OurEnum'
+        class WhereEnum(OurEnum):
+            def __init_subclass__(cls, **kwds):
+                pass
+        class NeverEnum(WhereEnum):
+            ONE = 1
+        self.assertEqual(OurEnum.__dict__['_test1'], 'MyEnum')
+        self.assertFalse(WhereEnum.__dict__.get('_test1', False))
+        self.assertEqual(WhereEnum.__dict__['_test2'], 'OurEnum')
+        self.assertFalse(NeverEnum.__dict__.get('_test1', False))
+        self.assertFalse(NeverEnum.__dict__.get('_test2', False))
 
 
 class TestIntFlag(unittest.TestCase):
@@ -2346,6 +2688,7 @@ class TestIntFlag(unittest.TestCase):
 
     def test_type(self):
         Perm = self.Perm
+        self.assertTrue(Perm._member_type_ is int)
         Open = self.Open
         for f in Perm:
             self.assertTrue(isinstance(f, Perm))
@@ -2424,6 +2767,11 @@ class TestIntFlag(unittest.TestCase):
         self.assertEqual(repr(~(Open.RO | Open.CE)), '<Open.AC|RW|WO: -524289>')
         self.assertEqual(repr(~(Open.WO | Open.CE)), '<Open.RW: -524290>')
         self.assertEqual(repr(Open(~4)), '<Open.CE|AC|RW|WO: -5>')
+
+    def test_format(self):
+        Perm = self.Perm
+        self.assertEqual(format(Perm.R, ''), '4')
+        self.assertEqual(format(Perm.R | Perm.X, ''), '5')
 
     def test_or(self):
         Perm = self.Perm
@@ -2612,7 +2960,11 @@ class TestIntFlag(unittest.TestCase):
         self.assertEqual(len(lst), len(Thing))
         self.assertEqual(len(Thing), 0, Thing)
 
-    def test_contains(self):
+    @unittest.skipIf(
+            python_version >= (3, 12),
+            '__contains__ now returns True/False for all inputs',
+            )
+    def test_contains_er(self):
         Open = self.Open
         Color = self.Color
         self.assertTrue(Color.GREEN in Color)
@@ -2620,13 +2972,33 @@ class TestIntFlag(unittest.TestCase):
         self.assertFalse(Color.GREEN in Open)
         self.assertFalse(Open.RW in Color)
         with self.assertRaises(TypeError):
-            'GREEN' in Color
+            with self.assertWarns(DeprecationWarning):
+                'GREEN' in Color
         with self.assertRaises(TypeError):
-            'RW' in Open
+            with self.assertWarns(DeprecationWarning):
+                'RW' in Open
         with self.assertRaises(TypeError):
-            2 in Color
+            with self.assertWarns(DeprecationWarning):
+                2 in Color
         with self.assertRaises(TypeError):
-            2 in Open
+            with self.assertWarns(DeprecationWarning):
+                2 in Open
+
+    @unittest.skipIf(
+            python_version < (3, 12),
+            '__contains__ only works with enum memmbers before 3.12',
+            )
+    def test_contains_tf(self):
+        Open = self.Open
+        Color = self.Color
+        self.assertTrue(Color.GREEN in Color)
+        self.assertTrue(Open.RW in Open)
+        self.assertTrue(Color.GREEN in Open)
+        self.assertTrue(Open.RW in Color)
+        self.assertFalse('GREEN' in Color)
+        self.assertFalse('RW' in Open)
+        self.assertTrue(2 in Color)
+        self.assertTrue(2 in Open)
 
     def test_member_contains(self):
         Perm = self.Perm
@@ -2701,7 +3073,7 @@ class TestIntFlag(unittest.TestCase):
         self.assertEqual(Color.ALL.value, 7)
         self.assertEqual(str(Color.BLUE), 'blue')
 
-    @support.reap_threads
+    @threading_helper.reap_threads
     def test_unique_composite(self):
         # override __eq__ to be identity only
         class TestFlag(IntFlag):
@@ -2731,7 +3103,7 @@ class TestIntFlag(unittest.TestCase):
                 threading.Thread(target=cycle_enum)
                 for _ in range(8)
                 ]
-        with support.start_threads(threads):
+        with threading_helper.start_threads(threads):
             pass
         # check that only 248 members were created
         self.assertFalse(
@@ -2956,7 +3328,7 @@ class TestStdLib(unittest.TestCase):
 
 class MiscTestCase(unittest.TestCase):
     def test__all__(self):
-        support.check__all__(self, enum)
+        check__all__(self, enum)
 
 
 # These are unordered here on purpose to ensure that declaration order
@@ -2998,7 +3370,7 @@ class TestIntEnumConvert(unittest.TestCase):
                           if name[0:2] not in ('CO', '__')],
                          [], msg='Names other than CONVERT_TEST_* found.')
 
-    @unittest.skipUnless(sys.version_info[:2] == (3, 8),
+    @unittest.skipUnless(python_version == (3, 8),
                          '_convert was deprecated in 3.8')
     def test_convert_warn(self):
         with self.assertWarns(DeprecationWarning):
@@ -3008,7 +3380,7 @@ class TestIntEnumConvert(unittest.TestCase):
                 __name__,
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
 
-    @unittest.skipUnless(sys.version_info >= (3, 9),
+    @unittest.skipUnless(python_version >= (3, 9),
                          '_convert was removed in 3.9')
     def test_convert_raise(self):
         with self.assertRaises(AttributeError):
@@ -3017,6 +3389,33 @@ class TestIntEnumConvert(unittest.TestCase):
                 ('test.test_enum', '__main__')[__name__=='__main__'],
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
 
+class TestHelpers(unittest.TestCase):
+
+    sunder_names = '_bad_', '_good_', '_what_ho_'
+    dunder_names = '__mal__', '__bien__', '__que_que__'
+    private_names = '_MyEnum__private', '_MyEnum__still_private'
+    private_and_sunder_names = '_MyEnum__private_', '_MyEnum__also_private_'
+    random_names = 'okay', '_semi_private', '_weird__', '_MyEnum__'
+
+    def test_sunder(self):
+        for name in self.sunder_names + self.private_and_sunder_names:
+            self.assertTrue(enum._is_sunder(name), '%r is a not sunder name?' % name)
+        for name in self.dunder_names + self.private_names + self.random_names:
+            self.assertFalse(enum._is_sunder(name), '%r is a sunder name?' % name)
+
+    def test_dunder(self):
+        for name in self.dunder_names:
+            self.assertTrue(enum._is_dunder(name), '%r is a not dunder name?' % name)
+        for name in self.sunder_names + self.private_names + self.private_and_sunder_names + self.random_names:
+            self.assertFalse(enum._is_dunder(name), '%r is a dunder name?' % name)
+
+    def test_is_private(self):
+        for name in self.private_names + self.private_and_sunder_names:
+            self.assertTrue(enum._is_private('MyEnum', name), '%r is a not private name?')
+        for name in self.sunder_names + self.dunder_names + self.random_names:
+            self.assertFalse(enum._is_private('MyEnum', name), '%r is a private name?')
+
 
 if __name__ == '__main__':
     unittest.main()
+

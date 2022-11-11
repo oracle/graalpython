@@ -85,7 +85,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -414,18 +413,22 @@ public class CApiMemberAccessNodes {
     @Builtin(name = "member_write_read_only", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"})
     protected abstract static class ReadOnlyMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin BUILTIN = ReadOnlyMemberNode.class.getAnnotation(Builtin.class);
+        private final TruffleString propertyName;
+
+        protected ReadOnlyMemberNode(TruffleString propertyName) {
+            this.propertyName = propertyName;
+        }
 
         @Specialization
         @SuppressWarnings("unused")
-        static Object doGeneric(Object self, Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.READONLY_ATTRIBUTE);
+        Object doGeneric(Object self, Object value) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTRIBUTE_S_OF_P_OBJECTS_IS_NOT_WRITABLE, propertyName, self);
         }
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create()), true),
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create(propertyName)), true),
                             CApiMemberAccessNodes.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);

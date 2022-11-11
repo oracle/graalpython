@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -118,7 +118,7 @@ PyAPI_DATA(PyTypeObject) PyUnicodeIter_Type;
 
 #define PyUnicode_Check(op) \
                  PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_UNICODE_SUBCLASS)
-#define PyUnicode_CheckExact(op) (Py_TYPE(op) == &PyUnicode_Type)
+#define PyUnicode_CheckExact(op) Py_IS_TYPE(op, &PyUnicode_Type)
 
 /* --- Constants ---------------------------------------------------------- */
 
@@ -266,10 +266,13 @@ PyAPI_FUNC(PyObject *) PyUnicode_FromFormat(
     );
 
 PyAPI_FUNC(void) PyUnicode_InternInPlace(PyObject **);
-PyAPI_FUNC(void) PyUnicode_InternImmortal(PyObject **);
 PyAPI_FUNC(PyObject *) PyUnicode_InternFromString(
     const char *u              /* UTF-8 encoded string */
     );
+
+// PyUnicode_InternImmortal() is deprecated since Python 3.10
+// and will be removed in Python 3.12. Use PyUnicode_InternInPlace() instead.
+Py_DEPRECATED(3.10) PyAPI_FUNC(void) PyUnicode_InternImmortal(PyObject **);
 
 /* Use only if you know it's a string */
 #define PyUnicode_CHECK_INTERNED(op) \
@@ -332,17 +335,6 @@ PyAPI_FUNC(wchar_t*) PyUnicode_AsWideCharString(
 */
 
 PyAPI_FUNC(PyObject*) PyUnicode_FromOrdinal(int ordinal);
-
-/* --- Free-list management ----------------------------------------------- */
-
-/* Clear the free list used by the Unicode implementation.
-
-   This can be used to release memory used for objects on the free
-   list back to the Python memory allocator.
-
-*/
-
-PyAPI_FUNC(int) PyUnicode_ClearFreeList(void);
 
 /* === Builtin Codecs =====================================================
 
@@ -480,6 +472,23 @@ PyAPI_FUNC(PyObject*) PyUnicode_DecodeUTF8Stateful(
 PyAPI_FUNC(PyObject*) PyUnicode_AsUTF8String(
     PyObject *unicode           /* Unicode object */
     );
+
+/* Returns a pointer to the default encoding (UTF-8) of the
+   Unicode object unicode and the size of the encoded representation
+   in bytes stored in *size.
+
+   In case of an error, no *size is set.
+
+   This function caches the UTF-8 encoded string in the unicodeobject
+   and subsequent calls will return the same string.  The memory is released
+   when the unicodeobject is deallocated.
+*/
+
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030A0000
+PyAPI_FUNC(const char *) PyUnicode_AsUTF8AndSize(
+    PyObject *unicode,
+    Py_ssize_t *size);
+#endif
 
 /* --- UTF-32 Codecs ------------------------------------------------------ */
 

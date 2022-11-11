@@ -9,21 +9,22 @@ Disassembly of foo:
   2:17  -   2:19        2 LOAD_BYTE_O                       10
   2:11  -   2:20        4 CALL_FUNCTION                     1
   2:2   -   5:26        6 GET_ITER
-  2:2   -   5:26  >>    7 FOR_ITER                          24   (to 31)                           can quicken
+  2:2   -   5:26  >>    7 FOR_ITER                          25   (to 32)                           can quicken
   2:6   -   2:7         9 STORE_FAST                        0    (i)                               generalizes: 7
-  4:13  -   4:14       11 LOAD_GLOBAL                       1    (a)
-  5:18  -   5:26       13 POP_TOP
-  5:18  -   5:26       14 JUMP_BACKWARD                     7    (to 7)
-  5:18  -   5:26       16 ROT_TWO
-  5:18  -   5:26       17 POP_TOP
-  5:18  -   5:26       18 RETURN_VALUE
-  5:18  -   5:26       19 JUMP_FORWARD                      8    (to 27)
-  5:18  -   5:26       21 PUSH_EXC_INFO                                                           (exc handler 11 - 13; stack: 1)
-  5:18  -   5:26       22 POP_EXCEPT
-  5:18  -   5:26       23 POP_TOP
-  5:18  -   5:26       24 JUMP_BACKWARD                     17   (to 7)
-  5:18  -   5:26       26 END_EXC_HANDLER                                                         (exc handler 22 - 26; stack: 2)
-  5:18  -   5:26  >>   27 JUMP_BACKWARD                     20   (to 7)
-  5:18  -   5:26       29 JUMP_BACKWARD                     22   (to 7)
-  5:18  -   5:26  >>   31 LOAD_NONE
-  5:18  -   5:26       32 RETURN_VALUE
+  3:4   -   5:26       11 NOP
+  4:13  -   4:14       12 LOAD_GLOBAL                       1    (a)
+  5:18  -   5:26       14 POP_TOP
+  5:18  -   5:26       15 JUMP_BACKWARD                     8    (to 7)
+  5:18  -   5:26       17 ROT_TWO
+  5:18  -   5:26       18 POP_TOP
+  5:18  -   5:26       19 RETURN_VALUE
+  5:18  -   5:26       20 JUMP_FORWARD                      8    (to 28)
+  5:18  -   5:26       22 PUSH_EXC_INFO                                                           (exc handler 12 - 14; stack: 1)
+  5:18  -   5:26       23 POP_EXCEPT
+  5:18  -   5:26       24 POP_TOP
+  5:18  -   5:26       25 JUMP_BACKWARD                     18   (to 7)
+  5:18  -   5:26       27 END_EXC_HANDLER                                                         (exc handler 23 - 27; stack: 2)
+  5:18  -   5:26  >>   28 JUMP_BACKWARD                     21   (to 7)
+  5:18  -   5:26       30 JUMP_BACKWARD                     23   (to 7)
+  5:18  -   5:26  >>   32 LOAD_NONE
+  5:18  -   5:26       33 RETURN_VALUE

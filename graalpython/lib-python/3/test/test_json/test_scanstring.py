@@ -4,7 +4,7 @@ from test import support
 
 
 class TestScanstring:
-    @support.impl_detail(msg="not yet supported: GR-26305 unicode supplementary characters", graalvm=False)
+    @support.impl_detail(msg="not yet supported: GR-26305 unicode supplementary characters", graalpy=False)
     def test_scanstring(self):
         scanstring = self.json.decoder.scanstring
         self.assertEqual(

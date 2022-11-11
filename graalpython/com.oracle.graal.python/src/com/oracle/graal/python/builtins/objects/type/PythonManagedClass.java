@@ -30,9 +30,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -59,7 +58,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     private boolean abstractClass;
 
-    private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
+    // Needs to maintain the order. It would make sense to use weakrefs, but CPython doesn't do that
+    private final LinkedHashSet<PythonAbstractClass> subClasses = new LinkedHashSet<>();
     @CompilationFinal private Shape instanceShape;
     private TruffleString name;
     private TruffleString qualName;
@@ -334,7 +334,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
-    final Set<PythonAbstractClass> getSubClasses() {
+    final LinkedHashSet<PythonAbstractClass> getSubClasses() {
         return subClasses;
     }
 

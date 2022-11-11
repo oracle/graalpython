@@ -223,6 +223,10 @@ class Process(process.BaseProcess):
     def _Popen(process_obj):
         return _default_context.get_context().Process._Popen(process_obj)
 
+    @staticmethod
+    def _after_fork():
+        return _default_context.get_context().Process._after_fork()
+
 class DefaultContext(BaseContext):
     Process = Process
 
@@ -288,6 +292,11 @@ if sys.platform != 'win32':
             return Popen(process_obj)    
             # End Truffle change
             
+        @staticmethod
+        def _after_fork():
+            # process is spawned, nothing to do
+            pass
+
     class ForkServerProcess(process.BaseProcess):
         _start_method = 'forkserver'
         @staticmethod
@@ -336,6 +345,11 @@ else:
         def _Popen(process_obj):
             from .popen_spawn_win32 import Popen
             return Popen(process_obj)
+
+        @staticmethod
+        def _after_fork():
+            # process is spawned, nothing to do
+            pass
 
     class SpawnContext(BaseContext):
         _name = 'spawn'

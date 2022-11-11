@@ -438,7 +438,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
     ioclass = pyio.BytesIO
     EOF = b""
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_getbuffer(self):
         memio = self.ioclass(b"1234567890")
         buf = memio.getbuffer()
@@ -697,7 +697,7 @@ class PyStringIOTest(MemoryTestMixin, MemorySeekTestMixin,
     UnsupportedOperation = pyio.UnsupportedOperation
     EOF = ""
     
-    @support.impl_detail(msg="failure causes unittest output to crash", graalvm=False)
+    @support.impl_detail(msg="failure causes unittest output to crash", graalpy=False)
     def test_lone_surrogates(self):
         # Issue #20424
         memio = self.ioclass('\ud800')

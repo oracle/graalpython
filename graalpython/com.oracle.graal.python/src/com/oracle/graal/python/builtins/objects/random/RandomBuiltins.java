@@ -223,10 +223,16 @@ public class RandomBuiltins extends PythonBuiltins {
             return RandomBuiltinsClinicProviders.GetRandBitsNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "k <= 0")
+        @Specialization(guards = "k < 0")
         @SuppressWarnings("unused")
-        int nonPositive(PRandom random, int k) {
-            throw raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_GREATER_THAN_ZERO);
+        int negative(PRandom random, int k) {
+            throw raise(ValueError, ErrorMessages.NUMBER_OF_BITS_MUST_BE_NON_NEGATIVE);
+        }
+
+        @Specialization(guards = "k == 0")
+        @SuppressWarnings("unused")
+        int zero(PRandom random, int k) {
+            return 0;
         }
 
         @Specialization(guards = {"k >= 1", "k <= 31"})

@@ -44,8 +44,8 @@ import static com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins
 import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins.setSSLErrorAttributes;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -257,8 +257,8 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseOSErrorSubType(frame, PythonBuiltinClassType.FileNotFoundError, format, fmtArgs);
     }
 
-    public final PException raiseSocketTimeoutError(Frame frame, TruffleString format, Object... fmtArgs) {
-        return raiseOSErrorSubType(frame, PythonBuiltinClassType.SocketTimeout, format, fmtArgs);
+    public final PException raiseTimeoutError(Frame frame, TruffleString message) {
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.TimeoutError, new Object[]{message});
     }
 
     public final PException raiseUnicodeEncodeError(Frame frame, String encoding, TruffleString object, int start, int end, String reason) {

@@ -1,12 +1,17 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 /* Do not renumber the file; these numbers are part of the stable ABI. */
+#if defined(Py_LIMITED_API)
 /* Disabled, see #10181 */
 #undef Py_bf_getbuffer
 #undef Py_bf_releasebuffer
+#else
+#define Py_bf_getbuffer 1
+#define Py_bf_releasebuffer 2
+#endif
 #define Py_mp_ass_subscript 3
 #define Py_mp_length 4
 #define Py_mp_subscript 5
@@ -87,4 +92,8 @@
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03050000
 /* New in 3.5 */
 #define Py_tp_finalize 80
+#endif
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030A0000
+/* New in 3.10 */
+#define Py_am_send 81
 #endif

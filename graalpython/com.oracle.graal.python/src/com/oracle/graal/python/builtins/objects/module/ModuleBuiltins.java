@@ -41,7 +41,9 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
@@ -155,11 +157,9 @@ public class ModuleBuiltins extends PythonBuiltins {
     public abstract static class ModuleDirNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dir(VirtualFrame frame, PythonModule self,
-                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached IsBuiltinClassProfile isDictProfile,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
-                        @Cached GetDictIfExistsNode getDict,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached HashingStorageGetItem getItem) {
             Object dict = lookup.execute(frame, self, T___DICT__);
@@ -172,20 +172,8 @@ public class ModuleBuiltins extends PythonBuiltins {
                     return constructListNode.execute(frame, dict);
                 }
             } else {
-                TruffleString name = getName(self, getDict, getItem, castToStringNode);
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, name);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, "<module>.__dict__");
             }
-        }
-
-        private TruffleString getName(PythonModule self, GetDictIfExistsNode getDict, HashingStorageGetItem getItem, CastToTruffleStringNode castToStringNode) {
-            PDict dict = getDict.execute(self);
-            if (dict != null) {
-                Object name = getItem.execute(dict.getDictStorage(), T___NAME__);
-                if (name != null) {
-                    return castToStringNode.execute(name);
-                }
-            }
-            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.NAMELESS_MODULE);
         }
 
         protected static boolean isDict(Object object, IsBuiltinClassProfile profile) {
@@ -340,6 +328,40 @@ public class ModuleBuiltins extends PythonBuiltins {
         Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T___GETATTRIBUTE__, "module", self);
         }
+    }
 
+    @Builtin(name = J___ANNOTATIONS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
+    @GenerateNodeFactory
+    abstract static class AnnotationsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        Object get(Object self, @SuppressWarnings("unused") Object value,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode read,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+            Object annotations = read.execute(self, T___ANNOTATIONS__);
+            if (annotations == PNone.NO_VALUE) {
+                annotations = factory().createDict();
+                write.execute(self, T___ANNOTATIONS__, annotations);
+            }
+            return annotations;
+        }
+
+        @Specialization(guards = "isDeleteMarker(value)")
+        Object delete(Object self, @SuppressWarnings("unused") Object value,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode read,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+            Object annotations = read.execute(self, T___ANNOTATIONS__);
+            if (annotations == PNone.NO_VALUE) {
+                throw raise(AttributeError, new Object[]{T___ANNOTATIONS__});
+            }
+            write.execute(self, T___ANNOTATIONS__, PNone.NO_VALUE);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        Object set(Object self, Object value,
+                        @Shared("write") @Cached WriteAttributeToObjectNode write) {
+            write.execute(self, T___ANNOTATIONS__, value);
+            return PNone.NONE;
+        }
     }
 }

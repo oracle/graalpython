@@ -274,6 +274,8 @@ public abstract class PosixSupportLibrary extends Library {
     // TODO is it worth synchronizing at least all accesses made through PosixSupportLibrary?
     public abstract void setenv(Object receiver, Object name, Object value, boolean overwrite) throws PosixException;
 
+    public abstract void unsetenv(Object receiver, Object name) throws PosixException;
+
     public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
                     int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
 

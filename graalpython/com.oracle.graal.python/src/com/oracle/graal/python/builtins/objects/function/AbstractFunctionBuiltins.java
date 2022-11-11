@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -282,12 +283,13 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        protected static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none,
-                        @Cached TruffleString.EqualNode equalNode,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+        protected static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
             Signature signature = self.getSignature();
+            return signatureToText(signature, false);
+        }
+
+        @TruffleBoundary
+        public static TruffleString signatureToText(Signature signature, boolean skipSelf) {
             TruffleString[] keywordNames = signature.getKeywordNames();
             boolean takesVarArgs = signature.takesVarArgs();
             boolean takesVarKeywordArgs = signature.takesVarKeywordArgs();
@@ -295,46 +297,54 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             TruffleString[] parameterNames = signature.getParameterIds();
 
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            appendStringNode.execute(sb, T_LPAREN);
+            sb.appendStringUncached(T_LPAREN);
             boolean first = true;
             for (int i = 0; i < parameterNames.length; i++) {
-                if (i == 0 && equalNode.execute(T_DOLLAR_DECL_TYPE, parameterNames[i], TS_ENCODING)) {
+                if (i == 0 && T_DOLLAR_DECL_TYPE.equalsUncached(parameterNames[i], TS_ENCODING)) {
                     continue;
                 }
-                first = appendCommaIfNeeded(appendStringNode, sb, first);
-                appendStringNode.execute(sb, parameterNames[i++]);
+                if (skipSelf) {
+                    skipSelf = false;
+                    continue;
+                }
+                if (!first && signature.getPositionalOnlyArgIndex() == i) {
+                    first = appendCommaIfNeeded(sb, first);
+                    sb.appendCodePointUncached('/', 1, true);
+                }
+                first = appendCommaIfNeeded(sb, first);
+                sb.appendStringUncached(parameterNames[i]);
             }
-            if (parameterNames.length > 0) {
-                first = appendCommaIfNeeded(appendStringNode, sb, first);
-                appendCodePointNode.execute(sb, '/', 1, true);
+            if (signature.getPositionalOnlyArgIndex() == parameterNames.length) {
+                first = appendCommaIfNeeded(sb, first);
+                sb.appendCodePointUncached('/', 1, true);
             }
             if (takesVarArgs) {
-                first = appendCommaIfNeeded(appendStringNode, sb, first);
-                appendStringNode.execute(sb, ARGS);
+                first = appendCommaIfNeeded(sb, first);
+                sb.appendStringUncached(ARGS);
             }
             if (keywordNames.length > 0) {
                 if (!takesVarArgs) {
-                    first = appendCommaIfNeeded(appendStringNode, sb, first);
-                    appendCodePointNode.execute(sb, '*', 1, true);
+                    first = appendCommaIfNeeded(sb, first);
+                    sb.appendCodePointUncached('*', 1, true);
                 }
                 for (TruffleString keywordName : keywordNames) {
-                    first = appendCommaIfNeeded(appendStringNode, sb, first);
-                    appendStringNode.execute(sb, keywordName);
-                    appendStringNode.execute(sb, T_EQ);
-                    appendCodePointNode.execute(sb, '?', 1, true);
+                    first = appendCommaIfNeeded(sb, first);
+                    sb.appendStringUncached(keywordName);
+                    sb.appendStringUncached(T_EQ);
+                    sb.appendCodePointUncached('?', 1, true);
                 }
             }
             if (takesVarKeywordArgs) {
-                appendCommaIfNeeded(appendStringNode, sb, first);
-                appendStringNode.execute(sb, KWARGS);
+                appendCommaIfNeeded(sb, first);
+                sb.appendStringUncached(KWARGS);
             }
-            appendStringNode.execute(sb, T_RPAREN);
-            return toStringNode.execute(sb);
+            sb.appendStringUncached(T_RPAREN);
+            return sb.toStringUncached();
         }
 
-        private static boolean appendCommaIfNeeded(TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder sb, boolean first) {
+        private static boolean appendCommaIfNeeded(TruffleStringBuilder sb, boolean first) {
             if (!first) {
-                appendStringNode.execute(sb, T_COMMA_SPACE);
+                sb.appendStringUncached(T_COMMA_SPACE);
             }
             return false;
         }

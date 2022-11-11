@@ -43,7 +43,7 @@
 #define REAL_SIZE_TP(tp) PyLong_AsSsize_t(PyDict_GetItem((tp)->tp_dict, polyglot_from_string("n_fields", SRC_CS)))
 #define REAL_SIZE(op) REAL_SIZE_TP(Py_TYPE(op))
 
-char *PyStructSequence_UnnamedField = "unnamed field";
+const char* const PyStructSequence_UnnamedField = "unnamed field";
 
 static void
 structseq_dealloc(PyStructSequence *obj)

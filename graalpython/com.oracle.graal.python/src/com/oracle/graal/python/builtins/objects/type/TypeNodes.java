@@ -294,6 +294,7 @@ public abstract class TypeNodes {
                     break;
                 case PMethod:
                 case PBuiltinFunctionOrMethod:
+                case PBuiltinMethod:
                 case MethodWrapper:
                     result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
                     break;

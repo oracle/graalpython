@@ -11,10 +11,14 @@ import itertools
 import operator
 import struct
 import sys
+import textwrap
 import unicodedata
 import unittest
 import warnings
+from test.support import import_helper
+from test.support import warnings_helper
 from test import support, string_tests
+from test.support.script_helper import assert_python_failure
 
 # Error handling (bad decoder return)
 def search_function(encoding):
@@ -32,7 +36,6 @@ def search_function(encoding):
         return (encode2, decode2, None, None)
     else:
         return None
-codecs.register(search_function)
 
 def duplicate_string(text):
     """
@@ -53,6 +56,10 @@ class UnicodeTest(string_tests.CommonTest,
         unittest.TestCase):
 
     type2test = str
+
+    def setUp(self):
+        codecs.register(search_function)
+        self.addCleanup(codecs.unregister, search_function)
 
     def checkequalnofix(self, result, object, methodname, *args):
         method = getattr(object, methodname)
@@ -200,7 +207,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(0, '\u0102' * 10, 'count', '\u0102\U00100304')
 
 
-    @support.impl_detail('GR-26305: string indexing', graalvm=False)
+    @support.impl_detail('GR-26305: string indexing', graalpy=False)
     def test_find(self):
         string_tests.CommonTest.test_find(self)
         # test implementation details of the memchr fast path
@@ -260,7 +267,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(-1, 'a' * 100, 'rfind', '\U00100304a')
         self.checkequal(-1, '\u0102' * 100, 'rfind', '\U00100304\u0102')
 
-    @support.impl_detail('GR-26305: string indexing', graalvm=False)
+    @support.impl_detail('GR-26305: string indexing', graalpy=False)
     def test_index(self):
         string_tests.CommonTest.test_index(self)
         self.checkequalnofix(0, 'abcdefghiabc', 'index',  '')
@@ -472,7 +479,7 @@ class UnicodeTest(string_tests.CommonTest,
         'needs too much memory on a 64-bit platform')
     # CPython creates an intermediate list, so it raises OverflowError on the size
     # We have an optimized implementation that doesn't, so we raise MemoryError
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_join_overflow(self):
         size = int(sys.maxsize**0.5) + 1
         seq = ('A' * size,) * size
@@ -507,8 +514,30 @@ class UnicodeTest(string_tests.CommonTest,
         text = 'abc def'
         self.assertIs(text.replace(pattern, pattern), text)
 
+    def test_repeat_id_preserving(self):
+        a = '123abc1@'
+        b = '456zyx-+'
+        self.assertEqual(id(a), id(a))
+        self.assertNotEqual(id(a), id(b))
+        self.assertNotEqual(id(a), id(a * -4))
+        self.assertNotEqual(id(a), id(a * 0))
+        self.assertEqual(id(a), id(a * 1))
+        self.assertEqual(id(a), id(1 * a))
+        self.assertNotEqual(id(a), id(a * 2))
+
+        class SubStr(str):
+            pass
+
+        s = SubStr('qwerty()')
+        self.assertEqual(id(s), id(s))
+        self.assertNotEqual(id(s), id(s * -4))
+        self.assertNotEqual(id(s), id(s * 0))
+        self.assertNotEqual(id(s), id(s * 1))
+        self.assertNotEqual(id(s), id(1 * s))
+        self.assertNotEqual(id(s), id(s * 2))
+
     def test_bytes_comparison(self):
-        with support.check_warnings():
+        with warnings_helper.check_warnings():
             warnings.simplefilter('ignore', BytesWarning)
             self.assertEqual('abc' == b'abc', False)
             self.assertEqual('abc' != b'abc', True)
@@ -723,6 +752,16 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertFalse("[".isidentifier())
         self.assertFalse("©".isidentifier())
         self.assertFalse("0".isidentifier())
+
+    @support.cpython_only
+    @support.requires_legacy_unicode_capi
+    def test_isidentifier_legacy(self):
+        import _testcapi
+        u = '𝖀𝖓𝖎𝖈𝖔𝖉𝖊'
+        self.assertTrue(u.isidentifier())
+        with warnings_helper.check_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            self.assertTrue(_testcapi.unicode_legacy_string(u).isidentifier())
 
     def test_isprintable(self):
         self.assertTrue("".isprintable())
@@ -1087,6 +1126,12 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertEqual('{0:^8s}'.format('result'), ' result ')
         self.assertEqual('{0:^9s}'.format('result'), ' result  ')
         self.assertEqual('{0:^10s}'.format('result'), '  result  ')
+        self.assertEqual('{0:8s}'.format('result'), 'result  ')
+        self.assertEqual('{0:0s}'.format('result'), 'result')
+        self.assertEqual('{0:08s}'.format('result'), 'result00')
+        self.assertEqual('{0:<08s}'.format('result'), 'result00')
+        self.assertEqual('{0:>08s}'.format('result'), '00result')
+        self.assertEqual('{0:^08s}'.format('result'), '0result0')
         self.assertEqual('{0:10000}'.format('a'), 'a' + ' ' * 9999)
         self.assertEqual('{0:10000}'.format(''), ' ' * 10000)
         self.assertEqual('{0:10000000}'.format(''), ' ' * 10000000)
@@ -1214,8 +1259,11 @@ class UnicodeTest(string_tests.CommonTest,
                           0, 1, 2, 3, 4, 5, 6, 7)
 
         # string format spec errors
-        self.assertRaises(ValueError, "{0:-s}".format, '')
-        self.assertRaises(ValueError, format, "", "-")
+        sign_msg = "Sign not allowed in string format specifier"
+        self.assertRaisesRegex(ValueError, sign_msg, "{0:-s}".format, '')
+        self.assertRaisesRegex(ValueError, sign_msg, format, "", "-")
+        space_msg = "Space not allowed in string format specifier"
+        self.assertRaisesRegex(ValueError, space_msg, "{: }".format, '')
         self.assertRaises(ValueError, "{0:=s}".format, '')
 
         # Alternate formatting is not supported
@@ -1756,7 +1804,7 @@ class UnicodeTest(string_tests.CommonTest,
         # Issue #8271: during the decoding of an invalid UTF-8 byte sequence,
         # only the start byte and the continuation byte(s) are now considered
         # invalid, instead of the number of bytes specified by the start byte.
-        # See http://www.unicode.org/versions/Unicode5.2.0/ch03.pdf (page 95,
+        # See https://www.unicode.org/versions/Unicode5.2.0/ch03.pdf (page 95,
         # table 3-8, Row 2) for more information about the algorithm used.
         FFFD = '\ufffd'
         sequences = [
@@ -1923,7 +1971,7 @@ class UnicodeTest(string_tests.CommonTest,
                                            'invalid continuation byte')
 
     # Java UTF-8 Charset reports the whole sequence as invalid
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_invalid_cb_for_3bytes_seq(self):
         """
         Test that an 'invalid continuation byte' error is raised when the
@@ -2154,7 +2202,7 @@ class UnicodeTest(string_tests.CommonTest,
             self.assertEqual(str(u.encode(encoding),encoding), u)
 
     # Java charsets sometimes produce a bit different results
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_codecs_charmap(self):
         # 0-127
         s = bytes(range(128))
@@ -2216,22 +2264,6 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertEqual(("abc" "def"), "abcdef")
         self.assertEqual(("abc" "def" "ghi"), "abcdefghi")
         self.assertEqual(("abc" "def" "ghi"), "abcdefghi")
-
-    def test_printing(self):
-        class BitBucket:
-            def write(self, text):
-                pass
-
-        out = BitBucket()
-        print('abc', file=out)
-        print('abc', 'def', file=out)
-        print('abc', 'def', file=out)
-        print('abc', 'def', file=out)
-        print('abc\n', file=out)
-        print('abc\n', end=' ', file=out)
-        print('abc\n', end=' ', file=out)
-        print('def\n', file=out)
-        print('def\n', file=out)
 
     def test_ucs4(self):
         x = '\U00100000'
@@ -2308,7 +2340,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertIs(s.expandtabs(), s)
 
     # Makes assumptions about memory consumption of strings
-    @support.impl_detail(graalvm=False)
+    @support.impl_detail(graalpy=False)
     def test_raiseMemError(self):
         if struct.calcsize('P') == 8:
             # 64 bits pointers
@@ -2366,6 +2398,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertEqual(len(args), 1)
 
     @support.cpython_only
+    @support.requires_legacy_unicode_capi
     def test_resize(self):
         from _testcapi import getargs_u
         for length in range(1, 100, 7):
@@ -2373,12 +2406,14 @@ class UnicodeTest(string_tests.CommonTest,
             text = 'a' * length + 'b'
 
             # fill wstr internal field
-            abc = getargs_u(text)
+            with self.assertWarns(DeprecationWarning):
+                abc = getargs_u(text)
             self.assertEqual(abc, text)
 
             # resize text: wstr field must be cleared and then recomputed
             text += 'c'
-            abcdef = getargs_u(text)
+            with self.assertWarns(DeprecationWarning):
+                abcdef = getargs_u(text)
             self.assertNotEqual(abc, abcdef)
             self.assertEqual(abcdef, text)
 
@@ -2456,24 +2491,86 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertTrue(astral >= bmp2)
         self.assertFalse(astral >= astral2)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, str)
         support.check_free_after_iterating(self, reversed, str)
+
+    def test_check_encoding_errors(self):
+        # bpo-37388: str(bytes) and str.decode() must check encoding and errors
+        # arguments in dev mode
+        encodings = ('ascii', 'utf8', 'latin1')
+        invalid = 'Boom, Shaka Laka, Boom!'
+        code = textwrap.dedent(f'''
+            import sys
+            encodings = {encodings!r}
+
+            for data in (b'', b'short string'):
+                try:
+                    str(data, encoding={invalid!r})
+                except LookupError:
+                    pass
+                else:
+                    sys.exit(21)
+
+                try:
+                    str(data, errors={invalid!r})
+                except LookupError:
+                    pass
+                else:
+                    sys.exit(22)
+
+                for encoding in encodings:
+                    try:
+                        str(data, encoding, errors={invalid!r})
+                    except LookupError:
+                        pass
+                    else:
+                        sys.exit(22)
+
+            for data in ('', 'short string'):
+                try:
+                    data.encode(encoding={invalid!r})
+                except LookupError:
+                    pass
+                else:
+                    sys.exit(23)
+
+                try:
+                    data.encode(errors={invalid!r})
+                except LookupError:
+                    pass
+                else:
+                    sys.exit(24)
+
+                for encoding in encodings:
+                    try:
+                        data.encode(encoding, errors={invalid!r})
+                    except LookupError:
+                        pass
+                    else:
+                        sys.exit(24)
+
+            sys.exit(10)
+        ''')
+        proc = assert_python_failure('-X', 'dev', '-c', code)
+        self.assertEqual(proc.rc, 10, proc)
 
 
 class CAPITest(unittest.TestCase):
 
     # Test PyUnicode_FromFormat()
-    @support.impl_detail("ctypes", graalvm=False)
+    @support.impl_detail("ctypes", graalpy=False)
     def test_from_format(self):
-        support.import_module('ctypes')
+        import_helper.import_module('ctypes')
         from ctypes import (
+            c_char_p,
             pythonapi, py_object, sizeof,
             c_int, c_long, c_longlong, c_ssize_t,
             c_uint, c_ulong, c_ulonglong, c_size_t, c_void_p)
         name = "PyUnicode_FromFormat"
         _PyUnicode_FromFormat = getattr(pythonapi, name)
+        _PyUnicode_FromFormat.argtypes = (c_char_p,)
         _PyUnicode_FromFormat.restype = py_object
 
         def PyUnicode_FromFormat(format, *args):
@@ -2708,7 +2805,7 @@ class CAPITest(unittest.TestCase):
     @support.cpython_only
     def test_aswidechar(self):
         from _testcapi import unicode_aswidechar
-        support.import_module('ctypes')
+        import_helper.import_module('ctypes')
         from ctypes import c_wchar, sizeof
 
         wchar, size = unicode_aswidechar('abcdef', 2)
@@ -2746,7 +2843,7 @@ class CAPITest(unittest.TestCase):
     @support.cpython_only
     def test_aswidecharstring(self):
         from _testcapi import unicode_aswidecharstring
-        support.import_module('ctypes')
+        import_helper.import_module('ctypes')
         from ctypes import c_wchar, sizeof
 
         wchar, size = unicode_aswidecharstring('abc')
@@ -2773,15 +2870,43 @@ class CAPITest(unittest.TestCase):
         for s in ['abc', '\xa1\xa2', '\u4f60\u597d', 'a\U0001f600',
                   'a\ud800b\udfffc', '\ud834\udd1e']:
             l = len(s)
-            self.assertEqual(unicode_asucs4(s, l, 1), s+'\0')
-            self.assertEqual(unicode_asucs4(s, l, 0), s+'\uffff')
-            self.assertEqual(unicode_asucs4(s, l+1, 1), s+'\0\uffff')
-            self.assertEqual(unicode_asucs4(s, l+1, 0), s+'\0\uffff')
-            self.assertRaises(SystemError, unicode_asucs4, s, l-1, 1)
-            self.assertRaises(SystemError, unicode_asucs4, s, l-2, 0)
+            self.assertEqual(unicode_asucs4(s, l, True), s+'\0')
+            self.assertEqual(unicode_asucs4(s, l, False), s+'\uffff')
+            self.assertEqual(unicode_asucs4(s, l+1, True), s+'\0\uffff')
+            self.assertEqual(unicode_asucs4(s, l+1, False), s+'\0\uffff')
+            self.assertRaises(SystemError, unicode_asucs4, s, l-1, True)
+            self.assertRaises(SystemError, unicode_asucs4, s, l-2, False)
             s = '\0'.join([s, s])
-            self.assertEqual(unicode_asucs4(s, len(s), 1), s+'\0')
-            self.assertEqual(unicode_asucs4(s, len(s), 0), s+'\uffff')
+            self.assertEqual(unicode_asucs4(s, len(s), True), s+'\0')
+            self.assertEqual(unicode_asucs4(s, len(s), False), s+'\uffff')
+
+    # Test PyUnicode_AsUTF8()
+    @support.cpython_only
+    def test_asutf8(self):
+        from _testcapi import unicode_asutf8
+
+        bmp = '\u0100'
+        bmp2 = '\uffff'
+        nonbmp = chr(0x10ffff)
+
+        self.assertEqual(unicode_asutf8(bmp), b'\xc4\x80')
+        self.assertEqual(unicode_asutf8(bmp2), b'\xef\xbf\xbf')
+        self.assertEqual(unicode_asutf8(nonbmp), b'\xf4\x8f\xbf\xbf')
+        self.assertRaises(UnicodeEncodeError, unicode_asutf8, 'a\ud800b\udfffc')
+
+    # Test PyUnicode_AsUTF8AndSize()
+    @support.cpython_only
+    def test_asutf8andsize(self):
+        from _testcapi import unicode_asutf8andsize
+
+        bmp = '\u0100'
+        bmp2 = '\uffff'
+        nonbmp = chr(0x10ffff)
+
+        self.assertEqual(unicode_asutf8andsize(bmp), (b'\xc4\x80', 2))
+        self.assertEqual(unicode_asutf8andsize(bmp2), (b'\xef\xbf\xbf', 3))
+        self.assertEqual(unicode_asutf8andsize(nonbmp), (b'\xf4\x8f\xbf\xbf', 4))
+        self.assertRaises(UnicodeEncodeError, unicode_asutf8andsize, 'a\ud800b\udfffc')
 
     # Test PyUnicode_FindChar()
     @support.cpython_only
@@ -2850,32 +2975,38 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(SystemError, unicode_copycharacters, s, 0, b'', 0, 0)
 
     @support.cpython_only
+    @support.requires_legacy_unicode_capi
     def test_encode_decimal(self):
         from _testcapi import unicode_encodedecimal
-        self.assertEqual(unicode_encodedecimal('123'),
-                         b'123')
-        self.assertEqual(unicode_encodedecimal('\u0663.\u0661\u0664'),
-                         b'3.14')
-        self.assertEqual(unicode_encodedecimal("\N{EM SPACE}3.14\N{EN SPACE}"),
-                         b' 3.14 ')
-        self.assertRaises(UnicodeEncodeError,
-                          unicode_encodedecimal, "123\u20ac", "strict")
-        self.assertRaisesRegex(
-            ValueError,
-            "^'decimal' codec can't encode character",
-            unicode_encodedecimal, "123\u20ac", "replace")
+        with warnings_helper.check_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            self.assertEqual(unicode_encodedecimal('123'),
+                             b'123')
+            self.assertEqual(unicode_encodedecimal('\u0663.\u0661\u0664'),
+                             b'3.14')
+            self.assertEqual(unicode_encodedecimal(
+                             "\N{EM SPACE}3.14\N{EN SPACE}"), b' 3.14 ')
+            self.assertRaises(UnicodeEncodeError,
+                              unicode_encodedecimal, "123\u20ac", "strict")
+            self.assertRaisesRegex(
+                ValueError,
+                "^'decimal' codec can't encode character",
+                unicode_encodedecimal, "123\u20ac", "replace")
 
     @support.cpython_only
+    @support.requires_legacy_unicode_capi
     def test_transform_decimal(self):
         from _testcapi import unicode_transformdecimaltoascii as transform_decimal
-        self.assertEqual(transform_decimal('123'),
-                         '123')
-        self.assertEqual(transform_decimal('\u0663.\u0661\u0664'),
-                         '3.14')
-        self.assertEqual(transform_decimal("\N{EM SPACE}3.14\N{EN SPACE}"),
-                         "\N{EM SPACE}3.14\N{EN SPACE}")
-        self.assertEqual(transform_decimal('123\u20ac'),
-                         '123\u20ac')
+        with warnings_helper.check_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            self.assertEqual(transform_decimal('123'),
+                             '123')
+            self.assertEqual(transform_decimal('\u0663.\u0661\u0664'),
+                             '3.14')
+            self.assertEqual(transform_decimal("\N{EM SPACE}3.14\N{EN SPACE}"),
+                             "\N{EM SPACE}3.14\N{EN SPACE}")
+            self.assertEqual(transform_decimal('123\u20ac'),
+                             '123\u20ac')
 
     @support.cpython_only
     def test_pep393_utf8_caching_bug(self):

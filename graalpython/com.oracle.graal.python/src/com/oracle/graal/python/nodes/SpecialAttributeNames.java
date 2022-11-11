@@ -98,8 +98,6 @@ public abstract class SpecialAttributeNames {
 
     public static final String J___MRO__ = "__mro__";
 
-    public static final TruffleString T___MRO_ENTRIES__ = tsLiteral("__mro_entries__");
-
     public static final TruffleString T___LOADER__ = tsLiteral("__loader__");
 
     public static final TruffleString T___PACKAGE__ = tsLiteral("__package__");
@@ -167,7 +165,13 @@ public abstract class SpecialAttributeNames {
     public static final String J___ORIG_CLASS__ = "__orig_class__";
     public static final TruffleString T___ORIG_CLASS__ = tsLiteral(J___ORIG_CLASS__);
 
+    public static final String J___WRAPPED__ = "__wrapped__";
+    public static final TruffleString T___WRAPPED__ = tsLiteral(J___WRAPPED__);
+
     // specific to super
     public static final String J___THISCLASS__ = "__thisclass__";
     public static final String J___SELF_CLASS__ = "__self_class__";
+
+    public static final String J___MATCH_ARGS__ = "__match_args__";
+    public static final TruffleString T___MATCH_ARGS__ = tsLiteral(J___MATCH_ARGS__);
 }

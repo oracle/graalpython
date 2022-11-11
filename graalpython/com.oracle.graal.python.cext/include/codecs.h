@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -30,6 +30,14 @@ Copyright (c) Corporation for National Research Initiatives.
    The search_function's refcount is incremented by this function. */
 
 PyAPI_FUNC(int) PyCodec_Register(
+       PyObject *search_function
+       );
+
+/* Unregister a codec search function and clear the registry's cache.
+   If the search function is not registered, do nothing.
+   Return 0 on success. Raise an exception and return -1 on error. */
+
+PyAPI_FUNC(int) PyCodec_Unregister(
        PyObject *search_function
        );
 

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T_A
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__ATTRIBUTES;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELDS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.util.PythonUtils.convertToObjectArray;
 
@@ -77,7 +78,7 @@ final class AstTypeFactory {
         newType.setAttribute(T___MODULE__, T_AST);
         newType.setAttribute(T___DOC__, docString);
         newType.setAttribute(T__FIELDS, factory.createTuple(convertToObjectArray(fields)));
-        // TODO __match_args__
+        newType.setAttribute(T___MATCH_ARGS__, factory.createTuple(convertToObjectArray(fields)));
         if (attributes != null) {
             newType.setAttribute(T__ATTRIBUTES, factory.createTuple(convertToObjectArray(attributes)));
         }

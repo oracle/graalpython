@@ -40,6 +40,10 @@
  */
 #include "capi.h"
 
+#include "pycore_pymem.h"
+#include "pycore_object.h"
+#include "pycore_tuple.h"
+
 PyObject* PyObject_SelfIter(PyObject* obj) {
     Py_INCREF(obj);
     return obj;
@@ -121,27 +125,6 @@ PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS
 
 PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
-Py_ssize_t _Py_REFCNT(PyObject *obj) {
-    return obj->ob_refcnt;
-}
-
-void _Py_SET_REFCNT(PyObject* obj, Py_ssize_t cnt) {
-    obj->ob_refcnt = cnt;
-}
-
-struct _typeobject* _Py_TYPE(PyObject *a) {
-    return a->ob_type;
-}
-Py_ssize_t _Py_SIZE(PyVarObject *a) {
-    return a->ob_size;
-}
-void _Py_SET_TYPE(PyObject *a, struct _typeobject *b) {
-    a->ob_type = b;
-}
-void _Py_SET_SIZE(PyVarObject *a, Py_ssize_t b) {
-    a->ob_size = b;
-}
-
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
@@ -170,50 +153,6 @@ PyObject* PyObject_Repr(PyObject* o) {
 	if (o == NULL)
 		return PyUnicode_FromString("<NULL>");
     return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));
-}
-
-// taken from CPython "Objects/call.c"
-PyObject * PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs) {
-	callable = native_pointer_to_java(callable);
-	tuple = native_pointer_to_java(tuple);
-	kwargs = native_pointer_to_java(kwargs);
-    /* get vectorcallfunc as in _PyVectorcall_Function, but without
-     * the _Py_TPFLAGS_HAVE_VECTORCALL check */
-    Py_ssize_t offset = Py_TYPE(callable)->tp_vectorcall_offset;
-    if (offset <= 0) {
-        PyErr_Format(PyExc_TypeError, "'%.200s' object does not support vectorcall",
-                     Py_TYPE(callable)->tp_name);
-        return NULL;
-    }
-    vectorcallfunc func = *(vectorcallfunc *)(((char *)callable) + offset);
-    if (func == NULL) {
-        PyErr_Format(PyExc_TypeError, "'%.200s' object does not support vectorcall",
-                     Py_TYPE(callable)->tp_name);
-        return NULL;
-    }
-
-    /* Convert arguments & call */
-    PyObject *const *args;
-    Py_ssize_t nargs = PyTuple_GET_SIZE(tuple);
-    PyObject *kwnames;
-    /* TODO(fa): we did not import header 'internal/pycore_tupleobject.h' yet */
-    /* if (_PyStack_UnpackDict(_PyTuple_ITEMS(tuple), nargs, */
-    if (_PyStack_UnpackDict(_PyTuple_CAST(tuple)->ob_item, nargs,
-        kwargs, &args, &kwnames) < 0) {
-        return NULL;
-    }
-    PyObject *result = func(callable, args, nargs, kwnames);
-    if (kwnames != NULL) {
-        Py_ssize_t i, n = PyTuple_GET_SIZE(kwnames) + nargs;
-        for (i = 0; i < n; i++) {
-            Py_DECREF(args[i]);
-        }
-        PyMem_Free((PyObject **)args);
-        Py_DECREF(kwnames);
-    }
-
-    //return _Py_CheckFunctionResult(callable, result, NULL);
-    return result;
 }
 
 #define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')
@@ -298,10 +237,209 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args), IS_SINGLE_ARG(fmt));
 }
 
-typedef PyObject *(*fast_call_dict_fun_t)(PyObject *, void *, PyObject *);
-UPCALL_TYPED_ID(PyObject_FastCallDict, fast_call_dict_fun_t);
-PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t nargs, PyObject *kwargs) {
-	return _jls_PyObject_FastCallDict(native_to_java(func), polyglot_from_PyObjectPtr_array(args, nargs), native_to_java(kwargs));
+typedef PyObject *(*make_tp_call_func)(PyObject *, void *, int, PyObject *, void *);
+UPCALL_TYPED_ID(_PyObject_MakeTpCall, make_tp_call_func);
+PyObject* _PyObject_MakeTpCall(PyThreadState *tstate, PyObject *callable,
+                     PyObject *const *args, Py_ssize_t nargs,
+                     PyObject *keywords) {
+    void* kwvalues = NULL;
+    if (keywords != NULL && PyTuple_Check(keywords)) {
+        kwvalues = polyglot_from_PyObjectPtr_array(args + nargs, PyTuple_GET_SIZE(keywords));
+    }
+    // We have to pass nargs separately because of GR-35465 - Sulong ignores the array size for our wrappers
+    return _jls__PyObject_MakeTpCall(native_to_java(callable), polyglot_from_PyObjectPtr_array(args, nargs), nargs, native_to_java(keywords), kwvalues);
+}
+
+// Taken from cpython call.c
+static void
+_PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
+                         PyObject *kwnames);
+static PyObject *const *
+_PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs,
+                    PyObject *kwargs, PyObject **p_kwnames)
+{
+    assert(nargs >= 0);
+    assert(kwargs != NULL);
+    assert(PyDict_Check(kwargs));
+
+    Py_ssize_t nkwargs = PyDict_GET_SIZE(kwargs);
+    /* Check for overflow in the PyMem_Malloc() call below. The subtraction
+     * in this check cannot overflow: both maxnargs and nkwargs are
+     * non-negative signed integers, so their difference fits in the type. */
+    Py_ssize_t maxnargs = PY_SSIZE_T_MAX / sizeof(args[0]) - 1;
+    if (nargs > maxnargs - nkwargs) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+    /* Add 1 to support PY_VECTORCALL_ARGUMENTS_OFFSET */
+    PyObject **stack = PyMem_Malloc((1 + nargs + nkwargs) * sizeof(args[0]));
+    if (stack == NULL) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+
+    PyObject *kwnames = PyTuple_New(nkwargs);
+    if (kwnames == NULL) {
+        PyMem_Free(stack);
+        return NULL;
+    }
+
+    stack++;  /* For PY_VECTORCALL_ARGUMENTS_OFFSET */
+
+    /* Copy positional arguments */
+    for (Py_ssize_t i = 0; i < nargs; i++) {
+        Py_INCREF(args[i]);
+        stack[i] = args[i];
+    }
+
+    PyObject **kwstack = stack + nargs;
+    /* This loop doesn't support lookup function mutating the dictionary
+       to change its size. It's a deliberate choice for speed, this function is
+       called in the performance critical hot code. */
+    Py_ssize_t pos = 0, i = 0;
+    PyObject *key, *value;
+    unsigned long keys_are_strings = Py_TPFLAGS_UNICODE_SUBCLASS;
+    while (PyDict_Next(kwargs, &pos, &key, &value)) {
+        keys_are_strings &= Py_TYPE(key)->tp_flags;
+        Py_INCREF(key);
+        Py_INCREF(value);
+        PyTuple_SET_ITEM(kwnames, i, key);
+        kwstack[i] = value;
+        i++;
+    }
+
+    /* keys_are_strings has the value Py_TPFLAGS_UNICODE_SUBCLASS if that
+     * flag is set for all keys. Otherwise, keys_are_strings equals 0.
+     * We do this check once at the end instead of inside the loop above
+     * because it simplifies the deallocation in the failing case.
+     * It happens to also make the loop above slightly more efficient. */
+    if (!keys_are_strings) {
+        PyErr_SetString(PyExc_TypeError,
+                         "keywords must be strings");
+        _PyStack_UnpackDict_Free(stack, nargs, kwnames);
+        return NULL;
+    }
+
+    *p_kwnames = kwnames;
+    return stack;
+}
+
+// Taken from cpython call.c
+static void
+_PyStack_UnpackDict_Free(PyObject *const *stack, Py_ssize_t nargs,
+                         PyObject *kwnames)
+{
+    Py_ssize_t n = PyTuple_GET_SIZE(kwnames) + nargs;
+    for (Py_ssize_t i = 0; i < n; i++) {
+        Py_DECREF(stack[i]);
+    }
+    PyMem_Free((PyObject **)stack - 1);
+    Py_DECREF(kwnames);
+}
+
+// Taken from cpython call.c
+PyObject* PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwargs) {
+    vectorcallfunc func;
+
+    /* get vectorcallfunc as in PyVectorcall_Function, but without
+     * the Py_TPFLAGS_HAVE_VECTORCALL check */
+    Py_ssize_t offset = Py_TYPE(callable)->tp_vectorcall_offset;
+    if (offset <= 0) {
+        PyErr_Format(PyExc_TypeError,
+                      "'%.200s' object does not support vectorcall",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+    memcpy(&func, (char *) callable + offset, sizeof(func));
+    if (func == NULL) {
+        PyErr_Format(PyExc_TypeError,
+                      "'%.200s' object does not support vectorcall",
+                      Py_TYPE(callable)->tp_name);
+        return NULL;
+    }
+
+    Py_ssize_t nargs = PyTuple_GET_SIZE(tuple);
+
+    /* Fast path for no keywords */
+    if (kwargs == NULL || PyDict_GET_SIZE(kwargs) == 0) {
+        return func(callable, _PyTuple_ITEMS(tuple), nargs, NULL);
+    }
+
+    /* Convert arguments & call */
+    PyObject *const *args;
+    PyObject *kwnames;
+    args = _PyStack_UnpackDict(_PyTuple_ITEMS(tuple), nargs,
+                               kwargs, &kwnames);
+    if (args == NULL) {
+        return NULL;
+    }
+    PyObject *result = func(callable, args,
+                            nargs | PY_VECTORCALL_ARGUMENTS_OFFSET, kwnames);
+    _PyStack_UnpackDict_Free(args, nargs, kwnames);
+
+    //return _Py_CheckFunctionResult(tstate, callable, result, NULL);
+    return result;
+}
+
+// Taken from cpython call.c
+PyObject* PyObject_VectorcallDict(PyObject *callable, PyObject *const *args,
+                       size_t nargsf, PyObject *kwargs) {
+    assert(callable != NULL);
+
+    Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+    assert(nargs >= 0);
+    assert(nargs == 0 || args != NULL);
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+
+    vectorcallfunc func = PyVectorcall_Function(callable);
+    if (func == NULL) {
+        /* Use tp_call instead */
+        return _PyObject_MakeTpCall(NULL, callable, args, nargs, kwargs);
+    }
+
+    PyObject *res;
+    if (kwargs == NULL || PyDict_GET_SIZE(kwargs) == 0) {
+        res = func(callable, args, nargsf, NULL);
+    }
+    else {
+        PyObject *kwnames;
+        PyObject *const *newargs;
+        newargs = _PyStack_UnpackDict(args, nargs,
+                                      kwargs, &kwnames);
+        if (newargs == NULL) {
+            return NULL;
+        }
+        res = func(callable, newargs,
+                   nargs | PY_VECTORCALL_ARGUMENTS_OFFSET, kwnames);
+        _PyStack_UnpackDict_Free(newargs, nargs, kwnames);
+    }
+    return res;
+}
+
+// Taken from CPython object.c
+int
+PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
+{
+    PyObject **dictptr = _PyObject_GetDictPtr(obj);
+    if (dictptr == NULL) {
+        PyErr_SetString(PyExc_AttributeError,
+                        "This object has no __dict__");
+        return -1;
+    }
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "cannot delete __dict__");
+        return -1;
+    }
+    if (!PyDict_Check(value)) {
+        PyErr_Format(PyExc_TypeError,
+                     "__dict__ must be set to a dictionary, "
+                     "not a '%.200s'", Py_TYPE(value)->tp_name);
+        return -1;
+    }
+    Py_INCREF(value);
+    Py_XSETREF(*dictptr, value);
+    return 0;
 }
 
 PyObject* PyObject_Type(PyObject* obj) {
@@ -713,15 +851,8 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     if (op == NULL) {
         return PyErr_NoMemory();
     }
-    Py_SET_TYPE(op, tp);
-    /* TOOD(fa): properly set HEAPTYPE flag */
-    /*
-    if (PyType_GetFlags(tp) & Py_TPFLAGS_HEAPTYPE) {
-        Py_INCREF(tp);
-    }
-    */
-    Py_INCREF(tp);
-    _Py_NewReference(op);
+
+    _PyObject_Init(op, tp);
     return op;
 }
 
@@ -731,10 +862,8 @@ PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t siz
     if (op == NULL) {
         return (PyVarObject *) PyErr_NoMemory();
     }
-    /* Any changes should be reflected in PyObject_INIT_VAR */
-    op->ob_size = size;
-    Py_SET_TYPE(op, tp);
-    _Py_NewReference((PyObject *)op);
+
+    _PyObject_InitVar(op, tp, size);
     return op;
 }
 
@@ -781,72 +910,66 @@ _Py_Dealloc(PyObject *op)
     destructor dealloc = Py_TYPE(op)->tp_dealloc;
 #ifdef Py_TRACE_REFS
     _Py_ForgetReference(op);
-#else
-    _Py_INC_TPFREES(op);
 #endif
     (*dealloc)(op);
 }
 
-// taken from CPython 'Objects/call.c'
-int
-_PyStack_UnpackDict(PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs,
-                    PyObject *const **p_stack, PyObject **p_kwnames)
+void
+_Py_NewReference(PyObject *op)
 {
-    PyObject **stack, **kwstack;
-    Py_ssize_t nkwargs;
-    Py_ssize_t pos, i;
-    PyObject *key, *value;
-    PyObject *kwnames;
-
-    kwargs = native_pointer_to_java(kwargs);
-    assert(nargs >= 0);
-    assert(kwargs == NULL || PyDict_CheckExact(kwargs));
-
-    if (kwargs == NULL || (nkwargs = PyDict_GET_SIZE(kwargs)) == 0) {
-        *p_stack = args;
-        *p_kwnames = NULL;
-        return 0;
+    if (_Py_tracemalloc_config.tracing) {
+        _PyTraceMalloc_NewReference(op);
     }
+#ifdef Py_REF_DEBUG
+    _Py_RefTotal++;
+#endif
+    Py_SET_REFCNT(op, 1);
+#ifdef Py_TRACE_REFS
+    _Py_AddToAllObjects(op, 1);
+#endif
+}
 
-    if ((size_t)nargs > PY_SSIZE_T_MAX / sizeof(stack[0]) - (size_t)nkwargs) {
-        PyErr_NoMemory();
-        return -1;
-    }
+#undef Py_NewRef
+#undef Py_XNewRef
 
-    stack = PyMem_Malloc((nargs + nkwargs) * sizeof(stack[0]));
-    if (stack == NULL) {
-        PyErr_NoMemory();
-        return -1;
-    }
+// Export Py_NewRef() and Py_XNewRef() as regular functions for the stable ABI.
+PyObject*
+Py_NewRef(PyObject *obj)
+{
+    return _Py_NewRef(obj);
+}
 
-    kwnames = PyTuple_New(nkwargs);
-    if (kwnames == NULL) {
-        PyMem_Free(stack);
-        return -1;
-    }
+PyObject*
+Py_XNewRef(PyObject *obj)
+{
+    return _Py_XNewRef(obj);
+}
 
-    /* Copy positional arguments */
-    for (i = 0; i < nargs; i++) {
-        Py_INCREF(args[i]);
-        stack[i] = args[i];
-    }
+#undef Py_Is
+#undef Py_IsNone
+#undef Py_IsTrue
+#undef Py_IsFalse
 
-    kwstack = stack + nargs;
-    pos = i = 0;
-    /* This loop doesn't support lookup function mutating the dictionary
-       to change its size. It's a deliberate choice for speed, this function is
-       called in the performance critical hot code. */
-    while (PyDict_Next(kwargs, &pos, &key, &value)) {
-        Py_INCREF(native_pointer_to_java(key));
-        Py_INCREF(native_pointer_to_java(value));
-        PyTuple_SET_ITEM(kwnames, i, key);
-        kwstack[i] = value;
-        i++;
-    }
+// Export Py_Is(), Py_IsNone(), Py_IsTrue(), Py_IsFalse() as regular functions
+// for the stable ABI.
+int Py_Is(PyObject *x, PyObject *y)
+{
+    return (x == y);
+}
 
-    *p_stack = stack;
-    *p_kwnames = kwnames;
-    return 0;
+int Py_IsNone(PyObject *x)
+{
+    return Py_Is(x, Py_None);
+}
+
+int Py_IsTrue(PyObject *x)
+{
+    return Py_Is(x, Py_True);
+}
+
+int Py_IsFalse(PyObject *x)
+{
+    return Py_Is(x, Py_False);
 }
 
 

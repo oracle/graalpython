@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,17 +33,32 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-// Corresponds to PyCFunction, but that name is just confusing
+/**
+ * Represents a builtin module-level function (bound to the module) or a bound builtin method.
+ * Corresponds to python types:
+ * <ul>
+ * <li>{@code builtin_function_or_method} - Called {@code PyCFunction} in CPython C code. Used for
+ * builtin module-level functions and when a builtin method on a type ({@code method_descriptor},
+ * see {@link PBuiltinFunction}) gets bound. Examples: {@code sys.getdefaultencoding},
+ * {@code "a".startswith}
+ * <li>{@code method-wrapper} - Used when a slot method on a type ({@code wrapper_descriptor}, see
+ * {@link PBuiltinFunction}) gets bound. Example: {@code "a".__str__}
+ * <li>{@code builtin_method} - Used when a builtin method with C call convention
+ * {@code METH_METHOD} is bound. Example: {@code pyexpat.ParserCreate().Parse}
+ * </ul>
+ */
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinMethod extends PythonBuiltinObject {
 
     private final PBuiltinFunction function;
     private final Object self;
+    private final Object classObject;
 
-    public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function) {
+    public PBuiltinMethod(Object clazz, Shape instanceShape, Object self, PBuiltinFunction function, Object classObject) {
         super(clazz, instanceShape);
         this.self = self;
         this.function = function;
+        this.classObject = classObject;
     }
 
     public PBuiltinFunction getFunction() {
@@ -52,6 +67,10 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
 
     public Object getSelf() {
         return self;
+    }
+
+    public Object getClassObject() {
+        return classObject;
     }
 
     @Override

@@ -40,24 +40,37 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "nt", isEager = true)
 public class NtModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return NtModuleBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -67,6 +80,38 @@ public class NtModuleBuiltins extends PythonBuiltins {
             core.removeBuiltinModule(T_POSIX);
         } else {
             core.removeBuiltinModule(T_NT);
+        }
+    }
+
+    @Builtin(name = "_path_splitroot", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @GenerateNodeFactory
+    abstract static class PathSplitRootNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object splitroot(PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // TODO should call WINAPI PathCchSkipRoot
+            TruffleString pathString = posixLib.getPathAsString(getPosixSupport(), path.value);
+            int len = pathString.codePointLengthUncached(TS_ENCODING);
+            int index = pathString.indexOfCodePointUncached(':', 0, len, TS_ENCODING);
+            if (index <= 0) {
+                return factory().createTuple(new Object[]{T_EMPTY_STRING, pathString});
+            } else {
+                index++;
+                int first = pathString.codePointAtIndexUncached(index, TS_ENCODING);
+                if (first == '\\' || first == '/') {
+                    index++;
+                }
+                TruffleString root = pathString.substringUncached(0, index, TS_ENCODING, false);
+                TruffleString rest = pathString.substringUncached(index, len - index, TS_ENCODING, false);
+                return factory().createTuple(new Object[]{root, rest});
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NtModuleBuiltinsClinicProviders.PathSplitRootNodeClinicProviderGen.INSTANCE;
         }
     }
 }

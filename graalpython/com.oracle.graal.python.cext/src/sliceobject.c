@@ -41,6 +41,8 @@ int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t
     PySliceObject *r = (PySliceObject*)_r;
     /* this is harder to get right than you might think */
 
+    Py_BUILD_ASSERT(PY_SSIZE_T_MIN + 1 <= -PY_SSIZE_T_MAX);
+
     if (r->step == Py_None) {
         *step = 1;
     }

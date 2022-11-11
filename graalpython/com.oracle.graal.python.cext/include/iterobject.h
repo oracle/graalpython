@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,14 +12,16 @@ extern "C" {
 
 PyAPI_DATA(PyTypeObject) PySeqIter_Type;
 PyAPI_DATA(PyTypeObject) PyCallIter_Type;
-PyAPI_DATA(PyTypeObject) PyCmpWrapper_Type;
+#ifdef Py_BUILD_CORE
+extern PyTypeObject _PyAnextAwaitable_Type;
+#endif
 
-#define PySeqIter_Check(op) (Py_TYPE(op) == &PySeqIter_Type)
+#define PySeqIter_Check(op) Py_IS_TYPE(op, &PySeqIter_Type)
 
 PyAPI_FUNC(PyObject *) PySeqIter_New(PyObject *);
 
 
-#define PyCallIter_Check(op) (Py_TYPE(op) == &PyCallIter_Type)
+#define PyCallIter_Check(op) Py_IS_TYPE(op, &PyCallIter_Type)
 
 PyAPI_FUNC(PyObject *) PyCallIter_New(PyObject *, PyObject *);
 

@@ -55,9 +55,9 @@ class BytesTest(unittest.TestCase):
 
 class StrTest(unittest.TestCase):
 
-    unicodesize = 2 if sys.maxunicode < 65536 else 4
+    unicodesize = 4
 
-    @support.impl_detail("depends on unicode storage size", graalvm=False)
+    @support.impl_detail("depends on unicode storage size", graalpy=False)
     @bigaddrspacetest
     def test_concat(self):
         try:
@@ -69,7 +69,7 @@ class StrTest(unittest.TestCase):
         finally:
             x = None
 
-    @support.impl_detail("depends on unicode storage size", graalvm=False)
+    @support.impl_detail("depends on unicode storage size", graalpy=False)
     @bigaddrspacetest
     def test_optimized_concat(self):
         try:
@@ -85,7 +85,7 @@ class StrTest(unittest.TestCase):
         finally:
             x = None
 
-    @support.impl_detail("depends on unicode storage size", graalvm=False)
+    @support.impl_detail("depends on unicode storage size", graalpy=False)
     @bigaddrspacetest
     def test_repeat(self):
         try:
@@ -95,12 +95,9 @@ class StrTest(unittest.TestCase):
             x = None
 
 
-def test_main():
-    support.run_unittest(BytesTest, StrTest)
-
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         support.set_memlimit(sys.argv[1])
     if sys.implementation.name == "graalpy" and support.max_memuse == 0:
         support.set_memlimit("2.1G")
-    test_main()
+    unittest.main()

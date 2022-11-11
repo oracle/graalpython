@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -67,6 +67,7 @@ typedef struct PyMemberDef {
 #define PY_WRITE_RESTRICTED 4
 #define RESTRICTED          (READ_RESTRICTED | PY_WRITE_RESTRICTED)
 
+#define PY_AUDIT_READ       READ_RESTRICTED
 
 /* Current API, use this */
 PyAPI_FUNC(PyObject *) PyMember_GetOne(const char *, struct PyMemberDef *);

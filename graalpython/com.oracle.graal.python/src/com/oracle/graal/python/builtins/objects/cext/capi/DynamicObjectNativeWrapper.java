@@ -830,7 +830,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_EXPORTS, key)")
-        static int doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static long doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return object.getExports();
         }
 
@@ -1081,6 +1081,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static Object doPyCFunctionObjectMSelf(PMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached ToSulongNode toSulongNode) {
             return toSulongNode.execute(object.getSelf());
+        }
+
+        @Specialization(guards = "eq(MM_CLASS, key)")
+        static Object doPyCMethodObjectMMClass(PBuiltinMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getClassObject());
+        }
+
+        @Specialization(guards = "eq(FUNC, key)")
+        static Object doPyCMethodObjectFunc(@SuppressWarnings("unused") PBuiltinMethod object, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return nativeWrapper;
         }
 
         @Specialization(guards = "eq(D_QUALNAME, key)")
@@ -1352,7 +1363,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
 
             @Specialization(guards = "eq(OB_EXPORTS, key)")
-            static void doObExports(PByteArray array, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, int value) {
+            static void doObExports(PByteArray array, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long value) {
                 array.setExports(value);
             }
 

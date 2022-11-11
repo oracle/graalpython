@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -525,24 +524,6 @@ public final class PythonCextLongBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
             return transformExceptionToNativeNode;
-        }
-    }
-
-    @Builtin(name = "PyLong_One")
-    @GenerateNodeFactory
-    public abstract static class PyTrueNode extends PythonBuiltinNode {
-        @Specialization
-        static int run() {
-            return 1;
-        }
-    }
-
-    @Builtin(name = "PyLong_Zero")
-    @GenerateNodeFactory
-    public abstract static class PyFalseNode extends PythonBuiltinNode {
-        @Specialization
-        static int run() {
-            return 0;
         }
     }
 }

@@ -21,7 +21,6 @@
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_setting_help
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_setting_quit
 *graalpython.lib-python.3.test.test_site.ImportSideEffectTests.test_sitecustomize_executed
-*graalpython.lib-python.3.test.test_site.StartupImportTests.test_startup_imports
 *graalpython.lib-python.3.test.test_site.StartupImportTests.test_startup_interactivehook
 *graalpython.lib-python.3.test.test_site.StartupImportTests.test_startup_interactivehook_isolated
 *graalpython.lib-python.3.test.test_site.StartupImportTests.test_startup_interactivehook_isolated_explicit

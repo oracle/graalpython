@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ public final class FormattingUtils {
     private FormattingUtils() {
     }
 
-    public static Spec validateAndPrepareForFloat(PRaiseNode raiseNode, Spec spec, String forType) {
+    public static Spec validateForFloat(PRaiseNode raiseNode, Spec spec, String forType) {
         switch (spec.type) {
             case InternalFormat.Spec.NONE:
             case 'n':
@@ -59,9 +59,7 @@ public final class FormattingUtils {
             case 'F':
             case 'G':
             case '%':
-                // spec may be incomplete. The defaults are those commonly used for numeric
-                // formats.
-                return spec.withDefaults(InternalFormat.Spec.NUMERIC);
+                return spec;
             default:
                 throw Formatter.unknownFormat(raiseNode, spec.type, forType);
         }

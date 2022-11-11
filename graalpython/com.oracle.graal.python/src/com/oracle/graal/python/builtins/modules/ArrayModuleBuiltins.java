@@ -34,8 +34,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
 import java.util.List;
@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -90,7 +91,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.graal.python.nodes.ErrorMessages;
 
 @CoreFunctions(defineModule = J_ARRAY)
 public final class ArrayModuleBuiltins extends PythonBuiltins {
@@ -190,10 +190,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
 
                 int start = range.getIntStart();
-                int stop = range.getIntStop();
                 int step = range.getIntStep();
+                int len = range.getIntLength();
 
-                for (int index = 0, value = start; value < stop; index++, value += step) {
+                for (int index = 0, value = start; index < len; index++, value += step) {
                     putValueNode.execute(null, array, index, value);
                 }
 

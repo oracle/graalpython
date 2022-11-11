@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,10 +48,12 @@ if syscfg.get_config_var('WITH_THREAD'):
     import threading
     import unittest
     from test import support
+    from test.support import import_helper
+    from test.support import threading_helper
 
     from _thread import start_new_thread
 
-    thread = support.import_module('_thread')
+    thread = import_helper.import_module('_thread')
     import time
     import weakref
 
@@ -83,10 +85,10 @@ if syscfg.get_config_var('WITH_THREAD'):
             self.running = 0
             self.next_ident = 0
 
-            self._threads = support.threading_setup()
+            self._threads = threading_helper.threading_setup()
 
         def tearDownClass(self):
-            support.threading_cleanup(*self._threads)
+            threading_helper.threading_cleanup(*self._threads)
 
 
     class ThreadRunningTests(BasicThreadTest):
@@ -297,10 +299,10 @@ if syscfg.get_config_var('WITH_THREAD'):
         failureException = AssertionError
 
         def setUpClass(self):
-            self._threads = support.threading_setup()
+            self._threads = threading_helper.threading_setup()
 
         def tearDownClass(self):
-            support.threading_cleanup(*self._threads)
+            threading_helper.threading_cleanup(*self._threads)
             # TODO: revert patch when os.waitpid(-1, ...) is implemented
             # support.reap_children()
 

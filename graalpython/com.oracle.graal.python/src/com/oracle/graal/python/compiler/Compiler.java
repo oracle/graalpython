@@ -185,7 +185,6 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -798,9 +797,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                 checkForbiddenName(keywords[i].arg, ExprContextTy.Store);
                 for (int j = i + 1; j < keywords.length; j++) {
                     if (keywords[i].arg.equals(keywords[j].arg)) {
-                        // TODO: cbasca 3.10 error message "keyword argument repeated: " +
-                        // keywords[i].arg
-                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "keyword argument repeated");
+                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "keyword argument repeated: " + keywords[i].arg);
                     }
                 }
             }
@@ -1902,8 +1899,12 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(KeywordTy node) {
         node.value.accept(this);
-        setLocation(node);
-        return addOp(MAKE_KEYWORD, addObject(unit.constants, toTruffleStringUncached(node.arg)));
+        SourceRange savedLocation = setLocation(node);
+        try {
+            return addOp(MAKE_KEYWORD, addObject(unit.constants, toTruffleStringUncached(node.arg)));
+        } finally {
+            setLocation(savedLocation);
+        }
     }
 
     @Override
@@ -2866,12 +2867,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else if (value instanceof ExprTy.UnaryOp) {
             patterMatchValueUnaryOp((ExprTy.UnaryOp) value);
         } else if (value instanceof ExprTy.BinOp) {
-            try {
-                patternMatchValueBinOp((ExprTy.BinOp) value);
-            } catch (Throwable t) {
-                ExceptionUtils.printPythonLikeStackTrace();
-                throw t;
-            }
+            patternMatchValueBinOp((ExprTy.BinOp) value);
         } else {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "patterns may only match literals and attribute lookups");
         }
@@ -3059,6 +3055,10 @@ public class Compiler implements SSTreeVisitor<Void> {
     @Override
     public Void visit(StmtTy.Try node) {
         setLocation(node);
+        if (node.body[0].getSourceRange().startLine != node.getSourceRange().startLine) {
+            // Add NOP for tracing the line with 'try:'
+            addOp(NOP);
+        }
         Block tryBody = new Block();
         Block end = new Block();
         boolean hasFinally = node.finalBody != null;
@@ -3405,7 +3405,9 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     @Override
-    public Void visit(StmtTy.Pass aThis) {
+    public Void visit(StmtTy.Pass node) {
+        setLocation(node);
+        addOp(NOP);
         return null;
     }
 

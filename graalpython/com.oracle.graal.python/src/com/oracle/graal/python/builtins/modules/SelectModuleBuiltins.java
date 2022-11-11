@@ -57,6 +57,7 @@ import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -134,7 +135,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
             Timeval timeoutval = null;
             if (!PGuards.isPNone(timeout)) {
-                timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, timeout, SEC_TO_NS));
+                timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, timeout, RoundType.TIMEOUT, SEC_TO_NS));
                 if (timeoutval.getSeconds() < 0) {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
                 }

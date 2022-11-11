@@ -197,12 +197,21 @@ PyObject* PyNumber_InPlaceOr(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, OR);
 }
 
+UPCALL_ID(PyIndex_Check)
+int PyIndex_Check(PyObject *obj) {
+    return UPCALL_CEXT_I(_jls_PyIndex_Check, native_to_java(obj));
+}
+
 UPCALL_ID(PyNumber_Index);
-PyObject * PyNumber_Index(PyObject *o) {
+PyObject* _PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
     }
     return UPCALL_CEXT_O(_jls_PyNumber_Index, native_to_java(o));
+}
+
+PyObject* PyNumber_Index(PyObject *o) {
+    return _PyNumber_Index(o);
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
@@ -440,6 +449,12 @@ int PyMapping_Check(PyObject *o) {
 // taken from CPython "Objects/abstract.c PyMapping_Check"
 int PyTruffle_PyMapping_Check(PyObject *o) {
     return o && Py_TYPE(o)->tp_as_mapping && Py_TYPE(o)->tp_as_mapping->mp_subscript;
+}
+
+// taken from CPython "Objects/abstract.c"
+int PyObject_CheckBuffer(PyObject *obj) {
+    PyBufferProcs *tp_as_buffer = Py_TYPE(obj)->tp_as_buffer;
+    return (tp_as_buffer != NULL && tp_as_buffer->bf_getbuffer != NULL);
 }
 
 // taken from CPython "Objects/abstract.c"

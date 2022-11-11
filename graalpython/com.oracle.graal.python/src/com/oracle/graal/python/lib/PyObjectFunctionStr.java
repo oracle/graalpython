@@ -40,52 +40,47 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 /**
  * Obtains a string representation of a function for error reporting. Equivalent of CPython's
  * {@code _PyObject_FunctionStr}.
  */
-@GenerateUncached
-public abstract class PyObjectFunctionStr extends PNodeWithContext {
-    public abstract TruffleString execute(Frame frame, Object function);
-
-    @Specialization
-    TruffleString str(VirtualFrame frame, Object function,
-                    @Cached PyObjectLookupAttr lookupName,
-                    @Cached PyObjectStrAsTruffleStringNode asStr,
-                    @Cached TruffleString.ConcatNode concatNode) {
-        return concatNode.execute(asStr.execute(lookupName.execute(frame, function, T___NAME__)), T_EMPTY_PARENS, TS_ENCODING, false);
-        // The following code is for 3.11
-        // Object qualname = lookupQualname.execute(frame, function, __QUALNAME__);
-        // if (qualname == PNone.NO_VALUE) {
-        // return asStr.execute(function);
-        // }
-        // Object module = lookupModule.execute(frame, function, __MODULE__);
-        // if (!(module instanceof PNone)) {
-        // String moduleStr = asStr.execute(frame, module);
-        // if (!"builtins".equals(moduleStr)) {
-        // return PString.cat(moduleStr, ".", asStr.execute(frame, qualname), "()");
-        // }
-        // }
-        // return PString.cat(asStr.execute(frame, qualname), "()");
-    }
-
-    public static PyObjectFunctionStr create() {
-        return PyObjectFunctionStrNodeGen.create();
-    }
-
-    public static PyObjectFunctionStr getUncached() {
-        return PyObjectFunctionStrNodeGen.getUncached();
+public abstract class PyObjectFunctionStr {
+    @TruffleBoundary
+    public static TruffleString execute(Object function) {
+        PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
+        PyObjectStrAsTruffleStringNode asStr = PyObjectStrAsTruffleStringNode.getUncached();
+        Object qualname = lookup.execute(null, function, T___QUALNAME__);
+        if (qualname == PNone.NO_VALUE) {
+            return asStr.execute(function);
+        }
+        TruffleString qualnameStr = asStr.execute(null, qualname);
+        Object module = lookup.execute(null, function, T___MODULE__);
+        if (!(module instanceof PNone)) {
+            TruffleString moduleStr = asStr.execute(null, module);
+            if (!T_BUILTINS.equalsUncached(moduleStr, TS_ENCODING)) {
+                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                sb.appendStringUncached(moduleStr);
+                sb.appendCodePointUncached('.');
+                sb.appendStringUncached(qualnameStr);
+                sb.appendCodePointUncached('(');
+                sb.appendCodePointUncached(')');
+                return sb.toStringUncached();
+            }
+        }
+        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        sb.appendStringUncached(qualnameStr);
+        sb.appendCodePointUncached('(');
+        sb.appendCodePointUncached(')');
+        return sb.toStringUncached();
     }
 }

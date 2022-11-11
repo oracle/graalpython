@@ -176,6 +176,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     // @ImportStatic doesn't work for this for some reason
     protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
     protected static final SpecialMethodSlot Next = SpecialMethodSlot.Next;
+    protected static final SpecialMethodSlot Len = SpecialMethodSlot.Len;
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
 
@@ -249,10 +250,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public boolean hasArrayElements(
                     @Cached PySequenceCheckNode check,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return check.execute(this);
+            return check.execute(this) && lookupLen.execute(getClassNode.execute(this)) != PNone.NO_VALUE;
         } finally {
             gil.release(mustRelease);
         }

@@ -2570,13 +2570,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static int doGeneric(VirtualFrame frame, SequenceStorage left, Object item,
+        static int doGeneric(VirtualFrame frame, SequenceStorage self, Object item,
                         @Cached LenNode lenNode,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
-            for (int i = 0; i < lenNode.execute(left); i++) {
-                Object leftItem = getItemNode.execute(left, i);
-                if (eqNode.execute(frame, item, leftItem)) {
+            for (int i = 0; i < lenNode.execute(self); i++) {
+                Object seqItem = getItemNode.execute(self, i);
+                if (eqNode.execute(frame, seqItem, item)) {
                     return i;
                 }
             }
@@ -3518,8 +3518,8 @@ public abstract class SequenceStorageNodes {
                         @Cached GetItemScalarNode getItemNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode) {
             for (int i = start; i < getLength(s, end); i++) {
-                Object object = getItemNode.execute(s, i);
-                if (eqNode.execute(frame, object, item)) {
+                Object seqItem = getItemNode.execute(s, i);
+                if (eqNode.execute(frame, seqItem, item)) {
                     return i;
                 }
             }

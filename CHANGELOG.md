@@ -5,6 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 23.0.0
 * `ginstall`: update `numpy`, `pandas` versions, add support for `scipy` and `scikit_learn`, add support for installation of packages from archives, add default deferring to `pip` for unknown packages
+* Update language version and standard library to 3.10
 
 ## Version 22.3.0
 * Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy` for better integration with other tools.

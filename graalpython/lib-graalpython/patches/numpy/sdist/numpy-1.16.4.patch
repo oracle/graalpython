@@ -881,7 +881,7 @@ index 9fc68a7..6c04f96 100644
  }
  
 diff --git a/numpy/random/mtrand/mtrand.c b/numpy/random/mtrand/mtrand.c
-index f9351e1..18c18e5 100644
+index f9351e1..b251cfa 100644
 --- a/numpy/random/mtrand/mtrand.c
 +++ b/numpy/random/mtrand/mtrand.c
 @@ -1332,7 +1332,7 @@ static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
@@ -905,3 +905,12 @@ index f9351e1..18c18e5 100644
      PyErr_Restore(etype, eval, etb);
    }
    Py_CLEAR(p->lock);
+@@ -40557,7 +40557,7 @@ static int __Pyx_modinit_type_init_code(void) {
+   __pyx_vtabptr_6mtrand_RandomState = &__pyx_vtable_6mtrand_RandomState;
+   __pyx_vtable_6mtrand_RandomState._shuffle_raw = (PyObject *(*)(struct __pyx_obj_6mtrand_RandomState *, npy_intp, npy_intp, npy_intp, char *, char *))__pyx_f_6mtrand_11RandomState__shuffle_raw;
+   if (PyType_Ready(&__pyx_type_6mtrand_RandomState) < 0) __PYX_ERR(0, 593, __pyx_L1_error)
+-  __pyx_type_6mtrand_RandomState.tp_print = 0;
++  __pyx_type_6mtrand_RandomState.tp_vectorcall_offset = 0;
+   if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_type_6mtrand_RandomState.tp_dictoffset && __pyx_type_6mtrand_RandomState.tp_getattro == PyObject_GenericGetAttr)) {
+     __pyx_type_6mtrand_RandomState.tp_getattro = __Pyx_PyObject_GenericGetAttr;
+   }

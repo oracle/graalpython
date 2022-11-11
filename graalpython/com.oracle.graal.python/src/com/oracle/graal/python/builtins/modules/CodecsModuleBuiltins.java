@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitVal
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ASCII;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_ENCODINGS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
@@ -117,15 +118,16 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -831,7 +833,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__truffle_lookup__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class CodecsLookupNode extends PythonBuiltinNode {
+    abstract static class CodecsLookupNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object lookup(TruffleString encoding,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
@@ -879,6 +881,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(encoding);
             PythonContext context = getContext();
+            ensureRegistryInitialized(context);
             PTuple result = getSearchPath(context, normalizedEncoding);
             if (hasSearchPathProfile.profile(result != null)) {
                 return result;
@@ -887,7 +890,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 PythonModule codecs = context.lookupBuiltinModule(T__CODECS_TRUFFLE);
                 result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, context.factory());
             } else {
-                for (Object func : getSearchPaths(context)) {
+                Object[] searchPaths = getSearchPaths(context);
+                for (Object func : searchPaths) {
                     Object obj = callNode.executeObject(func, normalizedEncoding);
                     if (obj != PNone.NONE) {
                         if (isTupleProfile.profile(!isTupleInstanceCheck(frame, obj, 4, typeCheck, sizeNode))) {
@@ -926,14 +930,23 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         return typeCheck.execute(result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, result) == len;
     }
 
+    private static void ensureRegistryInitialized(PythonContext context) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !context.isCodecsInitialized())) {
+            AbstractImportNode.importModule(T_ENCODINGS);
+            context.markCodecsInitialized();
+        }
+    }
+
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class RegisterNode extends PythonBuiltinNode {
+    abstract static class RegisterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "callableCheckNode.execute(searchFunction)", limit = "1")
         Object lookup(Object searchFunction,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
-            add(PythonContext.get(this), searchFunction);
-            return null;
+            PythonContext context = PythonContext.get(this);
+            ensureRegistryInitialized(context);
+            add(context, searchFunction);
+            return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
@@ -951,22 +964,24 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unregister", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class UnRegisterNode extends PythonBuiltinNode {
+    abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object unregister(Object searchFunction) {
-            remove(PythonContext.get(this), searchFunction);
-            return null;
+            PythonContext context = PythonContext.get(this);
+            remove(context, searchFunction);
+            return PNone.NONE;
         }
 
         @TruffleBoundary
         private static void remove(PythonContext context, Object searchFunction) {
             context.getCodecSearchPath().remove(searchFunction);
+            context.getCodecSearchCache().clear();
         }
     }
 
     @Builtin(name = "_forget_codec", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ForgetCodecNode extends PythonBuiltinNode {
+    abstract static class ForgetCodecNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object forget(VirtualFrame frame, PBytesLike encoding,
                         @Cached AsciiDecodeNode asciiDecodeNode) {
@@ -1483,7 +1498,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class CharmapBuildNode extends PythonBuiltinNode {
+    abstract static class CharmapBuildNode extends PythonUnaryBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(TruffleString chars,

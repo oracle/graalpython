@@ -46,16 +46,6 @@ class DummyNonInt():
     pass
 
 
-class DummyIntable():
-    def __int__(self):
-        return 0xCAFE
-
-
-class DummyIntSubclass(float):
-    def __int__(self):
-        return 0xBABE
-
-
 class TestPyBool(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -83,27 +73,6 @@ class TestPyBool(CPyExtTestCase):
         argspec="i",
         arguments=["int flag"],
     )
-    
-    test_PyBools_areNotPyLong = CPyExtFunction(
-        lambda args: 0,
-        lambda: (
-            (1,),
-            (0,),
-        ),
-        callfunction="CheckPyTrue",
-        code="""
-        static int CheckPyTrue(int flag) {
-            if (flag) {
-                return PyBool_FromLong(flag) == _PyLong_One;
-            } else {
-                return PyBool_FromLong(flag) == _PyLong_Zero;
-            }
-        }
-        """,
-        resultspec="i",
-        argspec="i",
-        arguments=["int flag"],
-    )
 
     test_PyBool_Check = CPyExtFunction(
         lambda args: isinstance(args[0], bool),
@@ -117,8 +86,6 @@ class TestPyBool(CPyExtTestCase):
             (0xfffffffffffffffffffffff,),
             ("hello",),
             (DummyNonInt(),),
-            (DummyIntable(),),
-            (DummyIntSubclass(),),
         ),
         resultspec="i",
         argspec='O',

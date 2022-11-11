@@ -139,6 +139,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextErrBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFileBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFloatBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextFuncBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextGenericAliasBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextHashBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextImportBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextIterBuiltins;
@@ -546,6 +547,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PythonCextFileBuiltins(),
                         new PythonCextFloatBuiltins(),
                         new PythonCextFuncBuiltins(),
+                        new PythonCextGenericAliasBuiltins(),
                         new PythonCextHashBuiltins(),
                         new PythonCextImportBuiltins(),
                         new PythonCextIterBuiltins(),
@@ -1101,10 +1103,16 @@ public abstract class Python3Core extends ParserErrorCallback {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(toTruffleStringUncached(annotation.defineModule())), builtin);
+                PythonModule module = builtinModules.get(toTruffleStringUncached(annotation.defineModule()));
+                if (module != null) {
+                    addBuiltinsTo(module, builtin);
+                }
             }
             if (annotation.extendsModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(toTruffleStringUncached(annotation.extendsModule())), builtin);
+                PythonModule module = builtinModules.get(toTruffleStringUncached(annotation.extendsModule()));
+                if (module != null) {
+                    addBuiltinsTo(module, builtin);
+                }
             }
             for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);

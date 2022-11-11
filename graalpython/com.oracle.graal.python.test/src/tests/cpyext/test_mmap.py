@@ -95,7 +95,7 @@ class TestPyMmap(CPyExtTestCase):
         code="""
         static PyObject* get_mmap_buf(PyObject* mmapObj) {
             Py_buffer buf;
-            Py_ssize_t len, i;
+            Py_ssize_t len;
             char* data = NULL;
             if (PyObject_GetBuffer(mmapObj, &buf, PyBUF_SIMPLE)) {
                 return NULL;

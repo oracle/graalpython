@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
@@ -36,7 +35,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ARRAY;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_ENCODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
@@ -63,7 +61,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SINGLE_QUOTE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -74,13 +71,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -106,6 +101,7 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -1051,30 +1047,6 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fromstring", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class FromStringNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "isString(str)")
-        static Object fromstring(VirtualFrame frame, PArray self, Object str,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached FromBytesNode fromBytesNode) {
-            warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.FROM_STRING_IS_DEPRECATED, 1);
-            Object bytes = callMethod.execute(frame, str, T_ENCODE, T_UTF8);
-            return fromBytesNode.executeWithoutClinic(frame, self, bytes);
-        }
-
-        @Specialization(guards = "!isString(str)")
-        Object fromother(VirtualFrame frame, PArray self, Object str,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached FromBytesNode fromBytesNode) {
-            warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.FROM_STRING_IS_DEPRECATED, 1);
-            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str, frame, this));
-        }
-    }
-
     @Builtin(name = "fromunicode", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "str"})
     @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
@@ -1135,18 +1107,6 @@ public class ArrayBuiltins extends PythonBuiltins {
         static Object tolist(VirtualFrame frame, PArray self,
                         @Cached ListNodes.ConstructListNode constructListNode) {
             return constructListNode.execute(frame, self);
-        }
-    }
-
-    @Builtin(name = "tostring", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ToStringNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object tostring(VirtualFrame frame, PArray self,
-                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached ToBytesNode toBytesNode) {
-            warnNode.warnEx(frame, DeprecationWarning, ErrorMessages.TO_STRING_IS_DEPRECATED, 1);
-            return toBytesNode.execute(frame, self);
         }
     }
 
@@ -1239,19 +1199,35 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "index", minNumOfPositionalArgs = 2)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class IndexNode extends PythonBinaryBuiltinNode {
+    abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
-        int index(VirtualFrame frame, PArray self, Object value,
+        int index(VirtualFrame frame, PArray self, Object value, int start, int stop,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
-            for (int i = 0; i < self.getLength(); i++) {
+            if (start < 0) {
+                start += self.getLength();
+                if (start < 0) {
+                    start = 0;
+                }
+            }
+            if (stop < 0) {
+                stop += self.getLength();
+            }
+            for (int i = start; i < stop && i < self.getLength(); i++) {
                 if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
                     return i;
                 }
             }
             throw raise(ValueError, ErrorMessages.ARRAY_INDEX_X_NOT_IN_ARRAY);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.IndexNodeClinicProviderGen.INSTANCE;
         }
     }
 

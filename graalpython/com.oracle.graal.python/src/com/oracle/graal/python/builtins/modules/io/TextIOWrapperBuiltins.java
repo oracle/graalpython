@@ -403,10 +403,15 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             }
 
             byte[] encodedText = bufferLib.getInternalOrCopiedByteArray(b);
-            int bytes_len = bufferLib.getBufferLength(b);
+            int bytesLen = bufferLib.getBufferLength(b);
 
-            self.appendPendingBytes(encodedText, bytes_len);
-            if (self.getPendingBytesCount() > self.getChunkSize() || needflush || self.isWriteThrough()) {
+            if (self.getPendingBytesCount() + bytesLen > self.getChunkSize()) {
+                // Prevent to concatenate more than chunk_size data.
+                writeFlushNode.execute(frame, self);
+            }
+
+            self.appendPendingBytes(encodedText, bytesLen);
+            if (self.getPendingBytesCount() >= self.getChunkSize() || needflush || self.isWriteThrough()) {
                 writeFlushNode.execute(frame, self);
             }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,7 +12,7 @@ class MyInt():
     def __init__(self, value):
         self.value = value
 
-    def __int__(self):
+    def __index__(self):
         return self.value
 
 class BinASCIITest(unittest.TestCase):

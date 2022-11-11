@@ -197,15 +197,14 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyModule_AddObject", minNumOfPositionalArgs = 3)
+    @Builtin(name = "PyModule_AddObjectRef", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class PyModuleAddObjectNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "isModuleSubtype(frame, m, getClassNode, isSubtypeNode)")
-        static Object addObject(VirtualFrame frame, Object m, TruffleString k, Object o,
+        static Object addObject(@SuppressWarnings("unused") VirtualFrame frame, Object m, TruffleString k, Object o,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 writeAtrrNode.execute(m, k, o);
@@ -222,9 +221,8 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached WriteAttributeToObjectNode writeAtrrNode,
-                        @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return addObject(frame, m, castToStringNode.execute(k), o, getClassNode, isSubtypeNode, writeAtrrNode, raiseNativeNode, transformExceptionToNativeNode);
+            return addObject(frame, m, castToStringNode.execute(k), o, getClassNode, isSubtypeNode, writeAtrrNode, transformExceptionToNativeNode);
         }
 
         @SuppressWarnings("unused")
@@ -233,7 +231,7 @@ public final class PythonCextModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObject", "module");
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, S_NEEDS_S_AS_FIRST_ARG, "PyModule_AddObjectRef", "module");
         }
 
         protected boolean isModuleSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

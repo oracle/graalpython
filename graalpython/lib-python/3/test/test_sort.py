@@ -205,7 +205,7 @@ class TestDecorateSortUndecorate(unittest.TestCase):
             return x
         self.assertRaises(ValueError, data.sort, key=k)
 
-    @support.impl_detail("finalization", graalvm=False)
+    @support.impl_detail("finalization", graalpy=False)
     def test_key_with_mutating_del(self):
         data = list(range(10))
         class SortKiller(object):

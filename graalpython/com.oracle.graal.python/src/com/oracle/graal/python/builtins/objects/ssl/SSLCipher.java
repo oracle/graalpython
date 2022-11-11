@@ -40,17 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 /**
  * This file has been automatically generated using scripts/generate_ssl_data.py. Do not edit!
- * Generated using: OpenSSL 1.1.1i FIPS 8 Dec 2020
- *
+ * Generated using: OpenSSL 1.1.1q FIPS 5 Jul 2022
+ * 
  * This class represents OpenSSL metadata of all SSL/TLS cipher suites.
  **/
 public enum SSLCipher {
@@ -87,18 +87,6 @@ public enum SSLCipher {
                     128,
                     true,
                     "aes-128-gcm",
-                    null,
-                    "kx-any",
-                    "auth-any"),
-    TLS_AES_128_CCM_SHA256(
-                    50336516,
-                    "TLS_AES_128_CCM_SHA256",
-                    "TLSv1.3",
-                    "TLS_AES_128_CCM_SHA256  TLSv1.3 Kx=any      Au=any  Enc=AESCCM(128) Mac=AEAD",
-                    128,
-                    128,
-                    true,
-                    "aes-128-ccm",
                     null,
                     "kx-any",
                     "auth-any"),
@@ -939,114 +927,6 @@ public enum SSLCipher {
                     128,
                     false,
                     "camellia-128-cbc",
-                    "sha1",
-                    "kx-dhe",
-                    "auth-null"),
-    TLS_ECDHE_ECDSA_WITH_RC4_128_SHA(
-                    50380807,
-                    "ECDHE-ECDSA-RC4-SHA",
-                    "TLSv1.0",
-                    "ECDHE-ECDSA-RC4-SHA     TLSv1 Kx=ECDH     Au=ECDSA Enc=RC4(128)  Mac=SHA1",
-                    128,
-                    128,
-                    false,
-                    "rc4",
-                    "sha1",
-                    "kx-ecdhe",
-                    "auth-ecdsa"),
-    TLS_ECDHE_RSA_WITH_RC4_128_SHA(
-                    50380817,
-                    "ECDHE-RSA-RC4-SHA",
-                    "TLSv1.0",
-                    "ECDHE-RSA-RC4-SHA       TLSv1 Kx=ECDH     Au=RSA  Enc=RC4(128)  Mac=SHA1",
-                    128,
-                    128,
-                    false,
-                    "rc4",
-                    "sha1",
-                    "kx-ecdhe",
-                    "auth-rsa"),
-    TLS_ECDH_anon_WITH_RC4_128_SHA(
-                    50380822,
-                    "AECDH-RC4-SHA",
-                    "TLSv1.0",
-                    "AECDH-RC4-SHA           TLSv1 Kx=ECDH     Au=None Enc=RC4(128)  Mac=SHA1",
-                    128,
-                    128,
-                    false,
-                    "rc4",
-                    "sha1",
-                    "kx-ecdhe",
-                    "auth-null"),
-    TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA(
-                    50380808,
-                    "ECDHE-ECDSA-DES-CBC3-SHA",
-                    "TLSv1.0",
-                    "ECDHE-ECDSA-DES-CBC3-SHA TLSv1 Kx=ECDH     Au=ECDSA Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-ecdhe",
-                    "auth-ecdsa"),
-    TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA(
-                    50380818,
-                    "ECDHE-RSA-DES-CBC3-SHA",
-                    "TLSv1.0",
-                    "ECDHE-RSA-DES-CBC3-SHA  TLSv1 Kx=ECDH     Au=RSA  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-ecdhe",
-                    "auth-rsa"),
-    TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA(
-                    50331670,
-                    "DHE-RSA-DES-CBC3-SHA",
-                    "SSLv3",
-                    "DHE-RSA-DES-CBC3-SHA    SSLv3 Kx=DH       Au=RSA  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-dhe",
-                    "auth-rsa"),
-    TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA(
-                    50331667,
-                    "DHE-DSS-DES-CBC3-SHA",
-                    "SSLv3",
-                    "DHE-DSS-DES-CBC3-SHA    SSLv3 Kx=DH       Au=DSS  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-dhe",
-                    "auth-dss"),
-    TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA(
-                    50380823,
-                    "AECDH-DES-CBC3-SHA",
-                    "TLSv1.0",
-                    "AECDH-DES-CBC3-SHA      TLSv1 Kx=ECDH     Au=None Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-ecdhe",
-                    "auth-null"),
-    TLS_DH_anon_WITH_3DES_EDE_CBC_SHA(
-                    50331675,
-                    "ADH-DES-CBC3-SHA",
-                    "SSLv3",
-                    "ADH-DES-CBC3-SHA        SSLv3 Kx=DH       Au=None Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
                     "sha1",
                     "kx-dhe",
                     "auth-null"),
@@ -1892,140 +1772,6 @@ public enum SSLCipher {
                     "sha256",
                     "kx-psk",
                     "auth-psk"),
-    TLS_ECDHE_PSK_WITH_RC4_128_SHA(
-                    50380851,
-                    "ECDHE-PSK-RC4-SHA",
-                    "TLSv1.0",
-                    "ECDHE-PSK-RC4-SHA       TLSv1 Kx=ECDHEPSK Au=PSK  Enc=RC4(128)  Mac=SHA1",
-                    128,
-                    128,
-                    false,
-                    "rc4",
-                    "sha1",
-                    "kx-ecdhe-psk",
-                    "auth-psk"),
-    TLS_RSA_PSK_WITH_RC4_128_SHA(
-                    50331794,
-                    "RSA-PSK-RC4-SHA",
-                    "SSLv3",
-                    "RSA-PSK-RC4-SHA         SSLv3 Kx=RSAPSK   Au=RSA  Enc=RC4(128)  Mac=SHA1",
-                    128,
-                    128,
-                    false,
-                    "rc4",
-                    "sha1",
-                    "kx-rsa-psk",
-                    "auth-rsa"),
-    TLS_DHE_PSK_WITH_RC4_128_SHA(
-                    50331790,
-                    "DHE-PSK-RC4-SHA",
-                    "SSLv3",
-                    "DHE-PSK-RC4-SHA         SSLv3 Kx=DHEPSK   Au=PSK  Enc=RC4(128)  Mac=SHA1",
-                    128,
-                    128,
-                    false,
-                    "rc4",
-                    "sha1",
-                    "kx-dhe-psk",
-                    "auth-psk"),
-    TLS_RSA_WITH_RC4_128_SHA(50331653, "RC4-SHA", "SSLv3", "RC4-SHA                 SSLv3 Kx=RSA      Au=RSA  Enc=RC4(128)  Mac=SHA1", 128, 128, false, "rc4", "sha1", "kx-rsa", "auth-rsa"),
-    TLS_PSK_WITH_RC4_128_SHA(50331786, "PSK-RC4-SHA", "SSLv3", "PSK-RC4-SHA             SSLv3 Kx=PSK      Au=PSK  Enc=RC4(128)  Mac=SHA1", 128, 128, false, "rc4", "sha1", "kx-psk", "auth-psk"),
-    TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA(
-                    50380852,
-                    "ECDHE-PSK-3DES-EDE-CBC-SHA",
-                    "TLSv1.0",
-                    "ECDHE-PSK-3DES-EDE-CBC-SHA TLSv1 Kx=ECDHEPSK Au=PSK  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-ecdhe-psk",
-                    "auth-psk"),
-    TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA(
-                    50380828,
-                    "SRP-DSS-3DES-EDE-CBC-SHA",
-                    "SSLv3",
-                    "SRP-DSS-3DES-EDE-CBC-SHA SSLv3 Kx=SRP      Au=DSS  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-srp",
-                    "auth-dss"),
-    TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA(
-                    50380827,
-                    "SRP-RSA-3DES-EDE-CBC-SHA",
-                    "SSLv3",
-                    "SRP-RSA-3DES-EDE-CBC-SHA SSLv3 Kx=SRP      Au=RSA  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-srp",
-                    "auth-rsa"),
-    TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA(
-                    50380826,
-                    "SRP-3DES-EDE-CBC-SHA",
-                    "SSLv3",
-                    "SRP-3DES-EDE-CBC-SHA    SSLv3 Kx=SRP      Au=SRP  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-srp",
-                    "auth-srp"),
-    TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA(
-                    50331795,
-                    "RSA-PSK-3DES-EDE-CBC-SHA",
-                    "SSLv3",
-                    "RSA-PSK-3DES-EDE-CBC-SHA SSLv3 Kx=RSAPSK   Au=RSA  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-rsa-psk",
-                    "auth-rsa"),
-    TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA(
-                    50331791,
-                    "DHE-PSK-3DES-EDE-CBC-SHA",
-                    "SSLv3",
-                    "DHE-PSK-3DES-EDE-CBC-SHA SSLv3 Kx=DHEPSK   Au=PSK  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-dhe-psk",
-                    "auth-psk"),
-    TLS_RSA_WITH_3DES_EDE_CBC_SHA(
-                    50331658,
-                    "DES-CBC3-SHA",
-                    "SSLv3",
-                    "DES-CBC3-SHA            SSLv3 Kx=RSA      Au=RSA  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-rsa",
-                    "auth-rsa"),
-    TLS_PSK_WITH_3DES_EDE_CBC_SHA(
-                    50331787,
-                    "PSK-3DES-EDE-CBC-SHA",
-                    "SSLv3",
-                    "PSK-3DES-EDE-CBC-SHA    SSLv3 Kx=PSK      Au=PSK  Enc=3DES(168) Mac=SHA1",
-                    112,
-                    168,
-                    false,
-                    "des-ede3-cbc",
-                    "sha1",
-                    "kx-psk",
-                    "auth-psk"),
     TLS_ECDHE_ECDSA_WITH_NULL_SHA(
                     50380806,
                     "ECDHE-ECDSA-NULL-SHA",
@@ -2144,18 +1890,6 @@ public enum SSLCipher {
     TLS_PSK_WITH_NULL_SHA256(50331824, "PSK-NULL-SHA256", "TLSv1.0", "PSK-NULL-SHA256         TLSv1 Kx=PSK      Au=PSK  Enc=None      Mac=SHA256", 0, 0, false, null, "sha256", "kx-psk", "auth-psk"),
     TLS_PSK_WITH_NULL_SHA(50331692, "PSK-NULL-SHA", "SSLv3", "PSK-NULL-SHA            SSLv3 Kx=PSK      Au=PSK  Enc=None      Mac=SHA1", 0, 0, false, null, "sha1", "kx-psk", "auth-psk");
 
-    private static final TruffleString T_ID = tsLiteral("id");
-    private static final TruffleString T_NAME = tsLiteral("name");
-    private static final TruffleString T_PROTOCOL = tsLiteral("protocol");
-    private static final TruffleString T_DESCRIPTION = tsLiteral("description");
-    private static final TruffleString T_STRENGTH_BITS = tsLiteral("strength_bits");
-    private static final TruffleString T_ALG_BITS = tsLiteral("alg_bits");
-    private static final TruffleString T_AEAD = tsLiteral("aead");
-    private static final TruffleString T_SYMMETRIC = tsLiteral("symmetric");
-    private static final TruffleString T_DIGEST = tsLiteral("digest");
-    private static final TruffleString T_KEA = tsLiteral("kea");
-    private static final TruffleString T_AUTH = tsLiteral("auth");
-
     private final int opensslId;
     private final TruffleString opensslName;
     private final TruffleString protocol;
@@ -2167,6 +1901,18 @@ public enum SSLCipher {
     private final TruffleString digest;
     private final TruffleString kea;
     private final TruffleString auth;
+
+    private static final TruffleString T_ID = tsLiteral("id");
+    private static final TruffleString T_NAME = tsLiteral("name");
+    private static final TruffleString T_PROTOCOL = tsLiteral("protocol");
+    private static final TruffleString T_DESCRIPTION = tsLiteral("description");
+    private static final TruffleString T_STRENGTH_BITS = tsLiteral("strength_bits");
+    private static final TruffleString T_ALG_BITS = tsLiteral("alg_bits");
+    private static final TruffleString T_AEAD = tsLiteral("aead");
+    private static final TruffleString T_SYMMETRIC = tsLiteral("symmetric");
+    private static final TruffleString T_DIGEST = tsLiteral("digest");
+    private static final TruffleString T_KEA = tsLiteral("kea");
+    private static final TruffleString T_AUTH = tsLiteral("auth");
 
     SSLCipher(int opensslId, String opensslName, String protocol, String description, int strengthBits, int algorithmBits, boolean aead, String symmetric, String digest, String kea, String auth) {
         this.opensslId = opensslId;

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -932,30 +932,24 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.fabs(MyFloat()), 0.6)
 
     def test_factorial(self):
-        self.assertRaises(ValueError, math.factorial, float('nan'))
-        self.assertRaises(ValueError, math.factorial, float('inf'))
-        self.assertRaises(ValueError, math.factorial, float('-inf'))
+        self.assertRaises(TypeError, math.factorial, 0.0)
         self.assertEqual(math.factorial(0), 1)
-        self.assertEqual(math.factorial(0.0), 1)
         self.assertEqual(math.factorial(True), 1)
         self.assertEqual(math.factorial(False), 1)
         total = 1
         for i in range(1, 1000):
             total *= i
             self.assertEqual(math.factorial(i), total)
-            self.assertEqual(math.factorial(float(i)), total)
             self.assertEqual(math.factorial(i), py_factorial(i))
         self.assertRaises(ValueError, math.factorial, -1)
-        self.assertRaises(ValueError, math.factorial, -1.0)
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
             # these tests are failing in python 3.4.1
             self.assertRaises(ValueError, math.factorial, -10**100)
-            self.assertRaises(ValueError, math.factorial, -1e100)
-        self.assertRaises(ValueError, math.factorial, math.pi)
+        self.assertRaises(TypeError, math.factorial, math.pi)
         self.assertRaises(TypeError, math.factorial, 'hello')
         self.assertEqual(math.factorial(13), 6227020800)
         self.assertEqual(math.factorial(30), 265252859812191058636308480000000)
-        self.assertRaises(ValueError, math.factorial, -11.1)
+        self.assertRaises(TypeError, math.factorial, -11.1)
 
         if sys.version_info > (3, 8, 0):
             self.assertEqual(math.factorial(MyIndexable(4)), 24)

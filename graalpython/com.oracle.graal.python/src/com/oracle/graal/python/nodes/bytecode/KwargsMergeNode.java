@@ -67,8 +67,7 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
                     @Cached ConcatKeywordsNode.ConcatDictToStorageNode concatNode,
                     @Cached PRaiseNode raise,
                     @Cached BranchProfile keywordsError,
-                    @Cached StringNodes.CastToJavaStringCheckedNode castToStringNode,
-                    @Cached PyObjectFunctionStr functionStr) {
+                    @Cached StringNodes.CastToJavaStringCheckedNode castToStringNode) {
         int stackTop = initialStackTop;
         Object mapping = frame.getObject(stackTop);
         frame.setObject(stackTop--, null);
@@ -78,24 +77,24 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
             dict.setDictStorage(resultStorage);
         } catch (SameDictKeyException e) {
             keywordsError.enter();
-            Object functionName = getFunctionName(frame, stackTop, functionStr);
+            Object functionName = getFunctionName(frame, stackTop);
             String keyName = castToStringNode.cast(e.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, keyName);
         } catch (NonMappingException e) {
             keywordsError.enter();
-            Object functionName = getFunctionName(frame, stackTop, functionStr);
+            Object functionName = getFunctionName(frame, stackTop);
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
         }
         return stackTop;
     }
 
-    private static Object getFunctionName(VirtualFrame frame, int stackTop, PyObjectFunctionStr functionStr) {
+    private static Object getFunctionName(VirtualFrame frame, int stackTop) {
         /*
          * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
          * this point is [kwargs dict, varargs, callable].
          */
         Object callable = frame.getObject(stackTop - 2);
-        return functionStr.execute(frame, callable);
+        return PyObjectFunctionStr.execute(callable);
     }
 
     public static KwargsMergeNode create() {

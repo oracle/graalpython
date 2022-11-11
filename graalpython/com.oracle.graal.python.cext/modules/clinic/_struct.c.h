@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -129,14 +129,9 @@ Struct_unpack_from(PyStructObject *self, PyObject *const *args, Py_ssize_t nargs
     if (!noptargs) {
         goto skip_optional_pos;
     }
-    if (PyFloat_Check(args[1])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[1]);
+        PyObject *iobj = _PyNumber_Index(args[1]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -209,7 +204,7 @@ calcsize(PyObject *module, PyObject *arg)
     PyStructObject *s_object = NULL;
     Py_ssize_t _return_value;
 
-    if (!cache_struct_converter(arg, &s_object)) {
+    if (!cache_struct_converter(module, arg, &s_object)) {
         goto exit;
     }
     _return_value = calcsize_impl(module, s_object);
@@ -251,7 +246,7 @@ unpack(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
     if (!_PyArg_CheckPositional("unpack", nargs, 2, 2)) {
         goto exit;
     }
-    if (!cache_struct_converter(args[0], &s_object)) {
+    if (!cache_struct_converter(module, args[0], &s_object)) {
         goto exit;
     }
     if (PyObject_GetBuffer(args[1], &buffer, PyBUF_SIMPLE) != 0) {
@@ -307,7 +302,7 @@ unpack_from(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject 
     if (!args) {
         goto exit;
     }
-    if (!cache_struct_converter(args[0], &s_object)) {
+    if (!cache_struct_converter(module, args[0], &s_object)) {
         goto exit;
     }
     if (PyObject_GetBuffer(args[1], &buffer, PyBUF_SIMPLE) != 0) {
@@ -320,14 +315,9 @@ unpack_from(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject 
     if (!noptargs) {
         goto skip_optional_pos;
     }
-    if (PyFloat_Check(args[2])) {
-        PyErr_SetString(PyExc_TypeError,
-                        "integer argument expected, got float" );
-        goto exit;
-    }
     {
         Py_ssize_t ival = -1;
-        PyObject *iobj = PyNumber_Index(args[2]);
+        PyObject *iobj = _PyNumber_Index(args[2]);
         if (iobj != NULL) {
             ival = PyLong_AsSsize_t(iobj);
             Py_DECREF(iobj);
@@ -379,7 +369,7 @@ iter_unpack(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
     if (!_PyArg_CheckPositional("iter_unpack", nargs, 2, 2)) {
         goto exit;
     }
-    if (!cache_struct_converter(args[0], &s_object)) {
+    if (!cache_struct_converter(module, args[0], &s_object)) {
         goto exit;
     }
     buffer = args[1];
@@ -391,4 +381,4 @@ exit:
 
     return return_value;
 }
-/*[clinic end generated code: output=6a6228cfc4b7099c input=a9049054013a1b77]*/
+/*[clinic end generated code: output=a3d3cd900091cb1c input=a9049054013a1b77]*/

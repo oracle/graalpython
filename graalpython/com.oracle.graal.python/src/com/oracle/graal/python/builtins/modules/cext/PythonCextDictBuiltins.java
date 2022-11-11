@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.PopNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -465,6 +466,42 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "dict", obj);
+        }
+
+        protected boolean isDictSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @Builtin(name = "PyDict_SetDefault", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class PyDictSetDefaultNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        public Object setItem(VirtualFrame frame, PDict dict, Object key, Object value,
+                        @Cached DictBuiltins.SetDefaultNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return setItemNode.execute(frame, dict, key, value);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getContext().getNativeNull();
+            }
+        }
+
+        @Specialization(guards = {"!isDict(dict)", "isDictSubtype(frame, dict, getClassNode, isSubtypeNode)"})
+        public Object setItemNative(VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "dict");
+        }
+
+        @Specialization(guards = {"!isDict(obj)", "!isDictSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object setItem(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, ErrorMessages.EXPECTED_S_NOT_P, "dict", obj);
         }
 
         protected boolean isDictSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {

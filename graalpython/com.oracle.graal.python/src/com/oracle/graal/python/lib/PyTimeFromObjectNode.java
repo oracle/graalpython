@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,16 +63,35 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class PyTimeFromObjectNode extends PNodeWithRaise {
 
-    public abstract long execute(VirtualFrame frame, Object obj, long unitToNs);
+    public enum RoundType {
+        FLOOR,
+        CEILING,
+        ROUND_UP,
+        TIMEOUT     // alias for ROUND_UP
+    }
+
+    public abstract long execute(VirtualFrame frame, Object obj, RoundType round, long unitToNs);
 
     @Specialization
-    long doDouble(double d, long unitToNs) {
+    long doDouble(double d, RoundType round, long unitToNs) {
         // Implements _PyTime_FromDouble, rounding mode (HALF_UP) is hard-coded for now
         if (Double.isNaN(d)) {
             throw raise(ValueError, INVALID_VALUE_NAN);
         }
+
         double value = d * unitToNs;
-        value = value >= 0.0 ? Math.ceil(value) : Math.floor(value);
+        switch (round) {
+            case FLOOR:
+                value = Math.floor(value);
+                break;
+            case CEILING:
+                value = Math.ceil(value);
+                break;
+            case TIMEOUT:
+            case ROUND_UP:
+                value = value >= 0.0 ? Math.ceil(value) : Math.floor(value);
+                break;
+        }
         if (value < Long.MIN_VALUE || value > Long.MAX_VALUE) {
             throw raiseTimeOverflow();
         }
@@ -80,7 +99,7 @@ public abstract class PyTimeFromObjectNode extends PNodeWithRaise {
     }
 
     @Specialization
-    long doLong(long l, long unitToNs) {
+    long doLong(long l, @SuppressWarnings("unused") RoundType round, long unitToNs) {
         try {
             return PythonUtils.multiplyExact(l, unitToNs);
         } catch (OverflowException e) {
@@ -89,14 +108,14 @@ public abstract class PyTimeFromObjectNode extends PNodeWithRaise {
     }
 
     @Specialization
-    long doOther(VirtualFrame frame, Object value, long unitToNs,
+    long doOther(VirtualFrame frame, Object value, RoundType round, long unitToNs,
                     @Cached CastToJavaDoubleNode castToDouble,
                     @Cached PyLongAsLongAndOverflowNode asLongNode) {
         try {
-            return doDouble(castToDouble.execute(value), unitToNs);
+            return doDouble(castToDouble.execute(value), round, unitToNs);
         } catch (CannotCastException e) {
             try {
-                return doLong(asLongNode.execute(frame, value), unitToNs);
+                return doLong(asLongNode.execute(frame, value), round, unitToNs);
             } catch (OverflowException e1) {
                 throw raiseTimeOverflow();
             }

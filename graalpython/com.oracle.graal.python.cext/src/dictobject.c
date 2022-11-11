@@ -57,6 +57,11 @@ int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t h
     return UPCALL_CEXT_I(_jls_PyDict_SetItem_KnownHash, native_to_java(d), native_to_java(k), native_to_java(v), hash);
 }
 
+UPCALL_ID(PyDict_SetDefault);
+PyObject* PyDict_SetDefault(PyObject *d, PyObject *key, PyObject *defaultobj) {
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_SetDefault, native_to_java(d), native_to_java(key), native_to_java(defaultobj));
+}
+
 PyObject* _PyDict_NewPresized(Py_ssize_t minused) {
     /* we ignore requests to capacity for now */
     return UPCALL_CEXT_O(_jls_PyDict_New);
@@ -205,37 +210,6 @@ PyObject* PyObject_GenericGetDict(PyObject* obj, void* context) {
     return d;
 }
 
-int PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
-{
-    PyObject **dictptr = _PyObject_GetDictPtr(obj);
-    if (dictptr == NULL) {
-//        if (_PyType_HasFeature(Py_TYPE(obj), Py_TPFLAGS_MANAGED_DICT) &&
-//            _PyDictOrValues_IsValues(*_PyObject_DictOrValuesPointer(obj)))
-//        {
-//            /* Was unable to convert to dict */
-//            PyErr_NoMemory();
-//        }
-//        else {
-//            PyErr_SetString(PyExc_AttributeError,
-//                            "This object has no __dict__");
-//        }
-        return -1;
-    }
-    if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError, "cannot delete __dict__");
-        return -1;
-    }
-    if (!PyDict_Check(value)) {
-        PyErr_Format(PyExc_TypeError,
-                     "__dict__ must be set to a dictionary, "
-                     "not a '%.200s'", Py_TYPE(value)->tp_name);
-        return -1;
-    }
-    Py_INCREF(value);
-    Py_XSETREF(*dictptr, value);
-    return 0;
-}
-
 PyObject** _PyObject_GetDictPtr(PyObject* obj) {
 	obj = native_pointer_to_java(obj);
     Py_ssize_t dictoffset;
@@ -283,4 +257,27 @@ PyObject * PyDict_Keys(PyObject *dict) {
 UPCALL_ID(PyDict_Values);
 PyObject * PyDict_Values(PyObject *dict) {
     return UPCALL_CEXT_O(_jls_PyDict_Values, native_to_java(dict));
+}
+
+
+/* Taken from CPython */
+int
+_PyDict_ContainsId(PyObject *op, struct _Py_Identifier *key)
+{
+    PyObject *kv = _PyUnicode_FromId(key); /* borrowed */
+    if (kv == NULL) {
+        return -1;
+    }
+    return PyDict_Contains(op, kv);
+}
+
+/* Taken from CPython */
+int
+_PyDict_SetItemId(PyObject *v, struct _Py_Identifier *key, PyObject *item)
+{
+    PyObject *kv;
+    kv = _PyUnicode_FromId(key); /* borrowed */
+    if (kv == NULL)
+        return -1;
+    return PyDict_SetItem(v, kv, item);
 }

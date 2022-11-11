@@ -302,7 +302,7 @@ def run_cpython_test(raw_args):
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--gvm', dest='vm', action='store_const', const='gvm')
     parser.add_argument('--svm', dest='vm', action='store_const', const='svm')
-    parser.add_argument('-k', dest='tags', nargs='*')
+    parser.add_argument('-k', dest='tags', action='append')
     parser.add_argument('globs', nargs='+')
     args, rest_args = parser.parse_known_args(raw_args)
     testfiles = []

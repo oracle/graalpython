@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,9 +13,9 @@
 // Note the __clang__ conditional has to come before the __GNUC__ one because
 // clang pretends to be GCC.
 #if defined(__clang__)
-#define COMPILER "\n[Clang " __clang_version__ "]"
+#define COMPILER "[Clang " __clang_version__ "]"
 #elif defined(__GNUC__)
-#define COMPILER "\n[GCC " __VERSION__ "]"
+#define COMPILER "[GCC " __VERSION__ "]"
 // Generic fallbacks.
 #elif defined(__cplusplus)
 #define COMPILER "[C++]"

@@ -1,1 +1,0 @@
-*graalpython.lib-python.3.test.test_symbol.TestSymbolGeneration.test_real_grammar_and_symbol_file

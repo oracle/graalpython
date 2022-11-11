@@ -83,7 +83,7 @@ public abstract class KeywordsNode extends PNodeWithContext {
          * this point is [kwargs kw, callable].
          */
         Object callable = frame.getObject(stackTop - 2);
-        return PyObjectFunctionStr.getUncached().execute(frame, callable);
+        return PyObjectFunctionStr.execute(callable);
     }
 
     public static KeywordsNode create() {

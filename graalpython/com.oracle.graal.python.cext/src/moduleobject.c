@@ -49,6 +49,8 @@ UPCALL_ID(_PyModule_GetAndIncMaxModuleNumber);
 PyObject*
 PyModuleDef_Init(struct PyModuleDef* def)
 {
+    if (PyType_Ready(&PyModuleDef_Type) < 0)
+         return NULL;
     if (def->m_base.m_index == 0) {
         Py_SET_REFCNT(def, 1);
         Py_SET_TYPE(def, &PyModuleDef_Type);
@@ -121,15 +123,6 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
 
     mod->md_def = polyglot_from_PyModuleDef(moduledef);
     return (PyObject*) mod;
-}
-
-UPCALL_ID(PyModule_AddObject);
-int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
-    return UPCALL_CEXT_I(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
-}
-
-int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
-    return UPCALL_CEXT_I(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
 }
 
 PyObject* PyModule_Create2(PyModuleDef* moduledef, int apiversion) {

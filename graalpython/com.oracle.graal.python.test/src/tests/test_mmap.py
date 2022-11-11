@@ -1,11 +1,13 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import os
 import re
 import unittest
-from test.support import (TESTFN, run_unittest, import_module)
+from test.support import run_unittest
+from test.support.import_helper import import_module
+from test.support.os_helper import TESTFN
 
 # Skip test if we can't import mmap.
 mmap = import_module('mmap')

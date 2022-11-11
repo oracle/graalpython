@@ -53,12 +53,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -87,7 +85,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -99,7 +96,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
 public class ZipImporterBuiltins extends PythonBuiltins {
@@ -356,21 +352,6 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Specialization
         public PNone init(PZipImporter self, TruffleString path) {
             initZipImporter(self, path);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        public PNone init(PZipImporter self, PBytes path,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            SequenceStorage store = path.getSequenceStorage();
-            byte[] bytes = getBytes.execute(store);
-            int len = lenNode.execute(store);
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
-            BytesUtils.repr(sb, bytes, len, appendCodePointNode);
-            initZipImporter(self, toStringNode.execute(sb));
             return PNone.NONE;
         }
 

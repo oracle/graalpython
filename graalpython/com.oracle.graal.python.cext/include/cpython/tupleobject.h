@@ -1,14 +1,10 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #ifndef Py_CPYTHON_TUPLEOBJECT_H
 #  error "this header file must not be included directly"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 typedef struct {
@@ -33,10 +29,6 @@ PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject *);
 #define PyTuple_GET_ITEM(op, i) (_PyTuple_CAST(op)->ob_item[i])
 
 /* Macro, *only* to be used to fill in brand new tuples */
-#define PyTuple_SET_ITEM(op, i, v) (_PyTuple_CAST(op)->ob_item[i] = v)
+#define PyTuple_SET_ITEM(op, i, v) ((void)(_PyTuple_CAST(op)->ob_item[i] = v))
 
 PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);
-
-#ifdef __cplusplus
-}
-#endif

@@ -15,6 +15,8 @@ import copy
 import pickle
 import time
 
+from test.support import import_helper
+
 
 class AbstractMemoryTests:
     source_bytes = b"abcdef"
@@ -223,7 +225,7 @@ class AbstractMemoryTests:
             m = None
             # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
-    @test.support.impl_detail("weakref nondeterministic", graalvm=False)
+    @test.support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_gc(self):
         for tp in self._types:
             if not isinstance(tp, type):
@@ -356,7 +358,7 @@ class AbstractMemoryTests:
         self.assertRaises(ValueError, hash, m)
 
     # Even with added GC calls, the test sometimes transiently fails
-    @test.support.impl_detail("weakref nondeterministic", graalvm=False)
+    @test.support.impl_detail("weakref nondeterministic", graalpy=False)
     def test_weakref(self):
         # Check memoryviews are weakrefable
         for tp in self._types:
@@ -464,7 +466,7 @@ class BaseMemorySliceTests:
     def _check_contents(self, tp, obj, contents):
         self.assertEqual(obj[1:7], tp(contents))
 
-    @test.support.impl_detail("refcounting", graalvm=False)
+    @test.support.impl_detail("refcounting", graalpy=False)
     def test_refs(self):
         for tp in self._types:
             m = memoryview(tp(self._source))
@@ -528,10 +530,10 @@ class ArrayMemorySliceSliceTest(unittest.TestCase,
 
 
 class OtherTest(unittest.TestCase):
-    @test.support.impl_detail("ctypes", graalvm=False)
+    @test.support.impl_detail("ctypes", graalpy=False)
     def test_ctypes_cast(self):
         # Issue 15944: Allow all source formats when casting to bytes.
-        ctypes = test.support.import_module("ctypes")
+        ctypes = import_helper.import_module("ctypes")
         p6 = bytes(ctypes.c_double(0.6))
 
         d = ctypes.c_double()
@@ -566,6 +568,107 @@ class OtherTest(unittest.TestCase):
             with self.assertRaises(TypeError):
                 pickle.dumps(m, proto)
 
+    def test_use_released_memory(self):
+        # gh-92888: Previously it was possible to use a memoryview even after
+        # backing buffer is freed in certain cases. This tests that those
+        # cases raise an exception.
+        size = 128
+        def release():
+            m.release()
+            nonlocal ba
+            ba = bytearray(size)
+        class MyIndex:
+            def __index__(self):
+                release()
+                return 4
+        class MyFloat:
+            def __float__(self):
+                release()
+                return 4.25
+        class MyBool:
+            def __bool__(self):
+                release()
+                return True
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        with self.assertRaises(ValueError):
+            m[MyIndex()]
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        self.assertEqual(list(m[:MyIndex()]), [255] * 4)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        self.assertEqual(list(m[MyIndex():8]), [255] * 4)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size)).cast('B', (64, 2))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[MyIndex(), 0]
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size)).cast('B', (2, 64))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[0, MyIndex()]
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[MyIndex()] = 42
+        self.assertEqual(ba[:8], b'\0'*8)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[:MyIndex()] = b'spam'
+        self.assertEqual(ba[:8], b'\0'*8)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[MyIndex():8] = b'spam'
+        self.assertEqual(ba[:8], b'\0'*8)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size)).cast('B', (64, 2))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[MyIndex(), 0] = 42
+        self.assertEqual(ba[8:16], b'\0'*8)
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size)).cast('B', (2, 64))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[0, MyIndex()] = 42
+        self.assertEqual(ba[:8], b'\0'*8)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size))
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[0] = MyIndex()
+        self.assertEqual(ba[:8], b'\0'*8)
+
+        for fmt in 'bhilqnBHILQN':
+            with self.subTest(fmt=fmt):
+                ba = None
+                m = memoryview(bytearray(b'\xff'*size)).cast(fmt)
+                with self.assertRaisesRegex(ValueError, "operation forbidden"):
+                    m[0] = MyIndex()
+                self.assertEqual(ba[:8], b'\0'*8)
+
+        for fmt in 'fd':
+            with self.subTest(fmt=fmt):
+                ba = None
+                m = memoryview(bytearray(b'\xff'*size)).cast(fmt)
+                with self.assertRaisesRegex(ValueError, "operation forbidden"):
+                    m[0] = MyFloat()
+                self.assertEqual(ba[:8], b'\0'*8)
+
+        ba = None
+        m = memoryview(bytearray(b'\xff'*size)).cast('?')
+        with self.assertRaisesRegex(ValueError, "operation forbidden"):
+            m[0] = MyBool()
+        self.assertEqual(ba[:8], b'\0'*8)
 
 if __name__ == "__main__":
     unittest.main()

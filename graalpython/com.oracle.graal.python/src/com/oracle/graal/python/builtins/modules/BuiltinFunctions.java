@@ -79,6 +79,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -192,7 +193,6 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -202,7 +202,7 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -233,7 +233,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.pegparser.AbstractParser;
@@ -766,7 +765,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // dir([object])
-    @Builtin(name = J_DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = J_DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
 
@@ -1007,10 +1006,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = J_COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize", "_feature_version"})
+    @Builtin(name = J_COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize"}, keywordOnlyNames = {"_feature_version"})
+    @ArgumentClinic(name = "mode", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "dont_inherit", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
+    @ArgumentClinic(name = "optimize", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "_feature_version", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class CompileNode extends PythonBuiltinNode {
+    public abstract static class CompileNode extends PythonClinicBuiltinNode {
 
         // code.h
         private static final int CO_NESTED = 0x0010;
@@ -1056,19 +1059,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
             this.lstrip = false;
         }
 
-        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwOptimize, int featureVersion) {
-            return (PCode) executeInternal(frame, source, filename, mode, 0, false, kwOptimize, featureVersion);
+        public final PCode compile(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int optimize, int featureVersion) {
+            return (PCode) executeInternal(frame, source, filename, mode, 0, false, optimize, featureVersion);
         }
 
-        protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
-                        Object featureVersion);
+        protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
+                        int featureVersion);
 
-        @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        Object compile(TruffleString expression, TruffleString filename, TruffleString mode, int kwFlags, Object kwDontInherit, int kwOptimize, int featureVersion) {
-            checkFlags(kwFlags);
-            checkOptimize(kwOptimize, kwOptimize);
+        Object compile(TruffleString expression, TruffleString filename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize, int featureVersion) {
+            checkFlags(flags);
+            checkOptimize(optimize, optimize);
             checkSource(expression);
 
             TruffleString code = expression;
@@ -1090,12 +1092,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
                 pm = ParserMode.Statement;
             } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
-                if ((kwFlags & PyCF_ONLY_AST) == 0) {
+                if ((flags & PyCF_ONLY_AST) == 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
                 }
                 pm = ParserMode.FuncType;
             } else {
-                if ((kwFlags & PyCF_ONLY_AST) != 0) {
+                if ((flags & PyCF_ONLY_AST) != 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE_AST_ONLY);
                 } else {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE);
@@ -1107,7 +1109,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     code = code.substringUncached(1, code.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING, true);
                 }
             }
-            if ((kwFlags & PyCF_ONLY_AST) != 0) {
+            if ((flags & PyCF_ONLY_AST) != 0) {
                 InputType type;
                 switch (pm) {
                     case File:
@@ -1128,17 +1130,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                 RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
 
-                EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
-                if ((kwFlags & PyCF_TYPE_COMMENTS) != 0) {
-                    flags.add(AbstractParser.Flags.TYPE_COMMENTS);
+                EnumSet<AbstractParser.Flags> compilerFlags = EnumSet.noneOf(AbstractParser.Flags.class);
+                if ((flags & PyCF_TYPE_COMMENTS) != 0) {
+                    compilerFlags.add(AbstractParser.Flags.TYPE_COMMENTS);
                 }
                 if (featureVersion < 0) {
                     featureVersion = PythonLanguage.MINOR;
                 }
                 if (featureVersion < 7) {
-                    flags.add(AbstractParser.Flags.ASYNC_HACKS);
+                    compilerFlags.add(AbstractParser.Flags.ASYNC_HACKS);
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, flags, featureVersion);
+                Parser parser = Compiler.createParser(code.toJavaStringUncached(), errorCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 errorCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
@@ -1147,17 +1149,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             TruffleString finalCode = code;
             Supplier<CallTarget> createCode = () -> {
                 if (pm == ParserMode.File) {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(kwOptimize));
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(optimize));
                     return context.getEnv().parsePublic(source);
                 } else if (pm == ParserMode.Eval) {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(kwOptimize));
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(optimize));
                     return context.getEnv().parsePublic(source);
                 } else {
                     Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                     if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                        return context.getLanguage().parseForBytecodeInterpreter(context, source, InputType.SINGLE, false, kwOptimize, false, null);
+                        return context.getLanguage().parseForBytecodeInterpreter(context, source, InputType.SINGLE, false, optimize, false, null);
                     }
-                    return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
+                    return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, optimize, getCore(), source, null, null));
                 }
             };
             if (getCore().isCoreInitialized()) {
@@ -1169,11 +1171,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        Object generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize, Object kwFeatureVersion,
+        Object generic(VirtualFrame frame, Object wSource, Object wFilename, TruffleString mode, int flags, @SuppressWarnings("unused") boolean dontInherit, int optimize, int featureVersion,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @Cached PyObjectStrAsTruffleStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
@@ -1200,38 +1200,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 filename = asPath.execute(frame, wFilename);
             }
-            TruffleString mode;
-            try {
-                mode = castStr.execute(wMode);
-            } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_S_NOT_P, "compile()", "mode", "str", wMode);
-            }
-            int flags = 0;
-            if (kwFlags != PNone.NO_VALUE) {
-                try {
-                    flags = castInt.execute(kwFlags);
-                } catch (CannotCastException e) {
-                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
-                }
-                checkFlags(flags);
-            }
-            int optimize = 0;
-            if (kwOptimize != PNone.NO_VALUE) {
-                try {
-                    optimize = castInt.execute(kwOptimize);
-                } catch (CannotCastException e) {
-                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
-                }
-                checkOptimize(optimize, kwOptimize);
-            }
-            int featureVersion = -1;
-            if (kwFeatureVersion != PNone.NO_VALUE) {
-                try {
-                    featureVersion = castInt.execute(kwFeatureVersion);
-                } catch (CannotCastException e) {
-                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
-                }
-            }
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
                 ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
                 Source source = PythonUtils.createFakeSource();
@@ -1240,7 +1208,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             TruffleString source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode);
             checkSource(source);
-            return compile(source, filename, mode, flags, kwDontInherit, optimize, featureVersion);
+            return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion);
         }
 
         private PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {
@@ -1326,6 +1294,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public static CompileNode create(boolean mapFilenameToUri, boolean lstrip) {
             return BuiltinFunctionsFactory.CompileNodeFactory.create(mapFilenameToUri, lstrip, new ReadArgumentNode[]{});
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinFunctionsClinicProviders.CompileNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -2404,9 +2377,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         PTuple update(PTuple bases, Object[] arguments, int nargs,
                         @Cached PythonObjectFactory factory,
-                        @Cached GetClassNode getMroClass,
-                        @Cached("create(T___MRO_ENTRIES__)") LookupAttributeInMRONode getMroEntries,
-                        @Cached CallBinaryMethodNode callMroEntries) {
+                        @Cached PyObjectLookupAttr getMroEntries,
+                        @Cached CallUnaryMethodNode callMroEntries) {
             CompilerAsserts.neverPartOfCompilation();
             ArrayList<Object> newBases = null;
             for (int i = 0; i < nargs; i++) {
@@ -2420,18 +2392,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     continue;
                 }
 
-                Object meth = getMroEntries.execute(getMroClass.execute(base));
+                Object meth = getMroEntries.execute(null, base, T___MRO_ENTRIES__);
                 if (PGuards.isNoValue(meth)) {
                     if (newBases != null) {
                         newBases.add(base);
                     }
                     continue;
                 }
-                Object newBase = callMroEntries.executeObject(null, meth, base, bases);
-                if (newBase == null) {
-                    // error
-                    return null;
-                }
+                Object newBase = callMroEntries.executeObject(null, meth, bases);
                 if (!PGuards.isPTuple(newBase)) {
                     throw raise(PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }
@@ -2594,7 +2562,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     // will use the explicitly given object as it is
                 }
             }
-            InitializeBuildClass init = new InitializeBuildClass();
+            Object savedState = IndirectCallContext.enter(frame, this);
+            InitializeBuildClass init;
+            try {
+                init = new InitializeBuildClass();
+            } finally {
+                IndirectCallContext.exit(frame, this, savedState);
+            }
 
             Object ns;
             try {

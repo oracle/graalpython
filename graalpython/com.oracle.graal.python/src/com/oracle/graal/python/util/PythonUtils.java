@@ -384,6 +384,22 @@ public final class PythonUtils {
         return r;
     }
 
+    public static int negateExact(int a) throws OverflowException {
+        if (a == Integer.MIN_VALUE) {
+            throw OverflowException.INSTANCE;
+        }
+
+        return -a;
+    }
+
+    public static long negateExact(long a) throws OverflowException {
+        if (a == Long.MIN_VALUE) {
+            throw OverflowException.INSTANCE;
+        }
+
+        return -a;
+    }
+
     public static int toIntExact(long x) throws OverflowException {
         int r = (int) x;
         if (r != x) {

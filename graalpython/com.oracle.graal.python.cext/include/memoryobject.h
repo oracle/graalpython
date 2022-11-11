@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -17,7 +17,7 @@ PyAPI_DATA(PyTypeObject) _PyManagedBuffer_Type;
 #endif
 PyAPI_DATA(PyTypeObject) PyMemoryView_Type;
 
-#define PyMemoryView_Check(op) (Py_TYPE(op) == &PyMemoryView_Type)
+#define PyMemoryView_Check(op) Py_IS_TYPE(op, &PyMemoryView_Type)
 
 #ifndef Py_LIMITED_API
 /* Get a pointer to the memoryview's private copy of the exporter's buffer. */

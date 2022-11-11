@@ -1,20 +1,16 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
 
-import sys
-import os
-import unittest
-import time
 import importlib
-
+import os
+import sys
+import unittest
 import zipimport
+from test.support import import_helper
 from zipimport import ZipImportError
-
-from test import support
-from zipfile import ZipFile, ZipInfo, ZIP_STORED, ZIP_DEFLATED
 
 test_src = """\
 def get_name():
@@ -41,14 +37,14 @@ class ZipImportBaseTestCase(unittest.TestCase):
         self.meta_path = sys.meta_path[:]
         self.path_hooks = sys.path_hooks[:]
         sys.path_importer_cache.clear()
-        self.modules_before = support.modules_setup()
+        self.modules_before = import_helper.modules_setup()
 
     def tearDownClass(self):
         sys.path[:] = self.path
         sys.meta_path[:] = self.meta_path
         sys.path_hooks[:] = self.path_hooks
         sys.path_importer_cache.clear()
-        support.modules_cleanup(*self.modules_before)
+        import_helper.modules_cleanup(*self.modules_before)
 
 class BasicZipImportTests(ZipImportBaseTestCase):
 

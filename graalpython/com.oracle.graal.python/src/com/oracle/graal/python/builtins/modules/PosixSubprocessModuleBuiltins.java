@@ -184,7 +184,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
-                    "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
+                    "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "gid_object", "groups_list",
+                    "uid_object", "child_umask", "preexec_fn"})
     @ArgumentClinic(name = "args", conversionClass = ProcessArgsConversionNode.class)
     @ArgumentClinic(name = "close_fds", conversion = ClinicConversion.Boolean)
     @ArgumentClinic(name = "env", conversionClass = EnvConversionNode.class)
@@ -198,6 +199,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "errpipe_write", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "restore_signals", conversion = ClinicConversion.IntToBoolean)
     @ArgumentClinic(name = "call_setsid", conversion = ClinicConversion.IntToBoolean)
+    @ArgumentClinic(name = "child_umask", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class NewForkExecNode extends PythonClinicBuiltinNode {
 
@@ -225,12 +227,13 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return o;
         }
 
-        @Specialization(guards = "errPipeValid(closeFds, errPipeWrite)")
+        @Specialization
         int forkExec(VirtualFrame frame, Object[] args, Object executableList, boolean closeFds,
-                        PTuple fdsToKeepTuple, Object cwdObj, Object env,
+                        Object fdsToKeepObj, Object cwdObj, Object env,
                         int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
                         int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
-                        boolean restoreSignals, boolean callSetsid, @SuppressWarnings("unused") PNone preexecFn,
+                        boolean restoreSignals, boolean callSetsid, Object gidObject, Object groupsList,
+                        Object uidObject, int childUmask, Object preexecFn,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
@@ -240,9 +243,17 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GilNode gil,
                         @Cached ToBytesNode toBytesNode) {
-
+            if (!(preexecFn instanceof PNone)) {
+                throw raise(RuntimeError, ErrorMessages.S_NOT_SUPPORTED, "preexec_fn");
+            }
+            if (closeFds && errPipeWrite < 3) {
+                throw raise(ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
+            }
+            if (!(fdsToKeepObj instanceof PTuple)) {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
+            }
             Object[] processArgs = args;
-            int[] fdsToKeep = convertFdSequence(fdsToKeepTuple, lenNode, tupleGetItem, castToIntNode);
+            int[] fdsToKeep = convertFdSequence((PTuple) fdsToKeepObj, lenNode, tupleGetItem, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
@@ -284,40 +295,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-        }
-
-        @Specialization(guards = "!isPTuple(fdsToKeep)")
-        @SuppressWarnings("unused")
-        int fdsToKeepNotATuple(VirtualFrame frame, Object processArgs, Object executableList, boolean closeFds,
-                        Object fdsToKeep, Object cwd, Object env,
-                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
-                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
-                        boolean restoreSignals, boolean callSetsid, Object preexecFn) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeep);
-        }
-
-        @Specialization(guards = "!isPNone(preexecFn)")
-        @SuppressWarnings("unused")
-        int preexecFn(VirtualFrame frame, Object processArgs, Object executableList, boolean closeFds,
-                        PTuple fdsToKeep, Object cwd, Object env,
-                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
-                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
-                        boolean restoreSignals, boolean callSetsid, Object preexecFn) {
-            throw raise(RuntimeError, ErrorMessages.S_NOT_SUPPORTED, "preexec_fn");
-        }
-
-        @Specialization(guards = "!errPipeValid(closeFds, errPipeWrite)")
-        @SuppressWarnings("unused")
-        int errPipePrecondition(VirtualFrame frame, Object processArgs, Object executableList, boolean closeFds,
-                        PTuple fdsToKeep, Object cwd, Object env,
-                        int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
-                        int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
-                        boolean restoreSignals, boolean callSetsid, PNone preexecFn) {
-            throw raise(ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
-        }
-
-        protected static boolean errPipeValid(boolean closeFds, int errPipeWrite) {
-            return !(closeFds && errPipeWrite < 3);
         }
 
         /**

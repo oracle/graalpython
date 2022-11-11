@@ -566,7 +566,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 charValue = castToStringNode.execute(valueObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
+                throw raise(TypeError, optional ? ErrorMessages.S_MUST_BE_STRING_OR_NONE_NOT_S : ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
             }
 
             if (optional && equalNode.execute(charValue, T_NOT_SET, TS_ENCODING)) {

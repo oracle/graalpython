@@ -1,14 +1,10 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2022, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #ifndef Py_CPYTHON_PYMEM_H
 #  error "this header file must not be included directly"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 PyAPI_FUNC(void *) PyMem_RawMalloc(size_t size);
@@ -18,8 +14,6 @@ PyAPI_FUNC(void) PyMem_RawFree(void *ptr);
 
 /* Try to get the allocators name set by _PyMem_SetupAllocators(). */
 PyAPI_FUNC(const char*) _PyMem_GetCurrentAllocatorName(void);
-
-PyAPI_FUNC(void *) PyMem_Calloc(size_t nelem, size_t elsize);
 
 /* strdup() using PyMem_RawMalloc() */
 PyAPI_FUNC(char *) _PyMem_RawStrdup(const char *str);
@@ -107,7 +101,3 @@ PyAPI_FUNC(void) PyMem_SetAllocator(PyMemAllocatorDomain domain,
 
    The function does nothing if Python is not compiled is debug mode. */
 PyAPI_FUNC(void) PyMem_SetupDebugHooks(void);
-
-#ifdef __cplusplus
-}
-#endif

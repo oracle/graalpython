@@ -232,24 +232,28 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString formatString(PRaiseNode raiseNode, Spec spec, String str) {
-            TextFormatter formatter = new TextFormatter(raiseNode, spec.withDefaults(Spec.STRING));
+            TextFormatter formatter = new TextFormatter(raiseNode, spec);
             formatter.format(str);
             return formatter.pad().getResult();
         }
 
         private Spec getAndValidateSpec(TruffleString formatString) {
-            Spec spec = InternalFormat.fromText(getRaiseNode(), formatString);
+            Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, 's', '<');
             if (Spec.specified(spec.type) && spec.type != 's') {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
-            }
-            if (spec.alternate) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT);
-            }
-            if (Spec.specified(spec.align) && spec.align == '=') {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
+                throw raise(TypeError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
             }
             if (Spec.specified(spec.sign)) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIGN_NOT_ALLOWED_FOR_STRING_FMT);
+                if (spec.sign == ' ') {
+                    throw raise(ValueError, ErrorMessages.SPACE_NOT_ALLOWED_IN_STRING_FORMAT_SPECIFIER);
+                } else {
+                    throw raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_FOR_STRING_FMT);
+                }
+            }
+            if (spec.alternate) {
+                throw raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT);
+            }
+            if (Spec.specified(spec.align) && spec.align == '=') {
+                throw raise(ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
             }
             return spec;
         }
@@ -284,7 +288,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(self)")
         @SuppressWarnings("unused")
         TruffleString generic(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T_FORMAT, "str", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, T_FORMAT, "str", self);
         }
     }
 
@@ -1018,7 +1022,7 @@ public final class StringBuiltins extends PythonBuiltins {
             int toLen = codePointLengthNode.execute(toStr, TS_ENCODING);
             int fromLen = codePointLengthNode.execute(fromStr, TS_ENCODING);
             if (toLen != fromLen) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
+                throw raise(ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
             }
             HashingStorage storage = PDict.createNewStorage(false, fromLen);
             TruffleStringIterator fromIt = createCodePointIteratorNode.execute(fromStr, TS_ENCODING);
@@ -1076,7 +1080,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
         PDict doFail(Object cls, Object from, Object to, Object z) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT);
+            throw raise(TypeError, ErrorMessages.IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT);
         }
     }
 

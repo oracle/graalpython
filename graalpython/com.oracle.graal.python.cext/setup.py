@@ -416,21 +416,30 @@ class NativeBuiltinModule:
         # common case: just a single file which is the module's name plus the file extension
         sources = kwargs.pop("sources", [os.path.join("modules", self.name + ".c")])
 
+        core = kwargs.pop("core", True)
+
         libs, library_dirs, include_dirs = _build_deps(self.deps)
 
         libs += kwargs.pop("libs", [])
         library_dirs += kwargs.pop("library_dirs", [])
         include_dirs += kwargs.pop("include_dirs", [])
-        include_dirs.append(os.path.join(__dir__, "src"))
+        include_dirs += [os.path.join(__dir__, "src"), os.path.join(__dir__, "include")]
+        if core:
+            include_dirs += [os.path.join(__dir__, "include/internal")]
         extra_compile_args = cflags_warnings + kwargs.pop("extra_compile_args", [])
+
+        define_macros = kwargs.pop("define_macros", [])
+        if core:
+            define_macros.append(("Py_BUILD_CORE", None))
 
         return Extension(
             self.name,
-            sources=[os.path.join(__dir__, f) for f in sources],
+            sources=[os.path.join(__dir__, f) for f in sources if f.endswith('.c')],
             libraries=libs,
             library_dirs=library_dirs,
             extra_compile_args=extra_compile_args,
             include_dirs=include_dirs,
+            define_macros=define_macros,
             **kwargs,
         )
 
@@ -440,7 +449,7 @@ builtin_exts = (
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_cpython_struct"),
-    NativeBuiltinModule("_testcapi"),
+    NativeBuiltinModule("_testcapi", core=False),
     NativeBuiltinModule("_testmultiphase"),
     NativeBuiltinModule("_ctypes_test"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
@@ -471,10 +480,11 @@ builtin_exts = (
 def build_libpython(capi_home):
     src_dir = os.path.join(__dir__, "src")
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
-    module = Extension(libpython_name,
-                       sources=files,
-                       extra_compile_args=cflags_warnings,
-                       )
+    module = NativeBuiltinModule(
+        libpython_name,
+        sources=files,
+        extra_compile_args=cflags_warnings,
+    )()
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
     setup(
         script_name='setup' + libpython_name,
