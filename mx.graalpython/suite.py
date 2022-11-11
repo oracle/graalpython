@@ -779,6 +779,7 @@ suite = {
                     "file:graalpython/lib-graalpython",
                     "file:graalpython/com.oracle.graal.python.cext/include",
                 ],
+                "./include/python3.8": "link:.",
                 "./lib-graalpython/": [
                     "extracted-dependency:GRAALPYTHON_CEXT/*",
                     "extracted-dependency:GRAALPYTHON_JNI/*",
