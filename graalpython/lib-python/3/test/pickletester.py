@@ -1804,7 +1804,6 @@ class AbstractPickleTests:
             self.assertEqual(len(x.state), 1)
             self.assertIs(x.state[0], x)
 
-    @support.impl_detail("[GR-31493] unicode end cases", graalpy=False)
     def test_unicode(self):
         endcases = ['', '<\\u>', '<\\\u1234>', '<\n>',
                     '<\\>', '<\\\U00012345>',
@@ -1816,7 +1815,6 @@ class AbstractPickleTests:
                 u2 = self.loads(p)
                 self.assert_is_copy(u, u2)
 
-    @support.impl_detail("[GR-31493] unicode end cases", graalpy=False)
     def test_unicode_high_plane(self):
         t = '\U00012345'
         for proto in protocols:
