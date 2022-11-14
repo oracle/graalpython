@@ -294,10 +294,10 @@ public class ObjectHashMapTests {
 
         EconomicMapStorage storage = new EconomicMapStorage(actual, false);
         int[] size = new int[]{0};
-        HashingStorageForEachNodeGen.getUncached().execute(null, storage, new HashingStorageForEachCallback<Object>() {
+        HashingStorageForEachNodeGen.getUncached().execute(null, storage, new HashingStorageForEachCallback<>() {
             @Override
-            public Object execute(Frame frame, HashingStorage storage, HashingStorageIterator it, Object accumulator) {
-                Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+            public Object execute(Frame frame, HashingStorage s, HashingStorageIterator cbIt, Object accumulator) {
+                Object key = HashingStorageIteratorKey.executeUncached(s, cbIt);
                 assertTrue(key.toString(), expected.containsKey(key));
                 size[0]++;
                 return null;
