@@ -111,11 +111,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.HexNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.OctNodeFactory;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
@@ -133,8 +133,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -1061,9 +1061,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             TruffleString code = expression;
             PythonContext context = getContext();
-            ParserMode pm;
-            if (mode.equalsUncached(T_EXEC, TS_ENCODING)) {
-                pm = ParserMode.File;
+            ParserMode pm = getParserMode(mode, flags);
+            if (pm == ParserMode.File) {
                 // CPython adds a newline and we need to do the same in order to produce
                 // SyntaxError with the same offset when the line is incomplete.
                 // The new parser does this on its own - we must not add a newline here since
@@ -1073,20 +1072,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         code = code.concatUncached(T_NEWLINE, TS_ENCODING, true);
                     }
                 }
-            } else if (mode.equalsUncached(T_EVAL, TS_ENCODING)) {
-                pm = ParserMode.Eval;
-            } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
-                pm = ParserMode.Statement;
-            } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
+            } else if (pm == ParserMode.FuncType) {
                 if ((flags & PyCF_ONLY_AST) == 0) {
                     throw raise(ValueError, ErrorMessages.COMPILE_MODE_FUNC_TYPE_REQUIED_FLAG_ONLY_AST);
-                }
-                pm = ParserMode.FuncType;
-            } else {
-                if ((flags & PyCF_ONLY_AST) != 0) {
-                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE_AST_ONLY);
-                } else {
-                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE);
                 }
             }
             if (lstrip && !code.isEmpty()) {
@@ -1187,8 +1175,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 filename = asPath.execute(frame, wFilename);
             }
             if (AstModuleBuiltins.isAst(getContext(), wSource)) {
-                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource);
-                Source source = PythonUtils.createFakeSource();
+                ModTy mod = AstModuleBuiltins.obj2sst(getContext(), wSource, getParserMode(mode, flags));
+                Source source = PythonUtils.createFakeSource(filename);
                 RootCallTarget rootCallTarget = getLanguage().compileForBytecodeInterpreter(getContext(), mod, source, false, optimize, null, null);
                 return wrapRootCallTarget(rootCallTarget);
             }
@@ -1222,6 +1210,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private void checkFlags(int flags) {
             if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_COMPILE_MASK)) != 0) {
                 throw raise(ValueError, ErrorMessages.UNRECOGNIZED_FLAGS);
+            }
+        }
+
+        private ParserMode getParserMode(TruffleString mode, int flags) {
+            if (mode.equalsUncached(T_EXEC, TS_ENCODING)) {
+                return ParserMode.File;
+            } else if (mode.equalsUncached(T_EVAL, TS_ENCODING)) {
+                return ParserMode.Eval;
+            } else if (mode.equalsUncached(T_SINGLE, TS_ENCODING)) {
+                return ParserMode.Statement;
+            } else if (mode.equalsUncached(T_FUNC_TYPE, TS_ENCODING)) {
+                return ParserMode.FuncType;
+            } else {
+                if ((flags & PyCF_ONLY_AST) != 0) {
+                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE_AST_ONLY);
+                } else {
+                    throw raise(ValueError, ErrorMessages.COMPILE_MODE_MUST_BE);
+                }
             }
         }
 

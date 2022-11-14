@@ -43,9 +43,11 @@ package com.oracle.graal.python.builtins.modules.ast;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ALLOW_TOP_LEVEL_AWAIT;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ONLY_AST;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_TYPE_COMMENTS;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NODE_GOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.util.List;
 
@@ -60,11 +62,13 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -141,8 +145,27 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static ModTy obj2sst(PythonContext context, Object obj) {
-        ModTy mod = new Obj2Sst(getAstState(context)).obj2ModTy(obj);
+    public static ModTy obj2sst(PythonContext context, Object obj, ParserMode mode) {
+        AstState state = getAstState(context);
+        PythonClass expectedClass;
+        switch (mode) {
+            case File:
+                expectedClass = state.clsModule;
+                break;
+            case Eval:
+                expectedClass = state.clsExpression;
+                break;
+            case Statement:
+                expectedClass = state.clsInteractive;
+                break;
+            default:
+                throw shouldNotReachHere();
+        }
+        if (!Obj2SstBase.isInstanceOf(obj, expectedClass)) {
+            throw Obj2SstBase.raiseTypeError(EXPECTED_S_NODE_GOT_P, expectedClass.getName(), obj);
+        }
+
+        ModTy mod = new Obj2Sst(state).obj2ModTy(obj);
         Validator.validateMod(mod);
         return mod;
     }

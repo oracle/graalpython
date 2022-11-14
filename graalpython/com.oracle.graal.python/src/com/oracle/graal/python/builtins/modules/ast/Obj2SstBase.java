@@ -320,7 +320,7 @@ abstract class Obj2SstBase {
         throw PRaiseNode.getUncached().raise(type, format, arguments);
     }
 
-    private static PException raiseTypeError(TruffleString format, Object... arguments) {
+    static PException raiseTypeError(TruffleString format, Object... arguments) {
         throw raise(PythonBuiltinClassType.TypeError, format, arguments);
     }
 
