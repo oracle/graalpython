@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
@@ -177,7 +178,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String FROZEN_FILENAME_PREFIX = "<frozen ";
     public static final String FROZEN_FILENAME_SUFFIX = ">";
 
+    /**
+     * GraalVM version, as used by {@link Version}. Unfortunately, we cannot just use
+     * {@link Version#getCurrent} as it relies on a GraalVM build, but we may run from Jar files
+     * directly during development. So we hardcode the version here and have an assert below that it
+     * is equal to the version in the GraalVM we are built into.
+     */
+    public static final int[] GRAALVM_VERSION = new int[]{23, 0, 0};
+
     static {
+        assert Version.getCurrent().compareTo(GRAALVM_VERSION) == 0 || Version.getCurrent().toString().equals("snapshot");
+
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
                 RELEASE_LEVEL_STRING = tsLiteral("alpha");
