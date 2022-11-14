@@ -90,6 +90,7 @@ public class EconomicMapStorage extends HashingStorage {
         this.map = copy ? original.copy() : original;
     }
 
+    @TruffleBoundary
     public static EconomicMapStorage create(LinkedHashMap<String, Object> map) {
         EconomicMapStorage result = new EconomicMapStorage(map.size(), false);
         putAllUncached(map, result);
@@ -139,8 +140,8 @@ public class EconomicMapStorage extends HashingStorage {
         ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
-    @TruffleBoundary
     private static void putAllUncached(LinkedHashMap<String, Object> map, EconomicMapStorage result) {
+        CompilerAsserts.neverPartOfCompilation();
         for (Entry<String, Object> entry : map.entrySet()) {
             result.putUncached(TruffleString.fromJavaStringUncached(entry.getKey(), TS_ENCODING), entry.getValue());
         }

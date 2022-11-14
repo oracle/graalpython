@@ -289,6 +289,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
 
         private void writeAttribute(VirtualFrame frame, PDict dict, Object key, Object value) {
             if (setHashingStorageItem == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 setHashingStorageItem = insert(HashingStorageSetItem.create());
             }
             HashingStorage storage = dict.getDictStorage();
