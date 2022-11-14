@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'dict17'> SourceSection: [0,31]`{'a':'b','c':14,'d'
         Identifier: h
         IsBuiltinClassProfile SourceSection: None
           GetClassNodeGen SourceSection: None
-      CachedDispatchFirst SourceSection: None
-      CachedDispatchFirst SourceSection: None
-      CachedDispatchFirst SourceSection: None
-      CachedDispatchFirst SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None

@@ -15,5 +15,5 @@ ModuleRootNode Name: <module 'dict16'> SourceSection: [0,14]`{'a':'b',c:14}`
       StringLiteralNode SourceSection: [5,8]`'b'`
       IntegerLiteralNode SourceSection: [11,13]`14`
         Value: 14
-      CachedDispatchFirst SourceSection: None
-      CachedDispatchFirst SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None

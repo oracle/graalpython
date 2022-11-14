@@ -113,8 +113,8 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
               Value: 4
             IntegerLiteralNode SourceSection: [46,47]`5`
               Value: 5
-            CachedDispatchFirst SourceSection: None
-            CachedDispatchFirst SourceSection: None
-            CachedDispatchFirst SourceSection: None
-            CachedDispatchFirst SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            HashingStorageSetItemNodeGen SourceSection: None
+            HashingStorageSetItemNodeGen SourceSection: None
+            HashingStorageSetItemNodeGen SourceSection: None
+            HashingStorageSetItemNodeGen SourceSection: None
+            HashingStorageSetItemNodeGen SourceSection: None

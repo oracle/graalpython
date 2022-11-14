@@ -3335,8 +3335,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             StringLiteralNode SourceSection: [14409,14424]`'namedtuple_{}'`
                           ReadLocalVariableNodeGen SourceSection: [14432,14440]`typename`
                             Frame: [0,typename,Illegal]
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [14515,14533]`exec(s, namespace)`
                       PythonCallBinary SourceSection: [14515,14533]`exec(s, namespace)`
                         CallBinaryMethodNodeGen SourceSection: None
@@ -3770,16 +3770,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           Frame: [21,_asdict,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [16502,16516]`__getnewargs__`
                           Frame: [22,__getnewargs__,Illegal]
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
+                        HashingStorageSetItemNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [16528,16551]`cache = _nt_itemgett...`
                       Identifier: cache
                       Frame: [25,cache,Illegal]

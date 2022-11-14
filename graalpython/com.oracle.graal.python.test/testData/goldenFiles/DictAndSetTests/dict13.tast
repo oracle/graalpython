@@ -9,4 +9,4 @@ ModuleRootNode Name: <module 'dict13'> SourceSection: [0,9]`{'a':'b'}`
       PythonObjectFactoryNodeGen SourceSection: None
       StringLiteralNode SourceSection: [1,4]`'a'`
       StringLiteralNode SourceSection: [5,8]`'b'`
-      CachedDispatchFirst SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None

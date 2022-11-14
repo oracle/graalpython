@@ -228,14 +228,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
                   GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [1058,1062]`"\\"`
             PythonObjectFactoryNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1068,1544]`CATEGORIES = {↵    r...`
         Identifier: CATEGORIES
         DynamicDictLiteralNodeGen SourceSection: [1081,1544]`{↵    r"\A": (AT, AT...`
@@ -398,16 +398,16 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
               IsBuiltinClassProfile SourceSection: None
                 GetClassNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1546,1813]`FLAGS = {↵    # stan...`
         Identifier: FLAGS
         DynamicDictLiteralNodeGen SourceSection: [1554,1813]`{↵    # standard fla...`
@@ -452,14 +452,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
             Identifier: SRE_FLAG_UNICODE
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1815,1879]`TYPE_FLAGS = SRE_FLA...`
         Identifier: TYPE_FLAGS
         BitOrNodeGen SourceSection: [1828,1879]`SRE_FLAG_ASCII | SRE...`

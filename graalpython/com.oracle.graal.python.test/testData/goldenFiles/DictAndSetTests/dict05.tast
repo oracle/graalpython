@@ -23,5 +23,5 @@ ModuleRootNode Name: <module 'dict05'> SourceSection: [0,12]`{a:b, c:d, }`
         Identifier: d
         IsBuiltinClassProfile SourceSection: None
           GetClassNodeGen SourceSection: None
-      CachedDispatchFirst SourceSection: None
-      CachedDispatchFirst SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None

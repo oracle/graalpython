@@ -1347,10 +1347,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                   GetClassNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [7283,8082]`def total_ordering(c...`
         Identifier: total_ordering
         FunctionDefinitionNode Name: total_ordering SourceSection: None

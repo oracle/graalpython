@@ -15,4 +15,4 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,5]`{a:b}`
         Identifier: b
         IsBuiltinClassProfile SourceSection: None
           GetClassNodeGen SourceSection: None
-      CachedDispatchFirst SourceSection: None
+      HashingStorageSetItemNodeGen SourceSection: None

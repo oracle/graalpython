@@ -14,15 +14,15 @@ ModuleRootNode Name: <module 'dict11'> SourceSection: [0,52]`{**{"a": "hello", "
         StringLiteralNode SourceSection: [18,21]`"b"`
         StringLiteralNode SourceSection: [9,16]`"hello"`
         StringLiteralNode SourceSection: [23,30]`"world"`
-        CachedDispatchFirst SourceSection: None
-        CachedDispatchFirst SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
       DynamicDictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [33,34]`1`
           Value: 1
         IntegerLiteralNode SourceSection: [35,36]`2`
           Value: 2
-        CachedDispatchFirst SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
       DynamicDictLiteralNodeGen SourceSection: [41,51]`{3:4, 5:6}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [42,43]`3`
@@ -33,5 +33,5 @@ ModuleRootNode Name: <module 'dict11'> SourceSection: [0,52]`{**{"a": "hello", "
           Value: 4
         IntegerLiteralNode SourceSection: [49,50]`6`
           Value: 6
-        CachedDispatchFirst SourceSection: None
-        CachedDispatchFirst SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None

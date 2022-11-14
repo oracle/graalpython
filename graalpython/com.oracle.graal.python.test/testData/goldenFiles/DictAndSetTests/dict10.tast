@@ -14,8 +14,8 @@ ModuleRootNode Name: <module 'dict10'> SourceSection: [0,46]`{**{"a": "hello", "
         StringLiteralNode SourceSection: [18,21]`"b"`
         StringLiteralNode SourceSection: [9,16]`"hello"`
         StringLiteralNode SourceSection: [23,30]`"world"`
-        CachedDispatchFirst SourceSection: None
-        CachedDispatchFirst SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
       DynamicDictLiteralNodeGen SourceSection: [35,45]`{3:4, 5:6}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [36,37]`3`
@@ -26,5 +26,5 @@ ModuleRootNode Name: <module 'dict10'> SourceSection: [0,46]`{**{"a": "hello", "
           Value: 4
         IntegerLiteralNode SourceSection: [43,44]`6`
           Value: 6
-        CachedDispatchFirst SourceSection: None
-        CachedDispatchFirst SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None
+        HashingStorageSetItemNodeGen SourceSection: None

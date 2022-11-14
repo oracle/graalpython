@@ -726,8 +726,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_IGNORE
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3741,3837]`OP_LOCALE_IGNORE = {...`
         Identifier: OP_LOCALE_IGNORE
         DynamicDictLiteralNodeGen SourceSection: [3760,3837]`{↵    LITERAL: LITER...`
@@ -748,8 +748,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_LOC_IGNORE
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3839,3936]`OP_UNICODE_IGNORE = ...`
         Identifier: OP_UNICODE_IGNORE
         DynamicDictLiteralNodeGen SourceSection: [3859,3936]`{↵    LITERAL: LITER...`
@@ -770,8 +770,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_UNI_IGNORE
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3938,4017]`AT_MULTILINE = {↵   ...`
         Identifier: AT_MULTILINE
         DynamicDictLiteralNodeGen SourceSection: [3953,4017]`{↵    AT_BEGINNING: ...`
@@ -792,8 +792,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_END_LINE
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4019,4109]`AT_LOCALE = {↵    AT...`
         Identifier: AT_LOCALE
         DynamicDictLiteralNodeGen SourceSection: [4031,4109]`{↵    AT_BOUNDARY: A...`
@@ -814,8 +814,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_LOC_NON_BOUNDARY
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4111,4202]`AT_UNICODE = {↵    A...`
         Identifier: AT_UNICODE
         DynamicDictLiteralNodeGen SourceSection: [4124,4202]`{↵    AT_BOUNDARY: A...`
@@ -836,8 +836,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_UNI_NON_BOUNDARY
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4204,4558]`CH_LOCALE = {↵    CA...`
         Identifier: CH_LOCALE
         DynamicDictLiteralNodeGen SourceSection: [4216,4558]`{↵    CATEGORY_DIGIT...`
@@ -906,14 +906,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: CATEGORY_NOT_LINEBREAK
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4560,4939]`CH_UNICODE = {↵    C...`
         Identifier: CH_UNICODE
         DynamicDictLiteralNodeGen SourceSection: [4573,4939]`{↵    CATEGORY_DIGIT...`
@@ -982,14 +982,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: CATEGORY_UNI_NOT_LINEBREAK
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
+          HashingStorageSetItemNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4949,4970]`SRE_FLAG_TEMPLATE = ...`
         Identifier: SRE_FLAG_TEMPLATE
         IntegerLiteralNode SourceSection: [4969,4970]`1`
