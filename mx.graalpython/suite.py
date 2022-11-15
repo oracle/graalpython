@@ -366,7 +366,6 @@ suite = {
                 "jdk.unsupported",
                 "jdk.security.auth",
             ],
-            "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
             "javaCompliance": "11+",
             "checkstyleVersion": "8.36.1",

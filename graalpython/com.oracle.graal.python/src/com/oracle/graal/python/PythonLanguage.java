@@ -262,6 +262,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
     /**
+     * Whether Java classes are included that implement the SSL module. These come from packages
+     * including (but not limited to): javax.net.ssl, org.bouncycastle, java.security, javax.crypto,
+     * sun.security
+     */
+    public static final boolean JAVA_SSL = !"false".equals(System.getProperty("python.java.ssl"));
+    public static final TruffleString JAVA_SSL_ERROR_MSG = tsLiteral("Invalid attempt to use a Java SSL related class, this was disallowed using the python.java.ssl property. (%s)");
+
+    /**
+     * Whether Java classes are included that relate to authentication. These come from packages
+     * include (but not limited to): com.sun.security.auth
+     */
+    public static final boolean JAVA_SECURITY_AUTH = !"false".equals(System.getProperty("python.java.auth"));
+
+    /**
+     * Whether we are allowed to use sun.misc.Signal* classes to raise and handle signals.
+     */
+    public static final boolean JAVA_SIGNALS = !"false".equals(System.getProperty("python.java.signals"));
+
+    /**
      * Named semaphores are shared between all processes in a system, and they persist until the
      * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
      * globally per language instance, that is, they are shared between different Contexts in the

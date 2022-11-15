@@ -1131,7 +1131,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @TruffleBoundary(allowInlining = true)
     private static long getPrincipalId(UserPrincipal principal) {
-        if (principal instanceof UnixNumericGroupPrincipal) {
+        if (PythonLanguage.JAVA_SECURITY_AUTH && principal instanceof UnixNumericGroupPrincipal) {
             try {
                 return Long.decode(principal.getName());
             } catch (NumberFormatException ignored) {
@@ -1850,9 +1850,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getuid() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
-            return new com.sun.security.auth.module.UnixSystem().getUid();
+        if (PythonLanguage.JAVA_SECURITY_AUTH) {
+            String osName = System.getProperty("os.name");
+            if (osName.contains("Linux")) {
+                return new UnixSystem().getUid();
+            }
         }
         return 1000;
     }
@@ -2484,6 +2486,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
+        if (!PythonLanguage.JAVA_SECURITY_AUTH) {
+            throw new UnsupportedPosixFeatureException("getpwnam without python.java.security disabled");
+        }
         UnixSystem unix = new UnixSystem();
         if (unix.getUid() != uid) {
             throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
@@ -2496,6 +2501,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) {
+        if (!PythonLanguage.JAVA_SECURITY_AUTH) {
+            throw new UnsupportedPosixFeatureException("getpwnam without python.java.security disabled");
+        }
         UnixSystem unix = new UnixSystem();
         if (!unix.getUsername().equals(name)) {
             throw new UnsupportedPosixFeatureException("getpwnam with other uid than the current user");

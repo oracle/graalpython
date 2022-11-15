@@ -422,9 +422,13 @@ public abstract class Python3Core {
         PythonOS currentOs = PythonOS.getPythonOS();
         List<PythonBuiltins> toRemove = new ArrayList<>();
         for (PythonBuiltins builtin : builtins) {
-            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-            if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+            if (builtin == null) {
                 toRemove.add(builtin);
+            } else {
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+                    toRemove.add(builtin);
+                }
             }
         }
         builtins.removeAll(toRemove);
@@ -610,7 +614,7 @@ public abstract class Python3Core {
                         new SelectModuleBuiltins(),
                         new SocketModuleBuiltins(),
                         new SocketBuiltins(),
-                        new SignalModuleBuiltins(),
+                        PythonLanguage.JAVA_SIGNALS ? new SignalModuleBuiltins() : null,
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
                         new AtexitModuleBuiltins(),
@@ -621,10 +625,10 @@ public abstract class Python3Core {
                         new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
-                        new SSLModuleBuiltins(),
-                        new SSLContextBuiltins(),
+                        PythonLanguage.JAVA_SSL ? new SSLModuleBuiltins() : null,
+                        PythonLanguage.JAVA_SSL ? new SSLContextBuiltins() : null,
                         new SSLErrorBuiltins(),
-                        new SSLSocketBuiltins(),
+                        PythonLanguage.JAVA_SSL ? new SSLSocketBuiltins() : null,
                         new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
