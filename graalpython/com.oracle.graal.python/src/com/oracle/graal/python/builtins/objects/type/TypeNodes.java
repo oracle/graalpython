@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_IT
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
@@ -396,18 +397,35 @@ public abstract class TypeNodes {
             for (int i = 0; i < n; i++) {
                 Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
                 if (mroEntry instanceof PythonBuiltinClass) {
-                    result |= doBuiltinClass((PythonBuiltinClass) mroEntry);
+                    result = setFlags(result, doBuiltinClass((PythonBuiltinClass) mroEntry));
                 } else if (mroEntry instanceof PythonBuiltinClassType) {
-                    result |= doBuiltinClassType((PythonBuiltinClassType) mroEntry);
+                    result = setFlags(result, doBuiltinClassType((PythonBuiltinClassType) mroEntry));
                 } else if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result |= doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached());
+                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
+                } else if (mroEntry != clazz && mroEntry instanceof PythonClass) {
+                    long flags = doPythonClass((PythonClass) mroEntry, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(), ConditionProfile.getUncached());
+                    result = setFlags(result, flags);
                 }
-                // 'PythonClass' is intentionally ignored because they do not actually add any
-                // interesting flags except that we already specify before the loop
             }
             return result;
         }
 
+        public static GetTypeFlagsNode getUncached() {
+            return TypeNodesFactory.GetTypeFlagsNodeGen.getUncached();
+        }
+    }
+
+    private static long setFlags(long result, long flags) {
+        if ((flags & IS_ABSTRACT) != 0) {
+            flags &= ~IS_ABSTRACT;
+        }
+        if ((result & COLLECTION_FLAGS) != 0) {
+            // SEQUENCE and MAPPING are mutually exclusive.
+            // If multiple inheritance, the first one wins.
+            flags &= ~COLLECTION_FLAGS;
+        }
+        result |= flags;
+        return result;
     }
 
     @GenerateUncached

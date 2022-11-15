@@ -1,5 +1,8 @@
 from _weakrefset import WeakSet
 
+# Begin Truffle change
+from _abc import _abc_init, _abc_register
+# End Truffle change
 
 def get_cache_token():
     """Returns the current ABC cache token.
@@ -49,6 +52,9 @@ class ABCMeta(type):
         cls._abc_cache = WeakSet()
         cls._abc_negative_cache = WeakSet()
         cls._abc_negative_cache_version = ABCMeta._abc_invalidation_counter
+        # Begin Truffle change
+        _abc_init(cls)
+        # End Truffle change
         return cls
 
     def register(cls, subclass):
@@ -67,6 +73,9 @@ class ABCMeta(type):
             raise RuntimeError("Refusing to create an inheritance cycle")
         cls._abc_registry.add(subclass)
         ABCMeta._abc_invalidation_counter += 1  # Invalidate negative cache
+        # Begin Truffle change
+        _abc_register(cls, subclass)
+        # End Truffle change
         return subclass
 
     def _dump_registry(cls, file=None):

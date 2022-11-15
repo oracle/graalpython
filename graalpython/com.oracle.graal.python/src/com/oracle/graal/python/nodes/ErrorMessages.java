@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
+    public static final TruffleString ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING = tsLiteral("\"__abc_tpflags__ cannot be both Py_TPFLAGS_SEQUENCE and Py_TPFLAGS_MAPPING\"");
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");
     public static final TruffleString P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN = tsLiteral("%p() accepts %d positional sub-pattern%s (%d given)");
     public static final TruffleString AF_UNIX_NOT_SUPPORTED = tsLiteral("%s(): AF_UNIX is not supported");

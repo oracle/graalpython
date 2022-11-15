@@ -60,6 +60,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -454,6 +455,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
+                        new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
