@@ -1055,6 +1055,15 @@ public class CompilerTests extends PythonTests {
         checkSyntaxErrorMessage("class C: yield 1", "'yield' outside function");
     }
 
+    @Test
+    public void testReturnFromAsyncWith() {
+        String source = "async def f():\n" +
+                        "  async with a:\n" +
+                        "     return";
+        doTest(source);
+    }
+
+
     private void doTest(String src) {
         doTest(src, InputType.FILE);
     }
