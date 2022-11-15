@@ -1024,7 +1024,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (toLen != fromLen) {
                 throw raise(ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
             }
-            HashingStorage storage = PDict.createNewStorage(false, fromLen);
+            HashingStorage storage = PDict.createNewStorage(fromLen);
             TruffleStringIterator fromIt = createCodePointIteratorNode.execute(fromStr, TS_ENCODING);
             TruffleStringIterator toIt = createCodePointIteratorNode.execute(toStr, TS_ENCODING);
             while (fromIt.hasNext()) {
@@ -1058,7 +1058,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue) {
             HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
-            HashingStorage destStorage = PDict.createNewStorage(false, lenNode.execute(srcStorage));
+            HashingStorage destStorage = PDict.createNewStorage(lenNode.execute(srcStorage));
             HashingStorageIterator it = getIter.execute(srcStorage);
             while (!iterHasNext.execute(srcStorage, it)) {
                 Object currentKey = iterKey.execute(srcStorage, it);

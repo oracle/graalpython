@@ -165,7 +165,7 @@ public abstract class HashingStorage {
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            HashingStorage curStorage = PDict.createNewStorage(0);
             return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
@@ -183,7 +183,7 @@ public abstract class HashingStorage {
                         @Shared("getItem") @Cached PyObjectGetItem getItemNode,
                         @Shared("getNext") @Cached GetNextNode nextNode,
                         @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            HashingStorage curStorage = PDict.createNewStorage(0);
             return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, getItemNode, getIter, nextNode, errorProfile, setHasihngStorageItem, addAllToOther);
         }
 
@@ -246,7 +246,7 @@ public abstract class HashingStorage {
 
     @FunctionalInterface
     public interface StorageSupplier {
-        HashingStorage get(boolean isStringKey, int length);
+        HashingStorage get(int length);
     }
 
     public static HashingStorage addSequenceToStorage(VirtualFrame frame, Object iterable, PKeyword[] kwargs, StorageSupplier storageSupplier,
@@ -277,7 +277,7 @@ public abstract class HashingStorage {
                 e.expectStopIteration(errorProfile);
             }
         }
-        HashingStorage storage = storageSupplier.get(false, elements.size() + kwargs.length);
+        HashingStorage storage = storageSupplier.get(elements.size() + kwargs.length);
         for (int j = 0; j < elements.size(); j++) {
             PSequence element = elements.get(j);
             Object key = getItemNode.execute(frame, element, 0);

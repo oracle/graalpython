@@ -2008,7 +2008,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                 // super-fast path for string keys
                 if (key instanceof TruffleString) {
                     if (dictStorage instanceof EmptyStorage) {
-                        dictStorage = PDict.createNewStorage(true, 1);
+                        dictStorage = PDict.createNewStorage(1);
                         dict.setDictStorage(dictStorage);
                     }
 

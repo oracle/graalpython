@@ -143,7 +143,7 @@ public abstract class DictNodes {
                         @Cached ConditionProfile lengthTwoProfile,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
-            HashingStorage.StorageSupplier storageSupplier = (boolean isStringKey, int length) -> self.getDictStorage();
+            HashingStorage.StorageSupplier storageSupplier = (int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, other, PKeyword.EMPTY_KEYWORDS, storageSupplier,
                             getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile,
                             errorProfile, setHasihngStorageItem, addAllToOther);

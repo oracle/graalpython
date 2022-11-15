@@ -177,33 +177,33 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization
-        static HashingStorage doString(VirtualFrame frame, TruffleString str, Object value,
+        static HashingStorage doString(TruffleString str, Object value,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            HashingStorage storage = PDict.createNewStorage(true, codePointLengthNode.execute(str, TS_ENCODING));
+            HashingStorage storage = PDict.createNewStorage(codePointLengthNode.execute(str, TS_ENCODING));
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             TruffleStringIterator it = createCodePointIteratorNode.execute(str, TS_ENCODING);
             while (it.hasNext()) {
                 // TODO: GR-37219: use SubstringNode with lazy=true?
                 int codePoint = nextNode.execute(it);
                 TruffleString key = fromCodePointNode.execute(codePoint, TS_ENCODING, true);
-                storage = setStorageItem.execute(frame, storage, key, val);
+                storage = setStorageItem.execute(storage, key, val);
             }
             return storage;
         }
 
         @Specialization
-        static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
+        static HashingStorage doString(PString pstr, Object value,
                         @Shared("setStorageItem") @Cached HashingStorageSetItem setStorageItem,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode) {
-            return doString(frame, castToStringNode.execute(pstr), value, setStorageItem, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
+            return doString(castToStringNode.execute(pstr), value, setStorageItem, codePointLengthNode, createCodePointIteratorNode, nextNode, fromCodePointNode);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})

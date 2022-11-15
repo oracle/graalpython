@@ -110,11 +110,6 @@ public class PDict extends PHashingCollection {
         return newDictStorage;
     }
 
-    public static HashingStorage createNewStorage(@SuppressWarnings("unused") boolean isStringKey, int expectedSize) {
-        // TODO: remove this overload with isStringKey
-        return createNewStorage(expectedSize);
-    }
-
     public void update(PDict other) {
         HashingStorageAddAllToOther.getUncached().execute(null, other.getDictStorage(), this);
     }

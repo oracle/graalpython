@@ -1506,7 +1506,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            HashingStorage store = PDict.createNewStorage(false, codePointLengthNode.execute(chars, TS_ENCODING));
+            HashingStorage store = PDict.createNewStorage(codePointLengthNode.execute(chars, TS_ENCODING));
             PDict dict = factory().createDict(store);
             int num = 0;
             TruffleStringIterator it = createCodePointIteratorNode.execute(chars, TS_ENCODING);

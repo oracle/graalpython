@@ -56,7 +56,7 @@ public abstract class DictLiteralNode {
 
         @ExplodeLoop
         private HashingStorage eval(VirtualFrame frame) {
-            HashingStorage storage = PDict.createNewStorage(false, values.length);
+            HashingStorage storage = PDict.createNewStorage(values.length);
             for (int i = 0; i < values.length; i++) {
                 Object key = keys[i].execute(frame);
                 Object value = values[i].execute(frame);

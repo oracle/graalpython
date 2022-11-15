@@ -1002,7 +1002,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     readArray(listItems);
                     return list;
                 case TYPE_DICT:
-                    HashingStorage store = PDict.createNewStorage(false, 0);
+                    HashingStorage store = PDict.createNewStorage(0);
                     PDict dict = factory.createDict(store);
                     addRef.run(dict);
                     while (true) {

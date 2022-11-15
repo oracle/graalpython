@@ -145,6 +145,10 @@ public class HashingStorageNodes {
             return HashingStorageGetItemNodeGen.getUncached().execute(null, storage, key) != null;
         }
 
+        public static HashingStorageGetItem create() {
+            return HashingStorageGetItemNodeGen.create();
+        }
+
         public final boolean hasKey(HashingStorage self, TruffleString key) {
             return execute(null, self, key) != null;
         }
@@ -579,6 +583,10 @@ public class HashingStorageNodes {
             return HashingStorageLenNodeGen.getUncached().execute(dictStorage);
         }
 
+        public static HashingStorageLen create() {
+            return HashingStorageLenNodeGen.create();
+        }
+
         public abstract int execute(HashingStorage storage);
 
         @Specialization
@@ -714,6 +722,10 @@ public class HashingStorageNodes {
             return HashingStorageGetIteratorNodeGen.getUncached().execute(storage);
         }
 
+        public static HashingStorageGetIterator create() {
+            return HashingStorageGetIteratorNodeGen.create();
+        }
+
         public final HashingStorageIterator execute(HashingStorage storage) {
             HashingStorageIterator result = executeImpl(storage);
             assert !result.isReverse;
@@ -810,6 +822,10 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageIteratorNext extends Node {
         public static boolean executeUncached(HashingStorage storage, HashingStorageIterator it) {
             return HashingStorageIteratorNextNodeGen.getUncached().execute(storage, it);
+        }
+
+        public static HashingStorageIteratorNext create() {
+            return HashingStorageIteratorNextNodeGen.create();
         }
 
         /**
@@ -940,6 +956,10 @@ public class HashingStorageNodes {
             return HashingStorageIteratorValueNodeGen.getUncached().execute(storage, it);
         }
 
+        public static HashingStorageIteratorValue create() {
+            return HashingStorageIteratorValueNodeGen.create();
+        }
+
         public abstract Object execute(HashingStorage storage, HashingStorageIterator it);
 
         @Specialization
@@ -974,6 +994,10 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageIteratorKey extends Node {
         public static Object executeUncached(HashingStorage storage, HashingStorageIterator it) {
             return HashingStorageIteratorKeyNodeGen.getUncached().execute(storage, it);
+        }
+
+        public static HashingStorageIteratorKey create() {
+            return HashingStorageIteratorKeyNodeGen.create();
         }
 
         public abstract Object execute(HashingStorage storage, HashingStorageIterator it);

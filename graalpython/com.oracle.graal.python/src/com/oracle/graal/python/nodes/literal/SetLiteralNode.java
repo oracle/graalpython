@@ -31,8 +31,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -40,7 +38,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class SetLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
@@ -58,11 +55,9 @@ public abstract class SetLiteralNode extends LiteralNode {
     @Specialization
     @ExplodeLoop
     public PSet expand(VirtualFrame frame,
-                    @Cached ConditionProfile hasFrame,
                     @Cached HashingStorageSetItem setItem) {
         // we will usually have more than 'values.length' elements
-        HashingStorage storage = PDict.createNewStorage(true, values.length);
-        ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
+        HashingStorage storage = PDict.createNewStorage(values.length);
         for (ExpressionNode n : values) {
             Object element = n.execute(frame);
             if (StarredExpressionNode.isStarredExpression(n)) {
