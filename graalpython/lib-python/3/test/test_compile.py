@@ -456,7 +456,7 @@ if 1:
             ast = compile(code, '%s2' % fname, 'exec', _ast.PyCF_ONLY_AST)
             self.assertTrue(type(ast) == _ast.Module)
             co2 = compile(ast, '%s3' % fname, 'exec')
-            # self.assertEqual(co1, co2)
+            self.assertEqual(co1, co2)
             # the code object's filename comes from the second compilation step
             self.assertEqual(co2.co_filename, '%s3' % fname)
 
