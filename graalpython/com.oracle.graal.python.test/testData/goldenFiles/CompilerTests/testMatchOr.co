@@ -11,8 +11,9 @@ Disassembly of <module>:
   2:11  -   2:12       18 POP_AND_JUMP_IF_FALSE             6    (to 24)                           generalizes: 16
   2:11  -   2:12       22 JUMP_FORWARD                      5    (to 27)
   2:11  -   2:12  >>   24 POP_TOP
-  2:11  -   2:12       25 JUMP_FORWARD                      5    (to 30)
+  2:11  -   2:12       25 JUMP_FORWARD                      6    (to 31)
   2:11  -   2:12  >>   27 POP_TOP
-  3:4   -   3:8        28 JUMP_FORWARD                      2    (to 30)
-  2:2   -   3:8   >>   30 LOAD_NONE
-  2:2   -   3:8        31 RETURN_VALUE
+  3:4   -   3:8        28 NOP
+  3:4   -   3:8        29 JUMP_FORWARD                      2    (to 31)
+  2:2   -   3:8   >>   31 LOAD_NONE
+  2:2   -   3:8        32 RETURN_VALUE

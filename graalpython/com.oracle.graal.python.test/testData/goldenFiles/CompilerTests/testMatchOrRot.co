@@ -26,12 +26,13 @@ Disassembly of <module>:
   2:17  -   2:23       50 JUMP_FORWARD                      6    (to 56)
   2:17  -   2:23  >>   52 POP_TOP
   2:17  -   2:23       53 POP_TOP
-  2:17  -   2:23       54 JUMP_FORWARD                      13   (to 67)
+  2:17  -   2:23       54 JUMP_FORWARD                      14   (to 68)
   2:17  -   2:23  >>   56 ROT_N                             3
   2:17  -   2:23       58 ROT_N                             3
   2:17  -   2:23       60 POP_TOP
   2:17  -   2:23       61 STORE_NAME                        0    (a)
   2:17  -   2:23       63 STORE_NAME                        1    (b)
-  3:4   -   3:8        65 JUMP_FORWARD                      2    (to 67)
-  2:2   -   3:8   >>   67 LOAD_NONE
-  2:2   -   3:8        68 RETURN_VALUE
+  3:4   -   3:8        65 NOP
+  3:4   -   3:8        66 JUMP_FORWARD                      2    (to 68)
+  2:2   -   3:8   >>   68 LOAD_NONE
+  2:2   -   3:8        69 RETURN_VALUE
