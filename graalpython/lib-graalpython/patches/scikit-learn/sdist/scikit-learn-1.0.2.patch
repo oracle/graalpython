@@ -1,8 +1,8 @@
 diff --git a/sklearn/__init__.py b/sklearn/__init__.py
-index 7de2303..f8c7e75 100644
+index 7de2303..0dc86ff 100644
 --- a/sklearn/__init__.py
 +++ b/sklearn/__init__.py
-@@ -42,6 +42,139 @@ logger = logging.getLogger(__name__)
+@@ -42,6 +42,140 @@ logger = logging.getLogger(__name__)
  __version__ = "1.0.2"
  
  
@@ -66,6 +66,7 @@ index 7de2303..f8c7e75 100644
 +    sys.modules["scipy.special"].gammaln = None
 +    sys.modules["scipy.special"].gammainc = None
 +    sys.modules["scipy.special"].boxcox = None
++    sys.modules["scipy.special"].comb = None
 +
 +    sys.modules["scipy.spatial"] = type(sys)("scipy.spatial")
 +    sys.modules["scipy.spatial"].__path__ = ""
