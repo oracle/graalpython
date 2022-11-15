@@ -373,7 +373,7 @@ class ReTests(unittest.TestCase):
                                   [b":", b"::", b":::"])
             self.assertTypedEqual(re.findall(b"(:)(:*)", string),
                                   [(b":", b""), (b":", b":"), (b":", b"::")])
-        for x in ("\xe0", "\u0430"):    # TODO(TruffleString) "\U0001d49c"
+        for x in ("\xe0", "\u0430", "\U0001d49c"):
             xx = x * 2
             xxx = x * 3
             string = "a%sb%sc%sd" % (x, xx, xxx)
