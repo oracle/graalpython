@@ -2796,7 +2796,9 @@ public class Compiler implements SSTreeVisitor<Void> {
                 // Keyword:
                 pattern = kwdPatterns[i - nargs];
             }
-            wildcardCheck(pattern);
+            if (wildcardCheck(pattern)) {
+                continue;
+            }
             // Get the i-th attribute, and match it against the i-th pattern:
             addOp(DUP_TOP);
             addLoadNumber(i);
