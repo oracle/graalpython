@@ -284,12 +284,11 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         public static TruffleString repr(PBytes self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
-            int len = lenNode.execute(store);
+            int len = store.length();
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             BytesUtils.reprLoop(sb, bytes, len, appendCodePointNode);
             return toStringNode.execute(sb);
@@ -659,9 +658,8 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static boolean doLen(PBytesLike operand,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(operand.getSequenceStorage()) != 0;
+        static boolean doLen(PBytesLike operand) {
+            return operand.getSequenceStorage().length() != 0;
         }
 
         @Fallback
@@ -709,9 +707,8 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static int len(PBytesLike self,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(self.getSequenceStorage());
+        public static int len(PBytesLike self) {
+            return self.getSequenceStorage().length();
         }
     }
 
@@ -721,20 +718,18 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean contains(PBytesLike self, PBytesLike other,
-                        @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.FindNode findNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             return findNode.execute(self.getSequenceStorage(), len1, other, 0, len1) != -1;
         }
 
         @Specialization(guards = "!isBytes(other)")
         boolean contains(VirtualFrame frame, PBytesLike self, Object other,
-                        @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached("createCast()") CastToByteNode cast) {
 
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
             return findNode.execute(bytes, len1, cast.execute(frame, other), 0, len1) != -1;
         }
@@ -769,10 +764,9 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPTuple(substr)")
         boolean doPrefixStartEnd(VirtualFrame frame, PBytesLike self, Object substr, int start, int end,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createToBytes()") BytesNodes.ToBytesNode tobytes) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             byte[] substrBytes = tobytes.execute(frame, substr);
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
@@ -782,11 +776,10 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         boolean doTuplePrefixStartEnd(VirtualFrame frame, PBytesLike self, PTuple substrs, int start, int end,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createToBytesFromTuple()") BytesNodes.ToBytesNode tobytes,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
             return doIt(frame, bytes, substrs, begin, last, tobytes, getObjectArrayNode);
@@ -903,9 +896,8 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         int index(PBytesLike self, Object arg, int start, int end,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.FindNode findNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             return checkResult(findNode.execute(self.getSequenceStorage(), last, arg, begin, last));
@@ -933,9 +925,8 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         int indexWithStartEnd(PBytesLike self, Object arg, int start, int end,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.RFindNode rfindNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             return checkResult(rfindNode.execute(self.getSequenceStorage(), last, arg, begin, last));
@@ -951,18 +942,17 @@ public class BytesBuiltins extends PythonBuiltins {
 
     public abstract static class PartitionAbstractNode extends PythonBinaryBuiltinNode {
 
-        protected static boolean isEmptySep(PBytesLike sep, SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(sep.getSequenceStorage()) == 0;
+        protected static boolean isEmptySep(PBytesLike sep) {
+            return sep.getSequenceStorage().length() == 0;
         }
 
-        @Specialization(guards = "!isEmptySep(sep, lenNode)")
+        @Specialization(guards = "!isEmptySep(sep)")
         PTuple partition(VirtualFrame frame, PBytesLike self, PBytesLike sep,
                         @Cached ConditionProfile notFound,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached BytesNodes.CreateBytesNode createBytesNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            int len = lenNode.execute(self.getSequenceStorage());
-            int lenSep = lenNode.execute(sep.getSequenceStorage());
+                        @Cached BytesNodes.CreateBytesNode createBytesNode) {
+            int len = self.getSequenceStorage().length();
+            int lenSep = sep.getSequenceStorage().length();
             byte[] bytes = toBytesNode.execute(self);
             int idx = find(frame, self.getSequenceStorage(), sep, len);
             PBytesLike first, second, third;
@@ -991,9 +981,8 @@ public class BytesBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{first, second, third});
         }
 
-        @Specialization(guards = "isEmptySep(sep, lenNode)")
-        Object error(@SuppressWarnings("unused") PBytesLike self, @SuppressWarnings("unused") PBytesLike sep,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
+        @Specialization(guards = "isEmptySep(sep)")
+        Object error(@SuppressWarnings("unused") PBytesLike self, @SuppressWarnings("unused") PBytesLike sep) {
             return raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
         }
 
@@ -1061,10 +1050,9 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         static int count(PBytesLike self, int sub, int start, int end,
                         @Cached.Shared("castNode") @Cached CastToJavaByteNode cast,
-                        @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode) {
             byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             return countSingle(bytes, begin, last, cast.execute(sub));
@@ -1073,13 +1061,12 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         static int count(PBytesLike self, PBytesLike sub, int start, int end,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode,
-                        @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.FindNode findNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             byte[] elems = toBytesNode.execute(sub.getSequenceStorage());
-            int len2 = lenNode.execute(sub.getSequenceStorage());
+            int len2 = sub.getSequenceStorage().length();
             if (len2 == 1) {
                 byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
                 return countSingle(bytes, begin, last, elems[0]);
@@ -1091,13 +1078,12 @@ public class BytesBuiltins extends PythonBuiltins {
         int count(VirtualFrame frame, PBytesLike self, Object sub, int start, int end,
                         @Cached.Shared("castNode") @Cached CastToJavaByteNode cast,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode,
-                        @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.FindNode findNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             if (indexCheckNode.execute(sub)) {
@@ -1173,9 +1159,8 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         static int find(PBytesLike self, Object sub, int start, int end,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.FindNode findNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             return findNode.execute(self.getSequenceStorage(), last, sub, begin, last);
@@ -1196,9 +1181,8 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         static int find(PBytesLike self, Object sub, int start, int end,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.RFindNode rfindNode) {
-            int len1 = lenNode.execute(self.getSequenceStorage());
+            int len1 = self.getSequenceStorage().length();
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
             return rfindNode.execute(self.getSequenceStorage(), last, sub, begin, last);
@@ -1287,19 +1271,17 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString none(PBytesLike self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
                         @Cached.Shared("p") @Cached ConditionProfile earlyExit,
-                        @Cached.Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
-            return hex(self, (byte) 0, 0, earlyExit, lenNode, getBytes, toHexNode);
+            return hex(self, (byte) 0, 0, earlyExit, getBytes, toHexNode);
         }
 
         @Specialization
         TruffleString hex(PBytesLike self, byte sep, int bytesPerSepGroup,
                         @Cached.Shared("p") @Cached ConditionProfile earlyExit,
-                        @Cached.Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             if (earlyExit.profile(len == 0)) {
                 return T_EMPTY_STRING;
             }
@@ -1666,13 +1648,12 @@ public class BytesBuiltins extends PythonBuiltins {
         PBytesLike replace(PBytesLike self, PBytesLike substr, PBytesLike replacement, int count,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toInternalBytes,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached ConditionProfile selfSubAreEmpty,
                         @Cached ConditionProfile selfIsEmpty,
                         @Cached ConditionProfile subIsEmpty,
                         @Cached BytesNodes.CreateBytesNode create) {
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             byte[] bytes = toInternalBytes.execute(self.getSequenceStorage());
             byte[] subBytes = toBytes.execute(substr);
             byte[] replacementBytes = toBytes.execute(replacement);
@@ -1933,33 +1914,30 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(guards = "isWhitespace(sep)")
         PList whitespace(PBytesLike self, @SuppressWarnings("unused") byte[] sep, int maxsplit,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
-                        @Cached.Shared("length") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("create") @Cached BytesNodes.CreateBytesNode createBytesNode) {
             byte[] splitBs = selfToBytesNode.execute(self.getSequenceStorage());
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             return getBytesResult(splitWhitespace(splitBs, len, adjustMaxSplit(maxsplit)), appendNode, self, createBytesNode);
         }
 
         @Specialization(guards = {"!isWhitespace(sep)", "isSingleSep(sep)"})
         PList single(PBytesLike self, byte[] sep, int maxsplit,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
-                        @Cached.Shared("length") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("create") @Cached BytesNodes.CreateBytesNode createBytesNode) {
             byte[] splitBs = selfToBytesNode.execute(self.getSequenceStorage());
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             return getBytesResult(splitSingle(splitBs, len, sep[0], adjustMaxSplit(maxsplit)), appendNode, self, createBytesNode);
         }
 
         @Specialization(guards = {"!isWhitespace(sep)", "!isEmptySep(sep)", "!isSingleSep(sep)"})
         PList split(PBytesLike self, byte[] sep, int maxsplit,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode selfToBytesNode,
-                        @Cached.Shared("length") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("append") @Cached ListNodes.AppendNode appendNode,
                         @Cached.Shared("create") @Cached BytesNodes.CreateBytesNode createBytesNode) {
             byte[] splitBs = selfToBytesNode.execute(self.getSequenceStorage());
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             return getBytesResult(splitDelimiter(splitBs, len, sep, adjustMaxSplit(maxsplit)), appendNode, self, createBytesNode);
         }
 
@@ -2528,9 +2506,8 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(limit = "2")
         PBytesLike capitalize(PBytesLike self,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.CreateBytesNode create) {
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             if (len == 0) {
                 return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
             }

@@ -87,7 +87,7 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyNamespaceNewNode extends PythonBuiltinNode {
         @Specialization
-        public Object imp(VirtualFrame frame, PDict dict,
+        public Object imp(PDict dict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {

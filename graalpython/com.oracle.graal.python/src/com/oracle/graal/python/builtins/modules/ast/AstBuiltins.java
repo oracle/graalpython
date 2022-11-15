@@ -129,7 +129,7 @@ public final class AstBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private boolean contains(Object[] fields, int maxIndex, TruffleString name, TruffleString.EqualNode equalNode) {
+        private static boolean contains(Object[] fields, int maxIndex, TruffleString name, TruffleString.EqualNode equalNode) {
             for (int i = 0; i < maxIndex; ++i) {
                 if (fields[i] instanceof TruffleString && equalNode.execute(name, (TruffleString) fields[i], TS_ENCODING)) {
                     return true;

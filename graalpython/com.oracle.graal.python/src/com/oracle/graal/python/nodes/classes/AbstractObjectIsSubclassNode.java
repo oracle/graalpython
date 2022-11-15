@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -97,13 +96,12 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
                     @Cached @SuppressWarnings("unused") IsSameTypeNode isSameTypeNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
                     @Cached GetObjectArrayNode getObjectArrayNode) {
         CompilerAsserts.partialEvaluationConstant(depth);
         PTuple bases = getBasesNode.execute(frame, cachedDerived);
-        if (bases == null || isEmpty(bases, lenNode)) {
+        if (bases == null || isEmpty(bases)) {
             return false;
         }
         Object[] basesAry = getObjectArrayNode.execute(bases);
@@ -144,7 +142,6 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     @Specialization(replaces = {"doSubclass", "doSameClass"})
     static boolean doGeneric(VirtualFrame frame, Object derived, Object cls, int depth,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached("createRecursive(depth)") AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode,
@@ -155,7 +152,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         }
 
         PTuple bases = getBasesNode.execute(frame, derived);
-        if (bases == null || isEmpty(bases, lenNode)) {
+        if (bases == null || isEmpty(bases)) {
             return false;
         }
 
@@ -174,8 +171,8 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return AbstractObjectIsSubclassNodeGen.create();
     }
 
-    private static boolean isEmpty(PTuple bases, SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(bases.getSequenceStorage()) == 0;
+    private static boolean isEmpty(PTuple bases) {
+        return bases.getSequenceStorage().length() == 0;
     }
 
     /**

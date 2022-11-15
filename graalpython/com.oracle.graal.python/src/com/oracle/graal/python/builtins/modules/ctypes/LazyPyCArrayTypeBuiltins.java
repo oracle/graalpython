@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -178,10 +177,9 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doSet(CDataObject self, PBytes value,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached GetInternalByteArrayNode getBytes) {
             if (self.b_ptr.isManagedBytes()) {
-                int len = lenNode.execute(value.getSequenceStorage());
+                int len = value.getSequenceStorage().length();
                 if (len > self.b_size) {
                     throw raise(ValueError, BYTE_STRING_TOO_LONG);
                 }

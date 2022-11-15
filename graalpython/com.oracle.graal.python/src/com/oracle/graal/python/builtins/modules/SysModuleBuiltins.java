@@ -163,7 +163,6 @@ import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.Tex
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -1264,7 +1263,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private SyntaxErrData parseSyntaxError(VirtualFrame frame, Object err) {
+        private static SyntaxErrData parseSyntaxError(VirtualFrame frame, Object err) {
             Object v, msg;
             TruffleString fileName = null, text = null;
             int lineNo = 0, offset = 0, hold;
@@ -1325,7 +1324,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return new SyntaxErrData(msg, fileName, lineNo, offset, text, false);
         }
 
-        private void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
+        private static void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
             TruffleString text = castToString(objectStr(frame, syntaxErrData.text));
             int textLen = text.codePointLengthUncached(TS_ENCODING);
             int offset = syntaxErrData.offset;
@@ -1618,7 +1617,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_MOD_OS = tsLiteral("os");
         static final TruffleString T_ATTR_ENVIRON = tsLiteral("environ");
 
-        private TruffleString getEnvVar(VirtualFrame frame, PyImportImport importNode, PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
+        private static TruffleString getEnvVar(VirtualFrame frame, PyImportImport importNode, PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
                         CastToTruffleStringNode castToStringNode) {
             Object os = importNode.execute(frame, T_MOD_OS);
             final Object environ = getAttr.execute(frame, os, T_ATTR_ENVIRON);
@@ -1799,7 +1798,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         private static final double FACTOR = 1.e-6;
 
         @Specialization
-        Object getCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys) {
+        Object getCheckInterval(@SuppressWarnings("unused") PythonModule sys) {
             return FACTOR * getContext().getSysModuleState().getSwitchInterval();
         }
     }
@@ -1850,11 +1849,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(status)")
         Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Cached TupleBuiltins.GetItemNode getItemNode) {
             Object code = status;
             if (status instanceof PTuple) {
-                if (lenNode.execute(((PTuple) status).getSequenceStorage()) == 1) {
+                if (((PTuple) status).getSequenceStorage().length() == 1) {
                     code = getItemNode.execute(frame, status, 0);
                 }
             }

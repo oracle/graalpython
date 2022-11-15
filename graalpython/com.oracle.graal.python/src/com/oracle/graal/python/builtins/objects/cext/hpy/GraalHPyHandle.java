@@ -148,13 +148,13 @@ public final class GraalHPyHandle implements TruffleObject {
         return result;
     }
 
-    public boolean isValidId(Object obj, int id) {
+    public boolean isValidId(Object obj, int newId) {
         if (delegate == PNone.NO_VALUE) {
             // special case of HPy_NULL internally represented as NO_VALUE
-            return id == 0;
+            return newId == 0;
         }
         int singletonId = GraalHPyContext.getHPyHandleForSingleton(obj);
-        return singletonId == -1 || singletonId == id;
+        return singletonId == -1 || singletonId == newId;
     }
 
     @ExportMessage

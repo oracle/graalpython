@@ -183,7 +183,6 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         Object init(VirtualFrame frame, PBaseException self, Object[] args,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
             baseExceptionInitNode.execute(self, args);
@@ -194,7 +193,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             if (args.length == 2) {
                 PTuple info = constructTupleNode.execute(frame, args[1]);
                 final SequenceStorage storage = info.getSequenceStorage();
-                if (lenNode.execute(storage) != 4) {
+                if (storage.length() != 4) {
                     // not a very good error message, but it's what Python 2.4 gives
                     throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
                 }

@@ -752,7 +752,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         private List<Object> fromString(String dataString)
-                        throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, CRLException {
+                        throws IOException, CertificateException, CRLException {
             if (dataString.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
@@ -760,8 +760,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private List<Object> getCertificates(String dataString)
-                        throws PException, CRLException, IOException, CertificateException {
+        private static List<Object> getCertificates(String dataString) throws PException, CRLException, IOException, CertificateException {
             try (BufferedReader r = new BufferedReader(new StringReader(dataString))) {
                 try {
                     List<Object> certificates = CertUtils.getCertificates(r);
@@ -778,8 +777,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Collection<?> fromBytesLike(byte[] bytes)
-                        throws KeyStoreException, IOException, NoSuchAlgorithmException {
+        private static Collection<?> fromBytesLike(byte[] bytes) {
             try {
                 return CertUtils.generateCertificates(bytes);
             } catch (CertificateException ex) {
@@ -853,8 +851,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object load(PythonContext context, PSSLContext self, BufferedReader certReader, BufferedReader keyReader, char[] password)
-                        throws NeedsPasswordException {
+        private static Object load(PythonContext context, PSSLContext self, BufferedReader certReader, BufferedReader keyReader, char[] password) throws NeedsPasswordException {
             // TODO add logging
             try {
                 X509Certificate[] certs;

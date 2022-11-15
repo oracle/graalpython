@@ -83,7 +83,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -210,7 +209,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("try")
-        long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
+        long start(Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {

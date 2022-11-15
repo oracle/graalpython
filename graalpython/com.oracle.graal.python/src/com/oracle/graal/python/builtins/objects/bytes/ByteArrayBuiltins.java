@@ -211,13 +211,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
                         @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
             SequenceStorage storage = self.getSequenceStorage();
-            int otherLen = lenNode.execute(getSequenceStorageNode.execute(value));
+            int otherLen = getSequenceStorageNode.execute(value).length();
             SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
-            SliceInfo info = adjustIndices.execute(lenNode.execute(storage), unadjusted);
+            SliceInfo info = adjustIndices.execute(storage.length(), unadjusted);
             if (differentLenProfile.profile(info.sliceLength != otherLen)) {
                 self.checkCanResize(this);
             }
@@ -233,14 +232,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
                         @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
             Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(value));
-                return doSliceSequence(frame, self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
+                return doSliceSequence(frame, self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -252,12 +250,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
                         @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices,
                         @Cached ListNodes.ConstructListNode constructListNode) {
             PList values = constructListNode.execute(frame, value);
-            return doSliceSequence(frame, self, slice, values, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
+            return doSliceSequence(frame, self, slice, values, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, unpack, adjustIndices);
         }
 
         @Fallback
@@ -296,13 +293,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
                         @Cached CastToByteNode toByteNode) {
             self.checkCanResize(this);
             byte v = toByteNode.execute(frame, value);
             SequenceStorage storage = getSequenceStorageNode.execute(self);
-            insertItemNode.execute(storage, normalizeIndex(index, lenNode.execute(storage)), v);
+            insertItemNode.execute(storage, normalizeIndex(index, storage.length()), v);
             return PNone.NONE;
         }
 
@@ -334,14 +330,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         static Object repr(PByteArray self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached GetClassNode getClassNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
-            int len = lenNode.execute(store);
+            int len = store.length();
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             TruffleString typeName = getNameNode.execute(getClassNode.execute(self));
             appendStringNode.execute(sb, typeName);
@@ -432,11 +427,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createCast()") CastToByteNode cast,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached BytesNodes.FindNode findNode,
-                        @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.DeleteNode deleteNode) {
             self.checkCanResize(this);
             SequenceStorage storage = self.getSequenceStorage();
-            int len = lenNode.execute(storage);
+            int len = storage.length();
             int pos = findNode.execute(getBytes.execute(self.getSequenceStorage()), len, cast.execute(frame, value), 0, len);
             if (pos != -1) {
                 deleteNode.execute(frame, storage, pos);
@@ -728,11 +722,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class AllocNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public static int alloc(PByteArray byteArray,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+        public static int alloc(PByteArray byteArray) {
             // XXX: (mq) We return a fake allocation size.
             // The actual number might useful for manual memory management.
-            return lenNode.execute(byteArray.getSequenceStorage()) + 1;
+            return byteArray.getSequenceStorage().length() + 1;
         }
     }
 
@@ -761,13 +754,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         public Object reduce(VirtualFrame frame, PByteArray self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupDict,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
-            int len = lenNode.execute(self.getSequenceStorage());
+            int len = self.getSequenceStorage().length();
             Object dict = lookupDict.execute(frame, self, T___DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;

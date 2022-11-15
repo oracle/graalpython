@@ -118,6 +118,7 @@ public abstract class ManagedMethodWrappers {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         protected boolean isExecutable() {
             return true;
         }

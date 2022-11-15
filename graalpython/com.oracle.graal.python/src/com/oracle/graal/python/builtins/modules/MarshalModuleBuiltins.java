@@ -873,21 +873,21 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void writeStringArray(TruffleString[] a) throws IOException {
+        private void writeStringArray(TruffleString[] a) {
             writeInt(a.length);
             for (int i = 0; i < a.length; i++) {
                 writeString(a[i]);
             }
         }
 
-        private void writeShortArray(short[] a) throws IOException {
+        private void writeShortArray(short[] a) {
             writeInt(a.length);
             for (int i = 0; i < a.length; i++) {
                 writeShort(a[i]);
             }
         }
 
-        private void writeBooleanArray(boolean[] a) throws IOException {
+        private void writeBooleanArray(boolean[] a) {
             writeInt(a.length);
             for (int i = 0; i < a.length; i++) {
                 writeByte(a[i] ? 1 : 0);
@@ -1043,7 +1043,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void writeString(TruffleString v) throws IOException {
+        private void writeString(TruffleString v) {
             /*
              * Ugly workaround for GR-39571 - TruffleString UTF-8 doesn't support surrogate
              * passthrough. If the string contains surrogates, we mark it and emit it as UTF-32.
@@ -1214,9 +1214,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private CodeUnit readCodeUnit() {
-            int version = readByte();
-            if (version != Compiler.BYTECODE_VERSION) {
-                throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, version);
+            int fileVersion = readByte();
+            if (fileVersion != Compiler.BYTECODE_VERSION) {
+                throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, fileVersion);
             }
             TruffleString name = readString();
             TruffleString qualname = readString();

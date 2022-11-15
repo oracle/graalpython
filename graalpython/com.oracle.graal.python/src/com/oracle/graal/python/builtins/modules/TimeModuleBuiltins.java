@@ -603,11 +603,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         protected static int[] checkStructtime(VirtualFrame frame, PTuple time,
                         SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
-                        SequenceStorageNodes.LenNode lenNode,
                         PyNumberAsSizeNode asSizeNode,
                         PRaiseNode raise) {
             Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
-            if (lenNode.execute(time.getSequenceStorage()) != 9) {
+            if (time.getSequenceStorage().length() != 9) {
                 throw raise.raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
             }
             int[] date = new int[9];
@@ -930,7 +929,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, PTuple time,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
@@ -938,7 +936,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            int[] date = checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode());
+            int[] date = checkStructtime(frame, time, getArray, asSizeNode, getRaiseNode());
             return format(toJavaStringNode.execute(format), date, fromJavaStringNode);
         }
 
@@ -1027,10 +1025,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return format(StrfTimeNode.checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode()), fromJavaStringNode);
+            return format(StrfTimeNode.checkStructtime(frame, time, getArray, asSizeNode, getRaiseNode()), fromJavaStringNode);
         }
 
         @Fallback

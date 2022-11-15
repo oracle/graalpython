@@ -140,13 +140,12 @@ public class TupleBuiltins extends PythonBuiltins {
         int index(VirtualFrame frame, PTuple self, Object value, int startIn, int endIn,
                         @Cached BranchProfile startLe0Profile,
                         @Cached BranchProfile endLe0Profile,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
             SequenceStorage storage = self.getSequenceStorage();
             int start = startIn;
             if (start < 0) {
                 startLe0Profile.enter();
-                start += lenNode.execute(storage);
+                start += storage.length();
                 if (start < 0) {
                     start = 0;
                 }
@@ -155,7 +154,7 @@ public class TupleBuiltins extends PythonBuiltins {
             int end = endIn;
             if (end < 0) {
                 endLe0Profile.enter();
-                end += lenNode.execute(storage);
+                end += storage.length();
             }
 
             // Note: ItemIndexNode normalizes the end to min(end, length(storage))
@@ -214,13 +213,12 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         public static TruffleString repr(VirtualFrame frame, PTuple self,
-                        @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
-            int len = getLen.execute(tupleStore);
+            int len = tupleStore.length();
             if (len == 0) {
                 return T_EMPTY_PARENS;
             }
@@ -456,9 +454,8 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean doPTuple(PTuple self,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(self.getSequenceStorage()) != 0;
+        boolean doPTuple(PTuple self) {
+            return self.getSequenceStorage().length() != 0;
         }
 
         @Fallback
@@ -513,12 +510,11 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public long computeHash(VirtualFrame frame, PTuple self,
-                        @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectHashNode hashNode) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
-            int len = getLen.execute(tupleStore);
+            int len = tupleStore.length();
             long multiplier = 0xf4243;
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {

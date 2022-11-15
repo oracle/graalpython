@@ -1094,7 +1094,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object gcdNative(PythonAbstractNativeObject a, Object b) {
+        Object gcdNative(@SuppressWarnings("unused") PythonAbstractNativeObject a, @SuppressWarnings("unused") Object b) {
             throw raise(SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
         }
 

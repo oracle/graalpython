@@ -1034,7 +1034,7 @@ final class Validator implements SSTreeVisitor<Void> {
     }
 
     // Equivalent of validate_constant
-    private void validateConstant(ConstantValue value) {
+    private void validateConstant(@SuppressWarnings("unused") ConstantValue value) {
         // Already done in Obj2SstBase#obj2ConstantValue()
     }
 

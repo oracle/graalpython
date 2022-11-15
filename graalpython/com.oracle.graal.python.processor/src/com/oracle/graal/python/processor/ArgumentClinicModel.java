@@ -186,6 +186,7 @@ public class ArgumentClinicModel {
                     continue;
                 }
                 String[] args = new String[factory.params.length];
+                Set<String> imports = new HashSet<>();
                 int extraParamIndex = 0;
                 for (int i = 0; i < args.length; ++i) {
                     switch (factory.params[i]) {
@@ -204,26 +205,22 @@ public class ArgumentClinicModel {
                                 // factory method
                                 continue factoryLoop;
                             }
-                            args[i] = getLiteralOrFieldReference(type, annotation.defaultValue());
+                            args[i] = getLiteralOrFieldReference(type, annotation.defaultValue(), imports);
                             break;
                         case UseDefaultForNone:
                             args[i] = String.valueOf(annotation.useDefaultForNone());
                             break;
                         case Extra:
-                            args[i] = getLiteralOrFieldReference(type, annotation.args()[extraParamIndex++]);
+                            args[i] = getLiteralOrFieldReference(type, annotation.args()[extraParamIndex++], null);
                             break;
                         default:
                             throw new IllegalStateException("Unsupported ClinicArgument: " + factory.params[i]);
                     }
                 }
                 String castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, String.join(", ", args));
-                Set<String> imports = new HashSet<>();
                 imports.add(factory.fullClassName);
                 if (annotation.defaultValue().startsWith("PNone.")) {
                     imports.add("com.oracle.graal.python.builtins.objects.PNone");
-                }
-                if (annotation.defaultValue().startsWith("T_")) {
-                    imports.add("static com.oracle.graal.python.nodes.StringLiterals.*");
                 }
 
                 return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(factory.acceptedPrimitiveTypes)), castNodeFactory, imports);
@@ -233,7 +230,7 @@ public class ArgumentClinicModel {
                             factories[0].fullClassName, factories[0].fullClassName);
         }
 
-        private static String getLiteralOrFieldReference(TypeElement type, String defaultValue) {
+        private static String getLiteralOrFieldReference(TypeElement type, String defaultValue, Set<String> imports) {
             Stream<? extends Element> enclosedElements = type.getEnclosedElements().stream();
             Element enclosingElement = type.getEnclosingElement();
             if (enclosingElement instanceof TypeElement) {
@@ -247,6 +244,9 @@ public class ArgumentClinicModel {
                 result = fieldEnclosingType.getQualifiedName() + "." + typeElement.get().getSimpleName();
             } else {
                 result = defaultValue;
+                if (imports != null && defaultValue.startsWith("T_")) {
+                    imports.add("static com.oracle.graal.python.nodes.StringLiterals.*");
+                }
             }
             return result;
         }

@@ -1104,7 +1104,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 // Fall back to the generic impl
             }
             defaultCase.enter();
-            return defaultConversion(frame, lib, object, getSwitchEncodingNode());
+            return defaultConversion(frame, lib, object);
         }
 
         private LookupAndCallUnaryNode getCallStrNode() {
@@ -1123,7 +1123,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return castToListNode;
         }
 
-        private TruffleString.SwitchEncodingNode getSwitchEncodingNode() {
+        protected TruffleString.SwitchEncodingNode getSwitchEncodingNode() {
             if (switchEncodingNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 switchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
@@ -1131,9 +1131,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return switchEncodingNode;
         }
 
-        protected TruffleString defaultConversion(@SuppressWarnings("unused") VirtualFrame frame, InteropLibrary lib, Object object, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        protected TruffleString defaultConversion(@SuppressWarnings("unused") VirtualFrame frame, InteropLibrary lib, Object object) {
             try {
-                return switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(object)), TS_ENCODING);
+                return getSwitchEncodingNode().execute(lib.asTruffleString(lib.toDisplayString(object)), TS_ENCODING);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("toDisplayString result not convertible to String");
             }
@@ -1146,7 +1146,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;
 
         @Override
-        protected TruffleString defaultConversion(VirtualFrame frame, InteropLibrary lib, Object object, TruffleString.SwitchEncodingNode switchEncodingNode) {
+        protected TruffleString defaultConversion(VirtualFrame frame, InteropLibrary lib, Object object) {
             try {
                 if (getContext().getEnv().isHostObject(object)) {
                     boolean isMetaObject = lib.isMetaObject(object);
@@ -1157,7 +1157,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         metaObject = lib.getMetaObject(object);
                     }
                     if (metaObject != null) {
-                        TruffleString displayName = switchEncodingNode.execute(lib.asTruffleString(lib.toDisplayString(metaObject)), TS_ENCODING);
+                        TruffleString displayName = getSwitchEncodingNode().execute(lib.asTruffleString(lib.toDisplayString(metaObject)), TS_ENCODING);
                         return simpleTruffleStringFormatUncached("<%s[%s] at 0x%s>", isMetaObject ? "JavaClass" : "JavaObject", displayName,
                                         PythonAbstractObject.systemHashCodeAsHexString(object));
                     }

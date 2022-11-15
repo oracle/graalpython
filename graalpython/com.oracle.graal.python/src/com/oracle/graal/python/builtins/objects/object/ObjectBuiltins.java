@@ -767,7 +767,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached("op") TruffleString cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached TruffleString.EqualNode equalNode) {
+                        @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode) {
             if (!seenNonBoolean) {
                 try {
                     return node.executeBool(frame, left, right);

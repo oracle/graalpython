@@ -229,7 +229,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PyObjectSetItem setItemNode;
         @Child PyObjectStrAsObjectNode strNode;
         @Child CallNode callNode;
-        @Child SequenceStorageNodes.LenNode sequenceLenNode;
         @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItemNode;
         @Child TypeNodes.IsTypeNode isTypeNode;
         @Child TruffleString.CodePointLengthNode codePointLengthNode;
@@ -332,14 +331,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 sequenceGetItemNode = insert(SequenceStorageNodes.GetItemScalarNode.create());
             }
             return sequenceGetItemNode;
-        }
-
-        private SequenceStorageNodes.LenNode getSequenceLenNode() {
-            if (sequenceLenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sequenceLenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return sequenceLenNode;
         }
 
         private Object getPythonClass(Object object) {
@@ -607,14 +598,13 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             }
             SequenceStorage filtersStorage = ((PList) filters).getSequenceStorage();
             SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItemNode();
-            SequenceStorageNodes.LenNode sequenceLen = getSequenceLenNode();
-            for (int i = 0; i < sequenceLen.execute(filtersStorage); i++) {
+            for (int i = 0; i < filtersStorage.length(); i++) {
                 Object tmpItem = sequenceGetItem.execute(filtersStorage, i);
                 if (!(tmpItem instanceof PTuple)) {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
                 SequenceStorage tmpStorage = ((PTuple) tmpItem).getSequenceStorage();
-                if (sequenceLen.execute(tmpStorage) != 5) {
+                if (tmpStorage.length() != 5) {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
 

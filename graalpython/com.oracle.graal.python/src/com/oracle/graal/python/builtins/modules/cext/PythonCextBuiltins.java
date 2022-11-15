@@ -151,7 +151,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -2152,11 +2151,10 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doBytes(PBytes bytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached GetItemScalarNode getItemScalarNode) {
 
             SequenceStorage sequenceStorage = bytes.getSequenceStorage();
-            int len = lenNode.execute(sequenceStorage);
+            int len = sequenceStorage.length();
             try {
                 for (int i = 0; i < len; i++) {
                     if (getItemScalarNode.executeInt(sequenceStorage, i) == 0) {

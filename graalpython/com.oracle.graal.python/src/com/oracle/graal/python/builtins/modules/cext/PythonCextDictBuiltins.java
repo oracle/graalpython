@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.PopNode;
@@ -689,7 +688,6 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"override == 0", "!isDict(b)"}, limit = "3")
         public static Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
-                        @Cached LenNode lenNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
@@ -706,7 +704,7 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
 
                 SequenceStorage keysStorage = keys.getSequenceStorage();
                 HashingStorage aStorage = a.getDictStorage();
-                int size = lenNode.execute(keysStorage);
+                int size = keysStorage.length();
                 loopProfile.profileCounted(size);
                 for (int i = 0; loopProfile.inject(i < size); i++) {
                     Object key = getKeyNode.execute(keysStorage, i);

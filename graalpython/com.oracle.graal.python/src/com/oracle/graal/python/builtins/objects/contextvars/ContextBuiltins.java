@@ -112,7 +112,7 @@ public class ContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetMethod extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(def)")
-        Object doGet(PContextVarsContext self, Object key, Object def,
+        Object doGet(PContextVarsContext self, Object key, @SuppressWarnings("unused") Object def,
                         @Cached PRaiseNode raise) {
             return doGetDefault(self, key, PNone.NONE, raise);
         }

@@ -133,7 +133,7 @@ public class EmptyStorage extends HashingStorage {
         return this;
     }
 
-    private static final Iterator<Object> KEYS_ITERATOR = new Iterator<Object>() {
+    private static final Iterator<Object> KEYS_ITERATOR = new Iterator<>() {
         @Override
         public boolean hasNext() {
             return false;

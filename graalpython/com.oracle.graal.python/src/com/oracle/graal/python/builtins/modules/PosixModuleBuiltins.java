@@ -2122,7 +2122,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "size < 0")
-        Object urandomNeg(int size) {
+        Object urandomNeg(@SuppressWarnings("unused") int size) {
             throw raise(ValueError, ErrorMessages.NEG_ARG_NOT_ALLOWED);
         }
 

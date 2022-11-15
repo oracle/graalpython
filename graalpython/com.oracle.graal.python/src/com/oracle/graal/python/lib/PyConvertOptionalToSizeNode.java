@@ -60,7 +60,7 @@ public abstract class PyConvertOptionalToSizeNode extends PNodeWithContext {
     public abstract int execute(Frame frame, Object object, int defaultValue);
 
     @Specialization(guards = "isNone(value)")
-    int doOptional(VirtualFrame frame, @SuppressWarnings("unused") PNone value, int defaultValue) {
+    int doOptional(@SuppressWarnings("unused") PNone value, int defaultValue) {
         return defaultValue;
     }
 

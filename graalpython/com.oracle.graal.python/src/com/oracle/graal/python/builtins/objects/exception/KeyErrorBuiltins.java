@@ -74,14 +74,13 @@ public final class KeyErrorBuiltins extends PythonBuiltins {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionBuiltins.ArgsNode argsNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached BaseExceptionBuiltins.StrNode baseStrNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode) {
             Object args = argsNode.executeGet(frame, self);
             if (args instanceof PTuple) {
                 SequenceStorage storage = ((PTuple) args).getSequenceStorage();
-                if (lenNode.execute(storage) == 1) {
+                if (storage.length() == 1) {
                     return reprNode.execute(frame, getItemNode.execute(storage, 0));
                 }
             }

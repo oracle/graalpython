@@ -159,11 +159,10 @@ public final class PythonCextTupleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doPTuple(PTuple tuple, long key,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             // we must do a bounds-check but we must not normalize the index
-            if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
+            if (key < 0 || key >= sequenceStorage.length()) {
                 throw raise(IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
             return getItemNode.execute(sequenceStorage, (int) key);

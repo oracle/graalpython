@@ -757,7 +757,7 @@ public final class PythonCextUnicodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyUnicodeSplit extends PythonQuaternaryBuiltinNode {
         @Specialization
-        Object split(VirtualFrame frame, Object module, Object string, Object sep, Object maxsplit,
+        Object split(VirtualFrame frame, @SuppressWarnings("unused") Object module, Object string, Object sep, Object maxsplit,
                         @Cached StringBuiltins.SplitNode splitNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {

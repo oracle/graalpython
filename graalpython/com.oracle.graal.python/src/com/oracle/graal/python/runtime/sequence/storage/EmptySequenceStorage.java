@@ -125,7 +125,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
+    public SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
         assert start == stop && stop == 0;
         return this;
     }
@@ -161,36 +161,43 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     int getBufferLength() {
         return 0;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     byte readByte(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     short readShort(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     int readInt(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     long readLong(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     float readFloat(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     double readDouble(@SuppressWarnings("unused") int byteOffset) throws IndexOutOfBoundsException {
         throw new IndexOutOfBoundsException("EmptySequenceStorage is always empty!");
     }

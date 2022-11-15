@@ -256,9 +256,9 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     void checkExports(PRaiseNode node) {
-        long exports = getExports().get();
-        if (exports > 0) {
-            throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
+        long exportsValue = getExports().get();
+        if (exportsValue > 0) {
+            throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exportsValue);
         }
     }
 

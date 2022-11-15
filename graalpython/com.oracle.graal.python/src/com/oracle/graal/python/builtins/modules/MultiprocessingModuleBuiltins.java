@@ -180,11 +180,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
         long spawn(int fd, int sentinel, PList keepFds,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
             SequenceStorage storage = keepFds.getSequenceStorage();
-            int length = lenNode.execute(storage);
+            int length = storage.length();
             int[] keep = new int[length];
             for (int i = 0; i < length; i++) {
                 Object item = getItem.execute(storage, i);
@@ -366,16 +365,16 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         /*
          * We would like to poll two different things with a timeout: the actual file descriptors
          * and the Java managed LinkedBlockingQueues.
-         * 
+         *
          * The LinkedBlockingQueue does not expose anything that would allow us to wait on multiple
          * LinkedBlockingQueues at once, so we'd have to spawn a thread for each or roll out our own
          * synchronization of take/offer to allow that.
-         * 
+         *
          * The actual file descriptors could be backed by Java POSIX emulation layer, or by the
          * native POSIX implementation -- the `select` can run actual native select, which we cannot
          * easily interrupt from Java if one of the LinkedBlockingQueue is unblocked earlier than
          * the native select returns.
-         * 
+         *
          * Given all these complexities, for the time being, we do active waiting here, but at least
          * without holding the GIL, and we also yield in every iteration.
          */

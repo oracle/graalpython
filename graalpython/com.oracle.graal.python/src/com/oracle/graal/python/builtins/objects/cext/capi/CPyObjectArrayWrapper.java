@@ -102,7 +102,7 @@ public final class CPyObjectArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer(
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
         Object nativePointer = lib.getNativePointer(this);
         assert nativePointer instanceof Long;
         return (long) nativePointer;

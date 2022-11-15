@@ -113,11 +113,10 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(data.getSequenceStorage());
-                int len = lenNode.execute(data.getSequenceStorage());
+                int len = data.getSequenceStorage().length();
                 return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
             }
         }

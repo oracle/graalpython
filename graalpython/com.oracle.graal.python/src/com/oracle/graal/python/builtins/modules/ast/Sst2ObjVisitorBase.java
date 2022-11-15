@@ -152,7 +152,7 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
         return factory.createList(objs);
     }
 
-    final void fillSourceRangeAttributes(PythonObject o, SourceRange sourceRange) {
+    static final void fillSourceRangeAttributes(PythonObject o, SourceRange sourceRange) {
         o.setAttribute(T_F_LINENO, sourceRange.startLine);
         o.setAttribute(T_F_COL_OFFSET, sourceRange.startColumn);
         o.setAttribute(T_F_END_LINENO, sourceRange.endLine);

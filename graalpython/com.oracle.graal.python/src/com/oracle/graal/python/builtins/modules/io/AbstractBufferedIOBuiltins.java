@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -221,8 +220,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @Specialization
         static PException raise(Node node, Object errno, TruffleString message, int written,
-                        @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToObjectNode writeAttribute) {
+                        @Cached PythonObjectFactory factory) {
             Object[] args = new Object[]{
                             errno,
                             message,

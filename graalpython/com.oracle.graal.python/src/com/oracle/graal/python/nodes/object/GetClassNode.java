@@ -87,10 +87,12 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     public abstract Object execute(Object object);
 
+    @SuppressWarnings("static-method")
     public final Object execute(@SuppressWarnings("unused") int i) {
         return PythonBuiltinClassType.PInt;
     }
 
+    @SuppressWarnings("static-method")
     public final Object execute(@SuppressWarnings("unused") double d) {
         return PythonBuiltinClassType.PFloat;
     }

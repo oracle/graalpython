@@ -247,6 +247,7 @@ public abstract class ZLibCompObject extends PythonBuiltinObject {
             int flg = getValue(bytes[idx++], crc);
             // Skip MTIME, XFL, and OS fields
             idx += 6;
+            @SuppressWarnings("unused")
             int n = 2 + 2 + 6;
             // Skip optional extra field
             if ((flg & FEXTRA) == FEXTRA) {

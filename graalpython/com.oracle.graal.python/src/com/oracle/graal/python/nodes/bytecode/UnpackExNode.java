@@ -76,7 +76,6 @@ public abstract class UnpackExNode extends PNodeWithContext {
     static int doUnpackSequence(VirtualFrame frame, int initialStackTop, PSequence sequence, int countBefore, int countAfter,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                     @Shared("factory") @Cached PythonObjectFactory factory,
@@ -86,7 +85,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
         int resultStackTop = initialStackTop + countBefore + 1 + countAfter;
         int stackTop = resultStackTop;
         SequenceStorage storage = getSequenceStorageNode.execute(sequence);
-        int len = lenNode.execute(storage);
+        int len = storage.length();
         int starLen = len - countBefore - countAfter;
         if (starLen < 0) {
             throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, len);
@@ -105,7 +104,6 @@ public abstract class UnpackExNode extends PNodeWithContext {
                     @Cached IsBuiltinClassProfile notIterableProfile,
                     @Cached IsBuiltinClassProfile stopIterationProfile,
                     @Cached ListNodes.ConstructListNode constructListNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                     @Shared("factory") @Cached PythonObjectFactory factory,
@@ -124,7 +122,7 @@ public abstract class UnpackExNode extends PNodeWithContext {
         stackTop = moveItemsToStack(frame, iterator, stackTop, 0, countBefore, countBefore + countAfter, getNextNode, stopIterationProfile, raiseNode);
         PList starAndAfter = constructListNode.execute(frame, iterator);
         SequenceStorage storage = starAndAfter.getSequenceStorage();
-        int lenAfter = lenNode.execute(storage);
+        int lenAfter = storage.length();
         if (lenAfter < countAfter) {
             throw raiseNode.raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK_EX, countBefore + countAfter, countBefore + lenAfter);
         }

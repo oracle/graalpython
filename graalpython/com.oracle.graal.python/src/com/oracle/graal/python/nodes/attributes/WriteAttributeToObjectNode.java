@@ -331,8 +331,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Shared("updateStorage") @Cached BranchProfile updateStorage,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @SuppressWarnings("unused") @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @SuppressWarnings("unused") @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
 
             /*
              * For native types, the type attributes are stored in a dict that is located in

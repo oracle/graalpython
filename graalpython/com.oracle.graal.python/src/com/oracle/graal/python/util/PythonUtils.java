@@ -578,7 +578,7 @@ public final class PythonUtils {
 
     @TruffleBoundary
     public static <E> List<E> newList() {
-        return new ArrayList<E>();
+        return new ArrayList<>();
     }
 
     @TruffleBoundary

@@ -518,10 +518,9 @@ public class MemoryViewNodes {
         MemoryPointer resolveTupleCached(VirtualFrame frame, PMemoryView self, PTuple indices,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
-            checkTupleLength(lenNode, indicesStorage, cachedDimensions);
+            checkTupleLength(indicesStorage, cachedDimensions);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < cachedDimensions; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
@@ -534,11 +533,10 @@ public class MemoryViewNodes {
         @Specialization(replaces = "resolveTupleCached")
         MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             int ndim = self.getDimensions();
-            checkTupleLength(lenNode, indicesStorage, ndim);
+            checkTupleLength(indicesStorage, ndim);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < ndim; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
@@ -558,8 +556,8 @@ public class MemoryViewNodes {
             }
         }
 
-        private void checkTupleLength(SequenceStorageNodes.LenNode lenNode, SequenceStorage indicesStorage, int ndim) {
-            int length = lenNode.execute(indicesStorage);
+        private void checkTupleLength(SequenceStorage indicesStorage, int ndim) {
+            int length = indicesStorage.length();
             if (length == ndim) {
                 return;
             }

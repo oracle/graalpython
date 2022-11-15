@@ -215,7 +215,6 @@ public class StringUtils {
         errorCallback.warn(PythonBuiltinClassType.DeprecationWarning, INVALID_ESCAPE_SEQUENCE, nextChar);
     }
 
-    private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
     private static final String MALFORMED_ERROR = "malformed \\N character escape";
     private static final String TRUNCATED_XXX_ERROR = "truncated \\xXX escape";
     private static final String TRUNCATED_UXXXX_ERROR = "truncated \\uXXXX escape";

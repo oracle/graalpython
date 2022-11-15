@@ -105,12 +105,11 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()"})
         PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data, int maxLength,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("dobj") @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(data.getSequenceStorage());
-                int len = lenNode.execute(data.getSequenceStorage());
+                int len = data.getSequenceStorage().length();
                 return factory().createBytes(decompressObj.execute(self, PythonContext.get(this), bytes, len, maxLength));
             }
         }

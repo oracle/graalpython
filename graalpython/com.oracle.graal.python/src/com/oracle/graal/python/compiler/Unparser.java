@@ -127,9 +127,9 @@ public class Unparser implements SSTreeVisitor<Void> {
         }
     }
 
-    private void appendExpr(SSTNode node, int level) {
+    private void appendExpr(SSTNode node, int newLevel) {
         int savedLevel = this.level;
-        this.level = level;
+        this.level = newLevel;
         node.accept(this);
         this.level = savedLevel;
     }
@@ -144,7 +144,7 @@ public class Unparser implements SSTreeVisitor<Void> {
 
     private static final TruffleString DBL_CLOSE_BR = tsLiteral("}}");
 
-    private TruffleString escapeBraces(TruffleString s) {
+    private static TruffleString escapeBraces(TruffleString s) {
         StringNodes.StringReplaceNode replace = StringNodes.StringReplaceNode.getUncached();
         TruffleString t = replace.execute(s, OPEN_BR, DBL_OPEN_BR, -1);
         return replace.execute(t, CLOSE_BR, DBL_CLOSE_BR, -1);
