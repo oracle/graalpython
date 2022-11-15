@@ -50,8 +50,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Map;
 
-import com.oracle.truffle.api.strings.TruffleString;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
@@ -75,6 +75,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
@@ -511,6 +512,23 @@ public class JavaInteropTest {
                             "6.0 <class 'float'>\n" +
                             "True <class 'bool'>\n" +
                             "c <class 'str'>\n", out.toString("UTF-8"));
+        }
+
+        @Test
+        public void javaStringsAndPythonStrings() throws IOException {
+            Source workflowScript = Source.newBuilder("python", "" +
+                            "def enrich(mymap):\n" +
+                            "    print(type(mymap))\n" +
+                            "    print(mymap['source'] == 'foo')\n" +
+                            "    print(mymap.get('source') == 'foo')\n",
+                            "workflowScript.py").build();
+            context.eval(workflowScript);
+            Map<String, String> source = Map.of("source", "foo");
+            context.getBindings("python").getMember("enrich").execute(source);
+            assertEquals("" +
+                            "<class 'foreign'>\n" +
+                            "True\n" +
+                            "True\n", out.toString("UTF-8"));
         }
 
         @Test

@@ -651,8 +651,21 @@ class PyPySuite(PySuite):
 
 class NumPySuite(PySuite):
     VERSION = "v1.16.4"
-    ASV = "0.5.1"
-    VIRTUALENV = "20.16.3"
+
+    PREREQUISITES = """
+    setuptools==63.1.0
+    wheel==0.37.1
+    """
+
+    BENCHMARK_REQ = f"""
+    asv==0.5.1
+    distlib==0.3.6
+    filelock==3.8.0
+    platformdirs==2.5.2
+    six==1.16.0
+    virtualenv==20.16.3
+    numpy=={VERSION}
+    """
 
     def name(self):
         return "numpy-suite"
@@ -710,16 +723,14 @@ class NumPySuite(PySuite):
             mx.run(["git", "branch", "master"], cwd=npdir, nonZeroIsFatal=False)
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
-            mx.run(
-                [
-                    join(workdir, vm_venv, "bin", "pip"),
-                    "install",
-                    f"asv=={self.ASV}",
-                    f"virtualenv=={self.VIRTUALENV}",
-                    f"numpy=={self.VERSION}",
-                ],
-                cwd=workdir,
-            )
+            pip = join(workdir, vm_venv, "bin", "pip")
+            requirements_txt = join(workdir, "requirements.txt")
+            with open(requirements_txt, "w") as f:
+                f.write(self.PREREQUISITES)
+            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
+            with open(requirements_txt, "w") as f:
+                f.write(self.BENCHMARK_REQ)
+            mx.run([pip, "install", "-r", requirements_txt], cwd=workdir)
             mx.run(
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )

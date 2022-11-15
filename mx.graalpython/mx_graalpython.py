@@ -2200,7 +2200,7 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         if os.path.exists(target_dir):
             shutil.rmtree(target_dir)
         mx.logv("Preparing header files (dest: {!s})".format(target_dir))
-        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir)
+        shutil.copytree(os.path.join(self.src_dir(), "include"), target_dir, symlinks=True)
         shutil.copy(os.path.join(mx.dependency("SULONG_LEGACY").get_output(), "include", "truffle.h"), target_dir)
 
     def build(self):

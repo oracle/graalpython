@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "19a0590617caf99311f9dd39169385690735e55b",
+                "version": "755c0a60ccf52870042dda137d107cc6722374ff",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "19a0590617caf99311f9dd39169385690735e55b",
+                "version": "755c0a60ccf52870042dda137d107cc6722374ff",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "19a0590617caf99311f9dd39169385690735e55b",
+                "version": "755c0a60ccf52870042dda137d107cc6722374ff",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -778,6 +778,9 @@ suite = {
                     "file:mx.graalpython/native-image.properties",
                     "file:graalpython/lib-graalpython",
                     "file:graalpython/com.oracle.graal.python.cext/include",
+                ],
+                "./include/python3.10/": [
+                    "file:graalpython/com.oracle.graal.python.cext/include/*",
                 ],
                 "./lib-graalpython/": [
                     "extracted-dependency:GRAALPYTHON_CEXT/*",
