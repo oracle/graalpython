@@ -777,6 +777,18 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(EconomicMapStorage.create(map));
     }
 
+    /**
+     * Generic version of {@link #createDictFromMap(LinkedHashMap)} that allows any type of keys.
+     * Note that this means that unless the keys are known to be side effect free, e.g., builtin
+     * types, this may end up calling Python code, so indirect call context should be properly
+     * set-up. This helper is meant for Truffle boundary code, in PE code build a storage by setting
+     * elements one by one starting from empty storage.
+     */
+    @SuppressWarnings("unchecked")
+    public final PDict createDictFromMapGeneric(LinkedHashMap<Object, Object> map) {
+        return createDict(EconomicMapStorage.createGeneric(map));
+    }
+
     public final PDict createDictLocals(MaterializedFrame frame) {
         return createDict(new LocalsStorage(frame));
     }

@@ -97,6 +97,13 @@ public class EconomicMapStorage extends HashingStorage {
         return result;
     }
 
+    public static EconomicMapStorage createGeneric(LinkedHashMap<Object, Object> map) {
+        CompilerAsserts.neverPartOfCompilation();
+        EconomicMapStorage result = new EconomicMapStorage(map.size(), false);
+        putAllUncachedGeneric(map, result);
+        return result;
+    }
+
     public int length() {
         return map.size();
     }
@@ -140,10 +147,21 @@ public class EconomicMapStorage extends HashingStorage {
         ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.hash(key, HashCodeNode.getUncached()), value);
     }
 
+    private void putUncached(Object key, Object value) {
+        ObjectHashMapFactory.PutNodeGen.getUncached().put(null, this.map, key, PyObjectHashNode.getUncached().execute(null, key), value);
+    }
+
     private static void putAllUncached(LinkedHashMap<String, Object> map, EconomicMapStorage result) {
         CompilerAsserts.neverPartOfCompilation();
         for (Entry<String, Object> entry : map.entrySet()) {
             result.putUncached(TruffleString.fromJavaStringUncached(entry.getKey(), TS_ENCODING), entry.getValue());
+        }
+    }
+
+    private static void putAllUncachedGeneric(LinkedHashMap<Object, Object> map, EconomicMapStorage result) {
+        CompilerAsserts.neverPartOfCompilation();
+        for (Entry<Object, Object> entry : map.entrySet()) {
+            result.putUncached(entry.getKey(), entry.getValue());
         }
     }
 
