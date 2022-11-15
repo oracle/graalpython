@@ -971,7 +971,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchOr() {
         String source = "" +
                         "match 0:\n" +
@@ -980,7 +980,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchOrRot() {
         String source = "" +
                         "match (0, 1):\n" +
@@ -989,7 +989,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchMapping() {
         String source = "" +
                         "match {1:1}:\n" +
@@ -998,7 +998,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchMappingSubpattern() {
         String source = "" +
                         "match {1:1}:\n" +
@@ -1007,7 +1007,7 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
-    // @Test skip until 3.10
+    @Test
     public void testMatchMappingStar() {
         String source = "" +
                         "match {1:1}:\n" +
