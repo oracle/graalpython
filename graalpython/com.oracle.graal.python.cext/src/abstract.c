@@ -56,6 +56,13 @@ static PyObject* null_error(void) {
     return NULL;
 }
 
+int PyIter_Check(PyObject *obj) {
+    PyTypeObject *tp = Py_TYPE(obj);
+    return (tp->tp_iternext != NULL &&
+            tp->tp_iternext != &_PyObject_NextNotImplemented &&
+            tp->tp_iternext != Py_NotImplemented);
+}
+
 UPCALL_ID(PyNumber_Check);
 int PyNumber_Check(PyObject *o) {
     return UPCALL_CEXT_I(_jls_PyNumber_Check, native_to_java(o));
