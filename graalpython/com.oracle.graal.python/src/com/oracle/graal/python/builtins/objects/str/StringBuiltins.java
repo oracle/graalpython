@@ -1060,7 +1060,7 @@ public final class StringBuiltins extends PythonBuiltins {
             HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
             HashingStorage destStorage = PDict.createNewStorage(lenNode.execute(srcStorage));
             HashingStorageIterator it = getIter.execute(srcStorage);
-            while (!iterHasNext.execute(srcStorage, it)) {
+            while (iterHasNext.execute(srcStorage, it)) {
                 Object currentKey = iterKey.execute(srcStorage, it);
                 Object currentValue = iterValue.execute(srcStorage, it);
                 if (PGuards.isInteger(currentKey) || PGuards.isPInt(currentKey)) {
