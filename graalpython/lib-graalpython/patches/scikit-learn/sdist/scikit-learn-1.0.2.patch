@@ -1,8 +1,8 @@
 diff --git a/sklearn/__init__.py b/sklearn/__init__.py
-index 7de2303..0dc86ff 100644
+index 7de2303..21ec6c6 100644
 --- a/sklearn/__init__.py
 +++ b/sklearn/__init__.py
-@@ -42,6 +42,140 @@ logger = logging.getLogger(__name__)
+@@ -42,6 +42,159 @@ logger = logging.getLogger(__name__)
  __version__ = "1.0.2"
  
  
@@ -28,9 +28,19 @@ index 7de2303..0dc86ff 100644
 +    sys.modules["scipy.linalg.lapack"] = type(sys)("scipy.linalg.lapack")
 +    sys.modules["scipy.linalg.lapack"].get_lapack_funcs = None
 +
++    sys.modules["scipy.linalg.cython_blas"] = type(sys)("scipy.linalg.cython_blas")
++    sys.modules["scipy.linalg.cython_blas"]._copy = None
++    sys.modules["scipy.linalg.cython_blas"]._rotg = None
++    sys.modules["scipy.linalg.cython_blas"]._rot = None
++    sys.modules["scipy.linalg.cython_blas"].dasum = None
++
 +    sys.modules["scipy.optimize"] = type(sys)("scipy.optimize")
++    sys.modules["scipy.optimize"].linprog = None
 +    sys.modules["scipy"].optimize = sys.modules["scipy.optimize"]
 +    sys.modules["scipy.optimize"].fmin_l_bfgs_b = None
++    sys.modules["scipy.optimize"].linear_sum_assignment = None
++    sys.modules["scipy.optimize"].minimize = None
++
 +
 +    sys.modules["scipy.optimize.linesearch"] = type(sys)("scipy.optimize.linesearch")
 +    sys.modules["scipy.optimize.linesearch"].line_search_wolfe1 = None
@@ -42,6 +52,7 @@ index 7de2303..0dc86ff 100644
 +    sys.modules["scipy.interpolate"] = type(sys)("scipy.interpolate")
 +    sys.modules["scipy"].interpolate = sys.modules["scipy.interpolate"]
 +    sys.modules["scipy"].interpolate.interp1d = None
++    sys.modules["scipy"].interpolate.BSpline = None
 +
 +    sys.modules["scipy.stats"] = type(sys)("scipy.stats")
 +    sys.modules["scipy"].stats = sys.modules["scipy.stats"]
@@ -67,6 +78,11 @@ index 7de2303..0dc86ff 100644
 +    sys.modules["scipy.special"].gammainc = None
 +    sys.modules["scipy.special"].boxcox = None
 +    sys.modules["scipy.special"].comb = None
++    sys.modules["scipy.special"].xlogy = None
++    sys.modules["scipy.special"].logit = None
++    sys.modules["scipy.special"].logsumexp = None
++    sys.modules["scipy.special.cython_special"] = type(sys)("scipy.special.cython_special")
++    sys.modules["scipy.special"].cython_special = sys.modules["scipy.special.cython_special"]
 +
 +    sys.modules["scipy.spatial"] = type(sys)("scipy.spatial")
 +    sys.modules["scipy.spatial"].__path__ = ""
@@ -89,7 +105,7 @@ index 7de2303..0dc86ff 100644
 +    sys.modules["scipy.sparse"].csr_matrix = None
 +    sys.modules["scipy.sparse"].coo_matrix = None
 +    sys.modules["scipy.sparse"].dok_matrix = None
-+    sys.modules["scipy.sparse"].lil_matrix = None
++    sys.modules["scipy.sparse"].lil_matrix = None    
 +
 +    sys.modules["scipy.sparse.linalg"] = type(sys)("scipy.sparse.linalg")
 +    sys.modules["scipy.sparse"].linalg = sys.modules["scipy.sparse.linalg"]
@@ -101,6 +117,7 @@ index 7de2303..0dc86ff 100644
 +    sys.modules["scipy.sparse.linalg"].solve = None
 +    sys.modules["scipy.sparse.linalg"].lobpcg = None
 +    sys.modules["scipy.sparse.linalg"].lsqr = None
++    sys.modules["scipy.sparse.linalg"].LinearOperator = object
 +
 +    sys.modules["scipy.sparse.linalg.interface"] = type(sys)("scipy.sparse.linalg.interface")
 +    sys.modules["scipy.sparse.linalg"].interface = sys.modules["scipy.sparse.linalg.interface"]
@@ -113,6 +130,7 @@ index 7de2303..0dc86ff 100644
 +    sys.modules["scipy.sparse"].csgraph = sys.modules["scipy.sparse.csgraph"]
 +    sys.modules["scipy.sparse.csgraph"].connected_components = None
 +    sys.modules["scipy.sparse.csgraph"].laplacian = None
++    sys.modules["scipy.sparse.csgraph"].shortest_path = None
 +
 +    sys.modules["sklearn.externals.joblib"] = type(sys)("sklearn.externals.joblib")
 +    sys.modules["sklearn.externals.joblib"].__all__ = ()
@@ -131,6 +149,7 @@ index 7de2303..0dc86ff 100644
 +    # fast_dict and _hierarchical module won't load due to unresolved C++ symbol right now
 +    sys.modules["sklearn.utils.fast_dict"] = type(sys)("sklearn.utils.fast_dict")
 +    sys.modules["sklearn.utils.fast_dict"].IntFloatDict = dict
++    
 +    sys.modules["sklearn.cluster._hierarchical"] = type(sys)("sklearn.cluster._hierarchical")
 +    sys.modules["sklearn.cluster._dbscan_inner"] = type(sys)("sklearn.cluster._dbscan_inner")
 +    sys.modules["sklearn.cluster._dbscan_inner"].dbscan_inner = None
@@ -143,25 +162,381 @@ index 7de2303..0dc86ff 100644
  # On OSX, we can get a runtime error due to multiple OpenMP libraries loaded
  # simultaneously. This can happen for instance when calling BLAS inside a
  # prange. Setting the following environment variable allows multiple OpenMP
-diff --git a/sklearn/svm/setup.py b/sklearn/svm/setup.py
-index d5f94d8..f0cc552 100644
---- a/sklearn/svm/setup.py
-+++ b/sklearn/svm/setup.py
-@@ -34,7 +34,7 @@ def configuration(parent_package="", top_path=None):
-         ],
-         # Force C++ linking in case gcc is picked up instead
-         # of g++ under windows with some versions of MinGW
--        extra_link_args=["-lstdc++"],
-+        # extra_link_args=["-lstdc++"],
-         # Use C++11 to use the random number generator fix
-         extra_compiler_args=["-std=c++11"],
-     )
-@@ -79,7 +79,7 @@ def configuration(parent_package="", top_path=None):
-         ],
-         # Force C++ linking in case gcc is picked up instead
-         # of g++ under windows with some versions of MinGW
--        extra_link_args=["-lstdc++"],
-+        # extra_link_args=["-lstdc++"],
-         # Use C++11 to use the random number generator fix
-         extra_compiler_args=["-std=c++11"],
-     )
+diff --git a/sklearn/tree/_criterion.pyx b/sklearn/tree/_criterion.pyx
+index 2c115d0..5442557 100644
+--- a/sklearn/tree/_criterion.pyx
++++ b/sklearn/tree/_criterion.pyx
+@@ -23,7 +23,7 @@ cimport numpy as np
+ np.import_array()
+ 
+ from numpy.math cimport INFINITY
+-from scipy.special.cython_special cimport xlogy
++# from scipy.special.cython_special cimport xlogy
+ 
+ from ._utils cimport log
+ from ._utils cimport safe_realloc
+@@ -1436,22 +1436,23 @@ cdef class Poisson(RegressionCriterion):
+         cdef DOUBLE_t w = 1.0
+         cdef SIZE_t n_outputs = self.n_outputs
+ 
+-        for k in range(n_outputs):
+-            if y_sum[k] <= EPSILON:
+-                # y_sum could be computed from the subtraction
+-                # sum_right = sum_total - sum_left leading to a potential
+-                # floating point rounding error.
+-                # Thus, we relax the comparison y_sum <= 0 to
+-                # y_sum <= EPSILON.
+-                return INFINITY
++        # for k in range(n_outputs):
++        #     if y_sum[k] <= EPSILON:
++        #         # y_sum could be computed from the subtraction
++        #         # sum_right = sum_total - sum_left leading to a potential
++        #         # floating point rounding error.
++        #         # Thus, we relax the comparison y_sum <= 0 to
++        #         # y_sum <= EPSILON.
++        #         return INFINITY
+ 
+-            y_mean = y_sum[k] / weight_sum
++        #     y_mean = y_sum[k] / weight_sum
+ 
+-            for p in range(start, end):
+-                i = self.samples[p]
++        #     for p in range(start, end):
++        #         i = self.samples[p]
+ 
+-                if weight != NULL:
+-                    w = weight[i]
++        #         if weight != NULL:
++        #             w = weight[i]
+ 
+-                poisson_loss += w * xlogy(y[i, k], y[i, k] / y_mean)
+-        return poisson_loss / (weight_sum * n_outputs)
++        #         poisson_loss += w * xlogy(y[i, k], y[i, k] / y_mean)
++        # return poisson_loss / (weight_sum * n_outputs)
++        return -1.0
+diff --git a/sklearn/utils/_cython_blas.pyx b/sklearn/utils/_cython_blas.pyx
+index c15e66e..5367e06 100644
+--- a/sklearn/utils/_cython_blas.pyx
++++ b/sklearn/utils/_cython_blas.pyx
+@@ -1,17 +1,16 @@
+ from cython cimport floating
+ 
+-from scipy.linalg.cython_blas cimport sdot, ddot
+-from scipy.linalg.cython_blas cimport sasum, dasum
+-from scipy.linalg.cython_blas cimport saxpy, daxpy
+-from scipy.linalg.cython_blas cimport snrm2, dnrm2
+-from scipy.linalg.cython_blas cimport scopy, dcopy
+-from scipy.linalg.cython_blas cimport sscal, dscal
+-from scipy.linalg.cython_blas cimport srotg, drotg
+-from scipy.linalg.cython_blas cimport srot, drot
+-from scipy.linalg.cython_blas cimport sgemv, dgemv
+-from scipy.linalg.cython_blas cimport sger, dger
+-from scipy.linalg.cython_blas cimport sgemm, dgemm
+-
++# from scipy.linalg.cython_blas cimport sdot, ddot
++# from scipy.linalg.cython_blas cimport sasum, dasum
++# from scipy.linalg.cython_blas cimport saxpy, daxpy
++# from scipy.linalg.cython_blas cimport snrm2, dnrm2
++# from scipy.linalg.cython_blas cimport scopy, dcopy
++# from scipy.linalg.cython_blas cimport sscal, dscal
++# from scipy.linalg.cython_blas cimport srotg, drotg
++# from scipy.linalg.cython_blas cimport srot, drot
++# from scipy.linalg.cython_blas cimport sgemv, dgemv
++# from scipy.linalg.cython_blas cimport sger, dger
++# from scipy.linalg.cython_blas cimport sgemm, dgemm
+ 
+ ################
+ # BLAS Level 1 #
+@@ -20,10 +19,11 @@ from scipy.linalg.cython_blas cimport sgemm, dgemm
+ cdef floating _dot(int n, floating *x, int incx,
+                    floating *y, int incy) nogil:
+     """x.T.y"""
+-    if floating is float:
+-        return sdot(&n, x, &incx, y, &incy)
+-    else:
+-        return ddot(&n, x, &incx, y, &incy)
++    # if floating is float:
++    #     return sdot(&n, x, &incx, y, &incy)
++    # else:
++    #     return ddot(&n, x, &incx, y, &incy)
++    return -1.0
+ 
+ 
+ cpdef _dot_memview(floating[::1] x, floating[::1] y):
+@@ -32,10 +32,11 @@ cpdef _dot_memview(floating[::1] x, floating[::1] y):
+ 
+ cdef floating _asum(int n, floating *x, int incx) nogil:
+     """sum(|x_i|)"""
+-    if floating is float:
+-        return sasum(&n, x, &incx)
+-    else:
+-        return dasum(&n, x, &incx)
++    # if floating is float:
++    #     return sasum(&n, x, &incx)
++    # else:
++    #     return dasum(&n, x, &incx)
++    return -1.0
+ 
+ 
+ cpdef _asum_memview(floating[::1] x):
+@@ -45,10 +46,10 @@ cpdef _asum_memview(floating[::1] x):
+ cdef void _axpy(int n, floating alpha, floating *x, int incx,
+                 floating *y, int incy) nogil:
+     """y := alpha * x + y"""
+-    if floating is float:
+-        saxpy(&n, &alpha, x, &incx, y, &incy)
+-    else:
+-        daxpy(&n, &alpha, x, &incx, y, &incy)
++    # if floating is float:
++    #     saxpy(&n, &alpha, x, &incx, y, &incy)
++    # else:
++    #     daxpy(&n, &alpha, x, &incx, y, &incy)
+ 
+ 
+ cpdef _axpy_memview(floating alpha, floating[::1] x, floating[::1] y):
+@@ -57,10 +58,11 @@ cpdef _axpy_memview(floating alpha, floating[::1] x, floating[::1] y):
+ 
+ cdef floating _nrm2(int n, floating *x, int incx) nogil:
+     """sqrt(sum((x_i)^2))"""
+-    if floating is float:
+-        return snrm2(&n, x, &incx)
+-    else:
+-        return dnrm2(&n, x, &incx)
++    # if floating is float:
++    #     return snrm2(&n, x, &incx)
++    # else:
++    #     return dnrm2(&n, x, &incx)
++    return -1.0
+ 
+ 
+ cpdef _nrm2_memview(floating[::1] x):
+@@ -69,10 +71,10 @@ cpdef _nrm2_memview(floating[::1] x):
+ 
+ cdef void _copy(int n, floating *x, int incx, floating *y, int incy) nogil:
+     """y := x"""
+-    if floating is float:
+-        scopy(&n, x, &incx, y, &incy)
+-    else:
+-        dcopy(&n, x, &incx, y, &incy)
++    # if floating is float:
++    #     scopy(&n, x, &incx, y, &incy)
++    # else:
++    #     dcopy(&n, x, &incx, y, &incy)
+ 
+ 
+ cpdef _copy_memview(floating[::1] x, floating[::1] y):
+@@ -81,10 +83,10 @@ cpdef _copy_memview(floating[::1] x, floating[::1] y):
+ 
+ cdef void _scal(int n, floating alpha, floating *x, int incx) nogil:
+     """x := alpha * x"""
+-    if floating is float:
+-        sscal(&n, &alpha, x, &incx)
+-    else:
+-        dscal(&n, &alpha, x, &incx)
++    # if floating is float:
++    #     sscal(&n, &alpha, x, &incx)
++    # else:
++    #     dscal(&n, &alpha, x, &incx)
+ 
+ 
+ cpdef _scal_memview(floating alpha, floating[::1] x):
+@@ -93,10 +95,10 @@ cpdef _scal_memview(floating alpha, floating[::1] x):
+ 
+ cdef void _rotg(floating *a, floating *b, floating *c, floating *s) nogil:
+     """Generate plane rotation"""
+-    if floating is float:
+-        srotg(a, b, c, s)
+-    else:
+-        drotg(a, b, c, s)
++    # if floating is float:
++    #     srotg(a, b, c, s)
++    # else:
++    #     drotg(a, b, c, s)
+ 
+ 
+ cpdef _rotg_memview(floating a, floating b, floating c, floating s):
+@@ -107,10 +109,10 @@ cpdef _rotg_memview(floating a, floating b, floating c, floating s):
+ cdef void _rot(int n, floating *x, int incx, floating *y, int incy,
+                floating c, floating s) nogil:
+     """Apply plane rotation"""
+-    if floating is float:
+-        srot(&n, x, &incx, y, &incy, &c, &s)
+-    else:
+-        drot(&n, x, &incx, y, &incy, &c, &s)
++    # if floating is float:
++    #     srot(&n, x, &incx, y, &incy, &c, &s)
++    # else:
++    #     drot(&n, x, &incx, y, &incy, &c, &s)
+ 
+ 
+ cpdef _rot_memview(floating[::1] x, floating[::1] y, floating c, floating s):
+@@ -126,17 +128,17 @@ cdef void _gemv(BLAS_Order order, BLAS_Trans ta, int m, int n, floating alpha,
+                 floating beta, floating *y, int incy) nogil:
+     """y := alpha * op(A).x + beta * y"""
+     cdef char ta_ = ta
+-    if order == RowMajor:
+-        ta_ = NoTrans if ta == Trans else Trans
+-        if floating is float:
+-            sgemv(&ta_, &n, &m, &alpha, A, &lda, x, &incx, &beta, y, &incy)
+-        else:
+-            dgemv(&ta_, &n, &m, &alpha, A, &lda, x, &incx, &beta, y, &incy)
+-    else:
+-        if floating is float:
+-            sgemv(&ta_, &m, &n, &alpha, A, &lda, x, &incx, &beta, y, &incy)
+-        else:
+-            dgemv(&ta_, &m, &n, &alpha, A, &lda, x, &incx, &beta, y, &incy)
++    # if order == RowMajor:
++    #     ta_ = NoTrans if ta == Trans else Trans
++    #     if floating is float:
++    #         sgemv(&ta_, &n, &m, &alpha, A, &lda, x, &incx, &beta, y, &incy)
++    #     else:
++    #         dgemv(&ta_, &n, &m, &alpha, A, &lda, x, &incx, &beta, y, &incy)
++    # else:
++    #     if floating is float:
++    #         sgemv(&ta_, &m, &n, &alpha, A, &lda, x, &incx, &beta, y, &incy)
++    #     else:
++    #         dgemv(&ta_, &m, &n, &alpha, A, &lda, x, &incx, &beta, y, &incy)
+ 
+ 
+ cpdef _gemv_memview(BLAS_Trans ta, floating alpha, floating[:, :] A,
+@@ -153,16 +155,16 @@ cpdef _gemv_memview(BLAS_Trans ta, floating alpha, floating[:, :] A,
+ cdef void _ger(BLAS_Order order, int m, int n, floating alpha, floating *x,
+                int incx, floating *y, int incy, floating *A, int lda) nogil:
+     """A := alpha * x.y.T + A"""
+-    if order == RowMajor:
+-        if floating is float:
+-            sger(&n, &m, &alpha, y, &incy, x, &incx, A, &lda)
+-        else:
+-            dger(&n, &m, &alpha, y, &incy, x, &incx, A, &lda)
+-    else:
+-        if floating is float:
+-            sger(&m, &n, &alpha, x, &incx, y, &incy, A, &lda)
+-        else:
+-            dger(&m, &n, &alpha, x, &incx, y, &incy, A, &lda)
++    # if order == RowMajor:
++    #     if floating is float:
++    #         sger(&n, &m, &alpha, y, &incy, x, &incx, A, &lda)
++    #     else:
++    #         dger(&n, &m, &alpha, y, &incy, x, &incx, A, &lda)
++    # else:
++    #     if floating is float:
++    #         sger(&m, &n, &alpha, x, &incx, y, &incy, A, &lda)
++    #     else:
++    #         dger(&m, &n, &alpha, x, &incx, y, &incy, A, &lda)
+ 
+ 
+ cpdef _ger_memview(floating alpha, floating[::1] x, floating[::] y,
+@@ -187,20 +189,20 @@ cdef void _gemm(BLAS_Order order, BLAS_Trans ta, BLAS_Trans tb, int m, int n,
+     cdef:
+         char ta_ = ta
+         char tb_ = tb
+-    if order == RowMajor:
+-        if floating is float:
+-            sgemm(&tb_, &ta_, &n, &m, &k, &alpha, B,
+-                  &ldb, A, &lda, &beta, C, &ldc)
+-        else:
+-            dgemm(&tb_, &ta_, &n, &m, &k, &alpha, B,
+-                  &ldb, A, &lda, &beta, C, &ldc)
+-    else:
+-        if floating is float:
+-            sgemm(&ta_, &tb_, &m, &n, &k, &alpha, A,
+-                  &lda, B, &ldb, &beta, C, &ldc)
+-        else:
+-            dgemm(&ta_, &tb_, &m, &n, &k, &alpha, A,
+-                  &lda, B, &ldb, &beta, C, &ldc)
++    # if order == RowMajor:
++    #     if floating is float:
++    #         sgemm(&tb_, &ta_, &n, &m, &k, &alpha, B,
++    #               &ldb, A, &lda, &beta, C, &ldc)
++    #     else:
++    #         dgemm(&tb_, &ta_, &n, &m, &k, &alpha, B,
++    #               &ldb, A, &lda, &beta, C, &ldc)
++    # else:
++    #     if floating is float:
++    #         sgemm(&ta_, &tb_, &m, &n, &k, &alpha, A,
++    #               &lda, B, &ldb, &beta, C, &ldc)
++    #     else:
++    #         dgemm(&ta_, &tb_, &m, &n, &k, &alpha, A,
++    #               &lda, B, &ldb, &beta, C, &ldc)
+ 
+ 
+ cpdef _gemm_memview(BLAS_Trans ta, BLAS_Trans tb, floating alpha,
+diff --git a/sklearn/utils/arrayfuncs.pyx b/sklearn/utils/arrayfuncs.pyx
+index f494499..91e8f24 100644
+--- a/sklearn/utils/arrayfuncs.pyx
++++ b/sklearn/utils/arrayfuncs.pyx
+@@ -10,7 +10,7 @@ from cython cimport floating
+ from libc.math cimport fabs
+ from libc.float cimport DBL_MAX, FLT_MAX
+ 
+-from ._cython_blas cimport _copy, _rotg, _rot
++# from ._cython_blas cimport _copy, _rotg, _rot
+ 
+ ctypedef np.float64_t DOUBLE
+ 
+@@ -48,34 +48,35 @@ cdef floating _min_pos(floating* X, Py_ssize_t size):
+ #
+ # TODO: put transpose as an option
+ def cholesky_delete(np.ndarray[floating, ndim=2] L, int go_out):
+-   cdef:
+-      int n = L.shape[0]
+-      int m = L.strides[0]
+-      floating c, s
+-      floating *L1
+-      int i
++   # cdef:
++   #    int n = L.shape[0]
++   #    int m = L.strides[0]
++   #    floating c, s
++   #    floating *L1
++   #    int i
+    
+-   if floating is float:
+-      m /= sizeof(float)
+-   else:
+-      m /= sizeof(double)
+-
+-   # delete row go_out
+-   L1 = &L[0, 0] + (go_out * m)
+-   for i in range(go_out, n-1):
+-      _copy(i + 2, L1 + m, 1, L1, 1)
+-      L1 += m
+-
+-   L1 = &L[0, 0] + (go_out * m)
+-   for i in range(go_out, n-1):
+-      _rotg(L1 + i, L1 + i + 1, &c, &s)
+-      if L1[i] < 0:
+-         # Diagonals cannot be negative
+-         L1[i] = fabs(L1[i])
+-         c = -c
+-         s = -s
+-
+-      L1[i + 1] = 0.  # just for cleanup
+-      L1 += m
+-
+-      _rot(n - i - 2, L1 + i, m, L1 + i + 1, m, c, s)
++   # if floating is float:
++   #    m /= sizeof(float)
++   # else:
++   #    m /= sizeof(double)
++
++   # # delete row go_out
++   # L1 = &L[0, 0] + (go_out * m)
++   # for i in range(go_out, n-1):
++   #    _copy(i + 2, L1 + m, 1, L1, 1)
++   #    L1 += m
++
++   # L1 = &L[0, 0] + (go_out * m)
++   # for i in range(go_out, n-1):
++   #    _rotg(L1 + i, L1 + i + 1, &c, &s)
++   #    if L1[i] < 0:
++   #       # Diagonals cannot be negative
++   #       L1[i] = fabs(L1[i])
++   #       c = -c
++   #       s = -s
++
++   #    L1[i + 1] = 0.  # just for cleanup
++   #    L1 += m
++
++   #    _rot(n - i - 2, L1 + i, m, L1 + i + 1, m, c, s)
++   pass
