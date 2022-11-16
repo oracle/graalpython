@@ -119,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -875,11 +874,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
         static long doWstrLength(PString object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("asWideCharNode") @Cached UnicodeAsWideCharNode asWideCharNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode) {
             long sizeofWchar = sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
             PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar);
-            return lenNode.execute(result.getSequenceStorage()) / sizeofWchar;
+            return result.getSequenceStorage().length() / sizeofWchar;
         }
 
         @Specialization(guards = "eq(UNICODE_LENGTH, key)")

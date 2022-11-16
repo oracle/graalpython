@@ -492,7 +492,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
                         @Cached GilNode gil,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached CastToTruffleStringNode castAddress,
                         @Cached PyLongAsIntNode asIntNode,
@@ -500,7 +499,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached TruffleString.FromLongNode fromLongNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
-            int addrLen = lenNode.execute(addr);
+            int addrLen = addr.length();
             if (addrLen < 2 || addrLen > 4) {
                 throw raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
             }

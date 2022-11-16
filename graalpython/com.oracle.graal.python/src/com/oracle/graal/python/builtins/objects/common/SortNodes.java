@@ -274,10 +274,9 @@ public abstract class SortNodes {
         void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
                         @Cached CallContext callContext,
                         @Cached CallNode callNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
-            int len = lenNode.execute(storage);
+            int len = storage.length();
             Object[] array = new Object[len];
             for (int i = 0; i < len; i++) {
                 array[i] = getItemScalarNode.execute(storage, i);

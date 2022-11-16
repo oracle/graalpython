@@ -385,10 +385,9 @@ public final class PythonCextListBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object append(PList list,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return lenNode.execute(list.getSequenceStorage());
+                return list.getSequenceStorage().length();
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;

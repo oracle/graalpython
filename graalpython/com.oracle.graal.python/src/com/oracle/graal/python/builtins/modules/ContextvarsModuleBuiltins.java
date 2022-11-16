@@ -61,7 +61,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__CONTEXTVARS)
@@ -86,12 +85,12 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContextVarNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected Object construct(VirtualFrame frame, Object cls, TruffleString name, PNone def) {
-            return constructDef(frame, cls, name, PContextVar.NO_DEFAULT);
+        protected Object construct(Object cls, TruffleString name, @SuppressWarnings("unused") PNone def) {
+            return constructDef(cls, name, PContextVar.NO_DEFAULT);
         }
 
         @Specialization(guards = "!isPNone(def)")
-        protected Object constructDef(VirtualFrame frame, Object cls, TruffleString name, Object def) {
+        protected Object constructDef(@SuppressWarnings("unused") Object cls, TruffleString name, Object def) {
             return factory().createContextVar(name, def);
         }
     }
@@ -100,7 +99,7 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object construct(VirtualFrame frame, Object cls) {
+        Object construct(@SuppressWarnings("unused") Object cls) {
             return factory().createContextVarsContext();
         }
     }
@@ -109,7 +108,7 @@ public class ContextvarsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TokenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object construct(VirtualFrame frame, Object cls,
+        Object construct(@SuppressWarnings("unused") Object cls,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.TOKEN_ONLY_BY_CONTEXTVAR);
         }

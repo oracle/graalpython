@@ -263,12 +263,11 @@ public final class SetBuiltins extends PythonBuiltins {
         static HashingStorage doBuiltin(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             SequenceStorage sequenceStorage = getSequenceStorageNode.execute(other);
-            int length = lenNode.execute(sequenceStorage);
+            int length = sequenceStorage.length();
             HashingStorage curStorage = storage;
             for (int i = 0; i < length; i++) {
                 Object key = getItemScalarNode.execute(sequenceStorage, i);

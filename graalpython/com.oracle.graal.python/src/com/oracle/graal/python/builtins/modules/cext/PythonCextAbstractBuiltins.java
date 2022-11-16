@@ -946,10 +946,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNativeObject(object)")
-        static Object doNative(VirtualFrame frame, Object object,
+        static Object doNative(Object object,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached PCallCapiFunction callCapiFunction,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_SEQUENCE_CHECK, toSulongNode.execute(object));
         }
     }
@@ -1075,7 +1074,6 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNativeObject(obj)"})
         Object size(VirtualFrame frame, Object obj,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             Object state = IndirectCallContext.enter(frame, this);
@@ -1205,10 +1203,9 @@ public final class PythonCextAbstractBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNativeObject(obj)")
-        static Object doNative(VirtualFrame frame, Object obj,
+        static Object doNative(Object obj,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached PCallCapiFunction callCapiFunction,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached PCallCapiFunction callCapiFunction) {
             return callCapiFunction.call(FUN_PY_TRUFFLE_PY_MAPPING_CHECK, toSulongNode.execute(obj));
         }
     }

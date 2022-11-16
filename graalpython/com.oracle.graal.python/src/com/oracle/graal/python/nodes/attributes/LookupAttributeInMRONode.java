@@ -262,7 +262,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     assumptions = "cachedAttrInMROInfo.assumption")
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass, dylib)") AttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.value;
     }

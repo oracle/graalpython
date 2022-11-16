@@ -2655,7 +2655,6 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
-        private static final double DECIMAL_DIGITS_PER_BIT = 0.3010299956639812; // log10(2)
 
         @Specialization
         static TruffleString doL(long self,

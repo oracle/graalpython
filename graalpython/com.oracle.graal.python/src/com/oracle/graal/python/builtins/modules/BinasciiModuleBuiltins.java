@@ -142,7 +142,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isAscii(value, getCodeRangeNode)", limit = "1")
-        Object nonAsciiString(TruffleString value,
+        Object nonAsciiString(@SuppressWarnings("unused") TruffleString value,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode) {
             throw raise(ValueError, ErrorMessages.STRING_ARG_SHOULD_CONTAIN_ONLY_ASCII);
         }

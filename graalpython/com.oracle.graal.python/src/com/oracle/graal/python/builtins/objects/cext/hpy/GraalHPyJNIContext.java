@@ -397,6 +397,7 @@ final class GraalHPyJNIContext implements TruffleObject {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         boolean isPointer() {
             return true;
         }

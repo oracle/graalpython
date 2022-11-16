@@ -141,6 +141,7 @@ public abstract class CodeNodes {
                             firstlineno, linetable);
         }
 
+        @SuppressWarnings("static-method")
         private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
             CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(data);
             if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars)) {

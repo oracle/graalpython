@@ -153,6 +153,7 @@ public abstract class BufferToTruffleStringNode extends PNodeWithContext {
         }
 
         @ExportMessage
+        @SuppressWarnings("static-method")
         boolean isPointer() {
             return true;
         }

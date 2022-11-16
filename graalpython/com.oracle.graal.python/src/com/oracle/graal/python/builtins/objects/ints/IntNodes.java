@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -192,8 +192,7 @@ public final class IntNodes {
         }
 
         @Specialization(guards = "fitsInLong(data)")
-        static long doArbitraryBytesLong(byte[] data, boolean bigEndian,
-                        @Cached PythonObjectFactory factory) {
+        static long doArbitraryBytesLong(byte[] data, boolean bigEndian) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             BigInteger integer = support.getBigInteger(data, 0);
             return PInt.longValue(integer);

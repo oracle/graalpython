@@ -74,14 +74,13 @@ public abstract class UnpackSequenceNode extends PNodeWithContext {
     static int doUnpackSequence(VirtualFrame frame, int initialStackTop, PSequence sequence, int count,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         CompilerAsserts.partialEvaluationConstant(count);
         int resultStackTop = initialStackTop + count;
         int stackTop = resultStackTop;
         SequenceStorage storage = getSequenceStorageNode.execute(sequence);
-        int len = lenNode.execute(storage);
+        int len = storage.length();
         if (len == count) {
             for (int i = 0; i < count; i++) {
                 frame.setObject(stackTop--, getItemNode.execute(storage, i));

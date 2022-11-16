@@ -345,14 +345,13 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
 
         @Specialization
         static int resize(VirtualFrame frame, PBytes self, long newSizeL,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
             int newSize = asSizeNode.executeExact(frame, newSizeL);
-            int len = lenNode.execute(storage);
+            int len = storage.length();
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
                 smaller[i] = castToByteNode.execute(frame, getItemNode.execute(storage, i));

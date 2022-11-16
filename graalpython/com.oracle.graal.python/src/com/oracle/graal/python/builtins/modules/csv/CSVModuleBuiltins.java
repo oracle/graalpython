@@ -505,13 +505,13 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                         TruffleString.EqualNode equalNode) {
 
             TruffleString delimiter = getChar(T_ATTR_DELIMITER, delimiterObj, T_COMMA, getClassNode, castToStringNode, codePointLengthNode, equalNode, false);
-            boolean doubleQuote = getBoolean(frame, T_ATTR_DOUBLEQUOTE, doublequoteObj, true, isTrueNode);
+            boolean doubleQuote = getBoolean(frame, doublequoteObj, true, isTrueNode);
             TruffleString escapeChar = getChar(T_ATTR_ESCAPECHAR, escapecharObj, T_NOT_SET, getClassNode, castToStringNode, codePointLengthNode, equalNode, true);
             TruffleString lineTerminator = getString(T_ATTR_LINETERMINATOR, lineterminatorObj, T_CRLF, castToStringNode);
             TruffleString quoteChar = getChar(T_ATTR_QUOTECHAR, quotecharObj, T_DOUBLE_QUOTE, getClassNode, castToStringNode, codePointLengthNode, equalNode, true);
             QuoteStyle quoting = getQuotingValue(frame, T_ATTR_QUOTING, quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
-            boolean skipInitialSpace = getBoolean(frame, T_ATTR_SKIPINITIALSPACE, skipinitialspaceObj, false, isTrueNode);
-            boolean strict = getBoolean(frame, T_ATTR_STRICT, strictObj, false, isTrueNode);
+            boolean skipInitialSpace = getBoolean(frame, skipinitialspaceObj, false, isTrueNode);
+            boolean strict = getBoolean(frame, strictObj, false, isTrueNode);
 
             /* validate options */
 
@@ -542,14 +542,14 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
                             skipInitialSpace, strict);
         }
 
-        private Object getAttributeValue(VirtualFrame frame, Object dialect, Object inputValue, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
+        private static Object getAttributeValue(VirtualFrame frame, Object dialect, Object inputValue, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
             if (inputValue != PNone.NO_VALUE) {
                 return inputValue;
             }
             return getAttributeValueFromDialect(frame, dialect, attributeName, getAttributeNode);
         }
 
-        private Object getAttributeValueFromDialect(VirtualFrame frame, Object dialect, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
+        private static Object getAttributeValueFromDialect(VirtualFrame frame, Object dialect, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {
             return getAttributeNode.execute(frame, dialect, attributeName);
         }
 
@@ -586,7 +586,7 @@ public final class CSVModuleBuiltins extends PythonBuiltins {
             return charValue;
         }
 
-        private boolean getBoolean(VirtualFrame frame, TruffleString attributeName, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
+        private static boolean getBoolean(VirtualFrame frame, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
             }

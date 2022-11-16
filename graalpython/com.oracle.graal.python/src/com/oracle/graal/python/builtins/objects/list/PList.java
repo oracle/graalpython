@@ -146,12 +146,11 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            final int len = lenNode.execute(store);
+            final int len = store.length();
             try {
                 normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
             } catch (PException e) {
@@ -165,11 +164,10 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            final int len = lenNode.execute(store);
+            final int len = store.length();
             return index == len;
         } finally {
             gil.release(mustRelease);
@@ -178,12 +176,11 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            final int len = lenNode.execute(store);
+            final int len = store.length();
             try {
                 normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
             } catch (PException e) {

@@ -76,7 +76,6 @@ import java.util.zip.Inflater;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -554,7 +553,6 @@ public class ZlibNodes {
         @Specialization
         byte[] doit(ZLibCompObject.JavaZlibCompObject self, byte[] bytes, int maxLength, int bufSize, PythonObjectFactory factory,
                         @Cached PRaiseNode raise,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
             int maxLen = maxLength == 0 ? Integer.MAX_VALUE : maxLength;
             byte[] result = new byte[Math.min(maxLen, bufSize)];
@@ -586,7 +584,7 @@ public class ZlibNodes {
             }
             self.setEof(isFinished(inflater));
             byte[] unusedDataBytes = toBytesNode.execute(self.getUnusedData());
-            int unconsumedTailLen = lenNode.execute(self.getUnconsumedTail().getSequenceStorage());
+            int unconsumedTailLen = self.getUnconsumedTail().getSequenceStorage().length();
             saveUnconsumedInput(self, bytes, unusedDataBytes, unconsumedTailLen, factory);
             return baos.toByteArray();
         }

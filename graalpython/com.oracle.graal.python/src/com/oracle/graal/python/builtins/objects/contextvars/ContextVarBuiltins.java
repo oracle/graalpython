@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -62,13 +61,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ContextVar)
 public final class ContextVarBuiltins extends PythonBuiltins {
-
-    private static final TruffleString T_VALUE = tsLiteral("value");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -98,7 +93,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object set(VirtualFrame frame, PContextVar self, Object value) {
+        Object set(PContextVar self, Object value) {
             PythonContext.PythonThreadState threadState = getContext().getThreadState(getLanguage());
             Object oldValue = self.getValue(threadState);
             self.setValue(threadState, value);
@@ -128,7 +123,7 @@ public final class ContextVarBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doError(PContextVar self, Object token,
+        Object doError(@SuppressWarnings("unused") PContextVar self, Object token,
                         @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.INSTANCE_OF_TOKEN_EXPECTED, token);
         }

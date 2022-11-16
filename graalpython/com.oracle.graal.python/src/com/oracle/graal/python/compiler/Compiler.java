@@ -56,7 +56,6 @@ import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_STACK;
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_STACK;
 import static com.oracle.graal.python.compiler.OpCodes.COPY_DICT_WITHOUT_KEYS;
-import static com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_ATTR;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_DEREF;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_FAST;
@@ -154,6 +153,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
@@ -225,6 +225,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         this.errorCallback = errorCallback;
     }
 
+    @SuppressWarnings("hiding")
     public CompilationUnit compile(ModTy mod, EnumSet<Flags> flags, int optimizationLevel) {
         this.flags = flags;
         if (mod instanceof ModTy.Module) {
@@ -619,7 +620,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         addNameVariableOpcode(ctx, addObject(unit.names, mangled));
     }
 
-    private <T> int addObject(HashMap<T, Integer> dict, T o) {
+    private static <T> int addObject(HashMap<T, Integer> dict, T o) {
         Integer v = dict.get(o);
         if (v == null) {
             v = dict.size();
@@ -852,7 +853,7 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     private void makeClosure(CodeUnit code, int makeFunctionFlags) {
-        int flags = makeFunctionFlags;
+        int newFlags = makeFunctionFlags;
         if (code.freevars.length > 0) {
             // add the closure
             for (TruffleString tfv : code.freevars) {
@@ -867,10 +868,10 @@ public class Compiler implements SSTreeVisitor<Void> {
                 addOp(LOAD_CLOSURE, arg);
             }
             addOp(CLOSURE_FROM_STACK, code.freevars.length);
-            flags |= OpCodes.MakeFunctionFlags.HAS_CLOSURE;
+            newFlags |= OpCodes.MakeFunctionFlags.HAS_CLOSURE;
         }
         addObject(unit.constants, code.qualname);
-        addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) flags});
+        addOp(MAKE_FUNCTION, addObject(unit.constants, code), new byte[]{(byte) newFlags});
     }
 
     // visiting
@@ -2554,11 +2555,11 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    private boolean wildcardCheck(PatternTy pattern) {
+    private static boolean wildcardCheck(PatternTy pattern) {
         return pattern instanceof PatternTy.MatchAs && ((PatternTy.MatchAs) pattern).name == null;
     }
 
-    private boolean wildcardStarCheck(PatternTy pattern) {
+    private static boolean wildcardStarCheck(PatternTy pattern) {
         return pattern instanceof PatternTy.MatchStar && ((PatternTy.MatchStar) pattern).name == null;
     }
 
@@ -2635,7 +2636,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         } else if (starWildcard) {
             patternHelperSequenceSubscr(node.patterns, star, pc);
         } else {
-            patternHelperSequenceUnpack(node.patterns, star, pc);
+            patternHelperSequenceUnpack(node.patterns, pc);
         }
         return null;
     }
@@ -2682,7 +2683,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         pc.allowIrrefutable = allowIrrefutable;
     }
 
-    private void patternHelperSequenceUnpack(PatternTy[] patterns, int star, PatternContext pc) {
+    private void patternHelperSequenceUnpack(PatternTy[] patterns, PatternContext pc) {
         patternUnpackHelper(patterns);
         int size = lengthOrZero(patterns);
         // We've now got a bunch of new subjects on the stack. They need to remain
@@ -2717,7 +2718,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
-    private int lengthOrZero(Object[] p) {
+    private static int lengthOrZero(Object[] p) {
         return p == null ? 0 : p.length;
     }
 
@@ -2827,6 +2828,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
     }
 
+    @SuppressWarnings("unused")
     public Void visit(PatternTy.MatchMapping node, PatternContext pc) {
         ExprTy[] keys = node.keys;
         PatternTy[] patterns = node.patterns;
@@ -2930,6 +2932,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
+    @SuppressWarnings("unused")
     public Void visit(PatternTy.MatchOr node, PatternContext pc) {
         Block end = new Block();
         int size = node.patterns.length;
@@ -3147,7 +3150,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         unit.useNextBlock(new Block());
     }
 
-    private void ensureFailPop(int n, PatternContext pc) {
+    private static void ensureFailPop(int n, PatternContext pc) {
         int size = n + 1;
         if (pc.failPop != null && size <= pc.failPop.size()) {
             return;

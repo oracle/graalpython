@@ -158,7 +158,6 @@ public abstract class CExtParseArgumentsNode {
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached("createConvertArgNodes(cachedFormat, lengthNode)") ConvertSingleArgNode[] convertArgNodes,
                         @Cached HashingCollectionNodes.LenNode kwdsLenNode,
-                        @Cached SequenceStorageNodes.LenNode argvLenNode,
                         @Cached PRaiseNativeNode raiseNode,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode eqNode) {
             try {
@@ -172,7 +171,7 @@ public abstract class CExtParseArgumentsNode {
                 while (i < length) {
                     i = convertArgNodes[i].execute(state, kwdsDict, format, i, length, kwdnames, varargs, codepointAtIndexNode);
                 }
-                checkExcessArgs(argv, argvLenNode, state, raiseNode);
+                checkExcessArgs(argv, state, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -186,7 +185,6 @@ public abstract class CExtParseArgumentsNode {
                         @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
-                        @Cached SequenceStorageNodes.LenNode argvLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 PDict kwdsDict = null;
@@ -199,15 +197,15 @@ public abstract class CExtParseArgumentsNode {
                 while (i < length) {
                     i = convertArgNode.execute(state, kwdsDict, format, i, length, kwdnames, varargs, codepointAtIndexNode);
                 }
-                checkExcessArgs(argv, argvLenNode, state, raiseNode);
+                checkExcessArgs(argv, state, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
             }
         }
 
-        private static void checkExcessArgs(PTuple argv, SequenceStorageNodes.LenNode argvLenNode, ParserState state, PRaiseNativeNode raiseNode) {
-            int argvLen = argvLenNode.execute(argv.getSequenceStorage());
+        private static void checkExcessArgs(PTuple argv, ParserState state, PRaiseNativeNode raiseNode) {
+            int argvLen = argv.getSequenceStorage().length();
             if (argvLen > state.v.argnum) {
                 raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, state.v.argnum, argvLen);
                 throw ParseArgumentsException.raise();
@@ -265,7 +263,6 @@ public abstract class CExtParseArgumentsNode {
         @Specialization
         int doArg(ParserState state, Object kwds, TruffleString format, int formatIdx, int formatLength, Object kwdnames, Object varargs, TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached AsNativeDoubleNode asDoubleNode,
                         @Cached AsNativeComplexNode asComplexNode,
@@ -401,7 +398,7 @@ public abstract class CExtParseArgumentsNode {
                                         s = ((PByteArray) arg).getSequenceStorage();
                                     }
 
-                                    if (s != null && lenNode.execute(s) == 1) {
+                                    if (s != null && s.length() == 1) {
                                         writeOutVarNode.writeInt8(varargs, getItemNode.execute(s, 0));
                                     } else {
                                         throw raise(raiseNode, TypeError, ErrorMessages.MUST_BE_BYTE_STRING_LEGTH1_NOT_P, arg);
@@ -841,14 +838,13 @@ public abstract class CExtParseArgumentsNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "c == FORMAT_PAR_CLOSE")
         static void doParClose(ParserState state, Object kwds, int c, Object kwdnames,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
             if (state.v.prev == null) {
                 CompilerDirectives.transferToInterpreter();
                 raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, ErrorMessages.LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG);
                 throw ParseArgumentsException.raise();
             }
-            int len = lenNode.execute(state.v.argv.getSequenceStorage());
+            int len = state.v.argv.getSequenceStorage().length();
             // Only check for excess. Too few arguments are checked when obtaining them
             if (len > state.v.argnum) {
                 throw raise(raiseNode, TypeError, ErrorMessages.MUST_BE_SEQ_OF_LENGTH_D_NOT_D, state.v.argnum, len);

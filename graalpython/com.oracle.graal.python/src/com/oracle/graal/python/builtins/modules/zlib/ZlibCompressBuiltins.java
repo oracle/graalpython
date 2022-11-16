@@ -98,12 +98,11 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isInitialized()")
         PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(data.getSequenceStorage());
-                int len = lenNode.execute(data.getSequenceStorage());
+                int len = data.getSequenceStorage().length();
                 return factory().createBytes(compressObj.execute(self, PythonContext.get(this), bytes, len));
             }
         }

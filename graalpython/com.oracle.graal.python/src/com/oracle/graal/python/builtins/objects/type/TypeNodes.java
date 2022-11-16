@@ -392,7 +392,7 @@ public abstract class TypeNodes {
 
             // flags are inherited
             MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
-            int n = SequenceStorageNodes.LenNode.getUncached().execute(mroStorage);
+            int n = mroStorage.length();
             for (int i = 0; i < n; i++) {
                 Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
                 if (mroEntry instanceof PythonBuiltinClass) {
@@ -1847,7 +1847,6 @@ public abstract class TypeNodes {
         @Child private ReadAttributeFromObjectNode readAttr;
         @Child private CastToJavaIntExactNode castToInt;
         @Child private CastToListNode castToList;
-        @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
         @Child private GetMroNode getMroNode;
@@ -1979,7 +1978,7 @@ public abstract class TypeNodes {
                     slotsObject = getCastToListNode().execute(frame, slots[0]);
                     slotsStorage = ((PList) slotsObject).getSequenceStorage();
                 }
-                int slotlen = getListLenNode().execute(slotsStorage);
+                int slotlen = slotsStorage.length();
 
                 if (slotlen > 0 && hasItemSize) {
                     throw raise.raise(TypeError, ErrorMessages.NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S, base);
@@ -2151,14 +2150,6 @@ public abstract class TypeNodes {
                 appendNode = insert(SequenceStorageNodes.AppendNode.create());
             }
             return appendNode;
-        }
-
-        private SequenceStorageNodes.LenNode getListLenNode() {
-            if (slotLenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                slotLenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return slotLenNode;
         }
 
         /**

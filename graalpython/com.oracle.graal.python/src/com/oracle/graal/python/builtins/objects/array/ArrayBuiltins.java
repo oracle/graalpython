@@ -793,10 +793,9 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object extend(VirtualFrame frame, PArray self, PSequence value,
                         @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(value);
-            int storageLength = lenNode.execute(storage);
+            int storageLength = storage.length();
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), storageLength);
                 if (newLength != self.getLength()) {
@@ -1020,12 +1019,11 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object fromlist(VirtualFrame frame, PArray self, PList list,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             try {
                 SequenceStorage storage = getSequenceStorageNode.execute(list);
-                int length = lenNode.execute(storage);
+                int length = storage.length();
                 int newLength = PythonUtils.addExact(self.getLength(), length);
                 self.checkCanResize(this);
                 self.resizeStorage(newLength);

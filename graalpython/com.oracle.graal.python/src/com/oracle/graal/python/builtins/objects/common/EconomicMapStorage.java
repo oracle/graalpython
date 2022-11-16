@@ -245,7 +245,6 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     Object forEachUntyped(ForEachNode<Object> node, Object arg,
-                    @CachedLibrary("this") HashingStorageLibrary thisLib,
                     @Shared("selfEntriesLoop") @Cached LoopConditionProfile loopProfile) {
         return map.forEachUntyped(node, arg, loopProfile);
     }

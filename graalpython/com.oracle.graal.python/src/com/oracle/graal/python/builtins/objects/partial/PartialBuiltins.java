@@ -216,10 +216,9 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached PyDictCheckExactNode dictCheckExactNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            if (lenNode.execute(state.getSequenceStorage()) != 4) {
+            if (state.getSequenceStorage().length() != 4) {
                 throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 

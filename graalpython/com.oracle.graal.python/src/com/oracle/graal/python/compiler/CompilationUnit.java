@@ -141,16 +141,16 @@ public final class CompilationUnit {
             cellvars.put("__class__", 0);
         }
 
-        int[] cell2arg = new int[cellvars.size()];
+        int[] cell2argValue = new int[cellvars.size()];
         boolean hasArgCell = false;
-        Arrays.fill(cell2arg, -1);
+        Arrays.fill(cell2argValue, -1);
         for (String cellvar : cellvars.keySet()) {
             if (varnames.containsKey(cellvar)) {
-                cell2arg[cellvars.get(cellvar)] = varnames.get(cellvar);
+                cell2argValue[cellvars.get(cellvar)] = varnames.get(cellvar);
                 hasArgCell = true;
             }
         }
-        this.cell2arg = hasArgCell ? cell2arg : null;
+        this.cell2arg = hasArgCell ? cell2argValue : null;
         freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), cellvars.size());
     }
 
@@ -325,7 +325,7 @@ public final class CompilationUnit {
                         finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
     }
 
-    private void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
+    private static void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
         if (start == end) {
             // Don't emit empty ranges. TODO don't emit the block at all if not necessary
             return;
@@ -373,7 +373,7 @@ public final class CompilationUnit {
         }
     }
 
-    private void computeStackLevels(Block block, int level, Deque<Block> todo) {
+    private static void computeStackLevels(Block block, int level, Deque<Block> todo) {
         if (block.stackLevel == -1) {
             block.stackLevel = level;
             todo.push(block);
@@ -419,7 +419,7 @@ public final class CompilationUnit {
         } while (repeat);
     }
 
-    private void emitBytecode(Instruction instr, ByteArrayOutputStream buf, SourceMap.Builder sourceMapBuilder) throws IllegalStateException {
+    private static void emitBytecode(Instruction instr, ByteArrayOutputStream buf, SourceMap.Builder sourceMapBuilder) throws IllegalStateException {
         OpCodes opcode = instr.opcode;
         // Pre-quicken constant loads
         if (opcode == OpCodes.LOAD_BYTE) {
@@ -458,7 +458,7 @@ public final class CompilationUnit {
         }
     }
 
-    private <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, int offset, com.oracle.graal.python.util.Function<T, U> convertor) {
+    private static <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, int offset, com.oracle.graal.python.util.Function<T, U> convertor) {
         U[] ary = Arrays.copyOf(template, map.size());
         for (Map.Entry<T, Integer> e : map.entrySet()) {
             ary[e.getValue() - offset] = convertor.apply(e.getKey());
@@ -466,15 +466,15 @@ public final class CompilationUnit {
         return ary;
     }
 
-    private <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template) {
+    private static <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template) {
         return orderedKeys(map, template, 0, i -> i);
     }
 
-    private <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, com.oracle.graal.python.util.Function<T, U> convertor) {
+    private static <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, com.oracle.graal.python.util.Function<T, U> convertor) {
         return orderedKeys(map, template, 0, convertor);
     }
 
-    private long[] orderedLong(HashMap<Long, Integer> map) {
+    private static long[] orderedLong(HashMap<Long, Integer> map) {
         long[] ary = new long[map.size()];
         for (Map.Entry<Long, Integer> e : map.entrySet()) {
             ary[e.getValue()] = e.getKey();

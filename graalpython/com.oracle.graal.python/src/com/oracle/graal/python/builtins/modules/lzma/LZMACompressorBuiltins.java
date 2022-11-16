@@ -165,10 +165,9 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doBytes(LZMACompressor self, PBytesLike data,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("c") @Cached LZMANodes.CompressNode compress) {
             byte[] bytes = toBytes.execute(data.getSequenceStorage());
-            int len = lenNode.execute(data.getSequenceStorage());
+            int len = data.getSequenceStorage().length();
             return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 

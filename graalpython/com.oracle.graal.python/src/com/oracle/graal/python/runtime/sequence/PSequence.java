@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -155,11 +155,10 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public long getArraySize(@Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return lenNode.execute(getSequenceStorageNode.execute(this));
+            return getSequenceStorageNode.execute(this).length();
         } finally {
             gil.release(mustRelease);
         }

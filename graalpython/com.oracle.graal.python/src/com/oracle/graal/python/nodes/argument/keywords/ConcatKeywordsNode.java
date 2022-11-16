@@ -144,14 +144,13 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ListNodes.FastConstructListNode asList,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
                         @Cached PyObjectGetItem getItem) {
             HashingStorage result = dest;
             try {
                 PSequence keys = asList.execute(frame, callKeys.execute(frame, other, T_KEYS));
                 SequenceStorage keysStorage = getSequenceStorage.execute(keys);
-                int keysLen = lenNode.execute(keysStorage);
+                int keysLen = keysStorage.length();
                 for (int i = 0; i < keysLen; i++) {
                     Object key = sequenceGetItem.execute(keysStorage, i);
                     if (hlib.hasKey(result, key)) {

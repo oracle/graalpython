@@ -116,7 +116,6 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
         TruffleString str(VirtualFrame frame, PBaseException self,
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached SequenceStorageNodes.GetItemNode getitemNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             if (self.getExceptionAttributes() == null) {
@@ -131,7 +130,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             final TruffleString encoding = strNode.execute(frame, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
             final TruffleString reason = strNode.execute(frame, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
-            if (start < lenNode.execute(object.getSequenceStorage()) && end == start + 1) {
+            if (start < object.getSequenceStorage().length() && end == start + 1) {
                 final int b = getitemNode.executeKnownInt(object.getSequenceStorage(), 0);
                 String bStr = PythonUtils.formatJString("%02x", b);
                 return simpleTruffleStringFormatNode.format("'%s' codec can't decode byte 0x%s in position %d: %s", encoding, bStr, start, reason);

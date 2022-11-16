@@ -184,7 +184,7 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnableNode extends PythonTernaryBuiltinNode {
         @Specialization
-        static PNone doit(PythonModule self, Object file, Object allThreads) {
+        static PNone doit(PythonModule self, @SuppressWarnings("unused") Object file, @SuppressWarnings("unused") Object allThreads) {
             ((FaulthandlerModuleBuiltins) self.getBuiltins()).enabled = true;
             return PNone.NONE;
         }

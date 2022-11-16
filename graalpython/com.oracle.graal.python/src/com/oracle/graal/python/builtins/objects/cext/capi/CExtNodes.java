@@ -2896,13 +2896,12 @@ public abstract class CExtNodes {
         @Specialization
         static Object doSingleContext(Object cls, NativeMember nativeMemberName, Object managedMemberName,
                         @Cached GetMroStorageNode getMroNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
                         @Cached GetTypeMemberNode getTypeMemberNode) {
 
             MroSequenceStorage mroStorage = getMroNode.execute(cls);
-            int n = lenNode.execute(mroStorage);
+            int n = mroStorage.length();
 
             for (int i = 0; i < n; i++) {
                 PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);

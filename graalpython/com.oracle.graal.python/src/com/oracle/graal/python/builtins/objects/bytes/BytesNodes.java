@@ -293,11 +293,10 @@ public abstract class BytesNodes {
         int find(SequenceStorage self, int len1, PBytesLike sub, int start, int end,
                         @Cached ConditionProfile earlyExit1,
                         @Cached ConditionProfile earlyExit2,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
             byte[] haystack = getBytes.execute(self);
             byte[] needle = getBytes.execute(sub.getSequenceStorage());
-            int len2 = lenNode.execute(sub.getSequenceStorage());
+            int len2 = sub.getSequenceStorage().length();
 
             if (earlyExit1.profile(len2 == 0 && start <= len1)) {
                 return emptySubIndex(start, end);
@@ -424,10 +423,9 @@ public abstract class BytesNodes {
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private CastToByteNode castToByteNode;
-        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public byte[] execute(VirtualFrame frame, SequenceStorage storage) {
-            int len = getLenNode().execute(storage);
+            int len = storage.length();
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
                 Object item = getGetItemNode().execute(storage, i);
@@ -450,14 +448,6 @@ public abstract class BytesNodes {
                 castToByteNode = insert(CastToByteNode.create());
             }
             return castToByteNode;
-        }
-
-        private SequenceStorageNodes.LenNode getLenNode() {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode;
         }
 
         public static FromSequenceStorageNode create() {
@@ -526,10 +516,9 @@ public abstract class BytesNodes {
         @Specialization
         static int cmp(PBytesLike left, PBytesLike right,
                         @Cached SequenceStorageNodes.GetItemNode getLeftItemNode,
-                        @Cached SequenceStorageNodes.GetItemNode getRightItemNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            int llen = lenNode.execute(left.getSequenceStorage());
-            int rlen = lenNode.execute(right.getSequenceStorage());
+                        @Cached SequenceStorageNodes.GetItemNode getRightItemNode) {
+            int llen = left.getSequenceStorage().length();
+            int rlen = right.getSequenceStorage().length();
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 int a = getLeftItemNode.executeKnownInt(left.getSequenceStorage(), i);
                 int b = getRightItemNode.executeKnownInt(right.getSequenceStorage(), i);

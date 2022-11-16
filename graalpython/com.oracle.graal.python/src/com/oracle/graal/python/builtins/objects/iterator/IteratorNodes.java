@@ -245,7 +245,7 @@ public abstract class IteratorNodes {
         }
 
         @Fallback
-        static SequenceStorage doOthers(PBuiltinIterator it) {
+        static SequenceStorage doOthers(@SuppressWarnings("unused") PBuiltinIterator it) {
             return null;
         }
     }

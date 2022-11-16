@@ -46,7 +46,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -96,16 +95,14 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
     static int doList(PList object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(object.getSequenceStorage());
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+        return object.getSequenceStorage().length();
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
     static int doTuple(PTuple object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(object.getSequenceStorage());
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+        return object.getSequenceStorage().length();
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")

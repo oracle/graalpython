@@ -76,7 +76,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -632,7 +631,7 @@ public final class CertUtils {
 
     @TruffleBoundary
     static PrivateKey getPrivateKey(PythonContext context, BufferedReader reader, char[] password, X509Certificate cert)
-                    throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NeedsPasswordException {
+                    throws NeedsPasswordException {
         PEMParser pemParser = new PEMParser(reader);
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
         converter.setProvider(BOUNCYCASTLE_PROVIDER);

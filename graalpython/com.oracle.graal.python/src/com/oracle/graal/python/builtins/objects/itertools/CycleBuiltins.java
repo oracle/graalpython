@@ -137,21 +137,25 @@ public final class CycleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
+        @SuppressWarnings("static-method")
         private boolean isEmpty(List<Object> l) {
             return l.isEmpty();
         }
 
         @TruffleBoundary
+        @SuppressWarnings("static-method")
         private Object add(List<Object> l, Object item) {
             return l.add(item);
         }
 
         @TruffleBoundary
+        @SuppressWarnings("static-method")
         private Object get(List<Object> l, int idx) {
             return l.get(idx);
         }
 
         @TruffleBoundary
+        @SuppressWarnings("static-method")
         private int size(List<Object> l) {
             return l.size();
         }

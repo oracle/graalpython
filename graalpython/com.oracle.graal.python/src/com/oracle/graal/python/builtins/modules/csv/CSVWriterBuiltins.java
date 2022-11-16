@@ -221,7 +221,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean needsQuotes(CSVDialect dialect, TruffleString field, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode, TruffleStringIterator.NextNode nextNode,
+        private static boolean needsQuotes(CSVDialect dialect, TruffleString field, TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode, TruffleStringIterator.NextNode nextNode,
                         TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
             if (field == null) {
                 return false;
@@ -240,7 +240,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             return false;
         }
 
-        private boolean needsEscape(CSVDialect dialect, int codePoint, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
+        private static boolean needsEscape(CSVDialect dialect, int codePoint, TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
             return codePoint == dialect.delimiterCodePoint || codePoint == dialect.escapeCharCodePoint || codePoint == dialect.quoteCharCodePoint ||
                             byteIndexOfCodePointNode.execute(dialect.lineTerminator, codePoint, 0, dialect.lineTerminator.byteLength(TS_ENCODING), TS_ENCODING) >= 0;
         }

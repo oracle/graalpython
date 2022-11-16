@@ -88,7 +88,6 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
     @ImportStatic(PGuards.class)
     public abstract static class CastToListNode extends Node implements IndirectCallNode {
-        @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -167,11 +166,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         }
 
         protected int getLength(PTuple t) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(t.getSequenceStorage());
+            return t.getSequenceStorage().length();
         }
 
         protected SequenceStorageNodes.GetItemNode getGetItemNode() {

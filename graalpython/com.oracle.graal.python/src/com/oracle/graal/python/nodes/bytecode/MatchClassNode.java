@@ -137,7 +137,8 @@ public abstract class MatchClassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private void getArgs(VirtualFrame frame, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs, PyObjectGetAttr getAttr,
+    private static void getArgs(VirtualFrame frame, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs,
+                    PyObjectGetAttr getAttr,
                     StringBuiltins.EqNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(nargs);
         for (int i = 0; i < nargs; i++) {
@@ -151,7 +152,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private void getKwArgs(VirtualFrame frame, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, PyObjectGetAttr getAttr,
+    private static void getKwArgs(VirtualFrame frame, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, PyObjectGetAttr getAttr,
                     StringBuiltins.EqNode eqStrNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(kwArgs);
         for (int i = 0; i < kwArgs.length; i++) {
@@ -162,7 +163,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
         }
     }
 
-    private void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
+    private static void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
         if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
             throw raise.raise(TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
@@ -170,7 +171,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.EqNode eqNode) {
+    private static boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.EqNode eqNode) {
         for (int i = 0; i < seen.length; i++) {
             if (seen[i] != null && (boolean) eqNode.execute(frame, seen[i], name)) {
                 return true;

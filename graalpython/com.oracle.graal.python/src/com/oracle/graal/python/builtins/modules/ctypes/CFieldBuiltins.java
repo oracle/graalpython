@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -105,7 +104,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -551,11 +549,10 @@ public class CFieldBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "setfunc == c_set")
         Object c_set(FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
-                        @Cached GetInternalByteArrayNode getBytes,
-                        @Cached LenNode lenNode) {
+                        @Cached GetInternalByteArrayNode getBytes) {
             if (PGuards.isBytes(value)) {
                 PBytesLike bytes = (PBytesLike) value;
-                if (lenNode.execute(bytes.getSequenceStorage()) == 1) {
+                if (bytes.getSequenceStorage().length() == 1) {
                     byte[] b = getBytes.execute(bytes.getSequenceStorage());
                     ptr.writePrimitive(setfunc.ffiType, b[0]);
                     return PNone.NONE;
@@ -1053,7 +1050,7 @@ public class CFieldBuiltins extends PythonBuiltins {
             }
             if (ilib.isPointer(p)) {
                 try {
-                    return factory.createNativeVoidPtr((TruffleObject) p, ilib.asPointer(p));
+                    return factory.createNativeVoidPtr(p, ilib.asPointer(p));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }

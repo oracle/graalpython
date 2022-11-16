@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -101,7 +102,6 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         public static final Object STOP_MARKER = new Object();
         private final boolean throwStopIteration;
-        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
 
         NextNode() {
             this.throwStopIteration = true;
@@ -161,7 +161,8 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PIntRangeIterator self) {
+        Object next(PIntRangeIterator self,
+                        @Shared("next") @Cached ConditionProfile profile) {
             if (profile.profile(self.hasNextInt())) {
                 return self.nextInt();
             }
@@ -224,7 +225,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         Object next(PDictView.PBaseDictIterator<?> self,
                         @Cached ConditionProfile sizeChanged,
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLibrary,
-                        @Cached ConditionProfile profile) {
+                        @Shared("next") @Cached ConditionProfile profile) {
             if (profile.profile(self.hasNext())) {
                 if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
                     throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
@@ -237,10 +238,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         Object next(PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = getStorage.execute(self.getPSequence());
-            if (self.getIndex() < lenNode.execute(s)) {
+            if (self.getIndex() < s.length()) {
                 return getItemNode.execute(s, self.index++);
             }
             return stopIteration(self);
