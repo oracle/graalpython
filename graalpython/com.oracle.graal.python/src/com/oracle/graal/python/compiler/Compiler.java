@@ -55,6 +55,7 @@ import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_COLLECTION
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_ADD_STACK;
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_COLLECTION;
 import static com.oracle.graal.python.compiler.OpCodes.COLLECTION_FROM_STACK;
+import static com.oracle.graal.python.compiler.OpCodes.COPY_DICT_WITHOUT_KEYS;
 import static com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_ATTR;
 import static com.oracle.graal.python.compiler.OpCodes.DELETE_DEREF;
@@ -107,6 +108,8 @@ import static com.oracle.graal.python.compiler.OpCodes.MAKE_FUNCTION;
 import static com.oracle.graal.python.compiler.OpCodes.MAKE_KEYWORD;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_CLASS;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_EXC_OR_JUMP;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_KEYS;
+import static com.oracle.graal.python.compiler.OpCodes.MATCH_MAPPING;
 import static com.oracle.graal.python.compiler.OpCodes.MATCH_SEQUENCE;
 import static com.oracle.graal.python.compiler.OpCodes.NOP;
 import static com.oracle.graal.python.compiler.OpCodes.POP_AND_JUMP_IF_FALSE;
@@ -141,7 +144,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -152,6 +154,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.ErrorCallback.ErrorType;
@@ -185,6 +188,7 @@ import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1803,17 +1807,10 @@ public class Compiler implements SSTreeVisitor<Void> {
             // Basic constant folding for unary negation
             if (node.op == UnaryOpTy.USub && node.operand instanceof ExprTy.Constant) {
                 ExprTy.Constant c = (ExprTy.Constant) node.operand;
-                if (c.value.kind == ConstantValue.Kind.LONG) {
-                    long v = c.value.getLong();
-                    if (v != Long.MIN_VALUE) {
-                        return visit(new ExprTy.Constant(ConstantValue.ofLong(-v), null, c.getSourceRange()));
-                    } else {
-                        return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(BigInteger.valueOf(v).negate()), null, c.getSourceRange()));
-                    }
-                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
-                    return visit(new ExprTy.Constant(ConstantValue.ofDouble(-c.value.getDouble()), null, c.getSourceRange()));
-                } else if (c.value.kind == ConstantValue.Kind.BIGINTEGER) {
-                    return visit(new ExprTy.Constant(ConstantValue.ofBigInteger(c.value.getBigInteger().negate()), null, c.getSourceRange()));
+                if (c.value.kind == ConstantValue.Kind.BIGINTEGER || c.value.kind == ConstantValue.Kind.DOUBLE || c.value.kind == ConstantValue.Kind.LONG ||
+                                c.value.kind == ConstantValue.Kind.COMPLEX) {
+                    ConstantValue cv = c.value.negate();
+                    return visit(new ExprTy.Constant(cv, null, c.getSourceRange()));
                 }
             }
             node.operand.accept(this);
@@ -2752,7 +2749,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         checkForbiddenName(n, ExprContextTy.Store);
         // Can't assign to the same name twice:
         if (pc.stores.contains(n)) {
-            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name '%s' in pattern", n);
+            duplicateStoreError(n);
         }
         // Rotate this object underneath any items we need to preserve:
         pc.stores.add(n);
@@ -2831,11 +2828,222 @@ public class Compiler implements SSTreeVisitor<Void> {
     }
 
     public Void visit(PatternTy.MatchMapping node, PatternContext pc) {
-        return emitNotImplemented("match mapping");
+        ExprTy[] keys = node.keys;
+        PatternTy[] patterns = node.patterns;
+        int size = lengthOrZero(keys);
+        int npatterns = lengthOrZero(patterns);
+        if (size != npatterns) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "keys (%d) / patterns (%d) length mismatch in mapping pattern", size, npatterns);
+        }
+        // We have a double-star target if "rest" is set
+        String starTarget = node.rest;
+        // We need to keep the subject on top during the mapping and length checks:
+        pc.onTop++;
+        addOp(MATCH_MAPPING);
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+
+        if (size == 0 && starTarget == null) {
+            pc.onTop--;
+            addOp(POP_TOP);
+            return null;
+        }
+        if (Integer.MAX_VALUE < size - 1) {
+            errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "too many sub-patterns in mapping pattern");
+        }
+        if (size > 0) {
+            // If the pattern has any keys in it, perform a length check:
+            addOp(GET_LEN);
+            addLoadNumber(size);
+            addCompareOp(CmpOpTy.GtE);
+            jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        }
+        // Collect all of the keys into a tuple for MATCH_KEYS and
+        // COPY_DICT_WITHOUT_KEYS. They can either be dotted names or literals:
+        Collector collector = new Collector(CollectionBits.KIND_OBJECT, 0);
+        List<Object> seen = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            ExprTy key = keys[i];
+            if (key == null) {
+                setLocation(patterns[i]);
+                errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "can't use NULL keys in MatchMapping (set 'rest' parameter instead)");
+            }
+
+            if (key instanceof ExprTy.Attribute) {
+                key.accept(this);
+            } else {
+                ConstantValue constantValue = null;
+                if (key instanceof ExprTy.UnaryOp || key instanceof ExprTy.BinOp) {
+                    constantValue = foldConstantOp(key);
+                } else if (key instanceof ExprTy.Constant) {
+                    constantValue = ((ExprTy.Constant) key).value;
+                } else {
+                    errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern keys may only match literals and attribute lookups");
+                }
+                assert constantValue != null;
+                Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue, PythonObjectFactory.getUncached());
+                for (Object o : seen) {
+                    // need python like equal - e.g. 1 equals True
+                    if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, o, pythonValue)) {
+                        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "mapping pattern checks duplicate key (%s)", pythonValue);
+                    }
+                }
+                seen.add(pythonValue);
+                addConstant(constantValue);
+            }
+            collector.appendItem();
+        }
+        collector.finishCollection();
+
+        addOp(MATCH_KEYS);
+        // There's now an Object[] array of keys and a tuple of values on top of the subject:
+        pc.onTop += 2;
+        jumpToFailPop(POP_AND_JUMP_IF_FALSE, pc);
+        // So far so good. Use that tuple of values on the stack to match
+        // sub-patterns against:
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = node.patterns[i];
+            if (wildcardCheck(pattern)) {
+                continue;
+            }
+            addOp(DUP_TOP);
+            addLoadNumber(i);
+            addOp(BINARY_SUBSCR);
+            patternSubpattern(pattern, pc);
+        }
+
+        // If we get this far, it's a match! We're done with the tuple of values,
+        // and whatever happens next should consume the arrays of keys underneath it:
+        pc.onTop -= 2;
+        addOp(POP_TOP);
+        if (starTarget != null) {
+            // If we have a starred name, bind a dict of remaining items to it:
+            addOp(COPY_DICT_WITHOUT_KEYS);
+            patternHelperStoreName(starTarget, pc);
+        } else {
+            // Otherwise, we don't care about this tuple of keys anymore:
+            addOp(POP_TOP);
+        }
+        // Pop the subject:
+        pc.onTop--;
+        addOp(POP_TOP);
+
+        return null;
     }
 
     public Void visit(PatternTy.MatchOr node, PatternContext pc) {
-        return emitNotImplemented("match or");
+        Block end = new Block();
+        int size = node.patterns.length;
+        assert size > 1;
+        PatternContext oldPc = pc;
+        // control is the list of names bound by the first alternative. It is used
+        // for checking different name bindings in alternatives, and for correcting
+        // the order in which extracted elements are placed on the stack.
+        ArrayList<String> control = null;
+
+        for (int i = 0; i < size; i++) {
+            PatternTy pattern = node.patterns[i];
+            setLocation(pattern);
+            pc = new PatternContext();
+            pc.stores = new ArrayList<>();
+            // An irrefutable sub-pattern must be last, if it is allowed at all:
+            pc.allowIrrefutable = (i == size - 1) && oldPc.allowIrrefutable;
+            pc.failPop = null;
+            pc.onTop = 0;
+
+            addOp(DUP_TOP);
+            visit(pattern, pc);
+            int nstores = pc.stores.size();
+            if (i == 0) {
+                // This is the first alternative, so save its stores as a "control"
+                // for the others (they can't bind a different set of names, and
+                // might need to be reordered):
+                assert control == null;
+                control = pc.stores;
+            }
+            if (nstores != control.size()) {
+                altPatternsDiffNamesError();
+            } else if (nstores != 0) {
+                // There were captures. Check to see if we differ from control:
+                int icontrol = nstores;
+                while (icontrol-- > 0) {
+                    String name = control.get(icontrol);
+                    int istores = pc.stores.indexOf(name);
+                    if (istores < 0) {
+                        altPatternsDiffNamesError();
+                    }
+                    if (icontrol != istores) {
+                        // Reorder the names on the stack to match the order of the
+                        // names in control. There's probably a better way of doing
+                        // this; the current solution is potentially very
+                        // inefficient when each alternative subpattern binds lots
+                        // of names in different orders. It's fine for reasonable
+                        // cases, though.
+                        assert istores < icontrol;
+                        int rotations = istores + 1;
+                        // Perform the same rotation on pc.stores:
+                        ArrayList<String> rotated = new ArrayList<>();
+                        Iterator<String> it = pc.stores.iterator();
+                        int r = 0;
+                        while (it.hasNext() && r++ < rotations) {
+                            rotated.add(it.next());
+                            it.remove();
+                        }
+                        for (int j = 0; j < rotated.size(); j++) {
+                            pc.stores.add(icontrol - istores + j, rotated.get(j));
+                        }
+
+                        // That just did:
+                        // rotated = pc_stores[:rotations]
+                        // del pc_stores[:rotations]
+                        // pc_stores[icontrol-istores:icontrol-istores] = rotated
+                        // Do the same thing to the stack, using several ROT_Ns:
+                        while (rotations-- > 0) {
+                            addOp(ROT_N, icontrol + 1);
+                        }
+                    }
+                }
+            }
+            assert control != null;
+            addOp(JUMP_FORWARD, end);
+            unit.useNextBlock(new Block());
+            emitAndResetFailPop(pc);
+        }
+        pc = oldPc;
+        addOp(POP_TOP);
+        jumpToFailPop(JUMP_FORWARD, pc);
+        unit.useNextBlock(end);
+
+        int nstores = control.size();
+        // There's a bunch of stuff on the stack between any where the new stores
+        // are and where they need to be:
+        // - The other stores.
+        // - A copy of the subject.
+        // - Anything else that may be on top of the stack.
+        // - Any previous stores we've already stashed away on the stack.
+        int nrots = nstores + 1 + pc.onTop + pc.stores.size();
+        for (int i = 0; i < nstores; i++) {
+            // Rotate this capture to its proper place on the stack:
+            addOp(ROT_N, nrots);
+            // Update the list of previous stores with this new name, checking for duplicates:
+            String name = control.get(i);
+            if (pc.stores.contains(name)) {
+                duplicateStoreError(name);
+            }
+            pc.stores.add(name);
+        }
+
+        // Pop the copy of the subject:
+        addOp(POP_TOP);
+
+        return null;
+    }
+
+    private void altPatternsDiffNamesError() {
+        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "alternative patterns bind different names");
+    }
+
+    private void duplicateStoreError(String name) {
+        errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "multiple assignments to name '%s' in pattern", name);
     }
 
     public Void visit(PatternTy.MatchSingleton node, PatternContext pc) {
@@ -2861,13 +3069,10 @@ public class Compiler implements SSTreeVisitor<Void> {
 
     public Void visit(PatternTy.MatchValue node, PatternContext pc) {
         setLocation(node);
-        ExprTy value = node.value;
-        if (value instanceof ExprTy.Constant || value instanceof ExprTy.Attribute) {
+        if (node.value instanceof ExprTy.UnaryOp || node.value instanceof ExprTy.BinOp) {
+            addConstant(foldConstantOp(node.value));
+        } else if (node.value instanceof ExprTy.Constant || node.value instanceof ExprTy.Attribute) {
             node.value.accept(this);
-        } else if (value instanceof ExprTy.UnaryOp) {
-            patterMatchValueUnaryOp((ExprTy.UnaryOp) value);
-        } else if (value instanceof ExprTy.BinOp) {
-            patternMatchValueBinOp((ExprTy.BinOp) value);
         } else {
             errorCallback.onError(ErrorType.Syntax, unit.currentLocation, "patterns may only match literals and attribute lookups");
         }
@@ -2876,36 +3081,55 @@ public class Compiler implements SSTreeVisitor<Void> {
         return null;
     }
 
-    private void patterMatchValueUnaryOp(ExprTy.UnaryOp unaryOp) {
+    /**
+     * handles only particular cases when a constant comes either as a unary or binary op
+     */
+    private ConstantValue foldConstantOp(ExprTy value) {
+        if (value instanceof ExprTy.UnaryOp) {
+            return foldUnaryOpConstant((ExprTy.UnaryOp) value);
+        } else if (value instanceof ExprTy.BinOp) {
+            return foldBinOpComplexConstant((ExprTy.BinOp) value);
+        }
+        throw new IllegalStateException("should not reach here");
+    }
+
+    /**
+     * handles only unary sub and a numeric constant
+     */
+    private ConstantValue foldUnaryOpConstant(ExprTy.UnaryOp unaryOp) {
         assert unaryOp.op == UnaryOpTy.USub;
         assert unaryOp.operand instanceof ExprTy.Constant : unaryOp.operand;
         SourceRange savedLocation = setLocation(unaryOp);
         try {
-            unaryOp.operand.accept(this);
-            addOp(UNARY_OP, UnaryOps.NEGATIVE.ordinal());
+            ExprTy.Constant c = (ExprTy.Constant) unaryOp.operand;
+            ConstantValue ret = c.value.negate();
+            assert ret != null;
+            return ret;
         } finally {
             setLocation(savedLocation);
         }
     }
 
-    private void patternMatchValueBinOp(ExprTy.BinOp binOp) {
+    /**
+     * handles only complex which comes as a BinOp
+     */
+    private ConstantValue foldBinOpComplexConstant(ExprTy.BinOp binOp) {
         assert (binOp.left instanceof ExprTy.UnaryOp || binOp.left instanceof ExprTy.Constant) && binOp.right instanceof ExprTy.Constant : binOp.left + " " + binOp.right;
         assert binOp.op == OperatorTy.Sub || binOp.op == OperatorTy.Add;
         SourceRange savedLocation = setLocation(binOp);
         try {
+            ConstantValue left;
             if (binOp.left instanceof ExprTy.UnaryOp) {
-                patterMatchValueUnaryOp((ExprTy.UnaryOp) binOp.left);
+                left = foldUnaryOpConstant((ExprTy.UnaryOp) binOp.left);
             } else {
-                binOp.left.accept(this);
+                left = ((ExprTy.Constant) binOp.left).value;
             }
-            binOp.right.accept(this);
+            ExprTy.Constant right = (ExprTy.Constant) binOp.right;
             switch (binOp.op) {
                 case Add:
-                    addOp(BINARY_OP, BinaryOps.ADD.ordinal());
-                    break;
+                    return left.addComplex(right.value);
                 case Sub:
-                    addOp(BINARY_OP, BinaryOps.SUB.ordinal());
-                    break;
+                    return left.subComplex(right.value);
                 default:
                     throw new IllegalStateException("wrong constant BinOp operator " + binOp.op);
             }

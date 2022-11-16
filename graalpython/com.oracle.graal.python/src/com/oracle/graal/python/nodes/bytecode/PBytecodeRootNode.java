@@ -43,7 +43,8 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -325,6 +326,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectSizeNode> NODE_SIZE = PyObjectSizeNode::create;
     private static final NodeSupplier<GetTPFlagsNode> NODE_TP_FLAGS = GetTPFlagsNode::create;
     private static final GetTPFlagsNode UNCACHED_TP_FLAGS = GetTPFlagsNode.getUncached();
+    private static final NodeSupplier<MatchKeysNode> NODE_MATCH_KEYS = MatchKeysNode::create;
+    private static final NodeSupplier<CopyDictWithoutKeysNode> NODE_COPY_DICT_WITHOUT_KEYS = CopyDictWithoutKeysNode::create;
     private static final KwargsMergeNode UNCACHED_KWARGS_MERGE = KwargsMergeNode.getUncached();
     private static final NodeSupplier<KwargsMergeNode> NODE_KWARGS_MERGE = KwargsMergeNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
@@ -1616,7 +1619,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.MATCH_SEQUENCE: {
-                        stackTop = bytecodeCheckSeq(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
+                        stackTop = bytecodeCheckTpFlags(virtualFrame, SEQUENCE, useCachedNodes, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_MAPPING: {
+                        stackTop = bytecodeCheckTpFlags(virtualFrame, MAPPING, useCachedNodes, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_KEYS: {
+                        stackTop = bytecodeMatchKeys(virtualFrame, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.COPY_DICT_WITHOUT_KEYS: {
+                        bytecodeCopyDictWithoutKeys(virtualFrame, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.MATCH_CLASS: {
@@ -2270,11 +2285,32 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeCheckSeq(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
-        Object seq = virtualFrame.getObject(stackTop);
+    private int bytecodeCheckTpFlags(VirtualFrame virtualFrame, long flags, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
+        Object obj = virtualFrame.getObject(stackTop);
         GetTPFlagsNode flagsNode = insertChildNode(localNodes, bci, UNCACHED_TP_FLAGS, GetTPFlagsNodeGen.class, NODE_TP_FLAGS, useCachedNodes);
-        boolean res = (flagsNode.execute(seq) & Py_TPFLAGS_SEQUENCE) != 0;
+        boolean res = (flagsNode.execute(obj) & flags) != 0;
         virtualFrame.setObject(++stackTop, res);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeMatchKeys(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
+        Object keys = virtualFrame.getObject(stackTop);
+        Object subject = virtualFrame.getObject(stackTop - 1);
+        MatchKeysNode matchKeysNode = insertChildNode(localNodes, bci, MatchKeysNodeGen.class, NODE_MATCH_KEYS);
+        Object values = matchKeysNode.execute(virtualFrame, subject, (Object[]) keys);
+        virtualFrame.setObject(++stackTop, values);
+        virtualFrame.setObject(++stackTop, values != PNone.NONE ? true : false);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeCopyDictWithoutKeys(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
+        Object keys = virtualFrame.getObject(stackTop);
+        Object subject = virtualFrame.getObject(stackTop - 1);
+        CopyDictWithoutKeysNode copyDictNode = insertChildNode(localNodes, bci, CopyDictWithoutKeysNodeGen.class, NODE_COPY_DICT_WITHOUT_KEYS);
+        PDict rest = copyDictNode.execute(virtualFrame, subject, (Object[]) keys);
+        virtualFrame.setObject(stackTop, rest);
         return stackTop;
     }
 
