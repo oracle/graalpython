@@ -539,6 +539,7 @@ class GraalPythonTags(object):
     native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
     windows = 'python-windows-smoketests'
+    language_checker = 'python-language-checker'
 
 
 def python_gate(args):
@@ -1039,6 +1040,21 @@ def graalpython_gate_runner(args, tasks):
             success = "\n".join(["win32"])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+
+    with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker]) as task:
+        if task:
+            mx.run_mx([
+                "--dy", "graalpython,/substratevm",
+                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "--native-images=",
+                "build",
+            ])
+            mx.run_mx([
+                "--dy", "graalpython,/substratevm",
+                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "--native-images=",
+                "gate", "svm-truffle-tck-python",
+            ])
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)

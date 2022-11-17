@@ -1,0 +1,14 @@
+[
+  {
+    "name": "java.net.URL",
+    "methods": [
+      {
+        "name": "fromURI",
+        "justification": "The constructor calls in this method always pass null for the handler, so the security manager check is never actually run.",
+        "parameterTypes": [
+          "java.net.URI"
+        ]
+      }
+    ]
+  }
+]
