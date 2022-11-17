@@ -1077,23 +1077,11 @@ def graalpython_gate_runner(args, tasks):
     with Task('Python exclusion of security relevant classes', tasks, tags=[GraalPythonTags.exclusions_checker]) as task:
         if task:
             with tempfile.TemporaryDirectory() as d:
-                with open(os.path.join(d, "Test.java"), "w") as f:
-                    f.write("""
-                    import org.graalvm.polyglot.Context;
-                    public class Test {
-                      public static void main(String[] args) {
-                        try (Context context = Context.create()) {
-                          context.eval("python", "print('Hello Python!');");
-                        }
-                      }
-                    }
-                    """)
-
                 home = _graalvm_home(envfile="graalpython-bash-launcher")
                 javac = os.path.join(home, "bin", "javac")
-                mx.run([javac, os.path.join(d, "Test.java")])
                 native_image([
                     "--language:python",
+                    "-cp", mx.dependency("com.oracle.graal.python.test").get_output_root(),
                     "-Dpython.java.ssl=false",
                     "-Dpython.java.signals=false",
                     "-Dpython.java.auth=false",
@@ -1173,7 +1161,7 @@ def graalpython_gate_runner(args, tasks):
                         """.split()
                     ),
                     "-cp", d,
-                    "Test"
+                    "com.oracle.graal.python.test.advance.ExclusionsTest"
                 ])
 
 

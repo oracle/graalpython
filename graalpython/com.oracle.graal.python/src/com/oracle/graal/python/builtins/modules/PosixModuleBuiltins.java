@@ -39,7 +39,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -125,6 +124,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonRandom;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2127,7 +2127,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void nextBytes(SecureRandom secureRandom, byte[] bytes) {
+        private static void nextBytes(PythonRandom secureRandom, byte[] bytes) {
             secureRandom.nextBytes(bytes);
         }
 
