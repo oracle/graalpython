@@ -37,15 +37,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -223,15 +226,22 @@ public class PZipImporter extends PythonBuiltinObject {
      * @throws IOException
      */
     @TruffleBoundary
-    public static TruffleString getCodeFromArchive(TruffleString filenameAndSuffix, TruffleString archive) throws IOException {
-        ZipFile zip = null;
+    public static TruffleString getCodeFromArchive(PythonContext context, TruffleString filenameAndSuffix, TruffleString archive) throws IOException {
+        InputStream fileStream = null;
         try {
-            zip = new ZipFile(archive.toJavaStringUncached());
-            ZipEntry entry = zip.getEntry(filenameAndSuffix.toJavaStringUncached());
-            InputStream in = zip.getInputStream(entry);
+            TruffleFile f = context.getEnv().getPublicTruffleFile(archive.toJavaStringUncached());
+            fileStream = f.newInputStream(StandardOpenOption.READ);
+            ZipInputStream zis = new ZipInputStream(fileStream);
+            ZipEntry entry;
+            String filenameAndSuffixStr = filenameAndSuffix.toJavaStringUncached();
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.getName().equals(filenameAndSuffixStr)) {
+                    break;
+                }
+            }
 
             // reading the file should be done better?
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
             int size = (int) entry.getSize();
             if (size < 0) {
                 size = (int) entry.getCompressedSize();
@@ -248,9 +258,9 @@ public class PZipImporter extends PythonBuiltinObject {
         } catch (IOException e) {
             throw e;
         } finally {
-            if (zip != null) {
+            if (fileStream != null) {
                 try {
-                    zip.close();
+                    fileStream.close();
                 } catch (IOException e) {
                     // just ignore it.
                 }
@@ -312,7 +322,7 @@ public class PZipImporter extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    protected final ModuleCodeData getModuleCode(TruffleString fullname) throws IOException {
+    protected final ModuleCodeData getModuleCode(PythonContext context, TruffleString fullname) throws IOException {
         TruffleString path = makeFilename(fullname);
         TruffleString fullPath = makePackagePath(fullname);
 
@@ -330,7 +340,7 @@ public class PZipImporter extends PythonBuiltinObject {
 
             TruffleString code;
             try {
-                code = getCodeFromArchive(searchPath, archive);
+                code = getCodeFromArchive(context, searchPath, archive);
             } catch (IOException e) {
                 throw new IOException("Can not read code from " + makePackagePath(searchPath), e);
             }

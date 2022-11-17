@@ -493,7 +493,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             ModuleCodeData md;
             try {
-                md = self.getModuleCode(fullname);
+                md = self.getModuleCode(getContext(), fullname);
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
@@ -602,7 +602,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             ModuleCodeData moduleCodeData;
             try {
-                moduleCodeData = self.getModuleCode(fullname);
+                moduleCodeData = self.getModuleCode(getContext(), fullname);
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
@@ -632,7 +632,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             }
             ModuleCodeData md;
             try {
-                md = self.getModuleCode(fullname);
+                md = self.getModuleCode(getContext(), fullname);
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
