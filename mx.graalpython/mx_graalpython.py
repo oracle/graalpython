@@ -540,6 +540,7 @@ class GraalPythonTags(object):
     license = 'python-license'
     windows = 'python-windows-smoketests'
     language_checker = 'python-language-checker'
+    exclusions_checker = 'python-class-exclusion-checker'
 
 
 def python_gate(args):
@@ -642,6 +643,7 @@ def python_enterprise_gvm(_=None):
     mx.log(launcher)
     return launcher
 
+
 def python_svm(_=None):
     home = _graalvm_home(envfile="graalpython-launcher")
     launcher = _join_bin(home, "graalpy")
@@ -654,6 +656,22 @@ def python_managed_svm():
     launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
+
+
+def native_image(args):
+    mx.run_mx([
+        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
+        "--dy", "graalpython",
+        "--native-images=",
+        "build",
+    ])
+    mx.run_mx([
+        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
+        "--dy", "graalpython",
+        "--native-images=",
+        "native-image",
+        *args
+    ])
 
 
 def python_so():
@@ -1055,6 +1073,108 @@ def graalpython_gate_runner(args, tasks):
                 "--native-images=",
                 "gate", "svm-truffle-tck-python",
             ])
+
+    with Task('Python exclusion of security relevant classes', tasks, tags=[GraalPythonTags.exclusions_checker]) as task:
+        if task:
+            with tempfile.TemporaryDirectory() as d:
+                with open(os.path.join(d, "Test.java"), "w") as f:
+                    f.write("""
+                    import org.graalvm.polyglot.Context;
+                    public class Test {
+                      public static void main(String[] args) {
+                        try (Context context = Context.create()) {
+                          context.eval("python", "print('Hello Python!');");
+                        }
+                      }
+                    }
+                    """)
+
+                home = _graalvm_home(envfile="graalpython-bash-launcher")
+                javac = os.path.join(home, "bin", "javac")
+                mx.run([javac, os.path.join(d, "Test.java")])
+                native_image([
+                    "--language:python",
+                    "-Dpython.java.ssl=false",
+                    "-Dpython.java.signals=false",
+                    "-Dpython.java.auth=false",
+                    "-H:+ReportExceptionStackTraces",
+                    "-Dpolyglot.image-build-time.PreinitializeContexts=",
+                    *map(
+                        lambda s: f"-H:ReportAnalysisForbiddenType={s}",
+                        """
+                        com.sun.security.auth.UnixNumericGroupPrincipal
+                        com.sun.security.auth.module.UnixSystem
+                        java.security.KeyManagementException
+                        java.security.KeyStore
+                        java.security.KeyStoreException
+                        java.security.SignatureException
+                        java.security.UnrecoverableEntryException
+                        java.security.UnrecoverableKeyException
+                        java.security.cert.CRL
+                        java.security.cert.CRLException
+                        java.security.cert.CertPathBuilder
+                        java.security.cert.CertPathBuilderSpi
+                        java.security.cert.CertPathChecker
+                        java.security.cert.CertPathParameters
+                        java.security.cert.CertSelector
+                        java.security.cert.CertStore
+                        java.security.cert.CertStoreParameters
+                        java.security.cert.CertStoreSpi
+                        java.security.cert.CertificateEncodingException
+                        java.security.cert.CertificateParsingException
+                        java.security.cert.CollectionCertStoreParameters
+                        java.security.cert.Extension
+                        java.security.cert.PKIXBuilderParameters
+                        java.security.cert.PKIXCertPathChecker
+                        java.security.cert.PKIXParameters
+                        java.security.cert.PKIXRevocationChecker
+                        java.security.cert.PKIXRevocationChecker$Option
+                        java.security.cert.TrustAnchor
+                        java.security.cert.X509CRL
+                        java.security.cert.X509CertSelector
+                        java.security.cert.X509Certificate
+                        java.security.cert.X509Extension
+                        sun.security.x509.AVA
+                        sun.security.x509.AVAComparator
+                        sun.security.x509.AVAKeyword
+                        sun.security.x509.AuthorityInfoAccessExtension
+                        sun.security.x509.AuthorityKeyIdentifierExtension
+                        sun.security.x509.BasicConstraintsExtension
+                        sun.security.x509.CRLDistributionPointsExtension
+                        sun.security.x509.CertAttrSet
+                        sun.security.x509.CertificatePoliciesExtension
+                        sun.security.x509.CertificatePolicySet
+                        sun.security.x509.DNSName
+                        sun.security.x509.EDIPartyName
+                        sun.security.x509.ExtendedKeyUsageExtension
+                        sun.security.x509.Extension
+                        sun.security.x509.GeneralName
+                        sun.security.x509.GeneralNameInterface
+                        sun.security.x509.GeneralSubtree
+                        sun.security.x509.GeneralSubtrees
+                        sun.security.x509.IPAddressName
+                        sun.security.x509.IssuerAlternativeNameExtension
+                        sun.security.x509.KeyUsageExtension
+                        sun.security.x509.NameConstraintsExtension
+                        sun.security.x509.NetscapeCertTypeExtension
+                        sun.security.x509.OIDMap
+                        sun.security.x509.OIDMap$OIDInfo
+                        sun.security.x509.OIDName
+                        sun.security.x509.OtherName
+                        sun.security.x509.PKIXExtensions
+                        sun.security.x509.PrivateKeyUsageExtension
+                        sun.security.x509.RDN
+                        sun.security.x509.RFC822Name
+                        sun.security.x509.SubjectAlternativeNameExtension
+                        sun.security.x509.SubjectKeyIdentifierExtension
+                        sun.security.x509.URIName
+                        sun.security.x509.X400Address
+                        sun.security.x509.X500Name
+                        """.split()
+                    ),
+                    "-cp", d,
+                    "Test"
+                ])
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)
