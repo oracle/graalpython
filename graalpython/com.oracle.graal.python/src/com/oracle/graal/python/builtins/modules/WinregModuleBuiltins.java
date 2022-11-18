@@ -73,6 +73,7 @@ public class WinregModuleBuiltins extends PythonBuiltins {
             return WinregModuleBuiltinsClinicProviders.OpenKeyNodeClinicProviderGen.INSTANCE;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
         Object openKey(VirtualFrame frame, Object key, Object subKey, Object reserved, Object access) {
             throw raiseOSError(frame, OSErrorEnum.ENOENT);

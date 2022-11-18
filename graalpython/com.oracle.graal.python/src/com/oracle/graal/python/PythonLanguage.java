@@ -535,7 +535,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
-    private Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
+    private static Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
         try {
             return Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
         } catch (IOException | SecurityException | UnsupportedOperationException | InvalidPathException e) {
@@ -598,7 +598,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private ModTy transformASTForExecutionWithArguments(List<String> argumentNames, ModTy mod) {
+    private static ModTy transformASTForExecutionWithArguments(List<String> argumentNames, ModTy mod) {
         NodeFactory nodeFactory = new NodeFactory();
         ArgTy[] astArgArray = new ArgTy[argumentNames.size()];
         for (int i = 0; i < astArgArray.length; i++) {

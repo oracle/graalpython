@@ -351,7 +351,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = tsLiteral("getting the source is not supported for '%p'");
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
-    public static final TruffleString P_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
+    public static final TruffleString S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
@@ -484,6 +484,7 @@ public abstract class ErrorMessages {
     public static final TruffleString LOST_SYSSTDOUT = tsLiteral("lost sys.stdout");
     public static final TruffleString LENGTH_SHOULD_NOT_BE_NEG = tsLiteral("length should not be negative");
     public static final TruffleString MAKE_ENCODER_ARG_1_MUST_BE_DICT = tsLiteral("make_encoder() argument 1 must be dict or None, not %p");
+    public static final TruffleString MAPPING_PATTERN_CHECKS_DUPE_KEY_S = tsLiteral("mapping pattern checks duplicate key (%s)");
     public static final TruffleString MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P = tsLiteral("__match_args__ elements must be strings (got %p)");
     public static final TruffleString P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P = tsLiteral("%p.__match_args__ must be a tuple (got %p)");
     public static final TruffleString MATCH_AS_MUST_SPECIFY_A_TARGET_NAME_IF_A_PATTERN_IS_GIVEN = tsLiteral("MatchAs must specify a target name if a pattern is given");

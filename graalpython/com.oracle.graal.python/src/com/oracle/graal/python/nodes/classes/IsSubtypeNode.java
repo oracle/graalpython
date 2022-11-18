@@ -168,13 +168,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "mroAry.length == derivedMroLen",
                     "mroDiff < 16",
     }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
-    boolean isVariableSubtypeOfConstantTypeCachedMultiContext(Object derived, @SuppressWarnings("unused") Object cls,
+    boolean isVariableSubtypeOfConstantTypeCachedMultiContext(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @SuppressWarnings("unused") @Cached ConditionProfile builtinTypeProfile,
                     @SuppressWarnings("unused") @Cached ConditionProfile builtinClassProfile,
                     @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached GetMroStorageNode getMro,
+                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMro,
                     @Bind("getMro.execute(derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
-                    @Cached("mroAry.length") int derivedMroLen,
+                    @SuppressWarnings("unused") @Cached("mroAry.length") int derivedMroLen,
                     @Cached("getType(cls, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedCls,
                     @Cached("sub(derivedMroLen, getMro.execute(cachedCls).getInternalClassArray().length)") int mroDiff) {
         return isSubMro(cachedCls, mroAry, mroDiff, isSameTypeNode);
@@ -245,13 +245,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }, assumptions = {
                     "baseMro.getLookupStableAssumption()"
     })
-    boolean isVariableSubtypeOfConstantTypeCached(Object derived, @SuppressWarnings("unused") Object cls,
+    boolean isVariableSubtypeOfConstantTypeCached(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @Cached("cls") @SuppressWarnings("unused") Object cachedCls,
-                    @Cached GetMroStorageNode getMro,
+                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMro,
                     @SuppressWarnings("unused") @Cached("getMro.execute(cachedCls)") MroSequenceStorage baseMro,
                     @Cached IsSameTypeNode isSameTypeInLoopNode,
                     @Bind("getMro.execute(derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
-                    @Cached("mroAry.length") int derivedMroLen,
+                    @SuppressWarnings("unused") @Cached("mroAry.length") int derivedMroLen,
                     @Cached("sub(derivedMroLen, baseMro.getInternalClassArray().length)") int mroDiff,
                     @Cached @SuppressWarnings("unused") IsSameTypeNode isSameClsNode) {
         return isSubMro(cachedCls, mroAry, mroDiff, isSameTypeInLoopNode);

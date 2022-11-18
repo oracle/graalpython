@@ -92,7 +92,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * through a collision chain, we can stop at items that do not have this bit set. The practical
  * implications of this is that for close to full maps, lookups of items that are not present in the
  * map are faster, because we can terminate the collisions chain chasing earlier.
- * 
+ *
  * Notable use case that does not (yet) work well with this approach: repeated insertion and removal
  * of the same key. This keeps on adding dummy entries when removing the entry and creating long
  * collisions chains that the insertion needs to follow to find a free slot. This all repeats until
@@ -312,13 +312,6 @@ public final class ObjectHashMap {
         }
     }
 
-    // -------------------------------
-    // methods for actual manipulation of the data-structure
-
-    private int getBucketsCount() {
-        return getBucketsCount(indices);
-    }
-
     private static int getBucketsCount(int[] indices) {
         return indices.length;
     }
@@ -377,7 +370,7 @@ public final class ObjectHashMap {
             int[] indices = map.indices;
             int indicesLen = indices.length;
 
-            int compactIndex = map.getIndex(indicesLen, keyHash);
+            int compactIndex = getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
             if (foundNullKey.profile(index == EMPTY_INDEX)) {
                 return null;
@@ -404,7 +397,7 @@ public final class ObjectHashMap {
                         throw RestartLookupException.INSTANCE;
                     }
                     perturb >>>= PERTURB_SHIFT;
-                    compactIndex = map.nextIndex(indicesLen, compactIndex, perturb);
+                    compactIndex = nextIndex(indicesLen, compactIndex, perturb);
                     index = map.indices[compactIndex];
                     if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
                         return null;
@@ -477,7 +470,7 @@ public final class ObjectHashMap {
             int[] indices = map.indices;
             int indicesLen = indices.length;
 
-            int compactIndex = map.getIndex(indicesLen, keyHash);
+            int compactIndex = getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
             if (foundNullKey.profile(index == EMPTY_INDEX)) {
                 map.putInNewSlot(indices, rehash1Profile, key, keyHash, value, compactIndex);
@@ -502,7 +495,7 @@ public final class ObjectHashMap {
                         throw RestartLookupException.INSTANCE;
                     }
                     perturb >>>= PERTURB_SHIFT;
-                    compactIndex = map.nextIndex(indicesLen, compactIndex, perturb);
+                    compactIndex = nextIndex(indicesLen, compactIndex, perturb);
                     index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
                         map.putInNewSlot(indices, rehash2Profile, key, keyHash, value, compactIndex);
@@ -638,7 +631,7 @@ public final class ObjectHashMap {
 
             // Note: CPython is not shrinking the capacity of the hash table on delete, we do the
             // same
-            int compactIndex = map.getIndex(indicesLen, keyHash);
+            int compactIndex = getIndex(indicesLen, keyHash);
             int index = indices[compactIndex];
             if (foundNullKey.profile(index == EMPTY_INDEX)) {
                 return null; // not found
@@ -665,7 +658,7 @@ public final class ObjectHashMap {
                         throw RestartLookupException.INSTANCE;
                     }
                     perturb >>>= PERTURB_SHIFT;
-                    compactIndex = map.nextIndex(indicesLen, compactIndex, perturb);
+                    compactIndex = nextIndex(indicesLen, compactIndex, perturb);
                     index = indices[compactIndex];
                     if (collisionFoundNoValue.profile(index == EMPTY_INDEX)) {
                         return null; // not found
@@ -814,11 +807,11 @@ public final class ObjectHashMap {
         assert dummyCount <= 0;
     }
 
-    private int nextIndex(int indicesLen, int i, long perturb) {
+    private static int nextIndex(int indicesLen, int i, long perturb) {
         return getIndex(indicesLen, i * 5L + perturb + 1L);
     }
 
-    private int getIndex(int indicesLen, long hash) {
+    private static int getIndex(int indicesLen, long hash) {
         // since buckets count is power of 2, the & works as modulo
         return (int) (hash & (indicesLen - 1));
     }
@@ -854,14 +847,14 @@ public final class ObjectHashMap {
         return true;
     }
 
-    private int getNextPow2(int n) {
+    private static int getNextPow2(int n) {
         if (isPow2(n)) {
             return n;
         }
         return 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(n));
     }
 
-    private boolean isPow2(int n) {
+    private static boolean isPow2(int n) {
         return Integer.bitCount(n) == 1;
     }
 }

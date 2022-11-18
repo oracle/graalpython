@@ -560,14 +560,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization(guards = "isPTuple(shapeObj) || isList(shapeObj)")
         PMemoryView cast(VirtualFrame frame, PMemoryView self, TruffleString formatString, Object shapeObj,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
             self.checkReleased(this);
             SequenceStorage storage = getSequenceStorageNode.execute(shapeObj);
-            int ndim = lenNode.execute(storage);
+            int ndim = storage.length();
             int[] shape = new int[ndim];
             for (int i = 0; i < ndim; i++) {
                 shape[i] = asSizeNode.executeExact(frame, getItemScalarNode.execute(storage, i));

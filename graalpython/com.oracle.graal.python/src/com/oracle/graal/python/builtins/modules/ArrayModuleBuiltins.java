@@ -246,13 +246,12 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             PArray arraySequenceInitializer(VirtualFrame frame, Object cls, TruffleString typeCode, PSequence initializer,
                             @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                            @Cached SequenceStorageNodes.LenNode lenNode,
                             @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                             @Cached TruffleString.CodePointLengthNode lengthNode,
                             @Cached TruffleString.CodePointAtIndexNode atIndexNode) {
                 BufferFormat format = getFormatChecked(typeCode, lengthNode, atIndexNode);
                 SequenceStorage storage = getSequenceStorageNode.execute(initializer);
-                int length = lenNode.execute(storage);
+                int length = storage.length();
                 try {
                     PArray array = getFactory().createArray(cls, typeCode, format, length);
                     for (int i = 0; i < length; i++) {

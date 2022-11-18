@@ -114,7 +114,6 @@ public final class CodeUnit {
                     int[] exceptionHandlerRanges, int conditionProfileCount,
                     int startLine, int startColumn, int endLine, int endColumn,
                     byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
-        int[] arg2cell;
         this.name = name;
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
@@ -129,17 +128,17 @@ public final class CodeUnit {
         this.cellvars = cellvars;
         this.freevars = freevars;
         this.cell2arg = cell2arg;
-        arg2cell = null;
+        int[] arg2cellValue = null;
         if (cell2arg != null) {
-            arg2cell = new int[getTotalArgCount()];
-            Arrays.fill(arg2cell, -1);
+            arg2cellValue = new int[getTotalArgCount()];
+            Arrays.fill(arg2cellValue, -1);
             for (int i = 0; i < cell2arg.length; i++) {
                 if (cell2arg[i] >= 0) {
-                    arg2cell[cell2arg[i]] = i;
+                    arg2cellValue[cell2arg[i]] = i;
                 }
             }
         }
-        this.arg2cell = arg2cell;
+        this.arg2cell = arg2cellValue;
         this.constants = constants;
         this.primitiveConstants = primitiveConstants;
         this.exceptionHandlerRanges = exceptionHandlerRanges;
@@ -315,8 +314,8 @@ public final class CodeUnit {
                     }
                     case MAKE_FUNCTION: {
                         line[4] = String.format("% 2d", followingArgs[0]);
-                        CodeUnit code = (CodeUnit) constants[oparg];
-                        line[5] = line[5] = code.qualname.toJavaStringUncached();
+                        CodeUnit codeUnit = (CodeUnit) constants[oparg];
+                        line[5] = line[5] = codeUnit.qualname.toJavaStringUncached();
                         break;
                     }
                     case LOAD_INT:

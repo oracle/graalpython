@@ -164,7 +164,6 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -3016,7 +3015,6 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached("createClassProfile()") ValueProfile typeProfile) throws ArityException {
@@ -3479,7 +3477,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asVar,
                         @Cached HPyAsPythonObjectNode asVal,
-                        @Cached PyObjectCallMethodObjArgs callSet,
                         @Cached PRaiseNode raiseNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
@@ -3586,7 +3583,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @CachedLibrary(limit = "2") InteropLibrary slotLib,
                         @CachedLibrary(limit = "2") InteropLibrary slotDefLib,
-                        @CachedLibrary(limit = "2") InteropLibrary slotFuncLib,
                         @Cached ReadAttributeFromObjectNode readFunction) throws ArityException {
             checkArity(arguments, 3);
             GraalHPyContext context = asContextNode.execute(arguments[0]);

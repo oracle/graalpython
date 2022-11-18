@@ -1,0 +1,38 @@
+Disassembly of <module>:
+  1:6   -   1:12        0 LOAD_CONST_COLLECTION             0    ([0, 1] type int into tuple)
+  2:8   -   2:14        3 DUP_TOP
+  2:8   -   2:14        4 MATCH_SEQUENCE
+  2:8   -   2:14        5 POP_AND_JUMP_IF_FALSE             21   (to 26)
+  2:8   -   2:14        9 GET_LEN
+  2:8   -   2:14       10 LOAD_BYTE_O                       2
+  2:8   -   2:14       12 BINARY_OP                         12   (EQ)                              can quicken
+  2:8   -   2:14       14 POP_AND_JUMP_IF_FALSE             12   (to 26)                           generalizes: 12
+  2:8   -   2:14       18 UNPACK_SEQUENCE                   2
+  2:8   -   2:14       20 ROT_N                             2
+  2:8   -   2:14       22 ROT_N                             2
+  2:8   -   2:14       24 JUMP_FORWARD                      32   (to 56)
+  2:8   -   2:14  >>   26 POP_TOP
+  2:17  -   2:23       27 DUP_TOP
+  2:17  -   2:23       28 MATCH_SEQUENCE
+  2:17  -   2:23       29 POP_AND_JUMP_IF_FALSE             23   (to 52)
+  2:17  -   2:23       33 GET_LEN
+  2:17  -   2:23       34 LOAD_BYTE_O                       2
+  2:17  -   2:23       36 BINARY_OP                         12   (EQ)                              can quicken
+  2:17  -   2:23       38 POP_AND_JUMP_IF_FALSE             14   (to 52)                           generalizes: 36
+  2:17  -   2:23       42 UNPACK_SEQUENCE                   2
+  2:17  -   2:23       44 ROT_N                             2
+  2:17  -   2:23       46 ROT_N                             2
+  2:17  -   2:23       48 ROT_N                             2
+  2:17  -   2:23       50 JUMP_FORWARD                      6    (to 56)
+  2:17  -   2:23  >>   52 POP_TOP
+  2:17  -   2:23       53 POP_TOP
+  2:17  -   2:23       54 JUMP_FORWARD                      14   (to 68)
+  2:17  -   2:23  >>   56 ROT_N                             3
+  2:17  -   2:23       58 ROT_N                             3
+  2:17  -   2:23       60 POP_TOP
+  2:17  -   2:23       61 STORE_NAME                        0    (a)
+  2:17  -   2:23       63 STORE_NAME                        1    (b)
+  3:4   -   3:8        65 NOP
+  3:4   -   3:8        66 JUMP_FORWARD                      2    (to 68)
+  2:2   -   3:8   >>   68 LOAD_NONE
+  2:2   -   3:8        69 RETURN_VALUE

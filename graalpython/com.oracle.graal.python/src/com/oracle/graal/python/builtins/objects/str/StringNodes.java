@@ -313,7 +313,6 @@ public abstract class StringNodes {
         static TruffleString doPSequence(TruffleString self, PSequence sequence,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ConditionProfile isEmptyProfile,
                         @Cached ConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
@@ -323,7 +322,7 @@ public abstract class StringNodes {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
 
             SequenceStorage storage = getSequenceStorageNode.execute(sequence);
-            int len = lenNode.execute(storage);
+            int len = storage.length();
 
             // shortcut
             if (isEmptyProfile.profile(len == 0)) {

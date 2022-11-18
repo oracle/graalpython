@@ -270,7 +270,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyErrCreateAndSetExceptionNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isExceptionClass(frame, type, isTypeNode, isSubClassNode)")
-        static Object create(VirtualFrame frame, Object type, Object value,
+        static Object create(VirtualFrame frame, Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
                         @SuppressWarnings("unused") @Cached IsSubClassNode isSubClassNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
@@ -412,7 +412,6 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached PyErrGivenExceptionMatchesNode matchesNode,
-                        @Cached IsTypeNode isTypeNode,
                         @Cached LoopConditionProfile loopProfile) {
             int len = (int) lenNode.execute(frame, exc);
             loopProfile.profileCounted(len);
@@ -543,13 +542,13 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
             }
             Object exceptHook = PyObjectLookupAttr.getUncached().execute(null, sys, T_EXCEPTHOOK);
             if (exceptHook != PNone.NO_VALUE) {
-                hanleExceptHook(exceptHook, type, val, tb, excInfoNode, getItemNode, sys, errDisplayNode);
+                handleExceptHook(exceptHook, type, val, tb, excInfoNode, getItemNode, sys, errDisplayNode);
             }
             return PNone.NONE;
         }
 
         @TruffleBoundary
-        private void writeLastVars(PythonModule sys, Object type, Object val, Object tb, PyErrRestoreNode restoreNode) {
+        private static void writeLastVars(PythonModule sys, Object type, Object val, Object tb, PyErrRestoreNode restoreNode) {
             try {
                 WriteAttributeToObjectNode.getUncached().execute(sys, T_LAST_TYPE, type);
                 WriteAttributeToObjectNode.getUncached().execute(sys, T_LAST_VALUE, val);
@@ -560,7 +559,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private void hanleExceptHook(Object exceptHook, Object type, Object val, Object tb, ExcInfoNode excInfoNode,
+        private static void handleExceptHook(Object exceptHook, Object type, Object val, Object tb, ExcInfoNode excInfoNode,
                         TupleBuiltins.GetItemNode getItemNode, PythonModule sys, PyErrDisplayNode errDisplayNode) {
             try {
                 CallNode.getUncached().execute(exceptHook, type, val, tb);

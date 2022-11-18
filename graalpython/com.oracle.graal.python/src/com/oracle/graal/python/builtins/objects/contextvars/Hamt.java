@@ -193,8 +193,7 @@ public final class Hamt {
     }
 
     public Hamt withEntry(Entry newEntry) {
-        TreePart root = partWithEntry(this.root, newEntry, 0);
-        return new Hamt(root);
+        return new Hamt(partWithEntry(this.root, newEntry, 0));
     }
 
     @CompilerDirectives.TruffleBoundary

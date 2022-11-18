@@ -1736,7 +1736,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         abstract Object execute(Object ptr, Object src, Object ctype);
 
         @Specialization
-        static Object cast(PythonNativeVoidPtr ptr, PythonNativeVoidPtr src, Object ctype,
+        static Object cast(PythonNativeVoidPtr ptr, @SuppressWarnings("unused") PythonNativeVoidPtr src, Object ctype,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode,

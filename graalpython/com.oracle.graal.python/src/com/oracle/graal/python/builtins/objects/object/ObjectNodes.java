@@ -870,6 +870,7 @@ public abstract class ObjectNodes {
 
         public abstract PNone execute(VirtualFrame frame, Object object, TruffleString key, Object value);
 
+        @SuppressWarnings("unused")
         protected boolean writeAttribute(Object object, TruffleString key, Object value) {
             throw CompilerDirectives.shouldNotReachHere("writeAttribute");
         }

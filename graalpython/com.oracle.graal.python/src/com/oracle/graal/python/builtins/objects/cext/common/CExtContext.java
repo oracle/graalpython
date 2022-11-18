@@ -242,7 +242,7 @@ public abstract class CExtContext {
         }
 
         @TruffleBoundary
-        private boolean canEncode(TruffleString basename) {
+        private static boolean canEncode(TruffleString basename) {
             return TruffleString.GetCodeRangeNode.getUncached().execute(basename, TS_ENCODING) == CodeRange.ASCII;
         }
 

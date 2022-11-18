@@ -193,7 +193,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean isSimpleObj(Object obj) {
+        private static boolean isSimpleObj(Object obj) {
             return obj == PNone.NONE || obj == Boolean.TRUE || obj == Boolean.FALSE || isString(obj) || isInteger(obj) || isPInt(obj) || obj instanceof Float || isDouble(obj) || isPFloat(obj);
         }
 

@@ -115,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -2213,7 +2212,6 @@ public class GraalHPyNodes {
                         HPyAsPythonObjectNode asPythonObjectNode) throws InteropException {
             if (!ptrLib.isNull(typeSpecParamArray)) {
                 long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
-                ArrayList<Object> basesList = new ArrayList<>();
                 for (long i = 0; i < nSpecParam; i++) {
                     Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
                     // TODO(fa): directly read member as soon as this is supported by Sulong.
@@ -2252,6 +2250,7 @@ public class GraalHPyNodes {
             return new TruffleString[]{null, specName};
         }
 
+        @SuppressWarnings("unused")
         private static void checkInheritanceConstraints(long flags, long baseFlags, boolean isPure, Object baseIsPure, PRaiseNode raiseNode) {
             // Pure types may inherit from:
             //
@@ -2509,7 +2508,7 @@ public class GraalHPyNodes {
                         @Cached RecursiveExceptionMatches recExcMatch,
                         @Cached PInteropSubscriptNode getItemNode,
                         @Cached LoopConditionProfile loopProfile) {
-            int len = SequenceStorageNodes.LenNode.getUncached().execute(exc.getSequenceStorage());
+            int len = exc.getSequenceStorage().length();
             for (int i = 0; loopProfile.profile(i < len); i++) {
                 Object e = getItemNode.execute(exc, i);
                 if (recExcMatch.execute(context, err, e) != 0) {

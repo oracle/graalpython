@@ -108,7 +108,6 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         public static final Object STOP_MARKER = new Object();
         private final boolean throwStopIteration;
-        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
 
         NextNode() {
             this.throwStopIteration = true;
@@ -166,7 +165,8 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PIntRangeIterator self) {
+        Object next(PIntRangeIterator self,
+                        @Shared("next") @Cached ConditionProfile profile) {
             if (profile.profile(self.hasNextInt())) {
                 return self.nextInt();
             }
@@ -213,7 +213,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageIteratorNext nextNode,
                         @Cached PHashingStorageIteratorNextValue itValueNode,
-                        @Cached ConditionProfile profile) {
+                        @Shared("next") @Cached ConditionProfile profile) {
             HashingStorage storage = self.getHashingStorage();
             final HashingStorageIterator it = self.getIterator();
             if (profile.profile(nextNode.execute(storage, it))) {
@@ -230,10 +230,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         Object next(PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage s = getStorage.execute(self.getPSequence());
-            if (self.getIndex() < lenNode.execute(s)) {
+            if (self.getIndex() < s.length()) {
                 return getItemNode.execute(s, self.index++);
             }
             return stopIteration(self);

@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -118,7 +117,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
-                        @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode) {
             PSequence argsSequence;
             try {
@@ -129,11 +127,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             SequenceStorage argsStorage = getSequenceStorageNode.execute(argsSequence);
-            int len = lenNode.execute(argsStorage);
+            int len = argsStorage.length();
             Object[] argsArray = new Object[len];
             for (int i = 0; i < len; ++i) {
                 SequenceStorage newStorage = getSequenceStorageNode.execute(argsSequence);
-                if (newStorage != argsStorage || lenNode.execute(newStorage) != len) {
+                if (newStorage != argsStorage || newStorage.length() != len) {
                     // TODO write a test for this
                     throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
@@ -227,6 +225,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return o;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
         int forkExec(VirtualFrame frame, Object[] args, Object executableList, boolean closeFds,
                         Object fdsToKeepObj, Object cwdObj, Object env,
@@ -235,7 +234,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         boolean restoreSignals, boolean callSetsid, Object gidObject, Object groupsList,
                         Object uidObject, int childUmask, Object preexecFn,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
                         @Cached PyObjectGetItem getItem,
                         @Cached CastToJavaIntExactNode castToIntNode,
@@ -253,7 +251,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
             }
             Object[] processArgs = args;
-            int[] fdsToKeep = convertFdSequence((PTuple) fdsToKeepObj, lenNode, tupleGetItem, castToIntNode);
+            int[] fdsToKeep = convertFdSequence((PTuple) fdsToKeepObj, tupleGetItem, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable).toJavaStringUncached());
@@ -301,9 +299,9 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
          * Checks that the tuple contains only valid fds (positive integers fitting into an int) in
          * ascending order.
          */
-        private int[] convertFdSequence(PTuple fdSequence, LenNode lenNode, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
+        private int[] convertFdSequence(PTuple fdSequence, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode) {
             SequenceStorage storage = fdSequence.getSequenceStorage();
-            int len = lenNode.execute(storage);
+            int len = storage.length();
             int[] fds = new int[len];
             int prevFd = -1;
             for (int i = 0; i < len; ++i) {

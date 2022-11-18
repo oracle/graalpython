@@ -58,12 +58,13 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRAC
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags._Py_TPFLAGS_MATCH_SELF;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -256,7 +257,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | BASETYPE;
                     break;
                 case PArray:
-                    result = DEFAULT | BASETYPE | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | BASETYPE | SEQUENCE;
                     break;
                 case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
                 case PyCSimpleType: // DEFAULT | BASETYPE | PythonClass.flags
@@ -277,13 +278,13 @@ public abstract class TypeNodes {
                     break;
                 case PFrozenSet:
                 case PSet:
-                    result = DEFAULT | HAVE_GC | BASETYPE | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | HAVE_GC | BASETYPE | MATCH_SELF;
                     break;
                 case Boolean:
-                    result = DEFAULT | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | LONG_SUBCLASS | MATCH_SELF;
                     break;
                 case PBytes:
-                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS | MATCH_SELF;
                     break;
                 case PFunction:
                 case PBuiltinFunction:
@@ -303,7 +304,6 @@ public abstract class TypeNodes {
                     break;
                 case GetSetDescriptor:
                 case MemberDescriptor:
-                case PMappingproxy:
                 case PFrame:
                 case PGenerator:
                 case PBuffer:
@@ -316,36 +316,42 @@ public abstract class TypeNodes {
                 case PArrayIterator:
                     result = DEFAULT | HAVE_GC;
                     break;
+                case PMappingproxy:
+                    result = DEFAULT | HAVE_GC | MAPPING;
+                    break;
                 case PMemoryView:
-                    result = DEFAULT | HAVE_GC | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | SEQUENCE;
                     break;
                 case PDict:
-                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS | MATCH_SELF | MAPPING;
+                    break;
+                case PDefaultDict:
+                    result = DEFAULT | HAVE_GC | BASETYPE | MAPPING;
                     break;
                 case PBaseException:
                     result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
                     break;
                 case PList:
-                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS | MATCH_SELF | SEQUENCE;
                     break;
                 case PInt:
-                    result = DEFAULT | BASETYPE | LONG_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | LONG_SUBCLASS | MATCH_SELF;
                     break;
                 case PString:
-                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS | MATCH_SELF;
                     break;
                 case PTuple:
-                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | _Py_TPFLAGS_MATCH_SELF | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS | MATCH_SELF | SEQUENCE;
                     break;
                 case PRange:
-                    result = DEFAULT | Py_TPFLAGS_SEQUENCE;
+                    result = DEFAULT | SEQUENCE;
                     break;
                 case PythonModuleDef:
                     result = 0;
                     break;
                 case PByteArray:
                 case PFloat:
-                    result = DEFAULT | BASETYPE | _Py_TPFLAGS_MATCH_SELF;
+                    result = DEFAULT | BASETYPE | MATCH_SELF;
                     break;
                 default:
                     // default case; this includes: PythonObject, PCode, PInstancemethod, PNone,
@@ -398,7 +404,7 @@ public abstract class TypeNodes {
 
             // flags are inherited
             MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
-            int n = SequenceStorageNodes.LenNode.getUncached().execute(mroStorage);
+            int n = mroStorage.length();
             for (int i = 0; i < n; i++) {
                 Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
                 if (mroEntry instanceof PythonBuiltinClass) {
@@ -1863,7 +1869,6 @@ public abstract class TypeNodes {
         @Child private ReadAttributeFromObjectNode readAttr;
         @Child private CastToJavaIntExactNode castToInt;
         @Child private CastToListNode castToList;
-        @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
         @Child private GetMroNode getMroNode;
@@ -2006,7 +2011,7 @@ public abstract class TypeNodes {
                     slotsObject = getCastToListNode().execute(frame, slots[0]);
                     slotsStorage = ((PList) slotsObject).getSequenceStorage();
                 }
-                int slotlen = getListLenNode().execute(slotsStorage);
+                int slotlen = slotsStorage.length();
 
                 if (slotlen > 0 && hasItemSize) {
                     throw raise.raise(TypeError, ErrorMessages.NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S, base);
@@ -2178,14 +2183,6 @@ public abstract class TypeNodes {
                 appendNode = insert(SequenceStorageNodes.AppendNode.create());
             }
             return appendNode;
-        }
-
-        private SequenceStorageNodes.LenNode getListLenNode() {
-            if (slotLenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                slotLenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return slotLenNode;
         }
 
         /**

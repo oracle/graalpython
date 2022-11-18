@@ -442,7 +442,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             }
 
-            private PBaseException handleInstanceNotAnException(Object type, Object instance) {
+            private static PBaseException handleInstanceNotAnException(Object type, Object instance) {
                 /*
                  * Instead of throwing the exception here, we throw it into the generator. That's
                  * what CPython does

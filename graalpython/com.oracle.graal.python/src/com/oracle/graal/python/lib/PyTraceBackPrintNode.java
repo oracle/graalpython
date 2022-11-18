@@ -241,7 +241,7 @@ public abstract class PyTraceBackPrintNode extends PNodeWithContext {
         return traceback.getNext();
     }
 
-    private void printLineRepeated(VirtualFrame frame, Object out, int count) {
+    private static void printLineRepeated(VirtualFrame frame, Object out, int count) {
         int cnt = count;
         cnt -= TB_RECURSIVE_CUTOFF;
         final StringBuilder sb = newStringBuilder("  [Previous line repeated ");

@@ -198,10 +198,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ConditionProfile tupleLenProfile,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
             SequenceStorage tupleStorage = key.getSequenceStorage();
-            if (tupleLenProfile.profile(lenNode.execute(tupleStorage) != 2)) {
+            if (tupleLenProfile.profile(tupleStorage.length() != 2)) {
                 return false;
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();

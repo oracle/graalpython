@@ -330,9 +330,26 @@ public enum OpCodes {
     MATCH_SEQUENCE(0, 0, 1),
 
     /**
+     * Determines if a python object is a mapping.
+     */
+    MATCH_MAPPING(0, 0, 1),
+
+    /**
      * Determines if a python object is of a particular type.
      */
     MATCH_CLASS(1, 3, 2),
+
+    /**
+     * Matches the keys (stack top) in a dict (stack second). On successful match pushes the values
+     * and True, otherwise None and False.
+     */
+    MATCH_KEYS(0, 2, 4),
+
+    /**
+     * Creates a copy of a dict (stack second) without elements matching a tuple of keys (stack
+     * top).
+     */
+    COPY_DICT_WITHOUT_KEYS(0, 1, 1),
 
     /**
      * Retrieves the length of a python object and stores it on top.

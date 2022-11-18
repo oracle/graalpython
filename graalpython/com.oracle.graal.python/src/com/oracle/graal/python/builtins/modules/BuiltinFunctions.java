@@ -395,12 +395,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doGenericSequence(VirtualFrame frame,
-                        SequenceStorage sequenceStorage,
-                        AnyOrAllNodeType nodeType,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+        boolean doGenericSequence(VirtualFrame frame, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType) {
             Object[] internalArray = sequenceStorage.getInternalArray();
-            int seqLength = lenNode.execute(sequenceStorage);
+            int seqLength = sequenceStorage.length();
 
             loopConditionProfile.profileCounted(seqLength);
             for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
@@ -1401,7 +1398,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
         static final byte NON_RECURSIVE = Byte.MAX_VALUE;
 
-        @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         protected final byte depth;
 
@@ -1484,12 +1480,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return doRecursiveWithNode(null, instance, clsTuple, node);
         }
 
-        protected final int getLength(PTuple t) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(t.getSequenceStorage());
+        protected static int getLength(PTuple t) {
+            return t.getSequenceStorage().length();
         }
 
         private Object[] getArray(PTuple tuple) {
@@ -1849,9 +1841,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public long ord(PBytesLike chr,
                         @Cached CastToJavaLongExactNode castNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            int len = lenNode.execute(chr.getSequenceStorage());
+            int len = chr.getSequenceStorage().length();
             if (len != 1) {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }

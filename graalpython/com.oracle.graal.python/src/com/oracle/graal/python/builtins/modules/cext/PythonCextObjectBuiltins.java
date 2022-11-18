@@ -301,7 +301,6 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
                         @Cached ToNewRefNode toNewRefNode,
@@ -323,7 +322,7 @@ public class PythonCextObjectBuiltins extends PythonBuiltins {
                         // We have a tuple with kw names and an array with kw values
                         PTuple kwTuple = (PTuple) kwargs;
                         SequenceStorage storage = kwTuple.getSequenceStorage();
-                        int kwcount = lenNode.execute(storage);
+                        int kwcount = storage.length();
                         keywords = new PKeyword[kwcount];
                         for (int i = 0; i < kwcount; i++) {
                             TruffleString name = castToTruffleStringNode.execute(getItemScalarNode.execute(storage, i));

@@ -190,11 +190,10 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
         Object fromSequence(PSequence sequence, Object type,
                         @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ZerosNode zerosNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(sequence);
-            int length = lenNode.execute(storage);
+            int length = storage.length();
             Object array = zerosNode.execute(length, type);
             for (int i = 0; i < length; i++) {
                 Object value = getItemScalarNode.execute(storage, i);
@@ -214,11 +213,10 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ZerosNode zerosNode) {
             PList list = constructListNode.execute(frame, sequence);
-            return fromSequence(list, type, lib, getSequenceStorageNode, lenNode, getItemScalarNode, zerosNode);
+            return fromSequence(list, type, lib, getSequenceStorageNode, getItemScalarNode, zerosNode);
         }
     }
 }

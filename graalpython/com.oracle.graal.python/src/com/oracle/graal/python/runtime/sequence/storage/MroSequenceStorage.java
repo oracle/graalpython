@@ -268,7 +268,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         lookupStableAssumption.invalidate();
     }
 
-    private static final Predicate<List<Assumption>> REMOVE_IF_LARGE = new Predicate<List<Assumption>>() {
+    private static final Predicate<List<Assumption>> REMOVE_IF_LARGE = new Predicate<>() {
 
         @Override
         public boolean test(List<Assumption> assumptions) {

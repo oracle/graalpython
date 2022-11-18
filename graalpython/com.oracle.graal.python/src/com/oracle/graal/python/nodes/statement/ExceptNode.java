@@ -191,11 +191,10 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         @Specialization
         static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
                         @Cached ExceptMatchNode recursiveNode,
-                        @Cached SequenceStorageNodes.LenNode getLenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             // check for every type in the tuple
             SequenceStorage storage = clause.getSequenceStorage();
-            int length = getLenNode.execute(storage);
+            int length = storage.length();
             for (int i = 0; i < length; i++) {
                 Object clauseType = getItemNode.execute(storage, i);
                 if (recursiveNode.executeMatch(frame, e, clauseType)) {

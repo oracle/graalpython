@@ -73,7 +73,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
@@ -226,8 +225,6 @@ public class CombinationsBuiltins extends PythonBuiltins {
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached BranchProfile isNotTupleProfile,
-                        @Cached BranchProfile wrongLenProfile,
                         @Cached CastToJavaIntLossyNode catsToIntNode,
                         @Cached ConditionProfile noResultProfile,
                         @Cached LoopConditionProfile indicesProfile) {

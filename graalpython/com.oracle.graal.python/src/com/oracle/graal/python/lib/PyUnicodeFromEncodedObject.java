@@ -47,7 +47,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -72,11 +71,10 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
 
     @Specialization
     Object doBytes(VirtualFrame frame, PBytes object, Object encoding, Object errors,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached ConditionProfile emptyStringProfile,
                     @Cached PyUnicodeDecode decode) {
         // Decoding bytes objects is the most common case and should be fast
-        if (emptyStringProfile.profile(lenNode.execute(object.getSequenceStorage()) == 0)) {
+        if (emptyStringProfile.profile(object.getSequenceStorage().length() == 0)) {
             return T_EMPTY_STRING;
         }
         return decode.execute(frame, object, encoding, errors);

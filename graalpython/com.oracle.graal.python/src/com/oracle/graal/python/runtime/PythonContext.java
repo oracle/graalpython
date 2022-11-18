@@ -410,10 +410,10 @@ public final class PythonContext extends Python3Core {
             return tracing;
         }
 
-        public void tracingStart(TraceEvent tracingWhat) {
+        public void tracingStart(TraceEvent newTracingWhat) {
             assert !this.tracing : "Attempt made to trace a call while inside a trace function. Did you forget to check isTracing before calling invokeTraceFunction?";
             this.tracing = true;
-            setTracingWhat(tracingWhat);
+            setTracingWhat(newTracingWhat);
         }
 
         public void tracingStop() {
@@ -609,7 +609,6 @@ public final class PythonContext extends Python3Core {
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
-    private boolean isInitializedNonCompilationFinal;
 
     private OutputStream out;
     private OutputStream err;
@@ -1539,7 +1538,6 @@ public final class PythonContext extends Python3Core {
 
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
-        isInitializedNonCompilationFinal = true;
     }
 
     private void initializeHashSecret() {

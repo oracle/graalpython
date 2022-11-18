@@ -59,12 +59,11 @@ abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContex
 
     @Specialization
     HashingStorage doIt(VirtualFrame frame, SequenceStorage sequenceStorage,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                     @Cached HashingStorageSetItem setItem,
                     @Cached LoopConditionProfile loopConditionProfile) {
         HashingStorage setStorage = EmptyStorage.INSTANCE;
-        int length = lenNode.execute(sequenceStorage);
+        int length = sequenceStorage.length();
         loopConditionProfile.profileCounted(length);
         for (int i = 0; loopConditionProfile.inject(i < length); ++i) {
             Object o = getItemNode.execute(sequenceStorage, i);

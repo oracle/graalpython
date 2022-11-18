@@ -125,12 +125,11 @@ public final class StarredExpressionNode extends LiteralNode {
         @Specialization(guards = "cannotBeOverridden(values, getClassNode)", limit = "1")
         static HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, PSequence values,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached HashingStorageSetItem setHashingStorageItem) {
             HashingStorage storage = storageIn;
             SequenceStorage valuesStorage = values.getSequenceStorage();
-            int n = lenNode.execute(valuesStorage);
+            int n = valuesStorage.length();
             for (int i = 0; i < n; i++) {
                 Object element = getItemNode.execute(valuesStorage, i);
                 storage = setHashingStorageItem.execute(frame, storage, element, PNone.NONE);

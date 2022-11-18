@@ -174,7 +174,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(v)", "isDeleteMarker(v)"})
-        static Object doDel(PFrame self, Object v) {
+        static Object doDel(PFrame self, @SuppressWarnings("unused") Object v) {
             self.setLocalTraceFun(null);
             return PNone.NONE;
         }

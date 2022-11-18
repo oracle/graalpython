@@ -447,12 +447,11 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetDictIfExistsNode getDictNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             PTuple args = self.getArgs();
             final Object filename = attrNode.get(self, IDX_FILENAME, OS_ERROR_ATTR_FACTORY);
             final Object filename2 = attrNode.get(self, IDX_FILENAME2, OS_ERROR_ATTR_FACTORY);
-            if (lenNode.execute(args.getSequenceStorage()) == 2 && filename != PNone.NONE) {
+            if (args.getSequenceStorage().length() == 2 && filename != PNone.NONE) {
                 Object[] argData = new Object[filename2 != PNone.NONE ? 5 : 3];
                 argData[0] = getItemNode.execute(args.getSequenceStorage(), 0);
                 argData[1] = getItemNode.execute(args.getSequenceStorage(), 1);

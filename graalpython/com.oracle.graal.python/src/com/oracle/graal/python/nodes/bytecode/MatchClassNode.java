@@ -63,7 +63,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags._Py_TPFLAGS_MATCH_SELF;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -87,7 +87,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
                     @Cached PRaiseNode raise) {
 
         if (!isTypeNode.execute(type)) {
-            raise.raise(TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
+            throw raise.raise(TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
         }
 
         if (!isInstanceNode.executeWith(frame, subject, type)) {
@@ -105,7 +105,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
             try {
                 matchArgs = getAttr.execute(frame, type, T___MATCH_ARGS);
                 if (!tupleCheckExactNode.execute(matchArgs)) {
-                    raise.raise(TypeError, ErrorMessages.P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P, type, matchArgs);
+                    throw raise.raise(TypeError, ErrorMessages.P_MATCH_ARGS_MUST_BE_A_TUPLE_GOT_P, type, matchArgs);
                 }
             } catch (PException e) {
                 // _Py_TPFLAGS_MATCH_SELF is only acknowledged if the type does not
@@ -114,11 +114,11 @@ public abstract class MatchClassNode extends PNodeWithContext {
                 // soon as they redefine it.
                 e.expectAttributeError(isClassProfile);
                 matchArgs = factory.createEmptyTuple();
-                matchSelf = (getTypeFlagsNode.execute(type) & _Py_TPFLAGS_MATCH_SELF) != 0;
+                matchSelf = (getTypeFlagsNode.execute(type) & MATCH_SELF) != 0;
             }
             int allowed = matchSelf ? 1 : tupleSizeNode.execute(matchArgs);
             if (allowed < nargs) {
-                raise.raise(TypeError, ErrorMessages.P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN, type, allowed, (allowed == 1) ? "" : "s", nargs);
+                throw raise.raise(TypeError, ErrorMessages.P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN, type, allowed, (allowed == 1) ? "" : "s", nargs);
             }
             if (matchSelf) {
                 // Easy. Copy the subject itself, and move on to kwargs.
@@ -137,12 +137,14 @@ public abstract class MatchClassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private void getArgs(VirtualFrame frame, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs, PyObjectGetAttr getAttr,
+    private static void getArgs(VirtualFrame frame, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs,
+                    PyObjectGetAttr getAttr,
                     StringBuiltins.EqNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
+        CompilerAsserts.partialEvaluationConstant(nargs);
         for (int i = 0; i < nargs; i++) {
             Object name = getItemNode.execute(frame, matchArgs, i);
             if (!unicodeCheckNode.execute(name)) {
-                raise.raise(TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
+                throw raise.raise(TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
             }
             setName(frame, type, name, seen, seenLength, eqStrNode, raise);
             attrs[attrsLength[0]++] = getAttr.execute(frame, subject, name);
@@ -150,7 +152,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private void getKwArgs(VirtualFrame frame, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, PyObjectGetAttr getAttr,
+    private static void getKwArgs(VirtualFrame frame, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, PyObjectGetAttr getAttr,
                     StringBuiltins.EqNode eqStrNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(kwArgs);
         for (int i = 0; i < kwArgs.length; i++) {
@@ -161,15 +163,15 @@ public abstract class MatchClassNode extends PNodeWithContext {
         }
     }
 
-    private void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
+    private static void setName(VirtualFrame frame, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.EqNode eqNode, PRaiseNode raise) {
         if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
-            raise.raise(TypeError, ErrorMessages.P_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
+            throw raise.raise(TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
         seen[seenLength[0]++] = name;
     }
 
     @ExplodeLoop
-    private boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.EqNode eqNode) {
+    private static boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.EqNode eqNode) {
         for (int i = 0; i < seen.length; i++) {
             if (seen[i] != null && (boolean) eqNode.execute(frame, seen[i], name)) {
                 return true;

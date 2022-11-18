@@ -161,12 +161,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     }
 
     private static class FrozenInfo {
-        final TruffleString name;
+        @SuppressWarnings("unused") final TruffleString name;
         final byte[] data;
         final int size;
         final boolean isPackage;
         final TruffleString origName;
-        final boolean isAlias;
+        @SuppressWarnings("unused") final boolean isAlias;
 
         FrozenInfo(byte[] data, int size) {
             this(null, data, size, false, null, false);

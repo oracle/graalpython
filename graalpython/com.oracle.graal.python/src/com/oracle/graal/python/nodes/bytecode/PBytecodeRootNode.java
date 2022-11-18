@@ -43,7 +43,8 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.Py_TPFLAGS_SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -246,6 +247,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 /**
  * Root node with main bytecode interpreter loop.
  */
+@SuppressWarnings("static-method")
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
     private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create(null, null);
@@ -325,6 +327,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectSizeNode> NODE_SIZE = PyObjectSizeNode::create;
     private static final NodeSupplier<GetTPFlagsNode> NODE_TP_FLAGS = GetTPFlagsNode::create;
     private static final GetTPFlagsNode UNCACHED_TP_FLAGS = GetTPFlagsNode.getUncached();
+    private static final NodeSupplier<MatchKeysNode> NODE_MATCH_KEYS = MatchKeysNode::create;
+    private static final NodeSupplier<CopyDictWithoutKeysNode> NODE_COPY_DICT_WITHOUT_KEYS = CopyDictWithoutKeysNode::create;
     private static final KwargsMergeNode UNCACHED_KWARGS_MERGE = KwargsMergeNode.getUncached();
     private static final NodeSupplier<KwargsMergeNode> NODE_KWARGS_MERGE = KwargsMergeNode::create;
     private static final UnpackSequenceNode UNCACHED_UNPACK_SEQUENCE = UnpackSequenceNode.getUncached();
@@ -655,27 +659,27 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         for (int i = 0; i < cellvars.length; i++) {
             cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
         }
-        int classcellIndex = -1;
+        int classcellIndexValue = -1;
         for (int i = 0; i < this.freevars.length; i++) {
             if (T___CLASS__.equalsUncached(this.freevars[i], TS_ENCODING)) {
-                classcellIndex = this.freeoffset + i;
+                classcellIndexValue = this.freeoffset + i;
                 break;
             }
         }
-        this.classcellIndex = classcellIndex;
-        int selfIndex = -1;
+        this.classcellIndex = classcellIndexValue;
+        int selfIndexValue = -1;
         if (!signature.takesNoArguments()) {
-            selfIndex = 0;
+            selfIndexValue = 0;
             if (co.cell2arg != null) {
                 for (int i = 0; i < co.cell2arg.length; i++) {
                     if (co.cell2arg[i] == 0) {
-                        selfIndex = celloffset + i;
+                        selfIndexValue = celloffset + i;
                         break;
                     }
                 }
             }
         }
-        this.selfIndex = selfIndex;
+        this.selfIndex = selfIndexValue;
     }
 
     @Override
@@ -1616,12 +1620,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.MATCH_SEQUENCE: {
-                        stackTop = bytecodeCheckSeq(virtualFrame, useCachedNodes, stackTop, bci, localNodes);
+                        stackTop = bytecodeCheckTpFlags(virtualFrame, SEQUENCE, useCachedNodes, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_MAPPING: {
+                        stackTop = bytecodeCheckTpFlags(virtualFrame, MAPPING, useCachedNodes, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.MATCH_KEYS: {
+                        stackTop = bytecodeMatchKeys(virtualFrame, stackTop, bci, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.COPY_DICT_WITHOUT_KEYS: {
+                        bytecodeCopyDictWithoutKeys(virtualFrame, stackTop, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.MATCH_CLASS: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeMatchClass(virtualFrame, useCachedNodes, stackTop, oparg, bci, localNodes);
+                        stackTop = bytecodeMatchClass(virtualFrame, stackTop, oparg, bci, localNodes);
                         break;
                     }
                     case OpCodesConstants.GET_LEN: {
@@ -2270,22 +2286,43 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeCheckSeq(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
-        Object seq = virtualFrame.getObject(stackTop);
+    private int bytecodeCheckTpFlags(VirtualFrame virtualFrame, long flags, boolean useCachedNodes, int stackTop, int bci, Node[] localNodes) {
+        Object obj = virtualFrame.getObject(stackTop);
         GetTPFlagsNode flagsNode = insertChildNode(localNodes, bci, UNCACHED_TP_FLAGS, GetTPFlagsNodeGen.class, NODE_TP_FLAGS, useCachedNodes);
-        boolean res = (flagsNode.execute(seq) & Py_TPFLAGS_SEQUENCE) != 0;
+        boolean res = (flagsNode.execute(obj) & flags) != 0;
         virtualFrame.setObject(++stackTop, res);
         return stackTop;
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeMatchClass(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, int oparg, int bci, Node[] localNodes) {
-        TruffleString[] names = (TruffleString[]) virtualFrame.getObject(stackTop--);
+    private int bytecodeMatchKeys(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
+        Object keys = virtualFrame.getObject(stackTop);
+        Object subject = virtualFrame.getObject(stackTop - 1);
+        MatchKeysNode matchKeysNode = insertChildNode(localNodes, bci, MatchKeysNodeGen.class, NODE_MATCH_KEYS);
+        Object values = matchKeysNode.execute(virtualFrame, subject, (Object[]) keys);
+        virtualFrame.setObject(++stackTop, values);
+        virtualFrame.setObject(++stackTop, values != PNone.NONE ? true : false);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeCopyDictWithoutKeys(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
+        Object keys = virtualFrame.getObject(stackTop);
+        Object subject = virtualFrame.getObject(stackTop - 1);
+        CopyDictWithoutKeysNode copyDictNode = insertChildNode(localNodes, bci, CopyDictWithoutKeysNodeGen.class, NODE_COPY_DICT_WITHOUT_KEYS);
+        PDict rest = copyDictNode.execute(virtualFrame, subject, (Object[]) keys);
+        virtualFrame.setObject(stackTop, rest);
+        return stackTop;
+    }
+
+    @BytecodeInterpreterSwitch
+    private int bytecodeMatchClass(VirtualFrame virtualFrame, int stackTop, int oparg, int bci, Node[] localNodes) {
+        TruffleString[] argNames = (TruffleString[]) virtualFrame.getObject(stackTop--);
         Object type = virtualFrame.getObject(stackTop);
         Object subject = virtualFrame.getObject(stackTop - 1);
 
         MatchClassNode matchClassNode = insertChildNode(localNodes, bci, MatchClassNodeGen.class, NODE_MATCH_CLASS);
-        Object attrs = matchClassNode.execute(virtualFrame, subject, type, oparg, names);
+        Object attrs = matchClassNode.execute(virtualFrame, subject, type, oparg, argNames);
 
         if (attrs != null) {
             virtualFrame.setObject(stackTop, true);
@@ -4372,8 +4409,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return stackTop;
     }
 
-    private void bytecodeDeleteDeref(Frame localFrame, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
-        PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
+    private void bytecodeDeleteDeref(Frame localFrame, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
+        PCell cell = (PCell) localFrame.getObject(cachedCelloffset + oparg);
         Object value = cell.getRef();
         if (value == null) {
             raiseUnboundCell(localNodes, bci, oparg, useCachedNodes);
@@ -4382,8 +4419,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeStoreDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int oparg, int celloffset) {
-        PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
+    private int bytecodeStoreDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int oparg, int cachedCelloffset) {
+        PCell cell = (PCell) localFrame.getObject(cachedCelloffset + oparg);
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         cell.setRef(value);
@@ -4391,7 +4428,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
+    private int bytecodeLoadClassDeref(VirtualFrame virtualFrame, Frame localFrame, Object locals, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
         TruffleString varName;
         boolean isCellVar;
         if (oparg < cellvars.length) {
@@ -4407,13 +4444,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             virtualFrame.setObject(++stackTop, value);
             return stackTop;
         } else {
-            return bytecodeLoadDeref(virtualFrame, localFrame, stackTop, bci, localNodes, oparg, celloffset, useCachedNodes);
+            return bytecodeLoadDeref(virtualFrame, localFrame, stackTop, bci, localNodes, oparg, cachedCelloffset, useCachedNodes);
         }
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int celloffset, boolean useCachedNodes) {
-        PCell cell = (PCell) localFrame.getObject(celloffset + oparg);
+    private int bytecodeLoadDeref(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, Node[] localNodes, int oparg, int cachedCelloffset, boolean useCachedNodes) {
+        PCell cell = (PCell) localFrame.getObject(cachedCelloffset + oparg);
         Object value = cell.getRef();
         if (value == null) {
             raiseUnboundCell(localNodes, bci, oparg, useCachedNodes);

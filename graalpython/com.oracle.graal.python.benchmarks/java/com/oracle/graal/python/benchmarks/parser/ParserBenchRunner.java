@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,7 +55,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -113,7 +112,6 @@ public class ParserBenchRunner {
 
     public static void main(String[] args) throws RunnerException {
         assert args.length > 1;
-        final HashMap<String, String> rest = new HashMap<>();
         String benchName = args[0];
         String benchClass = args[1];
         int iter = MEASUREMENT_ITERATIONS;
@@ -179,7 +177,6 @@ public class ParserBenchRunner {
         }
         File file;
         PythonFileFilter filter = new PythonFileFilter(recursion, excludedPaths);
-        PythonContext pyContext = PythonContext.get(null);
         for (String path : paths) {
             file = new File(path);
             if (file.isDirectory() || filter.accept(file)) {
@@ -189,10 +186,10 @@ public class ParserBenchRunner {
         return result;
     }
 
-    public List<PythonParserImpl.CacheItem> getAntlrResults(List<Source> sources) {
-        List<PythonParserImpl.CacheItem> result = new ArrayList<>(sources.size());
+    public List<PythonParserImpl.CacheItem> getAntlrResults() {
+        List<PythonParserImpl.CacheItem> result = new ArrayList<>(getSources().size());
 
-        for (Source source : sources) {
+        for (Source source : getSources()) {
             try {
                 PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
                 PythonParserImpl.CacheItem cachedItem = parser.parseWithANTLR(PythonParser.ParserMode.File, 0, core, sstFactory, source, null, null);

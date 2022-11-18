@@ -99,27 +99,25 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
 
     @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex < 0"})
     void writeList(VirtualFrame frame, PList rhsVal,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
         SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
-        writeSequenceStorage(frame, sequenceStorage, lenNode, getItemNode);
+        writeSequenceStorage(frame, sequenceStorage, getItemNode);
         performAssignments(frame);
     }
 
     @Specialization(guards = {"isBuiltinTuple(rhsVal, isBuiltinClass)", "starredIndex < 0"})
     void writeTuple(VirtualFrame frame, PTuple rhsVal,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
         SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
-        writeSequenceStorage(frame, sequenceStorage, lenNode, getItemNode);
+        writeSequenceStorage(frame, sequenceStorage, getItemNode);
         performAssignments(frame);
     }
 
     @ExplodeLoop
-    private void writeSequenceStorage(VirtualFrame frame, SequenceStorage sequenceStorage, SequenceStorageNodes.LenNode lenNode, SequenceStorageNodes.GetItemNode getItemNode) {
-        int len = lenNode.execute(sequenceStorage);
+    private void writeSequenceStorage(VirtualFrame frame, SequenceStorage sequenceStorage, SequenceStorageNodes.GetItemNode getItemNode) {
+        int len = sequenceStorage.length();
         if (len > slots.length) {
             CompilerDirectives.transferToInterpreter();
             throw ensureRaiseNode().raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, slots.length);
@@ -161,12 +159,11 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     @Specialization(guards = {"!isBuiltinTuple(iterable, tupleProfile)", "!isBuiltinList(iterable, listProfile)", "starredIndex < 0"})
     void writeIterable(VirtualFrame frame, Object iterable,
                     @Cached TupleNodes.ConstructTupleNode constructTupleNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile tupleProfile,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile listProfile) {
         PTuple rhsValue = constructTupleNode.execute(frame, iterable);
-        writeSequenceStorage(frame, rhsValue.getSequenceStorage(), lenNode, getItemNode);
+        writeSequenceStorage(frame, rhsValue.getSequenceStorage(), getItemNode);
         performAssignments(frame);
     }
 
@@ -201,11 +198,10 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
 
         abstract void execute(VirtualFrame frame, SequenceStorage storage, WriteNode[] slots, int starredIndex);
 
-        @Specialization(guards = {"getLength(lenNode, storage) == cachedLength"}, limit = "1")
+        @Specialization(guards = {"getLength(storage) == cachedLength"}, limit = "1")
         void doExploded(VirtualFrame frame, SequenceStorage storage, WriteNode[] slots, int starredIndex,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("lenNode") @Cached @SuppressWarnings("unused") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("getLength(lenNode, storage)") int cachedLength) {
+                        @Cached("getLength(storage)") int cachedLength) {
 
             CompilerAsserts.partialEvaluationConstant(slots);
             CompilerAsserts.partialEvaluationConstant(starredIndex);
@@ -224,11 +220,10 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
 
         @Specialization(replaces = "doExploded")
         void doGeneric(VirtualFrame frame, SequenceStorage storage, WriteNode[] slots, int starredIndex,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode) {
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             CompilerAsserts.partialEvaluationConstant(slots);
             CompilerAsserts.partialEvaluationConstant(starredIndex);
-            int len = lenNode.execute(storage);
+            int len = storage.length();
             if (len < slots.length - 1) {
                 throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, len);
             } else {
@@ -274,8 +269,8 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             }
         }
 
-        static int getLength(SequenceStorageNodes.LenNode lenNode, SequenceStorage storage) {
-            return lenNode.execute(storage);
+        static int getLength(SequenceStorage storage) {
+            return storage.length();
         }
 
         private PythonObjectFactory factory() {
