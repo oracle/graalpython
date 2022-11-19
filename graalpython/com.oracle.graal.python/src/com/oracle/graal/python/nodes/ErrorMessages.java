@@ -302,6 +302,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");
     public static final TruffleString EXPECTED_S_P_FOUND = tsLiteral("expected %s, %p found");
     public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected '%s' after conversion specifier");
+    public static final TruffleString EXPECTED_S_NODE_GOT_P = tsLiteral("expected %s node, got %p");
     public static final TruffleString EXPECTED_SOME_SORT_OF_S_BUT_GOT_S = tsLiteral("expected some sort of %s, but got %s");
     public static final TruffleString EXPECTED_STR_OR_BYTES = tsLiteral("expected str or bytes, got '%p'");
     public static final TruffleString EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = tsLiteral("expected str, bytes or os.PathLike object, not %p");

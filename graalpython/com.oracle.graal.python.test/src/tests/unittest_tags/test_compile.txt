@@ -9,7 +9,6 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_handling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_order
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_bad_single_statement
-*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_compile_ast
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_compile_filename
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_compiler_recursion_limit
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_dead_blocks_do_not_generate_bytecode

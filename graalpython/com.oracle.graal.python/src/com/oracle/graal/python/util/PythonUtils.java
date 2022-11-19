@@ -43,6 +43,7 @@ package com.oracle.graal.python.util;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.management.ManagementFactory;
@@ -712,9 +713,13 @@ public final class PythonUtils {
         return result;
     }
 
-    @TruffleBoundary
     public static Source createFakeSource() {
-        return Source.newBuilder(PythonLanguage.ID, "", "").build();
+        return createFakeSource(T_EMPTY_STRING);
+    }
+
+    @TruffleBoundary
+    public static Source createFakeSource(TruffleString name) {
+        return Source.newBuilder(PythonLanguage.ID, "", name.toJavaStringUncached()).build();
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {

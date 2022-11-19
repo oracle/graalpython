@@ -151,88 +151,98 @@ def assert_raise_syntax_error(source, msg):
     else:
         assert False , "Syntax Error was not raised.\nCode:\n----\n%s\n----\nhas to raise Syntax Error: %s" % (source,msg)
 
-# TODO GR-39439: the error messages changed between 3.8 and 3.10
-# def test_cannot_assign():
-#     if sys.implementation.version.minor >= 8:
-#         def check(s, msg):
-#             # test simple assignment
-#             assert_raise_syntax_error("%s = 1" % s, msg)
-#             # testing aug assignment
-#             assert_raise_syntax_error("%s += 1" % s, msg)
-#             # test with statement
-#             assert_raise_syntax_error("with foo as %s:\n pass" % s, msg)
-#             # test for statement
-#             assert_raise_syntax_error("for %s in range(1,10):\n pass" % s, msg)
-#             # test for comprehension statement
-#             assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, msg)
-#         check("1", "cannot assign to literal")
-#         check("1.1", "cannot assign to literal")
-#         check("{1}", "cannot assign to set display")
-#         check("{}", "cannot assign to dict display")
-#         check("{1: 2}", "cannot assign to dict display")
-#         check("[1,2, 3]", "cannot assign to literal")
-#         check("(1,2, 3)", "cannot assign to literal")
-#         check("1.2j", "cannot assign to literal")
-#         check("None", "cannot assign to None")
-#         check("...", "cannot assign to Ellipsis")
-#         check("True", "cannot assign to True")
-#         check("False", "cannot assign to False")
-#         check("b''", "cannot assign to literal")
-#         check("''", "cannot assign to literal")
-#         check("f''", "cannot assign to f-string expression")
-#         check("(a,None, b)", "cannot assign to None")
-#         check("(a,True, b)", "cannot assign to True")
-#         check("(a,False, b)", "cannot assign to False")
-#         check("a+b", "cannot assign to operator")
-#         check("fn()", "cannot assign to function call")
-#         check("{letter for letter in 'ahoj'}", "cannot assign to set comprehension")
-#         check("[letter for letter in 'ahoj']", "cannot assign to list comprehension")
-#         check("(letter for letter in 'ahoj')", "cannot assign to generator expression")
-#         check("obj.True", "invalid syntax")
-#         check("(a, *True, b)", "cannot assign to True")
-#         check("(a, *False, b)", "cannot assign to False")
-#         check("(a, *None, b)", "cannot assign to None")
-#         check("(a, *..., b)", "cannot assign to Ellipsis")
-#         check("__debug__", "cannot assign to __debug__")
-#         check("a.__debug__", "cannot assign to __debug__")
-#         check("a.b.__debug__", "cannot assign to __debug__")
-#
-# def test_cannot_assign_without_with():
-#     if sys.implementation.version.minor >= 8:
-#         def check(s, msg):
-#             # test simple assignment
-#             assert_raise_syntax_error("%s = 1" % s, msg)
-#             # testing aug assignment
-#             assert_raise_syntax_error("%s += 1" % s, msg)
-#             # test for statement
-#             assert_raise_syntax_error("for %s in range(1,10):\n pass" % s, msg)
-#             # test for comprehension statement
-#             assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, msg)
-#         check("*True", "cannot assign to True")
-#         check("*False", "cannot assign to False")
-#         check("*None", "cannot assign to None")
-#         check("*...", "cannot assign to Ellipsis")
-#         check("[a, b, c + 1],", "cannot assign to operator")
-#
-# def test_cannot_assign_other():
-#     if sys.implementation.version.minor >= 8:
-#         assert_raise_syntax_error("a if 1 else b = 1", "cannot assign to conditional expression")
-#         assert_raise_syntax_error("a if 1 else b -= 1", "cannot assign to conditional expression")
-#         assert_raise_syntax_error("f(True=2)", "cannot assign to True")
-#         assert_raise_syntax_error("f(__debug__=2)", "cannot assign to __debug__")
-#         assert_raise_syntax_error("def f(__debug__): pass\n", "cannot assign to __debug__")
-#         assert_raise_syntax_error("def f(*, x=lambda __debug__:0): pass\n", "cannot assign to __debug__")
-#         assert_raise_syntax_error("def f(*args:(lambda __debug__:0)): pass\n", "cannot assign to __debug__")
-#         assert_raise_syntax_error("def f(**kwargs:(lambda __debug__:0)): pass\n", "cannot assign to __debug__")
-#         assert_raise_syntax_error("def f(**__debug__): pass\n", "cannot assign to __debug__")
-#         assert_raise_syntax_error("def f(*xx, __debug__): pass\n", "cannot assign to __debug__")
-#
-# def test_invalid_assignmetn_to_yield_expression():
-#     if sys.implementation.version.minor >= 8:
-#         assert_raise_syntax_error("def fn():\n (yield 10) = 1", "cannot assign to yield expression")
-#         assert_raise_syntax_error("def fn():\n (yield 10) += 1", "cannot assign to yield expression")
-#         assert_raise_syntax_error("def fn():\n with foo as (yield 10) : pass", "cannot assign to yield expression")
-#         assert_raise_syntax_error("def fn():\n for (yield 10) in range(1,10): pass", "cannot assign to yield expression")
+def test_cannot_assign():
+    if sys.implementation.version.minor >= 8:
+        def check(s, label1, label2=None):
+            if label1:
+                msg1 = f'cannot assign to {label1}'
+                msg2 = f"'{label2 or label1}' is an illegal expression for augmented assignment"
+            else:
+                msg1 = msg2 = "invalid syntax"
+            # test simple assignment
+            assert_raise_syntax_error("%s = 1" % s, msg1)
+            # testing aug assignment
+            if label1 != '__debug__':
+                assert_raise_syntax_error("%s += 1" % s, msg2)
+            # test with statement
+            assert_raise_syntax_error("with foo as %s:\n pass" % s, msg1)
+            # test for statement
+            assert_raise_syntax_error("for %s in range(1,10):\n pass" % s, msg1)
+            # test for comprehension statement
+            assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, msg1)
+        check("1", "literal")
+        check("1.1", "literal")
+        check("{1}", "set display")
+        check("{}", "dict literal")
+        check("{1: 2}", "dict literal")
+        check("[1,2, 3]", "literal", "list")
+        check("(1,2, 3)", "literal", "tuple")
+        check("1.2j", "literal")
+        check("None", "None")
+        check("...", "ellipsis")
+        check("True", "True")
+        check("False", "False")
+        check("b''", "literal")
+        check("''", "literal")
+        check("f''", "f-string expression")
+        check("(a,None, b)", "None", "tuple")
+        check("(a,True, b)", "True", "tuple")
+        check("(a,False, b)", "False", "tuple")
+        check("a+b", "expression")
+        check("fn()", "function call")
+        check("{letter for letter in 'ahoj'}", "set comprehension")
+        check("[letter for letter in 'ahoj']", "list comprehension")
+        check("(letter for letter in 'ahoj')", "generator expression")
+        check("obj.True", None)
+        check("(a, *True, b)", "True", "tuple")
+        check("(a, *False, b)", "False", "tuple")
+        check("(a, *None, b)", "None", "tuple")
+        check("(a, *..., b)", "ellipsis", "tuple")
+        check("__debug__", "__debug__")
+        check("a.__debug__", "__debug__")
+        check("a.b.__debug__", "__debug__")
+
+def test_cannot_assign_without_with():
+    if sys.implementation.version.minor >= 8:
+        def check(s, label1, label2=None):
+            if label1:
+                msg1 = f'cannot assign to {label1}'
+                msg2 = f"'{label2 or label1}' is an illegal expression for augmented assignment"
+            else:
+                msg1 = msg2 = "invalid syntax"
+            # test simple assignment
+            assert_raise_syntax_error("%s = 1" % s, msg1)
+            # testing aug assignment
+            assert_raise_syntax_error("%s += 1" % s, msg2)
+            # test for statement
+            assert_raise_syntax_error("for %s in range(1,10):\n pass" % s, msg1)
+            # test for comprehension statement
+            assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, msg1)
+        check("*True", "True", "starred")
+        check("*False", "False", "starred")
+        check("*None", "None", "starred")
+        check("*...", "ellipsis", "starred")
+        check("[a, b, c + 1],", "expression", "tuple")
+
+def test_cannot_assign_other():
+    if sys.implementation.version.minor >= 8:
+        assert_raise_syntax_error("a if 1 else b = 1", "cannot assign to conditional expression")
+        assert_raise_syntax_error("a if 1 else b -= 1", "'conditional expression' is an illegal expression for augmented assignment")
+        assert_raise_syntax_error("f(True=2)", "cannot assign to True")
+        assert_raise_syntax_error("f(__debug__=2)", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f(__debug__): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f(*, x=lambda __debug__:0): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f(*args:(lambda __debug__:0)): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f(**kwargs:(lambda __debug__:0)): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f(**__debug__): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f(*xx, __debug__): pass\n", "cannot assign to __debug__")
+
+def test_invalid_assignmetn_to_yield_expression():
+    if sys.implementation.version.minor >= 8:
+        assert_raise_syntax_error("def fn():\n (yield 10) = 1", "cannot assign to yield expression")
+        assert_raise_syntax_error("def fn():\n (yield 10) += 1", "'yield expression' is an illegal expression for augmented assignment")
+        assert_raise_syntax_error("def fn():\n with foo as (yield 10) : pass", "cannot assign to yield expression")
+        assert_raise_syntax_error("def fn():\n for (yield 10) in range(1,10): pass", "cannot assign to yield expression")
 
 def test_invalid_ann_assignment():
     if sys.implementation.version.minor >= 8:
@@ -775,14 +785,14 @@ def test_annotations_in_function():
 
 def test_annotations_in_class():
 
-    # TODO GR-39439 review after update to python 3.10
-    # test_globals = {'__annotations__': {}}
-    # source = '''class Bif:
-    #     pass
-    #     '''
-    # code = compile (source, "<test>", "exec")
-    # exec(code, test_globals)
-    # assert hasattr(test_globals['Bif'], '__annotations__') == False
+    test_globals = {'__annotations__': {}}
+    source = '''class Bif:
+        pass
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code, test_globals)
+    assert hasattr(test_globals['Bif'], '__annotations__')
+    assert len(test_globals['Bif'].__annotations__) == 0
 
     test_globals = {'__annotations__': {}}
     source = '''class Baf:

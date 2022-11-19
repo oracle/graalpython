@@ -207,7 +207,6 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(0, '\u0102' * 10, 'count', '\u0102\U00100304')
 
 
-    @support.impl_detail('GR-26305: string indexing', graalpy=False)
     def test_find(self):
         string_tests.CommonTest.test_find(self)
         # test implementation details of the memchr fast path
@@ -267,7 +266,6 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(-1, 'a' * 100, 'rfind', '\U00100304a')
         self.checkequal(-1, '\u0102' * 100, 'rfind', '\U00100304\u0102')
 
-    @support.impl_detail('GR-26305: string indexing', graalpy=False)
     def test_index(self):
         string_tests.CommonTest.test_index(self)
         self.checkequalnofix(0, 'abcdefghiabc', 'index',  '')
