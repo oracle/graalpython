@@ -181,4 +181,8 @@ public final class PGenerator extends PythonBuiltinObject {
     public void setQualname(TruffleString qualname) {
         this.qualname = qualname;
     }
+
+    public boolean isCoroutine() {
+        return isCoroutine || isIterableCoroutine;
+    }
 }

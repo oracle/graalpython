@@ -1063,6 +1063,16 @@ public class CompilerTests extends PythonTests {
         doTest(source);
     }
 
+    @Test
+    public void testReturnFromAsyncWithT() {
+        String source = "async def f():\n" +
+                "  yield from []\n" +
+                "  with a:\n" +
+                "    with b:\n" +
+                "      return";
+        doTest(source);
+
+    }
 
     private void doTest(String src) {
         doTest(src, InputType.FILE);

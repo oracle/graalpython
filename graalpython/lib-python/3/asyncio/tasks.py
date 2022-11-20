@@ -324,8 +324,9 @@ try:
 except ImportError:
     pass
 else:
-    # _CTask is needed for tests.
-    Task = _CTask = _asyncio.Task
+    # graalpy change: C Tasks are not implemented yet, so we keep the python Task
+    # Task = _CTask = _asyncio.Task
+    pass
 
 
 def create_task(coro, *, name=None):

@@ -100,7 +100,7 @@ public class CoroutineWrapperBuiltins extends PythonBuiltins {
         @Specialization
         public Object doThrow(VirtualFrame frame, PCoroutineWrapper self, Object typ, Object val, Object tp,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode) {
-            return throwNode.execute(frame, self, typ, val, tp);
+            return throwNode.execute(frame, self.coroutine, typ, val, tp);
         }
     }
 }

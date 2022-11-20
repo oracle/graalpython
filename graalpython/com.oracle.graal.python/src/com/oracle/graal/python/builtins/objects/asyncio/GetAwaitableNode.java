@@ -67,9 +67,7 @@ public abstract class GetAwaitableNode extends Node {
 
     @Specialization
     public Object doGenerator(PGenerator generator,
-                    @Cached PRaiseNode raise,
-                    @Cached ConditionProfile hasCode,
-                    @Cached PythonObjectFactory factory) {
+                    @Cached PRaiseNode raise) {
         if (generator.isCoroutine()) {
             return generator;
         } else {

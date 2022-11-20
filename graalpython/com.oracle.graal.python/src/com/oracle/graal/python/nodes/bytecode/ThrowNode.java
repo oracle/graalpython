@@ -117,7 +117,7 @@ public abstract class ThrowNode extends PNodeWithContext {
                 throw exception;
             }
             try {
-                Object value = callThrow.execute(frame, throwMethod);
+                Object value = callThrow.execute(frame, throwMethod, exception.getEscapedException());
                 frame.setObject(stackTop, value);
                 return false;
             } catch (PException e) {

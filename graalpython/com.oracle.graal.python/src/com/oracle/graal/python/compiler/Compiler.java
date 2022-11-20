@@ -2112,10 +2112,10 @@ public class Compiler implements SSTreeVisitor<Void> {
         WithItemTy item = node.items[itemIndex];
         item.contextExpr.accept(this);
         addOp(SETUP_AWITH);
-        awaitStackTop(); // SETUP_AWITH leaves 2 awaitables rather than a function and a result
         unit.pushBlock(new BlockInfo.AsyncWith(body, handler, node));
 
         unit.useNextBlock(body);
+        awaitStackTop(); // SETUP_AWITH leaves 2 awaitables rather than a function and a result
         /*
          * Unwind one more stack item than it normally would to get rid of the context manager that
          * is not needed in the finally block
@@ -3618,6 +3618,18 @@ public class Compiler implements SSTreeVisitor<Void> {
                     }
                     addOp(LOAD_NONE);
                     addOp(EXIT_WITH);
+                } else if (info instanceof BlockInfo.AsyncWith) {
+                    unit.useNextBlock(new Block());
+                    BlockInfo.AsyncWith with = (BlockInfo.AsyncWith) info;
+                    setLocation(with.node);
+                    if (type == UnwindType.RETURN_VALUE) {
+                        addOp(ROT_THREE);
+                    }
+                    addOp(LOAD_NONE);
+                    addOp(GET_AEXIT_CORO);
+                    awaitStackTop();
+                    addOp(EXIT_AWITH);
+
                 } else if (info instanceof BlockInfo.TryFinally) {
                     unit.useNextBlock(new Block());
                     if (type == UnwindType.RETURN_VALUE) {
