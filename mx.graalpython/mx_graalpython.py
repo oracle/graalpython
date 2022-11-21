@@ -1509,17 +1509,20 @@ def _python_checkpatchfiles():
     try:
         # TODO our mirror doesn't handle the json API
         # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
-        pypi_base_url = "https://pypi.org/"
+        pypi_base_url = "https://pypi.org"
         with open(listfilename, "r") as listfile:
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
-        checked = set()
+        checked = {
+            'scipy',  # scipy puts the whole license text in the field, skip it. It's new BSD
+            'setuptools',  # Empty license field, skip it. It's MIT
+        }
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
             "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache", "new BSD",
         ]
         for line in content.split("\n"):
-            if os.stat(line).st_size == 0:
+            if not line or os.stat(line).st_size == 0:
                 # empty files are just markers and do not need to be license checked
                 continue
             match = patchfile_pattern.search(line)
