@@ -152,7 +152,7 @@ def test_module_code():
         assert set(code.co_varnames) == set()
         assert code.co_filename.endswith("__init__.py")
         assert code.co_name.startswith("<module")
-        assert code.co_firstlineno == 40
+        assert code.co_firstlineno == 1
         assert code.co_freevars == tuple()
         assert code.co_cellvars == tuple()
 
