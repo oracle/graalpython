@@ -108,29 +108,24 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    @ImportStatic(PGuards.class)
     static class Length {
         @Specialization(guards = "desc == self.frame.getFrameDescriptor()", limit = "1")
         @ExplodeLoop
         static int getLengthCached(LocalsStorage self,
                         @Shared("desc") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
-            int size = desc.getNumberOfSlots();
-            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
-                Object identifier = desc.getSlotName(slot);
-                if (identifier != null || self.getValue(slot) == null) {
-                    size--;
-                }
-            }
-            return size;
+            return computeLength(self, desc);
         }
 
         @Specialization(replaces = "getLengthCached")
         static int getLength(LocalsStorage self) {
-            FrameDescriptor desc = self.frame.getFrameDescriptor();
+            return computeLength(self, self.frame.getFrameDescriptor());
+        }
+
+        private static int computeLength(LocalsStorage self, FrameDescriptor desc) {
             int size = desc.getNumberOfSlots();
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);
-                if (identifier != null || self.getValue(slot) == null) {
+                if (identifier == null || self.getValue(slot) == null) {
                     size--;
                 }
             }
