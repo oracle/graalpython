@@ -63,12 +63,12 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -104,7 +104,6 @@ import sun.misc.Unsafe;
 
 public final class PythonUtils {
 
-    public static final PCell[] NO_CLOSURE = new PCell[0];
     public static final ByteArraySupport arrayAccessor;
     public static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
 
@@ -132,6 +131,7 @@ public final class PythonUtils {
     public static final int[] EMPTY_INT_ARRAY = new int[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final char[] EMPTY_CHAR_ARRAY = new char[0];
+    public static final ByteSequence EMPTY_BYTE_SEQUENCE = ByteSequence.create(EMPTY_BYTE_ARRAY);
 
     /**
      * Returns an estimate for the initial capacity of a
@@ -726,7 +726,7 @@ public final class PythonUtils {
 
     @TruffleBoundary
     public static Source createFakeSource(TruffleString name) {
-        return Source.newBuilder(PythonLanguage.ID, "", name.toJavaStringUncached()).build();
+        return Source.newBuilder(PythonLanguage.ID, EMPTY_BYTE_SEQUENCE, name.toJavaStringUncached()).build();
     }
 
     public static Object[] prependArgument(Object primary, Object[] arguments) {
