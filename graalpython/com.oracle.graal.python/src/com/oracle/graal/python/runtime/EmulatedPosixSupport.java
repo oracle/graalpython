@@ -991,9 +991,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             return unixStat(f, linkOptions);
         } catch (UnsupportedOperationException unsupported) {
-            try {
-                return posixStat(f, linkOptions);
-            } catch (UnsupportedOperationException unsupported2) {
+            if (PythonLanguage.JAVA_SECURITY_AUTH) {
+                try {
+                    return posixStat(f, linkOptions);
+                } catch (UnsupportedOperationException unsupported2) {
+                    return basicStat(f, linkOptions);
+                }
+            } else {
                 return basicStat(f, linkOptions);
             }
         }
