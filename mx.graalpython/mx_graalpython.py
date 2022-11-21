@@ -1526,7 +1526,7 @@ def _python_checkpatchfiles():
             if match:
                 package_name = match.group(1)
                 if package_name in checked:
-                    break
+                    continue
                 checked.add(package_name)
                 package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
                 mx.log("Checking license of patchfile for " + package_url)
