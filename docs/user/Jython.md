@@ -237,12 +237,47 @@ for record in handler.this.logged:
 ## Embedding Python into Java
 
 The other way to use Jython is to embed it into Java applications.
-Where above GraalVM's Python runtime offered some measure of compatibility with existing Jython code, nothing is offered in this case.
-Existing code using Jython depends directly on the Jython package (for example, in the Maven configuration), because the Java code has references to Jython internal classes such as `PythonInterpreter`.
+Where above GraalVM's Python runtime offered some measure of compatibility with existing Jython code, not much is offered in this case.
 
-For GraalVM's Python runtime, no dependency other than on the [GraalVM SDK](https://mvnrepository.com/artifact/org.graalvm.sdk/graal-sdk) is required.
-There are no APIs particular to Python that are exposed, and everything is done through the GraalVM API.
+There are two options for embedding Jython in a Java application.
+One it to use the `PythonInterpreter` object that Jython provides.
+Existing code using Jython n this manner depends directly on the Jython package (for example, in the Maven configuration), because the Java code has references to Jython internal classes.
+These classes do not exist in GraalVM, and no equivalent classes are exposed.
+To migrate from this usage, we recommend switching to the [GraalVM SDK](https://mvnrepository.com/artifact/org.graalvm.sdk/graal-sdk).
+Using this SDK, no APIs particular to Python are exposed, everything is done through the GraalVM API, with maximum configurability of the Python runtime.
 
-It is important to note that as long as your application is executed on GraalVM with the Python language installed,
-you can embed Python in your programs.
+The other option to embed Jython in Java is via **JSR 223**, "Scripting for the Java Platform", by using the classes of the the `javax.script` package, and in particular, via the `ScriptEngine` class.
+We do not recommend this approach, since the `ScriptEngine` APIs are not a clean fit for the options and capabilities of GraalVM Python.
+However, to migrate existing code, the Netbeans project provides packages on Maven Central to help here.
+Remove Jython and add the following dependencies instead (using a Maven `pom.xml` as an example):
+
+```xml
+<dependency>
+  <groupId>org.netbeans.api</groupId>
+  <artifactId>org-netbeans-libs-graalsdk</artifactId>
+  <version>RELEASE150</version> <!-- or any later release -->
+</dependency>
+<dependency>
+  <groupId>org.netbeans.api</groupId>
+  <artifactId>org-netbeans-api-scripting</artifactId>
+  <version>RELEASE150</version> <!-- or any later release -->
+</dependency>
+```
+
+Afterwards, basic usage of GraalVM's Python can be achieved by replacing
+
+```java
+ScriptEngine python = new ScriptEngineManager().getEngineByName("python");
+`` 
+
+with
+
+```java
+import org.netbeans.api.scripting.Scripting;
+// ...
+ScriptEngineManager manager = Scripting.newBuilder().allowAllAccess(true).build();
+ScriptEngine python = manager.getEngineByName("GraalVM:python");
+```
+
+It is important to note that either of those options will only work if your application is executed on GraalVM with the Python language installed.
 For more details, refer to the [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) guide.
