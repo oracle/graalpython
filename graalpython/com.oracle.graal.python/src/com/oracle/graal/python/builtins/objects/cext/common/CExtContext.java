@@ -66,8 +66,8 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -373,6 +373,6 @@ public abstract class CExtContext {
         TruffleString message = toTruffleStringUncached(e.getMessage());
         PBaseException excObject = PythonObjectFactory.getUncached().createBaseException(SystemError, message != null ? message : toTruffleStringUncached(e.toString()),
                         PythonUtils.EMPTY_OBJECT_ARRAY);
-        return ExceptionHandlingStatementNode.wrapJavaException(e, raisingNode, excObject);
+        return ExceptionUtils.wrapJavaException(e, raisingNode, excObject);
     }
 }

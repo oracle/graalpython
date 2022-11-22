@@ -7,3 +7,4 @@ ScopeEnvironment
             DerivedClassName: [DefLocal, Local]
             modname: [Use, GlobalImplicit]
       Scope DerivedClassName Class
+            Flags: [IsNested]

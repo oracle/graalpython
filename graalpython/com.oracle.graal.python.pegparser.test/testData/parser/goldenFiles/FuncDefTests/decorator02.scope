@@ -12,14 +12,14 @@ ScopeEnvironment
             delta: [DefParam, Cell]
             wrap: [DefLocal, Use, Local]
       Scope wrap Function
-            Flags: [HasChildWithFreeVars]
+            Flags: [IsNested, HasChildWithFreeVars]
             Varnames: fn
             Symbols:
                   delta: [Free]
                   fn: [DefParam, Cell]
                   wrapped_f: [DefLocal, Use, Local]
         Scope wrapped_f Function
-                Flags: [HasFreeVars, HasVarArgs]
+                Flags: [IsNested, HasFreeVars, HasVarArgs]
                 Varnames: args
                 Symbols:
                         args: [DefParam, Use, Local]

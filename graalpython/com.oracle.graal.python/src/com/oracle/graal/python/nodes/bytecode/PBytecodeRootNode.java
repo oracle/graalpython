@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -160,6 +159,8 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNodeGen;
+import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
+import com.oracle.graal.python.nodes.exception.ExceptMatchNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
@@ -183,21 +184,13 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
-import com.oracle.graal.python.nodes.statement.ExceptNodeFactory.ExceptMatchNodeGen;
-import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
-import com.oracle.graal.python.nodes.statement.ImportStarNode;
-import com.oracle.graal.python.nodes.statement.RaiseNode;
-import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
-import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
-import com.oracle.graal.python.nodes.subscript.DeleteItemNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
-import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -250,8 +243,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @SuppressWarnings("static-method")
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
-    private static final NodeSupplier<RaiseNode> NODE_RAISENODE = () -> RaiseNode.create(null, null);
-    private static final NodeSupplier<DeleteItemNode> NODE_DELETE_ITEM = DeleteItemNode::create;
+    private static final NodeSupplier<RaiseNode> NODE_RAISENODE = RaiseNode::create;
     private static final NodeSupplier<PyObjectDelItem> NODE_OBJECT_DEL_ITEM = PyObjectDelItem::create;
     private static final PyObjectDelItem UNCACHED_OBJECT_DEL_ITEM = PyObjectDelItem.getUncached();
 
@@ -465,12 +457,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw CompilerDirectives.shouldNotReachHere();
         }
     };
-
-    /*
-     * Create fake GeneratorControlData just to maintain the same generator frame layout as AST
-     * interpreter. TODO remove
-     */
-    public static final GeneratorControlData GENERATOR_CONTROL_DATA = new GeneratorControlData(new GeneratorInfo(new GeneratorInfo.Mutable()));
 
     private final Signature signature;
     private final TruffleString name;
@@ -1018,7 +1004,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         // it, otherwise they stay at the initial value, which we must set to null here
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
-        PArguments.setControlData(arguments, GENERATOR_CONTROL_DATA);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
         copyArgsAndCells(generatorFrame, arguments);
     }
@@ -1769,7 +1754,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.DELETE_SUBSCR: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
-                        stackTop = bytecodeDeleteSubscr(virtualFrame, stackTop, beginBci, localNodes);
+                        stackTop = bytecodeDeleteSubscr(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.RAISE_VARARGS: {
@@ -2985,7 +2970,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void chainPythonExceptions(VirtualFrame virtualFrame, MutableLoopData mutableData, PException pe) {
         if (pe != null) {
             if (mutableData.localException != null) {
-                ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
+                ExceptionUtils.chainExceptions(pe.getUnreifiedException(), mutableData.localException, exceptionChainProfile1, exceptionChainProfile2);
             } else {
                 if (getCaughtExceptionNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2993,7 +2978,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
                 PException exceptionState = getCaughtExceptionNode.execute(virtualFrame);
                 if (exceptionState != null) {
-                    ExceptionHandlingStatementNode.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
+                    ExceptionUtils.chainExceptions(pe.getUnreifiedException(), exceptionState, exceptionChainProfile1, exceptionChainProfile2);
                 }
             }
         }
@@ -4567,13 +4552,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private int bytecodeDeleteSubscr(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes) {
-        DeleteItemNode delItem = insertChildNode(localNodes, bci, DeleteItemNodeGen.class, NODE_DELETE_ITEM);
+    private int bytecodeDeleteSubscr(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, boolean useCachedNodes) {
+        PyObjectDelItem delItem = insertChildNode(localNodes, bci, UNCACHED_OBJECT_DEL_ITEM, PyObjectDelItemNodeGen.class, NODE_OBJECT_DEL_ITEM, useCachedNodes);
         Object slice = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         Object container = virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        delItem.executeWith(virtualFrame, container, slice);
+        delItem.execute(virtualFrame, container, slice);
         return stackTop;
     }
 
@@ -5169,7 +5154,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int level = (int) virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         ImportStarNode importStarNode = insertChildNode(localNodes, bci, ImportStarNode.class, () -> new ImportStarNode(importName, level));
-        importStarNode.executeVoid(virtualFrame);
+        importStarNode.execute(virtualFrame);
         return stackTop;
     }
 

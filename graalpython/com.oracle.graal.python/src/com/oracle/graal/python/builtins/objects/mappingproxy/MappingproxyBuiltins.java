@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -164,7 +165,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getItem(VirtualFrame frame, PMappingproxy self, Object key,
-                        @Cached com.oracle.graal.python.nodes.subscript.GetItemNode getItemNode) {
+                        @Cached PyObjectGetItem getItemNode) {
             return getItemNode.execute(frame, self.getMapping(), key);
         }
     }

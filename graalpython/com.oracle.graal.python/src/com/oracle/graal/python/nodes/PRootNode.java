@@ -40,15 +40,9 @@
  */
 package com.oracle.graal.python.nodes;
 
-import java.util.ArrayList;
-
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.parser.PythonParserImpl;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
@@ -78,15 +72,6 @@ public abstract class PRootNode extends RootNode {
     @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
 
     private int nodeCount = -1;
-
-    /**
-     * This contains all the deprecation warnings that were issued while parsing the contents of
-     * this root node. They cannot be raised/printed immediately because the parse result might be
-     * cached, in which case the parser will not trigger them directly. At the place where the code
-     * would "logically" be parsed, the warnings can be raised via
-     * {@link #triggerDeprecationWarnings()}.
-     */
-    @CompilationFinal(dimensions = 1) private String[] deprecationWarnings;
 
     // contains the code of this root node in marshaled/serialized form
     private byte[] code;
@@ -145,28 +130,6 @@ public abstract class PRootNode extends RootNode {
     public void setNeedsExceptionState() {
         CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
         dontNeedExceptionState.invalidate();
-    }
-
-    public final void triggerDeprecationWarnings() {
-        if (deprecationWarnings != null) {
-            triggerDeprecationWarningsBoundary();
-        }
-    }
-
-    @TruffleBoundary
-    private void triggerDeprecationWarningsBoundary() {
-        Python3Core errors = PythonContext.get(this);
-        try {
-            for (String warning : deprecationWarnings) {
-                errors.warn(PythonBuiltinClassType.DeprecationWarning, ErrorMessages.S, warning);
-            }
-        } catch (Exception e) {
-            throw PythonParserImpl.handleParserError(errors, getSourceSection().getSource(), e);
-        }
-    }
-
-    public final void setDeprecationWarnings(ArrayList<String> deprecationWarnings) {
-        this.deprecationWarnings = deprecationWarnings == null || deprecationWarnings.isEmpty() ? null : deprecationWarnings.toArray(new String[0]);
     }
 
     @Override

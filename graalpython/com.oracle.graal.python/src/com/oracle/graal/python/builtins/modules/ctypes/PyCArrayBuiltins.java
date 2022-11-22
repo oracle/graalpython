@@ -73,20 +73,19 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes.AdjustIndices;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes.SliceUnpack;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.subscript.SetItemNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.AdjustIndices;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.SliceUnpack;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -121,10 +120,10 @@ public class PyCArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         Object Array_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached SetItemNode pySequenceSetItem) {
+                        @Cached PyObjectSetItem pySequenceSetItem) {
             int n = args.length;
             for (int i = 0; i < n; ++i) {
-                pySequenceSetItem.executeWith(frame, self, i, args[i]);
+                pySequenceSetItem.execute(frame, self, i, args[i]);
             }
             return PNone.NONE;
         }
@@ -176,7 +175,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(value)")
         Object Array_ass_subscript(VirtualFrame frame, CDataObject self, PSlice slice, Object value,
                         @Cached PyObjectSizeNode pySequenceLength,
-                        @Cached GetItemNode pySequenceGetItem,
+                        @Cached PyObjectGetItem pySequenceGetItem,
                         @Cached SliceUnpack sliceUnpack,
                         @Cached AdjustIndices adjustIndices,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -235,8 +234,8 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
-                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached SliceUnpack sliceUnpack,
+                        @Cached AdjustIndices adjustIndices,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);

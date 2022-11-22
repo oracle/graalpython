@@ -147,6 +147,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StrGetItemNodeWithSlice;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
@@ -198,7 +199,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
@@ -3556,7 +3556,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode objNode,
                         @Cached PCallHPyFunction callWriteDataNode,
-                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack) throws ArityException {
+                        @Cached SliceNodes.SliceUnpack sliceUnpack) throws ArityException {
             checkArity(arguments, 5);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object obj = objNode.execute(context, arguments[1]);

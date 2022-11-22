@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CallTarget;
@@ -214,6 +215,12 @@ public final class PythonUtils {
             result[i] = src[i];
         }
         return result;
+    }
+
+    // parser.c:_Py_Mangle
+    @TruffleBoundary
+    public static TruffleString mangleName(TruffleString className, TruffleString name) {
+        return toTruffleStringUncached(ScopeEnvironment.mangle(className.toJavaStringUncached(), name.toJavaStringUncached()));
     }
 
     @TruffleBoundary
@@ -720,6 +727,13 @@ public final class PythonUtils {
     @TruffleBoundary
     public static Source createFakeSource(TruffleString name) {
         return Source.newBuilder(PythonLanguage.ID, "", name.toJavaStringUncached()).build();
+    }
+
+    public static Object[] prependArgument(Object primary, Object[] arguments) {
+        Object[] result = new Object[arguments.length + 1];
+        result[0] = primary;
+        arraycopy(arguments, 0, result, 1, arguments.length);
+        return result;
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {

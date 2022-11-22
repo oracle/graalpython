@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -170,9 +169,6 @@ public final class PFunction extends PythonObject {
     @TruffleBoundary
     String getSourceCode() {
         RootNode rootNode = GetCallTargetNode.getUncached().execute(this).getRootNode();
-        if (rootNode instanceof GeneratorFunctionRootNode) {
-            rootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
-        }
         SourceSection sourceSection = rootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getCharacters().toString();

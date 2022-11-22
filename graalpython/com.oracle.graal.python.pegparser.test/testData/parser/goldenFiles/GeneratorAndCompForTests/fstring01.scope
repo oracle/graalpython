@@ -7,7 +7,7 @@ ScopeEnvironment
         Symbols:
             someset: [DefParam, Use, Local]
       Scope genexp Function
-            Flags: [IsGenerator, IsComprehension]
+            Flags: [IsNested, IsGenerator, IsComprehension]
             Varnames: .0
             Symbols:
                   .0: [DefParam, Local]

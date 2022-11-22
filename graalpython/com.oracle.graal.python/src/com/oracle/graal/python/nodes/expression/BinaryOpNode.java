@@ -25,15 +25,10 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChild(value = "leftNode", type = ExpressionNode.class)
-@NodeChild(value = "rightNode", type = ExpressionNode.class)
-public abstract class BinaryOpNode extends ExpressionNode implements BinaryOp {
-    public abstract ExpressionNode getLeftNode();
-
-    public abstract ExpressionNode getRightNode();
+public abstract class BinaryOpNode extends PNodeWithContext implements BinaryOp {
 
     // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
     // the lengths we go to to avoid boxing :(

@@ -320,6 +320,9 @@ public class ScopeEnvironment {
             Scope prev = currentScope;
             if (prev != null) {
                 scope.comprehensionIterExpression = prev.comprehensionIterExpression;
+                if (prev.type == ScopeType.Function || prev.isNested()) {
+                    scope.flags.add(ScopeFlags.IsNested);
+                }
             }
             currentScope = scope;
             if (type == Scope.ScopeType.Annotation) {

@@ -42,8 +42,8 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.T__INITIALIZING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
-import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL;
+import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
@@ -66,6 +66,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -88,8 +89,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -97,7 +96,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
-public abstract class AbstractImportNode extends StatementNode {
+public abstract class AbstractImportNode extends PNodeWithContext {
 
     @CompilationFinal(dimensions = 1) public static final TruffleString[] T_IMPORT_ALL = tsArray("*");
     public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
@@ -106,10 +105,6 @@ public abstract class AbstractImportNode extends StatementNode {
 
     public AbstractImportNode() {
         super();
-    }
-
-    private PythonLanguage getPythonLanguage() {
-        return PythonLanguage.get(this);
     }
 
     protected final Object importModule(VirtualFrame frame, TruffleString name) {
@@ -620,11 +615,6 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected boolean emulateJython() {
-        return getPythonLanguage().getEngineOption(PythonOptions.EmulateJython);
-    }
-
-    @Override
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return tag == StandardTags.CallTag.class || super.hasTag(tag);
+        return PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython);
     }
 }

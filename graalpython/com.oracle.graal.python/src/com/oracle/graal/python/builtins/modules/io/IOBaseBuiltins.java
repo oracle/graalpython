@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEK;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_SEEKABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_TRUNCATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J_WRITELINES;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.J__CHECKCLOSED;
@@ -67,6 +66,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READLINE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEK;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.T_TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T___IOBASE_CLOSED;
@@ -75,11 +75,11 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOu
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_FILENO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -108,7 +109,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -257,7 +257,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                 } catch (PException e) {
                     errorProfile.enter();
                     try {
-                        setAttributeNode.executeVoid(frame, self, true);
+                        setAttributeNode.execute(frame, self, true);
                     } catch (PException e1) {
                         PBaseException ee = e1.getEscapedException();
                         ee.setContext(e.setCatchingFrameAndGetEscapedException(frame, this));
@@ -265,7 +265,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     }
                     throw e.getExceptionForReraise();
                 }
-                setAttributeNode.executeVoid(frame, self, true);
+                setAttributeNode.execute(frame, self, true);
             }
             return PNone.NONE;
         }

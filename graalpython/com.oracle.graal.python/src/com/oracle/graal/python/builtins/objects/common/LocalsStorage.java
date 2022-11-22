@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Iterator;
@@ -109,29 +108,24 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    @ImportStatic(PGuards.class)
     static class Length {
         @Specialization(guards = "desc == self.frame.getFrameDescriptor()", limit = "1")
         @ExplodeLoop
         static int getLengthCached(LocalsStorage self,
                         @Shared("desc") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc) {
-            int size = desc.getNumberOfSlots();
-            for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
-                Object identifier = desc.getSlotName(slot);
-                if (!isUserFrameSlot(identifier) || self.getValue(slot) == null) {
-                    size--;
-                }
-            }
-            return size;
+            return computeLength(self, desc);
         }
 
         @Specialization(replaces = "getLengthCached")
         static int getLength(LocalsStorage self) {
-            FrameDescriptor desc = self.frame.getFrameDescriptor();
+            return computeLength(self, self.frame.getFrameDescriptor());
+        }
+
+        private static int computeLength(LocalsStorage self, FrameDescriptor desc) {
             int size = desc.getNumberOfSlots();
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);
-                if (!isUserFrameSlot(identifier) || self.getValue(slot) == null) {
+                if (identifier == null || self.getValue(slot) == null) {
                     size--;
                 }
             }
@@ -154,9 +148,6 @@ public final class LocalsStorage extends HashingStorage {
 
         @Specialization(replaces = "getItemCached")
         static Object string(LocalsStorage self, TruffleString key, ThreadState state) {
-            if (!isUserFrameSlot(key)) {
-                return null;
-            }
             int slot = findSlot(self.frame.getFrameDescriptor(), key);
             return self.getValue(slot);
         }
@@ -242,7 +233,7 @@ public final class LocalsStorage extends HashingStorage {
         FrameDescriptor fd = this.frame.getFrameDescriptor();
         for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
             Object identifier = fd.getSlotName(slot);
-            if (isUserFrameSlot(identifier)) {
+            if (identifier != null) {
                 Object value = getValue(slot);
                 if (value != null) {
                     result = node.execute(identifier, result);
@@ -263,7 +254,7 @@ public final class LocalsStorage extends HashingStorage {
             HashingStorage result = other;
             for (int slot = 0; slot < desc.getNumberOfSlots(); slot++) {
                 Object identifier = desc.getSlotName(slot);
-                if (isUserFrameSlot(identifier)) {
+                if (identifier != null) {
                     Object value = self.getValue(slot);
                     if (value != null) {
                         result = lib.setItem(result, desc.getSlotName(slot), value);
@@ -337,7 +328,7 @@ public final class LocalsStorage extends HashingStorage {
         protected final boolean loadNext() {
             while (nextIndex()) {
                 Object identifier = frame.getFrameDescriptor().getSlotName(index);
-                if (isUserFrameSlot(identifier)) {
+                if (identifier != null) {
                     Object nextValue = getValue(this.frame, index);
                     if (nextValue != null) {
                         return true;

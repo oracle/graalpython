@@ -12,7 +12,7 @@ ScopeEnvironment
             gen: [DefLocal, Use, Local]
             list: [Use, GlobalImplicit]
       Scope _inner_func Function
-            Flags: [HasFreeVars, HasChildWithFreeVars, IsGenerator]
+            Flags: [IsNested, HasFreeVars, HasChildWithFreeVars, IsGenerator]
             Symbols:
                   A: [DefLocal, Use, Local]
                   C: [DefLocal, Local]
@@ -20,6 +20,6 @@ ScopeEnvironment
                   doit: [DefLocal, Use, Local]
                   exec_gen: [Free]
         Scope doit Function
-                Flags: [HasFreeVars]
+                Flags: [IsNested, HasFreeVars]
                 Symbols:
                         exec_gen: [DefLocal, DefNonLocal, Free]

@@ -43,18 +43,12 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.WriteNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@NodeChild(value = "object", type = ExpressionNode.class)
-@NodeChild(value = "rhs", type = ExpressionNode.class)
-public abstract class SetAttributeNode extends StatementNode implements WriteNode {
+public abstract class SetAttributeNode extends PNodeWithContext {
 
     public static final class Dynamic extends PNodeWithContext {
         @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(SpecialMethodSlot.SetAttr);
@@ -74,31 +68,14 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
         this.key = key;
     }
 
-    protected abstract ExpressionNode getObject();
-
-    public abstract ExpressionNode getRhs();
-
     public static SetAttributeNode create(TruffleString key) {
-        return create(key, null, null);
+        return SetAttributeNodeGen.create(key);
     }
 
-    public static SetAttributeNode create(TruffleString key, ExpressionNode object, ExpressionNode rhs) {
-        return SetAttributeNodeGen.create(key, object, rhs);
-    }
-
-    @Override
-    public final void executeObject(VirtualFrame frame, Object value) {
-        executeVoid(frame, getObject().execute(frame), value);
-    }
-
-    public abstract void executeVoid(VirtualFrame frame, Object object, Object value);
+    public abstract void execute(VirtualFrame frame, Object object, Object value);
 
     public TruffleString getAttributeId() {
         return key;
-    }
-
-    public ExpressionNode getPrimaryNode() {
-        return getObject();
     }
 
     @Specialization

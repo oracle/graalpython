@@ -45,25 +45,23 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public abstract class ReadNameNode extends ExpressionNode implements ReadNode, AccessNameNode {
+public abstract class ReadNameNode extends PNodeWithContext implements AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
     @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final TruffleString attributeId;
+
+    public abstract Object execute(VirtualFrame frame);
 
     protected ReadNameNode(TruffleString attributeId) {
         this.attributeId = attributeId;
@@ -108,7 +106,7 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected Object readFromLocals(VirtualFrame frame,
-                    @Cached GetItemNode getItem) {
+                    @Cached PyObjectGetItem getItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             return getItem.execute(frame, frameLocals, attributeId);
@@ -117,21 +115,4 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         }
     }
 
-    public StatementNode makeWriteNode(ExpressionNode rhs) {
-        return WriteNameNode.create(attributeId, rhs);
-    }
-
-    public TruffleString getAttributeId() {
-        return attributeId;
-    }
-
-    @Override
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return StandardTags.ReadVariableTag.class == tag || super.hasTag(tag);
-    }
-
-    @Override
-    public Object getNodeObject() {
-        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, attributeId);
-    }
 }

@@ -1,8 +1,0 @@
-ModuleRootNode Name: <module 'Float01'> SourceSection: [0,3]`1.0`
-  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-  FreeVars: None
-  NeedsCellFrame: False
-  FrameDescriptor:  Empty
-  Documentation: None
-  InnerRootNode SourceSection: [0,3]`1.0`
-    DoubleLiteralNode SourceSection: [0,3]`1.0`

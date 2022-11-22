@@ -67,7 +67,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -75,7 +74,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.CallBinaryArithmeticRootNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic.CallTernaryArithmeticRootNode;
-import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -134,39 +132,6 @@ public enum InplaceArithmetic {
         };
     }
 
-    public static ExpressionNode createInplaceOperation(String string, ExpressionNode left, ExpressionNode right) {
-        switch (string) {
-            case "+=":
-                return IAdd.create(left, right);
-            case "-=":
-                return ISub.create(left, right);
-            case "*=":
-                return IMul.create(left, right);
-            case "/=":
-                return ITrueDiv.create(left, right);
-            case "//=":
-                return IFloorDiv.create(left, right);
-            case "%=":
-                return IMod.create(left, right);
-            case "**=":
-                return IPow.create(left, right);
-            case "<<=":
-                return ILShift.create(left, right);
-            case ">>=":
-                return IRShift.create(left, right);
-            case "&=":
-                return IAnd.create(left, right);
-            case "|=":
-                return IOr.create(left, right);
-            case "^=":
-                return IXor.create(left, right);
-            case "@=":
-                return IMatMul.create(left, right);
-            default:
-                throw new RuntimeException("unexpected operation: " + string);
-        }
-    }
-
     public TruffleString getMethodName() {
         return methodName;
     }
@@ -214,12 +179,8 @@ public enum InplaceArithmetic {
         }
     }
 
-    public LookupAndCallInplaceNode create(ExpressionNode left, ExpressionNode right) {
-        return LookupAndCallInplaceNode.create(this, left, right, new ObjectLiteralNode(PNone.NO_VALUE));
-    }
-
     public LookupAndCallInplaceNode create() {
-        return LookupAndCallInplaceNode.create(this, null, null, null);
+        return LookupAndCallInplaceNode.create(this);
     }
 
     /**

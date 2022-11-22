@@ -11,7 +11,7 @@ ScopeEnvironment
             dirs: [DefParam, Use, Local]
             files: [DefParam, Cell]
       Scope listcomp Function
-            Flags: [HasFreeVars, IsComprehension]
+            Flags: [IsNested, HasFreeVars, IsComprehension]
             Varnames: .0
             Symbols:
                   .0: [DefParam, Local]

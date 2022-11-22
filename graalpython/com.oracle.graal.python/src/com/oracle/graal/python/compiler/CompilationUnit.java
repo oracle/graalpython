@@ -245,9 +245,15 @@ public final class CompilationUnit {
             b = b.next;
         }
 
-        int flags = 0;
+        int flags = PCode.CO_OPTIMIZED | PCode.CO_NEWLOCALS;
         flags |= takesVarArgs ? PCode.CO_VARARGS : 0;
         flags |= takesVarKeywordArgs ? PCode.CO_VARKEYWORDS : 0;
+        if (scope.isNested()) {
+            flags |= PCode.CO_NESTED;
+        }
+        if (cellvars.isEmpty() && freevars.isEmpty()) {
+            flags |= PCode.CO_NOFREE;
+        }
         if (scope.isModule()) {
             flags |= PCode.CO_GRAALPYHON_MODULE;
         }

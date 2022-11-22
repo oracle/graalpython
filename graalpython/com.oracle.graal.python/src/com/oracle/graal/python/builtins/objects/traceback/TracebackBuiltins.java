@@ -43,16 +43,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -66,7 +64,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
-import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
 public final class TracebackBuiltins extends PythonBuiltins {
@@ -111,31 +108,17 @@ public final class TracebackBuiltins extends PythonBuiltins {
              * active stack in the traceback. Truffle doesn't tell us where the boundary between
              * exception frames and frames from the Java stack is, so we cut it off when we see the
              * current call target in the stacktrace.
-             *
-             * For the top frame of a traceback, we need to know the location of where the exception
-             * occured in the "try" block. We cannot get it from the frame we capture because it
-             * already "moved" to the "except" block. When unwinding, Truffle captures the frame and
-             * location of each exiting call. When constructing the stacktrace, the location is
-             * "moved up". The element with the bottom frame gets the location from the exception
-             * and the other elements get the location from the frame of the element directly below
-             * them. Therefore, the element for the current frame, even though the frame itself
-             * doesn't belong to the traceback, contains the desired location from which we can get
-             * the lineno.
              */
-            boolean usingBytecodeIntepreter = PythonContext.get(this).getOption(PythonOptions.EnableBytecodeInterpreter);
-            int lineno = -2;
             PTraceback next = null;
             if (tb.getLazyTraceback().getNextChain() != null) {
                 next = getTracebackNode.execute(tb.getLazyTraceback().getNextChain());
             }
-            TruffleStackTraceElement nextElement = null;
             // The logic of skipping and cutting off frames here and in GetTracebackNode must be the
             // same
             PException pException = tb.getLazyTraceback().getException();
             boolean skipFirst = pException.shouldHideLocation();
             for (TruffleStackTraceElement element : pException.getTruffleStackTrace()) {
                 if (pException.shouldCutOffTraceback(element)) {
-                    lineno = getLineno(element);
                     break;
                 }
                 if (skipFirst) {
@@ -147,67 +130,23 @@ public final class TracebackBuiltins extends PythonBuiltins {
                      * Bytecode tracebacks pull location data from corresponding stacktrace element.
                      * AST tracebacks pull locations from the call node of the element "above".
                      */
-                    if (usingBytecodeIntepreter) {
-                        if (LazyTraceback.elementWantedForTraceback(element)) {
-                            nextElement = element;
-                            PFrame pFrame = materializeFrame(element, materializeFrameNode);
-                            next = factory.createTraceback(pFrame, pFrame.getLine(), next);
-                        }
-                    } else {
-                        if (nextElement != null) {
-                            PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                            next = factory.createTraceback(pFrame, pFrame.getLine(), next);
-                        }
-                        nextElement = element;
-                    }
-                }
-            }
-            if (usingBytecodeIntepreter) {
-                if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
-                    PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
-                    tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
-                    tb.setNext(next);
-                } else {
-                    assert next != null;
-                    tb.setLineno(next.getLineno());
-                    tb.setFrame(next.getFrame());
-                    tb.setNext(next.getNext());
-                }
-            } else {
-                if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
-                    // We already have a pFrame as tb_frame, so what we compute here is the tb_next
-                    // chain.
-                    if (nextElement != null) {
-                        PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
+                    if (LazyTraceback.elementWantedForTraceback(element)) {
+                        PFrame pFrame = materializeFrame(element, materializeFrameNode);
                         next = factory.createTraceback(pFrame, pFrame.getLine(), next);
                     }
-                    // Additionally, we obtained tb_lineno from the "fake current" frame element
-                    tb.setLineno(lineno);
-                } else {
-                    // GetTracebackNode is responsible for making sure that an "empty" PTraceback
-                    // with
-                    // no PFrame[Ref] and no usable stacktrace elements is never constructed
-                    assert nextElement != null;
-                    // We don't have a pFrame, so the first element (now in nextElement) needs to go
-                    // into tb_frame and the rest into tb_next.
-                    PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                    tb.setFrame(pFrame);
-                    tb.setLineno(pFrame.getLine());
                 }
+            }
+            if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
+                PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
+                tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
                 tb.setNext(next);
+            } else {
+                assert next != null;
+                tb.setLineno(next.getLineno());
+                tb.setFrame(next.getFrame());
+                tb.setNext(next.getNext());
             }
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
-        }
-
-        @TruffleBoundary
-        private static int getLineno(TruffleStackTraceElement element) {
-            if (element.getLocation() != null) {
-                SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
-                if (sourceSection != null) {
-                    return sourceSection.getStartLine();
-                }
-            }
-            return -2;
         }
 
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {

@@ -59,11 +59,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -102,7 +102,7 @@ public class StructureBuiltins extends PythonBuiltins {
         Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached CastToTruffleStringNode toString,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -137,7 +137,7 @@ public class StructureBuiltins extends PythonBuiltins {
          */
         int _init_pos_args(VirtualFrame frame, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         SetAttributeNode.Dynamic setAttr,
-                        GetItemNode getItemNode,
+                        PyObjectGetItem getItemNode,
                         CastToTruffleStringNode toString,
                         HashingStorageLibrary hlib,
                         PyTypeStgDictNode pyTypeStgDictNode,

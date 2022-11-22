@@ -139,7 +139,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -168,6 +167,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -497,7 +497,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private Object op(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
             Object newMethod = lookupNew.execute(self);
             if (hasNew.profile(newMethod != PNone.NO_VALUE)) {
-                Object[] newArgs = PositionalArgumentsNode.prependArgument(self, arguments);
+                Object[] newArgs = PythonUtils.prependArgument(self, arguments);
                 Object newInstance = dispatchNew.execute(frame, bindNew.execute(frame, newMethod, self), newArgs, keywords);
 
                 // see typeobject.c#type_call()
@@ -517,7 +517,7 @@ public class TypeBuiltins extends PythonBuiltins {
             if (isSubType(newInstanceKlass, self)) {
                 Object initMethod = getInitNode().execute(frame, newInstanceKlass, newInstance);
                 if (hasInit.profile(initMethod != PNone.NO_VALUE)) {
-                    Object[] initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
+                    Object[] initArgs = PythonUtils.prependArgument(newInstance, arguments);
                     Object initResult = getDispatchNode().execute(frame, initMethod, initArgs, keywords);
                     if (gotInitResult.profile(initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
                         throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");

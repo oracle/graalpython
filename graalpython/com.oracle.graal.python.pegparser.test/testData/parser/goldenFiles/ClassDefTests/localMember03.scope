@@ -9,17 +9,17 @@ ScopeEnvironment
             a_local_var: [DefLocal, Cell]
             f: [DefLocal, Local]
       Scope f Function
-            Flags: [HasChildWithFreeVars]
+            Flags: [IsNested, HasFreeVars, HasChildWithFreeVars]
             Symbols:
                   C: [DefLocal, Use, Local]
                   a_local_var: [Free]
                   object: [Use, GlobalImplicit]
         Scope C Class
-                Flags: [HasChildWithFreeVars]
+                Flags: [IsNested, HasChildWithFreeVars]
                 Symbols:
                         a_local_var: [DefLocal, Use, DefFreeClass, Local]
                         method01: [DefLocal, Local]
           Scope method01 Function
-                    Flags: [HasFreeVars]
+                    Flags: [IsNested, HasFreeVars]
                     Symbols:
                               a_local_var: [Use, Free]

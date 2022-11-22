@@ -108,7 +108,7 @@ public class MethodWrapperBuiltins extends PythonBuiltins {
         }
 
         protected static GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create(T___NAME__, null);
+            return GetAttributeNode.create(T___NAME__);
         }
     }
 }

@@ -44,8 +44,6 @@ import signal
 
 import builtins
 
-# only while the bytecode interpreter is not the default
-skip = not getattr(getattr(builtins, '__graalpython__', None), 'uses_bytecode_interpreter', True)
 
 def basic():
     return 'return value'
@@ -161,7 +159,7 @@ def make_test_method(fun, name):
     test_case.__name__ = name
     return test_case
 
-@unittest.skipIf(skip, 'sys.settrace only works in the bytecode interpreter')
+
 class TraceTests(unittest.TestCase):
     def trace(self, frame, event, arg):
         code = frame.f_code

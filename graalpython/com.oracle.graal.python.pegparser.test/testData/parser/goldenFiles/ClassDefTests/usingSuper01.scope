@@ -15,7 +15,7 @@ ScopeEnvironment
                   f: [DefLocal, Local]
                   self: [DefParam, Local]
         Scope f Function
-                Flags: [HasFreeVars]
+                Flags: [IsNested, HasFreeVars]
                 Symbols:
                         __class__: [Use, Free]
                         super: [Use, GlobalImplicit]

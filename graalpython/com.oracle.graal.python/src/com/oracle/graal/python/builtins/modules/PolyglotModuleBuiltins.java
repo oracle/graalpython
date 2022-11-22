@@ -266,7 +266,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ExportSymbolNode.class);
 
-        @Child private GetAttributeNode getNameAttributeNode;
+        @Child private GetAttributeNode.GetFixedAttributeNode getNameAttributeNode;
         @Child private CastToJavaStringNode castToStringNode;
 
         @Specialization(guards = "!isString(value)")
@@ -339,7 +339,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         private String getMethodName(VirtualFrame frame, Object o) {
             if (getNameAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.T___NAME__, null));
+                getNameAttributeNode = insert(GetAttributeNode.GetFixedAttributeNode.create(SpecialAttributeNames.T___NAME__));
             }
             if (castToStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

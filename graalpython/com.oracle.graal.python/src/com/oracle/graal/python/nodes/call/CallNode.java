@@ -55,7 +55,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -202,7 +201,7 @@ public abstract class CallNode extends PNodeWithContext {
         if (call == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);
         }
-        return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
+        return callCallNode.execute(frame, call, PythonUtils.prependArgument(callableObject, arguments), keywords);
     }
 
     @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")

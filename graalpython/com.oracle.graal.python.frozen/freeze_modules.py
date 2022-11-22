@@ -119,7 +119,6 @@ def add_graalpython_core():
         "function",
         "java",
         "pip_hook",
-        "type",
         "unicodedata",
         "zipimport",
     ]:

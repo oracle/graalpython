@@ -224,6 +224,10 @@ public class Scope {
         return flags.contains(ScopeFlags.IsCoroutine);
     }
 
+    public boolean isNested() {
+        return flags.contains(ScopeFlags.IsNested);
+    }
+
     public HashMap<String, Integer> getSymbolsByType(EnumSet<DefUse> expectedFlags, int start) {
         int i = start;
         HashMap<String, Integer> mapping = new HashMap<>();

@@ -67,10 +67,10 @@ public abstract class PyImportImport extends PNodeWithState {
     private static final TruffleString T_LEVEL = tsLiteral("level");
     private static final TruffleString T_FROMLIST = tsLiteral("fromlist");
 
-    public abstract Object execute(VirtualFrame frame, Object name);
+    public abstract Object execute(VirtualFrame frame, TruffleString name);
 
     @Specialization
-    Object doGeneric(VirtualFrame frame, Object moduleName,
+    Object doGeneric(VirtualFrame frame, TruffleString moduleName,
                     @Cached ConditionProfile noGlobalsProfile,
                     @Cached ConditionProfile dictBuiltinsProfile,
                     @Cached PyImportGetModule importGetModule,

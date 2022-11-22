@@ -66,7 +66,7 @@ public enum UnaryArithmetic {
     Invert(UnaryArithmeticFactory.InvertNodeGen::create);
 
     interface CreateUnaryOp {
-        UnaryOpNode create(ExpressionNode left);
+        UnaryOpNode create();
     }
 
     private final CreateUnaryOp create;
@@ -108,12 +108,8 @@ public enum UnaryArithmetic {
         }
     }
 
-    public ExpressionNode create(ExpressionNode receiver) {
-        return create.create(receiver);
-    }
-
     public UnaryOpNode create() {
-        return create.create(null);
+        return create.create();
     }
 
     /**
@@ -177,7 +173,7 @@ public enum UnaryArithmetic {
         }
 
         public static PosNode create() {
-            return UnaryArithmeticFactory.PosNodeGen.create(null);
+            return UnaryArithmeticFactory.PosNodeGen.create();
         }
     }
 
@@ -212,7 +208,7 @@ public enum UnaryArithmetic {
         }
 
         public static NegNode create() {
-            return UnaryArithmeticFactory.NegNodeGen.create(null);
+            return UnaryArithmeticFactory.NegNodeGen.create();
         }
     }
 
@@ -242,7 +238,7 @@ public enum UnaryArithmetic {
         }
 
         public static InvertNode create() {
-            return UnaryArithmeticFactory.InvertNodeGen.create(null);
+            return UnaryArithmeticFactory.InvertNodeGen.create();
         }
     }
 }
