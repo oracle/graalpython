@@ -1,6 +1,9 @@
 *graalpython.lib-python.3.test.test_re.ExternalTests.test_re_benchmarks
 *graalpython.lib-python.3.test.test_re.ExternalTests.test_re_tests
+*graalpython.lib-python.3.test.test_re.ImplementationTest.test_disallow_instantiation
+*graalpython.lib-python.3.test.test_re.ImplementationTest.test_immutable
 *graalpython.lib-python.3.test.test_re.ImplementationTest.test_overlap_table
+*graalpython.lib-python.3.test.test_re.ImplementationTest.test_signedness
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_bytes
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_flags_repr
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_inline_flags
@@ -47,6 +50,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_case_helpers
 *graalpython.lib-python.3.test.test_re.ReTests.test_category
 *graalpython.lib-python.3.test.test_re.ReTests.test_character_set_errors
+*graalpython.lib-python.3.test.test_re.ReTests.test_comments
 *graalpython.lib-python.3.test.test_re.ReTests.test_compile
 *graalpython.lib-python.3.test.test_re.ReTests.test_constants
 *graalpython.lib-python.3.test.test_re.ReTests.test_copying
@@ -66,6 +70,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case_range
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case_set
+*graalpython.lib-python.3.test.test_re.ReTests.test_ignore_spaces
 *graalpython.lib-python.3.test.test_re.ReTests.test_inline_flags
 *graalpython.lib-python.3.test.test_re.ReTests.test_issue17998
 *graalpython.lib-python.3.test.test_re.ReTests.test_keep_buffer
@@ -97,6 +102,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_fullmatch
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists
+*graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists_errors
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_overflow
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_match
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_split
@@ -118,7 +124,9 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_string_boundaries
 *graalpython.lib-python.3.test.test_re.ReTests.test_sub_template_numeric_escape
 *graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_groups
+*graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_groups_errors
 *graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_refs
+*graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_refs_errors
 *graalpython.lib-python.3.test.test_re.ReTests.test_unlimited_zero_width_repeat
 *graalpython.lib-python.3.test.test_re.ReTests.test_weakref
 *graalpython.lib-python.3.test.test_re.ReTests.test_zerowidth

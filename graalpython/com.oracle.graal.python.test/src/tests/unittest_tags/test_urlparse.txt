@@ -26,8 +26,10 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_noslash
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_fragments
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qs_encoding
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qs_separator
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qsl_encoding
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qsl_max_num_fields
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qsl_separator
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_port_casting_failure_message
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_portseparator
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_qs
@@ -44,6 +46,7 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_sequences
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urljoins
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_attributes
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_remove_unsafe_bytes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlsplit_scoped_IPv6
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_usingsys
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_withoutscheme

@@ -1,3 +1,5 @@
+*graalpython.lib-python.3.test.test_threading.AtexitTests.test_atexit_called_once
+*graalpython.lib-python.3.test.test_threading.AtexitTests.test_atexit_output
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_abort
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_abort_and_reset
 *graalpython.lib-python.3.test.test_threading.BarrierTests.test_action
@@ -14,6 +16,7 @@
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_acquire_timeout
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_constructor
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_default_value
+*graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_multirelease
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_release_unacquired
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_try_acquire
 *graalpython.lib-python.3.test.test_threading.BoundedSemaphoreTests.test_try_acquire_contended
@@ -61,6 +64,7 @@
 *graalpython.lib-python.3.test.test_threading.ConditionTests.test_unacquired_wait
 *graalpython.lib-python.3.test.test_threading.ConditionTests.test_waitfor
 *graalpython.lib-python.3.test.test_threading.ConditionTests.test_waitfor_timeout
+*graalpython.lib-python.3.test.test_threading.EventTests.test_at_fork_reinit
 *graalpython.lib-python.3.test.test_threading.EventTests.test_is_set
 *graalpython.lib-python.3.test.test_threading.EventTests.test_notify
 *graalpython.lib-python.3.test.test_threading.EventTests.test_reset_internal_locks

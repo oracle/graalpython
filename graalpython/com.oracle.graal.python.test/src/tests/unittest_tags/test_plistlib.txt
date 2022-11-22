@@ -1,10 +1,14 @@
 *graalpython.lib-python.3.test.test_plistlib.MiscTestCase.test__all__
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_cycles
+*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_deep_nesting
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_identity
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_invalid_binary
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_large_timestamp
+*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_load_int
+*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_load_singletons
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_nonstandard_refs_size
+*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_unsupported
 *graalpython.lib-python.3.test.test_plistlib.TestKeyedArchive.test_keyed_archive_data
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_appleformatting
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_appleformattingfromliteral
@@ -19,6 +23,7 @@
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_indentation_dict
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_indentation_dict_mix
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_int
+*graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_integer_notations
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_invalid_type
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_invalid_uid
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_invalidarray
@@ -47,6 +52,7 @@
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_uid_pickle
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_uid_repr
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_xml_encodings
+*graalpython.lib-python.3.test.test_plistlib.TestPlistlib.test_xml_plist_with_entity_decl
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlibDeprecated.test_bytes_deprecated
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlibDeprecated.test_dataobject_deprecated
 *graalpython.lib-python.3.test.test_plistlib.TestPlistlibDeprecated.test_io_deprecated

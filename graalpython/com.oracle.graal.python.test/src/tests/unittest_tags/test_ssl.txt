@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_private_init
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_purpose_enum
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_read_write_zero
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_refcycle
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_server_side
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_str_for_enums
@@ -47,6 +48,7 @@
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_options
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_protocol
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_python_ciphers
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_security_level
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_default_verify_paths
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_sni_callback
@@ -79,6 +81,8 @@
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_bpo37428_pha_cert_none
+*graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_internal_chain_client
+*graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_internal_chain_server
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_no_pha_client
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_no_pha_server
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_not_tls13
@@ -107,6 +111,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert_enotconn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_handshake_timeout
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_hostname_checks_common_name
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_mismatch
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_sslv3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_tlsv1_1

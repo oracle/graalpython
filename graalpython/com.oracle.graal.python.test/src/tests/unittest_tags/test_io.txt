@@ -91,6 +91,8 @@
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_writes_and_seeks
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_writes_and_truncates
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_args_error
+*graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_bad_readinto_type
+*graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_bad_readinto_value
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_buffer_freeing
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_buffering
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_close_error_on_close
@@ -126,6 +128,7 @@
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_repr
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_sizeof
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_threads
+*graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_truncate_on_read_only
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_uninitialized
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_unseekable
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_args_error
@@ -220,6 +223,8 @@
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_abcs
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_attributes
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_blockingioerror
+*graalpython.lib-python.3.test.test_io.CMiscIOTest.test_check_encoding_errors
+*graalpython.lib-python.3.test.test_io.CMiscIOTest.test_check_encoding_warning
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_create_fail
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_create_writes
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stderr_deadlock
@@ -229,6 +234,7 @@
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_nonblock_pipe_write_smallbuf
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_open_allargs
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_open_pipe_with_append
+*graalpython.lib-python.3.test.test_io.CMiscIOTest.test_openwrapper
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_pickling
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_readinto_buffer_overflow
 *graalpython.lib-python.3.test.test_io.CMiscIOTest.test_warn_on_dealloc
@@ -265,6 +271,7 @@
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_illegal_decoder
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_illegal_encoder
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_initialization
+*graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_internal_buffer_size
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_issue1395_1
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_issue1395_2
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_issue1395_3
@@ -431,6 +438,7 @@
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_threads
+*graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_truncate_on_read_only
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_uninitialized
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_unseekable
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_close_error_on_close
@@ -519,6 +527,8 @@
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_abcs
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_attributes
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_blockingioerror
+*graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_check_encoding_errors
+*graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_check_encoding_warning
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_create_fail
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_create_writes
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_io_after_close
@@ -526,6 +536,7 @@
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_nonblock_pipe_write_smallbuf
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_open_allargs
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_open_pipe_with_append
+*graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_openwrapper
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_pickling
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_warn_on_dealloc
 *graalpython.lib-python.3.test.test_io.PyMiscIOTest.test_warn_on_dealloc_fd

@@ -53,6 +53,7 @@
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_init_with_preset_and_filters
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_init_with_x_mode
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_issue21872
+*graalpython.lib-python.3.test.test_lzma.FileTestCase.test_issue44439
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_iterator
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_peek
 *graalpython.lib-python.3.test.test_lzma.FileTestCase.test_peek_bad_args

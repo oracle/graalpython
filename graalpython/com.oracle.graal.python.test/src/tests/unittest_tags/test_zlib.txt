@@ -58,5 +58,6 @@
 *graalpython.lib-python.3.test.test_zlib.ExceptionTestCase.test_baddecompressobj
 *graalpython.lib-python.3.test.test_zlib.ExceptionTestCase.test_badlevel
 *graalpython.lib-python.3.test.test_zlib.ExceptionTestCase.test_decompressobj_badflush
+*graalpython.lib-python.3.test.test_zlib.ExceptionTestCase.test_disallow_instantiation
 *graalpython.lib-python.3.test.test_zlib.ExceptionTestCase.test_overflow
 *graalpython.lib-python.3.test.test_zlib.VersionTestCase.test_library_version

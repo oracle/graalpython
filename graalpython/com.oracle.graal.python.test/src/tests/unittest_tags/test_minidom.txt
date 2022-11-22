@@ -13,6 +13,8 @@
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testAttrListValues
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testAttrList__getitem__
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testAttrList__setitem__
+*graalpython.lib-python.3.test.test_minidom.MinidomTest.testAttrModeSetsNonOptionalAttrs
+*graalpython.lib-python.3.test.test_minidom.MinidomTest.testAttrModeSetsParamsAsAttrs
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testAttributeRepr
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testBug0777884
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testBug1433694
@@ -107,6 +109,7 @@
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testSetIdAttributeNS
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testSetIdAttributeNode
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testSiblings
+*graalpython.lib-python.3.test.test_minidom.MinidomTest.testStandalone
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testTextNodeRepr
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testTextRepr
 *graalpython.lib-python.3.test.test_minidom.MinidomTest.testTooManyDocumentElements

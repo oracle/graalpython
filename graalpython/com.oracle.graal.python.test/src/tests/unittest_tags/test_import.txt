@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_import.__init__.CircularImportTests.test_indirect
 *graalpython.lib-python.3.test.test_import.__init__.CircularImportTests.test_rebinding
 *graalpython.lib-python.3.test.test_import.__init__.CircularImportTests.test_subpackage
+*graalpython.lib-python.3.test.test_import.__init__.CircularImportTests.test_unwritable_module
 *graalpython.lib-python.3.test.test_import.__init__.FilePermissionTests.test_cached_mode_issue_2051
 *graalpython.lib-python.3.test.test_import.__init__.FilePermissionTests.test_cached_readonly
 *graalpython.lib-python.3.test.test_import.__init__.FilePermissionTests.test_creation_mode

@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_format.FormatTest.test_bytes_and_bytearray_format
 *graalpython.lib-python.3.test.test_format.FormatTest.test_common_format
 *graalpython.lib-python.3.test.test_format.FormatTest.test_format_class
+*graalpython.lib-python.3.test.test_format.FormatTest.test_g_format_has_no_trailing_zeros
 *graalpython.lib-python.3.test.test_format.FormatTest.test_locale
 *graalpython.lib-python.3.test.test_format.FormatTest.test_non_ascii
 *graalpython.lib-python.3.test.test_format.FormatTest.test_nul
@@ -8,3 +9,7 @@
 *graalpython.lib-python.3.test.test_format.FormatTest.test_precision
 *graalpython.lib-python.3.test.test_format.FormatTest.test_precision_c_limits
 *graalpython.lib-python.3.test.test_format.FormatTest.test_str_format
+*graalpython.lib-python.3.test.test_format.FormatTest.test_with_a_commas_and_an_underscore_in_format_specifier
+*graalpython.lib-python.3.test.test_format.FormatTest.test_with_an_underscore_and_a_comma_in_format_specifier
+*graalpython.lib-python.3.test.test_format.FormatTest.test_with_two_commas_in_format_specifier
+*graalpython.lib-python.3.test.test_format.FormatTest.test_with_two_underscore_in_format_specifier

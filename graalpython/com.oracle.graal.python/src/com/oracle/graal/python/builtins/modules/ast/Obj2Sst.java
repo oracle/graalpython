@@ -197,13 +197,13 @@ final class Obj2Sst extends Obj2SstBase {
             return obj2Expr(obj, sourceRange);
         }
         if (isInstanceOf(obj, state.clsPass)) {
-            return obj2Pass(sourceRange);
+            return obj2Pass(obj, sourceRange);
         }
         if (isInstanceOf(obj, state.clsBreak)) {
-            return obj2Break(sourceRange);
+            return obj2Break(obj, sourceRange);
         }
         if (isInstanceOf(obj, state.clsContinue)) {
-            return obj2Continue(sourceRange);
+            return obj2Continue(obj, sourceRange);
         }
         throw unexpectedNodeType(AstState.T_T_STMT, obj);
     }
@@ -368,15 +368,15 @@ final class Obj2Sst extends Obj2SstBase {
         return new StmtTy.Expr(value, sourceRange);
     }
 
-    static StmtTy.Pass obj2Pass(SourceRange sourceRange) {
+    StmtTy.Pass obj2Pass(Object obj, SourceRange sourceRange) {
         return new StmtTy.Pass(sourceRange);
     }
 
-    static StmtTy.Break obj2Break(SourceRange sourceRange) {
+    StmtTy.Break obj2Break(Object obj, SourceRange sourceRange) {
         return new StmtTy.Break(sourceRange);
     }
 
-    static StmtTy.Continue obj2Continue(SourceRange sourceRange) {
+    StmtTy.Continue obj2Continue(Object obj, SourceRange sourceRange) {
         return new StmtTy.Continue(sourceRange);
     }
 
