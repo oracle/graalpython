@@ -108,7 +108,6 @@
 *test.test_json.test_recursion.TestPyRecursion.test_listrecursion
 *test.test_json.test_scanstring.TestCScanstring.test_bad_escapes
 *test.test_json.test_scanstring.TestCScanstring.test_overflow
-*test.test_json.test_scanstring.TestCScanstring.test_scanstring
 *test.test_json.test_scanstring.TestPyScanstring.test_bad_escapes
 *test.test_json.test_scanstring.TestPyScanstring.test_overflow
 *test.test_json.test_scanstring.TestPyScanstring.test_scanstring
