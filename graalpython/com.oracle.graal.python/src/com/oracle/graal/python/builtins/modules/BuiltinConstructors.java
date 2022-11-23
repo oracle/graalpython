@@ -79,6 +79,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUNC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -188,6 +189,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySliceNew;
@@ -197,7 +199,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -2176,14 +2177,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached("create(New)") LookupCallableSlotInMRONode getNewFuncNode,
                         @Cached TypeBuiltins.BindNew bindNew,
-                        @Cached("create(T___MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Cached PyObjectLookupAttr lookupMroEntriesNode,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached CallNode callNewFuncNode,
                         @Cached CreateTypeNode createType) {
             // Determine the proper metatype to deal with this
             TruffleString name = castStr.execute(wName);
             Object metaclass = cls;
-            Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, lookupMroEntriesNode);
+            Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, isTypeNode, lookupMroEntriesNode);
             if (winner != metaclass) {
                 Object newFunc = getNewFuncNode.execute(winner);
                 if (newFunc instanceof PBuiltinMethod && (((PBuiltinMethod) newFunc).getFunction().getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
@@ -2209,10 +2211,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private Object calculateMetaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, LookupInheritedAttributeNode lookupMroEntries) {
+        private Object calculateMetaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, IsTypeNode isTypeNode, PyObjectLookupAttr lookupMroEntries) {
             Object winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
-                if (lookupMroEntries.execute(base) != PNone.NO_VALUE) {
+                if (!isTypeNode.execute(base) && lookupMroEntries.execute(frame, base, T___MRO_ENTRIES__) != PNone.NO_VALUE) {
                     throw raise(TypeError, ErrorMessages.TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION);
                 }
                 if (!ensureIsAcceptableBaseNode().execute(base)) {
