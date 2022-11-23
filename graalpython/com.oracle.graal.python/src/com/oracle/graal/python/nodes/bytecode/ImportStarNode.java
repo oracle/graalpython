@@ -25,12 +25,12 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ALL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -38,14 +38,13 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -54,6 +53,9 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -62,65 +64,30 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class ImportStarNode extends AbstractImportNode {
-    private final ConditionProfile javaImport = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile havePyFrame = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile haveCustomLocals = ConditionProfile.createBinaryProfile();
+@GenerateUncached
+public abstract class ImportStarNode extends AbstractImportNode {
+    public abstract void execute(VirtualFrame frame, TruffleString moduleName, int level);
 
-    @Child private PyObjectSetItem dictWriteNode;
-    @Child private SetAttributeNode.Dynamic setAttributeNode;
-    @Child private PyObjectGetItem getItemNode;
-    @Child private CastToTruffleStringNode castToStringNode;
-    @Child private GetNextNode nextNode;
-    @Child private PyObjectSizeNode sizeNode;
-    @Child private PyObjectGetIter getIterNode;
-    @Child private PyObjectGetAttr getAllNode;
-    @Child private GetOrCreateDictNode getDictNode;
-
-    @Child private IsBuiltinClassProfile isAttributeErrorProfile;
-    @Child private IsBuiltinClassProfile isStopIterationProfile;
-
-    @Child private PRaiseNode raiseNode;
-    @Child private TruffleString.FromJavaStringNode fromJavaStringNode;
-    @Child private TruffleString.CodePointLengthNode codePointLengthNode;
-    @Child private TruffleString.CodePointAtIndexNode codePointAtIndexNode;
-
-    private final TruffleString moduleName;
-    private final int level;
-
-    private PException raiseTypeError(TruffleString format, Object... args) {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, format, args);
-    }
-
-    // TODO: remove once we removed PythonModule globals
-
-    private void writeAttribute(VirtualFrame frame, PythonObject globals, TruffleString name, Object value) {
-        if (globals instanceof PDict || globals instanceof PMappingproxy) {
-            if (dictWriteNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dictWriteNode = insert(PyObjectSetItem.create());
-            }
-            dictWriteNode.execute(frame, globals, name, value);
-        } else {
-            if (setAttributeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setAttributeNode = insert(new SetAttributeNode.Dynamic());
-            }
-            setAttributeNode.execute(frame, globals, name, value);
-        }
-    }
-
-    public ImportStarNode(TruffleString moduleName, int level) {
-        this.moduleName = moduleName;
-        this.level = level;
-    }
-
-    public void execute(VirtualFrame frame) {
-        Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level);
+    @Specialization
+    void doImport(VirtualFrame frame, TruffleString moduleName, int level,
+                    @Cached ImportName importNameNode,
+                    @Cached PyObjectSetItem setItemNode,
+                    @Cached PyObjectSetAttr setAttrNode,
+                    @Cached GetOrCreateDictNode getDictNode,
+                    @Cached PyObjectGetAttr getAttrNode,
+                    @Cached PyObjectGetIter getIterNode,
+                    @Cached GetNextNode getNextNode,
+                    @Cached PyObjectSizeNode sizeNode,
+                    @Cached PyObjectGetItem getItemNode,
+                    @Cached ConditionProfile javaImport,
+                    @Cached ConditionProfile havePyFrame,
+                    @Cached ConditionProfile haveCustomLocals,
+                    @Cached CastToTruffleStringNode castToTruffleStringNode,
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached IsBuiltinClassProfile isAttributeErrorProfile,
+                    @Cached IsBuiltinClassProfile isStopIterationProfile) {
+        Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level, importNameNode);
         PythonObject locals = fastGetCustomLocalsOrGlobals(frame, havePyFrame, haveCustomLocals);
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
@@ -133,7 +100,7 @@ public class ImportStarNode extends AbstractImportNode {
                     String attrName = interopLib.asString(interopLib.readArrayElement(hostAttrs, i));
                     Object attr = interopLib.readMember(importedModule, attrName);
                     attr = PForeignToPTypeNode.getUncached().executeConvert(attr);
-                    writeAttribute(frame, locals, ensureFromJavaStringNode().execute(attrName, TS_ENCODING), attr);
+                    writeAttribute(frame, locals, TruffleString.fromJavaStringUncached(attrName, TS_ENCODING), attr, setItemNode, setAttrNode);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -141,22 +108,24 @@ public class ImportStarNode extends AbstractImportNode {
             }
         } else {
             try {
-                Object attrAll = ensureGetAllNode().execute(frame, importedModule, T___ALL__);
-                int n = ensureSizeNode().execute(frame, attrAll);
+                Object attrAll = getAttrNode.execute(frame, importedModule, T___ALL__);
+                int n = sizeNode.execute(frame, attrAll);
                 for (int i = 0; i < n; i++) {
-                    Object attrName = ensureGetItemNode().execute(frame, attrAll, i);
-                    writeAttributeToLocals(frame, (PythonModule) importedModule, locals, attrName, true);
+                    Object attrName = getItemNode.execute(frame, attrAll, i);
+                    writeAttributeToLocals(frame, moduleName, (PythonModule) importedModule, locals, attrName, true, castToTruffleStringNode, codePointLengthNode,
+                                    codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                 }
             } catch (PException e) {
-                e.expectAttributeError(ensureIsAttributeErrorProfile());
+                e.expectAttributeError(isAttributeErrorProfile);
                 assert importedModule instanceof PythonModule;
-                Object keysIterator = ensureGetIterNode().execute(frame, ensureGetDictNode().execute(importedModule));
+                Object keysIterator = getIterNode.execute(frame, getDictNode.execute(importedModule));
                 while (true) {
                     try {
-                        Object key = ensureGetNextNode().execute(frame, keysIterator);
-                        writeAttributeToLocals(frame, (PythonModule) importedModule, locals, key, false);
+                        Object key = getNextNode.execute(frame, keysIterator);
+                        writeAttributeToLocals(frame, moduleName, (PythonModule) importedModule, locals, key, false, castToTruffleStringNode, codePointLengthNode,
+                                        codePointAtIndexNode, getAttrNode, setItemNode, setAttrNode);
                     } catch (PException iterException) {
-                        iterException.expectStopIteration(ensureIsStopIterationErrorProfile());
+                        iterException.expectStopIteration(isStopIterationProfile);
                         break;
                     }
                 }
@@ -164,120 +133,41 @@ public class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private void writeAttributeToLocals(VirtualFrame frame, PythonModule importedModule, PythonObject locals, Object attrName, boolean fromAll) {
+    // TODO: remove once we removed PythonModule globals
+    private void writeAttribute(VirtualFrame frame, PythonObject globals, TruffleString name, Object value, PyObjectSetItem setItemNode, PyObjectSetAttr setAttrNode) {
+        if (globals instanceof PDict || globals instanceof PMappingproxy) {
+            setItemNode.execute(frame, globals, name, value);
+        } else {
+            setAttrNode.execute(frame, globals, name, value);
+        }
+    }
+
+    private void writeAttributeToLocals(VirtualFrame frame, TruffleString moduleName, PythonModule importedModule, PythonObject locals, Object attrName, boolean fromAll,
+                    CastToTruffleStringNode castToTruffleStringNode, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode, PyObjectGetAttr getAttr,
+                    PyObjectSetItem dictWriteNode, PyObjectSetAttr setAttrNode) {
         try {
-            TruffleString name = ensureCastToStringNode().execute(attrName);
+            TruffleString name = castToTruffleStringNode.execute(attrName);
             // skip attributes with leading '__' if there was no '__all__' attribute (see
             // 'ceval.c: import_all_from')
-            if (fromAll || !isDunder(name)) {
-                Object moduleAttr = ensureGetAllNode().execute(frame, importedModule, name);
-                writeAttribute(frame, locals, name, moduleAttr);
+            if (fromAll || !isDunder(name, cpLenNode, cpAtIndexNode)) {
+                Object moduleAttr = getAttr.execute(frame, importedModule, name);
+                writeAttribute(frame, locals, name, moduleAttr, dictWriteNode, setAttrNode);
             }
         } catch (CannotCastException cce) {
-            throw raiseTypeError(fromAll ? ErrorMessages.ITEM_IN_S_MUST_BE_STRING : ErrorMessages.KEY_IN_S_MUST_BE_STRING,
+            throw PRaiseNode.raiseUncached(this, TypeError, fromAll ? ErrorMessages.ITEM_IN_S_MUST_BE_STRING : ErrorMessages.KEY_IN_S_MUST_BE_STRING,
                             moduleName, fromAll ? T___ALL__ : T___DICT__, attrName);
         }
     }
 
-    private boolean isDunder(TruffleString s) {
-        TruffleString.CodePointLengthNode cpLenNode = ensureCodePointLengthNode();
-        TruffleString.CodePointAtIndexNode cpAtIndexNode = ensureCodePointAtIndexNode();
+    private boolean isDunder(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode) {
         return cpLenNode.execute(s, TS_ENCODING) >= 2 && cpAtIndexNode.execute(s, 0, TS_ENCODING) == '_' && cpAtIndexNode.execute(s, 1, TS_ENCODING) == '_';
     }
 
-    private PyObjectGetItem ensureGetItemNode() {
-        if (getItemNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getItemNode = insert(PyObjectGetItem.create());
-        }
-        return getItemNode;
+    public static ImportStarNode create() {
+        return ImportStarNodeGen.create();
     }
 
-    private CastToTruffleStringNode ensureCastToStringNode() {
-        if (castToStringNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            castToStringNode = insert(CastToTruffleStringNode.create());
-        }
-        return castToStringNode;
-    }
-
-    private IsBuiltinClassProfile ensureIsAttributeErrorProfile() {
-        if (isAttributeErrorProfile == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isAttributeErrorProfile = insert(IsBuiltinClassProfile.create());
-        }
-        return isAttributeErrorProfile;
-    }
-
-    private IsBuiltinClassProfile ensureIsStopIterationErrorProfile() {
-        if (isStopIterationProfile == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isStopIterationProfile = insert(IsBuiltinClassProfile.create());
-        }
-        return isStopIterationProfile;
-    }
-
-    private GetNextNode ensureGetNextNode() {
-        if (nextNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            nextNode = insert(GetNextNode.create());
-        }
-        return nextNode;
-    }
-
-    private PyObjectSizeNode ensureSizeNode() {
-        if (sizeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            sizeNode = insert(PyObjectSizeNode.create());
-        }
-        return sizeNode;
-    }
-
-    private PyObjectGetAttr ensureGetAllNode() {
-        if (getAllNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getAllNode = insert(PyObjectGetAttrNodeGen.create());
-        }
-        return getAllNode;
-    }
-
-    private PyObjectGetIter ensureGetIterNode() {
-        if (getIterNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getIterNode = insert(PyObjectGetIter.create());
-        }
-        return getIterNode;
-    }
-
-    private GetOrCreateDictNode ensureGetDictNode() {
-        if (getDictNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getDictNode = insert(GetOrCreateDictNode.create());
-        }
-        return getDictNode;
-    }
-
-    private TruffleString.FromJavaStringNode ensureFromJavaStringNode() {
-        if (fromJavaStringNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            fromJavaStringNode = insert(TruffleString.FromJavaStringNode.create());
-        }
-        return fromJavaStringNode;
-    }
-
-    private TruffleString.CodePointLengthNode ensureCodePointLengthNode() {
-        if (codePointLengthNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            codePointLengthNode = insert(TruffleString.CodePointLengthNode.create());
-        }
-        return codePointLengthNode;
-    }
-
-    private TruffleString.CodePointAtIndexNode ensureCodePointAtIndexNode() {
-        if (codePointAtIndexNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            codePointAtIndexNode = insert(TruffleString.CodePointAtIndexNode.create());
-        }
-        return codePointAtIndexNode;
+    public static ImportStarNode getUncached() {
+        return ImportStarNodeGen.getUncached();
     }
 }

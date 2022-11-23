@@ -41,19 +41,28 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class ImportNode extends AbstractImportNode {
-    @CompilationFinal(dimensions = 1) TruffleString[] cachedFromList;
+@GenerateUncached
+public abstract class ImportNode extends AbstractImportNode {
+    public abstract Object execute(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
-    public final Object execute(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level) {
-        if (cachedFromList == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            cachedFromList = fromList;
-        }
-        return importModule(frame, name, globals, cachedFromList, level);
+    @Specialization
+    Object doImport(VirtualFrame frame, TruffleString name, Object globals, @SuppressWarnings("unused") TruffleString[] fromList, int level,
+                    @Cached(value = "fromList", dimensions = 1, allowUncached = true) TruffleString[] cachedFromList,
+                    @Cached ImportName importName) {
+        return importModule(frame, name, globals, cachedFromList, level, importName);
+    }
+
+    public static ImportNode create() {
+        return ImportNodeGen.create();
+    }
+
+    public static ImportNode getUncached() {
+        return ImportNodeGen.getUncached();
     }
 }
