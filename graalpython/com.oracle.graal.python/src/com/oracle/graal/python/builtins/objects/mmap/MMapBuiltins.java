@@ -527,6 +527,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     throw raise(ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
                 }
                 posixLib.mmapWriteBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
+                self.setPos(self.getPos() + dataLen);
                 return dataLen;
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
