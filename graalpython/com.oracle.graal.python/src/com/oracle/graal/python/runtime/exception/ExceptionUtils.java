@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -74,6 +74,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -229,5 +230,43 @@ public final class ExceptionUtils {
                 exception.getCause().printStackTrace();
             }
         }
+    }
+
+    public static void chainExceptions(PBaseException currentException, PException contextException, ConditionProfile p1, ConditionProfile p2) {
+        PBaseException context = contextException.getUnreifiedException();
+        if (currentException != context) {
+            PBaseException e = currentException;
+            while (p1.profile(e != null)) {
+                if (e.getContext() == context) {
+                    // We have already chained this exception in an inner block, do nothing
+                    return;
+                }
+                e = e.getContext();
+            }
+            e = context;
+            while (p2.profile(e != null)) {
+                if (e.getContext() == currentException) {
+                    e.setContext(null);
+                }
+                e = e.getContext();
+            }
+            if (context != null) {
+                contextException.markFrameEscaped();
+            }
+            currentException.setContext(context);
+        }
+    }
+
+    public static void chainExceptions(PBaseException currentException, PException contextException) {
+        chainExceptions(currentException, contextException, ConditionProfile.getUncached(), ConditionProfile.getUncached());
+    }
+
+    public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
+        PException pe = PException.fromObject(pythonException, node, e);
+        pe.setHideLocation(true);
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
+        return pe;
     }
 }

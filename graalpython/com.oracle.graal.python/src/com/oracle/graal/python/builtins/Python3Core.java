@@ -25,13 +25,8 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.T__IMP;
-import static com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_PRINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
@@ -40,7 +35,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
-import static com.oracle.graal.python.nodes.StringLiterals.J_STRING_SOURCE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_GRAALPYTHON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
@@ -57,9 +51,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -238,7 +231,6 @@ import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
@@ -347,22 +339,14 @@ import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.pegparser.InputType;
-import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParser;
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -372,10 +356,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -383,7 +364,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
  * through an extra field in the context.
  */
-public abstract class Python3Core extends ParserErrorCallback {
+public abstract class Python3Core {
     private static final int REC_LIM = 1000;
     private static final int NATIVE_REC_LIM = 8000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
@@ -395,12 +376,9 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static final TruffleString T_IMPORTLIB_BOOTSTRAP = tsLiteral("importlib._bootstrap");
     private final TruffleString[] coreFiles;
 
-    public static final Pattern MISSING_PARENTHESES_PATTERN = Pattern.compile("^(print|exec) +([^(][^;]*).*");
-
     private static TruffleString[] initializeCoreFiles() {
         // Order matters!
         List<TruffleString> coreFiles = new ArrayList<>(Arrays.asList(
-                        toTruffleStringUncached("type"),
                         toTruffleStringUncached("__graalpython__"),
                         toTruffleStringUncached("_weakref"),
                         toTruffleStringUncached("bytearray"),
@@ -454,6 +432,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(new BuiltinConstructors(),
+                        new AbcModuleBuiltins(),
                         new BuiltinFunctions(),
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
@@ -776,7 +755,6 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PInt pyFalse;
     @CompilationFinal private PFloat pyNaN;
 
-    private final PythonParser parser;
     private final SysModuleState sysModuleState = new SysModuleState();
 
     @CompilationFinal private Object globalScopeObject;
@@ -790,9 +768,8 @@ public abstract class Python3Core extends ParserErrorCallback {
     private final PythonLanguage language;
     @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonLanguage language, PythonParser parser, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, boolean isNativeSupportAllowed) {
         this.language = language;
-        this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
@@ -832,7 +809,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         return sysModuleState;
     }
 
-    @Override
     public final PythonContext getContext() {
         // Small hack: we know that this is the only implementation of Python3Core, this should be
         // removed once and if Python3Core is fully merged into PythonContext
@@ -841,14 +817,6 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     public final PythonLanguage getLanguage() {
         return language;
-    }
-
-    public final PythonParser getParser() {
-        return parser;
-    }
-
-    public final PythonCodeSerializer getSerializer() {
-        return (PythonCodeSerializer) parser;
     }
 
     /**
@@ -1019,12 +987,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         return importFunc;
     }
 
-    @Override
-    @TruffleBoundary
-    public final void warn(PythonBuiltinClassType type, TruffleString format, Object... args) {
-        WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
-    }
-
     /**
      * Returns the stderr object or signals error when stderr is "lost".
      */
@@ -1187,10 +1149,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         }
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
-            if (getContext().getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                return getLanguage().parseForBytecodeInterpreter(getContext(), source, InputType.FILE, false, 0, false, null);
-            }
-            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
+            return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null);
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
@@ -1210,71 +1169,6 @@ public abstract class Python3Core extends ParserErrorCallback {
 
     public final PFloat getNaN() {
         return pyNaN;
-    }
-
-    @Override
-    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, TruffleString message, Object... arguments) {
-        CompilerDirectives.transferToInterpreter();
-        Node location = new Node() {
-            @Override
-            public SourceSection getSourceSection() {
-                return section;
-            }
-        };
-        throw raiseInvalidSyntax(type, location, message, arguments);
-    }
-
-    @Override
-    @TruffleBoundary
-    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, TruffleString message, Object... arguments) {
-        PBaseException instance;
-        Object cls;
-        switch (type) {
-            case Indentation:
-                cls = IndentationError;
-                break;
-            case Tab:
-                cls = TabError;
-                break;
-            default:
-                cls = SyntaxError;
-                break;
-        }
-        instance = factory().createBaseException(cls, message, arguments);
-        final Object[] excAttrs = SYNTAX_ERROR_ATTR_FACTORY.create();
-        SourceSection section = location.getSourceSection();
-        Source source = section.getSource();
-        String path = source.getPath();
-        excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = toTruffleStringUncached((path != null) ? path : source.getName() != null ? source.getName() : J_STRING_SOURCE);
-        excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = section.getStartLine();
-        excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = section.getStartColumn();
-        String msg = ErrorMessages.INVALID_SYNTAX.toJavaStringUncached();
-        if (type == PythonParser.ErrorType.Print) {
-            CharSequence line = source.getCharacters(section.getStartLine());
-            line = line.subSequence(line.toString().lastIndexOf(J_PRINT), line.length());
-            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(line);
-            if (matcher.matches()) {
-                String arg = matcher.group(2).trim();
-                String maybeEnd = "";
-                if (arg.endsWith(",")) {
-                    maybeEnd = " end=\" \"";
-                }
-                msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
-            }
-        } else if (type == PythonParser.ErrorType.Exec) {
-            msg = "Missing parentheses in call to 'exec'";
-        } else if (section.getCharIndex() == source.getLength()) {
-            msg = "unexpected EOF while parsing";
-        } else if (message != null) {
-            msg = (new ErrorMessageFormatter()).format(message, arguments);
-        }
-        // Not very nice. This counts on the implementation in traceback.py where if the value of
-        // text attribute is NONE, then the line is not printed
-        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
-        excAttrs[SyntaxErrorBuiltins.IDX_MSG] = toTruffleStringUncached(msg);
-        excAttrs[SyntaxErrorBuiltins.IDX_TEXT] = toTruffleStringUncached(text);
-        instance.setExceptionAttributes(excAttrs);
-        throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
     public final Object getTopScopeObject() {

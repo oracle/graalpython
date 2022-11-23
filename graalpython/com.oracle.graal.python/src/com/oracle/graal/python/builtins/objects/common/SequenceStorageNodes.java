@@ -106,7 +106,11 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlice;
+import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -118,14 +122,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1082,8 +1082,8 @@ public abstract class SequenceStorageNodes {
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached SliceLiteralNode.SliceUnpack unpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.SliceUnpack unpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
             int len = storage.length();
             SliceInfo info = adjustIndices.execute(len, unadjusted);
@@ -1104,8 +1104,8 @@ public abstract class SequenceStorageNodes {
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached SliceLiteralNode.SliceUnpack unpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.SliceUnpack unpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
             int len = storage.length();
             SliceInfo info = adjustIndices.execute(len, unadjusted);
@@ -3177,8 +3177,8 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected void doSlice(SequenceStorage storage, PSlice slice,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached SliceLiteralNode.SliceUnpack unpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceNodes.SliceUnpack unpack,
+                        @Cached SliceNodes.AdjustIndices adjustIndices) {
             int len = storage.length();
             SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
             SliceInfo info = adjustIndices.execute(len, unadjusted);

@@ -52,14 +52,10 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChild("arg")
-@NodeChild("arg2")
-@NodeChild("arg3")
-public abstract class LookupAndCallInplaceNode extends ExpressionNode implements BinaryOp {
+public abstract class LookupAndCallInplaceNode extends PNodeWithContext implements BinaryOp {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2);
@@ -76,8 +72,8 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode implements
         this.arithmetic = arithmetic;
     }
 
-    public static LookupAndCallInplaceNode create(InplaceArithmetic arithmetic, ExpressionNode x, ExpressionNode y, ExpressionNode z) {
-        return LookupAndCallInplaceNodeGen.create(arithmetic, x, y, z);
+    public static LookupAndCallInplaceNode create(InplaceArithmetic arithmetic) {
+        return LookupAndCallInplaceNodeGen.create(arithmetic);
     }
 
     private CallBinaryMethodNode ensureBinaryCallNode() {

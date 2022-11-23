@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -69,18 +68,12 @@ import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.RaisePythonExceptionErrorCallback;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.RootNodeFactory;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
-import com.oracle.graal.python.nodes.util.BadOPCodeNode;
-import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.Parser;
@@ -93,7 +86,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
@@ -112,7 +104,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -249,8 +240,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
-    private final RootNodeFactory nodeFactory;
-
     /**
      * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
      * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
@@ -321,14 +310,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return -1;
     }
 
-    public PythonLanguage() {
-        this.nodeFactory = RootNodeFactory.create(this);
-    }
-
-    public RootNodeFactory getNodeFactory() {
-        return nodeFactory;
-    }
-
     /**
      * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b> Instead, use
      * {@link PythonContext#getThreadState(PythonLanguage)}}.
@@ -366,7 +347,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        final PythonContext context = new PythonContext(this, env, new PythonParserImpl(env));
+        final PythonContext context = new PythonContext(this, env);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
@@ -427,65 +408,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = PythonContext.get(null);
-        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-            return parseForBytecodeInterpreter(request);
-        }
-        Source source = request.getSource();
-        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
-            if (!request.getArgumentNames().isEmpty()) {
-                return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
-            }
-            RootNode root = doParse(context, source, 0);
-            if (root instanceof PRootNode) {
-                GilNode gil = GilNode.getUncached();
-                boolean wasAcquired = gil.acquire(context, root);
-                try {
-                    ((PRootNode) root).triggerDeprecationWarnings();
-                } finally {
-                    gil.release(context, wasAcquired);
-                }
-            }
-            if (context.isCoreInitialized()) {
-                return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
-            } else {
-                return PythonUtils.getOrCreateCallTarget(root);
-            }
-        }
-        if (!request.getArgumentNames().isEmpty()) {
-            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
-        }
-
-        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
-            byte[] bytes = source.getBytes().toByteArray();
-            if (bytes.length == 0) {
-                return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
-            }
-            return PythonUtils.getOrCreateCallTarget(context.getSerializer().deserialize(context, bytes));
-        }
-        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
-            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
-                assert !source.isInteractive();
-                return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.Eval, optimize, context, source, null, null));
-            }
-        }
-        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
-            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
-                assert !source.isInteractive();
-                return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
-            }
-        }
-        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
-    }
-
-    private CallTarget parseForBytecodeInterpreter(ParsingRequest request) {
-        PythonContext context = PythonContext.get(null);
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
             if (!request.getArgumentNames().isEmpty() && source.isInteractive()) {
                 throw new IllegalStateException("parse with arguments not allowed for interactive sources");
             }
             InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
-            return parseForBytecodeInterpreter(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames());
+            return parse(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames());
         }
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
@@ -523,13 +452,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, InputType.EVAL, false, optimize, false, null);
+                return parse(context, source, InputType.EVAL, false, optimize, false, null);
             }
         }
         for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
             if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return parseForBytecodeInterpreter(context, source, InputType.FILE, false, optimize, false, null);
+                return parse(context, source, InputType.FILE, false, optimize, false, null);
             }
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
@@ -543,7 +472,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public RootCallTarget parseForBytecodeInterpreter(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames) {
+    public RootCallTarget parse(PythonContext context, Source source, InputType type, boolean topLevel, int optimize, boolean interactiveTerminal, List<String> argumentNames) {
         RaisePythonExceptionErrorCallback errorCb = new RaisePythonExceptionErrorCallback(source, PythonOptions.isPExceptionWithJavaStacktrace(this));
         try {
             Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal);
@@ -653,9 +582,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private ExecutableNode parseForBytecodeInterpreter(InlineParsingRequest request) {
+    @Override
+    public ExecutableNode parse(InlineParsingRequest request) {
         PythonContext context = PythonContext.get(null);
-        RootCallTarget callTarget = parseForBytecodeInterpreter(context, request.getSource(), InputType.EVAL, false, 0, false, null);
+        RootCallTarget callTarget = parse(context, request.getSource(), InputType.EVAL, false, 0, false, null);
         return new ExecutableNode(this) {
             @Child private GilNode gilNode = GilNode.create();
             @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
@@ -667,7 +597,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 Object[] arguments = PArguments.create();
                 // escape?
                 PFrame pFrame = materializeFrameNode.execute(frame, this, false, true, frame);
-                Object locals = readLocalsNode.execute(frame, pFrame);
+                Object locals = readLocalsNode.execute(pFrame);
                 PArguments.setCustomLocals(arguments, locals);
                 PArguments.setSpecialArgument(arguments, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
@@ -679,148 +609,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
             }
         };
-    }
-
-    private RootNode doParse(PythonContext context, Source source, int optimize) {
-        ParserMode mode;
-        if (source.isInteractive()) {
-            if (context.getOption(PythonOptions.TerminalIsInteractive)) {
-                // if we run through our own launcher, the sys.__displayhook__ would provide the
-                // printing
-                mode = ParserMode.Statement;
-            } else {
-                // if we're not run through our own launcher, the embedder will expect the normal
-                // Truffle printing
-                mode = ParserMode.InteractiveStatement;
-            }
-        } else {
-            // by default we assume a module
-            mode = ParserMode.File;
-        }
-        try {
-            return (RootNode) context.getParser().parse(mode, optimize, context, source, null, null);
-        } catch (PException e) {
-            // handle PException during parsing (PIncompleteSourceException will propagate through)
-            PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
-            throw e;
-        }
-    }
-
-    private RootNode parseWithArguments(ParsingRequest request) {
-        final String[] argumentNames = request.getArgumentNames().toArray(new String[request.getArgumentNames().size()]);
-        final Source source = request.getSource();
-        CompilerDirectives.transferToInterpreter();
-        final PythonLanguage lang = this;
-        final RootNode executableNode = new RootNode(lang) {
-            @Child private DirectCallNode callNode;
-            @Child private GilNode gilNode;
-
-            protected Object[] preparePArguments(VirtualFrame frame) {
-                int argumentsLength = frame.getArguments().length;
-                Object[] arguments = PArguments.create(argumentsLength);
-                PArguments.setGlobals(arguments, new PDict(lang));
-                PythonUtils.arraycopy(frame.getArguments(), 0, arguments, PArguments.USER_ARGUMENTS_OFFSET, argumentsLength);
-                return arguments;
-            }
-
-            @Override
-            @TruffleBoundary
-            public Object execute(VirtualFrame frame) {
-                PythonContext context = PythonContext.get(callNode);
-                assert context != null;
-                if (!context.isInitialized()) {
-                    context.initialize();
-                }
-                if (callNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    RootCallTarget callTarget = parse(context, frame);
-                    callNode = insert(DirectCallNode.create(callTarget));
-                }
-                if (gilNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    gilNode = insert(GilNode.create());
-                }
-                boolean wasAcquired = gilNode.acquire();
-                try {
-                    Object[] args = preparePArguments(frame);
-                    return callNode.call(args);
-                } finally {
-                    gilNode.release(wasAcquired);
-                }
-            }
-
-            private RootCallTarget parse(PythonContext context, VirtualFrame frame) {
-                CompilerAsserts.neverPartOfCompilation();
-                RootNode rootNode = (RootNode) context.getParser().parse(ParserMode.WithArguments, 0, context, source, frame, argumentNames);
-                return rootNode.getCallTarget();
-            }
-        };
-        return executableNode;
-    }
-
-    @Override
-    protected ExecutableNode parse(InlineParsingRequest request) {
-        CompilerDirectives.transferToInterpreter();
-        RootNode rootNode = request.getLocation().getRootNode();
-        if (rootNode instanceof PBytecodeGeneratorRootNode) {
-            rootNode = ((PBytecodeGeneratorRootNode) rootNode).getBytecodeRootNode();
-        }
-        if (rootNode instanceof PBytecodeRootNode) {
-            return parseForBytecodeInterpreter(request);
-        }
-        final Source source = request.getSource();
-        final MaterializedFrame requestFrame = request.getFrame();
-        final ExecutableNode executableNode = new ExecutableNode(this) {
-            @CompilationFinal private volatile PythonContext cachedContext;
-            @Child private GilNode gilNode;
-            @Child private ExpressionNode expression;
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                PythonContext context = PythonContext.get(gilNode);
-                assert context != null && context.isInitialized();
-                PythonContext cachedCtx = cachedContext;
-                if (cachedCtx == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    parseAndCache(context);
-                    cachedCtx = context;
-                }
-                if (gilNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    gilNode = insert(GilNode.create());
-                }
-                boolean wasAcquired = gilNode.acquire();
-                try {
-                    Object result;
-                    if (context == cachedCtx) {
-                        result = expression.execute(frame);
-                    } else {
-                        result = parseAndEval(context, frame.materialize());
-                    }
-                    return result;
-                } finally {
-                    gilNode.release(wasAcquired);
-                }
-            }
-
-            private void parseAndCache(PythonContext context) {
-                CompilerAsserts.neverPartOfCompilation();
-                expression = insert(parseInline(source, context, requestFrame));
-                cachedContext = context;
-            }
-
-            @TruffleBoundary
-            private Object parseAndEval(PythonContext context, MaterializedFrame frame) {
-                ExpressionNode fragment = parseInline(source, context, frame);
-                return fragment.execute(frame);
-            }
-        };
-        return executableNode;
-    }
-
-    @TruffleBoundary
-    protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        return (ExpressionNode) context.getParser().parse(ParserMode.InlineEvaluation, 0, context, code, lexicalContextFrame, null);
     }
 
     @Override

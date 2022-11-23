@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_IT
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
@@ -57,14 +58,14 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MAPPING;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -186,7 +187,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -196,7 +196,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -408,18 +407,35 @@ public abstract class TypeNodes {
             for (int i = 0; i < n; i++) {
                 Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
                 if (mroEntry instanceof PythonBuiltinClass) {
-                    result |= doBuiltinClass((PythonBuiltinClass) mroEntry);
+                    result = setFlags(result, doBuiltinClass((PythonBuiltinClass) mroEntry));
                 } else if (mroEntry instanceof PythonBuiltinClassType) {
-                    result |= doBuiltinClassType((PythonBuiltinClassType) mroEntry);
+                    result = setFlags(result, doBuiltinClassType((PythonBuiltinClassType) mroEntry));
                 } else if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result |= doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached());
+                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
+                } else if (mroEntry != clazz && mroEntry instanceof PythonClass) {
+                    long flags = doPythonClass((PythonClass) mroEntry, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(), ConditionProfile.getUncached());
+                    result = setFlags(result, flags);
                 }
-                // 'PythonClass' is intentionally ignored because they do not actually add any
-                // interesting flags except that we already specify before the loop
             }
             return result;
         }
 
+        public static GetTypeFlagsNode getUncached() {
+            return TypeNodesFactory.GetTypeFlagsNodeGen.getUncached();
+        }
+    }
+
+    private static long setFlags(long result, long flags) {
+        if ((flags & IS_ABSTRACT) != 0) {
+            flags &= ~IS_ABSTRACT;
+        }
+        if ((result & COLLECTION_FLAGS) != 0) {
+            // SEQUENCE and MAPPING are mutually exclusive.
+            // If multiple inheritance, the first one wins.
+            flags &= ~COLLECTION_FLAGS;
+        }
+        result |= flags;
+        return result;
     }
 
     @GenerateUncached
@@ -2048,15 +2064,17 @@ public abstract class TypeNodes {
                     } else {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
+                        TruffleString mangledName;
                         try {
-                            TruffleString mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
+                            mangledName = PythonUtils.mangleName(name, slotName);
 
-                            HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
-                            HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
-                            pythonClass.setAttribute(mangledName, slotDesc);
-                        } catch (OverflowException e) {
+                        } catch (OutOfMemoryError e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
                             throw raise.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                         }
+                        HiddenKey hiddenSlotKey = createTypeKey(toJavaStringNode.execute(mangledName));
+                        HiddenKeyDescriptor slotDesc = factory.createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
+                        pythonClass.setAttribute(mangledName, slotDesc);
                     }
                     // Make slots into a tuple
                 }
@@ -2379,8 +2397,8 @@ public abstract class TypeNodes {
                 }
 
                 try {
-                    slotName = PythonSSTNodeFactory.mangleName(className, slotName);
-                } catch (OverflowException e) {
+                    slotName = PythonUtils.mangleName(className, slotName);
+                } catch (OutOfMemoryError e) {
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
                 }
                 if (slotName == null) {

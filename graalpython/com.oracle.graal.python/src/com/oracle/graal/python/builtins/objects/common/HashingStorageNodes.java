@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.DynamicObjectStorageSetStringKey;
@@ -922,7 +920,7 @@ public class HashingStorageNodes {
             it.index++;
             while (it.index < fd.getNumberOfSlots()) {
                 Object identifier = fd.getSlotName(it.index);
-                if (isUserFrameSlot(identifier) && self.getValue(it.index) != null) {
+                if (identifier != null && self.getValue(it.index) != null) {
                     // Update the code in HashingStorageIteratorKey if this assumption changes:
                     assert identifier instanceof TruffleString;
                     return true;
@@ -938,7 +936,7 @@ public class HashingStorageNodes {
             it.index--;
             while (it.index >= 0) {
                 Object identifier = fd.getSlotName(it.index);
-                if (isUserFrameSlot(identifier) && self.getValue(it.index) != null) {
+                if (identifier != null && self.getValue(it.index) != null) {
                     // Update the code in HashingStorageIteratorKey if this assumption changes:
                     assert identifier instanceof TruffleString;
                     return true;

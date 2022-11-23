@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
@@ -219,20 +218,14 @@ public abstract class IsNode extends Node implements BinaryOp {
             if (leftCt != null && rightCt != null) {
                 RootNode leftRootNode = leftCt.getRootNode();
                 RootNode rightRootNode = rightCt.getRootNode();
-                if (leftRootNode instanceof GeneratorFunctionRootNode) {
-                    leftRootNode = ((GeneratorFunctionRootNode) leftRootNode).getFunctionRootNode();
-                } else if (leftRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+                if (leftRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
                     leftRootNode = ((PBytecodeGeneratorFunctionRootNode) leftRootNode).getBytecodeRootNode();
                 }
-                if (rightRootNode instanceof GeneratorFunctionRootNode) {
-                    rightRootNode = ((GeneratorFunctionRootNode) rightRootNode).getFunctionRootNode();
-                } else if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
+                if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode) {
                     rightRootNode = ((PBytecodeGeneratorFunctionRootNode) rightRootNode).getBytecodeRootNode();
                 }
-                if (PythonContext.get(getCt).getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                    if (leftRootNode instanceof PBytecodeRootNode && rightRootNode instanceof PBytecodeRootNode) {
-                        return ((PBytecodeRootNode) leftRootNode).getCodeUnit() == ((PBytecodeRootNode) rightRootNode).getCodeUnit();
-                    }
+                if (leftRootNode instanceof PBytecodeRootNode && rightRootNode instanceof PBytecodeRootNode) {
+                    return ((PBytecodeRootNode) leftRootNode).getCodeUnit() == ((PBytecodeRootNode) rightRootNode).getCodeUnit();
                 }
                 return leftRootNode == rightRootNode;
             } else {

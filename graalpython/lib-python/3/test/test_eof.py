@@ -20,10 +20,6 @@ class EOFTestCase(unittest.TestCase):
                 raise support.TestFailed
 
     def test_EOFS(self):
-        # TODO GR-39439: the error messages changed between 3.8 and 3.10
-        if sys.implementation.name == 'graalpy' and __graalpython__.uses_bytecode_interpreter:
-            self.skipTest("due to changed error messages between 3.8 and 3.10")
-
         expect = ("unterminated triple-quoted string literal (detected at line 1) (<string>, line 1)")
         try:
             eval("""'''this is a test""")

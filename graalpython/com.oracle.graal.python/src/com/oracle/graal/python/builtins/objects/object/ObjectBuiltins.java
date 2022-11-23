@@ -110,8 +110,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -759,15 +759,30 @@ public class ObjectBuiltins extends PythonBuiltins {
         @CompilationFinal private boolean seenNonBoolean = false;
 
         static BinaryComparisonNode createOp(TruffleString op) {
-            return (BinaryComparisonNode) ExpressionNode.createComparisonOperation(op, null, null);
+            switch (op.toJavaStringUncached()) {
+                case "<":
+                    return BinaryComparisonNodeFactory.LtNodeGen.create();
+                case ">":
+                    return BinaryComparisonNodeFactory.GtNodeGen.create();
+                case "==":
+                    return BinaryComparisonNodeFactory.EqNodeGen.create();
+                case ">=":
+                    return BinaryComparisonNodeFactory.GeNodeGen.create();
+                case "<=":
+                    return BinaryComparisonNodeFactory.LeNodeGen.create();
+                case "<>":
+                case "!=":
+                    return BinaryComparisonNodeFactory.NeNodeGen.create();
+            }
+            throw new RuntimeException("unexpected operation: " + op);
         }
 
         @Specialization(guards = "stringEquals(op, cachedOp, equalNode)", limit = "NO_SLOW_PATH")
         boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") TruffleString op,
+                        @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode,
                         @SuppressWarnings("unused") @Cached("op") TruffleString cachedOp,
                         @Cached("createOp(op)") BinaryComparisonNode node,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @SuppressWarnings("unused") @Cached TruffleString.EqualNode equalNode) {
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
             if (!seenNonBoolean) {
                 try {
                     return node.executeBool(frame, left, right);

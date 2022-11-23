@@ -147,51 +147,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
-        @Specialization(guards = {"!self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object cachedAST(VirtualFrame frame, PGenerator self, Object sendValue,
-                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
-            self.setRunning(true);
-            Object[] arguments = prepareArguments(self);
-            if (sendValue != null) {
-                PArguments.setSpecialArgument(arguments, sendValue);
-            }
-            try {
-                return call.execute(frame, null, null, null, arguments);
-            } catch (PException e) {
-                self.markAsFinished();
-                throw e;
-            } finally {
-                self.setRunning(false);
-                self.setNextCallTarget();
-            }
-        }
-
-        @Specialization(guards = "!self.usesBytecode()", replaces = "cachedAST")
-        @Megamorphic
-        static Object genericAST(VirtualFrame frame, PGenerator self, Object sendValue,
-                        @Cached ConditionProfile hasFrameProfile,
-                        @Cached GenericInvokeNode call) {
-            self.setRunning(true);
-            Object[] arguments = prepareArguments(self);
-            if (sendValue != null) {
-                PArguments.setSpecialArgument(arguments, sendValue);
-            }
-            try {
-                if (hasFrameProfile.profile(frame != null)) {
-                    return call.execute(frame, self.getCurrentCallTarget(), arguments);
-                } else {
-                    return call.execute(self.getCurrentCallTarget(), arguments);
-                }
-            } catch (PException e) {
-                self.markAsFinished();
-                throw e;
-            } finally {
-                self.setRunning(false);
-                self.setNextCallTarget();
-            }
-        }
-
-        @Specialization(guards = {"self.usesBytecode()", "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         Object cached(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call,
                         @Cached BranchProfile returnProfile,
@@ -216,7 +172,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             return handleResult(self, result);
         }
 
-        @Specialization(guards = "self.usesBytecode()", replaces = "cached")
+        @Specialization(replaces = "cached")
         @Megamorphic
         Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached ConditionProfile hasFrameProfile,
@@ -513,10 +469,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);
-                if (self.usesBytecode()) {
-                    FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    pFrame.setLine(info.getRootNode().getFirstLineno());
-                }
+                FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                pFrame.setLine(info.getRootNode().getFirstLineno());
                 PTraceback existingTraceback = null;
                 if (instance.getTraceback() != null) {
                     existingTraceback = ensureGetTracebackNode().execute(instance.getTraceback());
@@ -624,33 +578,16 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PDict locals = PArguments.getGeneratorFrameLocals(generatorFrame);
                 Object[] arguments = PArguments.create();
                 Node location;
-                if (self.usesBytecode()) {
-                    location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
-                } else {
-                    location = self.getCurrentYieldNode();
-                    if (location == null) {
-                        location = self.getCurrentCallTarget().getRootNode();
-                    }
-                }
+                location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
                 PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
                 PArguments.setGeneratorFrame(arguments, generatorFrame);
                 frame.setArguments(arguments);
-                if (!self.usesBytecode()) {
-                    if (self.isStarted()) {
-                        /*
-                         * Hack: Fake bytecode to make inspect.getgeneratorstate distinguish
-                         * suspended and unstarted generators
-                         */
-                        frame.setLasti(10000);
-                    }
-                } else {
-                    FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    int bci = self.getBci();
-                    frame.setLasti(bci);
-                    frame.setLine(info.getRootNode().bciToLine(bci));
-                }
+                FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                int bci = self.getBci();
+                frame.setLasti(bci);
+                frame.setLine(info.getRootNode().bciToLine(bci));
                 return frame;
             }
         }

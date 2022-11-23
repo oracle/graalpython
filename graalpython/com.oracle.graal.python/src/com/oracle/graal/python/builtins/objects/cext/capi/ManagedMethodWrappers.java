@@ -48,9 +48,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -145,7 +145,7 @@ public abstract class ManagedMethodWrappers {
                 Object kwArgs = toJavaNode.execute(arguments[2]);
 
                 Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                 PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
 
                 // execute

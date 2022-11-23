@@ -9,7 +9,7 @@ ScopeEnvironment
             c: [DefLocal, Cell]
             range: [Use, GlobalImplicit]
       Scope genexp Function
-            Flags: [HasFreeVars, IsGenerator, IsComprehension]
+            Flags: [IsNested, HasFreeVars, IsGenerator, IsComprehension]
             Varnames: .0
             Symbols:
                   .0: [DefParam, Local]

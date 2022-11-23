@@ -56,11 +56,8 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixed
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -70,44 +67,20 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class GetAttributeNode extends ExpressionNode implements ReadNode {
+public final class GetAttributeNode extends PNodeWithContext {
 
     @Child private GetFixedAttributeNode getFixedAttributeNode;
-    @Child private ExpressionNode objectExpression;
-
-    @Override
-    public Object execute(VirtualFrame frame) {
-        return executeObject(frame, objectExpression.execute(frame));
-    }
 
     public Object executeObject(VirtualFrame frame, Object object) {
         return getFixedAttributeNode.executeObject(frame, object);
     }
 
-    protected GetAttributeNode(TruffleString key, ExpressionNode object) {
+    protected GetAttributeNode(TruffleString key) {
         getFixedAttributeNode = GetFixedAttributeNode.create(key);
-        objectExpression = object;
-    }
-
-    public final TruffleString getKey() {
-        return getFixedAttributeNode.key;
-    }
-
-    public static GetAttributeNode create(TruffleString key, ExpressionNode object) {
-        return new GetAttributeNode(key, object);
     }
 
     public static GetAttributeNode create(TruffleString key) {
-        return new GetAttributeNode(key, null);
-    }
-
-    @Override
-    public final StatementNode makeWriteNode(ExpressionNode rhs) {
-        return SetAttributeNode.create(getFixedAttributeNode.key, getObject(), rhs);
-    }
-
-    public ExpressionNode getObject() {
-        return objectExpression;
+        return new GetAttributeNode(key);
     }
 
     abstract static class GetAttributeBaseNode extends PNodeWithContext {

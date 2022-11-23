@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,10 +42,10 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -62,12 +62,8 @@ public abstract class ContainsNode extends BinaryOpNode {
     @Child private GetNextNode next;
     @Child private IsBuiltinClassProfile errorProfile;
 
-    public static ExpressionNode create(ExpressionNode left, ExpressionNode right) {
-        return ContainsNodeGen.create(left, right);
-    }
-
     public static ContainsNode create() {
-        return ContainsNodeGen.create(null, null);
+        return ContainsNodeGen.create();
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)

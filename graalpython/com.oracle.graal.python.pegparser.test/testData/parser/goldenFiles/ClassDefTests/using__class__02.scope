@@ -16,13 +16,13 @@ ScopeEnvironment
                   __class__: [Free]
                   this: [DefParam, Local]
         Scope Y Class
-                Flags: [HasFreeVars, HasChildWithFreeVars, NeedsClassClosure]
+                Flags: [IsNested, HasFreeVars, HasChildWithFreeVars, NeedsClassClosure]
                 Symbols:
                         __class__: [Use, Free]
                         methodY: [DefLocal, Local]
                         z: [DefLocal, Local]
           Scope methodY Function
-                    Flags: [HasFreeVars]
+                    Flags: [IsNested, HasFreeVars]
                     Varnames: this
                     Symbols:
                               __class__: [Use, Free]

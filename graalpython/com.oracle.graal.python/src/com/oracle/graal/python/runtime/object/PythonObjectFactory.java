@@ -196,8 +196,6 @@ import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -869,12 +867,6 @@ public abstract class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references, cells
      */
 
-    public final PGenerator createGenerator(TruffleString name, TruffleString qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
-                    ExecutionCellSlots cellSlots,
-                    GeneratorInfo generatorInfo, Object iterator) {
-        return trace(PGenerator.create(getLanguage(), name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
-    }
-
     public final PGenerator createGenerator(TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(PGenerator.create(getLanguage(), name, qualname, rootNode, callTargets, arguments));
     }
@@ -1126,8 +1118,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, codeUnit));
     }
 
-    public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
-                    Object[] freevars, Object[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
+    public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, TruffleString[] names, TruffleString[] varnames,
+                    TruffleString[] freevars, TruffleString[] cellvars, TruffleString filename, TruffleString name, int firstlineno, byte[] linetable) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, firstlineno, linetable));
     }

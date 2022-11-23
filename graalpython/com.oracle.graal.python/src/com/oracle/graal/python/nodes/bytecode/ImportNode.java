@@ -41,16 +41,10 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class ImportNode extends AbstractImportNode {
-    @Override
-    public final void executeVoid(VirtualFrame frame) {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
     public final Object execute(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level) {
         return importModule(frame, name, globals, fromList, level);
     }

@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -72,7 +73,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -159,7 +159,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         static Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached ReadAttributeFromObjectNode readObject,
-                        @Cached GetItemNode getItem,
+                        @Cached PyObjectGetItem getItem,
                         @Cached.Shared("writeObject") @Cached WriteAttributeToObjectNode writeObject) {
             Object module = readObject.execute(self, T___MODULE__);
             if (module == PNone.NO_VALUE) {

@@ -7,3 +7,4 @@ ScopeEnvironment
             decorator1: [Use, GlobalImplicit]
             inner: [DefLocal, Local]
       Scope inner Function
+            Flags: [IsNested]

@@ -70,4 +70,6 @@ public abstract class TypeFlags {
     public static final long TYPE_SUBCLASS = (1L << 31);
     public static final long DEFAULT = HAVE_STACKLESS_EXTENSION;
     public static final long HAVE_FINALIZE = 1L;
+
+    public static final long COLLECTION_FLAGS = SEQUENCE | MAPPING;
 }

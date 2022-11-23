@@ -1,13 +1,16 @@
 ScopeEnvironment
   Scope null Module
+    Flags: [HasChildWithFreeVars]
     Symbols:
       outer: [DefLocal, Use, Local]
     Scope outer Function
+        Flags: [HasChildWithFreeVars]
         Symbols:
             inner: [DefLocal, Use, Local]
             print: [Use, GlobalImplicit]
             x: [DefLocal, Use, Local]
       Scope inner Function
+            Flags: [IsNested, HasFreeVars]
             Symbols:
                   print: [Use, GlobalImplicit]
                   x: [DefLocal, Use, Local]

@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -76,12 +75,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  *
  * MaterializedFrame
  *       |
- *       |
- *       |                    |         ....         |
- *       |                    +----------------------+
- * INDEX_GENERATOR_FRAME   -> | GeneratorControlData |
- *       |                    +----------------------+
- *       |                    |                      |
  *       |                              ....
  *       |                    |                      |
  *       |                    +----------------------+
@@ -118,7 +111,7 @@ public final class PArguments {
 
     public static boolean isGeneratorFrame(Object[] frameArgs) {
         // a generator frame never has a frame info
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_GENERATOR_FRAME] instanceof GeneratorControlData;
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CALLER_FRAME_INFO] instanceof PDict;
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -360,31 +353,6 @@ public final class PArguments {
 
     public static void setGeneratorFunction(Object[] arguments, PFunction generatorFunction) {
         arguments[INDEX_GENERATOR_FRAME] = generatorFunction;
-    }
-
-    public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {
-        MaterializedFrame generatorFrame = (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
-        generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;
-    }
-
-    public static GeneratorControlData getControlDataFromGeneratorFrame(Frame generatorFrame) {
-        return (GeneratorControlData) generatorFrame.getArguments()[INDEX_GENERATOR_FRAME];
-    }
-
-    public static GeneratorControlData getControlDataFromGeneratorArguments(Object[] arguments) {
-        return getControlDataFromGeneratorFrame((MaterializedFrame) arguments[INDEX_GENERATOR_FRAME]);
-    }
-
-    public static Object[] insertSelf(Object[] arguments, Object self) {
-        final int userArgumentLength = arguments.length - USER_ARGUMENTS_OFFSET;
-        Object[] results = create(userArgumentLength + 1);
-        results[USER_ARGUMENTS_OFFSET] = self;
-
-        for (int i = 0; i < userArgumentLength; i++) {
-            results[USER_ARGUMENTS_OFFSET + 1 + i] = arguments[USER_ARGUMENTS_OFFSET + i];
-        }
-
-        return results;
     }
 
     public static void setGeneratorFrameLocals(Object[] arguments, PDict locals) {

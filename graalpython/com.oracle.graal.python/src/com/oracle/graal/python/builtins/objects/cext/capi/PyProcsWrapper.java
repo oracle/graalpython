@@ -56,7 +56,6 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -65,6 +64,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -299,7 +299,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object kwArgs = toJavaNode.execute(arguments[2]);
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
                         return 0;
@@ -348,7 +348,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object starArgs = toJavaNode.execute(arguments[1]);
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                         return toNewRefNode.execute(callNode.execute(null, lib.getDelegate(self), pArgs, PKeyword.EMPTY_KEYWORDS));
                     } catch (PException e) {
                         transformExceptionToNativeNode.execute(null, e);
@@ -396,7 +396,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object kwArgs = toJavaNode.execute(arguments[2]);
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         return toNewRefNode.execute(callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray));
                     } catch (PException e) {
@@ -445,7 +445,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         Object kwArgs = toJavaNode.execute(arguments[2]);
 
                         Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        Object[] pArgs = PythonUtils.prependArgument(receiver, starArgsArray);
                         PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
                         Object result = callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
                         return toNewRefNode.execute(result);

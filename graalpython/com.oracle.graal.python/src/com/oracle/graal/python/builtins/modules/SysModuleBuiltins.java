@@ -45,7 +45,6 @@ import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -573,11 +572,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         sys.setAttribute(tsLiteral("platlibdir"), tsLiteral("lib"));
 
-        if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-            sys.setAttribute(tsLiteral("settrace"), sys.getAttribute(tsLiteral("_settrace")));
-            sys.setAttribute(tsLiteral("setprofile"), sys.getAttribute(tsLiteral("_setprofile")));
-        }
-
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
         TruffleString capiHome = context.getCAPIHome();
@@ -776,14 +770,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Override
         public abstract PTuple execute(VirtualFrame frame);
-
-        public static Object fast(VirtualFrame frame, GetClassNode getClassNode, GetCaughtExceptionNode getCaughtExceptionNode, PythonObjectFactory factory) {
-            final PException currentException = getCaughtExceptionNode.execute(frame);
-            if (currentException == null) {
-                return factory.createTuple(new PNone[]{PNone.NONE});
-            }
-            return factory.createTuple(new Object[]{getClassNode.execute(currentException.getUnreifiedException())});
-        }
 
         @Specialization
         public PTuple run(VirtualFrame frame,
@@ -1044,16 +1030,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_settrace", minNumOfPositionalArgs = 1, parameterNames = {"function"}, doc = "Set the global debug tracing function.  It will be called on each\n" +
+    @Builtin(name = "settrace", minNumOfPositionalArgs = 1, parameterNames = {"function"}, doc = "Set the global debug tracing function.  It will be called on each\n" +
                     "function call.  See the debugger chapter in the library manual.")
     @GenerateNodeFactory
     abstract static class SetTrace extends PythonBuiltinNode {
         @Specialization
         Object settrace(Object function) {
             PythonContext ctx = getContext();
-            if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                throw raise(NotImplementedError, ErrorMessages.SETTRACE_NOT_IMPLEMENTED);
-            }
             PythonLanguage language = getLanguage();
             PythonContext.PythonThreadState state = ctx.getThreadState(language);
             if (function == PNone.NONE) {
@@ -1065,16 +1048,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_setprofile", minNumOfPositionalArgs = 1, parameterNames = {
+    @Builtin(name = "setprofile", minNumOfPositionalArgs = 1, parameterNames = {
                     "function"}, doc = "Set the profiling function.  It will be called on each function call\nand return.  See the profiler chapter in the library manual.")
     @GenerateNodeFactory
     abstract static class SetProfile extends PythonBuiltinNode {
         @Specialization
         Object settrace(Object function) {
             PythonContext ctx = getContext();
-            if (!ctx.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                throw raise(NotImplementedError, ErrorMessages.SETPROFILE_NOT_IMPLEMENTED);
-            }
             PythonLanguage language = getLanguage();
             PythonContext.PythonThreadState state = ctx.getThreadState(language);
             if (function == PNone.NONE) {

@@ -25,15 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.ByteArrayOutputStream;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -302,22 +297,6 @@ public final class BytesUtils {
         return (byte) TO_UPPER[mask(c)];
     }
 
-    public static byte[] fromString(ParserErrorCallback errors, String source) {
-        return decodeEscapeToBytes(errors, source);
-    }
-
-    public static byte[] fromHex(char[] chars, int len) {
-        byte[] out = new byte[len / 2];
-
-        for (int i = 0; i < len; i += 2) {
-            int hn = Character.digit(chars[i], 16) << 4;
-            int ln = Character.digit(chars[i + 1], 16);
-            out[i / 2] = (byte) (hn + ln);
-        }
-
-        return out;
-    }
-
     @TruffleBoundary(allowInlining = true)
     public static char figureOutQuote(byte[] bytes, int len) {
         char quote = '\'';
@@ -391,143 +370,6 @@ public final class BytesUtils {
         repr(sb, bytes, len, TruffleStringBuilder.AppendCodePointNode.getUncached());
         sb.appendCodePointUncached('\'');
         return sb.toStringUncached().toJavaStringUncached();
-    }
-
-    @TruffleBoundary(transferToInterpreterOnException = false)
-    public static StringBuilder decodeEscapes(ParserErrorCallback errors, String string, boolean regexMode) {
-        // see _PyBytes_DecodeEscape from
-        // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
-        // TODO: for the moment we assume ASCII
-        StringBuilder charList = new StringBuilder();
-        int length = string.length();
-        boolean wasDeprecationWarning = false;
-        for (int i = 0; i < length; i++) {
-            char chr = string.charAt(i);
-            if (chr != '\\') {
-                charList.append(chr);
-                continue;
-            }
-
-            i++;
-            if (i >= length) {
-                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
-            }
-
-            chr = string.charAt(i);
-            switch (chr) {
-                case '\n':
-                    break;
-                case '\\':
-                    if (regexMode) {
-                        charList.append('\\');
-                    }
-                    charList.append('\\');
-                    break;
-                case '\'':
-                    charList.append('\'');
-                    break;
-                case '\"':
-                    charList.append('\"');
-                    break;
-                case 'b':
-                    charList.append('\b');
-                    break;
-                case 'f':
-                    charList.append('\014');
-                    break; /* FF */
-                case 't':
-                    charList.append('\t');
-                    break;
-                case 'n':
-                    charList.append('\n');
-                    break;
-                case 'r':
-                    charList.append('\r');
-                    break;
-                case 'v':
-                    charList.append('\013');
-                    break; /* VT */
-                case 'a':
-                    charList.append('\007');
-                    break; /* BEL */
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                    if (!regexMode) {
-                        int code = chr - '0';
-                        if (i + 1 < length) {
-                            char nextChar = string.charAt(i + 1);
-                            if ('0' <= nextChar && nextChar <= '7') {
-                                code = (code << 3) + nextChar - '0';
-                                i++;
-
-                                if (i + 1 < length) {
-                                    nextChar = string.charAt(i + 1);
-                                    if ('0' <= nextChar && nextChar <= '7') {
-                                        code = (code << 3) + nextChar - '0';
-                                        i++;
-                                    }
-                                }
-                            }
-                        }
-                        charList.append((char) code);
-                    } else {
-                        // this mode is required for regex substitute to disambiguate from
-                        // backreferences
-                        charList.append('\\');
-                        charList.append(chr);
-                    }
-                    break;
-                case 'x':
-                    if (i + 2 < length) {
-                        try {
-                            int b = Integer.parseInt(string.substring(i + 1, i + 3), 16);
-                            assert b >= 0x00 && b <= 0xFF;
-                            charList.append((char) b);
-                            i += 2;
-                            break;
-                        } catch (NumberFormatException e) {
-                            // fall through
-                        }
-                    }
-                    throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.INVALID_ESCAPE_AT, "\\x", i);
-                default:
-                    if (regexMode) {
-                        if (chr == 'g' || (chr >= '0' && chr <= '9')) {
-                            // only allow backslashes, named group references and numbered group
-                            // references in regex mode
-                            charList.append('\\');
-                            charList.append(chr);
-                        } else {
-                            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.INVALID_ESCAPE_SEQ_AT, chr, i);
-                        }
-                    } else {
-                        charList.append('\\');
-                        charList.append(chr);
-                        if (!wasDeprecationWarning) {
-                            wasDeprecationWarning = true;
-                            warnInvalidEscapeSequence(errors, chr);
-                        }
-                    }
-            }
-        }
-
-        return charList;
-    }
-
-    private static byte[] decodeEscapeToBytes(ParserErrorCallback errors, String string) {
-        CompilerAsserts.neverPartOfCompilation();
-        StringBuilder sb = decodeEscapes(errors, string, false);
-        byte[] bytes = new byte[sb.length()];
-        for (int i = 0; i < sb.length(); i++) {
-            bytes[i] = (byte) sb.charAt(i);
-        }
-        return bytes;
     }
 
     /**

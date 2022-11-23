@@ -9,7 +9,7 @@ ScopeEnvironment
             inner: [DefLocal, Use, Local]
             x: [DefLocal, Cell]
       Scope inner Function
-            Flags: [HasFreeVars]
+            Flags: [IsNested, HasFreeVars]
             Symbols:
                   print: [Use, GlobalImplicit]
                   x: [Use, Free]

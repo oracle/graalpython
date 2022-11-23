@@ -112,8 +112,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private String checkHashPycsMode = "default";
     private String execName;
 
-    boolean useASTInterpreter = false;
-
     protected static void setStartupTime() {
         if (GraalPythonMain.startupNanoTime == -1) {
             GraalPythonMain.startupNanoTime = System.nanoTime();
@@ -205,10 +203,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                 throw abort("Argument expected for the --check-hash-based-pycs option\n" + SHORT_HELP, 2);
                             }
                             checkHashPycsMode = argumentIterator.next();
-                            continue;
-                        case "--use-ast-interpreter":
-                        case "--python.UseASTInterpreter":
-                            useASTInterpreter = true;
                             continue;
                         default:
                             if (arg.startsWith("--llvm.") ||
@@ -671,16 +665,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.InputFilePath", inputFile);
         }
 
-        if (useASTInterpreter) {
-            contextBuilder.option("python.DontWriteBytecodeFlag", "true");
-            contextBuilder.option("python.PyCachePrefix", "/dev/null");
-            contextBuilder.option("python.EnableBytecodeInterpreter", "false");
-            contextBuilder.option("python.DisableFrozenModules", "true");
-        } else {
-            contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
-            if (cachePrefix != null) {
-                contextBuilder.option("python.PyCachePrefix", cachePrefix);
-            }
+        contextBuilder.option("python.DontWriteBytecodeFlag", Boolean.toString(dontWriteBytecode));
+        if (cachePrefix != null) {
+            contextBuilder.option("python.PyCachePrefix", cachePrefix);
         }
 
         String osName = System.getProperty("os.name");

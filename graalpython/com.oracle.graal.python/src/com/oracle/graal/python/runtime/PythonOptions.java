@@ -333,9 +333,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Disables using frozen modules.") //
     public static final OptionKey<Boolean> DisableFrozenModules = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "Enables using bytecode interpreter instead of legacy AST interpreter.") //
-    public static final OptionKey<Boolean> EnableBytecodeInterpreter = new OptionKey<>(true);
-
     @Option(category = OptionCategory.EXPERT, help = "Makes bytecode instrumentation node materialization eager instead of lazy.") //
     public static final OptionKey<Boolean> EagerlyMaterializeInstrumentationNodes = new OptionKey<>(false);
 

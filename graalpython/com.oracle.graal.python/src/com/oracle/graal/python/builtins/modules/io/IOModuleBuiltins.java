@@ -345,7 +345,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
 
                 result = wrapper;
 
-                setAttrNode.executeVoid(frame, wrapper, mode.mode);
+                setAttrNode.execute(frame, wrapper, mode.mode);
                 return result;
             } catch (PException e) {
                 callClose.execute(frame, result, T_CLOSE);

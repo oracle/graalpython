@@ -7,7 +7,9 @@ ScopeEnvironment
             decorator1: [DefLocal, Use, Local]
             inner: [DefLocal, Local]
       Scope decorator1 Function
+            Flags: [IsNested]
             Varnames: fn
             Symbols:
                   fn: [DefParam, Local]
       Scope inner Function
+            Flags: [IsNested]

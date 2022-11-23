@@ -56,19 +56,18 @@ import mx_graalpython_bisect
 import mx_graalpython_python_benchmarks
 
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
-    JAVA_DRIVER_BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, JAVA_DRIVER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
     GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite, \
+    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, \
     CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
     CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
     GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
     CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
-    CONFIGURATION_JAVA_EMBEDDING_MULTI, CONFIGURATION_DEFAULT_AST, CONFIGURATION_INTERPRETER_AST
+    CONFIGURATION_JAVA_EMBEDDING_MULTI
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -1791,14 +1790,8 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_AST, extra_polyglot_args=[
-        '--experimental-options', '--use-ast-interpreter',
-    ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
         '--experimental-options', '--engine.Compilation=false'
-    ]), SUITE, 10)
-    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_AST, extra_polyglot_args=[
-        '--experimental-options', '--engine.Compilation=false', '--use-ast-interpreter',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
@@ -1851,8 +1844,6 @@ def _register_bench_suites(namespace):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
         mx_benchmark.add_bm_suite(java_bench_suite)
-    for parser_bench_suite in PythonParserBenchmarkSuite.get_benchmark_suites(PARSER_BENCHMARKS):
-        mx_benchmark.add_bm_suite(parser_bench_suite)
 
 
 class CharsetFilteringPariticpant:

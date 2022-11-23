@@ -59,8 +59,8 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.pegparser.ErrorCallback;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PIncompleteSourceException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -96,15 +96,15 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
 
     @Override
     public void reportIncompleteSource(int line) {
-        throw new PythonParser.PIncompleteSourceException("", null, line, source);
+        throw new PIncompleteSourceException("", null, line, source);
     }
 
     @Override
     public void onError(ErrorType errorType, SourceRange sourceRange, String message) {
-        throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message));
+        throw raiseSyntaxError(errorType, sourceRange, toTruffleStringUncached(message), source, withJavaStackTrace);
     }
 
-    private PException raiseSyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, TruffleString message) {
+    public static PException raiseSyntaxError(ErrorCallback.ErrorType errorType, SourceRange sourceRange, TruffleString message, Source source, boolean withJavaStackTrace) {
         Node location = new Node() {
             @Override
             public boolean isAdoptable() {
@@ -161,7 +161,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         }
         instance = PythonObjectFactory.getUncached().createBaseException(cls, message, PythonUtils.EMPTY_OBJECT_ARRAY);
         final Object[] excAttrs = SyntaxErrorBuiltins.SYNTAX_ERROR_ATTR_FACTORY.create();
-        TruffleString filename = getFilename();
+        TruffleString filename = getFilename(source);
         excAttrs[SyntaxErrorBuiltins.IDX_FILENAME] = filename;
         excAttrs[SyntaxErrorBuiltins.IDX_LINENO] = sourceRange.startLine;
         excAttrs[SyntaxErrorBuiltins.IDX_OFFSET] = sourceRange.startColumn + 1;
@@ -179,7 +179,7 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         throw PException.fromObject(instance, location, withJavaStackTrace);
     }
 
-    private TruffleString getFilename() {
+    private static TruffleString getFilename(Source source) {
         TruffleString filename = toTruffleStringUncached(source.getPath());
         if (filename == null) {
             filename = toTruffleStringUncached(source.getName());
@@ -221,14 +221,14 @@ public class RaisePythonExceptionErrorCallback implements ErrorCallback {
         for (DeprecationWarning warning : deprecationWarnings) {
             try {
                 PyObjectCallMethodObjArgs.getUncached().execute(null, warnings, WarningsModuleBuiltins.T_WARN_EXPLICIT, //
-                                warning.message, warning.type, getFilename(), warning.sourceRange.startLine);
+                                warning.message, warning.type, getFilename(source), warning.sourceRange.startLine);
             } catch (PException e) {
                 e.expect(warning.type, IsBuiltinClassProfile.getUncached());
                 /*
                  * Replace the DeprecationWarning exception with a SyntaxError to get a more
                  * accurate error report
                  */
-                throw raiseSyntaxError(ErrorType.Syntax, warning.sourceRange, warning.message);
+                throw raiseSyntaxError(ErrorType.Syntax, warning.sourceRange, warning.message, source, withJavaStackTrace);
             }
         }
     }

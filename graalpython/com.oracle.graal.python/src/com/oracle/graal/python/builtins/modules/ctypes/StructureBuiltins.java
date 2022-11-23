@@ -62,11 +62,11 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -107,7 +107,7 @@ public class StructureBuiltins extends PythonBuiltins {
         Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached CastToTruffleStringNode toString,
                         @Cached HashingStorageGetItem getItem,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -142,7 +142,7 @@ public class StructureBuiltins extends PythonBuiltins {
          */
         int _init_pos_args(VirtualFrame frame, Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         SetAttributeNode.Dynamic setAttr,
-                        GetItemNode getItemNode,
+                        PyObjectGetItem getItemNode,
                         CastToTruffleStringNode toString,
                         HashingStorageGetItem getItem,
                         PyTypeStgDictNode pyTypeStgDictNode,
@@ -192,7 +192,7 @@ public class StructureBuiltins extends PythonBuiltins {
         @TruffleBoundary
         int _init_pos_args_boundary(Object self, Object type, Object[] args, PKeyword[] kwds, int idx,
                         SetAttributeNode.Dynamic setAttr,
-                        GetItemNode getItemNode) {
+                        PyObjectGetItem getItemNode) {
             return _init_pos_args(null, self, type, args, kwds, idx, setAttr,
                             getItemNode, CastToTruffleStringNode.getUncached(),
                             HashingStorageGetItemNodeGen.getUncached(), PyTypeStgDictNodeGen.getUncached(),

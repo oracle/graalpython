@@ -7,7 +7,7 @@ ScopeEnvironment
             bar: [Use, GlobalImplicit]
             blat: [Use, GlobalImplicit]
       Scope lambda Function
-            Flags: [HasVarArgs, HasVarKeywords]
+            Flags: [IsNested, HasVarArgs, HasVarKeywords]
             Varnames: foo, blaz, y, z
             Symbols:
                   blaz: [DefParam, Local]

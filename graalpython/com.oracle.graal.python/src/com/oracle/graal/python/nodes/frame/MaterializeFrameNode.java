@@ -50,13 +50,10 @@ import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -142,7 +139,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(cachedFD);
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync, syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
@@ -152,7 +149,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync, syncValuesNode);
     }
 
     /**
@@ -168,7 +165,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         Object locals = getPFrame(frameToMaterialize).getLocalsDict();
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync, syncValuesNode);
     }
 
     public static boolean isBytecodeFrame(Frame frameToSync) {
@@ -188,7 +185,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
                     @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        if (syncProfile.profile(forceSync && !inModuleRoot(location) && !inClassBody(location))) {
+        if (syncProfile.profile(forceSync)) {
             syncValuesNode.execute(frame, pyFrame, frameToMaterialize, location);
         }
         if (markAsEscaped) {
@@ -248,24 +245,6 @@ public abstract class MaterializeFrameNode extends Node {
         return PArguments.getCurrentFrameInfo(frame).getPyFrame();
     }
 
-    protected static boolean inModuleRoot(Node location) {
-        assert location != null;
-        if (location instanceof PRootNode) {
-            return location instanceof ModuleRootNode;
-        } else {
-            return location.getRootNode() instanceof ModuleRootNode;
-        }
-    }
-
-    protected static boolean inClassBody(Node location) {
-        assert location != null;
-        if (location instanceof PRootNode) {
-            return location instanceof ClassBodyRootNode;
-        } else {
-            return location.getRootNode() instanceof ClassBodyRootNode;
-        }
-    }
-
     /**
      * When refreshing the frame values in the locals dict, there are 4 cases:
      * <ol>
@@ -301,7 +280,7 @@ public abstract class MaterializeFrameNode extends Node {
             assert cachedFd == target.getFrameDescriptor();
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                if (FrameSlotIDs.isUserFrameSlot(cachedFd.getSlotName(slot))) {
+                if (cachedFd.getSlotName(slot) != null) {
                     PythonUtils.copyFrameSlot(frameToSync, target, slot);
                 }
             }
@@ -316,7 +295,7 @@ public abstract class MaterializeFrameNode extends Node {
             assert cachedFd == target.getFrameDescriptor();
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                if (FrameSlotIDs.isUserFrameSlot(cachedFd.getSlotName(slot))) {
+                if (cachedFd.getSlotName(slot) != null) {
                     PythonUtils.copyFrameSlot(frameToSync, target, slot);
                 }
             }
@@ -332,7 +311,7 @@ public abstract class MaterializeFrameNode extends Node {
                 assert fd == target.getFrameDescriptor();
 
                 for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-                    if (FrameSlotIDs.isUserFrameSlot(fd.getSlotName(slot))) {
+                    if (fd.getSlotName(slot) != null) {
                         PythonUtils.copyFrameSlot(frameToSync, target, slot);
                     }
                 }
@@ -366,7 +345,7 @@ public abstract class MaterializeFrameNode extends Node {
 
             for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
                 Object identifier = cachedFd.getSlotName(slot);
-                if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                if (identifier != null) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
                         setItemNode.execute(frame, localsDict, identifier, resolveCellValue(profiles[slot], value));
@@ -394,7 +373,7 @@ public abstract class MaterializeFrameNode extends Node {
 
             for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
                 Object identifier = fd.getSlotName(slot);
-                if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                if (identifier != null) {
                     Object value = frameToSync.getValue(slot);
                     if (value != null) {
                         setItemNode.execute(frame, localsDict, identifier, resolveCellValue(ConditionProfile.getUncached(), value));

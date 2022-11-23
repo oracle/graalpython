@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -126,12 +125,7 @@ public abstract class CodeNodes {
             if (codedata.length == 0) {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
             } else {
-                if (context.getOption(PythonOptions.EnableBytecodeInterpreter)) {
-                    ct = create().deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars);
-                } else {
-                    RootNode rootNode = context.getSerializer().deserialize(context, codedata, toStringArray(cellvars), toStringArray(freevars));
-                    ct = PythonUtils.getOrCreateCallTarget(rootNode);
-                }
+                ct = create().deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars);
             }
             if (filename != null) {
                 context.setCodeFilename(ct, filename);
@@ -178,18 +172,6 @@ public abstract class CodeNodes {
                 RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
                 return factory.createCode(ct, flags, firstlineno, lnotab, filename);
             }
-        }
-
-        @TruffleBoundary
-        private static String[] toStringArray(TruffleString[] array) {
-            if (array == null) {
-                return null;
-            }
-            String[] result = new String[array.length];
-            for (int i = 0; i < array.length; i++) {
-                result[i] = array[i].toJavaStringUncached();
-            }
-            return result;
         }
 
         public static CreateCodeNode create() {

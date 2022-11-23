@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -96,6 +95,10 @@ public final class LocalsStorage extends HashingStorage {
             return value;
         }
         return null;
+    }
+
+    private static boolean isUserFrameSlot(Object identifier) {
+        return identifier != null;
     }
 
     @ImportStatic(PGuards.class)

@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -82,7 +83,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -320,7 +320,7 @@ abstract class Obj2SstBase {
         throw PRaiseNode.getUncached().raise(type, format, arguments);
     }
 
-    private static PException raiseTypeError(TruffleString format, Object... arguments) {
+    static PException raiseTypeError(TruffleString format, Object... arguments) {
         throw raise(PythonBuiltinClassType.TypeError, format, arguments);
     }
 

@@ -103,7 +103,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -123,8 +125,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.statement.ImportNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -578,7 +578,7 @@ public abstract class ObjectNodes {
         @Fallback
         Object dispatchGeneric(VirtualFrame frame, Object cls, Object clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
-                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
             /*
              * CPython looks at tp_dict of the type and assumes that it must be a builtin
@@ -710,16 +710,12 @@ public abstract class ObjectNodes {
 
         public abstract Object execute(VirtualFrame frame, Object obj, int proto);
 
-        static ImportNode.ImportExpression createImportCopyReg() {
-            return ImportNode.createAsExpression(T_MOD_COPYREG);
-        }
-
         @Specialization(guards = "proto >= 2")
         public Object reduceNewObj(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int proto,
                         @Cached GetClassNode getClassNode,
                         @Cached("create(T___NEW__)") LookupAttributeInMRONode lookupNew,
                         @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
+                        @Cached PyImportImport importNode,
                         @Cached ConditionProfile newObjProfile,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached GetNewArgsNode getNewArgsNode,
@@ -740,7 +736,7 @@ public abstract class ObjectNodes {
             Object kwargs = rv.getRight();
             Object newobj, newargs;
 
-            Object copyReg = importNode.execute(frame);
+            Object copyReg = importNode.execute(frame, T_MOD_COPYREG);
 
             boolean hasargs = args != PNone.NONE;
 
@@ -777,9 +773,9 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "proto < 2")
         public Object reduceCopyReg(VirtualFrame frame, Object obj, int proto,
-                        @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
+                        @Cached PyImportImport importNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object copyReg = importNode.execute(frame);
+            Object copyReg = importNode.execute(frame, T_MOD_COPYREG);
             return callMethod.execute(frame, copyReg, T__REDUCE_EX, obj, proto);
         }
     }

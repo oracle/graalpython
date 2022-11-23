@@ -53,12 +53,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.junit.Assert;
-import org.junit.Assume;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.interop.JavaInteropTest;
 import com.oracle.truffle.api.Truffle;
@@ -66,9 +61,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.LiteralBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonTests {
@@ -132,14 +124,6 @@ public class PythonTests {
             closeContext(context);
             context = null;
         }
-    }
-
-    public static void skipOnBytecodeInterpreter() {
-        Assume.assumeFalse(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
-    }
-
-    public static void skipOnLegacyASTInterpreter() {
-        Assume.assumeTrue(PythonOptions.EnableBytecodeInterpreter.getDefaultValue());
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
@@ -300,31 +284,6 @@ public class PythonTests {
             e.printStackTrace();
         }
         return ret;
-    }
-
-    public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
-        enterContext();
-        try {
-            PythonContext ctx = PythonContext.get(null);
-            ctx.setOut(out);
-            ctx.setErr(err);
-            return (RootNode) ctx.getParser().parse(ParserMode.File, 0, ctx, source, null, null);
-        } finally {
-            closeContext();
-        }
-    }
-
-    public static RootNode getParseResult(String code) {
-        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-
-        LiteralBuilder newBuilder = Source.newBuilder(PythonLanguage.ID, code, code);
-        newBuilder.name("test");
-        try {
-            return PythonTests.getParseResult(newBuilder.build(), new PrintStream(byteArray), System.err);
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     private static String getSource(File file) {
