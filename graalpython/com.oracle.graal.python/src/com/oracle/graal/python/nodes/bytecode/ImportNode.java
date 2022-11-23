@@ -49,12 +49,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 public abstract class ImportNode extends AbstractImportNode {
+    // fromlist must be PE-constant
     public abstract Object execute(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
     @Specialization
     Object doImport(VirtualFrame frame, TruffleString name, Object globals, @SuppressWarnings("unused") TruffleString[] fromList, int level,
                     @Cached(value = "fromList", dimensions = 1, allowUncached = true) TruffleString[] cachedFromList,
                     @Cached ImportName importName) {
+        assert fromList == cachedFromList;
         return importModule(frame, name, globals, cachedFromList, level, importName);
     }
 
