@@ -72,6 +72,7 @@ class ChecksumTests(unittest.TestCase):
         self.assertEqual(binascii.crc32(foo), crc)
         self.assertEqual(zlib.crc32(foo), crc)
         self.assertEqual(binascii.crc32(b'spam'), zlib.crc32(b'spam'))
+        self.assertEqual(binascii.crc32(b'spam', 0x80000000), zlib.crc32(b'spam', 0x80000000))
 
     @unittest.skipIf(sys.version_info.minor < 8)
     def test_index(self):
@@ -142,7 +143,7 @@ class CompressTests(BaseCompressTestCase, unittest.TestCase):
             self.assertEqual(zlib.decompress(ob), data)
 
     def test_incomplete_stream(self):
-        
+
         # A useful error message is given
         x = zlib.compress(HAMLET_SCENE)
         self.assertRaisesRegex(zlib.error,
