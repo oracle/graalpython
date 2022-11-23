@@ -41,11 +41,19 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class ImportNode extends AbstractImportNode {
+    @CompilationFinal(dimensions = 1) TruffleString[] cachedFromList;
+
     public final Object execute(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level) {
-        return importModule(frame, name, globals, fromList, level);
+        if (cachedFromList == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            cachedFromList = fromList;
+        }
+        return importModule(frame, name, globals, cachedFromList, level);
     }
 }

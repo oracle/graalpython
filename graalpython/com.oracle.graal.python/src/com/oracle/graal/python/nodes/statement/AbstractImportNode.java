@@ -179,6 +179,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         @Specialization(limit = "1")
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @CachedLibrary("builtins") DynamicObjectLibrary builtinsDylib,
+                        @Cached ConditionProfile importFuncProfile,
                         @Cached PConstructAndRaiseNode raiseNode,
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
@@ -188,7 +189,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             if (importFunc == null) {
                 throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
             }
-            if (context.importFunc() != importFunc) {
+            if (importFuncProfile.profile(context.importFunc() != importFunc)) {
                 Object globalsArg;
                 if (globals instanceof PNone) {
                     globalsArg = globals;
