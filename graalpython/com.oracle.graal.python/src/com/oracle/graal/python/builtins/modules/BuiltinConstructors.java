@@ -2163,14 +2163,34 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // type(object, bases, dict)
-    @Builtin(name = J_TYPE, minNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
+    @Builtin(name = J_TYPE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
-    public abstract static class TypeNode extends PythonBuiltinNode {
+    public abstract static class TypeNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private IsAcceptableBaseNode isAcceptableBaseNode;
 
         public abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
+
+        @Override
+        public final Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            if (arguments.length == 3) {
+                return execute(frame, self, arguments[0], arguments[1], arguments[2], keywords);
+            } else {
+                throw raise(TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "type.__new__", 3, arguments.length);
+            }
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            if (arguments.length == 4) {
+                return execute(frame, arguments[0], arguments[1], arguments[2], arguments[3], keywords);
+            } else if (arguments.length == 3) {
+                return execute(frame, self, arguments[0], arguments[1], arguments[2], keywords);
+            } else {
+                throw raise(TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "type.__new__", 3, arguments.length);
+            }
+        }
 
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
@@ -2201,7 +2221,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Fallback
-        Object generic(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object name, Object bases, Object namespace, @SuppressWarnings("unused") Object kwds) {
+        Object generic(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object name, Object bases, Object namespace, @SuppressWarnings("unused") PKeyword[] kwds) {
             if (!(bases instanceof PTuple)) {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
             } else if (!(namespace instanceof PDict)) {
@@ -2241,7 +2261,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         public static TypeNode create() {
-            return BuiltinConstructorsFactory.TypeNodeFactory.create(null);
+            return BuiltinConstructorsFactory.TypeNodeFactory.create();
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
