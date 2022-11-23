@@ -651,12 +651,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
         @Override
         void format_i(BigInteger value) {
-            format_n(value);
+            format_d(value);
         }
 
         @Override
         void format_i(int value) {
-            format_n(value);
+            format_d(value);
         }
 
         /**
