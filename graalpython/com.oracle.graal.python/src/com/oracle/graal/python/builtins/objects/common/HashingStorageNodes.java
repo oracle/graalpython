@@ -645,6 +645,10 @@ public class HashingStorageNodes {
             return HashingStorageCopyNodeGen.getUncached();
         }
 
+        public static HashingStorageCopy create() {
+            return HashingStorageCopyNodeGen.create();
+        }
+
         public abstract HashingStorage execute(HashingStorage source);
 
         @Specialization
@@ -1460,6 +1464,10 @@ public class HashingStorageNodes {
     public abstract static class HashingStorageAddAllToOther extends Node {
         public static HashingStorageAddAllToOther getUncached() {
             return HashingStorageAddAllToOtherNodeGen.getUncached();
+        }
+
+        public static HashingStorageAddAllToOther create() {
+            return HashingStorageAddAllToOtherNodeGen.create();
         }
 
         public final void execute(Frame frame, HashingStorage source, PHashingCollection dest) {
