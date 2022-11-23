@@ -68,7 +68,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
-import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ABSTRACTMETHODS__;
@@ -2162,9 +2161,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    // type(object)
     // type(object, bases, dict)
-    @Builtin(name = J_TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
+    @Builtin(name = J_TYPE, minNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
@@ -2173,19 +2171,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
-        @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
-        @SuppressWarnings("unused")
-        Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached GetClassNode getClass) {
-            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                return getClass.execute(obj);
-            } else {
-                throw raise(TypeError, TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "type.__new__", 3, 1);
-            }
-        }
-
-        @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @Cached GetClassNode getClassNode,
@@ -2217,8 +2202,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object generic(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object name, Object bases, Object namespace, @SuppressWarnings("unused") Object kwds) {
             if (!(bases instanceof PTuple)) {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
-            } else if (namespace == PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
             } else if (!(namespace instanceof PDict)) {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 3, "dict", bases);
             } else {
@@ -2263,9 +2246,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached TypeNode nextTypeNode,
                         @Cached IsTypeNode isTypeNode) {
-            if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
-                throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
-            } else if (!(name instanceof TruffleString || name instanceof PString)) {
+            if (!(name instanceof TruffleString || name instanceof PString)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 1", name);
             } else if (!(bases instanceof PTuple)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);

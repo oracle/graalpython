@@ -370,20 +370,38 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, PNone.NO_VALUE, arguments, keywords);
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            return execute(frame, self, arguments, keywords);
         }
 
-        @Specialization
-        Object selfInArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone self, Object[] arguments, PKeyword[] keywords,
+        @Specialization(guards = "isNoValue(self)")
+        Object selfInArgs(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
                         @Cached SplitArgsNode splitArgsNode,
+                        @Shared("isSameTypeNode") @Cached IsSameTypeNode isSameTypeNode,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Shared("callNode") @Cached CallNodeHelper callNode) {
+            if (isSameTypeNode.execute(PythonBuiltinClassType.PythonClass, arguments[0])) {
+                if (arguments.length == 2 && keywords.length == 0) {
+                    return getClassNode.execute(arguments[1]);
+                } else if (arguments.length != 4) {
+                    throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
+                }
+            }
             return callNode.execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
         }
 
         @Fallback
         Object selfSeparate(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords,
+                        @Shared("isSameTypeNode") @Cached IsSameTypeNode isSameTypeNode,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Shared("callNode") @Cached CallNodeHelper callNode) {
+            if (isSameTypeNode.execute(PythonBuiltinClassType.PythonClass, self)) {
+                if (arguments.length == 1 && keywords.length == 0) {
+                    return getClassNode.execute(arguments[0]);
+                } else if (arguments.length != 3) {
+                    throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
+                }
+            }
             return callNode.execute(frame, self, arguments, keywords);
         }
     }
@@ -499,13 +517,7 @@ public class TypeBuiltins extends PythonBuiltins {
             if (hasNew.profile(newMethod != PNone.NO_VALUE)) {
                 Object[] newArgs = PythonUtils.prependArgument(self, arguments);
                 Object newInstance = dispatchNew.execute(frame, bindNew.execute(frame, newMethod, self), newArgs, keywords);
-
-                // see typeobject.c#type_call()
-                // Ugly exception: when the call was type(something),
-                // don't call tp_init on the result.
-                if (!(self == PythonBuiltinClassType.PythonClass && arguments.length == 1 && keywords.length == 0)) {
-                    callInit(newInstance, self, frame, arguments, keywords);
-                }
+                callInit(newInstance, self, frame, arguments, keywords);
                 return newInstance;
             } else {
                 throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getTypeName(self));
