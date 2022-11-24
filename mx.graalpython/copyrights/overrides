@@ -263,6 +263,7 @@ graalpython/com.oracle.graal.python.jni/src/debug/memprotect.c,hpy.copyright
 graalpython/com.oracle.graal.python.jni/src/debug/stacktrace.c,hpy.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py,python.copyright
+graalpython/com.oracle.graal.python.pegparser.generator/pegen/__init__.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/pegen/__main__.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/pegen/ast_dump.py,python.copyright
 graalpython/com.oracle.graal.python.pegparser.generator/pegen/build.py,python.copyright
