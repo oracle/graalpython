@@ -36,6 +36,7 @@ import shlex
 import shutil
 import sys
 from functools import wraps
+from textwrap import dedent
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
@@ -1546,24 +1547,87 @@ def _python_checkpatchfiles():
     finally:
         os.unlink(listfilename)
 
-def import_python_sources(args):
-    "Update the inlined files from PyPy and CPython"
 
-    # mappings for files that are renamed
-    mapping = {
-        "_sre.c": "_cpython_sre.c",
-        "unicodedata.c": "_cpython_unicodedata.c",
-        "_bz2module.c": "_bz2.c",
-        "mmapmodule.c": "_mmap.c",
-        "_struct.c": "_cpython_struct.c",
-        "_testcapimodule.c": "_testcapi.c",
+def import_python_sources(args):
+    """Update the inlined files from PyPy and CPython"""
+    class CopyFrom:
+        def __init__(self, source_path, copy_all=False):
+            self.source_path = source_path
+            self.copy_all = copy_all
+
+        def copy(self, basedir, graalpy_path, overrides):
+            src = os.path.join(basedir, self.source_path)
+            if os.path.isfile(src):
+                os.makedirs(os.path.dirname(graalpy_path), exist_ok=True)
+                shutil.copy(src, graalpy_path)
+            elif os.path.isdir(src):
+                if self.copy_all:
+                    shutil.copytree(src, graalpy_path, dirs_exist_ok=True)
+                else:
+                    graalpy_prefix = f"{graalpy_path}/"
+                    matches = [f for f in overrides if f == graalpy_path or f.startswith(graalpy_prefix)]
+                    for f in matches:
+                        os.makedirs(os.path.dirname(f), exist_ok=True)
+                        src = os.path.join(basedir, self.source_path)
+                        if f.startswith(graalpy_prefix):
+                            src = os.path.join(src, f.removeprefix(graalpy_prefix))
+                        shutil.copy(src, f)
+            else:
+                sys.exit(f"Source path {src} not found")
+
+    class Ignore:
+        def copy(self, basedir, graalpy_path, overrides):
+            pass
+
+    cpython_mapping = {
+        # Lib
+        "graalpython/lib-python/3": CopyFrom("Lib", copy_all=True),
+
+        # C API
+        "graalpython/com.oracle.graal.python.cext/include": CopyFrom("Include"),
+        "graalpython/com.oracle.graal.python.cext/expat": CopyFrom("Modules/expat"),
+        "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c": CopyFrom("Modules/_sre.c"),
+        "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
+        "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
+        "graalpython/com.oracle.graal.python.cext/modules/_mmap.c": CopyFrom("Modules/mmapmodule.c"),
+        "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
+        "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
+        "graalpython/com.oracle.graal.python.cext/modules": CopyFrom("Modules"),
+        "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
+        "graalpython/com.oracle.graal.python.cext/src/capsule.c": CopyFrom("Objects/capsule.c"),
+        "graalpython/com.oracle.graal.python.cext/src/complexobject.c": CopyFrom("Objects/complexobject.c"),
+        "graalpython/com.oracle.graal.python.cext/src/floatobject.c": CopyFrom("Objects/floatobject.c"),
+        "graalpython/com.oracle.graal.python.cext/src/sliceobject.c": CopyFrom("Objects/sliceobject.c"),
+        "graalpython/com.oracle.graal.python.cext/src/unicodectype.c": CopyFrom("Objects/unicodectype.c"),
+        "graalpython/com.oracle.graal.python.cext/src/unicodeobject.c": CopyFrom("Objects/unicodeobject.c"),
+        "graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h": CopyFrom("Objects/unicodetype_db.h"),
+        "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
+        "graalpython/com.oracle.graal.python.cext/src/getcompiler.c": CopyFrom("Python/getcompiler.c"),
+        "graalpython/com.oracle.graal.python.cext/src/getversion.c": CopyFrom("Python/getversion.c"),
+        "graalpython/com.oracle.graal.python.cext/src/mysnprintf.c": CopyFrom("Python/mysnprintf.c"),
+        "graalpython/com.oracle.graal.python.cext/src/mystrtoul.c": CopyFrom("Python/mystrtoul.c"),
+        "graalpython/com.oracle.graal.python.cext/src/pystrhex.c": CopyFrom("Python/pystrhex.c"),
+        # Just few functions are taken from CPython
+        "graalpython/com.oracle.graal.python.cext/posix/fork_exec.c": Ignore(),
+
+        # Parser
+        "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen", copy_all=True),
+        "graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py": CopyFrom("Parser/asdl.py"),
+        "graalpython/com.oracle.graal.python.pegparser.generator/input_files/python.gram": CopyFrom("Grammar/python.gram"),
+        "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Tokens": CopyFrom("Grammar/Tokens"),
+        "graalpython/com.oracle.graal.python.pegparser.generator/diff_generator.py": Ignore(),
+        "graalpython/com.oracle.graal.python.pegparser.generator/pegjava/java_generator.py": Ignore(),
+
+        # Others
+        # Test files don't need to be updated, they inline some unittest code only
+        "graalpython/com.oracle.graal.python.test/src/tests": Ignore(),
+        # The following files are not copies, they just contain parts
+        "graalpython/lib-graalpython/zipimport.py": Ignore(),
+        "graalpython/com.oracle.graal.python.frozen/freeze_modules.py": Ignore(),
     }
-    extra_pypy_files = [
-        "graalpython/lib-python/3/_md5.py",
-        "graalpython/lib-python/3/_sha1.py",
-        "graalpython/lib-python/3/_sha256.py",
-        "graalpython/lib-python/3/_sha512.py",
-    ]
+    pypy_mapping = {
+        "graalpython/lib-python/3": CopyFrom("lib_pypy"),
+    }
 
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
@@ -1571,11 +1635,8 @@ def import_python_sources(args):
     parser.add_argument('--python-version', action='store', help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
 
-    python_sources = args.cpython
-    pypy_sources = args.pypy
-    import_version = args.python_version
-
-    print("""
+    # TODO
+    """
     So you think you want to update the inlined sources? Here is how it will go:
 
     1. We'll first check the copyrights check overrides file to identify the
@@ -1625,60 +1686,48 @@ def import_python_sources(args):
 
            git push origin python-import:python-import
 
-    NOTE: Your changes, untracked files and ignored files will be stashed for the
-    duration this operation. If you abort this script, you can recover them by
-    moving back to your branch and using git stash pop. It is recommended that you
-    close your IDE during the operation.
-    """.format(mapping))
-    input("Got it?")
+    """
 
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
-        cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
-        pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
+        entries = [line.split(',') for line in f if ',' in line]
+        cpython_files = [file for file, license in entries if license == "python.copyright"]
+        pypy_files = [file for file, license in entries if license == "pypy.copyright"]
 
-    # move to orphaned branch with sources
-    SUITE.vc.git_command(SUITE.dir, ["stash", "--all"])
-    SUITE.vc.git_command(SUITE.dir, ["checkout", "python-import"])
-    assert not SUITE.vc.isDirty(SUITE.dir)
-    shutil.rmtree("graalpython")
+    import_dir = os.path.abspath(os.path.join(SUITE.dir, 'python-import'))
+    shutil.rmtree(import_dir, ignore_errors=True)
+    # Fetch the python-import branch, would fail when not fast-forwardable
+    SUITE.vc.git_command(SUITE.dir, ['fetch', 'origin', 'python-import:python-import'])
+    # Checkout the python-import branch into a subdirectory
+    SUITE.vc.git_command(SUITE.dir, ['clone', '-b', 'python-import', '.', 'python-import'])
 
-    # re-copy lib-python
-    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
+    def copy_inlined_files(mapping, source_directory, overrides):
+        overrides = list(overrides)
+        for path, rule in mapping.items():
+            rule.copy(source_directory, os.path.join(import_dir, path), overrides)
+        if overrides:
+            lines = '\n'.join(overrides)
+            sys.exit(f"ERROR: The following files were not matched by any rule:\n{lines}")
 
-    def copy_inlined_files(inlined_files, source_directory):
-        inlined_files = [
-            # test files don't need to be updated, they inline some unittest code only
-            f for f in inlined_files if re.search(r'\.(py|c|h)$', f) and not re.search(r'/test_|_tests\.py$', f)
-        ]
-        for dirpath, _, filenames in os.walk(source_directory):
-            for filename in filenames:
-                original_file = os.path.join(dirpath, filename)
-                comparable_file = os.path.join(dirpath, mapping.get(filename, filename))
-                # Find the longest suffix match
-                inlined_file = max(inlined_files, key=lambda f: len(os.path.commonprefix([''.join(reversed(f)), ''.join(reversed(comparable_file))])))
-                if os.path.basename(inlined_file) != os.path.basename(comparable_file):
-                    continue
-                try:
-                    os.makedirs(os.path.dirname(inlined_file))
-                except OSError:
-                    pass
-                shutil.copy(original_file, inlined_file)
-                inlined_files.remove(inlined_file)
-                if not inlined_files:
-                    return
-        for remaining_file in inlined_files:
-            mx.warn("Could not update %s - original file not found" % remaining_file)
+    copy_inlined_files(cpython_mapping, args.cpython, cpython_files)
+    copy_inlined_files(pypy_mapping, args.pypy, pypy_files)
 
-    copy_inlined_files(pypy_files + extra_pypy_files, pypy_sources)
-    copy_inlined_files(cpy_files, python_sources)
+    # Commit and fetch changes back into the main repository
+    SUITE.vc.git_command(import_dir, ["add", "."])
+    SUITE.vc.commit(import_dir, f"Update Python inlined files: {args.python_version}")
+    SUITE.vc.git_command(SUITE.dir, ['fetch', 'python-import', '+python-import:python-import'])
+    print(dedent("""\
 
-    # commit and check back
-    SUITE.vc.git_command(SUITE.dir, ["add", "."])
-    input("Check that the updated files look as intended, then press RETURN...")
-    SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
-    SUITE.vc.git_command(SUITE.dir, ["merge", "python-import"])
-    SUITE.vc.git_command(SUITE.dir, ["stash", "pop"])
+    The python-import branch has been updated to the specified release.
+    It is checked out in the python-import directory, where you can make changes and amend the commit. If you do, you
+    need to pull the changes back to this repository using (from the main repository directory):
+        git fetch python-import +python-import:python-import
+    When you're happy with the state, push the changes using:
+        git push origin python-import:python-import
+    Then you can merge the imported files into the main repository using:
+        git merge python-import
+    Because the branches share a common ancestor, git will try to preserve our patches to files, that is,
+    copyright headers and any other source patches.
+    """))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
