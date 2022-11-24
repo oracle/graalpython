@@ -2163,7 +2163,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // type(object, bases, dict)
-    @Builtin(name = J_TYPE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
+    @Builtin(name = J_TYPE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
