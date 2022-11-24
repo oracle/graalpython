@@ -1,3 +1,4 @@
+import abc
 import os
 import shutil
 import sys
@@ -9,35 +10,76 @@ import mx
 SUITE = mx.suite('graalpython')
 
 
-class CopyFrom:
-    def __init__(self, source_path, copy_all=False):
+class AbstractRule(abc.ABC):
+    def __init__(self, source_path):
         self.source_path = source_path
-        self.copy_all = copy_all
 
-    def copy(self, basedir, graalpy_path, overrides):
-        src = os.path.join(basedir, self.source_path)
+    @abc.abstractmethod
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+        pass
+
+
+def match_overrides(graalpy_path, overrides):
+    graalpy_prefix = f"{graalpy_path}/"
+    matches = [f for f in overrides if f == graalpy_path or f.startswith(graalpy_prefix)]
+    for match in matches:
+        overrides.remove(match)
+    return matches
+
+
+class Ignore(AbstractRule):
+    """
+    A rule that ignores a file a directory.
+    """
+
+    def __init__(self):
+        super().__init__(None)
+
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+        match_overrides(graalpy_path, overrides)
+
+
+class CopyFrom(AbstractRule):
+    """
+    A rule that copies a file or a whole directory recursively.
+    """
+
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+        match_overrides(graalpy_path, overrides)
+        src = os.path.join(source_dir, self.source_path)
+        dst = os.path.join(graalpy_dir, graalpy_path)
         if os.path.isfile(src):
-            os.makedirs(os.path.dirname(graalpy_path), exist_ok=True)
-            shutil.copy(src, graalpy_path)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy(src, dst)
         elif os.path.isdir(src):
-            if self.copy_all:
-                shutil.copytree(src, graalpy_path, dirs_exist_ok=True)
-            else:
-                graalpy_prefix = f"{graalpy_path}/"
-                matches = [f for f in overrides if f == graalpy_path or f.startswith(graalpy_prefix)]
-                for f in matches:
-                    os.makedirs(os.path.dirname(f), exist_ok=True)
-                    src = os.path.join(basedir, self.source_path)
-                    if f.startswith(graalpy_prefix):
-                        src = os.path.join(src, f.removeprefix(graalpy_prefix))
-                    shutil.copy(src, f)
+            shutil.copytree(src, dst, dirs_exist_ok=True)
         else:
             sys.exit(f"Source path {src} not found")
 
 
-class Ignore:
-    def copy(self, basedir, graalpy_path, overrides):
-        pass
+class CopyFromWithOverrides(AbstractRule):
+    """
+    A rule that copies a directory using a list of files specified in the license header overrides list.
+    """
+
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+        src = os.path.join(source_dir, self.source_path)
+        if os.path.isdir(src):
+            graalpy_prefix = f"{graalpy_path}/"
+            matches = match_overrides(graalpy_path, overrides)
+            for f in matches:
+                dst = os.path.join(graalpy_dir, f)
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                src = os.path.join(source_dir, self.source_path)
+                if f.startswith(graalpy_prefix):
+                    src = os.path.join(src, f.removeprefix(graalpy_prefix))
+                if not os.path.exists(src):
+                    sys.exit(f"File {f} from license overrides not found in {self.source_path}")
+                shutil.copy(src, dst)
+        elif os.path.exists(src):
+            sys.exit(f"{type(self)} rule should only be used with directories")
+        else:
+            sys.exit(f"Source path {src} not found")
 
 
 #############################
@@ -45,18 +87,22 @@ class Ignore:
 #############################
 CPYTHON_SOURCES_MAPPING = {
     # Standard library
-    "graalpython/lib-python/3": CopyFrom("Lib", copy_all=True),
+    "graalpython/lib-python/3": CopyFrom("Lib"),
 
     # C API
-    "graalpython/com.oracle.graal.python.cext/include": CopyFrom("Include"),
-    "graalpython/com.oracle.graal.python.cext/expat": CopyFrom("Modules/expat"),
+    "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
+    "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c": CopyFrom("Modules/_sre.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_mmap.c": CopyFrom("Modules/mmapmodule.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
-    "graalpython/com.oracle.graal.python.cext/modules": CopyFrom("Modules"),
+    "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h": CopyFrom("Modules/_ctypes/_ctypes_test.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c": CopyFrom("Modules/_ctypes/_ctypes_test.c"),
+    "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom(
+        "Objects/clinic/memoryobject.c.h"),
+    "graalpython/com.oracle.graal.python.cext/modules": CopyFromWithOverrides("Modules"),
     "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
     "graalpython/com.oracle.graal.python.cext/src/capsule.c": CopyFrom("Objects/capsule.c"),
     "graalpython/com.oracle.graal.python.cext/src/complexobject.c": CopyFrom("Objects/complexobject.c"),
@@ -75,8 +121,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/posix/fork_exec.c": Ignore(),
 
     # PEG Parser
-    "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen",
-                                                                              copy_all=True),
+    "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen"),
     "graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py": CopyFrom("Parser/asdl.py"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/python.gram": CopyFrom("Grammar/python.gram"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Tokens": CopyFrom("Grammar/Tokens"),
@@ -92,7 +137,11 @@ CPYTHON_SOURCES_MAPPING = {
 }
 
 PYPY_SOURCES_MAPPING = {
-    "graalpython/lib-python/3": CopyFrom("lib_pypy"),
+    "graalpython/lib-python/3/_md5.py": CopyFrom("lib_pypy/_md5.py"),
+    "graalpython/lib-python/3/_sha1.py": CopyFrom("lib_pypy/_sha1.py"),
+    "graalpython/lib-python/3/_sha256.py": CopyFrom("lib_pypy/_sha256.py"),
+    "graalpython/lib-python/3/_sha512.py": CopyFrom("lib_pypy/_sha512.py"),
+    "graalpython/com.oracle.graal.python.benchmarks": Ignore(),
 }
 
 
@@ -159,8 +208,8 @@ def import_python_sources(args):
     """
 
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
-        entries = [line.split(',') for line in f if ',' in line]
-        cpython_files = [file for file, license in entries if license == "python.copyright"]
+        entries = [line.strip().split(',') for line in f if ',' in line]
+        cpython_files = [file for file, license in entries if license == "python.copyright" and not file.endswith('.java')]
         pypy_files = [file for file, license in entries if license == "pypy.copyright"]
 
     import_dir = os.path.abspath(os.path.join(SUITE.dir, 'python-import'))
@@ -169,11 +218,14 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ['fetch', 'origin', 'python-import:python-import'])
     # Checkout the python-import branch into a subdirectory
     SUITE.vc.git_command(SUITE.dir, ['clone', '-b', 'python-import', '.', 'python-import'])
+    for file in os.listdir(import_dir):
+        if not file.startswith('.'):
+            shutil.rmtree(os.path.join(import_dir, file), ignore_errors=True)
 
     def copy_inlined_files(mapping, source_directory, overrides):
         overrides = list(overrides)
         for path, rule in mapping.items():
-            rule.copy(source_directory, os.path.join(import_dir, path), overrides)
+            rule.copy(source_directory, import_dir, path, overrides)
         if overrides:
             lines = '\n'.join(overrides)
             sys.exit(f"ERROR: The following files were not matched by any rule:\n{lines}")
