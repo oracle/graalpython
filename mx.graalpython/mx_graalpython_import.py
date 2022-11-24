@@ -146,70 +146,20 @@ PYPY_SOURCES_MAPPING = {
 
 
 def import_python_sources(args):
-    """Update the inlined files from PyPy and CPython"""
-    parser = argparse.ArgumentParser(prog='mx python-src-import')
+    parser = argparse.ArgumentParser(
+        prog='mx python-src-import',
+        description="Update the inlined files from PyPy and CPython. Refer to the docs on Confluence.",
+    )
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
     parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
     parser.add_argument('--python-version', action='store',
                         help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
 
-    # TODO
-    """
-    So you think you want to update the inlined sources? Here is how it will go:
-
-    1. We'll first check the copyrights check overrides file to identify the
-       files taken from CPython or PyPy and we'll remember that list. There's a mapping
-       for files that were renamed, currently this includes:
-       \t{0!r}\n
-
-    2. We'll check out the "python-import" branch. This branch has only files
-       that were inlined from CPython or PyPy. We'll use the sources given on
-       the commandline for that. I hope those are in a state where that makes
-       sense.
-
-    3. We'll stop and wait to give you some time to check if the python-import
-       branch looks as you expect. Then we'll commit the updated files to the
-       python-import branch, push it, and move back to whatever your HEAD is
-       now.
-
-    4. We'll merge the python-import branch back into HEAD. Because these share
-       a common ancestor, git will try to preserve our patches to files, that
-       is, copyright headers and any other source patches.
-
-    5. !IMPORTANT! If files were inlined from CPython during normal development
-       that were not first added to the python-import branch, you will get merge
-       conflicts and git will tell you that the files was added on both
-       branches. You probably should resolve these using:
-
-           git checkout python-import -- path/to/file
-
-        Then check the diff and make sure that any patches that we did to those
-        files are re-applied.
-
-    6. After the merge is completed and any direct merge conflicts are resolved,
-       run this:
-
-           mx python-checkcopyrights --fix
-
-       This will apply copyrights to files that we're newly added from
-       python-import.
-
-    7. Adjust some constants in the source code:
-
-            version information in PythonLanguage (e.g., PythonLanguage#MINOR)
-
-    8. Run the tests and fix any remaining issues.
-
-    9. You should push the python-import branch using:
-
-           git push origin python-import:python-import
-
-    """
-
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         entries = [line.strip().split(',') for line in f if ',' in line]
-        cpython_files = [file for file, license in entries if license == "python.copyright" and not file.endswith('.java')]
+        cpython_files = [file for file, license in entries if
+                         license == "python.copyright" and not file.endswith('.java')]
         pypy_files = [file for file, license in entries if license == "pypy.copyright"]
 
     import_dir = os.path.abspath(os.path.join(SUITE.dir, 'python-import'))
@@ -241,12 +191,8 @@ def import_python_sources(args):
 
     The python-import branch has been updated to the specified release.
     It is checked out in the python-import directory, where you can make changes and amend the commit. If you do, you
-    need to pull the changes back to this repository using (from the main repository directory):
+    need to pull the changes back to this repository using the following (from the main repository directory):
         git fetch python-import +python-import:python-import
     When you're happy with the state, push the changes using:
         git push origin python-import:python-import
-    Then you can merge the imported files into the main repository using:
-        git merge python-import
-    Because the branches share a common ancestor, git will try to preserve our patches to files, that is,
-    copyright headers and any other source patches.
     """))
