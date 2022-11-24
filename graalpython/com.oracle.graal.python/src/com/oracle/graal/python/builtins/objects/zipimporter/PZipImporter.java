@@ -37,6 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
 import java.util.zip.ZipEntry;
@@ -230,7 +231,34 @@ public class PZipImporter extends PythonBuiltinObject {
         InputStream fileStream = null;
         try {
             TruffleFile f = context.getEnv().getPublicTruffleFile(archive.toJavaStringUncached());
+
             fileStream = f.newInputStream(StandardOpenOption.READ);
+            // This is not correct - it is wrong to read zip files by just skipping to the next
+            // local file header, instead, zip files should always be read from the back, by
+            // scanning for the EOCD record and possibly the EOCD Locator to find a Zip64 EOCD64.
+            // Only the entries and offsets stored in those are valid entries of the Zip file. The
+            // java.util.zip.ZipFile class handles all that, but it only works for java.io.File;
+            // this would break out of our TruffleFile sandbox. Alternative libraries such as zip4j
+            // also do not seem to work properly when just fed input streams. For now, we will just
+            // skip to the first local file header and hope for the best...
+            int offset = 0;
+            byte[] data = fileStream.readNBytes(4096);
+            outer: while (data.length >= 30) { // local file header is 30 bytes minimum
+                int i = 0;
+                for (; i < data.length - 30; i++) {
+                    // zip headers are stored little endian, match the integer value of "PK\03\04",
+                    // the local file header signature
+                    if (data[i] == 'P' && data[i + 1] == 'K' && data[i + 2] == 0x03 && data[i + 3] == 0x04) {
+                        fileStream.close();
+                        fileStream = f.newInputStream(StandardOpenOption.READ);
+                        fileStream.skip(offset + i);
+                        break outer;
+                    }
+                }
+                offset += 4096;
+                data = fileStream.readNBytes(4096);
+            }
+
             ZipInputStream zis = new ZipInputStream(fileStream);
             ZipEntry entry;
             String filenameAndSuffixStr = filenameAndSuffix.toJavaStringUncached();
@@ -238,6 +266,9 @@ public class PZipImporter extends PythonBuiltinObject {
                 if (entry.getName().equals(filenameAndSuffixStr)) {
                     break;
                 }
+            }
+            if (entry == null) {
+                throw new NoSuchFileException(filenameAndSuffixStr);
             }
 
             // reading the file should be done better?
