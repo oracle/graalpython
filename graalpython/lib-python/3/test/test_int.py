@@ -653,7 +653,10 @@ class IntStrDigitLimitsTests(unittest.TestCase):
                 str(huge_int)
             seconds_to_fail_huge = get_time() - start
         self.assertIn('conversion', str(err.exception))
-        self.assertLess(seconds_to_fail_huge, seconds_to_convert/8)
+        # XXX GraalVM change: GraalPy's conversion is faster than CPython's so the spread between the failed and
+        # successful case is not as big
+        # self.assertLess(seconds_to_fail_huge, seconds_to_convert/8)
+        self.assertLess(seconds_to_fail_huge, seconds_to_convert/2)
 
         # Now we test that a conversion that would take 30x as long also fails
         # in a similarly fast fashion.
