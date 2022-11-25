@@ -51,5 +51,6 @@
 *graalpython.lib-python.3.test.test_list.ListTest.test_setslice
 *graalpython.lib-python.3.test.test_list.ListTest.test_slice
 *graalpython.lib-python.3.test.test_list.ListTest.test_sort
+*graalpython.lib-python.3.test.test_list.ListTest.test_step_overflow
 *graalpython.lib-python.3.test.test_list.ListTest.test_subscript
 *graalpython.lib-python.3.test.test_list.ListTest.test_truth

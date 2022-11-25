@@ -4,12 +4,15 @@
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_constructor
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_constructor_special_numbers
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_divmod
+*graalpython.lib-python.3.test.test_complex.ComplexTest.test_divmod_zero_division
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_file
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_floordiv
+*graalpython.lib-python.3.test.test_complex.ComplexTest.test_floordiv_zero_division
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_format
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_getnewargs
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_hash
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_mod
+*graalpython.lib-python.3.test.test_complex.ComplexTest.test_mod_zero_division
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_neg
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_negated_imaginary_literal
 *graalpython.lib-python.3.test.test_complex.ComplexTest.test_negative_zero_repr_str

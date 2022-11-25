@@ -15,6 +15,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2CreateTest.test_create_pathlike_name
 *graalpython.lib-python.3.test.test_tarfile.Bz2CreateTest.test_create_taropen
 *graalpython.lib-python.3.test.test_tarfile.Bz2CreateTest.test_create_taropen_pathlike_name
+*graalpython.lib-python.3.test.test_tarfile.Bz2CreateTest.test_create_with_compresslevel
 *graalpython.lib-python.3.test.test_tarfile.Bz2CreateTest.test_eof_marker
 *graalpython.lib-python.3.test.test_tarfile.Bz2CreateTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.Bz2DetectReadTest.test_detect_file
@@ -38,6 +39,8 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_illegal_mode_arg
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_int_name_attribute
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_non_existent_tarfile
@@ -47,12 +50,15 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_premature_end_of_archive
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_v7_dirtype
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_xstar_type
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_zlib_error_does_not_leak
 *graalpython.lib-python.3.test.test_tarfile.Bz2PartialReadTest.test_partial_input
 *graalpython.lib-python.3.test.test_tarfile.Bz2PartialReadTest.test_partial_input_bz2
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_compare_members
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_ignore_zeros
+*graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_non_existent_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_null_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_premature_end_of_archive
@@ -62,6 +68,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamWriteTest.test_file_mode
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamWriteTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamWriteTest.test_stream_padding
+*graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_add_dir_getmember
 *graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_fileobj_iter
 *graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_fileobj_link1
 *graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_fileobj_link2
@@ -127,7 +134,11 @@
 *graalpython.lib-python.3.test.test_tarfile.CreateWithXModeTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.DetectReadTest.test_detect_file
 *graalpython.lib-python.3.test.test_tarfile.DetectReadTest.test_detect_fileobj
+*graalpython.lib-python.3.test.test_tarfile.DeviceHeaderTest.test_eof_marker
+*graalpython.lib-python.3.test.test_tarfile.DeviceHeaderTest.test_fileobj_no_close
+*graalpython.lib-python.3.test.test_tarfile.DeviceHeaderTest.test_headers_written_only_for_device_files
 *graalpython.lib-python.3.test.test_tarfile.GNUReadTest.test_header_offset
+*graalpython.lib-python.3.test.test_tarfile.GNUReadTest.test_longname_directory
 *graalpython.lib-python.3.test.test_tarfile.GNUReadTest.test_read_longlink
 *graalpython.lib-python.3.test.test_tarfile.GNUReadTest.test_read_longname
 *graalpython.lib-python.3.test.test_tarfile.GNUReadTest.test_truncated_longname
@@ -154,6 +165,7 @@
 *graalpython.lib-python.3.test.test_tarfile.GzipCreateTest.test_create_pathlike_name
 *graalpython.lib-python.3.test.test_tarfile.GzipCreateTest.test_create_taropen
 *graalpython.lib-python.3.test.test_tarfile.GzipCreateTest.test_create_taropen_pathlike_name
+*graalpython.lib-python.3.test.test_tarfile.GzipCreateTest.test_create_with_compresslevel
 *graalpython.lib-python.3.test.test_tarfile.GzipCreateTest.test_eof_marker
 *graalpython.lib-python.3.test.test_tarfile.GzipCreateTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.GzipDetectReadTest.test_detect_file
@@ -176,6 +188,8 @@
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_illegal_mode_arg
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_int_name_attribute
+*graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_non_existent_tarfile
@@ -185,10 +199,13 @@
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_premature_end_of_archive
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_v7_dirtype
 *graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_xstar_type
+*graalpython.lib-python.3.test.test_tarfile.GzipMiscReadTest.test_zlib_error_does_not_leak
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_compare_members
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_ignore_zeros
+*graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_non_existent_tarfile
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_null_tarfile
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamReadTest.test_premature_end_of_archive
@@ -197,7 +214,9 @@
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamWriteTest.test_eof_marker
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamWriteTest.test_file_mode
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamWriteTest.test_fileobj_no_close
+*graalpython.lib-python.3.test.test_tarfile.GzipStreamWriteTest.test_source_directory_not_leaked
 *graalpython.lib-python.3.test.test_tarfile.GzipStreamWriteTest.test_stream_padding
+*graalpython.lib-python.3.test.test_tarfile.GzipUstarReadTest.test_add_dir_getmember
 *graalpython.lib-python.3.test.test_tarfile.GzipUstarReadTest.test_fileobj_iter
 *graalpython.lib-python.3.test.test_tarfile.GzipUstarReadTest.test_fileobj_link1
 *graalpython.lib-python.3.test.test_tarfile.GzipUstarReadTest.test_fileobj_link2
@@ -244,6 +263,7 @@
 *graalpython.lib-python.3.test.test_tarfile.LzmaCreateTest.test_create_pathlike_name
 *graalpython.lib-python.3.test.test_tarfile.LzmaCreateTest.test_create_taropen
 *graalpython.lib-python.3.test.test_tarfile.LzmaCreateTest.test_create_taropen_pathlike_name
+*graalpython.lib-python.3.test.test_tarfile.LzmaCreateTest.test_create_with_preset
 *graalpython.lib-python.3.test.test_tarfile.LzmaCreateTest.test_eof_marker
 *graalpython.lib-python.3.test.test_tarfile.LzmaCreateTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.LzmaDetectReadTest.test_detect_file
@@ -266,6 +286,8 @@
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_illegal_mode_arg
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_int_name_attribute
+*graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_non_existent_tarfile
@@ -275,10 +297,13 @@
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_premature_end_of_archive
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_v7_dirtype
 *graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_xstar_type
+*graalpython.lib-python.3.test.test_tarfile.LzmaMiscReadTest.test_zlib_error_does_not_leak
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_compare_members
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_ignore_zeros
+*graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_non_existent_tarfile
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_null_tarfile
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamReadTest.test_premature_end_of_archive
@@ -288,6 +313,7 @@
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamWriteTest.test_file_mode
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamWriteTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.LzmaStreamWriteTest.test_stream_padding
+*graalpython.lib-python.3.test.test_tarfile.LzmaUstarReadTest.test_add_dir_getmember
 *graalpython.lib-python.3.test.test_tarfile.LzmaUstarReadTest.test_fileobj_iter
 *graalpython.lib-python.3.test.test_tarfile.LzmaUstarReadTest.test_fileobj_link1
 *graalpython.lib-python.3.test.test_tarfile.LzmaUstarReadTest.test_fileobj_link2
@@ -348,6 +374,8 @@
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_illegal_mode_arg
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_init_close_fobj
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_int_name_attribute
+*graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_no_name_argument
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_no_name_attribute
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_non_existent_tarfile
@@ -357,6 +385,7 @@
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_premature_end_of_archive
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_v7_dirtype
 *graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_xstar_type
+*graalpython.lib-python.3.test.test_tarfile.MiscReadTest.test_zlib_error_does_not_leak
 *graalpython.lib-python.3.test.test_tarfile.MiscTest.test__all__
 *graalpython.lib-python.3.test.test_tarfile.MiscTest.test_char_fields
 *graalpython.lib-python.3.test.test_tarfile.MiscTest.test_number_field_limits
@@ -373,11 +402,13 @@
 *graalpython.lib-python.3.test.test_tarfile.PAXUnicodeTest.test_utf7_filename
 *graalpython.lib-python.3.test.test_tarfile.PAXUnicodeTest.test_utf8_filename
 *graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_header_offset
+*graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_longname_directory
 *graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_pax_global_headers
 *graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_pax_number_fields
 *graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_read_longlink
 *graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_read_longname
 *graalpython.lib-python.3.test.test_tarfile.PaxReadTest.test_truncated_longname
+*graalpython.lib-python.3.test.test_tarfile.PaxWriteTest.test_create_pax_header
 *graalpython.lib-python.3.test.test_tarfile.PaxWriteTest.test_longlink_1023
 *graalpython.lib-python.3.test.test_tarfile.PaxWriteTest.test_longlink_1024
 *graalpython.lib-python.3.test.test_tarfile.PaxWriteTest.test_longlink_1025
@@ -393,6 +424,8 @@
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_empty_tarfile
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_fileobj_regular_file
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_ignore_zeros
+*graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_is_tarfile_erroneous
+*graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_is_tarfile_valid
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_non_existent_tarfile
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_null_tarfile
 *graalpython.lib-python.3.test.test_tarfile.StreamReadTest.test_premature_end_of_archive
@@ -402,6 +435,7 @@
 *graalpython.lib-python.3.test.test_tarfile.StreamWriteTest.test_file_mode
 *graalpython.lib-python.3.test.test_tarfile.StreamWriteTest.test_fileobj_no_close
 *graalpython.lib-python.3.test.test_tarfile.StreamWriteTest.test_stream_padding
+*graalpython.lib-python.3.test.test_tarfile.UstarReadTest.test_add_dir_getmember
 *graalpython.lib-python.3.test.test_tarfile.UstarReadTest.test_fileobj_iter
 *graalpython.lib-python.3.test.test_tarfile.UstarReadTest.test_fileobj_link1
 *graalpython.lib-python.3.test.test_tarfile.UstarReadTest.test_fileobj_link2

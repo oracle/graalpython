@@ -12,6 +12,8 @@
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_find
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_find_etc_raise_correct_error_messages
+*graalpython.lib-python.3.test.test_userstring.UserStringTest.test_find_periodic_pattern
+*graalpython.lib-python.3.test.test_userstring.UserStringTest.test_find_shift_table_overflow
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_fixtype
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_floatformatting
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_formatting

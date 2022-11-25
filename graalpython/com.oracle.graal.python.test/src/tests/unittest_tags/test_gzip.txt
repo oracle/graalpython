@@ -21,8 +21,10 @@
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_fileobj_mode
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_gzip_BadGzipFile_exception
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_io_on_closed_object
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_issue44439
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_many_append
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_metadata
+*graalpython.lib-python.3.test.test_gzip.TestGzip.test_metadata_ascii_name
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_mode
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_mtime
 *graalpython.lib-python.3.test.test_gzip.TestGzip.test_non_seekable_file

@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_thread.LockTests.test_acquire_contended
 *graalpython.lib-python.3.test.test_thread.LockTests.test_acquire_destroy
 *graalpython.lib-python.3.test.test_thread.LockTests.test_acquire_release
+*graalpython.lib-python.3.test.test_thread.LockTests.test_at_fork_reinit
 *graalpython.lib-python.3.test.test_thread.LockTests.test_constructor
 *graalpython.lib-python.3.test.test_thread.LockTests.test_different_thread
 *graalpython.lib-python.3.test.test_thread.LockTests.test_locked_repr

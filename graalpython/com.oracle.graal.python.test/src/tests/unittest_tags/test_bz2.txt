@@ -73,6 +73,7 @@
 *graalpython.lib-python.3.test.test_bz2.BZ2FileTest.testWriteLines
 *graalpython.lib-python.3.test.test_bz2.BZ2FileTest.testWriteMethodsOnReadOnlyFile
 *graalpython.lib-python.3.test.test_bz2.BZ2FileTest.testWriteNonDefaultCompressLevel
+*graalpython.lib-python.3.test.test_bz2.BZ2FileTest.test_issue44439
 *graalpython.lib-python.3.test.test_bz2.BZ2FileTest.test_read_truncated
 *graalpython.lib-python.3.test.test_bz2.CompressDecompressTest.testCompress
 *graalpython.lib-python.3.test.test_bz2.CompressDecompressTest.testCompressEmptyString

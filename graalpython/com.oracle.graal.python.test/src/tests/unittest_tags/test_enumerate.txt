@@ -1,5 +1,6 @@
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_illformediterable
@@ -10,6 +11,7 @@
 *graalpython.lib-python.3.test.test_enumerate.EnumerateStartTestCase.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_illformediterable
@@ -20,6 +22,7 @@
 *graalpython.lib-python.3.test.test_enumerate.EnumerateTestCase.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_illformediterable
@@ -30,6 +33,7 @@
 *graalpython.lib-python.3.test.test_enumerate.SubclassTestCase.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.TestBig.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_illformediterable
@@ -40,6 +44,7 @@
 *graalpython.lib-python.3.test.test_enumerate.TestBig.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_illformediterable
@@ -50,6 +55,7 @@
 *graalpython.lib-python.3.test.test_enumerate.TestEmpty.test_tuple_reuse
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.TestLongStart.test_illformediterable
@@ -68,6 +74,7 @@
 *graalpython.lib-python.3.test.test_enumerate.TestReversed.test_simple
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_argumentcheck
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_basicfunction
+*graalpython.lib-python.3.test.test_enumerate.TestStart.test_enumerate_result_gc
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_exception_propagation
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_getitemseqn
 *graalpython.lib-python.3.test.test_enumerate.TestStart.test_illformediterable

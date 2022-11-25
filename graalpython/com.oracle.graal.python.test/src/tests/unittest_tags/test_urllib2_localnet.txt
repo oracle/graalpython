@@ -14,7 +14,9 @@
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_https_with_cadefault
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_https_with_cafile
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_info
+*graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_issue16464
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_iteration
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_line_iteration
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_redirection
 *graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_sending_headers
+*graalpython.lib-python.3.test.test_urllib2_localnet.TestUrlopen.test_sending_headers_camel

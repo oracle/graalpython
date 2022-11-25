@@ -7,7 +7,10 @@
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_double
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_errors
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_eval_order
+*graalpython.lib-python.3.test.test_decorators.TestDecorators.test_expressions
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_memoize
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_order
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_single
+*graalpython.lib-python.3.test.test_decorators.TestDecorators.test_staticmethod
 *graalpython.lib-python.3.test.test_decorators.TestDecorators.test_staticmethod_function
+*graalpython.lib-python.3.test.test_decorators.TestDecorators.test_wrapped_classmethod_inside_classmethod

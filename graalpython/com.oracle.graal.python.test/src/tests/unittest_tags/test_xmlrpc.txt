@@ -30,9 +30,17 @@
 *graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase1.test_two
 *graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase2.test_close
 *graalpython.lib-python.3.test.test_xmlrpc.KeepaliveServerTestCase2.test_transport
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path_fragment
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_empty_path_query
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_invalid_path
 *graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path1
 *graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path2
 *graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path3
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_fragment
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_query
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_path_query_fragment
+*graalpython.lib-python.3.test.test_xmlrpc.MultiPathServerTestCase.test_root_path
 *graalpython.lib-python.3.test.test_xmlrpc.ServerProxyTestCase.test_close
 *graalpython.lib-python.3.test.test_xmlrpc.ServerProxyTestCase.test_transport
 *graalpython.lib-python.3.test.test_xmlrpc.SimpleServerEncodingTestCase.test_server_encoding
@@ -78,6 +86,7 @@
 *graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_dump_recursive_seq
 *graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_get_host_info
 *graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_keepalive_disconnect
+*graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_limit_int
 *graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_load_extension_types
 *graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_load_standard_types
 *graalpython.lib-python.3.test.test_xmlrpc.XMLRPCTestCase.test_loads_unsupported

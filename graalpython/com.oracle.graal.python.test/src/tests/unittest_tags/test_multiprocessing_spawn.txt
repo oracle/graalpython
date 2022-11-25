@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.MiscTestCase.test__all__
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.OtherTest.test_answer_challenge_auth_failure
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.OtherTest.test_deliver_challenge_auth_failure
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.SemLockTests.test_semlock_subclass
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestCloseFds.test_closefd
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestFlags.test_flags
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestForkAwareThreadLock.test_lock
@@ -11,12 +12,15 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestInvalidFamily.test_invalid_family
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestInvalidFamily.test_invalid_family_win32
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestInvalidHandle.test_invalid_handles
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNamedResource.test_global_named_resource_spawn
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestPoolNotLeakOnFailure.test_release_unused_processes
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_reused
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_sigint
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_sigkill
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestResourceTracker.test_resource_tracker_sigterm
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestSimpleQueue.test_close
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestSimpleQueue.test_closed
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestSimpleQueue.test_empty
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestStartMethod.test_context
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.TestStartMethod.test_get_all
@@ -122,6 +126,7 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPool.test_wrapped_exception
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPoolWorkerErrors.test_async_error_callback
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPoolWorkerErrors.test_unpickleable_result
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPoolWorkerLifetime.test_pool_maxtasksperchild_invalid
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPoolWorkerLifetime.test_pool_worker_lifetime
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPoolWorkerLifetime.test_pool_worker_lifetime_early_close
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestPoolWorkerLifetime.test_worker_finalization_via_atexit_handler_of_multiprocessing

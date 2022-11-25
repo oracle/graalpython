@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_chunked_sync
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_chunked_trailers
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_content_length_sync
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_dir_with_added_behavior_on_status
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_early_eof
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_epipe
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_error_leak
@@ -16,14 +17,17 @@
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_mixed_reads
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_negative_content_length
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_overflowing_chunked_line
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_overflowing_header_limit_after_100
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_overflowing_header_line
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_overflowing_status_line
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_readintos
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_readintos_incomplete_body
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_readintos_no_content_length
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_readintos_past_end
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads_incomplete_body
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads_no_content_length
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads_past_end
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_domain_validation
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_encoding
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_host_validation
@@ -107,4 +111,5 @@
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_connect_with_tunnel
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_disallow_set_tunnel_after_connect
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_set_tunnel_host_port_headers
+*graalpython.lib-python.3.test.test_httplib.TunnelTests.test_tunnel_connect_single_send_connection_setup
 *graalpython.lib-python.3.test.test_httplib.TunnelTests.test_tunnel_debuglog
