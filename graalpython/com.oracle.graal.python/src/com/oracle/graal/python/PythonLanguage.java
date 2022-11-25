@@ -281,6 +281,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final boolean JAVA_SIGNALS = !"false".equals(System.getProperty("python.java.signals"));
 
     /**
+     * Whether Python is allowed to change the Java timezone at runtime.
+     */
+    public static final boolean JAVA_TIMEZONE = !"false".equals(System.getProperty("python.java.timezone"));
+
+    /**
      * Named semaphores are shared between all processes in a system, and they persist until the
      * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
      * globally per language instance, that is, they are shared between different Contexts in the

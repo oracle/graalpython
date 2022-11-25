@@ -51,6 +51,7 @@ import java.util.TimeZone;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -304,14 +305,20 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tzset")
     @GenerateNodeFactory
     public abstract static class TzSetNode extends PythonBuiltinNode {
+        private static final TruffleString SET_TIMEZONE_ERROR = tsLiteral("Setting timezone was disallowed.");
+
         @Specialization
         @TruffleBoundary
-        public Object tzset() {
-            String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
-            if (tzEnv == null) {
-                tzEnv = "";
+        Object tzset() {
+            if (PythonLanguage.JAVA_TIMEZONE) {
+                String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
+                if (tzEnv == null) {
+                    tzEnv = "";
+                }
+                TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
+            } else {
+                PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, SET_TIMEZONE_ERROR);
             }
-            TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
             return PNone.NONE;
         }
     }
