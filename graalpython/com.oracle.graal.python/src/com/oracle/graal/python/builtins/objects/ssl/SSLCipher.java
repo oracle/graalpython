@@ -49,7 +49,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This file has been automatically generated using scripts/generate_ssl_data.py. Do not edit!
- * Generated using: OpenSSL 1.1.1q FIPS 5 Jul 2022
+ * Generated using: OpenSSL 1.1.1s 1 Nov 2022 (Library: OpenSSL 1.1.1q FIPS 5 Jul 2022)
  * 
  * This class represents OpenSSL metadata of all SSL/TLS cipher suites.
  **/
