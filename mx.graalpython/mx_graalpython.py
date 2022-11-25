@@ -1513,25 +1513,37 @@ def _python_checkpatchfiles():
     try:
         # TODO our mirror doesn't handle the json API
         # pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
-        pypi_base_url = "https://pypi.org/"
+        pypi_base_url = "https://pypi.org"
         with open(listfilename, "r") as listfile:
             content = listfile.read()
-        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
-        checked = set()
+        patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/(.*\.patch)")
+        checked = {
+            # scipy puts the whole license text in the field, skip it. It's new BSD
+            'scipy-1.3.1.patch',
+            'scipy-1.4.1.patch',
+            'scipy-1.7.3.patch',
+            'scipy-1.8.1.patch',
+            # Empty license field, skip it. It's MIT
+            'setuptools-60.patch',
+            'setuptools-60.9.patch',
+            'setuptools-63.patch',
+            'setuptools-65.patch',
+        }
         allowed_licenses = [
             "MIT", "BSD", "BSD-3-Clause", "BSD 3-Clause License", "BSD or Apache License, Version 2.0",
-            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache"
+            "MIT license", "PSF", "BSD-3-Clause OR Apache-2.0", "Apache", "new BSD",
         ]
         for line in content.split("\n"):
-            if os.stat(line).st_size == 0:
+            if not line or os.stat(line).st_size == 0:
                 # empty files are just markers and do not need to be license checked
                 continue
             match = patchfile_pattern.search(line)
             if match:
                 package_name = match.group(1)
-                if package_name in checked:
-                    break
-                checked.add(package_name)
+                patch_name = match.group(3)
+                if patch_name in checked:
+                    continue
+                checked.add(patch_name)
                 package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
                 mx.log("Checking license of patchfile for " + package_url)
                 response = urllib_request.urlopen(package_url)
@@ -1539,9 +1551,10 @@ def _python_checkpatchfiles():
                     data = json.loads(response.read())
                     data_license = data["info"]["license"]
                     if data_license not in allowed_licenses:
-                        mx.abort(("The license for the original project %r is %r. We cannot include " +
-                                  "a patch for it. Allowed licenses are: %r.") % (
-                            package_name, data_license, allowed_licenses))
+                        mx.abort(
+                            f"The license for the original project of patch file {patch_name!r} is {data_license!r}. "
+                            f"We cannot include a patch for it. Allowed licenses are: {allowed_licenses}"
+                        )
                 except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:

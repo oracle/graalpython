@@ -289,6 +289,7 @@
 *graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_decimal_fraction_comparison
 *graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_eval_round_trip
 *graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_hash_method
+*graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_hash_method_nan
 *graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_implicit_context
 *graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_min_and_max_methods
 *graalpython.lib-python.3.test.test_decimal.PyUsabilityTest.test_nan_to_float

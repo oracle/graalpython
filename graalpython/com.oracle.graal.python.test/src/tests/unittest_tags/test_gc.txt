@@ -6,6 +6,9 @@
 *graalpython.lib-python.3.test.test_gc.GCTests.test_frame
 *graalpython.lib-python.3.test.test_gc.GCTests.test_garbage_at_shutdown
 *graalpython.lib-python.3.test.test_gc.GCTests.test_get_count
+*graalpython.lib-python.3.test.test_gc.GCTests.test_is_finalized
 *graalpython.lib-python.3.test.test_gc.GCTests.test_legacy_finalizer
 *graalpython.lib-python.3.test.test_gc.GCTests.test_legacy_finalizer_newclass
+*graalpython.lib-python.3.test.test_gc.GCTests.test_trash_weakref_clear
 *graalpython.lib-python.3.test.test_gc.GCTests.test_trashcan
+*graalpython.lib-python.3.test.test_gc.PythonFinalizationTests.test_ast_fini

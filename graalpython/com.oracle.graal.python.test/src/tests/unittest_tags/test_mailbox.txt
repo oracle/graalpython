@@ -46,6 +46,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_update
 *graalpython.lib-python.3.test.test_mailbox.TestBabyl.test_values
 *graalpython.lib-python.3.test.test_mailbox.TestBabylMessage.test_all_eMM_attribues_exist
+*graalpython.lib-python.3.test.test_mailbox.TestBabylMessage.test_all_eMM_attributes_exist
 *graalpython.lib-python.3.test.test_mailbox.TestBabylMessage.test_become_message
 *graalpython.lib-python.3.test.test_mailbox.TestBabylMessage.test_explain_to
 *graalpython.lib-python.3.test.test_mailbox.TestBabylMessage.test_initialize_incorrectly
@@ -102,6 +103,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_update
 *graalpython.lib-python.3.test.test_mailbox.TestMH.test_values
 *graalpython.lib-python.3.test.test_mailbox.TestMHMessage.test_all_eMM_attribues_exist
+*graalpython.lib-python.3.test.test_mailbox.TestMHMessage.test_all_eMM_attributes_exist
 *graalpython.lib-python.3.test.test_mailbox.TestMHMessage.test_become_message
 *graalpython.lib-python.3.test.test_mailbox.TestMHMessage.test_explain_to
 *graalpython.lib-python.3.test.test_mailbox.TestMHMessage.test_initialize_incorrectly
@@ -161,6 +163,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_update
 *graalpython.lib-python.3.test.test_mailbox.TestMMDF.test_values
 *graalpython.lib-python.3.test.test_mailbox.TestMMDFMessage.test_all_eMM_attribues_exist
+*graalpython.lib-python.3.test.test_mailbox.TestMMDFMessage.test_all_eMM_attributes_exist
 *graalpython.lib-python.3.test.test_mailbox.TestMMDFMessage.test_become_message
 *graalpython.lib-python.3.test.test_mailbox.TestMMDFMessage.test_explain_to
 *graalpython.lib-python.3.test.test_mailbox.TestMMDFMessage.test_flags
@@ -233,6 +236,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMaildir.test_update
 *graalpython.lib-python.3.test.test_mailbox.TestMaildir.test_values
 *graalpython.lib-python.3.test.test_mailbox.TestMaildirMessage.test_all_eMM_attribues_exist
+*graalpython.lib-python.3.test.test_mailbox.TestMaildirMessage.test_all_eMM_attributes_exist
 *graalpython.lib-python.3.test.test_mailbox.TestMaildirMessage.test_become_message
 *graalpython.lib-python.3.test.test_mailbox.TestMaildirMessage.test_date
 *graalpython.lib-python.3.test.test_mailbox.TestMaildirMessage.test_explain_to
@@ -299,6 +303,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_update
 *graalpython.lib-python.3.test.test_mailbox.TestMbox.test_values
 *graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_all_eMM_attribues_exist
+*graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_all_eMM_attributes_exist
 *graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_become_message
 *graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_explain_to
 *graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_flags
@@ -311,6 +316,7 @@
 *graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_initialize_with_string
 *graalpython.lib-python.3.test.test_mailbox.TestMboxMessage.test_initialize_with_unixfrom
 *graalpython.lib-python.3.test.test_mailbox.TestMessage.test_all_eMM_attribues_exist
+*graalpython.lib-python.3.test.test_mailbox.TestMessage.test_all_eMM_attributes_exist
 *graalpython.lib-python.3.test.test_mailbox.TestMessage.test_become_message
 *graalpython.lib-python.3.test.test_mailbox.TestMessage.test_explain_to
 *graalpython.lib-python.3.test.test_mailbox.TestMessage.test_initialize_incorrectly

@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_socketserver.ErrorHandlerTest.test_threading_not_handled
 *graalpython.lib-python.3.test.test_socketserver.MiscTestCase.test_all
 *graalpython.lib-python.3.test.test_socketserver.MiscTestCase.test_shutdown_request_called_if_verify_request_false
+*graalpython.lib-python.3.test.test_socketserver.MiscTestCase.test_threads_reaped
 *graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingTCPServer
 *graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUDPServer
 *graalpython.lib-python.3.test.test_socketserver.SocketServerTest.test_ForkingUnixDatagramServer

@@ -46,12 +46,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.PGuards.isAscii;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.crc32;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.zip.CRC32;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
@@ -368,25 +368,18 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "crc32", minNumOfPositionalArgs = 1, parameterNames = {"data", "crc"})
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    // TODO crc argument
+    @ArgumentClinic(name = "crc", conversion = ArgumentClinic.ClinicConversion.Long, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class Crc32Node extends PythonBinaryClinicBuiltinNode {
-        // TODO crc != NO_VALUE
-        @Specialization(guards = "isNoValue(crc)", limit = "3")
-        long b2a(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") PNone crc,
+
+        @Specialization(limit = "3")
+        long b2a(VirtualFrame frame, Object buffer, long crc,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                return getCrcValue(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                return crc32((int) crc, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
-        }
-
-        @TruffleBoundary
-        private static long getCrcValue(byte[] bytes, int length) {
-            CRC32 crc32 = new CRC32();
-            crc32.update(bytes, 0, length);
-            return crc32.getValue();
         }
 
         @Override

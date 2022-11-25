@@ -73,8 +73,7 @@ class EnvBuilder:
         self.setup_python(context)
         if self.with_pip:
             self._setup_pip(context)
-        # Truffle change: patch shebang
-        self._patch_shebang(context)
+        # Truffle change
         self._install_compilers(context)
         # End of Truffle change
         if not self.upgrade:
@@ -124,6 +123,19 @@ class EnvBuilder:
         context.python_dir = dirname
         context.python_exe = exename
 
+        # Truffle change:
+        # The original CPython code assumes that one level up from the executable (not resolving
+        # symlinks) is the Python home. It is not the case for us since $GRAALVM_HOME/bin/graalpy
+        # is just a symlink to $GRAALVM_HOME/languages/python/bin/graalpy.
+        context.python_dir = __graalpython__.home
+        if not self.symlinks:
+            # We cannot copy the launcher to another location, because it is either bash launcher
+            # that locates the java executable relative to it, or it is a native application that
+            # loads a shared library also using a relative path
+            logger.warning("We support only symlinks in a Graal Python venv")
+            self.symlinks = True
+        # End of Truffle change
+
         if sys.platform == 'win32':
             binname = 'Scripts'
             incpath = 'Include'
@@ -134,49 +146,6 @@ class EnvBuilder:
             libpath = os.path.join(env_dir, 'lib',
                                    'python%d.%d' % sys.version_info[:2],
                                    'site-packages')
-
-        # Truffle change: our executable may not just be a file (e.g. we're
-        # running through java), we always provide a script for launching in
-        # venv
-        context.libpath = libpath
-        exename = context.python_exe = "graalpy"
-
-        import atexit, tempfile
-        tempdir = tempfile.mkdtemp()
-        script = os.path.join(tempdir, "graalpy")
-        if sys.platform == 'win32':
-            script += ".bat"
-
-        with open(script, "w") as f:
-            if sys.platform != "win32":
-                f.write("#!/bin/sh\n")
-            f.write(" ".join(__graalpython__.executable_list))
-            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'  --python.JNIHome='%s'" % (
-                __graalpython__.core_home,
-                __graalpython__.stdlib_home,
-                context.env_dir,
-                sys.base_prefix,
-                os.path.join(context.env_dir, binname, exename),
-                __graalpython__.capi_home,
-                __graalpython__.jni_home,
-            ))
-            if sys.platform == "win32":
-                f.write(" %*")
-            else:
-                f.write(" \"$@\"")
-
-        if sys.platform != "win32":
-            os.chmod(script, 0o777)
-
-        atexit.register(lambda: shutil.rmtree(tempdir, ignore_errors=True))
-
-        dirname = context.python_dir = __graalpython__.home
-        context.executable = script
-
-        if self.symlinks:
-            logger.warning("We're not using symlinks in a Graal Python venv")
-        self.symlinks = False
-        # End of Truffle change
 
         context.inc_path = path = os.path.join(env_dir, incpath)
         create_if_needed(path)
@@ -249,30 +218,6 @@ class EnvBuilder:
 
             if sys.platform != "win32":
                 os.chmod(script, 0o777)
-
-    def _patch_shebang(self, context):
-        # Truffle change: we need to patch the pip/pip3 (and maybe other)
-        # launchers on Darwin because the shebang tries to invoke our
-        # graalpython shell script but Darwin strictly requires a binary
-        # in the shebang.
-        if sys.platform == "darwin":
-            bin_dir = os.path.join(context.env_dir, context.bin_name)
-            python_exe = os.path.join(bin_dir, context.python_exe)
-            for entry in os.listdir(bin_dir):
-                abs_entry = os.path.join(bin_dir, entry)
-                if os.path.isfile(abs_entry):
-                    with open(abs_entry, "r+") as f:
-                        try:
-                            content = f.read()
-                            expected_shebang = "#!" + python_exe
-                            if content.startswith(expected_shebang):
-                                f.seek(0)
-                                f.truncate()
-                                logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
-                                content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
-                                f.write(content)
-                        except UnicodeDecodeError:
-                            pass # may happen for binary files
 
 
     def create_configuration(self, context):
@@ -374,11 +319,10 @@ class EnvBuilder:
             copier(context.executable, path)
             if not os.path.islink(path):
                 os.chmod(path, 0o755)
-            for suffix in ('python', 'python3', f'python3.{sys.version_info[1]}'):
+            # Truffle change: we add 'graalpy' to the list
+            for suffix in ('python', 'python3', f'python3.{sys.version_info[1]}', 'graalpy'):
                 path = os.path.join(binpath, suffix)
-                # Truffle change: always re-create Python executables if not symlinks
-                if not self.symlinks:
-                    # End of Truffle change
+                if not os.path.exists(path):
                     # Issue 18807: make copies if
                     # symlinks are not wanted
                     copier(context.env_exe, path, relative_symlinks_ok=True)

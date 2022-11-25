@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_struct.StructTest.test_705836
 *graalpython.lib-python.3.test.test_struct.StructTest.test_Struct_reinitialization
 *graalpython.lib-python.3.test.test_struct.StructTest.test__sizeof__
+*graalpython.lib-python.3.test.test_struct.StructTest.test__struct_types_immutable
 *graalpython.lib-python.3.test.test_struct.StructTest.test_bool
 *graalpython.lib-python.3.test.test_struct.StructTest.test_boundary_error_message
 *graalpython.lib-python.3.test.test_struct.StructTest.test_boundary_error_message_with_large_offset
@@ -29,3 +30,4 @@
 *graalpython.lib-python.3.test.test_struct.UnpackIteratorTest.test_iterate
 *graalpython.lib-python.3.test.test_struct.UnpackIteratorTest.test_length_hint
 *graalpython.lib-python.3.test.test_struct.UnpackIteratorTest.test_module_func
+*graalpython.lib-python.3.test.test_struct.UnpackIteratorTest.test_uninstantiable
