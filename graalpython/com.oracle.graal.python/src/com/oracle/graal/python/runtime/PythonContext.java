@@ -109,7 +109,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -1462,7 +1466,10 @@ public final class PythonContext extends Python3Core {
      * run-time package paths.
      */
     private void patchPackagePaths(TruffleString from, TruffleString to) {
-        for (Object v : HashingStorageLibrary.getUncached().values(getSysModules().getDictStorage())) {
+        HashingStorage modulesStorage = getSysModules().getDictStorage();
+        HashingStorageIterator it = HashingStorageGetIterator.executeUncached(modulesStorage);
+        while (HashingStorageIteratorNext.executeUncached(modulesStorage, it)) {
+            Object v = HashingStorageIteratorValue.executeUncached(modulesStorage, it);
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.T___PATH__);
@@ -1915,7 +1922,7 @@ public final class PythonContext extends Python3Core {
         LOGGER.fine("shutting down threads");
         PDict importedModules = getSysModules();
         HashingStorage dictStorage = importedModules.getDictStorage();
-        Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, T_THREADING);
+        Object value = HashingStorageGetItem.executeUncached(dictStorage, T_THREADING);
         if (value != null) {
             Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.T_SHUTDOWN);
             if (attrShutdown == PNone.NO_VALUE) {

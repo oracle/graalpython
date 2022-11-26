@@ -64,8 +64,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertSingleArgNodeGen;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -157,12 +157,12 @@ public abstract class CExtParseArgumentsNode {
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached("createConvertArgNodes(cachedFormat, lengthNode)") ConvertSingleArgNode[] convertArgNodes,
-                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
+                        @Cached HashingStorageLen kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode,
                         @SuppressWarnings("unused") @Cached TruffleString.EqualNode eqNode) {
             try {
                 PDict kwdsDict = null;
-                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                if (kwds != null && kwdsLenNode.execute(((PDict) kwds).getDictStorage()) != 0) {
                     kwdsDict = (PDict) kwds;
                 }
                 int length = lengthNode.execute(format, TS_ENCODING);
@@ -182,13 +182,13 @@ public abstract class CExtParseArgumentsNode {
         @Megamorphic
         int doGeneric(TruffleString funName, PTuple argv, Object kwds, TruffleString format, Object kwdnames, Object varargs,
                         @Cached ConvertSingleArgNode convertArgNode,
-                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
+                        @Cached HashingStorageLen kwdsLenNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 PDict kwdsDict = null;
-                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                if (kwds != null && kwdsLenNode.execute(((PDict) kwds).getDictStorage()) != 0) {
                     kwdsDict = (PDict) kwds;
                 }
                 int length = lengthNode.execute(format, TS_ENCODING);
@@ -947,7 +947,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PCallCExtFunction callCStringToString,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
@@ -967,7 +967,7 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof TruffleString) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = lib.getItem(((PDict) kwds).getDictStorage(), kwdname);
+                    out = getItem.execute(((PDict) kwds).getDictStorage(), (TruffleString) kwdname);
                 }
             }
             if (out == null && !state.restOptional) {

@@ -72,6 +72,8 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
 
     public abstract Object execute(Object object, Object key);
 
+    public abstract Object execute(Object object, TruffleString key);
+
     public abstract Object execute(Object object, HiddenKey key);
 
     protected static Object getAttribute(DynamicObject object, TruffleString key) {

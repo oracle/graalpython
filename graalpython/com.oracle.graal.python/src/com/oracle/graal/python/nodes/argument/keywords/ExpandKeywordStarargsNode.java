@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.argument.keywords;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -50,10 +50,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateUncached
 @ImportStatic({PythonOptions.class, PGuards.class})
@@ -76,21 +76,21 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
         return PKeyword.EMPTY_KEYWORDS;
     }
 
-    @Specialization(guards = {"len(lib, starargs) == cachedLen", "cachedLen < 32", "!isKeywordsStorage(starargs)", "!isEmptyStorage(starargs)"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {"len(lenNode, starargs) == cachedLen", "cachedLen < 32", "!isKeywordsStorage(starargs)", "!isEmptyStorage(starargs)"}, limit = "getVariableArgumentInlineCacheLimit()")
     static PKeyword[] doDictCached(PDict starargs,
                     @Cached CopyKeywordsNode copyKeywordsNode,
-                    @SuppressWarnings("unused") @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
-                    @Cached("len(lib, starargs)") int cachedLen) {
+                    @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
+                    @Cached("len(lenNode, starargs)") int cachedLen) {
         PKeyword[] keywords = PKeyword.create(cachedLen);
         copyKeywordsNode.execute(starargs, keywords);
         return keywords;
     }
 
-    @Specialization(guards = {"!isKeywordsStorage(starargs)", "!isEmptyStorage(starargs)"}, replaces = "doDictCached", limit = "1")
+    @Specialization(guards = {"!isKeywordsStorage(starargs)", "!isEmptyStorage(starargs)"}, replaces = "doDictCached")
     static PKeyword[] doDict(PDict starargs,
-                    @Cached CopyKeywordsNode copyKeywordsNode,
-                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
-        return doDictCached(starargs, copyKeywordsNode, lib, len(lib, starargs));
+                    @Shared("copyKwds") @Cached CopyKeywordsNode copyKeywordsNode,
+                    @Shared("lenNode") @Cached HashingStorageLen lenNode) {
+        return doDictCached(starargs, copyKeywordsNode, lenNode, len(lenNode, starargs));
     }
 
     @Specialization(guards = {"!isPNone(object)", "!isDict(object)"})
@@ -105,8 +105,8 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
 
     @Specialization(replaces = {"doKeywordsArray", "doKeywordsStorage", "doEmptyStorage", "doDictCached", "doDict", "doNonMapping", "doPNone"})
     static PKeyword[] doGeneric(Object kwargs,
-                    @Cached CopyKeywordsNode copyKeywordsNode,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                    @Shared("copyKwds") @Cached CopyKeywordsNode copyKeywordsNode,
+                    @Shared("lenNode") @Cached HashingStorageLen lenNode) {
         if (kwargs instanceof PDict) {
             PDict d = (PDict) kwargs;
             if (isKeywordsStorage(d)) {
@@ -114,7 +114,7 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
             } else if (isEmptyStorage(d)) {
                 return doEmptyStorage(d);
             }
-            return doDict(d, copyKeywordsNode, lib);
+            return doDict(d, copyKeywordsNode, lenNode);
         } else if (kwargs instanceof PKeyword[]) {
             return (PKeyword[]) kwargs;
         } else if (kwargs instanceof PNone) {
@@ -131,8 +131,8 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
         return dict.getDictStorage() instanceof EmptyStorage;
     }
 
-    static int len(HashingStorageLibrary lib, PDict dict) {
-        return lib.length(dict.getDictStorage());
+    static int len(HashingStorageLen lenNode, PDict dict) {
+        return lenNode.execute(dict.getDictStorage());
     }
 
     public static ExpandKeywordStarargsNode create() {

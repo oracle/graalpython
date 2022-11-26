@@ -62,9 +62,18 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNative
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
@@ -98,9 +107,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
@@ -144,20 +151,27 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "pos < size(frame, dict, sizeNode)", limit = "1")
-        Object run(VirtualFrame frame, PDict dict, int pos,
+        Object run(@SuppressWarnings("unused") VirtualFrame frame, PDict dict, int pos,
                         @SuppressWarnings("unused") @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext itNext,
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Cached HashingStorageIteratorValue itValue,
+                        @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached LoopConditionProfile loopProfile,
-                        @Cached PyObjectHashNode hashNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                HashingStorageIterator<DictEntry> it = lib.entries(dict.getDictStorage()).iterator();
-                DictEntry e = null;
+                HashingStorage storage = dict.getDictStorage();
+                HashingStorageNodes.HashingStorageIterator it = getIterator.execute(storage);
                 loopProfile.profileCounted(pos);
                 for (int i = 0; loopProfile.inject(i <= pos); i++) {
-                    e = it.next();
+                    if (!itNext.execute(storage, it)) {
+                        return getContext().getNativeNull();
+                    }
                 }
-                return factory().createTuple(new Object[]{e.key, e.value, hashNode.execute(frame, e.key)});
+                Object key = itKey.execute(storage, it);
+                Object value = itValue.execute(storage, it);
+                return factory().createTuple(new Object[]{key, value, itKeyHash.execute(storage, it)});
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -230,12 +244,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_Size", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyDictSizeNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public static int size(PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageLen lenNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return lib.length(dict.getDictStorage());
+                return lenNode.execute(dict.getDictStorage());
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -267,12 +281,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_Copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PyDictCopyNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public Object copy(PDict dict,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageCopy copyNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return factory().createDict(lib.copy(dict.getDictStorage()));
+                return factory().createDict(copyNode.execute(dict.getDictStorage()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();
@@ -304,13 +318,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_GetItem", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyDictGetItemNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public Object getItem(VirtualFrame frame, PDict dict, Object key,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached BranchProfile noResultProfile) {
             try {
-                Object res = lib.getItemWithFrame(dict.getDictStorage(), key, hasFrameProfile, frame);
+                Object res = getItem.execute(frame, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter();
                     return getContext().getNativeNull();
@@ -339,13 +352,13 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_GetItemWithError", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyDictGetItemWithErrorNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public Object getItem(PDict dict, Object key,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached BranchProfile noResultProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                Object res = lib.getItem(dict.getDictStorage(), key);
+                Object res = getItem.execute(null, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter();
                     return getContext().getNativeNull();
@@ -535,13 +548,12 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
     @Builtin(name = "PyDict_Contains", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyDictContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public static int contains(VirtualFrame frame, PDict dict, Object key,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return PInt.intValue(lib.hasKeyWithFrame(dict.getDictStorage(), key, hasFrame, frame));
+                return PInt.intValue(getItem.hasKey(frame, dict.getDictStorage(), key));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
@@ -663,20 +675,26 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "override == 0", limit = "3")
+        @Specialization(guards = "override == 0")
         public static Object merge(VirtualFrame frame, PDict a, PDict b, @SuppressWarnings("unused") int override,
-                        @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
-                        @CachedLibrary("b.getDictStorage()") HashingStorageLibrary libB,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageGetIterator getBIter,
+                        @Cached HashingStorageIteratorNext itBNext,
+                        @Cached HashingStorageIteratorKey itBKey,
+                        @Cached HashingStorageIteratorValue itBValue,
+                        @Cached HashingStorageIteratorKeyHash itBKeyHash,
+                        @Cached HashingStorageGetItemWithHash getAItem,
+                        @Cached HashingStorageSetItemWithHash setAItem,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                HashingStorageIterator<DictEntry> it = libB.entries(b.getDictStorage()).iterator();
+                HashingStorage bStorage = b.getDictStorage();
+                HashingStorageNodes.HashingStorageIterator bIt = getBIter.execute(bStorage);
                 HashingStorage aStorage = a.getDictStorage();
-                while (loopProfile.profile(it.hasNext())) {
-                    DictEntry e = it.next();
-                    if (!libA.hasKey(aStorage, e.key)) {
-                        libA.setItemWithFrame(aStorage, e.key, e.value, hasFrameProfile, frame);
+                while (loopProfile.profile(itBNext.execute(bStorage, bIt))) {
+                    Object key = itBKey.execute(bStorage, bIt);
+                    long hash = itBKeyHash.execute(bStorage, bIt);
+                    if (getAItem.execute(frame, aStorage, key, hash) != null) {
+                        setAItem.execute(frame, aStorage, key, hash, itBValue.execute(bStorage, bIt));
                     }
                 }
                 return 0;
@@ -686,15 +704,15 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"override == 0", "!isDict(b)"}, limit = "3")
+        @Specialization(guards = {"override == 0", "!isDict(b)"})
         public static Object merge(VirtualFrame frame, PDict a, Object b, @SuppressWarnings("unused") int override,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached GetItemNode getKeyNode,
                         @Cached com.oracle.graal.python.lib.PyObjectGetItem getValueNode,
-                        @CachedLibrary("a.getDictStorage()") HashingStorageLibrary libA,
-                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingStorageGetItem getItemA,
+                        @Cached HashingStorageSetItem setItemA,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached BranchProfile noKeyProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
@@ -708,10 +726,10 @@ public final class PythonCextDictBuiltins extends PythonBuiltins {
                 loopProfile.profileCounted(size);
                 for (int i = 0; loopProfile.inject(i < size); i++) {
                     Object key = getKeyNode.execute(keysStorage, i);
-                    if (!libA.hasKey(aStorage, key)) {
+                    if (!getItemA.hasKey(frame, aStorage, key)) {
                         noKeyProfile.enter();
                         Object value = getValueNode.execute(frame, b, key);
-                        aStorage = libA.setItemWithFrame(aStorage, key, value, hasFrameProfile, frame);
+                        aStorage = setItemA.execute(frame, aStorage, key, value);
                     }
                 }
                 a.setDictStorage(aStorage);

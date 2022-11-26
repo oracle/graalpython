@@ -197,7 +197,7 @@ like so:
 
     find graalpython -name '*.scope' -delete
     find graalpython -name '*.tast' -delete
-    mx punittest com.oracle.graal.python.test.parser
+    mx punittest com.oracle.graal.python.pegparser
 
 If you made changes to the bytecode compiler, you may have to regenerate its golden files:
 

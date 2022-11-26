@@ -127,7 +127,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -561,9 +561,8 @@ public enum SpecialMethodSlot {
             }
         } else {
             HashingStorage storage = dict.getDictStorage();
-            HashingStorageLibrary hlib = HashingStorageLibrary.getFactory().getUncached(storage);
             for (SpecialMethodSlot slot : VALUES) {
-                final Object value = hlib.getItem(storage, slot.getName());
+                final Object value = HashingStorageGetItem.executeUncached(storage, slot.getName());
                 if (value != null) {
                     slots[slot.ordinal()] = asSlotValue(slot, value, language);
                 }

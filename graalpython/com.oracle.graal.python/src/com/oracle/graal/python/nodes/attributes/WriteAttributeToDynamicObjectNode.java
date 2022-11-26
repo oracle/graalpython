@@ -56,7 +56,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
  * object has dict, also bypasses any other additional logic in
  * {@link WriteAttributeToDynamicObjectNode}. The only functionality this node provides on top of
- * {@link DynamicObjectLibrary} is casting of the key to {@code java.lang.String}.
+ * {@link DynamicObjectLibrary} is casting of the key to {@code TruffleString}.
  */
 @ImportStatic(PythonOptions.class)
 @GenerateUncached

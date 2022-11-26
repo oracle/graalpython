@@ -127,7 +127,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByte
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -504,14 +506,15 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object POINTER(VirtualFrame frame, Object cls,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
                         @Cached CallNode callNode,
                         @Cached GetNameNode getNameNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached SimpleTruffleStringFormatNode formatNode) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object result = hlib.getItem(ctypes.ptrtype_cache, cls);
+            Object result = getItem.execute(frame, ctypes.ptrtype_cache, cls);
             if (result != null) {
                 return result;
             }
@@ -531,7 +534,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(TypeError, MUST_BE_A_CTYPES_TYPE);
             }
-            hlib.setItem(ctypes.ptrtype_cache, key, result);
+            HashingStorage newStorage = setItem.execute(frame, ctypes.ptrtype_cache, key, result);
+            assert newStorage == ctypes.ptrtype_cache;
             return result;
         }
     }
@@ -542,12 +546,12 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object pointer(VirtualFrame frame, Object arg,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached PointerTypeNode callPOINTER,
                         @Cached CallNode callNode,
                         @Cached GetClassNode getClassNode) {
             CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
-            Object typ = hlib.getItem(ctypes.ptrtype_cache, getClassNode.execute(arg));
+            Object typ = getItem.execute(frame, ctypes.ptrtype_cache, getClassNode.execute(arg));
             if (typ != null) {
                 return callNode.execute(frame, typ, arg);
             }
@@ -1749,7 +1753,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object cast(CDataObject ptr, CDataObject src, Object ctype,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PythonObjectFactory factory,
                         @Cached CallNode callNode,
@@ -1784,7 +1788,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     // PyLong_FromVoidPtr((void *)src);
                     PDict dict = (PDict) result.b_objects;
                     Object index = factory.createNativeVoidPtr(src);
-                    hlib.setItem(dict.getDictStorage(), index, src);
+                    dict.setDictStorage(setItem.execute(null, dict.getDictStorage(), index, src));
                 }
             }
             /* Should we assert that result is a pointer type? */

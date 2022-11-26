@@ -34,7 +34,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -54,7 +58,6 @@ import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownKeyException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -86,15 +89,15 @@ public class PDict extends PHashingCollection {
     }
 
     public Object getItem(Object key) {
-        return HashingStorageLibrary.getUncached().getItem(storage, key);
+        return HashingStorageGetItem.executeUncached(storage, key);
     }
 
     public void setItem(Object key, Object value) {
-        storage = HashingStorageLibrary.getUncached().setItem(storage, key, value);
+        storage = HashingStorageSetItem.executeUncached(storage, key, value);
     }
 
     public void delItem(Object key) {
-        storage = HashingStorageLibrary.getUncached().delItem(storage, key);
+        HashingStorageDelItem.executeUncached(storage, key, this);
     }
 
     public static HashingStorage createNewStorage(int expectedSize) {
@@ -107,13 +110,8 @@ public class PDict extends PHashingCollection {
         return newDictStorage;
     }
 
-    public static HashingStorage createNewStorage(@SuppressWarnings("unused") boolean isStringKey, int expectedSize) {
-        // TODO: remove this overload with isStringKey
-        return createNewStorage(expectedSize);
-    }
-
     public void update(PDict other) {
-        storage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), storage);
+        HashingStorageAddAllToOther.getUncached().execute(null, other.getDictStorage(), this);
     }
 
     @Override
@@ -127,42 +125,42 @@ public class PDict extends PHashingCollection {
         return true;
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static long getHashSize(PDict self,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                    @Cached HashingStorageLen lenNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return lib.length(self.getDictStorage());
+            return lenNode.execute(self.getDictStorage());
         } finally {
             gil.release(mustRelease);
         }
     }
 
-    @ExportMessage(limit = "2")
-    @ExportMessage(name = "isHashEntryModifiable", limit = "2")
-    @ExportMessage(name = "isHashEntryRemovable", limit = "2")
+    @ExportMessage
+    @ExportMessage(name = "isHashEntryModifiable")
+    @ExportMessage(name = "isHashEntryRemovable")
     static boolean isHashEntryReadable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
-            return lib.hasKey(self.getDictStorage(), convertNode.executeConvert(key));
+            return getItem.hasKey(null, self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static Object readHashValue(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         Object value = null;
         boolean mustRelease = gil.acquire();
         try {
-            value = lib.getItem(self.getDictStorage(), convertNode.executeConvert(key));
+            value = getItem.execute(null, self.getDictStorage(), convertNode.executeConvert(key));
         } finally {
             gil.release(mustRelease);
         }
@@ -173,16 +171,16 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "3")
+    @ExportMessage
     static boolean isHashEntryInsertable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
                     @Cached PyObjectHashNode hashNode,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            if (lib.hasKey(self.getDictStorage(), pKey)) {
+            if (getItem.hasKey(null, self.getDictStorage(), pKey)) {
                 return false;
             } else {
                 // we can only insert hashable types
@@ -198,17 +196,18 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static void writeHashEntry(PDict self, Object key, Object value,
                     @Exclusive @Cached GilNode gil,
                     @Cached IsBuiltinClassProfile errorProfile,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Cached HashingStorageSetItem setItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNodeKey,
                     @Exclusive @Cached PForeignToPTypeNode convertNodeValue) throws UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         Object pKey = convertNodeKey.executeConvert(key);
         try {
-            lib.setItem(self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
+            HashingStorage newStorage = setItem.execute(null, self.getDictStorage(), pKey, convertNodeValue.executeConvert(value));
+            self.setDictStorage(newStorage);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
             throw UnsupportedTypeException.create(new Object[]{pKey}, "keys for Python arrays must be hashable");
@@ -217,18 +216,18 @@ public class PDict extends PHashingCollection {
         }
     }
 
-    @ExportMessage(limit = "2")
+    @ExportMessage
     static void removeHashEntry(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                    @Cached HashingStorageDelItem delItem,
                     @Exclusive @Cached PForeignToPTypeNode convertNode) throws UnknownKeyException {
         boolean mustRelease = gil.acquire();
         try {
             Object pKey = convertNode.executeConvert(key);
-            if (!lib.hasKey(self.getDictStorage(), pKey)) {
+            Object found = delItem.executePop(null, self.getDictStorage(), pKey, self);
+            if (found == null) {
                 throw UnknownKeyException.create(key);
             }
-            lib.delItem(self.getDictStorage(), pKey);
         } finally {
             gil.release(mustRelease);
         }

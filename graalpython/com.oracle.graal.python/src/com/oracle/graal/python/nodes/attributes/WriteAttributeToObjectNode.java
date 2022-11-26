@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -202,8 +202,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(object)") PDict dict,
                     @Shared("updateStorage") @Cached BranchProfile updateStorage,
-                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        return writeToDict(dict, key, value, updateStorage, hlib);
+                    @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem) {
+        return writeToDict(dict, key, value, updateStorage, setHashingStorageItem);
     }
 
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
@@ -214,13 +214,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Shared("castToStr") @Cached CastToTruffleStringNode castToStrNode,
                     @Shared("callAttrUpdate") @Cached BranchProfile callAttrUpdate,
                     @Shared("updateStorage") @Cached BranchProfile updateStorage,
-                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                    @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         if (PythonContext.get(this).isInitialized()) {
             throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.getUncached().execute(null, key), klass);
         } else {
-            return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, hlib, codePointLengthNode, codePointAtIndexNode);
+            return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
         }
     }
 
@@ -231,18 +231,19 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Shared("castToStr") @Cached CastToTruffleStringNode castToStrNode,
                     @Shared("callAttrUpdate") @Cached BranchProfile callAttrUpdate,
                     @Shared("updateStorage") @Cached BranchProfile updateStorage,
-                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                    @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                     @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, hlib, codePointLengthNode, codePointAtIndexNode);
+        return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
     }
 
     private static boolean writeToDictManagedClass(PythonManagedClass klass, PDict dict, Object key, Object value, CastToTruffleStringNode castToStrNode, BranchProfile callAttrUpdate,
-                    BranchProfile updateStorage, HashingStorageLibrary hlib, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    BranchProfile updateStorage, HashingStorageSetItem setHashingStorageItem, TruffleString.CodePointLengthNode codePointLengthNode,
+                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
         TruffleString strKey = castKey(castToStrNode, key);
         try {
-            return writeToDict(dict, strKey, value, updateStorage, hlib);
+            return writeToDict(dict, strKey, value, updateStorage, setHashingStorageItem);
         } finally {
             if (!klass.canSkipOnAttributeUpdate(strKey, value, codePointLengthNode, codePointAtIndexNode)) {
                 callAttrUpdate.enter();
@@ -253,10 +254,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     static boolean writeToDict(PDict dict, Object key, Object value,
                     BranchProfile updateStorage,
-                    HashingStorageLibrary hlib) {
+                    HashingStorageSetItem setHashingStorageItem) {
         assert dict != null;
         HashingStorage dictStorage = dict.getDictStorage();
-        HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
+        // The assumption is that the key is a string with the default __hash__ and __eq__, so we do
+        // not need to pass the frame. This is not entirely correct: GR-41728
+        HashingStorage hashingStorage = setHashingStorageItem.execute(null, dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
             dict.setDictStorage(hashingStorage);
@@ -294,7 +297,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                         @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                        @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached BranchProfile updateStorage,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             /*
@@ -304,7 +307,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
              */
             PDict dict = getDict.execute(object);
             if (dict != null) {
-                return writeToDict(dict, key, value, updateStorage, hlib);
+                return writeToDict(dict, key, value, updateStorage, setHashingStorageItem);
             }
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
@@ -328,7 +331,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = "!canBeSpecial(keyObj, codePointLengthNode, codePointAtIndexNode)", limit = "1")
         static boolean writeNativeClassSimple(PythonAbstractNativeObject object, TruffleString keyObj, Object value,
                         @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
-                        @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached BranchProfile updateStorage,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @SuppressWarnings("unused") @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -342,7 +345,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
              */
             Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
             if (dict instanceof PDict) {
-                return writeToDict((PDict) dict, keyObj, value, updateStorage, hlib);
+                return writeToDict((PDict) dict, keyObj, value, updateStorage, setHashingStorageItem);
             }
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, keyObj);
         }
@@ -350,7 +353,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         @Specialization(guards = "!isHiddenKey(keyObj)", replaces = "writeNativeClassSimple")
         static boolean writeNativeClassGeneric(PythonAbstractNativeObject object, Object keyObj, Object value,
                         @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
-                        @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
                         @Shared("updateStorage") @Cached BranchProfile updateStorage,
                         @Cached BranchProfile canBeSpecialSlot,
                         @Shared("castToStr") @Cached CastToTruffleStringNode castKeyNode,
@@ -368,7 +371,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                  */
                 Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
                 if (dict instanceof PDict) {
-                    return writeToDict((PDict) dict, keyObj, value, updateStorage, hlib);
+                    return writeToDict((PDict) dict, keyObj, value, updateStorage, setHashingStorageItem);
                 }
                 throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, keyObj);
             } finally {

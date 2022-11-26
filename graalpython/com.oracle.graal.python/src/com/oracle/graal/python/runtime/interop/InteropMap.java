@@ -44,7 +44,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.GilNode;
@@ -115,8 +119,12 @@ public final class InteropMap implements TruffleObject {
     @TruffleBoundary
     public static InteropMap fromPDict(PDict dict) {
         Map<String, Object> map = new HashMap<>();
-        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dict.getDictStorage())) {
-            map.put(e.getKey().toString(), e.getValue());
+        final HashingStorage storage = dict.getDictStorage();
+        HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
+        while (HashingStorageIteratorNext.executeUncached(storage, it)) {
+            Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+            Object value = HashingStorageIteratorValue.executeUncached(storage, it);
+            map.put(key.toString(), value);
         }
         return new InteropMap(map);
     }

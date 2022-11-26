@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -107,7 +107,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -254,7 +253,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Cached ReadCallerFrameNode readCaller,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageGetItem getItem) {
             PFrame target = readCaller.executeWith(frame, FrameSelector.SKIP_PYTHON_BUILTIN, 0);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
@@ -268,16 +267,16 @@ public final class SuperBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
 
-            Object cls = getClassFromTarget(frame, target, hlib);
+            Object cls = getClassFromTarget(target, getItem);
             return init(frame, self, cls, obj);
         }
 
-        private Object getClassFromTarget(VirtualFrame frame, PFrame target, HashingStorageLibrary hlib) {
+        private Object getClassFromTarget(PFrame target, HashingStorageGetItem getItem) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
             // sys._getframe(1).f_code.co_closure?
             PDict locals = (PDict) target.getLocalsDict();
-            Object cls = hlib.getItemWithState(locals.getDictStorage(), SpecialAttributeNames.T___CLASS__, PArguments.getThreadState(frame));
+            Object cls = getItem.execute(locals.getDictStorage(), SpecialAttributeNames.T___CLASS__);
             if (cls == null) {
                 // the cell is empty
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);

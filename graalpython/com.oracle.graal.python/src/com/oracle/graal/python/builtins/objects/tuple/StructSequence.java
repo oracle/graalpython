@@ -67,12 +67,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
@@ -109,7 +109,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -356,13 +355,12 @@ public class StructSequence {
                         @Cached IsBuiltinClassProfile notASequenceProfile,
                         @Cached BranchProfile wrongLenProfile,
                         @Cached BranchProfile needsReallocProfile,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary dictLib) {
+                        @Cached HashingStorageGetItem getItem) {
             Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
-            ThreadState threadState = PArguments.getThreadState(frame);
             for (int i = src.length; i < dst.length; ++i) {
-                Object o = dictLib.getItemWithState(hs, fieldNames[i], threadState);
+                Object o = getItem.execute(hs, fieldNames[i]);
                 dst[i] = o == null ? PNone.NONE : o;
             }
             return factory().createTuple(cls, new ObjectSequenceStorage(dst, inSequence));
@@ -425,7 +423,7 @@ public class StructSequence {
 
         @Specialization
         public PTuple reduce(PTuple self,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached GetClassNode getClass) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
             Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
@@ -438,7 +436,7 @@ public class StructSequence {
             } else {
                 HashingStorage storage = EconomicMapStorage.create(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
-                    storage = hlib.setItem(storage, fieldNames[i], data[i]);
+                    storage = setHashingStorageItem.execute(storage, fieldNames[i], data[i]);
                 }
                 seq = factory().createTuple(Arrays.copyOf(data, inSequence));
                 dict = factory().createDict(storage);

@@ -48,7 +48,11 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -62,7 +66,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -102,21 +105,22 @@ public final class PThreadLocal extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
-        List<String> keys = getLocalAttributes(hlib);
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        List<String> keys = getLocalAttributes();
         return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
     }
 
     @TruffleBoundary
-    private List<String> getLocalAttributes(HashingStorageLibrary hlib) {
+    private List<String> getLocalAttributes() {
         PDict localDict = getThreadLocalDict();
         List<String> keys = new ArrayList<>();
         if (localDict != null) {
-            for (HashingStorage.DictEntry e : hlib.entries(localDict.getDictStorage())) {
-                Object key = assertNoJavaString(e.getKey());
+            final HashingStorage storage = localDict.getDictStorage();
+            HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
+            while (HashingStorageIteratorNext.executeUncached(storage, it)) {
+                Object key = assertNoJavaString(HashingStorageIteratorKey.executeUncached(storage, it));
                 if (key instanceof TruffleString) {
-                    TruffleString strKey = (TruffleString) e.getKey();
+                    TruffleString strKey = (TruffleString) key;
                     keys.add(strKey.toJavaStringUncached());
                 }
             }
@@ -125,64 +129,64 @@ public final class PThreadLocal extends PythonBuiltinObject {
     }
 
     @Ignore
-    private Object readMember(String member, HashingStorageLibrary hlib, TruffleString.FromJavaStringNode fromJavaStringNode) {
+    private Object readMember(String member, HashingStorageGetItem getItem, TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
-        return localDict == null ? null : hlib.getItem(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING));
+        return localDict == null ? null : getItem.execute(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING));
     }
 
     @ExportMessage
     public boolean isMemberReadable(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return readMember(member, hlib, fromJavaStringNode) != null;
+        return readMember(member, getItem, fromJavaStringNode) != null;
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return readMember(member, hlib, fromJavaStringNode) != null;
+        return readMember(member, getItem, fromJavaStringNode) != null;
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return !isMemberReadable(member, hlib, fromJavaStringNode);
+        return !isMemberReadable(member, getItem, fromJavaStringNode);
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         PDict localDict = getThreadLocalDict();
-        return localDict != null && PGuards.isCallable(hlib.getItem(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING)));
+        return localDict != null && PGuards.isCallable(getItem.execute(localDict.getDictStorage(), fromJavaStringNode.execute(member, TS_ENCODING)));
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return isMemberReadable(member, hlib, fromJavaStringNode);
+        return isMemberReadable(member, getItem, fromJavaStringNode);
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet) {
-        Object attr = readMember(member, hlib, fromJavaStringNode);
+        Object attr = readMember(member, getItem, fromJavaStringNode);
         return attr != null && lookupGet.execute(getClassNode.execute(attr)) != PNone.NO_VALUE;
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
-                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet) {
-        Object attr = readMember(member, hlib, fromJavaStringNode);
+        Object attr = readMember(member, getItem, fromJavaStringNode);
         return attr != null && lookupSet.execute(getClassNode.execute(attr)) != PNone.NO_VALUE;
     }
 }

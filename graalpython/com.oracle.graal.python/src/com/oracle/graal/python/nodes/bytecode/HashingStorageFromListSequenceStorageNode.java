@@ -43,14 +43,14 @@ package com.oracle.graal.python.nodes.bytecode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContext {
@@ -58,16 +58,16 @@ abstract class HashingStorageFromListSequenceStorageNode extends PNodeWithContex
     public abstract HashingStorage execute(Frame virtualFrame, SequenceStorage sequenceStorage);
 
     @Specialization
-    HashingStorage doIt(SequenceStorage sequenceStorage,
+    HashingStorage doIt(VirtualFrame frame, SequenceStorage sequenceStorage,
                     @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
+                    @Cached HashingStorageSetItem setItem,
                     @Cached LoopConditionProfile loopConditionProfile) {
         HashingStorage setStorage = EmptyStorage.INSTANCE;
         int length = sequenceStorage.length();
         loopConditionProfile.profileCounted(length);
         for (int i = 0; loopConditionProfile.inject(i < length); ++i) {
             Object o = getItemNode.execute(sequenceStorage, i);
-            setStorage = hashingStorageLibrary.setItem(setStorage, o, PNone.NONE);
+            setStorage = setItem.execute(frame, setStorage, o, PNone.NONE);
         }
         return setStorage;
     }

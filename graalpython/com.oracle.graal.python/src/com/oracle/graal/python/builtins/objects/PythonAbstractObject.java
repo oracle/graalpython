@@ -74,7 +74,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -648,9 +651,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             dictStorage = new DynamicObjectStorage(o); // temporary wrapper makes the rest of the
                                                        // code easier
         }
-        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dictStorage)) {
+        HashingStorageIterator it = HashingStorageGetIterator.executeUncached(dictStorage);
+        while (HashingStorageIteratorNext.executeUncached(dictStorage, it)) {
             TruffleString strKey;
-            Object key = e.getKey();
+            Object key = HashingStorageIteratorKey.executeUncached(dictStorage, it);
             if (key instanceof TruffleString) {
                 strKey = (TruffleString) key;
             } else if (isJavaString(key)) {

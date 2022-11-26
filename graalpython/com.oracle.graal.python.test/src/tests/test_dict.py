@@ -659,6 +659,20 @@ def test_setdefault():
     x.fail = True
     assert_raises(Exc, d.setdefault, x, [])
 
+    class SideEffectHash:
+        def __init__(self):
+            self.hash_called = 0
+        def __hash__(self):
+            self.hash_called += 1
+            return 42
+
+    d = {'hello': 'world'}
+    key = SideEffectHash()
+    assert d.setdefault(key, 'new') == 'new'
+    assert key.hash_called == 1
+    assert d.setdefault(key, 'another new') == 'new'
+    assert key.hash_called == 2
+
 
 def test_keys_contained():
     helper_keys_contained(lambda x: x.keys())
@@ -930,6 +944,26 @@ def test_update_side_effect_on_other():
 
     assert 'kw' not in d
 
+
+def test_update_side_effect_on_other_with_dom_storage():
+    class MutatingKey:
+        def __hash__(self):
+            return hash('this_is_dom_storage')
+        def __eq__(self, other):
+            if hasattr(self, 'to_mutate'):
+                self.to_mutate['eq'] = 'eq'
+            return self is other
+
+    class DomStorage:
+        def __init__(self):
+            self.this_is_dom_storage = 1
+
+    key = MutatingKey()
+    d = {key: 1, 'another': 2}
+    d2 = DomStorage().__dict__
+    key.to_mutate = d2
+    assert_raises(RuntimeError, d.update, d2)
+
 def test_iter_changed_size():
     def just_iterate(it):
         for i in it:
@@ -1171,6 +1205,45 @@ def test_check_ref_identity_before_eq():
     assert d[k] == 'some value'
     assert eq_calls == 1
 
+
+class TrackingKey:
+    def __init__(self, id):
+        self.clear_observations()
+        self.id = id
+    def __hash__(self):
+        self.hash_calls += 1
+        return hash(self.id)
+    def __eq__(self, other):
+        self.eq_calls += 1
+        return self.id == getattr(other, 'id', other)
+    def clear_observations(self):
+        self.hash_calls = 0
+        self.eq_calls = 0
+
+
+def test_pop_side_effects():
+    key = TrackingKey(1)
+    d = {key: 42, 'other_key': 33}
+    assert key.hash_calls == 1
+    assert key.eq_calls == 0
+
+    lookup_key = TrackingKey(1)
+    assert d.pop(lookup_key) == 42
+    assert lookup_key.hash_calls == 1
+    assert lookup_key.eq_calls == 0
+
+
+def test_eq_side_effects():
+    key = TrackingKey('foo')
+    d1 = {key: 42}
+    key.clear_observations()
+    d2 = {'foo': 42}  # This should use specialized storage strategy
+
+    assert d1 == d2
+    assert key.hash_calls == 0
+    assert key.eq_calls == 1
+
+
 # TODO: GR-40680
 # def test_iteration_and_del():
 #     def test_iter(get_iterable):
@@ -1184,3 +1257,13 @@ def test_check_ref_identity_before_eq():
 #     test_iter(lambda d: d.keys())
 #     test_iter(lambda d: d.values())
 #     test_iter(lambda d: d.items())
+
+def test_dict_values_eq():
+    # Regression test: dict_values should not override __eq__
+    d1 = {1: 1, 2: 2}
+    d2 = {1: 1, 2: 2, 3: 3}
+    assert d1.values() != d2.values()
+
+    d1 = {1: 1, 2: 2, 4: 4}
+    assert d1.values() != d1.values()
+

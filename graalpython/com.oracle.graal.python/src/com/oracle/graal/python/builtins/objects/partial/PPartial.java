@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.partial;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -97,13 +98,13 @@ public final class PPartial extends PythonBuiltinObject {
         return kw;
     }
 
-    public PDict getKwCopy(PythonObjectFactory factory, HashingStorageLibrary lib) {
+    public PDict getKwCopy(PythonObjectFactory factory, HashingStorageCopy copyNode) {
         assert kw != null;
-        return factory.createDict(lib.copy(kw.getDictStorage()));
+        return factory.createDict(copyNode.execute(kw.getDictStorage()));
     }
 
-    public boolean hasKw(HashingStorageLibrary lib) {
-        return lib.length(kw.getDictStorage()) > 0;
+    public boolean hasKw(HashingStorageLen lenNode) {
+        return lenNode.execute(kw.getDictStorage()) > 0;
     }
 
     public void setKw(PDict kwArgs) {

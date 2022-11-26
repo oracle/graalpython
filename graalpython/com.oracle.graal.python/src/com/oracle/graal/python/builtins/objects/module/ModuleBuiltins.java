@@ -69,7 +69,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
@@ -161,11 +161,11 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookup,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+                        @Cached HashingStorageGetItem getItem) {
             Object dict = lookup.execute(frame, self, T___DICT__);
             if (isDict(dict, isDictProfile)) {
                 HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
-                Object dirFunc = hashLib.getItem(dictStorage, T___DIR__);
+                Object dirFunc = getItem.execute(dictStorage, T___DIR__);
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {

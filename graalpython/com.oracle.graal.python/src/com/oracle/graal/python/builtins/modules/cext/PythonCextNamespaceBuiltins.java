@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -48,11 +50,12 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.InitNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
@@ -60,14 +63,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 
 @CoreFunctions(extendsModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -87,17 +89,27 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyNamespaceNewNode extends PythonBuiltinNode {
         @Specialization
-        public Object imp(PDict dict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        public Object impDict(PDict dict,
+                        @Shared("getIt") @Cached HashingStorageGetIterator getIterator,
+                        @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
+                        @Shared("itKey") @Cached HashingStorageIteratorKey itKey,
+                        @Shared("itVal") @Cached HashingStorageIteratorValue itValue,
+                        @Shared("dylib") @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
+                        @Shared("transform") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            HashingStorage storage = dict.getDictStorage();
+            return impl(storage, getIterator, itNext, itKey, itValue, dyLib, transformExceptionToNativeNode);
+        }
+
+        private Object impl(HashingStorage storage, HashingStorageGetIterator getIterator, HashingStorageIteratorNext itNext,
+                        HashingStorageIteratorKey itKey, HashingStorageIteratorValue itValue,
+                        DynamicObjectLibrary dyLib, TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PSimpleNamespace ns = factory().createSimpleNamespace();
-                HashingStorageIterable<DictEntry> entries = lib.entries(dict.getDictStorage());
-                HashingStorageIterator<DictEntry> it = entries.iterator();
-                while (it.hasNext()) {
-                    DictEntry e = it.next();
-                    dyLib.put(ns, assertNoJavaString(e.key), e.value);
+                HashingStorageNodes.HashingStorageIterator it = getIterator.execute(storage);
+                while (itNext.execute(storage, it)) {
+                    Object key = itKey.execute(storage, it);
+                    Object value = itValue.execute(storage, it);
+                    dyLib.put(ns, assertNoJavaString(key), value);
                 }
                 return ns;
             } catch (PException e) {
@@ -107,21 +119,17 @@ public final class PythonCextNamespaceBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isDict(dict)")
-        public Object imp(VirtualFrame frame, Object dict,
+        public Object impGeneric(VirtualFrame frame, Object dict,
                         @Cached InitNode initNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Shared("getIt") @Cached HashingStorageGetIterator getIterator,
+                        @Shared("itNext") @Cached HashingStorageIteratorNext itNext,
+                        @Shared("itKey") @Cached HashingStorageIteratorKey itKey,
+                        @Shared("itVal") @Cached HashingStorageIteratorValue itValue,
+                        @Shared("dylib") @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib,
+                        @Shared("transform") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                PSimpleNamespace ns = factory().createSimpleNamespace();
                 HashingStorage hs = initNode.execute(frame, dict, PKeyword.EMPTY_KEYWORDS);
-                HashingStorageIterable<DictEntry> entries = lib.entries(hs);
-                HashingStorageIterator<DictEntry> it = entries.iterator();
-                while (it.hasNext()) {
-                    DictEntry e = it.next();
-                    dyLib.put(ns, assertNoJavaString(e.key), e.value);
-                }
-                return ns;
+                return impl(hs, getIterator, itNext, itKey, itValue, dyLib, transformExceptionToNativeNode);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return getContext().getNativeNull();

@@ -54,7 +54,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -94,8 +99,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -487,40 +492,29 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
 
         @ImportStatic(PGuards.class)
-        abstract static class ForEachKW extends HashingStorageLibrary.ForEachNode<ExcState> {
-            private final int limit;
-
-            protected ForEachKW(int limit) {
-                this.limit = limit;
-            }
-
-            protected final int getLimit() {
-                return limit;
-            }
-
+        abstract static class ForEachKW extends HashingStorageForEachCallback<ExcState> {
             @Override
-            public final ExcState execute(Object key, ExcState state) {
-                return execute(null, key, state);
-            }
-
-            public abstract ExcState execute(VirtualFrame frame, Object key, ExcState state);
+            public abstract ExcState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, ExcState state);
 
             @Specialization
-            public static ExcState doIt(VirtualFrame frame, TruffleString key, ExcState state,
+            public static ExcState doIt(Frame frame, HashingStorage storage, HashingStorageIterator it, ExcState state,
                             @Cached PyObjectSetAttr setAttr,
-                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                final Object value = lib.getItem(state.dictStorage, key);
+                            @Cached HashingStorageIteratorKey itKey,
+                            @Cached HashingStorageIteratorKeyHash itKeyHash,
+                            @Cached HashingStorageGetItemWithHash getItem) {
+                Object key = itKey.execute(storage, it);
+                Object value = getItem.execute(frame, state.dictStorage, key, itKeyHash.execute(storage, it));
                 setAttr.execute(frame, state.exception, key, value);
                 return state;
             }
         }
 
         @Specialization
-        Object setDict(PBaseException self, PDict state,
-                        @Cached("create(3)") ForEachKW forEachKW,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+        Object setDict(VirtualFrame frame, PBaseException self, PDict state,
+                        @Cached ForEachKW forEachKW,
+                        @Cached HashingStorageForEach forEachNode) {
             final HashingStorage dictStorage = state.getDictStorage();
-            lib.forEach(dictStorage, forEachKW, new ExcState(dictStorage, self));
+            forEachNode.execute(frame, dictStorage, forEachKW, new ExcState(dictStorage, self));
             return PNone.NONE;
         }
 

@@ -42,14 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SpecializedSetStringKey;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -60,21 +53,18 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@ExportLibrary(HashingStorageLibrary.class)
 public class KeywordsStorage extends HashingStorage {
 
-    private final PKeyword[] keywords;
+    final PKeyword[] keywords;
 
     protected KeywordsStorage(PKeyword[] keywords) {
         this.keywords = keywords;
@@ -84,8 +74,6 @@ public class KeywordsStorage extends HashingStorage {
         return keywords;
     }
 
-    @Override
-    @ExportMessage
     public int length() {
         return keywords.length;
     }
@@ -113,44 +101,17 @@ public class KeywordsStorage extends HashingStorage {
         return -1;
     }
 
-    @SuppressWarnings("unused")
-    @ExportMessage
     @ImportStatic(PGuards.class)
-    static class HasKeyWithState {
+    @GenerateUncached
+    public abstract static class GetItemNode extends Node {
+        /**
+         * For builtin strings the {@code keyHash} value is ignored and can be garbage. If the
+         * {@code keyHash} is equal to {@code -1} it will be computed for non-string keys.
+         */
+        public abstract Object execute(Frame frame, KeywordsStorage self, Object key, long hash);
+
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static boolean cached(KeywordsStorage self, TruffleString key, ThreadState state,
-                        @Exclusive @Cached("self.length()") int cachedLen,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return self.findCachedStringKey(key, cachedLen, equalNode) != -1;
-        }
-
-        @Specialization(replaces = "cached")
-        static boolean string(KeywordsStorage self, TruffleString key, ThreadState state,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return self.findStringKey(key, equalNode) != -1;
-        }
-
-        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Shared("castToTS") @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return string(self, castToTruffleStringNode.execute(key), state, equalNode);
-        }
-
-        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static boolean notString(KeywordsStorage self, Object key, ThreadState state,
-                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary("self") HashingStorageLibrary lib) {
-            return lib.getItemWithState(self, key, state) != null;
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    @ImportStatic(PGuards.class)
-    public static class GetItemWithState {
-        @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") ThreadState state,
+        static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
@@ -158,28 +119,26 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
-        static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") ThreadState state,
+        static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findStringKey(key, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
-        static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Shared("castToTS") @Cached CastToTruffleStringNode castToTruffleStringNode,
+        static Object pstring(KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
-            return string(self, castToTruffleStringNode.execute(key), state, equalNode);
+            return string(self, castToTruffleStringNode.execute(key), -1, equalNode);
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
-        static Object notString(KeywordsStorage self, Object key, ThreadState state,
+        static Object notString(Frame frame, KeywordsStorage self, Object key, long hashIn,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached PyObjectRichCompareBool.EqNode eqNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            long hash = hashNode.execute(frame, key);
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            long hash = hashIn == -1 ? hashNode.execute(frame, key) : hashIn;
             for (int i = 0; i < self.keywords.length; i++) {
                 TruffleString currentKey = self.keywords[i].getName();
                 long keyHash = hashNode.execute(frame, currentKey);
@@ -191,166 +150,15 @@ public class KeywordsStorage extends HashingStorage {
         }
     }
 
-    @ExportMessage
-    public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, false, length() + 1);
-        if (gotState.profile(state != null)) {
-            return lib.setItemWithState(newStore, key, value, state);
-        } else {
-            return lib.setItem(newStore, key, value);
+    void addAllTo(HashingStorage storage, SpecializedSetStringKey putNode) {
+        for (PKeyword entry : keywords) {
+            putNode.execute(storage, entry.getName(), entry.getValue());
         }
     }
 
-    @ExportMessage
-    public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Shared("gotState") @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, true, length() - 1);
-        if (gotState.profile(state != null)) {
-            return lib.delItemWithState(newStore, key, state);
-        } else {
-            return lib.delItem(newStore, key);
-        }
-    }
-
-    private HashingStorage generalize(HashingStorageLibrary lib, boolean isStringKey, int expectedLength) {
-        HashingStorage newStore = PDict.createNewStorage(isStringKey, expectedLength);
-        newStore = lib.addAllToOther(this, newStore);
-        return newStore;
-    }
-
-    @ExportMessage
-    static class ForEachUntyped {
-        @Specialization(guards = {"self.length() == cachedLen", "cachedLen <= 32"}, limit = "1")
-        @ExplodeLoop
-        static Object cached(KeywordsStorage self, ForEachNode<Object> node, Object arg,
-                        @Exclusive @Cached("self.length()") int cachedLen) {
-            Object result = arg;
-            for (int i = 0; i < cachedLen; i++) {
-                PKeyword entry = self.keywords[i];
-                result = node.execute(entry.getName(), result);
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "cached")
-        static Object generic(KeywordsStorage self, ForEachNode<Object> node, Object arg) {
-            Object result = arg;
-            for (int i = 0; i < self.length(); i++) {
-                PKeyword entry = self.keywords[i];
-                result = node.execute(entry.getName(), result);
-            }
-            return result;
-        }
-    }
-
-    @ExportMessage
-    public static class AddAllToOther {
-        @Specialization(guards = {"self.length() == cachedLen", "cachedLen <= 32"}, limit = "1")
-        @ExplodeLoop
-        static HashingStorage cached(KeywordsStorage self, HashingStorage other,
-                        @Exclusive @Cached("self.length()") int cachedLen,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            HashingStorage result = other;
-            for (int i = 0; i < cachedLen; i++) {
-                PKeyword entry = self.keywords[i];
-                result = lib.setItem(result, entry.getName(), entry.getValue());
-            }
-            return result;
-        }
-
-        @Specialization(replaces = "cached")
-        static HashingStorage generic(KeywordsStorage self, HashingStorage other,
-                        @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            HashingStorage result = other;
-            for (int i = 0; i < self.length(); i++) {
-                PKeyword entry = self.keywords[i];
-                result = lib.setItem(result, entry.getName(), entry.getValue());
-            }
-            return result;
-        }
-    }
-
-    @Override
-    @ExportMessage
-    public HashingStorage clear() {
-        return EmptyStorage.INSTANCE;
-    }
-
-    @Override
-    @ExportMessage
     public HashingStorage copy() {
         // this storage is unmodifiable; just reuse it
         return this;
-    }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new KeysIterator(this));
-    }
-
-    @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new ReverseKeysIterator(this));
-    }
-
-    private abstract static class AbstractKeysIterator implements Iterator<Object> {
-        protected final KeywordsStorage storage;
-        protected int index;
-
-        public AbstractKeysIterator(KeywordsStorage keywordsStorage, int initialIndex) {
-            this.index = initialIndex;
-            this.storage = keywordsStorage;
-        }
-
-        public abstract void nextIndex();
-
-        @Override
-        public Object next() {
-            if (hasNext()) {
-                Object result = storage.keywords[index].getName();
-                nextIndex();
-                return result;
-            } else {
-                throw new NoSuchElementException();
-            }
-        }
-    }
-
-    private static final class KeysIterator extends AbstractKeysIterator {
-        public KeysIterator(KeywordsStorage keywordsStorage) {
-            super(keywordsStorage, 0);
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index < storage.length();
-        }
-
-        @Override
-        public void nextIndex() {
-            index += 1;
-        }
-    }
-
-    private static final class ReverseKeysIterator extends AbstractKeysIterator {
-        public ReverseKeysIterator(KeywordsStorage keywordsStorage) {
-            super(keywordsStorage, keywordsStorage.keywords.length - 1);
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index >= 0;
-        }
-
-        @Override
-        public void nextIndex() {
-            index -= 1;
-        }
     }
 
     public static KeywordsStorage create(PKeyword[] keywords) {

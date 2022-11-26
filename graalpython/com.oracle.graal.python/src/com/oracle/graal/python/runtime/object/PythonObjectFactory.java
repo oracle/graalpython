@@ -71,10 +71,9 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -772,8 +771,20 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     @SuppressWarnings("unchecked")
-    public final PDict createDictFromMap(LinkedHashMap<?, ?> map) {
-        return createDict(new HashMapStorage((LinkedHashMap<Object, Object>) map));
+    public final PDict createDictFromMap(LinkedHashMap<String, Object> map) {
+        return createDict(EconomicMapStorage.create(map));
+    }
+
+    /**
+     * Generic version of {@link #createDictFromMap(LinkedHashMap)} that allows any type of keys.
+     * Note that this means that unless the keys are known to be side effect free, e.g., builtin
+     * types, this may end up calling Python code, so indirect call context should be properly
+     * set-up. This helper is meant for Truffle boundary code, in PE code build a storage by setting
+     * elements one by one starting from empty storage.
+     */
+    @SuppressWarnings("unchecked")
+    public final PDict createDictFromMapGeneric(LinkedHashMap<Object, Object> map) {
+        return createDict(EconomicMapStorage.createGeneric(map));
     }
 
     public final PDict createDictLocals(MaterializedFrame frame) {
@@ -1046,36 +1057,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PArrayIterator(PythonBuiltinClassType.PArrayIterator, PythonBuiltinClassType.PArrayIterator.getInstanceShape(getLanguage()), array));
     }
 
-    public final PBaseSetIterator createBaseSetIterator(PBaseSet set, HashingStorageIterator<Object> iterator, int initialSize) {
+    public final PBaseSetIterator createBaseSetIterator(PBaseSet set, HashingStorageNodes.HashingStorageIterator iterator, int initialSize) {
         return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), set, iterator, initialSize));
     }
 
-    public final PDictItemIterator createDictItemIterator(HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
+    public final PDictItemIterator createDictItemIterator(HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictItemIterator(PythonBuiltinClassType.PDictItemIterator, PythonBuiltinClassType.PDictItemIterator.getInstanceShape(getLanguage()), iterator, hashingStorage, initialSize));
     }
 
-    public final PDictItemIterator createDictReverseItemIterator(HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictItemIterator(PythonBuiltinClassType.PDictReverseItemIterator, PythonBuiltinClassType.PDictReverseItemIterator.getInstanceShape(getLanguage()), iterator, hashingStorage,
-                        initialSize));
-    }
-
-    public final PDictKeyIterator createDictKeyIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+    public final PDictKeyIterator createDictKeyIterator(HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictKeyIterator, PythonBuiltinClassType.PDictKeyIterator.getInstanceShape(getLanguage()), iterator, hashingStorage, initialSize));
     }
 
-    public final PDictKeyIterator createDictReverseKeyIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictReverseKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator.getInstanceShape(getLanguage()), iterator, hashingStorage,
-                        initialSize));
-    }
-
-    public final PDictValueIterator createDictValueIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+    public final PDictValueIterator createDictValueIterator(HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.getInstanceShape(getLanguage()), iterator, hashingStorage,
-                        initialSize));
-    }
-
-    public final PDictValueIterator createDictReverseValueIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PDictValueIterator(PythonBuiltinClassType.PDictReverseValueIterator, PythonBuiltinClassType.PDictReverseValueIterator.getInstanceShape(getLanguage()), iterator,
-                        hashingStorage,
                         initialSize));
     }
 

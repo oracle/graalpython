@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHORITY_INFO_ACCESS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_OCSP;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_CRL_DISTRIBUTION_POINTS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_ISSUER;
@@ -50,10 +54,6 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X50
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_SUBJECT;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_SUBJECT_ALT_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.T_JAVA_X509_VERSION;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHORITY_INFO_ACCESS;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_OCSP;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -86,7 +86,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import com.oracle.truffle.api.strings.TruffleString;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -103,7 +102,7 @@ import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.encoders.DecoderException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -113,6 +112,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CertUtils {
     public static final BouncyCastleProvider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
@@ -189,18 +189,17 @@ public final class CertUtils {
     public static PDict decodeCertificate(PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
-        HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
         try {
-            storage = setItem(hlib, storage, T_JAVA_X509_OCSP, parseOCSP(cert, factory));
-            storage = setItem(hlib, storage, T_JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
-            storage = setItem(hlib, storage, T_JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), factory));
-            storage = setItem(hlib, storage, T_JAVA_X509_NOT_AFTER, getNotAfter(cert));
-            storage = setItem(hlib, storage, T_JAVA_X509_NOT_BEFORE, getNotBefore(cert));
-            storage = setItem(hlib, storage, T_JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
-            storage = setItem(hlib, storage, T_JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
-            storage = setItem(hlib, storage, T_JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), factory));
-            storage = setItem(hlib, storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
-            storage = setItem(hlib, storage, T_JAVA_X509_VERSION, getVersion(cert));
+            storage = setItem(storage, T_JAVA_X509_OCSP, parseOCSP(cert, factory));
+            storage = setItem(storage, T_JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
+            storage = setItem(storage, T_JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), factory));
+            storage = setItem(storage, T_JAVA_X509_NOT_AFTER, getNotAfter(cert));
+            storage = setItem(storage, T_JAVA_X509_NOT_BEFORE, getNotBefore(cert));
+            storage = setItem(storage, T_JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
+            storage = setItem(storage, T_JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
+            storage = setItem(storage, T_JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), factory));
+            storage = setItem(storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
+            storage = setItem(storage, T_JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
             throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
         }
@@ -208,9 +207,9 @@ public final class CertUtils {
         return dict;
     }
 
-    private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, TruffleString key, Object value) {
+    private static HashingStorage setItem(HashingStorage storage, TruffleString key, Object value) {
         if (value != null) {
-            return hlib.setItem(storage, key, value);
+            return HashingStorageSetItem.executeUncached(storage, key, value);
         } else {
             return storage;
         }
