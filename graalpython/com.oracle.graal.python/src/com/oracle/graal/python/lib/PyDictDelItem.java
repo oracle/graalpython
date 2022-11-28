@@ -40,18 +40,15 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -61,41 +58,34 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 public abstract class PyDictDelItem extends Node {
+    // Note: for now this simply delegates to HashingStorageDelItem, but in the future, this should,
+    // unlike HashingStorageDelItem, also handle native subclasses of dict
+
+    public final void execute(PDict dict, TruffleString key) {
+        execute(null, dict, key);
+    }
+
+    public abstract void execute(Frame frame, PDict dict, TruffleString key);
+
     public abstract void execute(Frame frame, PDict dict, Object key);
 
     // We never need a frame for reading string keys
-    @Specialization(limit = "3")
+    @Specialization
     static void delItemWithStringKey(@SuppressWarnings("unused") PDict dict, TruffleString key,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib,
-                    @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage updatedStorage = lib.delItem(dictStorage, key);
-        if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
-            dict.setDictStorage(updatedStorage);
-        }
+                    @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
+        delItem.execute(dict.getDictStorage(), key, dict);
     }
 
-    @Specialization(replaces = "delItemWithStringKey", limit = "3")
+    @Specialization(replaces = "delItemWithStringKey")
     static void delItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @Cached ConditionProfile frameCondition,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib,
-                    @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage updatedStorage = lib.delItemWithFrame(dictStorage, key, frameCondition, frame);
-        if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
-            dict.setDictStorage(updatedStorage);
-        }
+                    @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
+        delItem.execute(frame, dict.getDictStorage(), key, dict);
     }
 
     @Specialization(replaces = "delItemCached")
     static void delItem(PDict dict, Object key,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                    @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage dictStorage = dict.getDictStorage();
-        HashingStorage updatedStorage = lib.delItem(dictStorage, key);
-        if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
-            dict.setDictStorage(updatedStorage);
-        }
+                    @Shared("delStorageItem") @Cached HashingStorageDelItem delItem) {
+        delItem.execute(null, dict.getDictStorage(), key, dict);
     }
 
     public static PyDictDelItem create() {

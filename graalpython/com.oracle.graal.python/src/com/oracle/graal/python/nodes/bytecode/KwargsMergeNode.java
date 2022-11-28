@@ -45,7 +45,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -68,14 +75,13 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class KwargsMergeNode extends PNodeWithContext {
@@ -130,40 +136,46 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
 
         @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
         static HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
-                        @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Cached.Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
-            return hlib.copy(other.getDictStorage());
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Cached HashingStorageCopy copyNode) {
+            return copyNode.execute(other.getDictStorage());
         }
 
         @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
         static HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
-                        @SuppressWarnings("unused") @Cached.Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached.Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
-                        @Cached.Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
-                        @Cached.Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Cached HashingStorageGetItem resultGetItem,
+                        @Cached HashingStorageSetItem resultSetItem,
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue,
+                        @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
             HashingStorage result = dest;
             HashingStorage otherStorage = other.getDictStorage();
-            for (Object key : hlib.keys(otherStorage)) {
-                Object value = hlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
-                if (hlib.hasKey(result, key)) {
+            HashingStorageIterator it = getIterator.execute(otherStorage);
+            while (iterNext.execute(otherStorage, it)) {
+                Object key = iterKey.execute(otherStorage, it);
+                Object value = iterValue.execute(otherStorage, it);
+                if (resultGetItem.hasKey(frame, result, key)) {
                     sameKeyProfile.enter();
                     throw new SameDictKeyException(key);
                 }
-                result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+                result = resultSetItem.execute(frame, result, key, value);
             }
             return result;
         }
 
         @Fallback
         static HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
-                        @Cached.Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
-                        @Cached.Shared("hasFrame") @Cached ConditionProfile hasFrame,
-                        @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
+                        @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
                         @Cached PyObjectCallMethodObjArgs callKeys,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ListNodes.FastConstructListNode asList,
+                        @Cached HashingStorageGetItem resultGetItem,
+                        @Cached HashingStorageSetItem resultSetItem,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
                         @Cached PyObjectGetItem getItem) {
@@ -174,12 +186,12 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
                 int keysLen = keysStorage.length();
                 for (int i = 0; i < keysLen; i++) {
                     Object key = sequenceGetItem.execute(keysStorage, i);
-                    if (hlib.hasKey(result, key)) {
+                    if (resultGetItem.hasKey(frame, result, key)) {
                         sameKeyProfile.enter();
                         throw new SameDictKeyException(key);
                     }
                     Object value = getItem.execute(frame, other, key);
-                    result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+                    result = resultSetItem.execute(frame, result, key, value);
                 }
                 return result;
             } catch (PException e) {
@@ -191,14 +203,6 @@ public abstract class KwargsMergeNode extends PNodeWithContext {
         /* CPython tests that tp_iter is dict_iter */
         protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
             return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == BuiltinMethodDescriptors.DICT_ITER;
-        }
-
-        public static ConcatDictToStorageNode create() {
-            return KwargsMergeNodeGen.ConcatDictToStorageNodeGen.create();
-        }
-
-        public static ConcatDictToStorageNode getUncached() {
-            return KwargsMergeNodeGen.ConcatDictToStorageNodeGen.getUncached();
         }
     }
 }

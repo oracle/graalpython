@@ -61,8 +61,13 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen;
@@ -102,6 +107,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -754,10 +760,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     HashingStorage dictStorage = ((PDict) v).getDictStorage();
                     // NULL terminated as in CPython
                     writeByte(TYPE_DICT | flag);
-                    HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
-                    for (DictEntry entry : lib.entries(dictStorage)) {
-                        writeObject(entry.key);
-                        writeObject(entry.value);
+                    HashingStorageIterator it = HashingStorageGetIterator.executeUncached(dictStorage);
+                    while (HashingStorageIteratorNext.executeUncached(dictStorage, it)) {
+                        writeObject(HashingStorageIteratorKey.executeUncached(dictStorage, it));
+                        writeObject(HashingStorageIteratorValue.executeUncached(dictStorage, it));
                     }
                     writeNull();
                 } else if (v instanceof PBaseSet && (PySetCheckExactNodeGen.getUncached().execute(v) || PyFrozenSetCheckExactNodeGen.getUncached().execute(v))) {
@@ -767,11 +773,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeByte(TYPE_SET | flag);
                     }
                     HashingStorage dictStorage = ((PBaseSet) v).getDictStorage();
-                    HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
-                    int len = lib.length(dictStorage);
+                    int len = HashingStorageLen.executeUncached(dictStorage);
                     writeSize(len);
-                    for (DictEntry entry : lib.entries(dictStorage)) {
-                        writeObject(entry.key);
+                    HashingStorageIterator it = HashingStorageGetIterator.executeUncached(dictStorage);
+                    while (HashingStorageIteratorNext.executeUncached(dictStorage, it)) {
+                        writeObject(HashingStorageIteratorKey.executeUncached(dictStorage, it));
                     }
                 } else if (v instanceof int[]) {
                     writeByte(TYPE_ARRAY | flag);
@@ -900,6 +906,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private Object readObject() throws NumberFormatException {
+            CompilerAsserts.neverPartOfCompilation();
             depth++;
 
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
@@ -930,6 +937,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private Object readObject(int type, AddRefAndReturn addRef) throws NumberFormatException {
+            CompilerAsserts.neverPartOfCompilation();
             switch (type) {
                 case TYPE_NULL:
                     return null;
@@ -994,10 +1002,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     readArray(listItems);
                     return list;
                 case TYPE_DICT:
-                    HashingStorage store = PDict.createNewStorage(false, 0);
+                    HashingStorage store = PDict.createNewStorage(0);
                     PDict dict = factory.createDict(store);
                     addRef.run(dict);
-                    HashingStorageLibrary dictLib = HashingStorageLibrary.getUncached();
                     while (true) {
                         Object key = readObject();
                         if (key == null) {
@@ -1005,7 +1012,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         }
                         Object value = readObject();
                         if (value != null) {
-                            store = dictLib.setItem(store, key, value);
+                            store = HashingStorageSetItem.executeUncached(store, key, value);
                         }
                     }
                     dict.setDictStorage(store);
@@ -1021,13 +1028,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         set = factory.createSet(setStore);
                     }
                     addRef.run(set);
-                    HashingStorageLibrary setLib = HashingStorageLibrary.getFactory().getUncached(setStore);
                     for (int i = 0; i < setSz; i++) {
                         Object key = readObject();
                         if (key == null) {
                             throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
                         }
-                        setStore = setLib.setItem(setStore, key, PNone.NO_VALUE);
+                        setStore = HashingStorageSetItem.executeUncached(setStore, key, PNone.NO_VALUE);
                     }
                     set.setDictStorage(setStore);
                     return set;

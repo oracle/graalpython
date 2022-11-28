@@ -21,6 +21,10 @@
 *graalpython.lib-python.3.test.test_textwrap.LongWordTestCase.test_break_long
 *graalpython.lib-python.3.test.test_textwrap.LongWordTestCase.test_max_lines_long
 *graalpython.lib-python.3.test.test_textwrap.LongWordTestCase.test_nobreak_long
+*graalpython.lib-python.3.test.test_textwrap.LongWordWithHyphensTestCase.test_break_long_words_not_on_hyphen
+*graalpython.lib-python.3.test.test_textwrap.LongWordWithHyphensTestCase.test_break_long_words_on_hyphen
+*graalpython.lib-python.3.test.test_textwrap.LongWordWithHyphensTestCase.test_break_on_hyphen_but_not_long_words
+*graalpython.lib-python.3.test.test_textwrap.LongWordWithHyphensTestCase.test_do_not_break_long_words_or_on_hyphens
 *graalpython.lib-python.3.test.test_textwrap.MaxLinesTestCase.test_placeholder
 *graalpython.lib-python.3.test.test_textwrap.MaxLinesTestCase.test_placeholder_backtrack
 *graalpython.lib-python.3.test.test_textwrap.MaxLinesTestCase.test_simple

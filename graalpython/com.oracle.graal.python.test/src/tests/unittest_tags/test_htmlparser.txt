@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_attr_nonascii
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_attr_syntax
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_attr_values
+*graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_comma_between_attributes
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_end_tag_in_attribute_value
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_entities_in_attribute_value
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_entityrefs_in_attributes
@@ -12,6 +13,8 @@
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_malformed_adjacent_attributes
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_malformed_attributes
 *graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_missing_attribute_value
+*graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_weird_chars_in_unquoted_attribute_values
+*graalpython.lib-python.3.test.test_htmlparser.AttributesTestCase.test_with_unquoted_attributes
 *graalpython.lib-python.3.test.test_htmlparser.HTMLParserTestCase.test_EOF_in_charref
 *graalpython.lib-python.3.test.test_htmlparser.HTMLParserTestCase.test_bad_nesting
 *graalpython.lib-python.3.test.test_htmlparser.HTMLParserTestCase.test_bare_ampersands

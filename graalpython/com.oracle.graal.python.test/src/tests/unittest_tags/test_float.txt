@@ -13,8 +13,10 @@
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_float_with_comma
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_floatasratio
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_floatconversion
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_hash
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_is_integer
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_keyword_args
+*graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_noargs
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_non_numeric_input_types
 *graalpython.lib-python.3.test.test_float.GeneralFloatCases.test_underscores
 *graalpython.lib-python.3.test.test_float.HexFloatTestCase.test_ends

@@ -45,11 +45,16 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.MapNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.dict.PHashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -66,6 +71,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -75,7 +81,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -137,8 +143,6 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             PArray array = self.array;
             if (self.getIndex() < array.getLength()) {
-                // TODO avoid boxing by getting the array's typecode and using primitive return
-                // types
                 return itemTypeProfile.profile(getValueNode.execute(array, self.index++));
             }
             return stopIteration(self);
@@ -194,19 +198,6 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PBaseSetIterator self,
-                        @Cached ConditionProfile sizeChanged,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLibrary) {
-            if (self.hasNext()) {
-                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
-                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "Set");
-                }
-                return self.next();
-            }
-            return stopIteration(self);
-        }
-
-        @Specialization(guards = "!self.isExhausted()")
         Object next(PStringIterator self,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode) {
@@ -216,21 +207,22 @@ public class IteratorBuiltins extends PythonBuiltins {
             return stopIteration(self);
         }
 
-        @TruffleBoundary
-        private Object nextDictValue(PDictView.PBaseDictIterator<?> self) {
-            return self.next(factory());
-        }
-
         @Specialization(guards = "!self.isExhausted()")
-        Object next(PDictView.PBaseDictIterator<?> self,
+        Object nextHashingStorageIter(PHashingStorageIterator self,
                         @Cached ConditionProfile sizeChanged,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary storageLibrary,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached HashingStorageIteratorNext nextNode,
+                        @Cached PHashingStorageIteratorNextValue itValueNode,
                         @Shared("next") @Cached ConditionProfile profile) {
-            if (profile.profile(self.hasNext())) {
-                if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
-                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
+            HashingStorage storage = self.getHashingStorage();
+            final HashingStorageIterator it = self.getIterator();
+            if (profile.profile(nextNode.execute(storage, it))) {
+                if (sizeChanged.profile(self.checkSizeChanged(lenNode))) {
+                    String name = PBaseSetIterator.isInstance(self) ? "Set" : "dictionary";
+                    throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, name);
                 }
-                return nextDictValue(self);
+                self.index++;
+                return itValueNode.execute(self, storage, it);
             }
             return stopIteration(self);
         }
@@ -255,6 +247,36 @@ public class IteratorBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 e.expectIndexError(profile);
                 return stopIteration(self);
+            }
+        }
+
+        abstract static class PHashingStorageIteratorNextValue extends Node {
+            abstract Object execute(PHashingStorageIterator pyIter, HashingStorage storage, HashingStorageIterator it);
+
+            @Specialization
+            Object doDictValue(@SuppressWarnings("unused") PDictView.PDictValueIterator self, HashingStorage storage, HashingStorageIterator it,
+                            @Shared("val") @Cached HashingStorageIteratorValue itValueNode) {
+                return itValueNode.execute(storage, it);
+            }
+
+            @Specialization
+            Object doDictKey(@SuppressWarnings("unused") PDictView.PDictKeyIterator self, HashingStorage storage, HashingStorageIterator it,
+                            @Shared("key") @Cached HashingStorageIteratorKey itKeyNode) {
+                return itKeyNode.execute(storage, it);
+            }
+
+            @Specialization
+            PTuple doDictItem(@SuppressWarnings("unused") PDictView.PDictItemIterator self, HashingStorage storage, HashingStorageIterator it,
+                            @Shared("val") @Cached HashingStorageIteratorValue itValueNode,
+                            @Shared("key") @Cached HashingStorageIteratorKey itKeyNode,
+                            @Cached PythonObjectFactory factory) {
+                return factory.createTuple(new Object[]{itKeyNode.execute(storage, it), itValueNode.execute(storage, it)});
+            }
+
+            @Specialization
+            Object doSetKey(@SuppressWarnings("unused") PBaseSetIterator self, HashingStorage storage, HashingStorageIterator it,
+                            @Shared("key") @Cached HashingStorageIteratorKey itKeyNode) {
+                return itKeyNode.execute(storage, it);
             }
         }
     }
@@ -282,11 +304,11 @@ public class IteratorBuiltins extends PythonBuiltins {
             return self.array.getLength() - self.getIndex();
         }
 
-        @Specialization(guards = "!self.isExhausted()", limit = "2")
-        public static int lengthHint(@SuppressWarnings({"unused"}) VirtualFrame frame, PDictView.PBaseDictIterator<?> self,
-                        @CachedLibrary("self.getHashingStorage()") HashingStorageLibrary hlib,
+        @Specialization(guards = "!self.isExhausted()")
+        public static int lengthHint(@SuppressWarnings({"unused"}) VirtualFrame frame, PDictView.PBaseDictIterator self,
+                        @Cached HashingStorageLen lenNode,
                         @Cached ConditionProfile profile) {
-            if (profile.profile(self.checkSizeChanged(hlib))) {
+            if (profile.profile(self.checkSizeChanged(lenNode))) {
                 return 0;
             }
             return self.getSize() - self.getIndex();
@@ -326,12 +348,12 @@ public class IteratorBuiltins extends PythonBuiltins {
             return len < 0 ? 0 : len;
         }
 
-        @Specialization(guards = "!self.isExhausted()", limit = "1")
+        @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PBaseSetIterator self,
-                        @CachedLibrary("self.getSet().getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached HashingStorageLen lenNode,
                         @Cached ConditionProfile profile) {
             int size = self.getSize();
-            final int lenSet = hlib.length(self.getSet().getDictStorage());
+            final int lenSet = lenNode.execute(self.getHashingStorage());
             if (profile.profile(lenSet != size)) {
                 return 0;
             }
@@ -378,26 +400,13 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object reduce(VirtualFrame frame, PBaseSetIterator self,
+        public Object reduce(VirtualFrame frame, PHashingStorageIterator self,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode) {
             int index = self.index;
             boolean isExhausted = self.isExhausted();
+            int state = self.getIterator().getState();
             PList list = factory().createList(storageNode.execute(frame, self));
-            self.setExhausted(isExhausted);
-            self.index = index;
-            return reduceInternal(frame, list, self.getIndex(), PythonContext.get(this));
-        }
-
-        @Specialization
-        public Object reduce(VirtualFrame frame, PDictView.PBaseDictIterator<?> self,
-                        @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
-                        @Cached MapNodes.GetIteratorState getState,
-                        @Cached MapNodes.SetIteratorState setState) {
-            int index = self.index;
-            boolean isExhausted = self.isExhausted();
-            int state = getState.execute(self.getIterator());
-            PList list = factory().createList(storageNode.execute(frame, self));
-            setState.execute(self.getIterator(), state);
+            self.getIterator().setState(state);
             self.setExhausted(isExhausted);
             self.index = index;
             return reduceInternal(frame, list, PythonContext.get(this));

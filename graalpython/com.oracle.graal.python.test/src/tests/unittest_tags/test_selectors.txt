@@ -58,6 +58,7 @@
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_close
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_context_manager
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_empty_select
+*graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_empty_select_timeout
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_fileno
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_get_key
 *graalpython.lib-python.3.test.test_selectors.KqueueSelectorTestCase.test_get_map

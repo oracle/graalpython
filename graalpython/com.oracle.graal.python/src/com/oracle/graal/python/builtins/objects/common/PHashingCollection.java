@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.truffle.api.object.Shape;
@@ -62,17 +60,5 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
     public final void setDictStorage(HashingStorage storage) {
         assert storage == this.storage || !(this instanceof PFrozenSet) : "frozenSet is unmodifiable";
         this.storage = storage;
-    }
-
-    public HashingStorageIterable<Object> items() {
-        return HashingStorageLibrary.getUncached().values(getDictStorage());
-    }
-
-    public HashingStorageIterable<Object> keys() {
-        return HashingStorageLibrary.getUncached().keys(getDictStorage());
-    }
-
-    public HashingStorageIterable<DictEntry> entries() {
-        return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
 }

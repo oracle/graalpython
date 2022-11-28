@@ -43,7 +43,9 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -66,7 +68,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -334,7 +335,7 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageDelItem delHashingStorageItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
             // refresh the values.
@@ -350,20 +351,7 @@ public abstract class MaterializeFrameNode extends Node {
                         setItemNode.execute(frame, localsDict, identifier, resolveCellValue(profiles[slot], value));
                     } else {
                         // delete variable
-                        HashingStorage storage = localsDict.getDictStorage();
-                        HashingStorage newStore = null;
-                        // TODO: FIXME: this might call __hash__ twice
-                        boolean hasKey = lib.hasKeyWithFrame(storage, identifier, hasFrame, frame);
-                        if (hasKey) {
-                            newStore = lib.delItemWithFrame(storage, identifier, hasFrame, frame);
-                        }
-
-                        if (hasKey) {
-                            if (newStore != storage) {
-                                updatedStorage.enter();
-                                localsDict.setDictStorage(newStore);
-                            }
-                        }
+                        delHashingStorageItem.execute(frame, localsDict.getDictStorage(), identifier, localsDict);
                     }
                 }
             }
@@ -374,7 +362,7 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageDelItem delHashingStorageItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
             // refresh the values.
@@ -391,21 +379,7 @@ public abstract class MaterializeFrameNode extends Node {
                         setItemNode.execute(frame, localsDict, identifier, resolveCellValue(ConditionProfile.getUncached(), value));
                     } else {
                         // delete variable
-                        HashingStorage storage = localsDict.getDictStorage();
-                        Object key = identifier;
-                        HashingStorage newStore = null;
-                        // TODO: FIXME: this might call __hash__ twice
-                        boolean hasKey = lib.hasKeyWithFrame(storage, key, hasFrame, frame);
-                        if (hasKey) {
-                            newStore = lib.delItemWithFrame(storage, key, hasFrame, frame);
-                        }
-
-                        if (hasKey) {
-                            if (newStore != storage) {
-                                updatedStorage.enter();
-                                localsDict.setDictStorage(newStore);
-                            }
-                        }
+                        delHashingStorageItem.execute(frame, localsDict.getDictStorage(), identifier, localsDict);
                     }
                 }
             }
@@ -464,7 +438,9 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
             // refresh the values.
@@ -475,7 +451,7 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
-                syncDict(frame, slot, info, frameToSync, localsDict, lib, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
             }
         }
 
@@ -490,7 +466,9 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
             // refresh the values.
@@ -501,7 +479,7 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
-                syncDict(frame, slot, info, frameToSync, localsDict, lib, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
             }
         }
 
@@ -510,7 +488,9 @@ public abstract class MaterializeFrameNode extends Node {
         static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached BranchProfile updatedStorage,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
             // refresh the values.
@@ -521,7 +501,7 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = ConditionProfile.getUncached();
-                syncDict(frame, slot, info, frameToSync, localsDict, lib, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
             }
         }
 
@@ -531,7 +511,8 @@ public abstract class MaterializeFrameNode extends Node {
             // nothing to do; we already worked on the custom object
         }
 
-        private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict, HashingStorageLibrary lib,
+        private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict,
+                        HashingStorageGetItem getItem, HashingStorageSetItem setItem, HashingStorageDelItem delItem,
                         ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
             TruffleString identifier = info.getVariableName(slot);
@@ -541,22 +522,14 @@ public abstract class MaterializeFrameNode extends Node {
             }
             HashingStorage newStore;
             if (value != null) {
-                newStore = lib.setItemWithFrame(storage, identifier, value, hasFrame, frame);
+                newStore = setItem.execute(frame, storage, identifier, value);
                 if (newStore != storage) {
                     updatedStorage.enter();
                     localsDict.setDictStorage(newStore);
                 }
             } else {
                 // delete variable
-                // TODO: FIXME: this might call __hash__ twice
-                boolean hasKey = lib.hasKeyWithFrame(storage, identifier, hasFrame, frame);
-                if (hasKey) {
-                    newStore = lib.delItemWithFrame(storage, identifier, hasFrame, frame);
-                    if (newStore != storage) {
-                        updatedStorage.enter();
-                        localsDict.setDictStorage(newStore);
-                    }
-                }
+                delItem.execute(frame, storage, identifier, localsDict);
             }
         }
 

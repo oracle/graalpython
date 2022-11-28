@@ -85,7 +85,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectS
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -261,7 +261,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             CDataObject result = atAddress.execute(type, buffer, offset, factory());
 
-            keepRefNode.execute(result, -1, buffer, factory());
+            keepRefNode.execute(frame, result, -1, buffer, factory());
 
             return result;
         }
@@ -468,7 +468,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             /*
              * If KeepRef fails, we are stumped. The dst memory block has already been changed
              */
-            keepRefNode.execute(dst, index, result, factory);
+            keepRefNode.execute(frame, dst, index, result, factory);
         }
 
         /*
@@ -591,7 +591,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     protected abstract static class KeepRefNode extends PNodeWithRaise {
 
-        abstract void execute(CDataObject target, int index, Object keep, PythonObjectFactory factory);
+        abstract void execute(VirtualFrame frame, CDataObject target, int index, Object keep, PythonObjectFactory factory);
 
         @Specialization
         @SuppressWarnings("unused")
@@ -600,11 +600,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(keep)")
-        void KeepRef(CDataObject target, int index, Object keep, PythonObjectFactory factory,
+        void KeepRef(VirtualFrame frame, CDataObject target, int index, Object keep, PythonObjectFactory factory,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageSetItem setItem) {
             CDataObject ob = PyCData_GetContainer(target, factory);
             if (!PGuards.isDict(ob.b_objects)) {
                 ob.b_objects = keep; /* refcount consumed */
@@ -612,7 +612,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             }
             PDict dict = (PDict) ob.b_objects;
             Object key = unique_key(target, index, getRaiseNode(), appendStringNode, toStringNode, fromJavaStringNode);
-            dict.setDictStorage(lib.setItem(dict.getDictStorage(), key, keep));
+            dict.setDictStorage(setItem.execute(frame, dict.getDictStorage(), key, keep));
         }
     }
 

@@ -50,8 +50,8 @@ import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CDATA_INSTANC
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_BE_A_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEW__;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.nodes.StringLiterals.T_AMPERSAND;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -68,7 +68,9 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -88,7 +90,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -113,7 +114,8 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached IsTypeNode isTypeNode,
@@ -135,7 +137,8 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             stgdict.flags |= TYPEFLAG_ISPOINTER;
 
             PDict typedict = (PDict) args[2];
-            Object proto = hlib.getItem(typedict.getDictStorage(), T__TYPE_); /* Borrowed ref */
+            // Borrowed ref:
+            Object proto = getItem.execute(typedict.getDictStorage(), T__TYPE_);
             if (proto != null) {
                 PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
@@ -163,7 +166,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
             setDict.execute((PythonObject) result, stgdict);
 
             return result;
@@ -236,12 +239,12 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCPointerType_set_type(Object self, TruffleString type,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageSetItem setItem,
                         @Cached IsTypeNode isTypeNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(self, getRaiseNode());
             PyCPointerType_SetProto(dict, type, isTypeNode, pyTypeStgDictNode, getRaiseNode());
-            hlib.setItem(dict.getDictStorage(), T__TYPE_, type);
+            dict.setDictStorage(setItem.execute(dict.getDictStorage(), T__TYPE_, type));
             return PNone.NONE;
         }
 

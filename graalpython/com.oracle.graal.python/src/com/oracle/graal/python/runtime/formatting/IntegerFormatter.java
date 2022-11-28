@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -651,12 +651,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
         @Override
         void format_i(BigInteger value) {
-            format_n(value);
+            format_d(value);
         }
 
         @Override
         void format_i(int value) {
-            format_n(value);
+            format_d(value);
         }
 
         /**

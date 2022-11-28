@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_urllib.PathName2URLTests.test_simple_compare
 *graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_basic
 *graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_ntpath
+*graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_prefixes
 *graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_quoting
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_getproxies_environment_keep_no_proxies
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_proxy_bypass_environment_always_match
@@ -39,6 +40,7 @@
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_mixed_case
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_parts
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_plus
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_with_bytes_input
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_doseq
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_empty_sequence
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_nonstring_seq_values
@@ -62,6 +64,7 @@
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_fileno
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_getcode
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_geturl
+*graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_headers
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_info
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_interface
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_iter
@@ -69,6 +72,8 @@
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_readline
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_readlines
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_relativelocalfile
+*graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_status
+*graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_url
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_URLopener_deprecation
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_cafile_and_context
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_empty_socket

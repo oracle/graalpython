@@ -61,7 +61,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -83,7 +84,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtrType)
@@ -121,7 +121,8 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached PyCallableCheckNode callableCheck,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
 
             stgdict.paramfunc = CArgObjectBuiltins.PyCFuncPtrTypeParamFunc;
@@ -142,7 +143,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
-            stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+            addAllToOtherNode.execute(frame, resDict.getDictStorage(), stgdict);
             setDict.execute((PythonObject) result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
@@ -150,14 +151,14 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             stgdict.setfunc = FieldSet.nil;
             stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
-            Object ob = hlib.getItem(stgdict.getDictStorage(), T_FLAGS_);
+            Object ob = getItem.execute(stgdict.getDictStorage(), T_FLAGS_);
             if (!PGuards.isInteger(ob)) {
                 throw raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
             stgdict.flags = asNumber.execute(ob) | TYPEFLAG_ISPOINTER;
 
             /* _argtypes_ is optional... */
-            ob = hlib.getItem(stgdict.getDictStorage(), T_ARGTYPES_);
+            ob = getItem.execute(stgdict.getDictStorage(), T_ARGTYPES_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
                     throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
@@ -168,7 +169,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                 stgdict.converters = converters;
             }
 
-            ob = hlib.getItem(stgdict.getDictStorage(), T_RESTYPE_);
+            ob = getItem.execute(stgdict.getDictStorage(), T_RESTYPE_);
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(ob);
                 if (dict == null && !callableCheck.execute(ob)) {

@@ -108,7 +108,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         Object result = setFuncNode.execute(frame, dict.setfunc, self.b_ptr, value, dict.size);
 
         /* consumes the refcount the setfunc returns */
-        keepRefNode.execute(self, 0, result, factory);
+        keepRefNode.execute(frame, self, 0, result, factory);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)

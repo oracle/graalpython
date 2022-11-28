@@ -1,3 +1,7 @@
+*graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_crcrcrlf
+*graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_crcrcrlf2
+*graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_crcrlf
+*graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_crlf
 *graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_default_coding
 *graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_double_coding_line
 *graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_double_coding_same_line
@@ -8,6 +12,10 @@
 *graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_third_coding_line
 *graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_utf8_bom
 *graalpython.lib-python.3.test.test_source_encoding.BytesSourceEncodingTest.test_utf8_bom_and_utf8_coding_line
+*graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_crcrcrlf
+*graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_crcrcrlf2
+*graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_crcrlf
+*graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_crlf
 *graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_default_coding
 *graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_double_coding_line
 *graalpython.lib-python.3.test.test_source_encoding.FileSourceEncodingTest.test_double_coding_same_line

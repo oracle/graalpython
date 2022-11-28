@@ -94,7 +94,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.FindLineEndingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
@@ -124,7 +124,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -611,7 +610,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 4) {
                 return notTuple(self, state);
@@ -655,7 +654,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                  * seems more practical to just update it.
                  */
                 PDict dict = getDict.execute(self);
-                hlib.addAllToOther(((PDict) array[3]).getDictStorage(), dict.getDictStorage());
+                addAllToOtherNode.execute(frame, ((PDict) array[3]).getDictStorage(), dict.getDictStorage());
             }
 
             return PNone.NONE;

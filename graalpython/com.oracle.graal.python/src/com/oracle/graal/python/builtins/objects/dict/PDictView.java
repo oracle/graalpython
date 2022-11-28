@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,9 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PDictView extends PythonBuiltinObject {
@@ -69,25 +65,10 @@ public abstract class PDictView extends PythonBuiltinObject {
         return name;
     }
 
-    public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
+    public abstract static class PBaseDictIterator extends PHashingStorageIterator {
 
-        protected final HashingStorage hashingStorage;
-
-        public PBaseDictIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int initialSize) {
-            super(clazz, instanceShape, iterator, initialSize);
-            this.hashingStorage = hashingStorage;
-        }
-
-        public HashingStorage getHashingStorage() {
-            return hashingStorage;
-        }
-
-        public Object next(@SuppressWarnings("unused") PythonObjectFactory factory) {
-            return this.next();
-        }
-
-        public final boolean checkSizeChanged(HashingStorageLibrary lib) {
-            return lib.length(hashingStorage) != size;
+        public PBaseDictIterator(Object clazz, Shape instanceShape, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, hashingStorage, iterator, initialSize);
         }
     }
 
@@ -96,8 +77,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictKeyIterator extends PBaseDictIterator<Object> {
-        public PDictKeyIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+    public static final class PDictKeyIterator extends PBaseDictIterator {
+        public PDictKeyIterator(Object clazz, Shape instanceShape, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
     }
@@ -114,8 +95,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the values
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictValueIterator extends PBaseDictIterator<Object> {
-        public PDictValueIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+    public static final class PDictValueIterator extends PBaseDictIterator {
+        public PDictValueIterator(Object clazz, Shape instanceShape, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
     }
@@ -132,20 +113,9 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the items
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public static final class PDictItemIterator extends PBaseDictIterator<DictEntry> {
-        public PDictItemIterator(Object clazz, Shape instanceShape, HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
+    public static final class PDictItemIterator extends PBaseDictIterator {
+        public PDictItemIterator(Object clazz, Shape instanceShape, HashingStorageNodes.HashingStorageIterator iterator, HashingStorage hashingStorage, int initialSize) {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
-        }
-
-        @TruffleBoundary
-        private DictEntry nextVal() {
-            return (DictEntry) super.next();
-        }
-
-        @Override
-        public Object next(PythonObjectFactory factory) {
-            DictEntry value = nextVal();
-            return factory.createTuple(new Object[]{value.getKey(), value.getValue()});
         }
     }
 

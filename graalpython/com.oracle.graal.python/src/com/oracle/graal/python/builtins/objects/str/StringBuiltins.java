@@ -98,7 +98,13 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -168,7 +174,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -996,7 +1001,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(to)")
         @SuppressWarnings("unused")
-        PDict doString(Object cls, Object from, Object to, Object z,
+        PDict doString(VirtualFrame frame, Object cls, Object from, Object to, Object z,
                         @Cached CastToTruffleStringCheckedNode castFromNode,
                         @Cached CastToTruffleStringCheckedNode castToNode,
                         @Cached CastToTruffleStringCheckedNode castZNode,
@@ -1004,7 +1009,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached ConditionProfile hasZProfile,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @Cached HashingStorageSetItem setHashingStorageItem) {
 
             TruffleString toStr = castToNode.cast(to, ErrorMessages.ARG_S_MUST_BE_S_NOT_P, "2", "str", to);
             TruffleString fromStr = castFromNode.cast(from, ErrorMessages.FIRST_MAKETRANS_ARGS_MUST_BE_A_STR);
@@ -1018,21 +1023,21 @@ public final class StringBuiltins extends PythonBuiltins {
             if (toLen != fromLen) {
                 throw raise(ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
             }
-            HashingStorage storage = PDict.createNewStorage(false, fromLen);
+            HashingStorage storage = PDict.createNewStorage(fromLen);
             TruffleStringIterator fromIt = createCodePointIteratorNode.execute(fromStr, TS_ENCODING);
             TruffleStringIterator toIt = createCodePointIteratorNode.execute(toStr, TS_ENCODING);
             while (fromIt.hasNext()) {
                 assert toIt.hasNext();
                 int key = nextNode.execute(fromIt);
                 int value = nextNode.execute(toIt);
-                storage = lib.setItem(storage, key, value);
+                storage = setHashingStorageItem.execute(frame, storage, key, value);
             }
             assert !toIt.hasNext();
             if (hasZ) {
                 TruffleStringIterator zIt = createCodePointIteratorNode.execute(zString, TS_ENCODING);
                 while (zIt.hasNext()) {
                     int key = nextNode.execute(zIt);
-                    storage = lib.setItem(storage, key, PNone.NONE);
+                    storage = setHashingStorageItem.execute(frame, storage, key, PNone.NONE);
                 }
             }
             return factory().createDict(storage);
@@ -1045,19 +1050,27 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringCheckedNode cast,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterHasNext,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue) {
             HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
-            HashingStorage destStorage = PDict.createNewStorage(false, hlib.length(srcStorage));
-            for (HashingStorage.DictEntry entry : hlib.entries(srcStorage)) {
-                if (PGuards.isInteger(entry.key) || PGuards.isPInt(entry.key)) {
-                    destStorage = hlib.setItem(destStorage, entry.key, entry.value);
+            HashingStorage destStorage = PDict.createNewStorage(lenNode.execute(srcStorage));
+            HashingStorageIterator it = getIter.execute(srcStorage);
+            while (iterHasNext.execute(srcStorage, it)) {
+                Object currentKey = iterKey.execute(srcStorage, it);
+                Object currentValue = iterValue.execute(srcStorage, it);
+                if (PGuards.isInteger(currentKey) || PGuards.isPInt(currentKey)) {
+                    destStorage = setHashingStorageItem.execute(frame, destStorage, currentKey, currentValue);
                 } else {
-                    TruffleString strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
+                    TruffleString strKey = cast.cast(currentKey, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
                     if (codePointLengthNode.execute(strKey, TS_ENCODING) != 1) {
                         throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     int codePoint = codePointAtIndexNode.execute(strKey, 0, TS_ENCODING);
-                    destStorage = hlib.setItem(destStorage, codePoint, entry.value);
+                    destStorage = setHashingStorageItem.execute(frame, destStorage, codePoint, currentValue);
                 }
             }
             return factory().createDict(destStorage);

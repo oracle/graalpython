@@ -78,8 +78,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -231,7 +231,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.callable = callable;
             self.thunk = thunk;
             self.b_ptr = PtrValue.object(thunk.pcl_exec);
-
+            
             keepRefNode.execute(self, 0, thunk, factory());
             return self;
             */
@@ -269,9 +269,9 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             /*- TODO
             int nArgs = converters.length;
             CThunkObject p = CThunkObject_new(nArgs);
-
+            
             p.pcl_write = ffi_closure_alloc(sizeof(ffi_closure), p.pcl_exec);
-
+            
             p.flags = flags;
             int i;
             for (i = 0; i < nArgs; ++i) {
@@ -279,7 +279,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 p.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
             }
             p.atypes[i] = null;
-
+            
             p.restype = restype;
             if (restype == PNone.NONE) {
                 p.setfunc = FieldSet.nil;
@@ -292,7 +292,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 p.setfunc = dict.setfunc;
                 p.ffi_restype = dict.ffi_type_pointer;
             }
-
+            
             ffi_abi cc = FFI_DEFAULT_ABI;
             int result = ffi_prep_cif(p.cif, cc, nArgs, _ctypes_get_ffi_type(restype, pyTypeStgDictNode), p.atypes);
             if (result != FFI_OK) {
@@ -302,7 +302,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             if (result != FFI_OK) {
                 throw raise(RuntimeError, FFI_PREP_CLOSURE_FAILED_WITH_D, result);
             }
-
+            
             p.converters = converters;
             p.callable = callable;
             return p;
@@ -795,7 +795,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             self.paramflags = paramflags;
 
             self.b_ptr = PtrValue.nativePointer(address); // TODO
-            keepRefNode.execute(self, 0, dll, factory);
+            keepRefNode.execute(frame, self, 0, dll, factory);
 
             self.callable = self;
             return self;

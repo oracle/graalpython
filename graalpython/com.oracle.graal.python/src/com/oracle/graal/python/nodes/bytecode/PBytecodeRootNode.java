@@ -5351,7 +5351,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case CollectionBits.KIND_SET: {
                 SetBuiltins.UpdateSingleNode updateNode = insertChildNode(localNodes, nodeIndex, UNCACHED_SET_UPDATE, SetBuiltinsFactory.UpdateSingleNodeGen.class, NODE_SET_UPDATE, useCachedNodes);
                 PSet set = (PSet) collection1;
-                set.setDictStorage(updateNode.execute(virtualFrame, set.getDictStorage(), collection2));
+                updateNode.execute(virtualFrame, set, collection2);
                 result = set;
                 break;
             }

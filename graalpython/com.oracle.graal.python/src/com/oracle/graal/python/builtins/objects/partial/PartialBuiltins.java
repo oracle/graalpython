@@ -64,7 +64,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -101,10 +107,10 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPartial)
 public class PartialBuiltins extends PythonBuiltins {
@@ -217,7 +223,7 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached TupleBuiltins.GetItemNode getItemNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Cached HashingStorageCopy copyStorageNode) {
             if (state.getSequenceStorage().length() != 4) {
                 throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
@@ -247,7 +253,7 @@ public class PartialBuiltins extends PythonBuiltins {
             if (fnKwargs == PNone.NONE) {
                 fnKwargsDict = factory().createDict();
             } else if (!dictCheckExactNode.execute(fnKwargs)) {
-                fnKwargsDict = factory().createDict(lib.copy(getHashingStorageNode.execute(frame, fnKwargs)));
+                fnKwargsDict = factory().createDict(copyStorageNode.execute(getHashingStorageNode.execute(frame, fnKwargs)));
             } else {
                 fnKwargsDict = (PDict) fnKwargs;
             }
@@ -286,31 +292,31 @@ public class PartialBuiltins extends PythonBuiltins {
             return keywords.length > 0;
         }
 
-        @Specialization(guards = "!self.hasKw(lib)")
+        @Specialization(guards = "!self.hasKw(lenNode)")
         Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, keywords);
         }
 
-        @Specialization(guards = {"self.hasKw(lib)", "!withKeywords(keywords)"})
+        @Specialization(guards = {"self.hasKw(lenNode)", "!withKeywords(keywords)"})
         Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached ExpandKeywordStarargsNode starargsNode,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(self.getKw()));
         }
 
-        @Specialization(guards = {"self.hasKw(lib)", "withKeywords(keywords)"})
+        @Specialization(guards = {"self.hasKw(lenNode)", "withKeywords(keywords)"})
         Object callWDictWKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Cached ExpandKeywordStarargsNode starargsNode,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Cached HashingStorageLen lenNode) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
 
             final PKeyword[] pKeywords = starargsNode.execute(self.getKw());
@@ -344,12 +350,15 @@ public class PartialBuiltins extends PythonBuiltins {
         }
 
         private static void reprKwArgs(VirtualFrame frame, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode, PyObjectStrAsTruffleStringNode strNode,
-                        HashingStorageLibrary lib, TruffleStringBuilder.AppendStringNode appendStringNode) {
+                        HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageIteratorNext, HashingStorageIteratorKey hashingStorageIteratorKey,
+                        HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
             final PDict kwDict = partial.getKw();
             if (kwDict != null) {
-                final HashingStorage storage = kwDict.getDictStorage();
-                for (Object key : lib.keys(storage)) {
-                    final Object value = lib.getItem(storage, key);
+                HashingStorage storage = kwDict.getDictStorage();
+                HashingStorageIterator it = getHashingStorageIterator.execute(storage);
+                while (hashingStorageIteratorNext.execute(storage, it)) {
+                    Object key = hashingStorageIteratorKey.execute(storage, it);
+                    final Object value = getItem.execute(frame, storage, key);
                     appendStringNode.execute(sb, T_COMMA_SPACE);
                     appendStringNode.execute(sb, strNode.execute(frame, key));
                     appendStringNode.execute(sb, T_EQ);
@@ -365,7 +374,10 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached GetClassNode classNode,
                         @Cached TypeNodes.GetNameNode nameNode,
                         @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetIterator getHashingStorageIterator,
+                        @Cached HashingStorageIteratorNext hashingStorageIteratorNext,
+                        @Cached HashingStorageIteratorKey hashingStorageIteratorKey,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             final Object cls = classNode.execute(partial);
@@ -380,7 +392,9 @@ public class PartialBuiltins extends PythonBuiltins {
                 appendStringNode.execute(sb, T_LPAREN);
                 appendStringNode.execute(sb, reprNode.execute(frame, partial.getFn()));
                 reprArgs(frame, partial, sb, reprNode, appendStringNode);
-                reprKwArgs(frame, partial, sb, reprNode, strNode, lib, appendStringNode);
+                reprKwArgs(frame, partial, sb, reprNode, strNode,
+                                getHashingStorageIterator, hashingStorageIteratorNext, hashingStorageIteratorKey,
+                                getItem, appendStringNode);
                 appendStringNode.execute(sb, T_RPAREN);
                 return toStringNode.execute(sb);
             } finally {

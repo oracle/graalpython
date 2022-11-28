@@ -46,8 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -64,9 +63,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -160,28 +156,13 @@ public abstract class SetNodes {
 
         public abstract boolean execute(VirtualFrame frame, PSet self, Object key);
 
-        @Specialization(limit = "3")
+        @Specialization
         boolean discard(VirtualFrame frame, PSet self, Object key,
-                        @Cached BranchProfile updatedStorage,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = self.getDictStorage();
-            HashingStorage newStore = null;
-            // TODO: FIXME: this might call __hash__ twice
+                        @Cached HashingStorageDelItem delItem) {
             Object checkedKey = conv.execute(key);
-            boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
-            if (hasKey) {
-                newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
-            }
-
-            if (hasKey) {
-                if (newStore != storage) {
-                    updatedStorage.enter();
-                    self.setDictStorage(newStore);
-                }
-            }
-            return hasKey;
+            Object found = delItem.executePop(frame, self.getDictStorage(), checkedKey, self);
+            return found != null;
         }
     }
 }

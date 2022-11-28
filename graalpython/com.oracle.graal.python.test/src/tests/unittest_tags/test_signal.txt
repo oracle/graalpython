@@ -1,4 +1,6 @@
 *graalpython.lib-python.3.test.test_signal.GenericTests.test_enums
+*graalpython.lib-python.3.test.test_signal.GenericTests.test_functions_module_attr
+*graalpython.lib-python.3.test.test_signal.ItimerTest.test_setitimer_tiny
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_pthread_kill
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_pthread_kill_main_thread
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_pthread_sigmask
@@ -13,6 +15,7 @@
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_sigwait
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_sigwait_thread
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_sigwaitinfo
+*graalpython.lib-python.3.test.test_signal.PidfdSignalTest.test_pidfd_send_signal
 *graalpython.lib-python.3.test.test_signal.PosixTests.test_getsignal
 *graalpython.lib-python.3.test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error
 *graalpython.lib-python.3.test.test_signal.RaiseSignalTest.test_invalid_argument

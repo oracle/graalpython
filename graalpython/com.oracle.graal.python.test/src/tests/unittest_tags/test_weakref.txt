@@ -26,6 +26,7 @@
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_dict_setdefault
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_dict_update
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_iters
+*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_basic_callback
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_basic_proxy
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_basic_ref
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_callback_gcs
@@ -41,6 +42,7 @@
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_equality
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_hashing
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_init
+*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_multiple_callbacks
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_multiple_selfref_callbacks
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_ordering
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_bool
@@ -48,6 +50,9 @@
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_div
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_index
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_iter
+*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_next
+*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_ref
+*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_reversed
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_unicode
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_ref_created_during_del
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_set_callback_attribute

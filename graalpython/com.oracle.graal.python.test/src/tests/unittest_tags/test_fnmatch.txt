@@ -4,9 +4,14 @@
 *graalpython.lib-python.3.test.test_fnmatch.FilterTestCase.test_sep
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_bytes
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_case
+*graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_char_set
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_fnmatch
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_fnmatchcase
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_mix_bytes_str
+*graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_range
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_sep
+*graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_sep_in_char_set
+*graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_sep_in_range
+*graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_slow_fnmatch
 *graalpython.lib-python.3.test.test_fnmatch.FnmatchTestCase.test_warnings
 *graalpython.lib-python.3.test.test_fnmatch.TranslateTestCase.test_translate

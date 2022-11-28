@@ -43,22 +43,27 @@ package com.oracle.graal.python.test.objects;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageForEachNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageGetReverseIteratorNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.MapCursor;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -67,7 +72,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 public class ObjectHashMapTests {
     public static final class DictKey implements TruffleObject {
@@ -162,7 +166,7 @@ public class ObjectHashMapTests {
         testBasics(map);
 
         // Basic tests of other methods
-        Object[] oldKeys = iteratorToArray(map.keys().getIterator());
+        Object[] oldKeys = keysToArray(map);
 
         ObjectHashMap copy = map.copy();
         assertEquals(map.size(), copy.size());
@@ -204,7 +208,7 @@ public class ObjectHashMapTests {
 
     private static void removeAll(ObjectHashMap map) {
         ArrayList<Long> keys = new ArrayList<>();
-        for (Object key : map.keys()) {
+        for (Object key : keysToArray(map)) {
             keys.add((Long) key);
         }
         for (Long key : keys) {
@@ -282,25 +286,42 @@ public class ObjectHashMapTests {
 
         // Using the array of keys/values, check other methods
         List<Object> keysValues = keys.stream().map(ObjectHashMap.DictKey::getValue).collect(Collectors.toList());
-        assertArrayEquals(message, keysValues.toArray(), iteratorToArray(actual.keys().getIterator()));
+        assertArrayEquals(message, keysValues.toArray(), keysToArray(actual));
 
         List<Object> keysValuesReversed = new ArrayList<>(keysValues);
         Collections.reverse(keysValuesReversed);
-        assertArrayEquals(message, keysValuesReversed.toArray(), iteratorToArray(actual.reverseKeys().getIterator()));
+        assertArrayEquals(message, keysValuesReversed.toArray(), reverseKeysToArray(actual));
 
-        actual.forEachUntyped(new ForEachNode<>() {
+        EconomicMapStorage storage = new EconomicMapStorage(actual, false);
+        int[] size = new int[]{0};
+        HashingStorageForEachNodeGen.getUncached().execute(null, storage, new HashingStorageForEachCallback<>() {
             @Override
-            public Object execute(Object key, Object indexObj) {
-                int index = (int) indexObj;
-                assertEquals(message + "; for index " + index, keysValues.get(index), key);
-                return index + 1;
+            public Object execute(Frame frame, HashingStorage s, HashingStorageIterator cbIt, Object accumulator) {
+                Object key = HashingStorageIteratorKey.executeUncached(s, cbIt);
+                assertTrue(key.toString(), expected.containsKey(key));
+                size[0]++;
+                return null;
             }
-        }, 0, LoopConditionProfile.getUncached());
+        }, null);
+        assertEquals(expected.size(), size[0]);
     }
 
-    private static Object[] iteratorToArray(Iterator<Object> iterator) {
-        var spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED);
-        return StreamSupport.stream(spliterator, false).toArray();
+    private static Object[] keysToArray(ObjectHashMap m) {
+        EconomicMapStorage s = new EconomicMapStorage(m, false);
+        return iteratorToArray(s, HashingStorageGetIterator.executeUncached(s));
+    }
+
+    private static Object[] reverseKeysToArray(ObjectHashMap m) {
+        EconomicMapStorage s = new EconomicMapStorage(m, false);
+        return iteratorToArray(s, HashingStorageGetReverseIteratorNodeGen.getUncached().execute(s));
+    }
+
+    private static Object[] iteratorToArray(HashingStorage s, HashingStorageIterator it) {
+        ArrayList<Object> result = new ArrayList<>();
+        while (HashingStorageIteratorNext.executeUncached(s, it)) {
+            result.add(HashingStorageIteratorKey.executeUncached(s, it));
+        }
+        return result.toArray();
     }
 
     private static int valueCounter = 0;
@@ -316,7 +337,7 @@ public class ObjectHashMapTests {
     private static Object get(ObjectHashMap map, Object key, long hash) {
         return ObjectHashMap.GetNode.doGetWithRestart(null, map, key, hash,
                         BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
-                        ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         new EqNodeStub());
     }
 
@@ -331,6 +352,6 @@ public class ObjectHashMapTests {
         ObjectHashMap.PutNode.doPutWithRestart(null, map, key, hash, value,
                         BranchProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
                         ConditionProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
-                        ConditionProfile.getUncached(), new EqNodeStub());
+                        new EqNodeStub());
     }
 }

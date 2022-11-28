@@ -41,15 +41,14 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -61,27 +60,30 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @GenerateUncached
 public abstract class PyDictSetItem extends Node {
+    public static void executeUncached(PDict dict, Object key, Object item) {
+        getUncached().execute(null, dict, key, item);
+    }
+
     public abstract void execute(Frame frame, PDict dict, Object key, Object item);
 
     // We never need a frame for setting string keys
-    @Specialization(limit = "3")
-    static void setItemWithStringKey(@SuppressWarnings("unused") PDict dict, TruffleString key, Object item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib,
-                    @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage updatedStorage = lib.setItem(dictStorage, key, item);
+    @Specialization
+    static void setItemWithStringKey(PDict dict, TruffleString key, Object item,
+                    @Shared("setItem") @Cached HashingStorageSetItem setItem,
+                    @Shared("updateStorage") @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
+        HashingStorage dictStorage = dict.getDictStorage();
+        HashingStorage updatedStorage = setItem.execute(dictStorage, key, item);
         if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }
 
-    @Specialization(replaces = "setItemWithStringKey", limit = "3")
+    @Specialization(replaces = "setItemWithStringKey")
     static void setItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key, Object item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @Cached ConditionProfile frameCondition,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib,
-                    @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage updatedStorage = lib.setItemWithFrame(dictStorage, key, item, frameCondition, frame);
+                    @Shared("setItem") @Cached HashingStorageSetItem setItem,
+                    @Shared("updateStorage") @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
+        HashingStorage dictStorage = dict.getDictStorage();
+        HashingStorage updatedStorage = setItem.execute(frame, dictStorage, key, item);
         if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
@@ -89,10 +91,10 @@ public abstract class PyDictSetItem extends Node {
 
     @Specialization(replaces = "setItemCached")
     static void setItem(PDict dict, Object key, Object item,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                    @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
+                    @Shared("setItem") @Cached HashingStorageSetItem setItem,
+                    @Shared("updateStorage") @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
         HashingStorage dictStorage = dict.getDictStorage();
-        HashingStorage updatedStorage = lib.setItem(dictStorage, key, item);
+        HashingStorage updatedStorage = setItem.execute(null, dictStorage, key, item);
         if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }

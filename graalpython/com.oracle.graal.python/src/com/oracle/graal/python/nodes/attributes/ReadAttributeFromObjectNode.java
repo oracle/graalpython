@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -132,9 +132,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
-                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib) {
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
         // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = hlib.getItem(cachedStorage, key);
+        Object value = getItem.execute(cachedStorage, key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -150,11 +150,13 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected static Object readFromDict(@SuppressWarnings("unused") PythonObject object, Object key,
                     @Shared("getDict") @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(object)") PDict dict,
-                    @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
+                    @Shared("getItem") @Cached HashingStorageGetItem getItem) {
         if (dict == null) {
             return PNone.NO_VALUE;
         }
-        Object value = hlib.getItem(dict.getDictStorage(), key);
+        // Note: we should pass the frame. In theory a subclass of a string may override __hash__ or
+        // __eq__ and run some side effects in there.
+        Object value = getItem.execute(null, dict.getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -174,10 +176,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @SuppressWarnings("unused")
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObjectNode.execute(object)"}, limit = "1")
     protected static PNone readUnboxed(Object object, Object key,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
-                    // We want to share "hlib" with subclasses, this is to make Truffle shut up
-                    // about not being able to share it in the base class
-                    @SuppressWarnings("unused") @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode
+    // We want to share "hlib" with subclasses, this is to make Truffle shut up
+    // about not being able to share it in the base class
+    ) {
         return PNone.NO_VALUE;
     }
 
@@ -190,8 +192,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
                         @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                        @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
-            return readNative(key, getDict.execute(object), hlib);
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+            return readNative(key, getDict.execute(object), getItem);
         }
     }
 
@@ -200,14 +202,14 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
-            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib);
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), getItem);
         }
     }
 
-    private static Object readNative(Object key, Object dict, HashingStorageLibrary hlib) {
+    private static Object readNative(Object key, Object dict, HashingStorageGetItem getItem) {
         if (dict instanceof PHashingCollection) {
-            Object result = hlib.getItem(((PHashingCollection) dict).getDictStorage(), key);
+            Object result = getItem.execute(null, ((PHashingCollection) dict).getDictStorage(), key);
             if (result != null) {
                 return result;
             }

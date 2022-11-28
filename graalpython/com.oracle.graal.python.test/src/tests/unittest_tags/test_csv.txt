@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_csv.KeyOrderingTest.test_ordered_dict_reader
 *graalpython.lib-python.3.test.test_csv.KeyOrderingTest.test_ordering_for_the_dict_reader_and_writer
 *graalpython.lib-python.3.test.test_csv.MiscTestCase.test__all__
+*graalpython.lib-python.3.test.test_csv.MiscTestCase.test_subclassable
 *graalpython.lib-python.3.test.test_csv.TestArrayWrites.test_char_write
 *graalpython.lib-python.3.test.test_csv.TestArrayWrites.test_double_write
 *graalpython.lib-python.3.test.test_csv.TestArrayWrites.test_float_write
@@ -36,12 +37,14 @@
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_incomplete_dialect
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_pickle
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_register_kwargs
+*graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_register_kwargs_override
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_registry
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_registry_badargs
 *graalpython.lib-python.3.test.test_csv.TestDialectRegistry.test_space_dialect
 *graalpython.lib-python.3.test.test_csv.TestDialectUnix.test_simple_reader
 *graalpython.lib-python.3.test.test_csv.TestDialectUnix.test_simple_writer
 *graalpython.lib-python.3.test.test_csv.TestDialectValidity.test_delimiter
+*graalpython.lib-python.3.test.test_csv.TestDialectValidity.test_escapechar
 *graalpython.lib-python.3.test.test_csv.TestDialectValidity.test_invalid_chars
 *graalpython.lib-python.3.test.test_csv.TestDialectValidity.test_lineterminator
 *graalpython.lib-python.3.test.test_csv.TestDialectValidity.test_quoting
@@ -77,6 +80,8 @@
 *graalpython.lib-python.3.test.test_csv.TestSniffer.test_guess_quote_and_delimiter
 *graalpython.lib-python.3.test.test_csv.TestSniffer.test_has_header
 *graalpython.lib-python.3.test.test_csv.TestSniffer.test_has_header_regex_special_delimiter
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_has_header_strings
+*graalpython.lib-python.3.test.test_csv.TestSniffer.test_issue43625
 *graalpython.lib-python.3.test.test_csv.TestSniffer.test_sniff
 *graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_read
 *graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_write
@@ -103,5 +108,6 @@
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_writer_dialect_attrs
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_writer_kw_attrs
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_writerows
+*graalpython.lib-python.3.test.test_csv.Test_Csv.test_writerows_errors
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_writerows_legacy_strings
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_writerows_with_none

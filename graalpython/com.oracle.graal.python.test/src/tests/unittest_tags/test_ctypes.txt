@@ -98,6 +98,9 @@
 *ctypes.test.test_delattr.TestCase.test_chararray
 *ctypes.test.test_delattr.TestCase.test_simple
 *ctypes.test.test_errno.Test.test_GetLastError
+*ctypes.test.test_find.FindLibraryLinux.test_find_library_with_gcc
+*ctypes.test.test_find.FindLibraryLinux.test_find_library_with_ld
+*ctypes.test.test_find.FindLibraryLinux.test_find_on_libpath
 *ctypes.test.test_find.LibPathFindTest.test_find_on_libpath
 *ctypes.test.test_find.Test_OpenGL_libs.test_gl
 *ctypes.test.test_find.Test_OpenGL_libs.test_gle
@@ -222,7 +225,9 @@
 *ctypes.test.test_structures.TestRecursiveStructure.test_contains_itself
 *ctypes.test.test_structures.TestRecursiveStructure.test_vice_versa
 *ctypes.test.test_unicode.StringTestCase.test_buffers
+*ctypes.test.test_unicode.StringTestCase.test_embedded_null
 *ctypes.test.test_unicode.StringTestCase.test_func
+*ctypes.test.test_unicode.UnicodeTestCase.test_embedded_null
 *ctypes.test.test_values.PythonValuesTestCase.test_undefined
 *ctypes.test.test_values.ValuesTestCase.test_undefined
 *ctypes.test.test_varsize_struct.VarSizeTest.test_array_invalid_length

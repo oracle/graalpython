@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "755c0a60ccf52870042dda137d107cc6722374ff",
+                "version": "12a4ec0a36ce6a86cf7ea96283d5bfe7142e7f7e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "755c0a60ccf52870042dda137d107cc6722374ff",
+                "version": "12a4ec0a36ce6a86cf7ea96283d5bfe7142e7f7e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "755c0a60ccf52870042dda137d107cc6722374ff",
+                "version": "12a4ec0a36ce6a86cf7ea96283d5bfe7142e7f7e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -627,8 +627,7 @@ suite = {
                 "BOUNCYCASTLE-PKIX",
                 "XZ-1.8",
                 "truffle:ICU4J",
-                # TODO this fails native image build for some reason
-                # "truffle:ICU4J-CHARSET",
+                "truffle:ICU4J-CHARSET",
             ],
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"

@@ -18,6 +18,7 @@
 *graalpython.lib-python.3.test.test_array.ByteTest.test_delitem
 *graalpython.lib-python.3.test.test_array.ByteTest.test_delslice
 *graalpython.lib-python.3.test.test_array.ByteTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.ByteTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.ByteTest.test_extend
 *graalpython.lib-python.3.test.test_array.ByteTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.ByteTest.test_extended_set_del_slice
@@ -47,6 +48,7 @@
 *graalpython.lib-python.3.test.test_array.ByteTest.test_remove
 *graalpython.lib-python.3.test.test_array.ByteTest.test_repr
 *graalpython.lib-python.3.test.test_array.ByteTest.test_reverse
+*graalpython.lib-python.3.test.test_array.ByteTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.ByteTest.test_setitem
 *graalpython.lib-python.3.test.test_array.ByteTest.test_setslice
 *graalpython.lib-python.3.test.test_array.ByteTest.test_sizeof_with_buffer
@@ -78,6 +80,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_delitem
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_delslice
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_extend
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_extended_set_del_slice
@@ -107,6 +110,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_remove
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_repr
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_reverse
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_setitem
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_setslice
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_sizeof_with_buffer
@@ -136,6 +140,7 @@
 *graalpython.lib-python.3.test.test_array.FloatTest.test_delitem
 *graalpython.lib-python.3.test.test_array.FloatTest.test_delslice
 *graalpython.lib-python.3.test.test_array.FloatTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.FloatTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.FloatTest.test_extend
 *graalpython.lib-python.3.test.test_array.FloatTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.FloatTest.test_extended_set_del_slice
@@ -165,6 +170,7 @@
 *graalpython.lib-python.3.test.test_array.FloatTest.test_remove
 *graalpython.lib-python.3.test.test_array.FloatTest.test_repr
 *graalpython.lib-python.3.test.test_array.FloatTest.test_reverse
+*graalpython.lib-python.3.test.test_array.FloatTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.FloatTest.test_setitem
 *graalpython.lib-python.3.test.test_array.FloatTest.test_setslice
 *graalpython.lib-python.3.test.test_array.FloatTest.test_sizeof_with_buffer
@@ -194,6 +200,7 @@
 *graalpython.lib-python.3.test.test_array.IntTest.test_delitem
 *graalpython.lib-python.3.test.test_array.IntTest.test_delslice
 *graalpython.lib-python.3.test.test_array.IntTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.IntTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.IntTest.test_extend
 *graalpython.lib-python.3.test.test_array.IntTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.IntTest.test_extended_set_del_slice
@@ -223,6 +230,7 @@
 *graalpython.lib-python.3.test.test_array.IntTest.test_remove
 *graalpython.lib-python.3.test.test_array.IntTest.test_repr
 *graalpython.lib-python.3.test.test_array.IntTest.test_reverse
+*graalpython.lib-python.3.test.test_array.IntTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.IntTest.test_setitem
 *graalpython.lib-python.3.test.test_array.IntTest.test_setslice
 *graalpython.lib-python.3.test.test_array.IntTest.test_sizeof_with_buffer
@@ -267,6 +275,7 @@
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_delitem
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_delslice
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.LongLongTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_extend
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_extended_set_del_slice
@@ -296,6 +305,7 @@
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_remove
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_repr
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_reverse
+*graalpython.lib-python.3.test.test_array.LongLongTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_setitem
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_setslice
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_sizeof_with_buffer
@@ -326,6 +336,7 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_delitem
 *graalpython.lib-python.3.test.test_array.LongTest.test_delslice
 *graalpython.lib-python.3.test.test_array.LongTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.LongTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.LongTest.test_extend
 *graalpython.lib-python.3.test.test_array.LongTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.LongTest.test_extended_set_del_slice
@@ -355,6 +366,7 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_remove
 *graalpython.lib-python.3.test.test_array.LongTest.test_repr
 *graalpython.lib-python.3.test.test_array.LongTest.test_reverse
+*graalpython.lib-python.3.test.test_array.LongTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.LongTest.test_setitem
 *graalpython.lib-python.3.test.test_array.LongTest.test_setslice
 *graalpython.lib-python.3.test.test_array.LongTest.test_sizeof_with_buffer
@@ -369,7 +381,9 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_type_error
 *graalpython.lib-python.3.test.test_array.LongTest.test_weakref
 *graalpython.lib-python.3.test.test_array.MiscTest.test_bad_constructor
+*graalpython.lib-python.3.test.test_array.MiscTest.test_disallow_instantiation
 *graalpython.lib-python.3.test.test_array.MiscTest.test_empty
+*graalpython.lib-python.3.test.test_array.MiscTest.test_immutable
 *graalpython.lib-python.3.test.test_array.ShortTest.test_add
 *graalpython.lib-python.3.test.test_array.ShortTest.test_assignment
 *graalpython.lib-python.3.test.test_array.ShortTest.test_buffer
@@ -387,6 +401,7 @@
 *graalpython.lib-python.3.test.test_array.ShortTest.test_delitem
 *graalpython.lib-python.3.test.test_array.ShortTest.test_delslice
 *graalpython.lib-python.3.test.test_array.ShortTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.ShortTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.ShortTest.test_extend
 *graalpython.lib-python.3.test.test_array.ShortTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.ShortTest.test_extended_set_del_slice
@@ -416,6 +431,7 @@
 *graalpython.lib-python.3.test.test_array.ShortTest.test_remove
 *graalpython.lib-python.3.test.test_array.ShortTest.test_repr
 *graalpython.lib-python.3.test.test_array.ShortTest.test_reverse
+*graalpython.lib-python.3.test.test_array.ShortTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.ShortTest.test_setitem
 *graalpython.lib-python.3.test.test_array.ShortTest.test_setslice
 *graalpython.lib-python.3.test.test_array.ShortTest.test_sizeof_with_buffer
@@ -444,6 +460,7 @@
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_deepcopy
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_delitem
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.UnicodeTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_extend
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_extended_set_del_slice
@@ -470,6 +487,7 @@
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_remove
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_repr
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_reverse
+*graalpython.lib-python.3.test.test_array.UnicodeTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_setitem
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_setslice
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_sizeof_with_buffer
@@ -500,6 +518,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_delitem
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_delslice
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_extend
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_extended_set_del_slice
@@ -529,6 +548,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_remove
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_repr
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_reverse
+*graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_setitem
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_setslice
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_sizeof_with_buffer
@@ -560,6 +580,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_delitem
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_delslice
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_extend
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_extended_set_del_slice
@@ -589,6 +610,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_remove
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_repr
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_reverse
+*graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_setitem
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_setslice
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_sizeof_with_buffer
@@ -620,6 +642,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_delitem
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_delslice
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_extend
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_extended_set_del_slice
@@ -649,6 +672,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_remove
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_repr
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_reverse
+*graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_setitem
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_setslice
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_sizeof_with_buffer
@@ -680,6 +704,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_delitem
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_delslice
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_extend
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_extended_set_del_slice
@@ -709,6 +734,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_remove
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_repr
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_reverse
+*graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_setitem
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_setslice
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_sizeof_with_buffer
@@ -740,6 +766,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_delitem
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_delslice
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_exhausted_iterator
+*graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_exhausted_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_extend
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_extended_set_del_slice
@@ -769,6 +796,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_remove
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_repr
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_reverse
+*graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_reverse_iterator
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_setitem
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_setslice
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_sizeof_with_buffer

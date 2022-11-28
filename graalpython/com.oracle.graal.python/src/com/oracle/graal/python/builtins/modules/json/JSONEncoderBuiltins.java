@@ -38,9 +38,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -97,6 +100,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallEncoderNode extends PythonTernaryClinicBuiltinNode {
 
+        // TODO: should all these be replaced with uncached nodes?
         @Child private CallUnaryMethodNode callEncode = CallUnaryMethodNode.create();
         @Child private CallUnaryMethodNode callDefaultFn = CallUnaryMethodNode.create();
         @Child private CastToTruffleStringNode castEncodeResult = CastToTruffleStringNode.create();
@@ -104,7 +108,6 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callGetDictIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
         @Child private GetNextNode callDictNext = GetNextNode.create();
         @Child private IsBuiltinClassProfile stopDictIterationProfile = IsBuiltinClassProfile.create();
-        @Child private HashingStorageLibrary dictLib = HashingStorageLibrary.getFactory().createDispatched(6);
         @Child private ListSortNode sortList = ListSortNode.create();
         @Child private LookupAndCallUnaryNode callGetListIter = LookupAndCallUnaryNode.create(SpecialMethodSlot.Iter);
         @Child private GetNextNode callListNext = GetNextNode.create();
@@ -253,17 +256,19 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         private void appendDict(PJSONEncoder encoder, TruffleStringBuilder builder, PDict dict) {
             HashingStorage storage = dict.getDictStorage();
 
-            if (dictLib.length(storage) == 0) {
+            if (HashingStorageLen.executeUncached(storage) == 0) {
                 appendStringNode.execute(builder, T_EMPTY_BRACES);
             } else {
                 startRecursion(encoder, dict);
                 appendStringNode.execute(builder, T_LBRACE);
 
                 if (!encoder.sortKeys && isClassProfile.profileObject(dict, PDict)) {
-                    HashingStorageIterable<DictEntry> entries = dictLib.entries(storage);
+                    HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
                     boolean first = true;
-                    for (DictEntry entry : entries) {
-                        first = appendDictEntry(encoder, builder, first, entry.key, entry.value);
+                    while (HashingStorageIteratorNext.executeUncached(storage, it)) {
+                        Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+                        Object value = HashingStorageIteratorValue.executeUncached(storage, it);
+                        first = appendDictEntry(encoder, builder, first, key, value);
                     }
                 } else {
                     PList items = constructList.execute(null, callGetItems.executeObject(null, dict));

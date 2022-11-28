@@ -84,7 +84,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -143,7 +144,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -553,8 +553,8 @@ public abstract class ObjectNodes {
         @Specialization
         Object dispatchDict(VirtualFrame frame, Object cls, PDict clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
-                        @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
-            Object slotNames = storageLib.getItem(clsDict.getDictStorage(), T__SLOTNAMES);
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
+            Object slotNames = getItem.execute(clsDict.getDictStorage(), T__SLOTNAMES);
             slotNames = slotNames == null ? PNone.NO_VALUE : slotNames;
             return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }
@@ -564,9 +564,9 @@ public abstract class ObjectNodes {
         Object dispatchMappingProxy(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PMappingproxy clsDict, Object copyReg,
                         @Shared("internal") @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Bind("clsDict.getMapping()") Object mapping,
-                        @Shared("storageLib") @CachedLibrary(limit = "3") HashingStorageLibrary storageLib) {
+                        @Shared("getItem") @Cached HashingStorageGetItem getItem) {
             PDict mappingDict = (PDict) mapping;
-            return dispatchDict(frame, cls, mappingDict, copyReg, getSlotNamesInternalNode, storageLib);
+            return dispatchDict(frame, cls, mappingDict, copyReg, getSlotNamesInternalNode, getItem);
         }
 
         @Specialization(guards = "isNoValue(noValue)")
@@ -657,7 +657,7 @@ public abstract class ObjectNodes {
                             @Cached GetClassNode getClassNode,
                             @Cached PyObjectSizeNode sizeNode,
                             @Cached PyObjectLookupAttr lookupAttr,
-                            @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                            @Cached HashingStorageSetItem setHashingStorageItem) {
                 Object state;
                 Object type = getClassNode.execute(obj);
                 if (required && getItemsizeNode.execute(type) != 0) {
@@ -686,7 +686,8 @@ public abstract class ObjectNodes {
                                 TruffleString name = toStringNode.execute(o);
                                 Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
-                                    hlib.setItem(slotsStorage, name, value);
+                                    HashingStorage newStorage = setHashingStorageItem.execute(frame, slotsStorage, name, value);
+                                    assert newStorage == slotsStorage;
                                     haveSlots = true;
                                 }
                             } catch (CannotCastException cce) {

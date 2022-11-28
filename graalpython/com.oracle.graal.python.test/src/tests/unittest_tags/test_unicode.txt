@@ -1,4 +1,6 @@
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_asucs4
+*graalpython.lib-python.3.test.test_unicode.CAPITest.test_asutf8
+*graalpython.lib-python.3.test.test_unicode.CAPITest.test_asutf8andsize
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_aswidechar
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_aswidecharstring
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_copycharacters
@@ -42,6 +44,8 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_find
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_find_etc_raise_correct_error_messages
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_find_periodic_pattern
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_find_shift_table_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_fixtype
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_floatformatting
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format
@@ -73,6 +77,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isdecimal
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isdigit
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isidentifier
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isidentifier_legacy
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_islower
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isnumeric
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isprintable
@@ -98,6 +103,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_raiseMemError
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_removeprefix
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_removesuffix
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_repeat_id_preserving
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace_id
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace_overflow

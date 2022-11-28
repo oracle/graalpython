@@ -78,7 +78,8 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.MakeAnonFieldsNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.CheckIsSequenceNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -108,7 +109,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -142,7 +142,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached HashingStorageGetItem getItemResDict,
+                        @Cached HashingStorageGetItem getItemStgDict,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached GetDictIfExistsNode getDict,
@@ -159,7 +161,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             /* keep this for bw compatibility */
-            if (hlib.hasKey(resDict.getDictStorage(), T__abstract_)) {
+            if (getItemResDict.hasKey(resDict.getDictStorage(), T__abstract_)) {
                 return result;
             }
 
@@ -171,15 +173,14 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * replace the class dict by our updated stgdict, which holds info about storage
              * requirements of the instances
              */
-            dict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), dict.getDictStorage()));
+            dict.setDictStorage(addAllToOtherNode.execute(frame, resDict.getDictStorage(), dict.getDictStorage()));
             setDict.execute((PythonObject) result, dict);
             dict.format = T_UPPER_B;
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;
-
-            boolean hasFields = hlib.hasKey(dict.getDictStorage(), T__fields_);
-            if (hasFields) {
-                setFieldsAttributeNode.execute(frame, result, hlib.getItem(dict.getDictStorage(), T__fields_));
+            Object fieldsValue = getItemStgDict.execute(dict.getDictStorage(), T__fields_);
+            if (fieldsValue != null) {
+                setFieldsAttributeNode.execute(frame, result, fieldsValue);
             } else {
                 StgDictObject basedict = pyTypeStgDictNode.execute(getBaseClassNode.execute(result));
                 if (basedict == null) {

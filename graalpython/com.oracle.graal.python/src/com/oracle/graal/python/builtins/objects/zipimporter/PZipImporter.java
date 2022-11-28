@@ -41,6 +41,11 @@ import java.util.EnumSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
@@ -285,7 +290,10 @@ public class PZipImporter extends PythonBuiltinObject {
     @TruffleBoundary
     protected boolean isDir(TruffleString path) {
         TruffleString dirPath = cat(path, separator);
-        for (Object key : files.keys()) {
+        HashingStorage filesStorage = files.getDictStorage();
+        HashingStorageIterator it = HashingStorageGetIterator.executeUncached(filesStorage);
+        while (HashingStorageIteratorNext.executeUncached(filesStorage, it)) {
+            Object key = HashingStorageIteratorKey.executeUncached(filesStorage, it);
             if (key instanceof TruffleString && ((TruffleString) key).equalsUncached(dirPath, TS_ENCODING)) {
                 return true;
             }

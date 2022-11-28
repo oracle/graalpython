@@ -5,10 +5,12 @@
 *graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_func_and
 *graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_if_else
 *graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_or
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_stack_3050
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_annotation_limit
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_handling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_order
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_bad_single_statement
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_big_dict_literal
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_compile_filename
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_compiler_recursion_limit
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_dead_blocks_do_not_generate_bytecode
@@ -26,6 +28,7 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_leading_newlines
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_literals_with_leading_zeroes
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_mangling
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_merge_code_attrs
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_merge_constants
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_no_ending_newline
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_none_assignment
@@ -34,10 +37,12 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_other_newlines
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_path_like_objects
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_peephole_opt_unreachable_code_array_access_in_bounds
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_redundant_jump_in_if_else_break
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_same_filename_used
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_sequence_unpacking_error
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_single_statement
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_stack_overflow
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_strip_unused_consts
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_subscripts
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_syntax_error
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_unary_minus

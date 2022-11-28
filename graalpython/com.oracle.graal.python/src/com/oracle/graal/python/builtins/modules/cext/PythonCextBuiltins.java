@@ -148,9 +148,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -176,6 +174,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1531,7 +1530,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)", limit = "1")
         @SuppressWarnings("unused")
         static PKeyword[] doNoKeywords(Object kwargsObj,
-                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Shared("lenNode") @Cached HashingStorageLen lenNode,
                         @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PKeyword.EMPTY_KEYWORDS;
@@ -1539,17 +1538,17 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!lib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "1")
         static PKeyword[] doKeywords(Object kwargsObj,
-                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Shared("lenNode") @Cached HashingStorageLen lenNode,
                         @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
             return expandKwargsNode.execute(kwargsToJavaNode.execute(kwargsObj));
         }
 
-        static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingCollectionNodes.LenNode lenNode, Object kwargsObj) {
+        static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingStorageLen lenNode, Object kwargsObj) {
             Object unwrapped = asPythonObjectNode.execute(kwargsObj);
             if (unwrapped instanceof PDict) {
-                return lenNode.execute((PDict) unwrapped) == 0;
+                return lenNode.execute(((PDict) unwrapped).getDictStorage()) == 0;
             }
             return false;
         }
@@ -2050,7 +2049,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 }
                 addSlot(arguments[0], arguments[1], arguments[2], arguments[3], castInt(arguments[4]), castInt(arguments[5]), arguments[6],
                                 AsPythonObjectNodeGen.getUncached(), CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
-                                CreateFunctionNodeGen.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                                CreateFunctionNodeGen.getUncached(), WriteAttributeToDynamicObjectNode.getUncached());
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -2065,8 +2064,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         FromCharPointerNode fromCharPointerNode,
                         InteropLibrary docPtrLib,
                         CreateFunctionNode createFunctionNode,
-                        WriteAttributeToDynamicObjectNode writeDocNode,
-                        HashingStorageLibrary dictStorageLib) {
+                        WriteAttributeToDynamicObjectNode writeDocNode) {
             Object clazz = asPythonObjectNode.execute(clsPtr);
             PDict tpDict = castPDict(asPythonObjectNode.execute(tpDictPtr));
 
@@ -2084,11 +2082,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             writeDocNode.execute(wrapperDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add wrapper descriptor to tp_dict
-            HashingStorage dictStorage = tpDict.getDictStorage();
-            HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, memberName, wrapperDescriptor);
-            if (dictStorage != updatedStorage) {
-                tpDict.setDictStorage(updatedStorage);
-            }
+            PyDictSetItem.executeUncached(tpDict, memberName, wrapperDescriptor);
         }
     }
 
@@ -2190,7 +2184,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                 Object nameObj = AsPythonObjectNodeGen.getUncached().execute(arguments[2]);
                 addMember(getLanguage(), clazz, tpDict, nameObj, castInt(arguments[3]), castInt(arguments[4]), castInt(arguments[5]), arguments[6],
                                 CastToTruffleStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
-                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached());
                 return 0;
             } catch (PException e) {
                 TransformExceptionToNativeNodeGen.getUncached().execute(e);
@@ -2204,8 +2198,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
                         FromCharPointerNode fromCharPointerNode,
                         InteropLibrary docPtrLib,
                         PythonObjectFactory factory,
-                        WriteAttributeToDynamicObjectNode writeDocNode,
-                        HashingStorageLibrary dictStorageLib) {
+                        WriteAttributeToDynamicObjectNode writeDocNode) {
 
             PDict tpDict = castPDict(tpDictObj);
             TruffleString memberName;
@@ -2228,11 +2221,7 @@ public final class PythonCextBuiltins extends PythonBuiltins {
             writeDocNode.execute(memberDescriptor, SpecialAttributeNames.T___DOC__, memberDoc);
 
             // add member descriptor to tp_dict
-            HashingStorage dictStorage = tpDict.getDictStorage();
-            HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, memberName, memberDescriptor);
-            if (dictStorage != updatedStorage) {
-                tpDict.setDictStorage(updatedStorage);
-            }
+            PyDictSetItem.executeUncached(tpDict, memberName, memberDescriptor);
         }
     }
 
@@ -2316,19 +2305,15 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doGeneric(Object cls, Object tpDict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
+        int doGeneric(VirtualFrame frame, Object cls, Object tpDict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CreateGetSetNode createGetSetNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary dictStorageLib,
+                        @Cached PyDictSetItem dictSetItem,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure, getLanguage(), factory());
                 PDict dict = PythonCextBuiltins.castPDict(asPythonObjectNode.execute(tpDict));
-                HashingStorage dictStorage = dict.getDictStorage();
-                HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, name, descr);
-                if (dictStorage != updatedStorage) {
-                    dict.setDictStorage(updatedStorage);
-                }
+                dictSetItem.execute(frame, dict, name, descr);
                 return 0;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);

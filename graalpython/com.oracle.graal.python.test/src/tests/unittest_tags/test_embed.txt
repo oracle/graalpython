@@ -12,10 +12,13 @@
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_initialize_twice
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_pre_initialization_api
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_pre_initialization_sys_options
+*graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_repeated_init_and_inittab
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_run_main
+*graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_run_main_loop
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_subinterps_different_ids
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_subinterps_distinct_state
 *graalpython.lib-python.3.test.test_embed.EmbeddingTests.test_subinterps_main
+*graalpython.lib-python.3.test.test_embed.InitConfigTests.test_get_argc_argv
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_global_pathconfig
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_compat_config
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_compat_env
@@ -37,6 +40,7 @@
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_pyvenv_cfg
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_read_set
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_run_main
+*graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_set_config
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_setpath
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_setpath_config
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_init_setpythonhome
@@ -49,3 +53,7 @@
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_preinit_isolated_config
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_preinit_parse_argv
 *graalpython.lib-python.3.test.test_embed.InitConfigTests.test_preinit_python_config
+*graalpython.lib-python.3.test.test_embed.MiscTests.test_unicode_id_init
+*graalpython.lib-python.3.test.test_embed.StdPrinterTests.test_disallow_instantiation
+*graalpython.lib-python.3.test.test_embed.StdPrinterTests.test_methods
+*graalpython.lib-python.3.test.test_embed.StdPrinterTests.test_write

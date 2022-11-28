@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -59,15 +60,14 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
@@ -82,79 +82,56 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doTuple(PTuple starargs,
-                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+                    @Shared("toArray") @Cached SequenceStorageNodes.ToArrayNode toArray) {
         return toArray.execute(starargs.getSequenceStorage());
     }
 
     @Specialization
     static Object[] doList(PList starargs,
-                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+                    @Shared("toArray") @Cached SequenceStorageNodes.ToArrayNode toArray) {
         return toArray.execute(starargs.getSequenceStorage());
     }
 
-    @Specialization(limit = "1")
+    // Separate PDict and PSet specializations to avoid instanceof checks on non-leaf class
+    // PHashingCollection
+
+    @Specialization
     static Object[] doDict(PDict starargs,
-                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
-        HashingStorage dictStorage = starargs.getDictStorage();
-        int length = lib.length(dictStorage);
-        Object[] args = new Object[length];
-        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
-        for (int i = 0; i < args.length; i++) {
-            assert iterator.hasNext();
-            args[i] = iterator.next();
-        }
-        return args;
+                    @Shared("doHashingStorage") @Cached ExecutePositionalStarargsDictStorageNode node) {
+        return node.execute(starargs.getDictStorage());
     }
 
-    @Specialization(limit = "1")
+    @Specialization
     static Object[] doSet(PSet starargs,
-                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
-        HashingStorage dictStorage = starargs.getDictStorage();
-        int length = lib.length(dictStorage);
-        Object[] args = new Object[length];
-        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
-        for (int i = 0; i < args.length; i++) {
-            assert iterator.hasNext();
-            args[i] = iterator.next();
-        }
-        return args;
+                    @Shared("doHashingStorage") @Cached ExecutePositionalStarargsDictStorageNode node) {
+        return node.execute(starargs.getDictStorage());
     }
 
     @Specialization
     static Object[] doNone(PNone none,
-                    @Cached PRaiseNode raise) {
+                    @Shared("raise") @Cached PRaiseNode raise) {
         throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
     @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
-                    @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode nextNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
         Object iterator = getIter.execute(frame, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
-            ArrayList<Object> internalStorage = new ArrayList<>();
+            ArrayBuilder<Object> internalStorage = new ArrayBuilder<>();
             while (true) {
                 try {
-                    addToList(internalStorage, nextNode.execute(frame, iterator));
+                    internalStorage.add(nextNode.execute(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    return toArray(internalStorage);
+                    return internalStorage.toArray(new Object[0]);
                 }
             }
         }
         throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, object);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static void addToList(ArrayList<Object> internalStorage, Object element) {
-        internalStorage.add(element);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static Object[] toArray(ArrayList<Object> internalStorage) {
-        return internalStorage.toArray();
     }
 
     public static ExecutePositionalStarargsNode create() {
@@ -163,5 +140,28 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     public static ExecutePositionalStarargsNode getUncached() {
         return ExecutePositionalStarargsNodeGen.getUncached();
+    }
+
+    // Extracted into a node shared between PDict/PSet specializations to reduce the footprint
+    @GenerateUncached
+    abstract static class ExecutePositionalStarargsDictStorageNode extends Node {
+        abstract Object[] execute(HashingStorage storage);
+
+        @Specialization
+        static Object[] doIt(HashingStorage storage,
+                        @Cached HashingStorageLen lenNode,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext iterNext,
+                        @Cached HashingStorageIteratorKey iteratorKey) {
+            int length = lenNode.execute(storage);
+            Object[] args = new Object[length];
+            HashingStorageIterator it = getIter.execute(storage);
+            for (int i = 0; i < args.length; i++) {
+                boolean hasNext = iterNext.execute(storage, it);
+                assert hasNext;
+                args[i] = iteratorKey.execute(storage, it);
+            }
+            return args;
+        }
     }
 }

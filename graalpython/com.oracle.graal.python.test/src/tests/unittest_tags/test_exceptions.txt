@@ -1,3 +1,8 @@
+*graalpython.lib-python.3.test.test_exceptions.AttributeErrorTests.test_attribute_error_with_failing_dict
+*graalpython.lib-python.3.test.test_exceptions.AttributeErrorTests.test_getattr_error_bad_suggestions_do_not_trigger_for_small_names
+*graalpython.lib-python.3.test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_big_dicts
+*graalpython.lib-python.3.test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_do_not_trigger_for_long_attributes
+*graalpython.lib-python.3.test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testAttributes
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testChainingAttrs
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testChainingDescriptors
@@ -15,7 +20,11 @@
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_3114
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_MemoryError
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_WindowsError
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_assert_shadowing
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_errno_ENOTDIR
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_error_offset_continuation_characters
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_cleanup_names
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_cleanup_names2
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_target_in_nested_scope
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_exception_with_doc
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_generator_close_cleanup_exc_state
@@ -32,6 +41,7 @@
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_generator_throw_cleanup_exc_state
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_memory_error_cleanup
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_memory_error_in_PyErr_PrintEx
+*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_memory_error_subclasses
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_raise_in_generator
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_recursion_error_cleanup
 *graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_recursion_normalizing_exception

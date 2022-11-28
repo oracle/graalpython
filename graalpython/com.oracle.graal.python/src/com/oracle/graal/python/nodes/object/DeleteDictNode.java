@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
@@ -61,7 +61,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
     @Specialization
     static void doPythonObject(PythonObject object,
                     @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                    @Cached HashingStorageCopy copyNode,
                     @Cached PythonObjectFactory factory) {
         /* There is no special handling for class MROs because type.__dict__ cannot be deleted. */
         assert !PGuards.isPythonClass(object);
@@ -73,7 +73,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
                  * We have to dissociate the dict from this DynamicObject so that changes to it no
                  * longer affect this object.
                  */
-                oldDict.setDictStorage(hlib.copy(storage));
+                oldDict.setDictStorage(copyNode.execute(storage));
             }
         }
         /*

@@ -52,6 +52,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -214,14 +219,16 @@ public class FunctionBuiltins extends PythonBuiltins {
         Object set(PFunction self, PDict arg) {
             CompilerDirectives.transferToInterpreter();
             ArrayList<PKeyword> keywords = new ArrayList<>();
-            for (HashingStorage.DictEntry e : arg.entries()) {
-                Object key = assertNoJavaString(e.getKey());
+            final HashingStorage storage = arg.getDictStorage();
+            HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
+            while (HashingStorageIteratorNext.executeUncached(storage, it)) {
+                Object key = assertNoJavaString(HashingStorageIteratorKey.executeUncached(storage, it));
                 if (key instanceof PString) {
                     key = ((PString) key).getValueUncached();
                 } else if (!(key instanceof TruffleString)) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, e.getKey());
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
                 }
-                keywords.add(new PKeyword((TruffleString) key, e.getValue()));
+                keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
             }
             self.setKwDefaults(keywords.isEmpty() ? PKeyword.EMPTY_KEYWORDS : keywords.toArray(new PKeyword[keywords.size()]));
             return PNone.NONE;

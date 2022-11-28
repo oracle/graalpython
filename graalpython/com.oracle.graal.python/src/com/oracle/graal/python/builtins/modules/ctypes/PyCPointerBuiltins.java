@@ -140,10 +140,10 @@ public class PyCPointerBuiltins extends PythonBuiltins {
          * b_length set to 2 instead of 1, and we set 'value' itself as the second item of the
          * b_objects list, additionally.
          */
-        keepRefNode.execute(self, 1, value, factory);
+        keepRefNode.execute(frame, self, 1, value, factory);
 
         Object keep = GetKeepedObjects(dst, factory);
-        keepRefNode.execute(self, 0, keep, factory);
+        keepRefNode.execute(frame, self, 0, keep, factory);
     }
 
     @Builtin(name = J___NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)

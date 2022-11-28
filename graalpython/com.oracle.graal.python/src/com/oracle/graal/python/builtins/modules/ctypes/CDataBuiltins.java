@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -194,7 +194,7 @@ public class CDataBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageAddAllToOther addAllToOtherNode) {
             Object[] array = getArray.execute(args.getSequenceStorage());
             if (array.length < 3 || !PGuards.isDict(array[0]) || !PGuards.isInteger(array[2])) {
                 throw raise(TypeError);
@@ -215,7 +215,7 @@ public class CDataBuiltins extends PythonBuiltins {
                                 getNameNode.execute(getClassNode.execute(mydict)));
             }
             PDict selfDict = (PDict) mydict;
-            selfDict.setDictStorage(hlib.addAllToOther(dict.getDictStorage(), selfDict.getDictStorage()));
+            addAllToOtherNode.execute(frame, dict.getDictStorage(), selfDict);
             return PNone.NONE;
         }
 

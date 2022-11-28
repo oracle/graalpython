@@ -6,7 +6,11 @@
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_itermonthdays2
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_itermonthdays3
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_itermonthdays4
+*graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_iterweekdays
+*graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_locale_calendar_formatweekday
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_locale_calendars
+*graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_locale_html_calendar_custom_css_class_month_name
+*graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_locale_html_calendar_custom_css_class_weekday
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_months
 *graalpython.lib-python.3.test.test_calendar.CalendarTestCase.test_setfirstweekday
 *graalpython.lib-python.3.test.test_calendar.CommandLineTestCase.test_help

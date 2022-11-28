@@ -80,7 +80,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -123,7 +123,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -332,9 +331,9 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyErrNewExceptionNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         Object newEx(VirtualFrame frame, TruffleString name, Object base, PDict dict,
-                        @CachedLibrary(value = "dict.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached HashingStorageGetItem getItem,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
@@ -344,7 +343,6 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                         @Cached BranchProfile notDotProfile,
                         @Cached BranchProfile notModuleProfile,
                         @Cached ConditionProfile baseProfile,
-                        @Cached ConditionProfile hasFrameProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 int length = codePointLengthNode.execute(name, TS_ENCODING);
@@ -353,7 +351,7 @@ public final class PythonCextErrBuiltins extends PythonBuiltins {
                     notDotProfile.enter();
                     return raiseNativeNode.raise(frame, getContext().getNativeNull(), SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
                 }
-                if (lib.getItemWithFrame(dict.getDictStorage(), base, hasFrameProfile, frame) == null) {
+                if (getItem.execute(frame, dict.getDictStorage(), base) == null) {
                     notModuleProfile.enter();
                     setItemNode.execute(frame, dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
                 }

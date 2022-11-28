@@ -1,7 +1,10 @@
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_backcompatibility
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_insort
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_insort_keynotNone
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_keyword_args
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_large_pyrange
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_large_range
+*graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_lookups_with_key_function
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_negative_lo
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_optionalSlicing
 *graalpython.lib-python.3.test.test_bisect.TestBisectPython.test_precomputed

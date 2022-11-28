@@ -41,16 +41,16 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -61,43 +61,21 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class PyDictKeys extends Node {
     public abstract Object execute(PDict dict);
 
-    @CompilerDirectives.ValueType
-    protected static final class EachKeyState {
-        private final Object[] ary;
-        private int idx;
-
-        EachKeyState(Object[] ary) {
-            this.ary = ary;
-            this.idx = 0;
-        }
-    }
-
-    @GenerateUncached
-    abstract static class ForEachKey extends ForEachNode<EachKeyState> {
-
-        public abstract EachKeyState executeReprState(Object key, EachKeyState arg);
-
-        @Override
-        public final EachKeyState execute(Object key, EachKeyState arg) {
-            return executeReprState(key, arg);
-        }
-
-        @Specialization
-        static EachKeyState append(Object key, EachKeyState current) {
-            current.ary[current.idx++] = key;
-            return current;
-        }
-    }
-
-    @Specialization(limit = "3")
-    @SuppressWarnings("unused")
-    static final Object getString(PDict dict,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @Cached ForEachKey consumerNode,
+    @Specialization
+    static Object getString(PDict dict,
                     @Cached PythonObjectFactory factory,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-        int len = lib.length(dictStorage);
-        EachKeyState result = lib.forEach(dictStorage, consumerNode, new EachKeyState(new Object[len]));
-        return factory.createList(result.ary);
+                    @Cached HashingStorageLen lenNode,
+                    @Cached HashingStorageGetIterator getIter,
+                    @Cached HashingStorageIteratorNext iterNext,
+                    @Cached HashingStorageIteratorKey iterKey) {
+        HashingStorage storage = dict.getDictStorage();
+        int len = lenNode.execute(storage);
+        HashingStorageIterator it = getIter.execute(storage);
+        Object[] keys = new Object[len];
+        int i = 0;
+        while (iterNext.execute(storage, it)) {
+            keys[i++] = iterKey.execute(storage, it);
+        }
+        return factory.createList(keys);
     }
 }

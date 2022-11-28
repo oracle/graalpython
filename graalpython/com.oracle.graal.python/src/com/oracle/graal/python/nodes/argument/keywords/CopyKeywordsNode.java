@@ -41,10 +41,14 @@
 package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_ADD;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.GetNextNode;
@@ -63,7 +67,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
@@ -92,30 +96,21 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
 
     @GenerateUncached
     @ImportStatic(PythonOptions.class)
-    abstract static class AddKeywordNode extends HashingStorageLibrary.ForEachNode<CopyKeywordsState> {
-        public abstract CopyKeywordsState executeWithState(Object key, CopyKeywordsState state);
-
+    abstract static class AddKeywordNode extends HashingStorageForEachCallback<CopyKeywordsState> {
         @Override
-        public CopyKeywordsState execute(Object key, CopyKeywordsState state) {
-            return executeWithState(key, state);
-        }
+        public abstract CopyKeywordsState execute(Frame frame, HashingStorage storage, HashingStorageIterator it, CopyKeywordsState accumulator);
 
-        @Specialization(rewriteOn = CannotCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
-        public CopyKeywordsState add(Object key, CopyKeywordsState state,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
-            Object value = lib.getItem(state.hashingStorage, key);
-            state.addKeyword(castToTruffleStringNode.execute(key), value);
-            return state;
-        }
-
-        @Specialization(replaces = J_ADD, limit = "getCallSiteInlineCacheMaxDepth()")
-        public CopyKeywordsState addExc(Object key, CopyKeywordsState state,
+        @Specialization
+        public CopyKeywordsState add(HashingStorage storage, HashingStorageIterator it, CopyKeywordsState state,
                         @Cached PRaiseNode raiseNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
+                        @Cached HashingStorageIteratorKey itKey,
+                        @Cached HashingStorageIteratorKeyHash itKeyHash,
+                        @Cached HashingStorageGetItemWithHash getItem) {
             try {
-                Object value = lib.getItem(state.hashingStorage, key);
+                Object key = itKey.execute(storage, it);
+                long hash = itKeyHash.execute(storage, it);
+                Object value = getItem.execute(null, storage, key, hash);
                 state.addKeyword(castToTruffleStringNode.execute(key), value);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");
@@ -126,12 +121,12 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
 
     public abstract void execute(PDict starargs, PKeyword[] keywords);
 
-    @Specialization(guards = "isBuiltinDict(starargs)", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "isBuiltinDict(starargs)")
     void doBuiltinDict(PDict starargs, PKeyword[] keywords,
                     @Cached AddKeywordNode addKeywordNode,
-                    @CachedLibrary(value = "starargs.getDictStorage()") HashingStorageLibrary lib) {
+                    @Cached HashingStorageForEach forEachNode) {
         HashingStorage hashingStorage = starargs.getDictStorage();
-        lib.forEach(hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
+        forEachNode.execute(null, hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
     }
 
     @Specialization(guards = "!isBuiltinDict(starargs)")

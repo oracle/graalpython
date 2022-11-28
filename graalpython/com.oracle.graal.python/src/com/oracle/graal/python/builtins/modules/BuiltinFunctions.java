@@ -131,7 +131,11 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -337,97 +341,104 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    enum AnyOrAllNodeType {
+        ALL,
+        ANY
+    }
+
     /**
      * Common class for all() and any() operations, as their logic and behaviors are very similar.
      */
-    abstract static class AllOrAnyNode extends PNodeWithContext {
-        enum NodeType {
-            ALL,
-            ANY
-        }
-
+    abstract static class AllOrAnySequenceStorageNode extends PNodeWithContext {
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
 
         private final LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
 
-        abstract boolean execute(Frame frame, Object storageObj, NodeType nodeType);
+        abstract boolean execute(Frame frame, SequenceStorage storageObj, AnyOrAllNodeType nodeType);
 
         @Specialization
         boolean doBoolSequence(VirtualFrame frame,
                         BoolSequenceStorage sequenceStorage,
-                        NodeType nodeType) {
+                        AnyOrAllNodeType nodeType) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
             int seqLength = sequenceStorage.length();
 
             loopConditionProfile.profileCounted(seqLength);
             for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
-                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
             }
 
-            return nodeType == NodeType.ALL;
+            return nodeType == AnyOrAllNodeType.ALL;
         }
 
         @Specialization
         boolean doIntSequence(VirtualFrame frame,
                         IntSequenceStorage sequenceStorage,
-                        NodeType nodeType) {
+                        AnyOrAllNodeType nodeType) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
             int seqLength = sequenceStorage.length();
 
             loopConditionProfile.profileCounted(seqLength);
             for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
-                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
             }
 
-            return nodeType == NodeType.ALL;
+            return nodeType == AnyOrAllNodeType.ALL;
         }
 
         @Specialization
-        boolean doGenericSequence(VirtualFrame frame, SequenceStorage sequenceStorage, NodeType nodeType) {
+        boolean doGenericSequence(VirtualFrame frame, SequenceStorage sequenceStorage, AnyOrAllNodeType nodeType) {
             Object[] internalArray = sequenceStorage.getInternalArray();
             int seqLength = sequenceStorage.length();
 
             loopConditionProfile.profileCounted(seqLength);
             for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+                if (nodeType == AnyOrAllNodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
-                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
             }
 
-            return nodeType == NodeType.ALL;
+            return nodeType == AnyOrAllNodeType.ALL;
         }
+    }
 
-        @Specialization(limit = "3")
-        protected boolean doHashStorage(VirtualFrame frame,
-                        HashingStorage hashingStorage,
-                        NodeType nodeType,
-                        @CachedLibrary("hashingStorage") HashingStorageLibrary hlib) {
-            HashingStorageLibrary.HashingStorageIterator<Object> keysIter = hlib.keys(hashingStorage).iterator();
-            int seqLength = hlib.length(hashingStorage);
+    /**
+     * Common class for all() and any() operations, as their logic and behaviors are very similar.
+     */
+    abstract static class AllOrAnyHashingStorageNode extends PNodeWithContext {
+        @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
 
-            loopConditionProfile.profileCounted(seqLength);
-            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
-                Object key = keysIter.next();
-                if (nodeType == NodeType.ALL) {
+        private final LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
+
+        abstract boolean execute(Frame frame, HashingStorage storageObj, AnyOrAllNodeType nodeType);
+
+        @Specialization
+        protected boolean doHashStorage(VirtualFrame frame, HashingStorage hashingStorage, AnyOrAllNodeType nodeType,
+                        @Cached HashingStorageGetIterator getIter,
+                        @Cached HashingStorageIteratorNext getIterNext,
+                        @Cached HashingStorageIteratorKey getIterKey) {
+            HashingStorageIterator it = getIter.execute(hashingStorage);
+            while (loopConditionProfile.profile(getIterNext.execute(hashingStorage, it))) {
+                Object key = getIterKey.execute(hashingStorage, it);
+                if (nodeType == AnyOrAllNodeType.ALL) {
                     if (!isTrueNode.execute(frame, key)) {
                         return false;
                     }
-                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, key)) {
+                } else if (nodeType == AnyOrAllNodeType.ANY && isTrueNode.execute(frame, key)) {
                     return true;
                 }
             }
-
-            return nodeType == NodeType.ALL;
+            return nodeType == AnyOrAllNodeType.ALL;
         }
     }
 
@@ -439,24 +450,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static boolean doList(VirtualFrame frame,
                         PList object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
+                        @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         static boolean doTuple(VirtualFrame frame,
                         PTuple object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
+                        @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         static boolean doHashColl(VirtualFrame frame,
                         PHashingCollection object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
+                        @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ALL);
         }
 
         @Specialization
@@ -496,24 +507,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static boolean doList(VirtualFrame frame,
                         PList object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
+                        @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         static boolean doTuple(VirtualFrame frame,
                         PTuple object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
+                        @Shared("allOrAnySeqNode") @Cached AllOrAnySequenceStorageNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AnyOrAllNodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         static boolean doHashColl(VirtualFrame frame,
                         PHashingCollection object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
+                        @Cached AllOrAnyHashingStorageNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getDictStorage(), AnyOrAllNodeType.ANY);
         }
 
         @Specialization
@@ -2066,7 +2077,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary("getContext().getSysModules().getDictStorage()") HashingStorageLibrary hlib) {
+                        @Cached HashingStorageGetItem getItem) {
             if (getDebuggerSessionCount() > 0) {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
@@ -2077,7 +2088,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = hlib.getItem(sysModules.getDictStorage(), T_SYS);
+                Object sysModule = getItem.execute(sysModules.getDictStorage(), T_SYS);
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, T_BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOST_SYSBREAKPOINTHOOK);
