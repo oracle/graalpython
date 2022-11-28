@@ -62,14 +62,14 @@ public class ExclusionsTest {
         public int read(ByteBuffer dst) throws IOException {
             int rem = dst.remaining();
             while (rem > 0) {
-                int val = (int)(seed >> 16);
+                int val = (int) (seed >> 16);
                 seed = seed * (0x12345678 * 4 + 1) + 1;
                 if (rem >= 4) {
                     dst.putInt(val);
                     rem -= 4;
                 } else {
                     for (int i = 0; i < rem; i++) {
-                        dst.put((byte)(val << i));
+                        dst.put((byte) (val << i));
                     }
                     rem = 0;
                 }
