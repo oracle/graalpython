@@ -553,7 +553,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         if (PythonOptions.WITHOUT_JAVA_INET) {
-            throw new UnsupportedPosixFeatureException("sendto was excluded");
+            throw new UnsupportedPosixFeatureException("select was excluded");
         }
         SelectableChannel[] readChannels = getSelectableChannels(readfds);
         SelectableChannel[] writeChannels = getSelectableChannels(writefds);
@@ -884,7 +884,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         if (PythonOptions.WITHOUT_JAVA_INET) {
-            throw new UnsupportedPosixFeatureException("sendto was excluded");
+            throw new UnsupportedPosixFeatureException("setBlocking was excluded");
         }
         try {
             Channel channel = getChannel(fd);
@@ -2503,7 +2503,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
         if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            throw new UnsupportedPosixFeatureException("getpwnam without python.java.security disabled");
+            throw new UnsupportedPosixFeatureException("getpwuid was excluded");
         }
         UnixSystem unix = new UnixSystem();
         if (unix.getUid() != uid) {
@@ -2518,7 +2518,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) {
         if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            throw new UnsupportedPosixFeatureException("getpwnam without python.java.security disabled");
+            throw new UnsupportedPosixFeatureException("getpwnam was excluded");
         }
         UnixSystem unix = new UnixSystem();
         if (!unix.getUsername().equals(name)) {
@@ -3034,7 +3034,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
         if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
-            throw new UnsupportedPosixFeatureException("getsockopt was excluded");
+            throw new UnsupportedPosixFeatureException("getaddrinfo was excluded");
         }
         if (node == null && service == null) {
             throw gaiError(EAI_NONAME.value);

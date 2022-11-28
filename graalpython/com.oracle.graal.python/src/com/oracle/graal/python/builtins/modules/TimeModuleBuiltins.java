@@ -311,7 +311,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object tzset() {
-            if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
                 String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
                 if (tzEnv == null) {
                     tzEnv = "";

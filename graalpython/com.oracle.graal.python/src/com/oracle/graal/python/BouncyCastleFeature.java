@@ -53,7 +53,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 public class BouncyCastleFeature implements Feature {
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        if (PythonOptions.WITHOUT_SSL) {
+        if (!PythonOptions.WITHOUT_SSL) {
             RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
             support.initializeAtBuildTime("org.bouncycastle", "security provider");
             support.rerunInitialization("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
