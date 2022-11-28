@@ -344,6 +344,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -614,7 +615,7 @@ public abstract class Python3Core {
                         new SelectModuleBuiltins(),
                         new SocketModuleBuiltins(),
                         new SocketBuiltins(),
-                        PythonLanguage.JAVA_SIGNALS ? new SignalModuleBuiltins() : null,
+                        PythonOptions.WITHOUT_PLATFORM_ACCESS ? new SignalModuleBuiltins() : null,
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
                         new AtexitModuleBuiltins(),
@@ -625,14 +626,14 @@ public abstract class Python3Core {
                         new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
-                        PythonLanguage.JAVA_SSL ? new SSLModuleBuiltins() : null,
-                        PythonLanguage.JAVA_SSL ? new SSLContextBuiltins() : null,
-                        new SSLErrorBuiltins(),
-                        PythonLanguage.JAVA_SSL ? new SSLSocketBuiltins() : null,
-                        new MemoryBIOBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? new SSLModuleBuiltins() : null,
+                        PythonOptions.WITHOUT_SSL ? new SSLContextBuiltins() : null,
+                        PythonOptions.WITHOUT_SSL ? new SSLErrorBuiltins() : null,
+                        PythonOptions.WITHOUT_SSL ? new SSLSocketBuiltins() : null,
+                        PythonOptions.WITHOUT_SSL ? new MemoryBIOBuiltins() : null,
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
-                        new PosixSubprocessModuleBuiltins(),
+                        PythonOptions.WITHOUT_PLATFORM_ACCESS ? new PosixSubprocessModuleBuiltins() : null,
                         new ReadlineModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),

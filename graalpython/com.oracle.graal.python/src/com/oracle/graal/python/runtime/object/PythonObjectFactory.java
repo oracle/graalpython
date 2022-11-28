@@ -1401,27 +1401,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PSSLContext createSSLContext(Object clazz, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
-        if (PythonLanguage.JAVA_SSL) {
-            return trace(new PSSLContext(clazz, getShape(clazz), method, verifyFlags, checkHostname, verifyMode, context));
-        } else {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, PythonLanguage.JAVA_SSL_ERROR_MSG, clazz);
-        }
+        return trace(new PSSLContext(clazz, getShape(clazz), method, verifyFlags, checkHostname, verifyMode, context));
     }
 
     public final PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PSocket socket) {
-        if (PythonLanguage.JAVA_SSL) {
-            return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, socket, createMemoryBIO(), createMemoryBIO(), createMemoryBIO()));
-        } else {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, PythonLanguage.JAVA_SSL_ERROR_MSG, clazz);
-        }
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, socket, createMemoryBIO(), createMemoryBIO(), createMemoryBIO()));
     }
 
     public final PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PMemoryBIO inbound, PMemoryBIO outbound) {
-        if (PythonLanguage.JAVA_SSL) {
-            return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, null, inbound, outbound, createMemoryBIO()));
-        } else {
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NotImplementedError, PythonLanguage.JAVA_SSL_ERROR_MSG, clazz);
-        }
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, null, inbound, outbound, createMemoryBIO()));
     }
 
     public final PMemoryBIO createMemoryBIO(Object clazz) {

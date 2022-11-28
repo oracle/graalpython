@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -310,7 +311,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object tzset() {
-            if (PythonLanguage.JAVA_TIMEZONE) {
+            if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
                 String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
                 if (tzEnv == null) {
                     tzEnv = "";

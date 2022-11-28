@@ -48,11 +48,12 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
+import com.oracle.graal.python.runtime.PythonOptions;
 
 public class BouncyCastleFeature implements Feature {
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        if (PythonLanguage.JAVA_SSL) {
+        if (PythonOptions.WITHOUT_SSL) {
             RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
             support.initializeAtBuildTime("org.bouncycastle", "security provider");
             support.rerunInitialization("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");

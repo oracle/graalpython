@@ -991,7 +991,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             return unixStat(f, linkOptions);
         } catch (UnsupportedOperationException unsupported) {
-            if (PythonLanguage.JAVA_SECURITY_AUTH) {
+            if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
                 try {
                     return posixStat(f, linkOptions);
                 } catch (UnsupportedOperationException unsupported2) {
@@ -1135,7 +1135,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @TruffleBoundary(allowInlining = true)
     private static long getPrincipalId(UserPrincipal principal) {
-        if (PythonLanguage.JAVA_SECURITY_AUTH && principal instanceof UnixNumericGroupPrincipal) {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS && principal instanceof UnixNumericGroupPrincipal) {
             try {
                 return Long.decode(principal.getName());
             } catch (NumberFormatException ignored) {
@@ -1854,7 +1854,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getuid() {
-        if (PythonLanguage.JAVA_SECURITY_AUTH) {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
             String osName = System.getProperty("os.name");
             if (osName.contains("Linux")) {
                 return new UnixSystem().getUid();
@@ -2490,7 +2490,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
-        if (!PythonLanguage.JAVA_SECURITY_AUTH) {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
             throw new UnsupportedPosixFeatureException("getpwnam without python.java.security disabled");
         }
         UnixSystem unix = new UnixSystem();
@@ -2505,7 +2505,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) {
-        if (!PythonLanguage.JAVA_SECURITY_AUTH) {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
             throw new UnsupportedPosixFeatureException("getpwnam without python.java.security disabled");
         }
         UnixSystem unix = new UnixSystem();

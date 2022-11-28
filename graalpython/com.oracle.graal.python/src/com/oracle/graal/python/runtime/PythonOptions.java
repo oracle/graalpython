@@ -75,6 +75,20 @@ public final class PythonOptions {
     private static final String J_STRING_LIST_SEPARATOR = "🏆";
     private static final TruffleString T_STRING_LIST_SEPARATOR = tsLiteral(J_STRING_LIST_SEPARATOR);
 
+    /**
+     * Whether Java classes are included that implement the SSL module. These come from packages
+     * including (but not limited to): javax.net.ssl, org.bouncycastle, java.security, javax.crypto,
+     * sun.security
+     */
+    public static final boolean WITHOUT_SSL = !"false".equals(System.getProperty("python.java.ssl"));
+
+    /**
+     * Whether Java classes are included that relate to Unix-specific access, modify process properties
+     * such as the default timezone, access the platform's Runtime MXBean, or spawn subprocesses are
+     * available.
+     */
+    public static final boolean WITHOUT_PLATFORM_ACCESS = !"false".equals(System.getProperty("python.java.auth"));
+
     public enum HPyBackendMode {
         NFI,
         JNI
