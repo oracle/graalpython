@@ -1,8 +1,8 @@
 diff --git a/numpy/__init__.py b/numpy/__init__.py
-index 45b0cf23c..8b3f758a9 100644
+index 45b0cf2..8b3f758 100644
 --- a/numpy/__init__.py
 +++ b/numpy/__init__.py
-@@ -333,7 +333,7 @@ def _sanity_check():
+@@ -333,7 +333,7 @@ else:
          try:
              x = ones(2, dtype=float32)
              if not abs(x.dot(x) - 2.0) < 1e-5:
@@ -12,7 +12,7 @@ index 45b0cf23c..8b3f758a9 100644
              msg = ("The current Numpy installation ({!r}) fails to "
                     "pass simple sanity checks. This can be caused for example "
 diff --git a/numpy/core/getlimits.py b/numpy/core/getlimits.py
-index 4149a5303..b394c0ec0 100644
+index 4149a53..b394c0e 100644
 --- a/numpy/core/getlimits.py
 +++ b/numpy/core/getlimits.py
 @@ -216,90 +216,6 @@ def _register_known_types():
@@ -107,10 +107,10 @@ index 4149a5303..b394c0ec0 100644
  
  def _get_machar(ftype):
 diff --git a/numpy/core/setup.py b/numpy/core/setup.py
-index 52b51e4b6..9c1c9014f 100644
+index 52b51e4..9c1c901 100644
 --- a/numpy/core/setup.py
 +++ b/numpy/core/setup.py
-@@ -866,7 +866,7 @@ def opts_if_msvc(build_cmd):
+@@ -866,7 +866,7 @@ def configuration(parent_package='',top_path=None):
      if os.environ.get('NPY_USE_BLAS_ILP64', "0") != "0":
          blas_info = get_info('blas_ilp64_opt', 2)
      else:
@@ -120,10 +120,10 @@ index 52b51e4b6..9c1c9014f 100644
      have_blas = blas_info and ('HAVE_CBLAS', None) in blas_info.get('define_macros', [])
  
 diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
-index 4b802de82..269d4c4e7 100644
+index 4b802de..269d4c4 100644
 --- a/numpy/core/setup_common.py
 +++ b/numpy/core/setup_common.py
-@@ -129,7 +129,7 @@ def set_sig(sig):
+@@ -129,7 +129,7 @@ OPTIONAL_STDFUNCS = ["expm1", "log1p", "acosh", "asinh", "atanh",
          "rint", "trunc", "exp2", "log2", "hypot", "atan2", "pow",
          "copysign", "nextafter", "strtoll", "strtoull", "cbrt"]
  
@@ -143,8 +143,22 @@ index 4b802de82..269d4c4e7 100644
          src, obj = cmd._compile(body, None, None, 'c')
          cmd.temp_files.append("_configtest")
          cmd.compiler.link_executable([obj], "_configtest")
+diff --git a/numpy/core/src/common/npy_hashtable.c b/numpy/core/src/common/npy_hashtable.c
+index af9e2df..afbba34 100644
+--- a/numpy/core/src/common/npy_hashtable.c
++++ b/numpy/core/src/common/npy_hashtable.c
+@@ -44,7 +44,8 @@ identity_list_hash(PyObject *const *v, int len)
+          * Lane is the single item hash, which for us is the rotated pointer.
+          * Identical to the python type hash (pointers end with 0s normally).
+          */
+-        size_t y = (size_t)v[i];
++        // size_t y = (size_t)v[i];
++        Py_hash_t y = PyObject_Hash(v[i]);
+         Py_uhash_t lane = (y >> 4) | (y << (8 * SIZEOF_VOID_P - 4));
+         acc += lane * _NpyHASH_XXPRIME_2;
+         acc = _NpyHASH_XXROTATE(acc);
 diff --git a/numpy/core/src/multiarray/_multiarray_tests.c.src b/numpy/core/src/multiarray/_multiarray_tests.c.src
-index 0fcebedc7..6b8b4559e 100644
+index 0fcebed..6b8b455 100644
 --- a/numpy/core/src/multiarray/_multiarray_tests.c.src
 +++ b/numpy/core/src/multiarray/_multiarray_tests.c.src
 @@ -2039,22 +2039,7 @@ get_fpu_mode(PyObject *NPY_UNUSED(self), PyObject *args)
@@ -171,7 +185,7 @@ index 0fcebedc7..6b8b4559e 100644
  
  /*
 diff --git a/numpy/core/src/multiarray/alloc.c b/numpy/core/src/multiarray/alloc.c
-index 6f18054ff..5b6f8b62c 100644
+index 6f18054..5b6f8b6 100644
 --- a/numpy/core/src/multiarray/alloc.c
 +++ b/numpy/core/src/multiarray/alloc.c
 @@ -105,18 +105,6 @@ _npy_alloc_cache(npy_uintp nelem, npy_uintp esz, npy_uint msz,
@@ -194,7 +208,7 @@ index 6f18054ff..5b6f8b62c 100644
      }
      return p;
 diff --git a/numpy/core/src/npymath/ieee754.c.src b/numpy/core/src/npymath/ieee754.c.src
-index 4e6ddb712..c3a43a77c 100644
+index 4e6ddb7..c3a43a7 100644
 --- a/numpy/core/src/npymath/ieee754.c.src
 +++ b/numpy/core/src/npymath/ieee754.c.src
 @@ -558,12 +558,10 @@ npy_longdouble npy_nextafterl(npy_longdouble x, npy_longdouble y)
@@ -468,7 +482,7 @@ index 4e6ddb712..c3a43a77c 100644
  
  #endif
 diff --git a/numpy/core/src/umath/extobj.c b/numpy/core/src/umath/extobj.c
-index 6b9a27e26..5290d82c6 100644
+index 6b9a27e..5290d82 100644
 --- a/numpy/core/src/umath/extobj.c
 +++ b/numpy/core/src/umath/extobj.c
 @@ -283,7 +283,7 @@ _check_ufunc_fperr(int errmask, PyObject *extobj, const char *ufunc_name) {
@@ -481,7 +495,7 @@ index 6b9a27e26..5290d82c6 100644
          return 0;
      }
 diff --git a/numpy/core/src/umath/loops.c.src b/numpy/core/src/umath/loops.c.src
-index 3a8a54913..a3d29c466 100644
+index 3a8a549..a3d29c4 100644
 --- a/numpy/core/src/umath/loops.c.src
 +++ b/numpy/core/src/umath/loops.c.src
 @@ -668,7 +668,7 @@ NPY_NO_EXPORT NPY_GCC_OPT_3 void
@@ -557,7 +571,7 @@ index 3a8a54913..a3d29c466 100644
  /**end repeat1**/
  
 diff --git a/numpy/core/src/umath/reduction.c b/numpy/core/src/umath/reduction.c
-index 817f99a04..0a4f10be6 100644
+index 817f99a..0a4f10b 100644
 --- a/numpy/core/src/umath/reduction.c
 +++ b/numpy/core/src/umath/reduction.c
 @@ -306,7 +306,7 @@ PyUFunc_ReduceWrapper(PyArrayMethod_Context *context,
@@ -570,7 +584,7 @@ index 817f99a04..0a4f10be6 100644
  
      /*
 diff --git a/numpy/core/src/umath/scalarmath.c.src b/numpy/core/src/umath/scalarmath.c.src
-index 8fb219b63..734885ac7 100644
+index 8fb219b..734885a 100644
 --- a/numpy/core/src/umath/scalarmath.c.src
 +++ b/numpy/core/src/umath/scalarmath.c.src
 @@ -1227,7 +1227,7 @@ static PyObject *
@@ -610,7 +624,7 @@ index 8fb219b63..734885ac7 100644
      if (retstatus) {
          int bufsize, errmask;
 diff --git a/numpy/core/src/umath/simd.inc.src b/numpy/core/src/umath/simd.inc.src
-index b477027b3..f40bc8396 100644
+index b477027..f40bc83 100644
 --- a/numpy/core/src/umath/simd.inc.src
 +++ b/numpy/core/src/umath/simd.inc.src
 @@ -1210,7 +1210,7 @@ AVX512F_absolute_@TYPE@(@type@ * op,
@@ -623,7 +637,7 @@ index b477027b3..f40bc8396 100644
  
  #endif
 diff --git a/numpy/core/src/umath/ufunc_object.c b/numpy/core/src/umath/ufunc_object.c
-index fce7d61de..001d57e5e 100644
+index fce7d61..001d57e 100644
 --- a/numpy/core/src/umath/ufunc_object.c
 +++ b/numpy/core/src/umath/ufunc_object.c
 @@ -123,7 +123,7 @@ PyUFunc_getfperr(void)
@@ -708,7 +722,7 @@ index fce7d61de..001d57e5e 100644
  
      if (!needs_api) {
 diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
-index 8697fae62..f5c11b272 100644
+index 8697fae..f5c11b2 100644
 --- a/numpy/distutils/ccompiler.py
 +++ b/numpy/distutils/ccompiler.py
 @@ -684,7 +684,7 @@ def CCompiler_cxx_compiler(self):
@@ -721,10 +735,10 @@ index 8697fae62..f5c11b272 100644
      if sys.platform.startswith('aix') and 'ld_so_aix' in cxx.linker_so[0]:
          # AIX needs the ld_so_aix script included with Python
 diff --git a/numpy/linalg/setup.py b/numpy/linalg/setup.py
-index dc62dff8f..5e0e0df61 100644
+index dc62dff..5e0e0df 100644
 --- a/numpy/linalg/setup.py
 +++ b/numpy/linalg/setup.py
-@@ -51,6 +51,7 @@ def calc_info(self):
+@@ -51,6 +51,7 @@ def configuration(parent_package='', top_path=None):
          lapack_info = numpy_linalg_lapack_lite().get_info(2)
  
      def get_lapack_lite_sources(ext, build_dir):
@@ -733,7 +747,7 @@ index dc62dff8f..5e0e0df61 100644
              print("### Warning:  Using unoptimized lapack ###")
              return all_sources
 diff --git a/numpy/linalg/umath_linalg.cpp b/numpy/linalg/umath_linalg.cpp
-index bbeb37906..2e51c357c 100644
+index bbeb379..2e51c35 100644
 --- a/numpy/linalg/umath_linalg.cpp
 +++ b/numpy/linalg/umath_linalg.cpp
 @@ -410,7 +410,7 @@ static inline int
@@ -755,7 +769,7 @@ index bbeb37906..2e51c357c 100644
  }
  
 diff --git a/setup.py b/setup.py
-index 353b6c096..36d376c1e 100755
+index 353b6c0..36d376c 100755
 --- a/setup.py
 +++ b/setup.py
 @@ -450,7 +450,8 @@ def setup_package():
