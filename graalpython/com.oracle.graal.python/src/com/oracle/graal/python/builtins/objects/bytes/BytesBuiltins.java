@@ -110,8 +110,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -121,6 +120,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -134,7 +134,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.IndexConversionNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -393,40 +392,34 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     // bytes.fromhex()
-    @Builtin(name = "fromhex", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @Builtin(name = "fromhex", minNumOfPositionalArgs = 2, isClassmethod = true, numOfPositionalOnlyArgs = 2, parameterNames = {"$cls", "string"})
+    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    public abstract static class FromHexNode extends PythonBinaryBuiltinNode {
+    public abstract static class FromHexNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization
-        PBytes doString(PythonBuiltinClass cls, TruffleString str,
+        @Specialization(guards = "isBuiltinBytesType(cls, isSameType)", limit = "1")
+        PBytes doBytes(Object cls, TruffleString str,
+                        @SuppressWarnings("unused") @Shared("isSameType") @Cached TypeNodes.IsSameTypeNode isSameType,
                         @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
             return factory().createBytes(cls, hexStringToBytesNode.execute(str));
         }
 
-        @Specialization
-        PBytes doGeneric(PythonBuiltinClass cls, Object strObj,
-                        @Shared("toString") @Cached CastToTruffleStringNode castToStringNode,
+        @Specialization(guards = "!isBuiltinBytesType(cls, isSameType)", limit = "1")
+        Object doGeneric(VirtualFrame frame, Object cls, TruffleString str,
+                        @SuppressWarnings("unused") @Shared("isSameType") @Cached TypeNodes.IsSameTypeNode isSameType,
+                        @Cached CallNode callNode,
                         @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
-            try {
-                TruffleString str = castToStringNode.execute(strObj);
-                return factory().createBytes(cls, hexStringToBytesNode.execute(str));
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
-            }
+            PBytes bytes = factory().createBytes(hexStringToBytesNode.execute(str));
+            return callNode.execute(frame, cls, bytes);
         }
 
-        @Specialization(guards = "!isPythonBuiltinClass(cls)")
-        Object doGeneric(VirtualFrame frame, Object cls, Object strObj,
-                        @Cached TypeBuiltins.CallNode callNode,
-                        @Shared("toString") @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared("hexToBytes") @Cached HexStringToBytesNode hexStringToBytesNode) {
-            try {
-                TruffleString str = castToStringNode.execute(strObj);
-                PBytes bytes = factory().createBytes(hexStringToBytesNode.execute(str));
-                return callNode.varArgExecute(frame, null, new Object[]{cls, bytes}, PKeyword.EMPTY_KEYWORDS);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
-            }
+        protected static boolean isBuiltinBytesType(Object cls, TypeNodes.IsSameTypeNode isSameTypeNode) {
+            return isSameTypeNode.execute(PythonBuiltinClassType.PBytes, cls);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesBuiltinsClinicProviders.FromHexNodeClinicProviderGen.INSTANCE;
         }
     }
 
