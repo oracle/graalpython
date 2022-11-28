@@ -1085,6 +1085,7 @@ def graalpython_gate_runner(args, tasks):
                 "-Dpython.WithoutNativePosix=true",
                 "-Dpython.WithoutJavaInet=true",
                 "-Dimage-build-time.PreinitializeContexts=",
+                "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
                 "-H:+ReportExceptionStackTraces",
                 *map(
                     lambda s: f"-H:ReportAnalysisForbiddenType={s}",
@@ -1157,6 +1158,19 @@ def graalpython_gate_runner(args, tasks):
                     sun.security.x509.URIName
                     sun.security.x509.X400Address
                     sun.security.x509.X500Name
+
+                    com.oracle.graal.python.runtime.NFIPosixSupport
+
+                    java.util.zip.Adler32
+
+                    org.tukaani.xz.XZ
+                    org.tukaani.xz.XZOutputStream
+                    org.tukaani.xz.LZMA2Options
+                    org.tukaani.xz.FilterOptions
+
+                    java.util.zip.ZipInputStream
+
+                    java.nio.channels.ServerSocketChannel
                     """.split()
                 ),
                 "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),

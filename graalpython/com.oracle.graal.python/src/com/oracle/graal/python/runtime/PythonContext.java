@@ -1496,9 +1496,11 @@ public final class PythonContext extends Python3Core {
             initializeHashSecret();
         }
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
-        nativeZlib = NFIZlibSupport.createNative(this, "");
-        nativeBz2lib = NFIBz2Support.createNative(this, "");
-        nativeLZMA = NFILZMASupport.createNative(this, "");
+        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES) {
+            nativeZlib = NFIZlibSupport.createNative(this, "");
+            nativeBz2lib = NFIBz2Support.createNative(this, "");
+            nativeLZMA = NFILZMASupport.createNative(this, "");
+        }
 
         mainModule = factory().createPythonModule(T___MAIN__);
         mainModule.setAttribute(T___BUILTINS__, getBuiltins());
