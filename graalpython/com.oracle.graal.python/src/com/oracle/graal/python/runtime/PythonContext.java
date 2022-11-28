@@ -1549,7 +1549,7 @@ public final class PythonContext extends Python3Core {
         PosixSupport result;
         // The resources field will be removed once all posix builtins go through PosixSupport
         TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
-        if (eqNode.execute(T_JAVA, option, TS_ENCODING)) {
+        if (PythonOptions.WITHOUT_NATIVE_POSIX || eqNode.execute(T_JAVA, option, TS_ENCODING)) {
             result = new EmulatedPosixSupport(this);
         } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING) || eqNode.execute(T_LLVM_LANGUAGE, option, TS_ENCODING)) {
             if (ImageInfo.inImageBuildtimeCode()) {

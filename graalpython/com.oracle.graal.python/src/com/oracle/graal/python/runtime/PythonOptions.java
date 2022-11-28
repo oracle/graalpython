@@ -102,6 +102,18 @@ public final class PythonOptions {
      */
     public static final String JAVA_SECURE_RANDOM = System.getProperty("python.java.random");
 
+    /**
+     * This property can be used to exclude zip, zlib, lzma, and bzip2 support from the
+     * Python core.
+     */
+    public static final boolean WITHOUT_COMPRESSION_LIBRARIES = Boolean.getBoolean("polyglot.python.WithoutCompressionLibraries");
+
+    /**
+     * This property can be used to exclude native posix support from the build. Only
+     * Java emulation will be available.
+     */
+    public static final boolean WITHOUT_NATIVE_POSIX = Boolean.getBoolean("polyglot.python.WithoutNativePosix");
+
     public enum HPyBackendMode {
         NFI,
         JNI

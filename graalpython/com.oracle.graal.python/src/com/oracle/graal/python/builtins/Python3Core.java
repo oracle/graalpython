@@ -387,7 +387,7 @@ public abstract class Python3Core {
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("function"),
                         toTruffleStringUncached("_sysconfig"),
-                        toTruffleStringUncached("zipimport"),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : toTruffleStringUncached("zipimport"),
                         toTruffleStringUncached("java"),
                         toTruffleStringUncached("pip_hook"),
                         toTruffleStringUncached("_struct")));
@@ -403,6 +403,7 @@ public abstract class Python3Core {
                 }
             }
         }
+        coreFiles.removeAll(Arrays.asList(new TruffleString[]{null}));
         return coreFiles.toArray(new TruffleString[coreFiles.size()]);
     }
 
@@ -637,8 +638,8 @@ public abstract class Python3Core {
                         new ReadlineModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
-                        new ZipImporterBuiltins(),
-                        new ZipImportModuleBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImporterBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImportModuleBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
@@ -663,9 +664,9 @@ public abstract class Python3Core {
                         new ZipLongestBuiltins(),
 
                         // zlib
-                        new ZLibModuleBuiltins(),
-                        new ZlibCompressBuiltins(),
-                        new ZlibDecompressBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZLibModuleBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibCompressBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressBuiltins(),
 
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
@@ -682,9 +683,9 @@ public abstract class Python3Core {
                         new ContextvarsModuleBuiltins(),
 
                         // lzma
-                        new LZMAModuleBuiltins(),
-                        new LZMACompressorBuiltins(),
-                        new LZMADecompressorBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMAModuleBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
@@ -731,7 +732,7 @@ public abstract class Python3Core {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode()) {
+        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES && (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode())) {
             builtins.add(new BZ2CompressorBuiltins());
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
@@ -928,7 +929,7 @@ public abstract class Python3Core {
              * would never include the intrinsified _bz2 module in the native image since native
              * access is never allowed during native image build time.
              */
-            if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
+            if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES && ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
                 removeBuiltinModule(BuiltinNames.T_BZ2);
             }
 
