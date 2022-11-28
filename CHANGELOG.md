@@ -5,7 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 23.0.0
 * Update `numpy` and `pandas` versions, add support for `scipy` and `scikit_learn` with `ginstall`. This automatically applies some fixes that make it possible to use these new versions with GraalPy.
-* Update language version and standard library to 3.10, making it compatible with more recent modules and packages.
+* Update language version and standard library to 3.10.8, making it compatible with more recent modules and packages.
 * Include GraalVM version in `sys.implementation.cache_tag` and `sysconfig`'s `EXT_SUFFIX` and `SOABI`, to ensure proper detection of compatible bytecode files and native extensions.
 * Update the builtin venv module to create virtual environments with symlinks instead of generated shell scripts that delegated to the base GraalPy.
 * Add GraalPy plugin for [Virtualenv](https://virtualenv.pypa.io) as a builtin module, such that creating virtual environments with `virtualenv` on GraalPy works out of the box.
