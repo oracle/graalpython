@@ -114,6 +114,12 @@ public final class PythonOptions {
      */
     public static final boolean WITHOUT_NATIVE_POSIX = Boolean.getBoolean("polyglot.python.WithoutNativePosix");
 
+    /**
+     * This property can be used to exclude socket and inet support from the Java
+     * posix backend.
+     */
+    public static final boolean WITHOUT_JAVA_INET = Boolean.getBoolean("polyglot.python.WithoutJavaInet");
+
     public enum HPyBackendMode {
         NFI,
         JNI
