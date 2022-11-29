@@ -66,6 +66,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -283,7 +284,10 @@ public class HashingStorageNodes {
         @Specialization
         static HashingStorage empty(Frame frame, @SuppressWarnings("unused") EmptyStorage self, Object key, long keyHash, Object value,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+                        @Exclusive @Cached ObjectHashMap.PutNode putNode) {
+            // The ObjectHashMap.PutNode is @Exclusive because profiles for a put into a freshly new
+            // allocated map can be quite different to profiles in the other situations when we are
+            // putting into a map that already has or will have some more items in it
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             return economicMap(frame, EconomicMapStorage.create(1), key, keyHash, value, profile, putNode);
         }
@@ -393,7 +397,10 @@ public class HashingStorageNodes {
         static HashingStorage empty(Frame frame, @SuppressWarnings("unused") EmptyStorage self, Object key, Object value,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile profile,
                         @Shared("hash") @Cached PyObjectHashNode hashNode,
-                        @Shared("economicPut") @Cached ObjectHashMap.PutNode putNode) {
+                        @Exclusive @Cached ObjectHashMap.PutNode putNode) {
+            // The ObjectHashMap.PutNode is @Exclusive because profiles for a put into a freshly new
+            // allocated map can be quite different to profiles in the other situations when we are
+            // putting into a map that already has or will have some more items in it
             // TODO: do we want to try DynamicObjectStorage if the key is a string?
             return economicMap(frame, EconomicMapStorage.create(1), key, value, profile, hashNode, putNode);
         }
