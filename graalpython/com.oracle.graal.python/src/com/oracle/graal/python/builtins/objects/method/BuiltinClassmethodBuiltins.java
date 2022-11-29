@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
@@ -50,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OBJCLASS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_QUESTIONMARK;
@@ -62,7 +60,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -149,20 +146,6 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
             TruffleString name = mayBeName != PNone.NO_VALUE ? asTruffleStringNode.execute(frame, mayBeName) : T_QUESTIONMARK;
             TruffleString typeName = getNameNode.execute(getObjClass.execute(frame, self.getCallable(), T___OBJCLASS__));
             return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", name, typeName);
-        }
-    }
-
-    @Builtin(name = J___REDUCE__, maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object reduce(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectGetAttr getAttr) {
-            PythonModule builtins = getContext().getBuiltins();
-            Object gettattr = getAttr.execute(frame, builtins, T_GETATTR);
-            Object type = getAttr.execute(frame, self, T___OBJCLASS__);
-            Object name = getAttr.execute(frame, self, T___NAME__);
-            return factory().createTuple(new Object[]{gettattr, factory().createTuple(new Object[]{type, name})});
         }
     }
 }

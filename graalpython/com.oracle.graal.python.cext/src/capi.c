@@ -911,3 +911,15 @@ PyObject* truffle_create_datetime_capsule(void *object) {
 int truffle_subclass_check(PyObject* type) {
     return PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
 }
+
+// Implements the basesisze check in typeobject.c:_PyObject_GetState
+int tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_num) {
+    Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
+    if (type->tp_dictoffset)
+        basicsize += sizeof(PyObject *);
+    if (type->tp_weaklistoffset)
+        basicsize += sizeof(PyObject *);
+    if (slot_num)
+        basicsize += sizeof(PyObject *) * PyList_GET_SIZE(slot_num);
+    return type->tp_basicsize > basicsize;
+}
