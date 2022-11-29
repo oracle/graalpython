@@ -22,6 +22,7 @@
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_arithmetic_Set
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_equality_Set
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_hash_Set
+*graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_illegal_patma_flags
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_isdisjoint_Set
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue16373
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue26915

@@ -1,0 +1,1 @@
+*graalpython.lib-python.3.test.test_opcache.TestLoadAttrCache.test_descriptor_added_after_optimization
