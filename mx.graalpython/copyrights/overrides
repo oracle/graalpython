@@ -533,7 +533,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/truffle/Py
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/truffle/PythonTypes.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonParser.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/exception/ExceptionHandledException.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/exception/PythonErrorType.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/FloatFormatter.java,jython.copyright
