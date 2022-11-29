@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T__AWAIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
@@ -188,6 +189,7 @@ public enum SpecialMethodSlot {
 
     Iter(T___ITER__),
     Next(T___NEXT__),
+    Await(T__AWAIT__),
 
     New(T___NEW__, NO_BUILTIN_DESCRIPTORS),
     Init(T___INIT__, NO_BUILTIN_DESCRIPTORS),
@@ -1006,6 +1008,10 @@ public enum SpecialMethodSlot {
                     return Bytes;
                 }
                 break;
+            case 'a' * 26 + 'w': // aw
+                if (eqNode.execute(name, T__AWAIT__, TS_ENCODING)) {
+                    return Await;
+                }
         }
         return null;
     }

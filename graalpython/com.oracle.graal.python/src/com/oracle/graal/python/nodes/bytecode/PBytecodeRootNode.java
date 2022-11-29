@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -278,6 +279,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<ForIterINode> NODE_FOR_ITER_I = ForIterINode::create;
     private static final NodeSupplier<PyObjectGetIter> NODE_OBJECT_GET_ITER = PyObjectGetIter::create;
     private static final PyObjectGetIter UNCACHED_OBJECT_GET_ITER = PyObjectGetIter.getUncached();
+
+    private static final NodeSupplier<GetAwaitableNode> NODE_OBJECT_GET_AWAITABLE = GetAwaitableNode::create;
+    private static final GetAwaitableNode UNCACHED_OBJECT_GET_AWAITABLE = GetAwaitableNode.getUncached();
     private static final NodeSupplier<PyObjectSetAttr> NODE_OBJECT_SET_ATTR = PyObjectSetAttr::create;
     private static final PyObjectSetAttr UNCACHED_OBJECT_SET_ATTR = PyObjectSetAttr.getUncached();
     private static final NodeSupplier<ReadGlobalOrBuiltinNode> NODE_READ_GLOBAL_OR_BUILTIN_BUILD_CLASS = () -> ReadGlobalOrBuiltinNode.create(T___BUILD_CLASS__);
@@ -2182,6 +2186,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             notifyStatement(virtualFrame, instrumentation, mutableData, bci, beginBci);
                             continue;
                         }
+                    }
+                    case OpCodesConstants.GET_AWAITABLE: {
+                        setCurrentBci(virtualFrame, bciSlot, bci);
+                        GetAwaitableNode getAwait = insertChildNode(localNodes, beginBci, UNCACHED_OBJECT_GET_AWAITABLE, GetAwaitableNode.class, NODE_OBJECT_GET_AWAITABLE, useCachedNodes);
+                        virtualFrame.setObject(stackTop, getAwait.execute(virtualFrame, virtualFrame.getObject(stackTop)));
+                        break;
                     }
                     case OpCodesConstants.PRINT_EXPR: {
                         stackTop = bytecodePrintExpr(virtualFrame, useCachedNodes, stackTop, bci, localNodes, bciSlot, beginBci);

@@ -1461,4 +1461,9 @@ public abstract class ErrorMessages {
     public static final TruffleString PY_CAPSULE_SET_POINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
     public static final TruffleString PY_CAPSULE_IMPORT_COULD_NOT_IMPORT_MODULE_S = tsLiteral("PyCapsule_Import could not import module \"%s\"");
     public static final TruffleString PY_CAPSULE_IMPORT_S_IS_NOT_VALID = tsLiteral("PyCapsule_Import \"%s\" is not valid");
+    public static final TruffleString CANNOT_BE_USED_AWAIT = tsLiteral("object %s can't be used in 'await' expression");
+
+    public static final TruffleString AWAIT_RETURN_COROUTINE = tsLiteral("__await__() returned a coroutine");
+
+    public static final TruffleString AWAIT_RETURN_NON_ITER = tsLiteral("__await__() returned non-iterator of type '%s'");
 }
