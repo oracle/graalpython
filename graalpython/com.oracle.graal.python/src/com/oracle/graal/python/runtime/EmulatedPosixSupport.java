@@ -362,7 +362,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @ImportStatic(ImageInfo.class)
     public static class Getpid {
 
         private static final TruffleString T_PROC_SELF_STAT = tsLiteral("/proc/self/stat");
@@ -380,8 +379,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         @Specialization(replaces = "getPid")
         @TruffleBoundary
         static long getPidFallback(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
-            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-            return Long.parseLong(info.split("@")[0]);
+            if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+                String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+                return Long.parseLong(info.split("@")[0]);
+            } else {
+                return Long.MAX_VALUE;
+            }
         }
     }
 
@@ -2127,6 +2130,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int system(Object commandObj) {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            return 126; // cannot execute exit code
+        }
         String cmd = pathToJavaString(commandObj);
         LOGGER.fine(() -> "os.system: " + cmd);
 
@@ -3033,7 +3039,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
-        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
             throw new UnsupportedPosixFeatureException("getaddrinfo was excluded");
         }
         if (node == null && service == null) {
