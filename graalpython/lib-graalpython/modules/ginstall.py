@@ -551,7 +551,7 @@ library_dirs = {lapack_lib}"""
             package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://sourceforge.net/projects/freetype/files/freetype2/2.6.1/%s.tar.gz")
             _download_with_curl_and_extract(target_dir, package_pattern % "freetype-2.6.1")
 
-        install_from_pypi("matplotlib==3.3.2", pre_install_hook=download_freetype, **kwargs)
+        install_from_pypi("matplotlib==3.3.3", pre_install_hook=download_freetype, **kwargs)
 
     return locals()
 
