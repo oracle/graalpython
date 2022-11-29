@@ -497,7 +497,6 @@ public class HashingStorageNodes {
 
         final Object executeWithAsserts(Frame frame, HashingStorage self, Object key, boolean isPop, PHashingCollection toUpdate) {
             assert toUpdate != null;
-            CompilerAsserts.partialEvaluationConstant(toUpdate.getClass());
             CompilerAsserts.partialEvaluationConstant(isPop);
             return executeImpl(frame, self, key, isPop, toUpdate);
         }
