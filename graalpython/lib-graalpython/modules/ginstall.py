@@ -214,7 +214,7 @@ def known_packages():
 
     @pip_package()
     def threadpoolctl(**kwargs):
-        install_with_pip("threadpoolctl==3.1.0", **kwargs)
+        install_with_pip("threadpoolctl==2.2.0", **kwargs)
 
     @pip_package()
     def joblib(**kwargs):
@@ -500,8 +500,10 @@ library_dirs = {lapack_lib}"""
         # install dependencies
         numpy(**kwargs)
         scipy(**kwargs)
+        joblib(**kwargs)
+        threadpoolctl(**kwargs)
 
-        install_from_pypi("scikit-learn==0.20.0", env=scikit_learn_build_env, **kwargs)
+        install_from_pypi("scikit-learn==1.0.2", env=scikit_learn_build_env, **kwargs)
 
     @pip_package()
     def cycler(**kwargs):
@@ -708,6 +710,9 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 
 def install_with_pip(package, msg="", failOnError=False, **kwargs):
+    for kw in ['extra_opts', 'debug_build']:
+        if kw in kwargs:
+            del kwargs[kw]
     run_cmd([sys.executable, "-m", "pip", "install", package], msg=msg, failOnError=failOnError, **kwargs)
 
 
