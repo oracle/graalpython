@@ -51,7 +51,6 @@ import java.util.TimeZone;
 
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
