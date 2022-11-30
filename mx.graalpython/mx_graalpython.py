@@ -1389,19 +1389,6 @@ def update_import_cmd(args):
         d = {'GRAAL_ENTERPRISE_REVISION': revisions['graalpython-enterprise']}
         json.dump(d, fp, indent=2)
 
-    # update vm-tests.json vm version
-    with open(join(overlaydir, "python", "graal-common.json"), 'r') as fp:
-        d = json.load(fp)
-        oraclejdk17_ver = d['jdks']['oraclejdk17']['version']
-
-    with open(join(overlaydir, "python", "vm-tests.json"), 'r') as fp:
-        d = json.load(fp)
-        for job in d:
-            job['downloads']['JAVA_HOME']['version'] = oraclejdk17_ver
-
-    with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
-        json.dump(d, fp, indent=2)
-
     repos_updated = []
 
     # now allow dependent repos to hook into update

@@ -8,4 +8,5 @@
 *graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_func_4
 *graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_func_5
 *graalpython.lib-python.3.test.test_coroutines.CoroutineTest.test_gen_1
+*graalpython.lib-python.3.test.test_coroutines.TokenizerRegrTest.test_oneline_defs
 *graalpython.lib-python.3.test.test_coroutines.UnawaitedWarningDuringShutdownTest.test_unawaited_warning_during_shutdown
