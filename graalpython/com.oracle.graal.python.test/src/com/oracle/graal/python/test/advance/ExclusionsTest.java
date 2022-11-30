@@ -40,55 +40,12 @@
  */
 package com.oracle.graal.python.test.advance;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-
 import org.graalvm.polyglot.Context;
 
 public class ExclusionsTest {
     public static void main(String[] args) {
         try (Context context = Context.create()) {
             context.eval("python", "print('Hello Python!');");
-        }
-    }
-
-    public static final class InsecureTestRandom implements ByteChannel {
-        private long seed = 0xeeffac0000caffeeL;
-
-        public InsecureTestRandom() {
-        }
-
-        public int read(ByteBuffer dst) throws IOException {
-            int rem = dst.remaining();
-            while (rem > 0) {
-                int val = (int) (seed >> 16);
-                seed = seed * (0x12345678 * 4 + 1) + 1;
-                if (rem >= 4) {
-                    dst.putInt(val);
-                    rem -= 4;
-                } else {
-                    for (int i = 0; i < rem; i++) {
-                        dst.put((byte) (val << i));
-                    }
-                    rem = 0;
-                }
-            }
-            return 0;
-        }
-
-        public boolean isOpen() {
-            return true;
-        }
-
-        public void close() throws IOException {
-        }
-
-        public int write(ByteBuffer src) throws IOException {
-            while (src.remaining() > 0) {
-                seed = (seed << 8) | src.get();
-            }
-            return 0;
         }
     }
 }

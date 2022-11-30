@@ -90,19 +90,6 @@ public final class PythonOptions {
     public static final boolean WITHOUT_PLATFORM_ACCESS = Boolean.getBoolean("python.WithoutPlatformAccess");
 
     /**
-     * If this property is defined, it will be interpreted as a fully-qualified class name to a
-     * class implementing the {@link java.nio.channels.ByteChannel ByteChannel} interface. This
-     * interface was chosen to avoid a dependency on the {@code SecureRandomSpi}, so this property
-     * can be used to avoid including SecureRandomSpis in the process at all. The
-     * {@link java.nio.channels.ByteChannel#read read} method of the provided class is expected to
-     * produce random bytes into the provided buffer. The
-     * {@link java.nio.channels.ByteChannel#write} method of the provided class is expected to set
-     * the seed of the random number generator from the provided buffer. None of the other interface
-     * methods of {@link java.nio.channels.ByteChannel ByteChannel} are called.
-     */
-    public static final String JAVA_SECURE_RANDOM = System.getProperty("python.ReplacementJavaRandom");
-
-    /**
      * This property can be used to exclude zip, zlib, lzma, and bzip2 support from the Python core.
      */
     public static final boolean WITHOUT_COMPRESSION_LIBRARIES = Boolean.getBoolean("python.WithoutCompressionLibraries");

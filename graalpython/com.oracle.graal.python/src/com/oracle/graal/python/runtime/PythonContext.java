@@ -65,6 +65,8 @@ import java.io.PrintWriter;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -137,7 +139,6 @@ import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Consumer;
-import com.oracle.graal.python.util.PythonRandom;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
@@ -579,7 +580,7 @@ public final class PythonContext extends Python3Core {
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
 
-    @CompilationFinal private PythonRandom secureRandom;
+    @CompilationFinal private SecureRandom secureRandom;
 
     // Equivalent of _Py_HashSecret
     @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
@@ -1326,11 +1327,23 @@ public final class PythonContext extends Python3Core {
     /**
      * Get a SecureRandom instance using a non-blocking source.
      */
-    public PythonRandom getSecureRandom() {
+    public SecureRandom getSecureRandom() {
         assert !ImageInfo.inImageBuildtimeCode();
         if (secureRandom == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            secureRandom = PythonRandom.getInstance();
+            try {
+                secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
+            } catch (NoSuchAlgorithmException e) {
+                if (getPythonOS() == PLATFORM_WIN32) {
+                    try {
+                        secureRandom = SecureRandom.getInstanceStrong();
+                    } catch (NoSuchAlgorithmException e2) {
+                        throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e2);
+                    }
+                } else {
+                    throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+                }
+            }
         }
         return secureRandom;
     }

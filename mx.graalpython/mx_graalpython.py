@@ -1080,7 +1080,6 @@ def graalpython_gate_runner(args, tasks):
                 "--language:python",
                 "-Dpython.WithoutSSL=true",
                 "-Dpython.WithoutPlatformAccess=true",
-                "-Dpython.ReplacementJavaRandom=com.oracle.graal.python.test.advance.ExclusionsTest$InsecureTestRandom",
                 "-Dpython.WithoutCompressionLibraries=true",
                 "-Dpython.WithoutNativePosix=true",
                 "-Dpython.WithoutJavaInet=true",

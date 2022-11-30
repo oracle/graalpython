@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.SecureRandom;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.PythonRandom;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -91,7 +91,7 @@ public class RandomBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PNone seedNone(PRandom random, @SuppressWarnings("unused") PNone none) {
-            PythonRandom secureRandom = getContext().getSecureRandom();
+            SecureRandom secureRandom = getContext().getSecureRandom();
             int[] seed = new int[PRandom.N];
             for (int i = 0; i < seed.length; ++i) {
                 seed[i] = secureRandom.nextInt();
