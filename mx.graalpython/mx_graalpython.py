@@ -465,6 +465,8 @@ def update_unittest_tags(args):
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_object_dead'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_all_freed'),
+        ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakkeydict'),
+        ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict'),
         # Disabled since code object comparison is not stable for us
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),

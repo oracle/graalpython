@@ -23,7 +23,6 @@
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_slots
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_tuple
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_tuple_subclass
-*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakkeydict
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakref
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_atomic
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_basic
@@ -60,7 +59,6 @@
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_tuple
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_tuple_of_immutables
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_tuple_subclass
-*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakref
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_exceptions
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_getstate_exc
