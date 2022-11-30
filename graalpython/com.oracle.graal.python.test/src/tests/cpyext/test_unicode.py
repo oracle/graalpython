@@ -57,7 +57,7 @@ def _reference_intern(args):
 
 def _reference_findchar(args):
     string = args[0]
-    char = args[1]
+    char = chr(args[1])
     start = args[2]
     end = args[3]
     direction = args[4]
@@ -633,21 +633,20 @@ class TestPyUnicode(CPyExtTestCase):
     test_PyUnicode_FindChar = CPyExtFunction(
         _reference_findchar,
         lambda: (
-            ("hello", "l", 0, 5, 1),
-            ("hello", "l", 0, 5, -1),
-            ("hello", "x", 0, 5, 1),
-            ("hello", "l", 0, 2, 1),
-            ("hello", "l", 3, 5, 1),
-            ("hello", "l", 4, 5, 1),
+            ("hello", ord("l"), 0, 5, 1),
+            ("hello", ord("l"), 0, 5, -1),
+            ("hello", ord("x"), 0, 5, 1),
+            ("hello", ord("l"), 0, 2, 1),
+            ("hello", ord("l"), 3, 5, 1),
+            ("hello", ord("l"), 4, 5, 1),
         ),
-        code="""Py_ssize_t wrap_PyUnicode_FindChar(PyObject* str, PyObject* c, Py_ssize_t start, Py_ssize_t end, int direction) {
-            Py_UCS4 uc = PyUnicode_4BYTE_DATA(c)[0];
-            return PyUnicode_FindChar(str, uc, start, end, direction);
+        code="""Py_ssize_t wrap_PyUnicode_FindChar(PyObject* str, Py_ssize_t ch, Py_ssize_t start, Py_ssize_t end, int direction) {
+            return PyUnicode_FindChar(str, ch, start, end, direction);
         }
         """,
         resultspec="n",
-        argspec='OOnni',
-        arguments=["PyObject* str", "PyObject* c", "Py_ssize_t start", "Py_ssize_t end", "int direction"],
+        argspec='Onnni',
+        arguments=["PyObject* str", "Py_ssize_t ch", "Py_ssize_t start", "Py_ssize_t end", "int direction"],
         callfunction="wrap_PyUnicode_FindChar",
         cmpfunc=unhandled_error_compare
     )

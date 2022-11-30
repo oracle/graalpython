@@ -834,3 +834,17 @@ class TestObjectFunctions(CPyExtTestCase):
         argspec="O",
         cmpfunc=unhandled_error_compare
     )
+
+
+class TestPickleNative:
+    def test_pickle_native(self):
+        import pickle
+        TestPicklable = CPyExtType("TestPicklable", "")
+        assert type(pickle.loads(pickle.dumps(TestPicklable()))) == TestPicklable
+        TestUnPicklable = CPyExtType("TestUnPicklable", "", cmembers="int foo;")
+        try:
+            pickle.dumps(TestUnPicklable())
+        except TypeError:
+            pass
+        else:
+            assert False, "Expected TypeError"

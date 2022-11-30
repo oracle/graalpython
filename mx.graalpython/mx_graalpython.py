@@ -53,6 +53,7 @@ import mx_unittest
 import mx_sdk
 import mx_subst
 import mx_graalpython_bisect
+import mx_graalpython_import
 import mx_graalpython_python_benchmarks
 
 from mx_gate import Task
@@ -1563,141 +1564,6 @@ def _python_checkpatchfiles():
     finally:
         os.unlink(listfilename)
 
-def import_python_sources(args):
-    "Update the inlined files from PyPy and CPython"
-
-    # mappings for files that are renamed
-    mapping = {
-        "_sre.c": "_cpython_sre.c",
-        "unicodedata.c": "_cpython_unicodedata.c",
-        "_bz2module.c": "_bz2.c",
-        "mmapmodule.c": "_mmap.c",
-        "_struct.c": "_cpython_struct.c",
-        "_testcapimodule.c": "_testcapi.c",
-    }
-    extra_pypy_files = [
-        "graalpython/lib-python/3/_md5.py",
-        "graalpython/lib-python/3/_sha1.py",
-        "graalpython/lib-python/3/_sha256.py",
-        "graalpython/lib-python/3/_sha512.py",
-    ]
-
-    parser = ArgumentParser(prog='mx python-src-import')
-    parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
-    parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
-    parser.add_argument('--python-version', action='store', help='Python version to be updated to (used for commit message)', required=True)
-    args = parser.parse_args(args)
-
-    python_sources = args.cpython
-    pypy_sources = args.pypy
-    import_version = args.python_version
-
-    print("""
-    So you think you want to update the inlined sources? Here is how it will go:
-
-    1. We'll first check the copyrights check overrides file to identify the
-       files taken from CPython or PyPy and we'll remember that list. There's a mapping
-       for files that were renamed, currently this includes:
-       \t{0!r}\n
-
-    2. We'll check out the "python-import" branch. This branch has only files
-       that were inlined from CPython or PyPy. We'll use the sources given on
-       the commandline for that. I hope those are in a state where that makes
-       sense.
-
-    3. We'll stop and wait to give you some time to check if the python-import
-       branch looks as you expect. Then we'll commit the updated files to the
-       python-import branch, push it, and move back to whatever your HEAD is
-       now.
-
-    4. We'll merge the python-import branch back into HEAD. Because these share
-       a common ancestor, git will try to preserve our patches to files, that
-       is, copyright headers and any other source patches.
-
-    5. !IMPORTANT! If files were inlined from CPython during normal development
-       that were not first added to the python-import branch, you will get merge
-       conflicts and git will tell you that the files was added on both
-       branches. You probably should resolve these using:
-
-           git checkout python-import -- path/to/file
-
-        Then check the diff and make sure that any patches that we did to those
-        files are re-applied.
-
-    6. After the merge is completed and any direct merge conflicts are resolved,
-       run this:
-
-           mx python-checkcopyrights --fix
-
-       This will apply copyrights to files that we're newly added from
-       python-import.
-
-    7. Adjust some constants in the source code:
-
-            version information in PythonLanguage (e.g., PythonLanguage#MINOR)
-
-    8. Run the tests and fix any remaining issues.
-
-    9. You should push the python-import branch using:
-
-           git push origin python-import:python-import
-
-    NOTE: Your changes, untracked files and ignored files will be stashed for the
-    duration this operation. If you abort this script, you can recover them by
-    moving back to your branch and using git stash pop. It is recommended that you
-    close your IDE during the operation.
-    """.format(mapping))
-    input("Got it?")
-
-    with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
-        cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
-        pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
-
-    # move to orphaned branch with sources
-    SUITE.vc.git_command(SUITE.dir, ["stash", "--all"])
-    SUITE.vc.git_command(SUITE.dir, ["checkout", "python-import"])
-    assert not SUITE.vc.isDirty(SUITE.dir)
-    shutil.rmtree("graalpython")
-
-    # re-copy lib-python
-    shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
-
-    def copy_inlined_files(inlined_files, source_directory):
-        inlined_files = [
-            # test files don't need to be updated, they inline some unittest code only
-            f for f in inlined_files if re.search(r'\.(py|c|h)$', f) and not re.search(r'/test_|_tests\.py$', f)
-        ]
-        for dirpath, _, filenames in os.walk(source_directory):
-            for filename in filenames:
-                original_file = os.path.join(dirpath, filename)
-                comparable_file = os.path.join(dirpath, mapping.get(filename, filename))
-                # Find the longest suffix match
-                inlined_file = max(inlined_files, key=lambda f: len(os.path.commonprefix([''.join(reversed(f)), ''.join(reversed(comparable_file))])))
-                if os.path.basename(inlined_file) != os.path.basename(comparable_file):
-                    continue
-                try:
-                    os.makedirs(os.path.dirname(inlined_file))
-                except OSError:
-                    pass
-                shutil.copy(original_file, inlined_file)
-                inlined_files.remove(inlined_file)
-                if not inlined_files:
-                    return
-        for remaining_file in inlined_files:
-            mx.warn("Could not update %s - original file not found" % remaining_file)
-
-    copy_inlined_files(pypy_files + extra_pypy_files, pypy_sources)
-    copy_inlined_files(cpy_files, python_sources)
-
-    # commit and check back
-    SUITE.vc.git_command(SUITE.dir, ["add", "."])
-    input("Check that the updated files look as intended, then press RETURN...")
-    SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
-    SUITE.vc.git_command(SUITE.dir, ["merge", "python-import"])
-    SUITE.vc.git_command(SUITE.dir, ["stash", "pop"])
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # add ci verification util
@@ -2585,7 +2451,7 @@ mx.update_commands(SUITE, {
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
-    'python-src-import': [import_python_sources, ''],
+    'python-src-import': [mx_graalpython_import.import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
     'graalpytest': [graalpytest, '[-h] [-v] [--python PYTHON] [-k TEST_PATTERN] [TESTS]'],

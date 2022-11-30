@@ -1516,6 +1516,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_ISSUBCLASS, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends RecursiveBinaryCheckBaseNode {
+        public abstract boolean executeBoolean(VirtualFrame frame, Object derived, Object cls);
 
         protected IsSubClassNode(byte depth) {
             super(depth);
@@ -1540,6 +1541,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return castToBooleanNode.executeBoolean(frame, instanceCheckResult);
             }
             return isSubtypeNode.execute(frame, derived, cls);
+        }
+
+        public static IsSubClassNode create() {
+            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create();
         }
     }
 

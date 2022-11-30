@@ -222,6 +222,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_SUBCLASS_CHECK("truffle_subclass_check"),
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes"),
     FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new"),
+    FUN_CHECK_BASESIZE_FOR_GETSTATE("tuffle_check_basesize_for_getstate"),
 
     /* PyDateTime_CAPI */
 

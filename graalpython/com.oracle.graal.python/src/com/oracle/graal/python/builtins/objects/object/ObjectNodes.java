@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CHECK_BASESIZE_FOR_GETSTATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.COPYREG_SLOTNAMES;
@@ -69,6 +70,7 @@ import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_UNICODE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NONE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NOTIMPLEMENTED;
 import static com.oracle.graal.python.runtime.object.IDUtils.getId;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -82,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -657,7 +660,8 @@ public abstract class ObjectNodes {
                             @Cached GetClassNode getClassNode,
                             @Cached PyObjectSizeNode sizeNode,
                             @Cached PyObjectLookupAttr lookupAttr,
-                            @Cached HashingStorageSetItem setHashingStorageItem) {
+                            @Cached HashingStorageSetItem setHashingStorageItem,
+                            @Cached CheckBasesizeForGetState checkBasesize) {
                 Object state;
                 Object type = getClassNode.execute(obj);
                 if (required && getItemsizeNode.execute(type) != 0) {
@@ -673,35 +677,65 @@ public abstract class ObjectNodes {
 
                 // we skip the assert that type is a type since we are certain of that in this case
                 Object slotnames = getSlotNamesNode.execute(frame, type, copyReg);
-                // TODO check basicsize typeobject.c:4213
-
+                Object[] names = EMPTY_OBJECT_ARRAY;
                 if (!PGuards.isNone(slotnames)) {
                     SequenceStorage sequenceStorage = getSequenceStorageNode.execute(slotnames);
-                    Object[] names = toArrayNode.execute(sequenceStorage);
-                    if (names.length > 0) {
-                        HashingStorage slotsStorage = EconomicMapStorage.create(names.length);
-                        boolean haveSlots = false;
-                        for (Object o : names) {
-                            try {
-                                TruffleString name = toStringNode.execute(o);
-                                Object value = lookupAttr.execute(frame, obj, name);
-                                if (!PGuards.isNoValue(value)) {
-                                    HashingStorage newStorage = setHashingStorageItem.execute(frame, slotsStorage, name, value);
-                                    assert newStorage == slotsStorage;
-                                    haveSlots = true;
-                                }
-                            } catch (CannotCastException cce) {
-                                throw raise(TypeError, ATTR_NAME_MUST_BE_STRING, o);
+                    names = toArrayNode.execute(sequenceStorage);
+                }
+
+                if (required && !checkBasesize.execute(obj, type, names.length)) {
+                    throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
+                }
+
+                if (names.length > 0) {
+                    HashingStorage slotsStorage = EconomicMapStorage.create(names.length);
+                    boolean haveSlots = false;
+                    for (Object o : names) {
+                        try {
+                            TruffleString name = toStringNode.execute(o);
+                            Object value = lookupAttr.execute(frame, obj, name);
+                            if (!PGuards.isNoValue(value)) {
+                                HashingStorage newStorage = setHashingStorageItem.execute(frame, slotsStorage, name, value);
+                                assert newStorage == slotsStorage;
+                                haveSlots = true;
                             }
+                        } catch (CannotCastException cce) {
+                            throw raise(TypeError, ATTR_NAME_MUST_BE_STRING, o);
                         }
-                        if (haveSlots) {
-                            state = factory().createTuple(new Object[]{state, factory().createDict(slotsStorage)});
-                        }
+                    }
+                    if (haveSlots) {
+                        state = factory().createTuple(new Object[]{state, factory().createDict(slotsStorage)});
                     }
                 }
 
                 return state;
             }
+        }
+    }
+
+    abstract static class CheckBasesizeForGetState extends Node {
+        public abstract boolean execute(Object obj, Object type, int slotNum);
+
+        @Specialization
+        boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+            Object result = callCapiFunction.call(FUN_CHECK_BASESIZE_FOR_GETSTATE, toSulongNode.execute(type), slotNum);
+            return (int) result == 0;
+        }
+
+        @Fallback
+        boolean doManaged(Object obj, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") int slotNum) {
+            /*
+             * CPython checks the type's basesize against the basesize of the 'object' type,
+             * effectively testing that the object doesn't have any C-level fields. Since we don't
+             * have basesize for managed types, we approximate the check by checking that the
+             * object's Java type is PythonObject, assuming that subclasses would have Java fields
+             * that would correspond to C fields.
+             *
+             * See: typeobject.c:_PyObject_GetState
+             */
+            return obj.getClass() == PythonObject.class;
         }
     }
 

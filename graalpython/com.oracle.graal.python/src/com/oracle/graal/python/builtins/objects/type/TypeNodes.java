@@ -1868,6 +1868,9 @@ public abstract class TypeNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid globals object");
             }
+            if (nameAttr == null || nameAttr == PNone.NO_VALUE) {
+                return null;
+            }
             try {
                 return ensureCastToStringNode().execute(nameAttr);
             } catch (CannotCastException e) {
