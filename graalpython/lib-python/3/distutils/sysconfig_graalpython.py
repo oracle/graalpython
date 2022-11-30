@@ -11,108 +11,9 @@ available.
 
 import sys
 import os
-import _imp
-import _sysconfig
 
-from distutils.errors import DistutilsPlatformError
-
-
-PREFIX = os.path.normpath(sys.prefix)
-EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
-BASE_PREFIX = os.path.normpath(sys.base_prefix)
-BASE_EXEC_PREFIX = os.path.normpath(sys.base_exec_prefix)
-project_base = os.path.dirname(os.path.abspath(sys.executable))
-python_build = False
-
-
-def get_python_inc(plat_specific=0, prefix=None):
-    return _sysconfig.get_python_inc()
-
-def get_python_version():
-    """Return a string containing the major and minor Python version,
-    leaving off the patchlevel.  Sample return values could be '1.5'
-    or '2.2'.
-    """
-    return _sysconfig.get_python_version()
-
-
-def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
-    """Return the directory containing the Python library (standard or
-    site additions).
-
-    If 'plat_specific' is true, return the directory containing
-    platform-specific modules, i.e. any module from a non-pure-Python
-    module distribution; otherwise, return the platform-shared library
-    directory.  If 'standard_lib' is true, return the directory
-    containing standard Python library modules; otherwise, return the
-    directory for site-specific modules.
-
-    If 'prefix' is supplied, use it instead of sys.prefix or
-    sys.exec_prefix -- i.e., ignore 'plat_specific'.
-    """
-    if prefix is None:
-        prefix = PREFIX
-    # Keep in sync with sysconfig module, distutils.install and site module
-    if standard_lib:
-        return os.path.join(prefix, "lib-python", str(sys.version_info[0]))
-    return os.path.join(prefix, "lib", 'python%d.%d' % sys.version_info[:2], "site-packages")
-
-
-_config_vars = None
-
-def _init_posix():
-    """Initialize the module as appropriate for POSIX systems."""
-    global _config_vars
-    _config_vars = _sysconfig._get_posix_vars()
-
-
-def _init_nt():
-    """Initialize the module as appropriate for NT"""
-    g = {}
-    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
-    g['EXE'] = ".exe"
-    g['SO'] = ".pyd"
-    g['SOABI'] = g['SO'].rsplit('.')[0]   # xxx?
-
-    global _config_vars
-    _config_vars = g
-
-
-def get_config_vars(*args):
-    """With no arguments, return a dictionary of all configuration
-    variables relevant for the current platform.  Generally this includes
-    everything needed to build extensions and install both pure modules and
-    extensions.  On Unix, this means every variable defined in Python's
-    installed Makefile; on Windows and Mac OS it's a much smaller set.
-
-    With arguments, return a list of values that result from looking up
-    each argument in the configuration variable dictionary.
-    """
-    global _config_vars
-    if _config_vars is None:
-        func = globals().get("_init_" + os.name)
-        if func:
-            func()
-        else:
-            _config_vars = {}
-
-        _config_vars['prefix'] = PREFIX
-        _config_vars['exec_prefix'] = EXEC_PREFIX
-
-    if args:
-        vals = []
-        for name in args:
-            vals.append(_config_vars.get(name))
-        return vals
-    else:
-        return _config_vars
-
-def get_config_var(name):
-    """Return the value of a single variable using the dictionary
-    returned by 'get_config_vars()'.  Equivalent to
-    get_config_vars().get(name)
-    """
-    return get_config_vars().get(name)
+from sysconfig import get_config_vars
+from distutils.sysconfig import _config_vars
 
 
 def customize_compiler(compiler):
@@ -131,7 +32,6 @@ def customize_compiler(compiler):
             # that Python itself was built on.  Also the user OS
             # version and build tools may not support the same set
             # of CPU architectures for universal builds.
-            global _config_vars
             # Use get_config_var() to ensure _config_vars is initialized.
             if not get_config_var('CUSTOMIZED_OSX_COMPILER'):
                 import _osx_support

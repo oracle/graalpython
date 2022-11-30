@@ -354,7 +354,6 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
 if sys.implementation.name == "graalpy":
     # Truffle: import our overrides
     from distutils.sysconfig_graalpython import *
-    from distutils.sysconfig_graalpython import _config_vars # needed by setuptools
 
     # Truffle: we cannot provide the Makefile
     del get_makefile_filename
