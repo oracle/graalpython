@@ -510,7 +510,7 @@ suite = {
         "python-lib": {
             "class": "ArchiveProject",
             "outputDir": "graalpython/lib-python/3",
-            "prefix": "lib-python/3",
+            "prefix": "",
             "ignorePatterns": [
                 ".pyc",
                 "\/__pycache__\/",
@@ -524,7 +524,7 @@ suite = {
         "python-test-support-lib": {
             "class": "ArchiveProject",
             "outputDir": "graalpython/lib-python/3/test/support",
-            "prefix": "lib-python/3/test/support",
+            "prefix": "test/support",
             "ignorePatterns": [],
             "license": ["PSF-License"],
         },
@@ -732,10 +732,11 @@ suite = {
             ],
             "layout": {
                 "./": [
-                    "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                     "file:graalpython/lib-graalpython",
-                    "file:graalpython/com.oracle.graal.python.cext/include",
+                ],
+                "./lib/python3.10/": [
+                    "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                 ],
                 "./include/python3.10/": [
                     "file:graalpython/com.oracle.graal.python.cext/include/*",

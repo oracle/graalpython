@@ -42,9 +42,7 @@ import os
 import shutil
 import sys
 from distutils.core import setup as distutils_setup, Extension
-from distutils.sysconfig import get_config_var, get_config_vars
-
-import _sysconfig
+from sysconfig import get_config_var, get_config_vars
 
 __dir__ = os.path.dirname(__file__)
 cflags_warnings = [ "-Wno-int-to-pointer-cast"
@@ -83,7 +81,7 @@ def setup(*args, **kwargs):
     return distutils_setup(*args, **kwargs)
 
 
-threaded = _sysconfig.get_config_var("WITH_THREAD")
+threaded = get_config_var("WITH_THREAD")
 if threaded:
     logger.debug("building C API threaded")
     import threading

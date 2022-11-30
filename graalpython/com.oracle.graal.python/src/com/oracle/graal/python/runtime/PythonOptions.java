@@ -107,7 +107,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Set the location of lib-graalpython. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> CoreHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @Option(category = OptionCategory.USER, help = "Set the location of lib-python/3. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
+    @Option(category = OptionCategory.USER, help = "Set the location of lib/python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR +
+                    ". Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> StdLibHome = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -i flag. Inspect interactively after running a script.", usageSyntax = "true|false", stability = OptionStability.STABLE) //

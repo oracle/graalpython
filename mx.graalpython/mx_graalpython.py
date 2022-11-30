@@ -2066,7 +2066,7 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
-        return os.path.join(SUITE.dir, "graalpython", "include")
+        return os.path.join(SUITE.dir, "graalpython", "include", "python3.10")
 
     def _prepare_headers(self):
         target_dir = self._dev_headers_dir()
