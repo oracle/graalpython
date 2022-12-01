@@ -1650,10 +1650,18 @@ public final class PythonContext extends Python3Core {
 
             if (coreHome.isEmpty()) {
                 try {
-                    for (TruffleFile f : home.list()) {
+                    outer: for (TruffleFile f : home.list()) {
                         if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
                             coreHome = toTruffleStringUncached(f.getPath());
                             break;
+                        } else if (f.getName().equals("lib") && f.isDirectory()) {
+                            for (TruffleFile f2 : f.list()) {
+                                if (f2.getName().equals("graalpy" + PythonLanguage.GRAALVM_VERSION[0] + "." + PythonLanguage.GRAALVM_VERSION[1]) && f.isDirectory()) {
+                                    stdLibHome = toTruffleStringUncached(f2.getPath());
+                                    coreHome = toTruffleStringUncached(f2.getPath());
+                                    break outer;
+                                }
+                            }
                         }
                     }
                 } catch (SecurityException | IOException e) {

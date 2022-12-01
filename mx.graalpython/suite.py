@@ -733,17 +733,17 @@ suite = {
             "layout": {
                 "./": [
                     "file:mx.graalpython/native-image.properties",
-                    "file:graalpython/lib-graalpython",
                 ],
-                "./lib/python3.10/": [
-                    "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
+                "./lib/python<py_ver>/": [
+                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                 ],
-                "./include/python3.10/": [
-                    "file:graalpython/com.oracle.graal.python.cext/include/*",
-                ],
-                "./lib-graalpython/": [
+                "./lib/graalpy<graal_ver>/": [
+                    "file:graalpython/lib-graalpython/*",
                     "extracted-dependency:GRAALPYTHON_CEXT/*",
                     "extracted-dependency:GRAALPYTHON_JNI/*",
+                ],
+                "./include/python<py_ver>/": [
+                    "file:graalpython/com.oracle.graal.python.cext/include/*",
                 ],
             },
             "maven": False,

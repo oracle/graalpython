@@ -79,6 +79,9 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
+GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
+PYTHON_VERSION = "3.10"
+
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
 SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java']
@@ -1217,7 +1220,7 @@ class ArchiveProject(mx.ArchivableProject):
             return os.path.join(self.dir, self.outputDir)
 
     def archive_prefix(self):
-        return getattr(self, "prefix", "")
+        return mx_subst.path_substitutions.substitute(getattr(self, "prefix", ""))
 
     def getResults(self):
         if hasattr(self, "outputFile"):
@@ -1270,9 +1273,19 @@ def _get_output_root(projectname):
     mx.abort("Could not find out dir for project %s" % projectname)
 
 
+def py_version_short(*args):
+    return PYTHON_VERSION
+
+
+def graal_version_short(*args):
+    return GRAAL_VERSION
+
+
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
 mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
+mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
+mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
 
 
 def delete_self_if_testdownstream(args):
@@ -2066,7 +2079,7 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
-        return os.path.join(SUITE.dir, "graalpython", "include", "python3.10")
+        return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
 
     def _prepare_headers(self):
         target_dir = self._dev_headers_dir()
