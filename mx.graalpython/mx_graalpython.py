@@ -638,7 +638,7 @@ def python_gvm(_=None):
 
 
 def python_managed_gvm(_=None):
-    home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
+    home = _graalvm_home(envfile="graalpython-managed-bash-launcher", extra_dy="/graalpython-enterprise")
     launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
@@ -928,7 +928,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
             mx.abort("At least one HPy testing thread failed.")
 
 
-def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True):
+def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
+                         checkIfWithGraalPythonEE=False):
     if env is None:
         env = os.environ
     sub_env = env.copy()
@@ -937,6 +938,10 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
         ENABLE_THREADED_GRAALPYTEST="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
     ))
+
+    if checkIfWithGraalPythonEE:
+        mx.run([python_binary, "-c", "import __graalpython_enterprise__"])
+        print("with graalpy EE")
     run_python_unittests(
         python_binary,
         args=["-v"],
@@ -1005,6 +1010,10 @@ def graalpython_gate_runner(args, tasks):
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
             run_tagged_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+
+    with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
+        if task:
+            run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True)
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
