@@ -170,16 +170,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String FROZEN_FILENAME_SUFFIX = ">";
 
     /**
-     * GraalVM version, as used by {@link Version}. Unfortunately, we cannot just use
+     * GraalVM version. Unfortunately, we cannot just use
      * {@link Version#getCurrent} as it relies on a GraalVM build, but we may run from Jar files
-     * directly during development. So we hardcode the version here and have an assert below that it
-     * is equal to the version in the GraalVM we are built into.
+     * directly during development. So we hardcode the version here.
+     * It will fail at runtime if it doesn't match the distribution layout
+     * that is derived from the actual version.
      */
-    public static final int[] GRAALVM_VERSION = new int[]{23, 0, 0};
+    public static final int GRAALVM_MAJOR = 23;
+    public static final int GRAALVM_MINOR = 0;
 
     static {
-        assert Version.getCurrent().compareTo(GRAALVM_VERSION) == 0 || Version.getCurrent().toString().equals("snapshot");
-
         switch (RELEASE_LEVEL) {
             case RELEASE_LEVEL_ALPHA:
                 RELEASE_LEVEL_STRING = tsLiteral("alpha");
