@@ -104,6 +104,7 @@ def _get_posix_vars():
     g['Py_ENABLE_SHARED'] = 0
     g['LIBDIR'] = __graalpython__.capi_home
     g['LDLIBRARY'] = 'libpython.' + so_abi + so_ext
+    g['WITH_THREAD'] = 1
     return g
 
 
