@@ -291,7 +291,7 @@ public enum OpCodes {
      * Imports a module by name determined by the immediate operand which indexes the names array
      * ({@code co_names}).
      *
-     * Pops: fromlist (must be {@code String[]}), then level (must be {@code int})
+     * Pops: fromlist (must be a constant {@code TruffleString[]}), then level (must be {@code int})
      *
      * Pushes: imported module
      */

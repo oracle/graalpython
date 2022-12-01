@@ -128,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1820,8 +1821,13 @@ public abstract class TypeNodes {
                 // set '__module__' attribute
                 Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
-                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
-                    PythonObject globals = callerFrame != null ? callerFrame.getGlobals() : null;
+                    PythonObject globals;
+                    if (getRootNode() instanceof BuiltinFunctionRootNode) {
+                        PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
+                        globals = callerFrame != null ? callerFrame.getGlobals() : null;
+                    } else {
+                        globals = PArguments.getGlobals(frame);
+                    }
                     if (globals != null) {
                         TruffleString moduleName = getModuleNameFromGlobals(globals, getItemGlobals);
                         if (moduleName != null) {

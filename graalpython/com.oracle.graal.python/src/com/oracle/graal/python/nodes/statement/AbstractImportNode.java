@@ -101,31 +101,21 @@ public abstract class AbstractImportNode extends PNodeWithContext {
     @CompilationFinal(dimensions = 1) public static final TruffleString[] T_IMPORT_ALL = tsArray("*");
     public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
 
-    @Child ImportName importNameNode;
-
-    public AbstractImportNode() {
-        super();
-    }
-
-    protected final Object importModule(VirtualFrame frame, TruffleString name) {
-        return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, 0);
-    }
-
     public static Object importModule(TruffleString name) {
         return importModule(name, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
     }
 
-    public static final Object importModule(TruffleString name, TruffleString[] fromList) {
+    public static Object importModule(TruffleString name, TruffleString[] fromList) {
         return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), 0);
     }
 
     @TruffleBoundary
-    public static final Object importModule(TruffleString name, Object[] fromList, Object level) {
+    public static Object importModule(TruffleString name, Object[] fromList, Object level) {
         return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), level);
     }
 
     @TruffleBoundary
-    public static final Object importModule(TruffleString name, Object fromList, Object level) {
+    public static Object importModule(TruffleString name, Object fromList, Object level) {
         Object builtinImport = PyFrameGetBuiltins.getUncached().execute().getAttribute(T___IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
@@ -135,11 +125,11 @@ public abstract class AbstractImportNode extends PNodeWithContext {
     }
 
     @TruffleBoundary
-    public static final Object importModule(PythonContext context, TruffleString name, TruffleString[] fromList, int level) {
+    public static Object importModule(PythonContext context, TruffleString name, TruffleString[] fromList, int level) {
         return ImportNameNodeGen.getUncached().execute(null, context, PyFrameGetBuiltins.getUncached().execute(), name, PNone.NONE, fromList, level);
     }
 
-    protected final Object importModule(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level) {
+    protected final Object importModule(VirtualFrame frame, TruffleString name, Object globals, TruffleString[] fromList, int level, ImportName importNameNode) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
         if (!context.isInitialized()) {
@@ -147,10 +137,6 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             if (builtinModule != null) {
                 return builtinModule;
             }
-        }
-        if (importNameNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            importNameNode = insert(ImportNameNodeGen.create());
         }
         if (emulateJython()) {
             if (fromList.length > 0) {
@@ -179,6 +165,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         @Specialization(limit = "1")
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level,
                         @CachedLibrary("builtins") DynamicObjectLibrary builtinsDylib,
+                        @Cached ConditionProfile importFuncProfile,
                         @Cached PConstructAndRaiseNode raiseNode,
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
@@ -188,7 +175,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             if (importFunc == null) {
                 throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
             }
-            if (context.importFunc() != importFunc) {
+            if (importFuncProfile.profile(context.importFunc() != importFunc)) {
                 Object globalsArg;
                 if (globals instanceof PNone) {
                     globalsArg = globals;
@@ -445,11 +432,11 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         private static final byte GOT_NO_NAME = 0b000001;
         public static final TruffleString T_PARENT = tsLiteral("parent");
 
-        protected static final byte[] uncachedByte() {
+        protected static byte[] uncachedByte() {
             return new byte[]{Byte.MIN_VALUE};
         }
 
-        protected static final byte[] singleByte() {
+        protected static byte[] singleByte() {
             return new byte[1];
         }
 

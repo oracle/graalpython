@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.set.SetNodesFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CreateSliceNode;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodesFactory.CreateSliceNodeGen;
-
 import com.oracle.graal.python.compiler.BinaryOpsConstants;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.FormatOptions;
@@ -251,7 +250,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final SetItemNode UNCACHED_SET_ITEM = HashingCollectionNodes.SetItemNode.getUncached();
     private static final NodeSupplier<CastToJavaIntExactNode> NODE_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode::create;
     private static final CastToJavaIntExactNode UNCACHED_CAST_TO_JAVA_INT_EXACT = CastToJavaIntExactNode.getUncached();
-    private static final NodeSupplier<ImportNode> NODE_IMPORT = ImportNode::new;
+    private static final ImportNode UNCACHED_IMPORT = ImportNode.getUncached();
+    private static final NodeSupplier<ImportNode> NODE_IMPORT = ImportNode::create;
+    private static final ImportStarNode UNCACHED_IMPORT_STAR = ImportStarNode.getUncached();
+    private static final NodeSupplier<ImportStarNode> NODE_IMPORT_STAR = ImportStarNode::create;
     private static final NodeSupplier<PyObjectGetAttr> NODE_OBJECT_GET_ATTR = PyObjectGetAttr::create;
     private static final PyObjectGetAttr UNCACHED_OBJECT_GET_ATTR = PyObjectGetAttr.getUncached();
     private static final NodeSupplier<PRaiseNode> NODE_RAISE = PRaiseNode::create;
@@ -1847,7 +1849,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.IMPORT_STAR: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes);
+                        stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.JUMP_FORWARD:
@@ -5130,7 +5132,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         TruffleString[] fromlist = (TruffleString[]) virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
         int level = castNode.execute(virtualFrame.getObject(stackTop));
-        ImportNode importNode = insertChildNode(localNodes, bci + 1, ImportNode.class, NODE_IMPORT);
+        ImportNode importNode = insertChildNode(localNodes, bci + 1, UNCACHED_IMPORT, ImportNodeGen.class, NODE_IMPORT, useCachedNodes);
         Object result = importNode.execute(virtualFrame, modname, globals, fromlist, level);
         virtualFrame.setObject(stackTop, result);
         return stackTop;
@@ -5148,13 +5150,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private int bytecodeImportStar(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes) {
+    private int bytecodeImportStar(VirtualFrame virtualFrame, int initialStackTop, int bci, int oparg, TruffleString[] localNames, Node[] localNodes, boolean useCachedNodes) {
         int stackTop = initialStackTop;
         TruffleString importName = localNames[oparg];
         int level = (int) virtualFrame.getObject(stackTop);
         virtualFrame.setObject(stackTop--, null);
-        ImportStarNode importStarNode = insertChildNode(localNodes, bci, ImportStarNode.class, () -> new ImportStarNode(importName, level));
-        importStarNode.execute(virtualFrame);
+        ImportStarNode importStarNode = insertChildNode(localNodes, bci, UNCACHED_IMPORT_STAR, ImportStarNodeGen.class, NODE_IMPORT_STAR, useCachedNodes);
+        importStarNode.execute(virtualFrame, importName, level);
         return stackTop;
     }
 

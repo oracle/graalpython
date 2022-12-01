@@ -172,12 +172,12 @@ def _pickling_benchmarks(module='pickle'):
 
 
 MICRO_NATIVE_BENCHMARKS = {
-    'c_member_access': ITER_10 + ['5'],
+    'c-member-access': ITER_10 + ['10000'],
     'c-list-iterating-obj': ITER_10 + ['50000000'],
     'c-magic-bool': ITER_10 + ['100000000'],
     'c-magic-iter': ITER_10 + ['50000000'],
-    'c_arith-binop': ITER_10 + ['5'],
-    'c_arith_binop_2': ITER_10 + ['50'],
+    'c-arith-binop': ITER_15 + ['1000'],
+    'c-arith-binop2': ITER_15 + ['100'],
     'c-call-classmethod': ITER_10 + ['50000000'],
     'c-issubtype-polymorphic-forced-to-native': ITER_10 + ['50000000'],
     'c-issubtype-polymorphic': ITER_10 + ['50000000'],

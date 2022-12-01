@@ -1,4 +1,3 @@
-*graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_all_freed
 *graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_arg_errors
 *graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_finalize
 *graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_order

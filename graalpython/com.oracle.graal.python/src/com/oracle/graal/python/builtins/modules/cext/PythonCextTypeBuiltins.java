@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -144,7 +145,7 @@ public final class PythonCextTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4)
+    @Builtin(name = "PyTruffle_CreateType", minNumOfPositionalArgs = 4, needsFrame = true)
     @GenerateNodeFactory
     abstract static class PyTruffleCreateType extends PythonQuaternaryBuiltinNode {
         @Specialization
