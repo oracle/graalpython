@@ -45,5 +45,5 @@ This can be achieved by passing
 
     -Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime -Dpolyglot.engine.WarnInterpreterOnly=false
 
-Using all of these combined brings down the GraalPy binary size from around 350MB to around 150MB.
+Using all of these combined can cut the GraalPy binary size in half at the time of this writing.
 Every embedding is different and the code pulled in by the rest of the Java code also matters, so combinations of these options should be tried to determine which effect they have in a specific instance.
