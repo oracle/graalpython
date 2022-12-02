@@ -730,21 +730,47 @@ suite = {
                 "GRAALPYTHON_JNI",
                 "GRAALPYTHON_CEXT",
             ],
-            "layout": {
-                "./": [
-                    "file:mx.graalpython/native-image.properties",
-                ],
-                "./lib/python<py_ver>/": [
-                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
-                ],
-                "./lib/graalpy<graal_ver>/": [
-                    "file:graalpython/lib-graalpython/*",
-                    "extracted-dependency:GRAALPYTHON_CEXT/*",
-                    "extracted-dependency:GRAALPYTHON_JNI/*",
-                ],
-                "./include/python<py_ver>/": [
-                    "file:graalpython/com.oracle.graal.python.cext/include/*",
-                ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "layout": {
+                            "./": [
+                                "file:mx.graalpython/native-image.properties",
+                            ],
+                            "./Lib/": [
+                                "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
+                            ],
+                            "./lib-graalpython/": [
+                                "file:graalpython/lib-graalpython/*",
+                                "extracted-dependency:GRAALPYTHON_CEXT/*",
+                                "extracted-dependency:GRAALPYTHON_JNI/*",
+                            ],
+                            "./Include/": [
+                                "file:graalpython/com.oracle.graal.python.cext/include/*",
+                            ],
+                        },
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "layout": {
+                            "./": [
+                                "file:mx.graalpython/native-image.properties",
+                            ],
+                            "./lib/python<py_ver>/": [
+                                "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
+                            ],
+                            "./lib/graalpy<graal_ver>/": [
+                                "file:graalpython/lib-graalpython/*",
+                                "extracted-dependency:GRAALPYTHON_CEXT/*",
+                                "extracted-dependency:GRAALPYTHON_JNI/*",
+                            ],
+                            "./include/python<py_ver>/": [
+                                "file:graalpython/com.oracle.graal.python.cext/include/*",
+                            ],
+                        },
+                    },
+                },
             },
             "maven": False,
         },
