@@ -54,8 +54,8 @@ public class ThreadPoolTests {
 
     @Test
     public void threadPool() {
-        String source = "import _sysconfig\n" +
-                        "assert _sysconfig.get_config_vars().get('WITH_THREAD'), 'context was not started for threading'\n" +
+        String source = "import sysconfig\n" +
+                        "assert sysconfig.get_config_vars().get('WITH_THREAD'), 'context was not started for threading'\n" +
                         "from multiprocessing.pool import ThreadPool\n" +
                         "\n" +
                         "def fun(item):\n" +

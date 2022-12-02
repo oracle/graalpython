@@ -170,11 +170,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String FROZEN_FILENAME_SUFFIX = ">";
 
     /**
-     * GraalVM version. Unfortunately, we cannot just use
-     * {@link Version#getCurrent} as it relies on a GraalVM build, but we may run from Jar files
-     * directly during development. So we hardcode the version here.
-     * It will fail at runtime if it doesn't match the distribution layout
-     * that is derived from the actual version.
+     * GraalVM version. Unfortunately, we cannot just use {@link Version#getCurrent} as it relies on
+     * a GraalVM build, but we may run from Jar files directly during development. So we hardcode
+     * the version here. It will fail at runtime if it doesn't match the distribution layout that is
+     * derived from the actual version.
      */
     public static final int GRAALVM_MAJOR = 23;
     public static final int GRAALVM_MINOR = 0;
