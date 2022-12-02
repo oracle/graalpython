@@ -933,11 +933,13 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
     if env is None:
         env = os.environ
     sub_env = env.copy()
+    python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
     sub_env.update(dict(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         ENABLE_THREADED_GRAALPYTEST="true",
-        PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
+        PYTHONPATH=python_path,
     ))
+    print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import __graalpython_enterprise__"])
@@ -1013,7 +1015,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
         if task:
-            run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True)
+            run_tagged_unittests(python_managed_gvm(), checkIfWithGraalPythonEE=True, cwd=SUITE.dir)
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
