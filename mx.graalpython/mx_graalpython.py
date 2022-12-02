@@ -638,7 +638,7 @@ def python_gvm(_=None):
 
 
 def python_managed_gvm(_=None):
-    home = _graalvm_home(envfile="graalpython-managed-bash-launcher", extra_dy="/graalpython-enterprise")
+    home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
     launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
