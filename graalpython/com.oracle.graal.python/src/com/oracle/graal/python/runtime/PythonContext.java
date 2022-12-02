@@ -567,7 +567,7 @@ public final class PythonContext extends Python3Core {
 
     private static final TruffleString T_PREFIX = T_SLASH;
     private static final TruffleString T_LIB_PYTHON_3 = tsLiteral("/lib/python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR);
-    private static final TruffleString T_LIB_GRAALPYTHON = tsLiteral("/lib-graalpython");
+    private static final TruffleString T_LIB_GRAALPYTHON = tsLiteral("/lib/graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + PythonLanguage.GRAALVM_MINOR);
     private static final TruffleString T_STD_LIB_PLACEHOLDER = tsLiteral("!stdLibHome!");
     private static final String J_NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     private static final String J_NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
