@@ -1780,13 +1780,18 @@ def python_coverage(args):
             '--jacocout', 'coverage',
             '--jacoco-format', 'lcov',
         ]
-        jacoco_gates = (
-            GraalPythonTags.junit,
-            GraalPythonTags.unittest,
-            GraalPythonTags.unittest_multi,
-            GraalPythonTags.unittest_jython,
-            GraalPythonTags.tagged,
-        )
+        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
+            jacoco_gates = (
+                GraalPythonTags.tagged,
+            )
+        else:
+            jacoco_gates = (
+                GraalPythonTags.junit,
+                GraalPythonTags.unittest,
+                GraalPythonTags.unittest_multi,
+                GraalPythonTags.unittest_jython,
+            )
+
         mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
@@ -1807,12 +1812,17 @@ def python_coverage(args):
     if args.truffle:
         executable = python_gvm()
         file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
-        variants = [
-            {"args": []},
-            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
-            # {"args": ["--llvm.managed"]},
-            # {"tagged": True},
-        ]
+        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
+            variants = [
+                # {"tagged": True},
+            ]
+        else:
+            variants = [
+                {"args": []},
+                {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+                # {"args": ["--llvm.managed"]},
+            ]
+
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
