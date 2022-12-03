@@ -1814,7 +1814,7 @@ def python_coverage(args):
         file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
         if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
             variants = [
-                # {"tagged": True},
+                {"tagged": True},
             ]
         else:
             variants = [
@@ -1909,6 +1909,10 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                 lcov = lcov.replace(home_launcher, "graalpython/graalpython").replace(suite_dir, "graalpython").replace(suite_parent, "")
                 # link our generated include paths back to the sources
                 lcov = lcov.replace("graalpython/graalpython/include/", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
+                # Map distribution paths to source paths
+                lcov = lcov.replace(f"graalpython/graalpython/lib/graalpy{graal_version_short()}", "graalpython/graalpython/lib-graalpython")
+                lcov = lcov.replace(f"graalpython/graalpython/lib/python{py_version_short()}", "graalpython/graalpython/lib-python/3")
+                lcov = lcov.replace(f"graalpython/graalpython/include/python{py_version_short()}", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
                 cmdargs += ["-a", f]
