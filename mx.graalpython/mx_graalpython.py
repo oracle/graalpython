@@ -1843,7 +1843,7 @@ def python_coverage(args):
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
             else:
-                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
+                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
