@@ -42,7 +42,8 @@ from sysconfig import (
     get_config_h_filename,
     get_config_var,
     get_config_vars,
-    get_makefile_filename,
+    # Truffle: we cannot provide the Makefile
+    # get_makefile_filename,
     get_python_version,
 )
 
@@ -263,6 +264,12 @@ def customize_compiler(compiler):
             linker_exe=cc,
             archiver=archiver)
 
+        # GRAALPY CHANGE BEGIN: added 'ranlib'
+        if compiler.executables['ranlib']:
+            # Note: it will only be !=None if compiler already had a default indicating that it needs ranlib
+            compiler.set_executable('ranlib', os.environ.get('RANLIB', get_config_var('RANLIB')))
+        # GRAALPY CHANGE END
+
         compiler.shared_lib_extension = shlib_suffix
 
 
@@ -349,12 +356,3 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
         raise DistutilsPlatformError(
             "I don't know where Python installs its library "
             "on platform '%s'" % os.name)
-
-
-if sys.implementation.name == "graalpy":
-    # Truffle: import our overrides
-    from distutils.sysconfig_graalpython import *
-    from distutils.sysconfig_graalpython import _config_vars # needed by setuptools
-
-    # Truffle: we cannot provide the Makefile
-    del get_makefile_filename

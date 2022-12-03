@@ -39,10 +39,7 @@
 import random
 import re
 import sys
-try:
-    import _sysconfig as syscfg
-except Exception:
-    import sysconfig as syscfg
+import sysconfig as syscfg
 
 if syscfg.get_config_var('WITH_THREAD'):
     import threading

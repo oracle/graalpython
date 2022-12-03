@@ -33,13 +33,13 @@ SCHEME_KEYS = ('purelib', 'platlib', 'headers', 'scripts', 'data')
 # alter locations for packages installations in a single place.
 # Note that this module is deprecated (PEP 632); all consumers
 # of this information should switch to using sysconfig directly.
-INSTALL_SCHEMES = {"unix_prefix": {}, "unix_home": {}, "nt": {}, "graalpy": {}}
+INSTALL_SCHEMES = {"unix_prefix": {}, "unix_home": {}, "nt": {}}
 
 # Copy from sysconfig._INSTALL_SCHEMES
 for key in SCHEME_KEYS:
     for distutils_scheme_name, sys_scheme_name in (
             ("unix_prefix", "posix_prefix"), ("unix_home", "posix_home"),
-            ("nt", "nt"), ("graalpy", "graalpy")):
+            ("nt", "nt")):
         sys_key = key
         sys_scheme = sysconfig._INSTALL_SCHEMES[sys_scheme_name]
         if key == "headers" and key not in sys_scheme:
@@ -477,9 +477,6 @@ class install(Command):
     def select_scheme(self, name):
         """Sets the install directories by applying the install schemes."""
         # it's the caller's problem if they supply a bad name!
-        # GraalVM change: select our scheme
-        if sys.implementation.name == 'graalpy' and not name.endswith(('_user', '_home')):
-            name = 'graalpy'
         scheme = INSTALL_SCHEMES[name]
         for key in SCHEME_KEYS:
             attrname = 'install_' + key

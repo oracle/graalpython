@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,8 +54,8 @@ public class ThreadPoolTests {
 
     @Test
     public void threadPool() {
-        String source = "import _sysconfig\n" +
-                        "assert _sysconfig.get_config_vars().get('WITH_THREAD'), 'context was not started for threading'\n" +
+        String source = "import sysconfig\n" +
+                        "assert sysconfig.get_config_vars().get('WITH_THREAD'), 'context was not started for threading'\n" +
                         "from multiprocessing.pool import ThreadPool\n" +
                         "\n" +
                         "def fun(item):\n" +

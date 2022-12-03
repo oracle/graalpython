@@ -38,31 +38,6 @@
 # SOFTWARE.
 
 
-def get_config_var(name):
-    return get_config_vars().get(name)
-
-
-# Following code is shared between GraalPy patches in the sysconfig and distutils modules:
-
-def get_python_inc(plat_specific=0, prefix=None):
-    import sys
-    import os
-    BASE_PREFIX = os.path.normpath(sys.base_prefix)
-    BASE_EXEC_PREFIX = os.path.normpath(sys.base_exec_prefix)
-    if prefix is None:
-        prefix = plat_specific and BASE_EXEC_PREFIX or BASE_PREFIX
-    return os.path.join(prefix, 'include')
-
-
-def get_python_version():
-    """Return a string containing the major and minor Python version,
-    leaving off the patchlevel.  Sample return values could be '1.5'
-    or '2.2'.
-    """
-    import sys
-    return ".".join(sys.version.split(".")[:2])
-
-
 def _get_posix_vars():
     """Initialize the config vars as appropriate for POSIX systems."""
     import _imp
@@ -84,13 +59,19 @@ def _get_posix_vars():
     toolchain_cxx = __graalpython__.get_toolchain_tool_path('CXX')
     have_cxx = toolchain_cxx is not None
 
+    python_inc = os.path.join(
+        os.path.normpath(sys.base_prefix),
+        'include',
+        f'python{sys.version_info[0]}.{sys.version_info[1]}{sys.abiflags}'
+    )
+
     g = {}
     g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
     g['OPT'] = "-stdlib=libc++ -DNDEBUG"
-    g['INCLUDEPY'] = get_python_inc()
-    g['CONFINCLUDEPY'] = get_python_inc()
-    g['CPPFLAGS'] = '-I. -I' + get_python_inc()
+    g['INCLUDEPY'] = python_inc
+    g['CONFINCLUDEPY'] = python_inc
+    g['CPPFLAGS'] = '-I. -I' + python_inc
     gnu_source = "-D_GNU_SOURCE=1"
     g['USE_GNU_SOURCE'] = gnu_source
     cflags_default = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -DGRAALVM_PYTHON_LLVM"
@@ -114,7 +95,7 @@ def _get_posix_vars():
     g['LD'] = __graalpython__.get_toolchain_tool_path('LD')
     g['EXE'] = ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
-    g['VERSION'] = get_python_version()
+    g['VERSION'] = ".".join(sys.version.split(".")[:2])
     g['Py_HASH_ALGORITHM'] = 0 # does not give any specific info about the hashing algorithm
     g['NM'] = __graalpython__.get_toolchain_tool_path('NM')
     g['MULTIARCH'] = sys.implementation._multiarch
@@ -123,4 +104,25 @@ def _get_posix_vars():
     g['Py_ENABLE_SHARED'] = 0
     g['LIBDIR'] = __graalpython__.capi_home
     g['LDLIBRARY'] = 'libpython.' + so_abi + so_ext
+    g['WITH_THREAD'] = 1
     return g
+
+
+def make_sysconfigdata():
+    # the sysconfigdata module name matches what's computed in stdlib's sysconfig.py
+    import sys
+    multiarch = getattr(sys.implementation, '_multiarch', '')
+    name = f'_sysconfigdata_{sys.abiflags}_{sys.platform}_{multiarch}'
+    sys.modules[name] = mod = type(sys)(name)
+    no_default = object()
+    def __getattr__(key, default=no_default):
+        if key == "build_time_vars":
+            return _get_posix_vars()
+        elif default is no_default:
+            raise AttributeError(key)
+        else:
+            return default
+    mod.__getattr__ = __getattr__
+
+
+make_sysconfigdata()

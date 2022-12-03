@@ -79,6 +79,9 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
+GRAAL_VERSION = ".".join(SUITE.suiteDict['version'].split('.')[:2])
+PYTHON_VERSION = "3.10"
+
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
 SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--llvm.partialPointerConversion=false', '--python.PosixModuleBackend=java']
@@ -1353,7 +1356,7 @@ class ArchiveProject(mx.ArchivableProject):
             return os.path.join(self.dir, self.outputDir)
 
     def archive_prefix(self):
-        return getattr(self, "prefix", "")
+        return mx_subst.path_substitutions.substitute(getattr(self, "prefix", ""))
 
     def getResults(self):
         if hasattr(self, "outputFile"):
@@ -1406,9 +1409,19 @@ def _get_output_root(projectname):
     mx.abort("Could not find out dir for project %s" % projectname)
 
 
+def py_version_short(*args):
+    return PYTHON_VERSION
+
+
+def graal_version_short(*args):
+    return GRAAL_VERSION
+
+
 mx_subst.path_substitutions.register_with_arg('suite', _get_suite_dir)
 mx_subst.path_substitutions.register_with_arg('src_dir', _get_src_dir)
 mx_subst.path_substitutions.register_with_arg('output_root', _get_output_root)
+mx_subst.path_substitutions.register_with_arg('py_ver', py_version_short)
+mx_subst.path_substitutions.register_with_arg('graal_ver', graal_version_short)
 
 
 def delete_self_if_testdownstream(args):
@@ -1903,13 +1916,18 @@ def python_coverage(args):
             '--jacocout', 'coverage',
             '--jacoco-format', 'lcov',
         ]
-        jacoco_gates = (
-            GraalPythonTags.junit,
-            GraalPythonTags.unittest,
-            GraalPythonTags.unittest_multi,
-            GraalPythonTags.unittest_jython,
-            GraalPythonTags.tagged,
-        )
+        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
+            jacoco_gates = (
+                GraalPythonTags.tagged,
+            )
+        else:
+            jacoco_gates = (
+                GraalPythonTags.junit,
+                GraalPythonTags.unittest,
+                GraalPythonTags.unittest_multi,
+                GraalPythonTags.unittest_jython,
+            )
+
         mx.run_mx([
             '--strict-compliance',
             '--primary', 'gate',
@@ -1930,12 +1948,17 @@ def python_coverage(args):
     if args.truffle:
         executable = python_gvm()
         file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
-        variants = [
-            {"args": []},
-            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
-            # {"args": ["--llvm.managed"]},
-            # {"tagged": True},
-        ]
+        if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
+            variants = [
+                {"tagged": True},
+            ]
+        else:
+            variants = [
+                {"args": []},
+                {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+                # {"args": ["--llvm.managed"]},
+            ]
+
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             outfile = os.path.join(SUITE.dir, "coverage_%s_$UUID$.lcov" % variant_str)
@@ -1956,7 +1979,7 @@ def python_coverage(args):
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
             else:
-                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds)
+                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
@@ -2022,6 +2045,10 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                 lcov = lcov.replace(home_launcher, "graalpython/graalpython").replace(suite_dir, "graalpython").replace(suite_parent, "")
                 # link our generated include paths back to the sources
                 lcov = lcov.replace("graalpython/graalpython/include/", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
+                # Map distribution paths to source paths
+                lcov = lcov.replace(f"graalpython/graalpython/lib/graalpy{graal_version_short()}", "graalpython/graalpython/lib-graalpython")
+                lcov = lcov.replace(f"graalpython/graalpython/lib/python{py_version_short()}", "graalpython/graalpython/lib-python/3")
+                lcov = lcov.replace(f"graalpython/graalpython/include/python{py_version_short()}", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
                 cmdargs += ["-a", f]
@@ -2202,7 +2229,7 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
-        return os.path.join(SUITE.dir, "graalpython", "include")
+        return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
 
     def _prepare_headers(self):
         target_dir = self._dev_headers_dir()

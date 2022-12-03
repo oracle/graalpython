@@ -566,8 +566,8 @@ public final class PythonContext extends Python3Core {
     }
 
     private static final TruffleString T_PREFIX = T_SLASH;
-    private static final TruffleString T_LIB_PYTHON_3 = tsLiteral("/lib-python/3");
-    private static final TruffleString T_LIB_GRAALPYTHON = tsLiteral("/lib-graalpython");
+    private static final TruffleString T_LIB_PYTHON_3 = tsLiteral("/lib/python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR);
+    private static final TruffleString T_LIB_GRAALPYTHON = tsLiteral("/lib/graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + PythonLanguage.GRAALVM_MINOR);
     private static final TruffleString T_STD_LIB_PLACEHOLDER = tsLiteral("!stdLibHome!");
     private static final String J_NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     private static final String J_NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
@@ -1657,10 +1657,17 @@ public final class PythonContext extends Python3Core {
 
             if (coreHome.isEmpty()) {
                 try {
-                    for (TruffleFile f : home.list()) {
+                    outer: for (TruffleFile f : home.list()) {
                         if (f.getName().equals("lib-graalpython") && f.isDirectory()) {
                             coreHome = toTruffleStringUncached(f.getPath());
                             break;
+                        } else if (f.getName().equals("lib") && f.isDirectory()) {
+                            for (TruffleFile f2 : f.list()) {
+                                if (f2.getName().equals("graalpy" + PythonLanguage.GRAALVM_MAJOR + "." + PythonLanguage.GRAALVM_MINOR) && f.isDirectory()) {
+                                    coreHome = toTruffleStringUncached(f2.getPath());
+                                    break outer;
+                                }
+                            }
                         }
                     }
                 } catch (SecurityException | IOException e) {
@@ -1668,9 +1675,22 @@ public final class PythonContext extends Python3Core {
             }
 
             if (stdLibHome.isEmpty()) {
+                // try stdlib layouts per sysconfig or our sources
                 try {
                     outer: for (TruffleFile f : home.list()) {
-                        if (f.getName().equals("lib-python") && f.isDirectory()) {
+                        if (getPythonOS() == PLATFORM_WIN32 && (f.getName().equals("Lib") || f.getName().equals("lib")) && f.isDirectory()) {
+                            // nt stdlib layout
+                            stdLibHome = toTruffleStringUncached(f.getPath());
+                        } else if (f.getName().equals("lib") && f.isDirectory()) {
+                            // posix stdlib layout
+                            for (TruffleFile f2 : f.list()) {
+                                if (f2.getName().equals("python" + PythonLanguage.MAJOR + "." + PythonLanguage.MINOR) && f.isDirectory()) {
+                                    stdLibHome = toTruffleStringUncached(f2.getPath());
+                                    break outer;
+                                }
+                            }
+                        } else if (f.getName().equals("lib-python") && f.isDirectory()) {
+                            // source stdlib layout
                             for (TruffleFile f2 : f.list()) {
                                 if (f2.getName().equals("3") && f.isDirectory()) {
                                     stdLibHome = toTruffleStringUncached(f2.getPath());

@@ -24,18 +24,6 @@ _ALWAYS_STR = {
 }
 
 _INSTALL_SCHEMES = {
-    # Graalpython change: custom scheme
-    # Keep in sync with distutils.sysconfig_graalpython, distutils.install and site module
-    'graalpy': {
-        'stdlib': '{installed_base}/lib-python/3',
-        'platstdlib': '{base}/lib-python/3',
-        'purelib': '{base}/lib/python{py_version_short}/site-packages',
-        'platlib': '{base}/lib/python{py_version_short}/site-packages',
-        'include': '{installed_base}/include',
-        'platinclude': '{installed_base}/include',
-        'scripts': '{base}/bin',
-        'data': '{base}',
-    },
     'posix_prefix': {
         'stdlib': '{installed_base}/{platlibdir}/python{py_version_short}',
         'platstdlib': '{platbase}/{platlibdir}/python{py_version_short}',
@@ -237,13 +225,23 @@ def _expand_vars(scheme, vars):
 
 
 def _get_preferred_schemes():
-    # XXX Graalpython change
+    if os.name == 'nt':
+        return {
+            'prefix': 'nt',
+            'home': 'posix_home',
+            'user': 'nt_user',
+        }
+    if sys.platform == 'darwin' and sys._framework:
+        return {
+            'prefix': 'posix_prefix',
+            'home': 'posix_home',
+            'user': 'osx_framework_user',
+        }
     return {
-        'prefix': 'graalpy',
-        'home': 'graalpy',
-        'user': 'graalpy',
+        'prefix': 'posix_prefix',
+        'home': 'posix_home',
+        'user': 'posix_user',
     }
-
 
 def get_preferred_scheme(key):
     scheme = _get_preferred_schemes()[key]
@@ -474,18 +472,10 @@ def _generate_posix_vars():
 def _init_posix(vars):
     """Initialize the module as appropriate for POSIX systems."""
     # _sysconfigdata is generated at build time, see _generate_posix_vars()
-    #
-    # GraalPython patch: following commented out code would import module named,
-    # e.g., _sysconfigdata__linux_x86_64-linux-gnu, which should contain the
-    # configuration data. We would need to distribute such module for all supported
-    # systems, instead, we reuse the logic from our patch of distutils.
-    #
-    # name = _get_sysconfigdata_name()
-    # _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
-    # build_time_vars = _temp.build_time_vars
-    #
-    import _sysconfig
-    vars.update(_sysconfig._get_posix_vars())
+    name = _get_sysconfigdata_name()
+    _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
+    build_time_vars = _temp.build_time_vars
+    vars.update(build_time_vars)
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""

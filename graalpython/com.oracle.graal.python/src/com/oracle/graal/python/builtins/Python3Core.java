@@ -102,7 +102,6 @@ import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TermiosModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
@@ -636,7 +635,6 @@ public abstract class Python3Core {
                         new PosixShMemModuleBuiltins(),
                         PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImporterBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImportModuleBuiltins(),
