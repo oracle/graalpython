@@ -75,6 +75,36 @@ public final class PythonOptions {
     private static final String J_STRING_LIST_SEPARATOR = "🏆";
     private static final TruffleString T_STRING_LIST_SEPARATOR = tsLiteral(J_STRING_LIST_SEPARATOR);
 
+    /**
+     * Whether Java classes are included that implement the SSL module. These come from packages
+     * including (but not limited to): javax.net.ssl, org.bouncycastle, java.security, javax.crypto,
+     * sun.security
+     */
+    public static final boolean WITHOUT_SSL = Boolean.getBoolean("python.WithoutSSL");
+
+    /**
+     * Whether Java classes are included that relate to Unix-specific access, modify process
+     * properties such as the default timezone, access the platform's Runtime MXBean, or spawn
+     * subprocesses are available.
+     */
+    public static final boolean WITHOUT_PLATFORM_ACCESS = Boolean.getBoolean("python.WithoutPlatformAccess");
+
+    /**
+     * This property can be used to exclude zip, zlib, lzma, and bzip2 support from the Python core.
+     */
+    public static final boolean WITHOUT_COMPRESSION_LIBRARIES = Boolean.getBoolean("python.WithoutCompressionLibraries");
+
+    /**
+     * This property can be used to exclude native posix support from the build. Only Java emulation
+     * will be available.
+     */
+    public static final boolean WITHOUT_NATIVE_POSIX = Boolean.getBoolean("python.WithoutNativePosix");
+
+    /**
+     * This property can be used to exclude socket and inet support from the Java posix backend.
+     */
+    public static final boolean WITHOUT_JAVA_INET = Boolean.getBoolean("python.WithoutJavaInet");
+
     public enum HPyBackendMode {
         NFI,
         JNI

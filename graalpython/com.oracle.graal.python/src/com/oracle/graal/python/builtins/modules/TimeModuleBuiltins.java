@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -304,14 +305,20 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tzset")
     @GenerateNodeFactory
     public abstract static class TzSetNode extends PythonBuiltinNode {
+        private static final TruffleString SET_TIMEZONE_ERROR = tsLiteral("Setting timezone was disallowed.");
+
         @Specialization
         @TruffleBoundary
-        public Object tzset() {
-            String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
-            if (tzEnv == null) {
-                tzEnv = "";
+        Object tzset() {
+            if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+                String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
+                if (tzEnv == null) {
+                    tzEnv = "";
+                }
+                TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
+            } else {
+                PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, SET_TIMEZONE_ERROR);
             }
-            TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
             return PNone.NONE;
         }
     }

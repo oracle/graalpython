@@ -548,6 +548,8 @@ class GraalPythonTags(object):
     native_image_embedder = 'python-native-image-embedder'
     license = 'python-license'
     windows = 'python-windows-smoketests'
+    language_checker = 'python-language-checker'
+    exclusions_checker = 'python-class-exclusion-checker'
 
 
 def python_gate(args):
@@ -650,6 +652,7 @@ def python_enterprise_gvm(_=None):
     mx.log(launcher)
     return launcher
 
+
 def python_svm(_=None):
     home = _graalvm_home(envfile="graalpython-launcher")
     launcher = _join_bin(home, "graalpy")
@@ -662,6 +665,22 @@ def python_managed_svm():
     launcher = _join_bin(home, "graalpy-managed")
     mx.log(launcher)
     return launcher
+
+
+def native_image(args):
+    mx.run_mx([
+        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
+        "--dy", "graalpython",
+        "--native-images=",
+        "build",
+    ])
+    mx.run_mx([
+        "-p", os.path.join(mx.suite("truffle").dir, "..", "substratevm"),
+        "--dy", "graalpython",
+        "--native-images=",
+        "native-image",
+        *args
+    ])
 
 
 def python_so():
@@ -1060,6 +1079,123 @@ def graalpython_gate_runner(args, tasks):
             success = "\n".join(["win32"])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+
+    with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker]) as task:
+        if task:
+            mx.run_mx([
+                "--dy", "graalpython,/substratevm",
+                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "--native-images=",
+                "build",
+            ])
+            mx.run_mx([
+                "--dy", "graalpython,/substratevm",
+                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "--native-images=",
+                "gate", "svm-truffle-tck-python",
+            ])
+
+    with Task('Python exclusion of security relevant classes', tasks, tags=[GraalPythonTags.exclusions_checker]) as task:
+        if task:
+            native_image([
+                "--language:python",
+                "-Dpython.WithoutSSL=true",
+                "-Dpython.WithoutPlatformAccess=true",
+                "-Dpython.WithoutCompressionLibraries=true",
+                "-Dpython.WithoutNativePosix=true",
+                "-Dpython.WithoutJavaInet=true",
+                "-Dimage-build-time.PreinitializeContexts=",
+                "-Dtruffle.TruffleRuntime=com.oracle.truffle.api.impl.DefaultTruffleRuntime",
+                "-H:+ReportExceptionStackTraces",
+                *map(
+                    lambda s: f"-H:ReportAnalysisForbiddenType={s}",
+                    """
+                    com.sun.security.auth.UnixNumericGroupPrincipal
+                    com.sun.security.auth.module.UnixSystem
+                    java.security.KeyManagementException
+                    java.security.KeyStore
+                    java.security.KeyStoreException
+                    java.security.SignatureException
+                    java.security.UnrecoverableEntryException
+                    java.security.UnrecoverableKeyException
+                    java.security.cert.CRL
+                    java.security.cert.CRLException
+                    java.security.cert.CertPathBuilder
+                    java.security.cert.CertPathBuilderSpi
+                    java.security.cert.CertPathChecker
+                    java.security.cert.CertPathParameters
+                    java.security.cert.CertSelector
+                    java.security.cert.CertStore
+                    java.security.cert.CertStoreParameters
+                    java.security.cert.CertStoreSpi
+                    java.security.cert.CertificateEncodingException
+                    java.security.cert.CertificateParsingException
+                    java.security.cert.CollectionCertStoreParameters
+                    java.security.cert.Extension
+                    java.security.cert.PKIXBuilderParameters
+                    java.security.cert.PKIXCertPathChecker
+                    java.security.cert.PKIXParameters
+                    java.security.cert.PKIXRevocationChecker
+                    java.security.cert.PKIXRevocationChecker$Option
+                    java.security.cert.TrustAnchor
+                    java.security.cert.X509CRL
+                    java.security.cert.X509CertSelector
+                    java.security.cert.X509Certificate
+                    java.security.cert.X509Extension
+                    sun.security.x509.AVA
+                    sun.security.x509.AVAComparator
+                    sun.security.x509.AVAKeyword
+                    sun.security.x509.AuthorityInfoAccessExtension
+                    sun.security.x509.AuthorityKeyIdentifierExtension
+                    sun.security.x509.BasicConstraintsExtension
+                    sun.security.x509.CRLDistributionPointsExtension
+                    sun.security.x509.CertAttrSet
+                    sun.security.x509.CertificatePoliciesExtension
+                    sun.security.x509.CertificatePolicySet
+                    sun.security.x509.DNSName
+                    sun.security.x509.EDIPartyName
+                    sun.security.x509.ExtendedKeyUsageExtension
+                    sun.security.x509.Extension
+                    sun.security.x509.GeneralName
+                    sun.security.x509.GeneralNameInterface
+                    sun.security.x509.GeneralSubtree
+                    sun.security.x509.GeneralSubtrees
+                    sun.security.x509.IPAddressName
+                    sun.security.x509.IssuerAlternativeNameExtension
+                    sun.security.x509.KeyUsageExtension
+                    sun.security.x509.NameConstraintsExtension
+                    sun.security.x509.NetscapeCertTypeExtension
+                    sun.security.x509.OIDMap
+                    sun.security.x509.OIDMap$OIDInfo
+                    sun.security.x509.OIDName
+                    sun.security.x509.OtherName
+                    sun.security.x509.PKIXExtensions
+                    sun.security.x509.PrivateKeyUsageExtension
+                    sun.security.x509.RDN
+                    sun.security.x509.RFC822Name
+                    sun.security.x509.SubjectAlternativeNameExtension
+                    sun.security.x509.SubjectKeyIdentifierExtension
+                    sun.security.x509.URIName
+                    sun.security.x509.X400Address
+                    sun.security.x509.X500Name
+
+                    com.oracle.graal.python.runtime.NFIPosixSupport
+
+                    java.util.zip.Adler32
+
+                    org.tukaani.xz.XZ
+                    org.tukaani.xz.XZOutputStream
+                    org.tukaani.xz.LZMA2Options
+                    org.tukaani.xz.FilterOptions
+
+                    java.util.zip.ZipInputStream
+
+                    java.nio.channels.ServerSocketChannel
+                    """.split()
+                ),
+                "-cp", mx.dependency("com.oracle.graal.python.test").classpath_repr(),
+                "com.oracle.graal.python.test.advance.ExclusionsTest"
+            ])
 
 
 mx_gate.add_gate_runner(SUITE, graalpython_gate_runner)

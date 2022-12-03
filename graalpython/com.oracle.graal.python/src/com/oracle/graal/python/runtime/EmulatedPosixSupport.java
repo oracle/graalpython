@@ -256,7 +256,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -362,7 +361,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @ImportStatic(ImageInfo.class)
     public static class Getpid {
 
         private static final TruffleString T_PROC_SELF_STAT = tsLiteral("/proc/self/stat");
@@ -380,8 +378,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         @Specialization(replaces = "getPid")
         @TruffleBoundary
         static long getPidFallback(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
-            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-            return Long.parseLong(info.split("@")[0]);
+            if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+                String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+                return Long.parseLong(info.split("@")[0]);
+            } else {
+                return Long.MAX_VALUE;
+            }
         }
     }
 
@@ -552,6 +554,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("select was excluded");
+        }
         SelectableChannel[] readChannels = getSelectableChannels(readfds);
         SelectableChannel[] writeChannels = getSelectableChannels(writefds);
         // Java doesn't support any exceptional conditions we could apply on errfds, report a
@@ -880,6 +885,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     public void setBlocking(int fd, boolean blocking,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("setBlocking was excluded");
+        }
         try {
             Channel channel = getChannel(fd);
             if (channel instanceof EmulatedSocket) {
@@ -991,9 +999,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             return unixStat(f, linkOptions);
         } catch (UnsupportedOperationException unsupported) {
-            try {
-                return posixStat(f, linkOptions);
-            } catch (UnsupportedOperationException unsupported2) {
+            if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+                try {
+                    return posixStat(f, linkOptions);
+                } catch (UnsupportedOperationException unsupported2) {
+                    return basicStat(f, linkOptions);
+                }
+            } else {
                 return basicStat(f, linkOptions);
             }
         }
@@ -1131,7 +1143,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @TruffleBoundary(allowInlining = true)
     private static long getPrincipalId(UserPrincipal principal) {
-        if (principal instanceof UnixNumericGroupPrincipal) {
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS && principal instanceof UnixNumericGroupPrincipal) {
             try {
                 return Long.decode(principal.getName());
             } catch (NumberFormatException ignored) {
@@ -1188,6 +1200,9 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @TruffleBoundary
     private static String getHostName() {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            return "";
+        }
         try {
             InetAddress addr;
             addr = InetAddress.getLocalHost();
@@ -1850,9 +1865,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public long getuid() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
-            return new com.sun.security.auth.module.UnixSystem().getUid();
+        if (!PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            String osName = System.getProperty("os.name");
+            if (osName.contains("Linux")) {
+                return new UnixSystem().getUid();
+            }
         }
         return 1000;
     }
@@ -1899,6 +1916,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            throw new UnsupportedPosixFeatureException("forkExec was excluded");
+        }
 
         // TODO there are a few arguments we ignore, we should throw an exception or report a
         // compatibility warning
@@ -2109,6 +2129,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int system(Object commandObj) {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            return 126; // cannot execute exit code
+        }
         String cmd = pathToJavaString(commandObj);
         LOGGER.fine(() -> "os.system: " + cmd);
 
@@ -2484,6 +2507,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            throw new UnsupportedPosixFeatureException("getpwuid was excluded");
+        }
         UnixSystem unix = new UnixSystem();
         if (unix.getUid() != uid) {
             throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
@@ -2496,6 +2522,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) {
+        if (PythonOptions.WITHOUT_PLATFORM_ACCESS) {
+            throw new UnsupportedPosixFeatureException("getpwnam was excluded");
+        }
         UnixSystem unix = new UnixSystem();
         if (!unix.getUsername().equals(name)) {
             throw new UnsupportedPosixFeatureException("getpwnam with other uid than the current user");
@@ -2524,6 +2553,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public int socket(int domain, int type, int protocol,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("socket was excluded");
+        }
         if (domain != AF_INET.value && domain != AF_INET6.value) {
             throw posixException(OSErrorEnum.EAFNOSUPPORT);
         }
@@ -2546,6 +2578,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public AcceptResult accept(int sockfd) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("accept was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         EmulatedSocket c = null;
         try {
@@ -2570,6 +2605,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("bind was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         EmulatedUniversalSockAddrImpl usa = (EmulatedUniversalSockAddrImpl) addr;
         if (socket.family != usa.getFamily()) {
@@ -2585,6 +2623,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("connect was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         EmulatedUniversalSockAddrImpl usa = (EmulatedUniversalSockAddrImpl) addr;
         if (socket.family == AF_INET.value && usa.getFamily() == AF_INET6.value) {
@@ -2600,6 +2641,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void listen(int sockfd, int backlog) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("listen was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         try {
             socket.listen(backlog);
@@ -2611,6 +2655,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public UniversalSockAddr getpeername(int sockfd) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("getpeername was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         try {
             SocketAddress sa = socket.getPeerName();
@@ -2645,6 +2692,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("send was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
         try {
@@ -2657,6 +2707,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("sendto was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         EmulatedUniversalSockAddrImpl usa = (EmulatedUniversalSockAddrImpl) destAddr;
         if (socket.family == AF_INET.value && usa.getFamily() == AF_INET6.value) {
@@ -2673,6 +2726,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("recv was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
         try {
@@ -2685,6 +2741,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("recvfrom was excluded");
+        }
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
         try {
@@ -2709,6 +2768,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("getsockopt was excluded");
+        }
         assert optval.length >= optlen;
         EmulatedSocket socket = getEmulatedSocket(sockfd);
         try {
@@ -2757,6 +2819,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("setsockopt was excluded");
+        }
         EmulatedSocket s = getEmulatedSocket(sockfd);
         try {
             if (level == SOL_SOCKET.value) {
@@ -2922,6 +2987,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws GetAddrInfoException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("getnameinfo was excluded");
+        }
         InetSocketAddress sa = ((EmulatedUniversalSockAddrImpl) addr).socketAddress;
         InetAddress a = sa.getAddress();
         int port = sa.getPort();
@@ -2970,6 +3038,9 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
+        if (PythonOptions.WITHOUT_JAVA_INET) {
+            throw new UnsupportedPosixFeatureException("getaddrinfo was excluded");
+        }
         if (node == null && service == null) {
             throw gaiError(EAI_NONAME.value);
         }

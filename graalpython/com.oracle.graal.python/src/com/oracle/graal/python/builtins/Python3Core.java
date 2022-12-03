@@ -344,6 +344,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
@@ -386,7 +387,7 @@ public abstract class Python3Core {
                         toTruffleStringUncached("_sre"),
                         toTruffleStringUncached("function"),
                         toTruffleStringUncached("_sysconfig"),
-                        toTruffleStringUncached("zipimport"),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : toTruffleStringUncached("zipimport"),
                         toTruffleStringUncached("java"),
                         toTruffleStringUncached("pip_hook"),
                         toTruffleStringUncached("_struct")));
@@ -402,6 +403,7 @@ public abstract class Python3Core {
                 }
             }
         }
+        coreFiles.removeAll(Arrays.asList(new TruffleString[]{null}));
         return coreFiles.toArray(new TruffleString[coreFiles.size()]);
     }
 
@@ -422,9 +424,13 @@ public abstract class Python3Core {
         PythonOS currentOs = PythonOS.getPythonOS();
         List<PythonBuiltins> toRemove = new ArrayList<>();
         for (PythonBuiltins builtin : builtins) {
-            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-            if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+            if (builtin == null) {
                 toRemove.add(builtin);
+            } else {
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+                    toRemove.add(builtin);
+                }
             }
         }
         builtins.removeAll(toRemove);
@@ -607,10 +613,10 @@ public abstract class Python3Core {
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
-                        new SelectModuleBuiltins(),
-                        new SocketModuleBuiltins(),
-                        new SocketBuiltins(),
-                        new SignalModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SelectModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SocketModuleBuiltins(),
+                        PythonOptions.WITHOUT_NATIVE_POSIX && PythonOptions.WITHOUT_JAVA_INET ? null : new SocketBuiltins(),
+                        PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new SignalModuleBuiltins(),
                         new TracebackBuiltins(),
                         new GcModuleBuiltins(),
                         new AtexitModuleBuiltins(),
@@ -621,19 +627,19 @@ public abstract class Python3Core {
                         new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
-                        new SSLModuleBuiltins(),
-                        new SSLContextBuiltins(),
-                        new SSLErrorBuiltins(),
-                        new SSLSocketBuiltins(),
-                        new MemoryBIOBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new SSLContextBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new SSLErrorBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new SSLSocketBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
-                        new PosixSubprocessModuleBuiltins(),
+                        PythonOptions.WITHOUT_PLATFORM_ACCESS ? null : new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
-                        new ZipImporterBuiltins(),
-                        new ZipImportModuleBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImporterBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImportModuleBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
@@ -658,9 +664,9 @@ public abstract class Python3Core {
                         new ZipLongestBuiltins(),
 
                         // zlib
-                        new ZLibModuleBuiltins(),
-                        new ZlibCompressBuiltins(),
-                        new ZlibDecompressBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZLibModuleBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibCompressBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZlibDecompressBuiltins(),
 
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
@@ -677,9 +683,9 @@ public abstract class Python3Core {
                         new ContextvarsModuleBuiltins(),
 
                         // lzma
-                        new LZMAModuleBuiltins(),
-                        new LZMACompressorBuiltins(),
-                        new LZMADecompressorBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMAModuleBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMACompressorBuiltins(),
+                        PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new LZMADecompressorBuiltins(),
 
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
@@ -726,7 +732,7 @@ public abstract class Python3Core {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode()) {
+        if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES && (nativeAccessAllowed || ImageInfo.inImageBuildtimeCode())) {
             builtins.add(new BZ2CompressorBuiltins());
             builtins.add(new BZ2DecompressorBuiltins());
             builtins.add(new BZ2ModuleBuiltins());
@@ -923,7 +929,7 @@ public abstract class Python3Core {
              * would never include the intrinsified _bz2 module in the native image since native
              * access is never allowed during native image build time.
              */
-            if (ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
+            if (!PythonOptions.WITHOUT_COMPRESSION_LIBRARIES && ImageInfo.inImageCode() && !getContext().isNativeAccessAllowed()) {
                 removeBuiltinModule(BuiltinNames.T_BZ2);
             }
 

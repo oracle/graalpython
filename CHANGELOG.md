@@ -9,6 +9,9 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Include GraalVM version in `sys.implementation.cache_tag` and `sysconfig`'s `EXT_SUFFIX` and `SOABI`, to ensure proper detection of compatible bytecode files and native extensions.
 * Update the builtin venv module to create virtual environments with symlinks instead of generated shell scripts that delegated to the base GraalPy.
 * Add GraalPy plugin for [Virtualenv](https://virtualenv.pypa.io) as a builtin module, such that creating virtual environments with `virtualenv` on GraalPy works out of the box.
+* Allow excluding the Java-based SSL module that uses classes from `java.security.*`, `org.bouncycastle.*`, `javax.net.ssl.*` and any related classes from the native image by passing `-Dpython.java.ssl=false` to the native image build Java arguments.
+* Allow excluding the Java UnixSystem classes from `com.sun.security.auth.*` by passing `-Dpython.java.auth=false` to the native image build Java arguments. This makes the POSIX calls `getpwuid`, `getpwname`, and `getuid` return less precise results in the Java-based POSIX backend.
+* Allow excluding the use of `sun.misc.Signal` and `sun.misc.SignalHandler` from GraalPy by passing `-Dpython.java.signals=false` to the native image build Java arguments. This removes the `signal` module from the binary.
 
 ## Version 22.3.0
 * Rename GraalPython to GraalPy. This change also updates the launchers we ship to include symlinks from `python` and `python3` to `graalpy` for better integration with other tools.

@@ -1,0 +1,12 @@
+[
+  {
+    "name": "javax.xml.catalog.CatalogImpl$1",
+    "methods": [
+      {
+        "name": "hasNext",
+        "justification": "Pulled in only via Sulong's XAR parser, which is never used on Linux.",
+        "parameterTypes": []
+      }
+    ]
+  }
+]

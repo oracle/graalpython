@@ -1,0 +1,12 @@
+[
+  {
+    "name": "com.ibm.icu.impl.ClassLoaderUtil$BootstrapClassLoader",
+    "methods": [
+      {
+        "name": "<init>",
+        "justification": "Creates a new dummy ClassLoader to represent a null ClassLoader, classloading is not supported by SVM.",
+        "parameterTypes": []
+      }
+    ]
+  }
+]
