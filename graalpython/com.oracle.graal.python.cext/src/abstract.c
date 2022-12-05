@@ -60,7 +60,7 @@ int PyIter_Check(PyObject *obj) {
     PyTypeObject *tp = Py_TYPE(obj);
     return (tp->tp_iternext != NULL &&
             tp->tp_iternext != &_PyObject_NextNotImplemented &&
-            tp->tp_iternext != Py_NotImplemented);
+            ((PyObject *)tp->tp_iternext) != Py_NotImplemented);
 }
 
 UPCALL_ID(PyNumber_Check);
