@@ -162,6 +162,8 @@
 *graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_link
 *graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_listdir_scandir
 *graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_mkdir
+*graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_mkfifo
+*graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_mknod
 *graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_open
 *graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_pwritev
 *graalpython.lib-python.3.test.test_posix.TestPosixWeaklinking.test_readlink
