@@ -43,6 +43,14 @@ suite = {
                 ]
             },
             {
+                "name": "vm",
+                "version": "f1e3336ec202f7a35da0a0ed6242b4f0438957c0",
+                "subdir": True,
+                "urls": [
+                    {"url": "https://github.com/oracle/graal", "kind": "git"},
+                ]
+            },
+            {
                 "name": "tools",
                 "version": "f1e3336ec202f7a35da0a0ed6242b4f0438957c0",
                 "subdir": True,
@@ -757,15 +765,15 @@ suite = {
                             "./": [
                                 "file:mx.graalpython/native-image.properties",
                             ],
-                            "./lib/python<py_ver>/": [
+                            "./lib/python<py_ver:major_minor_nodot>/": [
                                 "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                             ],
-                            "./lib/graalpy<graal_ver>/": [
+                            "./lib/graalpy<graal_ver:major_minor_nodot>/": [
                                 "file:graalpython/lib-graalpython/*",
                                 "extracted-dependency:GRAALPYTHON_CEXT/*",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
                             ],
-                            "./include/python<py_ver>/": [
+                            "./include/python<py_ver:major_minor_nodot>/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
                             ],
                         },
