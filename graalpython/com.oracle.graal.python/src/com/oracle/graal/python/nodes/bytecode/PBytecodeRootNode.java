@@ -2648,7 +2648,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @InliningCutoff
     private void traceException(VirtualFrame virtualFrame, MutableLoopData mutableData, int bci, PException pe) {
-        mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
+        mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         if (mutableData.getPyFrame().getLocalTraceFun() != null) {
             Object traceback = GetExceptionTracebackNode.getUncached().execute(pe);
             PBaseException peForPython = pe.setCatchingFrameAndGetEscapedException(virtualFrame, this);
@@ -2702,7 +2702,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         if (shouldTrace) {
             mutableData.setReturnLine(mutableData.getPastLine());
-            mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
+            mutableData.setPyFrame(ensurePyFrame(virtualFrame));
             if (mutableData.getPyFrame().getTraceLine()) {
                 invokeTraceFunction(virtualFrame, null, mutableData.getThreadState(this), mutableData, PythonContext.TraceEvent.LINE,
                                 mutableData.getPastLine(), true);
@@ -2834,15 +2834,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return bytecodeBinarySubscrOO(virtualFrame, stackTop, bci, localNodes, bcioffset);
     }
 
-    private PFrame ensurePyFrame(VirtualFrame virtualFrame, PFrame pyFrame) {
+    private PFrame ensurePyFrame(VirtualFrame virtualFrame) {
         if (traceMaterializeFrameNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             traceMaterializeFrameNode = insert(MaterializeFrameNode.create());
         }
-        if (pyFrame == null) {
-            return traceMaterializeFrameNode.execute(virtualFrame, this, true, true);
-        }
-        return pyFrame;
+        return traceMaterializeFrameNode.execute(virtualFrame, this, true, true);
     }
 
     @InliningCutoff
@@ -2853,7 +2850,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         assert event != PythonContext.TraceEvent.DISABLED;
         threadState.tracingStart(event);
-        PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
+        PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : threadState.getTraceFun();
         if (traceFn == null) {
             threadState.tracingStop();
@@ -2905,7 +2902,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         threadState.profilingStart();
-        PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, mutableData.getPyFrame()));
+        PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         Object profileFun = threadState.getProfileFun();
 
         if (profileFun == null) {
