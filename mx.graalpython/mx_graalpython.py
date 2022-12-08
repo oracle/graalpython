@@ -151,6 +151,11 @@ def full_python(args):
     """run python from graalvm"""
     if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
         args.insert(0, '--python.WithJavaStacktrace=1')
+
+    if "--hosted" in args[:2]:
+        args.remove("--hosted")
+        return python(args)
+
     if not any(arg.startswith('--experimental-options') for arg in args):
         args.insert(0, '--experimental-options')
 
@@ -2585,8 +2590,7 @@ def no_return(fn):
 mx.update_commands(SUITE, {
     'python-build-watch': [python_build_watch, ''],
     'python': [full_python, '[Python args|@VM options]'],
-    'python3': [full_python, '[Python args|@VM options]'],
-    'python-hosted': [python, '[Python args|@VM options]'],
+    'python3': [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM] [Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
