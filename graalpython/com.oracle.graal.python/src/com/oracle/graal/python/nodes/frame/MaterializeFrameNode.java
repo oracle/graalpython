@@ -41,10 +41,8 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -56,7 +54,6 @@ import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -65,7 +62,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -316,8 +312,6 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -333,7 +327,7 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
-                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, setItem, delItem, updatedStorage, profile);
             }
         }
 
@@ -346,8 +340,6 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -363,7 +355,7 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
-                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, setItem, delItem, updatedStorage, profile);
             }
         }
 
@@ -371,8 +363,6 @@ public abstract class MaterializeFrameNode extends Node {
                         "doGenericDictCachedLoop"})
         static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -388,7 +378,7 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = ConditionProfile.getUncached();
-                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, setItem, delItem, updatedStorage, profile);
             }
         }
 
@@ -399,8 +389,8 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict,
-                        HashingStorageGetItem getItem, HashingStorageSetItem setItem, HashingStorageDelItem delItem,
-                        ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
+                        HashingStorageSetItem setItem, HashingStorageDelItem delItem,
+                        BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
             TruffleString identifier = info.getVariableName(slot);
             Object value = frameToSync.getValue(slot);
@@ -465,13 +455,6 @@ public abstract class MaterializeFrameNode extends Node {
                 return frameProfile.profile(((LocalsStorage) storage).getFrame()).getFrameDescriptor();
             }
             return null;
-        }
-
-        private static Object resolveCellValue(ConditionProfile profile, Object value) {
-            if (profile.profile(value instanceof PCell)) {
-                return ((PCell) value).getRef();
-            }
-            return value;
         }
 
         public static SyncFrameValuesNode create() {
