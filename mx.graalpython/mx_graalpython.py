@@ -980,15 +980,13 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
                          checkIfWithGraalPythonEE=False):
-    if env is None:
-        env = os.environ
-    sub_env = env.copy()
     python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
     sub_env = dict(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         ENABLE_THREADED_GRAALPYTEST="true",
         PYTHONPATH=python_path,
-    ).update(sub_env)
+    )
+    sub_env.update(env or os.environ)
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
