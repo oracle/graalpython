@@ -239,6 +239,7 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
+                        "buildDependencies": [],
                     },
                 },
                 "<others>": {
@@ -273,6 +274,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "defaultBuild" : True,
                     },
                 },
             },
@@ -482,6 +484,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "defaultBuild" : True,
                     },
                 },
             },
@@ -510,6 +513,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "defaultBuild" : True,
                     },
                 },
             },
