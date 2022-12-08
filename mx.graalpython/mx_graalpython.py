@@ -914,10 +914,10 @@ def patch_batch_launcher(launcher_path, jvm_args):
         launcher.writelines(lines)
 
 
-def run_hpy_unittests(python_binary, args=None, include_native=True):
+def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
-        env = os.environ.copy()
+        env = env or os.environ.copy()
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
         delete_bad_env_keys(env)
@@ -969,7 +969,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
         if any(thread_errors):
             for t in threads:
                 mx.log_error("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
-            mx.abort("At least one HPy testing thread failed.")
+            if nonZeroIsFatal:
+                mx.abort("At least one HPy testing thread failed.")
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
@@ -1978,6 +1979,7 @@ def python_coverage(args):
             variants = [
                 {"args": []},
                 {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+                {"hpy": True},
                 # {"args": ["--llvm.managed"]},
             ]
 
@@ -2000,6 +2002,8 @@ def python_coverage(args):
             env['ENABLE_THREADED_GRAALPYTEST'] = "false"
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
+            elif kwds.pop("hpy", False):
+                run_hpy_unittests(executable, env=env, nonZeroIsFatal=False)
             else:
                 run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
 
