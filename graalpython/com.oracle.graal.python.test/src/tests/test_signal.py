@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -53,26 +53,28 @@ class SignalTests(unittest.TestCase):
 
 
 def test_alarm2():
-    try:
-        import _signal
-    except ImportError:
-        import signal as _signal
     import time
+    import signal
 
-    triggered = None
+    class CustomError(RuntimeError):
+        pass
 
-    def handler(signal, frame):
-        nonlocal triggered
-        triggered = (signal, frame)
+    def handler(signum, frame):
+        raise CustomError(signum, frame)
 
-    oldhandler = _signal.signal(_signal.SIGALRM, handler)
-    assert oldhandler == _signal.SIG_DFL, "oldhandler != SIG_DFL"
-    assert _signal.getsignal(_signal.SIGALRM) is handler, "getsignal handler != handler"
+    oldhandler = signal.signal(signal.SIGALRM, handler)
+    assert oldhandler == signal.SIG_DFL, "oldhandler != SIG_DFL"
+    assert signal.getsignal(signal.SIGALRM) is handler, "getsignal handler != handler"
 
-    _signal.alarm(1)
+    signal.alarm(1)
 
-    while not triggered:
-        time.sleep(0.5)
-
-    assert triggered[0] == _signal.SIGALRM
-    assert triggered[1].f_code.co_name # just check that we have access to the frame
+    try:
+        tries = 5
+        while tries:
+            time.sleep(0.5)
+            tries -= 1
+    except CustomError as e:
+        assert e.args[0] == signal.SIGALRM
+        assert e.args[1].f_code.co_name  # just check that we have access to the frame
+    else:
+        assert False, "Singnal handler didn't trigger or propagate exception"
