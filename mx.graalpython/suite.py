@@ -43,7 +43,7 @@ suite = {
                 ]
             },
             {
-                "name": "vm",
+                "name": "sdk",
                 "version": "f1e3336ec202f7a35da0a0ed6242b4f0438957c0",
                 "subdir": True,
                 "urls": [
