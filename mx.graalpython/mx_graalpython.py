@@ -2080,7 +2080,12 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                 lcov = lcov.replace(f"graalpython/graalpython/include/python{py_version_short()}", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
-                cmdargs += ["-a", f]
+
+                # check the file contains valid records
+                if mx.run(["/usr/bin/env", "lcov", "--summary", f], nonZeroIsFatal=False) == 0:
+                    cmdargs += ["-a", f]
+                else:
+                    mx.warn(f"Skipping {f}")
 
         # actually run the merge command
         mx.run(cmdargs)
