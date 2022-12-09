@@ -74,7 +74,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     public static final int INT_MAX_STR_DIGITS_THRESHOLD = 640;
 
     public static void main(String[] args) {
-        GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
     }
 
@@ -552,6 +551,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
+        GraalPythonMain.setStartupTime();
         String cachePrefix = null;
 
         // prevent the use of System.out/err - they are PrintStreams which suppresses exceptions

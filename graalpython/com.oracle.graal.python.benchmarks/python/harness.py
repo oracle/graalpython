@@ -39,8 +39,18 @@
 
 from time import time
 
-# Capture module load time as soon as possible for other engines. The unit is seconds.
-_module_start_time = time()
+try:
+    # https://docs.python.org/3/library/time.html#time.monotonic
+    # The reference point of the returned value is undefined, 
+    # so that **only the difference between the results of two calls is valid**.
+    from time import monotonic_ns
+    _module_start_time = monotonic_ns()
+    monotonic_best_accuracy = monotonic_ns
+    UNITS_PER_SECOND = 1e9
+except:
+    _module_start_time = time()
+    monotonic_best_accuracy = time
+    UNITS_PER_SECOND = 1.0
 
 import _io
 import os
@@ -54,15 +64,6 @@ except ImportError:
 
 # for compatibility with Jython 2.7
 GRAALPYTHON = getattr(getattr(sys, "implementation", None), "name", None) == "graalpy"
-
-# Try to use the timer with best accuracy. Unfortunately, 'monotonic_ns' is not available everywhere.
-if GRAALPYTHON:
-    from time import monotonic_ns
-    monotonic_best_accuracy = monotonic_ns
-    UNITS_PER_SECOND = 1e9
-else:
-    monotonic_best_accuracy = time
-    UNITS_PER_SECOND = 1.0
 
 _HRULE = '-'.join(['' for i in range(80)])
 
@@ -79,10 +80,13 @@ ATTR_TEARDOWN = '__teardown__'
 
 
 def get_seconds_since_startup(cur_time):
-    if GRAALPYTHON and __graalpython__.startup_nano != -1:
-        return (cur_time - __graalpython__.startup_nano) / UNITS_PER_SECOND
+    if GRAALPYTHON:
+        if __graalpython__.startup_nano != -1:
+            return (cur_time - __graalpython__.startup_nano) / UNITS_PER_SECOND
+        else:
+            print("### WARNING: __graalpython__.startup_nano == -1")
     # note: the unit of _module_start_time is seconds
-    return cur_time / UNITS_PER_SECOND - _module_start_time
+    return (cur_time - _module_start_time) / UNITS_PER_SECOND
 
 
 # ----------------------------------------------------------------------------------------------------------------------
