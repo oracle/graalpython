@@ -117,6 +117,10 @@ public class AsyncHandler {
             return false;
         }
 
+        protected void handleException(PException e) {
+            throw e;
+        }
+
         @Override
         public final void execute(PythonContext context) {
             Debugger debugger = null;
@@ -150,13 +154,8 @@ public class AsyncHandler {
                     debugger.disableStepping();
                     try {
                         GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
-                    } catch (RuntimeException e) {
-                        // we cannot raise the exception here (well, we could, but CPython
-                        // doesn't), so we do what they do and just print it
-
-                        // Just print a Python-like stack trace; CPython does the same (see
-                        // 'weakrefobject.c: handle_callback')
-                        ExceptionUtils.printPythonLikeStackTrace(e);
+                    } catch (PException e) {
+                        handleException(e);
                     } finally {
                         debugger.restoreStepping();
                         if (!alreadyTracing) {
