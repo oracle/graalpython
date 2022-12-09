@@ -59,6 +59,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKA
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
+import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
@@ -98,6 +99,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -978,7 +980,16 @@ public final class NFIPosixSupport extends PosixSupport {
     public long[] waitpid(long pid, int options,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int[] status = new int[1];
-        long res = invokeNode.callLong(this, PosixNativeFunction.call_waitpid, pid, wrap(status), options);
+        boolean hasNohang = (options & WNOHANG.getValueIfDefined()) != 0;
+        int subOptions = options | WNOHANG.getValueIfDefined();
+        Object wrappedStatus = wrap(status);
+        long res = invokeNode.callLong(this, PosixNativeFunction.call_waitpid, pid, wrappedStatus, subOptions);
+        while (res == 0 && !hasNohang) {
+            TruffleSafepoint.setBlockedThreadInterruptible(invokeNode, (ignored) -> {
+                Thread.sleep(20);
+            }, null);
+            res = invokeNode.callLong(this, PosixNativeFunction.call_waitpid, pid, wrappedStatus, subOptions);
+        }
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
