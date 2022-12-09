@@ -982,11 +982,13 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
                          checkIfWithGraalPythonEE=False):
     python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
     sub_env = dict(
-        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         ENABLE_THREADED_GRAALPYTEST="true",
-        PYTHONPATH=python_path,
     )
     sub_env.update(env or os.environ)
+    sub_env.update(
+        PYTHONPATH=python_path,
+        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+    )
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
