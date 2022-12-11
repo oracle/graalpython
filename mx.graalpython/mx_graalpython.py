@@ -2005,6 +2005,8 @@ def python_coverage(args):
             env = os.environ.copy()
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
             env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+            # deselect some tagged unittests that hang with coverage enabled
+            env['TAGGED_UNITTEST_SELECTION'] = "~test_multiprocessing_spawn,test_multiprocessing_main_handling"
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
             elif kwds.pop("hpy", False):
