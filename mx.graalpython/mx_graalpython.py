@@ -1976,7 +1976,7 @@ def python_coverage(args):
         ])
     if args.truffle:
         executable = python_gvm()
-        file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
+        file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
         if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
             variants = [
                 {"tagged": True},
