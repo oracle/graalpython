@@ -69,7 +69,7 @@ def test_alarm2():
     signal.alarm(1)
 
     try:
-        tries = 5
+        tries = 20
         while tries:
             time.sleep(0.5)
             tries -= 1
@@ -77,4 +77,4 @@ def test_alarm2():
         assert e.args[0] == signal.SIGALRM
         assert e.args[1].f_code.co_name  # just check that we have access to the frame
     else:
-        assert False, "Singnal handler didn't trigger or propagate exception"
+        assert False, "Signal handler didn't trigger or propagate exception"
