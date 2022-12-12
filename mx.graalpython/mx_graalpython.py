@@ -1955,6 +1955,7 @@ def python_coverage(args):
                 GraalPythonTags.unittest,
                 GraalPythonTags.unittest_multi,
                 GraalPythonTags.unittest_jython,
+                GraalPythonTags.unittest_hpy,
             )
 
         mx.run_mx([
