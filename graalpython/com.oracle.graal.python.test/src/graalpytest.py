@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ SERIAL_TESTS = [
     # test_import tests various behaviors related to __pycache__ directory,
     # it can interfere with other tests that generate code
     'test_import',
+    'test_imp',
     'test_subprocess',
     'test_posix',
     'test_io',
