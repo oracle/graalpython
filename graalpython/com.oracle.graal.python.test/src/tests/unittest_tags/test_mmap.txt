@@ -24,5 +24,4 @@
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_subclass
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_tagname
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_tougher_find
-*graalpython.lib-python.3.test.test_mmap.MmapTests.test_weakref
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_write_returning_the_number_of_bytes_written
