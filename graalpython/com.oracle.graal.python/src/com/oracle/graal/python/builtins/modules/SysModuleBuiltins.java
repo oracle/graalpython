@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_BUFFER;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSE;
@@ -529,6 +530,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant(T___STDERR__, stderr);
         addBuiltinConstant("implementation", makeImplementation(factory, versionInfo, gmultiarch));
         addBuiltinConstant("hexversion", PythonLanguage.VERSION_HEX);
+
+        if (os == PLATFORM_WIN32) {
+            addBuiltinConstant("winver", toTruffleStringUncached(PythonLanguage.MAJOR + "." + PythonLanguage.MINOR));
+        }
 
         addBuiltinConstant("float_repr_style", "short");
         addBuiltinConstant("meta_path", factory.createList());
