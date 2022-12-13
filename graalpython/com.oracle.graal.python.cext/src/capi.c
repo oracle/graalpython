@@ -575,7 +575,7 @@ void PyTruffle_Free(void *obj) {
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
-void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
+void* NativeHandle_ForArray(void* jobj, Py_ssize_t element_size) {
     return create_deref_handle(jobj);
 }
 

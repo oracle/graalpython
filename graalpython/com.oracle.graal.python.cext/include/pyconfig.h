@@ -139,7 +139,11 @@
 
 #define WITH_THREAD 1
 
+#ifndef MS_WINDOWS
 #define TIME_WITH_SYS_TIME 1
+#else
+#define NT_THREADS 1
+#endif
 
 #endif /*Py_PYCONFIG_H*/
 
