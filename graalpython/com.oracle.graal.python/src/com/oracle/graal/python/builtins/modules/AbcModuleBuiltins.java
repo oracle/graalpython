@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
 import java.util.List;
 import java.util.Set;
 
@@ -65,11 +70,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 @CoreFunctions(defineModule = "_abc")
 public class AbcModuleBuiltins extends PythonBuiltins {
@@ -123,23 +123,26 @@ public class AbcModuleBuiltins extends PythonBuiltins {
                 long tpFlags = getFlagsNode.execute(self);
                 long collectionFlag = tpFlags & COLLECTION_FLAGS;
                 if (collectionFlag > 0) {
-                    setCollectionFlagRecursive(subclass, collectionFlag, getFlagsNode, WriteAttributeToObjectNode.getUncached(), TypeNodes.GetSubclassesNode.getUncached(), isTypeNode);
+                    setCollectionFlagRecursive(subclass, collectionFlag, getFlagsNode, TypeNodes.SetTypeFlagsNode.getUncached(), TypeNodes.GetSubclassesNode.getUncached(), isTypeNode);
                 }
             }
             return PNone.NONE;
         }
 
-        private static void setCollectionFlagRecursive(Object child, long flag, TypeNodes.GetTypeFlagsNode getFlags, WriteAttributeToObjectNode writeHiddenFlagsNode,
+        private static void setCollectionFlagRecursive(Object child, long flag, TypeNodes.GetTypeFlagsNode getFlags, TypeNodes.SetTypeFlagsNode setTypeFlagsNode,
                         TypeNodes.GetSubclassesNode getSubclassesNode, TypeNodes.IsTypeNode isTypeNode) {
             assert flag == TypeFlags.SEQUENCE || flag == TypeFlags.MAPPING : flag;
-            long tpFlags = getFlags.execute(child);
-            tpFlags &= ~COLLECTION_FLAGS;
+            long origTpFlags = getFlags.execute(child);
+            long tpFlags = origTpFlags & ~COLLECTION_FLAGS;
             tpFlags |= flag;
-            writeHiddenFlagsNode.execute(child, TYPE_FLAGS, tpFlags);
+            if (tpFlags == origTpFlags) {
+                return;
+            }
+            setTypeFlagsNode.execute(child, tpFlags);
             Set<PythonAbstractClass> grandchildren = getSubclassesNode.execute(child);
             for (PythonAbstractClass c : grandchildren) {
                 if (isTypeNode.execute(c)) {
-                    setCollectionFlagRecursive(c, flag, getFlags, writeHiddenFlagsNode, getSubclassesNode, isTypeNode);
+                    setCollectionFlagRecursive(c, flag, getFlags, setTypeFlagsNode, getSubclassesNode, isTypeNode);
                 }
             }
         }

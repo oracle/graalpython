@@ -923,3 +923,7 @@ int tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_num) {
         basicsize += sizeof(PyObject *) * PyList_GET_SIZE(slot_num);
     return type->tp_basicsize > basicsize;
 }
+
+void truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
+    type->tp_flags = flags;
+}

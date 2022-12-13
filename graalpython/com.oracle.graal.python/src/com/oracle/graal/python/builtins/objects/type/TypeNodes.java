@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_TRUFFLE_SET_TP_FLAGS;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.compareStringsUncached;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -237,7 +238,69 @@ public abstract class TypeNodes {
         public abstract long execute(Object clazz);
 
         @Specialization
-        static long doBuiltinClassType(PythonBuiltinClassType clazz) {
+        long doBuiltinClassType(PythonBuiltinClassType clazz,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
+                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
+                        @Shared("profile") @Cached("createCountingProfile()") ConditionProfile profile) {
+            return doManaged(PythonContext.get(this).getCore().lookupType(clazz), readHiddenFlagsNode, writeHiddenFlagsNode, profile);
+        }
+
+        @Specialization
+        long doManaged(PythonManagedClass clazz,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
+                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
+                        @Shared("profile") @Cached("createCountingProfile()") ConditionProfile profile) {
+
+            Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
+            if (profile.profile(flagsObject != PNone.NO_VALUE)) {
+                // we have it under control; it must be a long
+                return (long) flagsObject;
+            }
+            long flags = computeFlags(clazz);
+            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
+            return flags;
+        }
+
+        @Specialization
+        static long doNative(PythonNativeClass clazz,
+                        @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+            return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
+        }
+
+        @TruffleBoundary
+        private long computeFlags(PythonManagedClass clazz) {
+            if (clazz instanceof PythonBuiltinClass) {
+                return defaultBuiltinFlags(((PythonBuiltinClass) clazz).getType());
+            }
+            // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
+            // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
+            // should be fine to just set it.
+            long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
+
+            if (clazz.isAbstractClass()) {
+                result |= IS_ABSTRACT;
+            }
+
+            PythonContext context = PythonContext.get(this);
+            // flags are inherited
+            MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
+            int n = mroStorage.length();
+            for (int i = 0; i < n; i++) {
+                Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
+                if (mroEntry instanceof PythonBuiltinClassType) {
+                    mroEntry = context.getCore().lookupType((PythonBuiltinClassType) mroEntry);
+                }
+                if (mroEntry instanceof PythonAbstractNativeObject) {
+                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
+                } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
+                    long flags = doManaged((PythonManagedClass) mroEntry, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(), ConditionProfile.getUncached());
+                    result = setFlags(result, flags);
+                }
+            }
+            return result;
+        }
+
+        private static long defaultBuiltinFlags(PythonBuiltinClassType clazz) {
             long result;
             switch (clazz) {
                 case DictRemover:
@@ -363,66 +426,37 @@ public abstract class TypeNodes {
             return result | READY;
         }
 
-        @Specialization
-        static long doBuiltinClass(PythonBuiltinClass clazz) {
-            return doBuiltinClassType(clazz.getType());
-        }
-
-        @Specialization
-        static long doPythonClass(PythonClass clazz,
-                        @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
-                        @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
-                        @Cached("createCountingProfile()") ConditionProfile profile) {
-
-            Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
-            if (profile.profile(flagsObject != PNone.NO_VALUE)) {
-                // we have it under control; it must be a long
-                return (long) flagsObject;
-            }
-            long flags = computeFlags(clazz);
-            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
-            return flags;
-        }
-
-        @Specialization
-        static long doNative(PythonNativeClass clazz,
-                        @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-            return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
-        }
-
-        @TruffleBoundary
-        private static long computeFlags(PythonClass clazz) {
-
-            // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
-            // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
-            // should be fine to just set it.
-            long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
-
-            if (clazz.isAbstractClass()) {
-                result |= IS_ABSTRACT;
-            }
-
-            // flags are inherited
-            MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
-            int n = mroStorage.length();
-            for (int i = 0; i < n; i++) {
-                Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
-                if (mroEntry instanceof PythonBuiltinClass) {
-                    result = setFlags(result, doBuiltinClass((PythonBuiltinClass) mroEntry));
-                } else if (mroEntry instanceof PythonBuiltinClassType) {
-                    result = setFlags(result, doBuiltinClassType((PythonBuiltinClassType) mroEntry));
-                } else if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, GetTypeMemberNodeGen.getUncached()));
-                } else if (mroEntry != clazz && mroEntry instanceof PythonClass) {
-                    long flags = doPythonClass((PythonClass) mroEntry, ReadAttributeFromObjectNode.getUncached(), WriteAttributeToObjectNode.getUncached(), ConditionProfile.getUncached());
-                    result = setFlags(result, flags);
-                }
-            }
-            return result;
-        }
-
         public static GetTypeFlagsNode getUncached() {
             return TypeNodesFactory.GetTypeFlagsNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class SetTypeFlagsNode extends Node {
+
+        public abstract void execute(Object clazz, long flags);
+
+        @Specialization
+        void doPBCT(PythonBuiltinClassType clazz, long flags,
+                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode) {
+            doManaged(PythonContext.get(this).getCore().lookupType(clazz), flags, writeHiddenFlagsNode);
+        }
+
+        @Specialization
+        static void doManaged(PythonManagedClass clazz, long flags,
+                        @Shared("write") @Cached WriteAttributeToObjectNode writeHiddenFlagsNode) {
+            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
+        }
+
+        @Specialization
+        static void doNative(PythonNativeClass clazz, long flags,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+            callCapiFunction.call(FUN_TRUFFLE_SET_TP_FLAGS, toSulongNode.execute(clazz), flags);
+        }
+
+        public static SetTypeFlagsNode getUncached() {
+            return TypeNodesFactory.SetTypeFlagsNodeGen.getUncached();
         }
     }
 
