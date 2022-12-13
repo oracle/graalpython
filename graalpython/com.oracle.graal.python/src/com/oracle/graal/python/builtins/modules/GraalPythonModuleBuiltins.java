@@ -592,7 +592,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (toolPath == null) {
                 return PNone.NONE;
             }
-            return toTruffleStringUncached(toolPath.toString());
+            return toTruffleStringUncached(toolPath.toString().replace("\\", "/"));
         }
     }
 
