@@ -177,7 +177,7 @@ def full_python(args):
 
     import mx_sdk_vm_impl
     home = mx_sdk_vm_impl.graalvm_home()
-    mx.run([os.path.join(home, "bin", "graalpy")] + args)
+    mx.run([os.path.join(home, "bin", f"graalpy{'.cmd' if mx.is_windows() else ''}")] + args)
 
 
 def python(args, **kwargs):
