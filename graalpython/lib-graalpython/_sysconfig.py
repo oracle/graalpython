@@ -65,6 +65,8 @@ def _get_posix_vars():
         f'python{sys.version_info[0]}.{sys.version_info[1]}{sys.abiflags}'
     )
 
+    fpic = "" if win32_native else "-fPIC"
+
     g = {}
     g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
@@ -78,8 +80,8 @@ def _get_posix_vars():
     g['CFLAGS_DEFAULT'] = cflags_default
     g['CFLAGS'] = cflags_default + " " + gnu_source
     g['LDFLAGS'] = ""
-    g['CCSHARED'] = "-fPIC"
-    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_tool_path('CC')
+    g['CCSHARED'] = fpic
+    g['LDSHARED_LINUX'] = "%s -shared %s" % (__graalpython__.get_toolchain_tool_path('CC'), fpic)
     if darwin_native:
         g['LDSHARED'] = __graalpython__.get_toolchain_tool_path('CC') + " -bundle -undefined dynamic_lookup"
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"

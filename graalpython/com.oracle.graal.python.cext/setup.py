@@ -64,7 +64,7 @@ darwin_native = MACOS and __graalpython__.platform_id == "native"
 win32_native = WIN32 and __graalpython__.platform_id == "native"
 relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
-SOABI = get_config_var("SOABI")
+SOABI = get_config_var("SOABI") or so_ext.split(".")[1]
 is_managed = 'managed' in SOABI
 lib_ext = 'dylib' if MACOS else ('pyd' if WIN32 else 'so')
 

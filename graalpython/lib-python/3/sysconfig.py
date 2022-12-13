@@ -479,6 +479,8 @@ def _init_posix(vars):
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""
+    # truffle change - init first with posix vars, because of the llvm toolchain we use
+    _init_posix(vars)
     # set basic install directories
     import _imp
     vars['LIBDEST'] = get_path('stdlib')

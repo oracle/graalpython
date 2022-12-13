@@ -2273,7 +2273,10 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
-        return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
+        if sys.platform == "win32":
+            return os.path.join(SUITE.dir, "graalpython", "include")
+        else:
+            return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
 
     def _prepare_headers(self):
         target_dir = self._dev_headers_dir()
