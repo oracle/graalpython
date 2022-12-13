@@ -27,7 +27,12 @@ package com.oracle.graal.python.test.basic;
 
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 import static com.oracle.graal.python.test.PythonTests.createSource;
+import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
+import org.graalvm.polyglot.Context;
 import org.junit.Test;
 
 public class HelloWorldTests {
@@ -42,5 +47,16 @@ public class HelloWorldTests {
         org.graalvm.polyglot.Source source = createSource("try: print(value)\nexcept:print('hello')\nvalue='world'");
         assertPrints("hello\n", source);
         assertPrints("hello\n", source);
+    }
+
+    @Test
+    public void usesFrozenModules() {
+        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+        final PrintStream printStream = new PrintStream(byteArray);
+        try (Context c = Context.newBuilder().option("log.python.level", "FINE").out(printStream).err(printStream).build()) {
+            c.initialize("python");
+        }
+        String result = byteArray.toString().replaceAll("\r\n", "\n");
+        assertTrue(result.contains("import '__graalpython__' # <frozen>"));
     }
 }
