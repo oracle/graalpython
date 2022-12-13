@@ -122,7 +122,7 @@ def add_graalpython_core():
         "unicodedata",
         "zipimport",
     ]:
-        modname = f"graalpython.{os.path.basename(name)}"
+        modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")
         l.append(f"{modname} : {modname} = {modpath}")
     FROZEN.append(("graalpython-lib", l))

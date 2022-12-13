@@ -201,19 +201,19 @@ public final class FrozenModules {
         private static final PythonFrozenModule __HELLO__ = new PythonFrozenModule("__HELLO__", "__hello__", false);
         private static final PythonFrozenModule FROZEN_ONLY = new PythonFrozenModule("FROZEN_ONLY", "frozen_only", false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", "_sysconfigdata", false);
-        private static final PythonFrozenModule GRAALPYTHON___GRAALPYTHON__ = new PythonFrozenModule("GRAALPYTHON___GRAALPYTHON__", "graalpython.__graalpython__", false);
-        private static final PythonFrozenModule GRAALPYTHON__SRE = new PythonFrozenModule("GRAALPYTHON__SRE", "graalpython._sre", false);
-        private static final PythonFrozenModule GRAALPYTHON__STRUCT = new PythonFrozenModule("GRAALPYTHON__STRUCT", "graalpython._struct", false);
-        private static final PythonFrozenModule GRAALPYTHON__SYSCONFIG = new PythonFrozenModule("GRAALPYTHON__SYSCONFIG", "graalpython._sysconfig", false);
-        private static final PythonFrozenModule GRAALPYTHON__WEAKREF = new PythonFrozenModule("GRAALPYTHON__WEAKREF", "graalpython._weakref", false);
-        private static final PythonFrozenModule GRAALPYTHON_BUILTINS = new PythonFrozenModule("GRAALPYTHON_BUILTINS", "graalpython.builtins", false);
-        private static final PythonFrozenModule GRAALPYTHON_BYTEARRAY = new PythonFrozenModule("GRAALPYTHON_BYTEARRAY", "graalpython.bytearray", false);
-        private static final PythonFrozenModule GRAALPYTHON_CTYPES = new PythonFrozenModule("GRAALPYTHON_CTYPES", "graalpython.ctypes", false);
-        private static final PythonFrozenModule GRAALPYTHON_FUNCTION = new PythonFrozenModule("GRAALPYTHON_FUNCTION", "graalpython.function", false);
-        private static final PythonFrozenModule GRAALPYTHON_JAVA = new PythonFrozenModule("GRAALPYTHON_JAVA", "graalpython.java", false);
-        private static final PythonFrozenModule GRAALPYTHON_PIP_HOOK = new PythonFrozenModule("GRAALPYTHON_PIP_HOOK", "graalpython.pip_hook", false);
-        private static final PythonFrozenModule GRAALPYTHON_UNICODEDATA = new PythonFrozenModule("GRAALPYTHON_UNICODEDATA", "graalpython.unicodedata", false);
-        private static final PythonFrozenModule GRAALPYTHON_ZIPIMPORT = new PythonFrozenModule("GRAALPYTHON_ZIPIMPORT", "graalpython.zipimport", false);
+        private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", "graalpy.__graalpython__", false);
+        private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", "graalpy._sre", false);
+        private static final PythonFrozenModule GRAALPY__STRUCT = new PythonFrozenModule("GRAALPY__STRUCT", "graalpy._struct", false);
+        private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", "graalpy._sysconfig", false);
+        private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", "graalpy._weakref", false);
+        private static final PythonFrozenModule GRAALPY_BUILTINS = new PythonFrozenModule("GRAALPY_BUILTINS", "graalpy.builtins", false);
+        private static final PythonFrozenModule GRAALPY_BYTEARRAY = new PythonFrozenModule("GRAALPY_BYTEARRAY", "graalpy.bytearray", false);
+        private static final PythonFrozenModule GRAALPY_CTYPES = new PythonFrozenModule("GRAALPY_CTYPES", "graalpy.ctypes", false);
+        private static final PythonFrozenModule GRAALPY_FUNCTION = new PythonFrozenModule("GRAALPY_FUNCTION", "graalpy.function", false);
+        private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", "graalpy.java", false);
+        private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", "graalpy.pip_hook", false);
+        private static final PythonFrozenModule GRAALPY_UNICODEDATA = new PythonFrozenModule("GRAALPY_UNICODEDATA", "graalpy.unicodedata", false);
+        private static final PythonFrozenModule GRAALPY_ZIPIMPORT = new PythonFrozenModule("GRAALPY_ZIPIMPORT", "graalpy.zipimport", false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -546,32 +546,32 @@ public final class FrozenModules {
                 return Map.FROZEN_ONLY;
             case "_sysconfigdata":
                 return Map._SYSCONFIGDATA;
-            case "graalpython.__graalpython__":
-                return Map.GRAALPYTHON___GRAALPYTHON__;
-            case "graalpython._sre":
-                return Map.GRAALPYTHON__SRE;
-            case "graalpython._struct":
-                return Map.GRAALPYTHON__STRUCT;
-            case "graalpython._sysconfig":
-                return Map.GRAALPYTHON__SYSCONFIG;
-            case "graalpython._weakref":
-                return Map.GRAALPYTHON__WEAKREF;
-            case "graalpython.builtins":
-                return Map.GRAALPYTHON_BUILTINS;
-            case "graalpython.bytearray":
-                return Map.GRAALPYTHON_BYTEARRAY;
-            case "graalpython.ctypes":
-                return Map.GRAALPYTHON_CTYPES;
-            case "graalpython.function":
-                return Map.GRAALPYTHON_FUNCTION;
-            case "graalpython.java":
-                return Map.GRAALPYTHON_JAVA;
-            case "graalpython.pip_hook":
-                return Map.GRAALPYTHON_PIP_HOOK;
-            case "graalpython.unicodedata":
-                return Map.GRAALPYTHON_UNICODEDATA;
-            case "graalpython.zipimport":
-                return Map.GRAALPYTHON_ZIPIMPORT;
+            case "graalpy.__graalpython__":
+                return Map.GRAALPY___GRAALPYTHON__;
+            case "graalpy._sre":
+                return Map.GRAALPY__SRE;
+            case "graalpy._struct":
+                return Map.GRAALPY__STRUCT;
+            case "graalpy._sysconfig":
+                return Map.GRAALPY__SYSCONFIG;
+            case "graalpy._weakref":
+                return Map.GRAALPY__WEAKREF;
+            case "graalpy.builtins":
+                return Map.GRAALPY_BUILTINS;
+            case "graalpy.bytearray":
+                return Map.GRAALPY_BYTEARRAY;
+            case "graalpy.ctypes":
+                return Map.GRAALPY_CTYPES;
+            case "graalpy.function":
+                return Map.GRAALPY_FUNCTION;
+            case "graalpy.java":
+                return Map.GRAALPY_JAVA;
+            case "graalpy.pip_hook":
+                return Map.GRAALPY_PIP_HOOK;
+            case "graalpy.unicodedata":
+                return Map.GRAALPY_UNICODEDATA;
+            case "graalpy.zipimport":
+                return Map.GRAALPY_ZIPIMPORT;
             default:
                 return null;
         }
