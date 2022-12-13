@@ -92,6 +92,7 @@
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_linenum
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_oddinputs
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_quoting
+*graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_skipinitialspace
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_reader_arg_valid
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_reader_attrs
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_reader_dialect_attrs

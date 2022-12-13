@@ -22,6 +22,7 @@
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_function_type
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_huge_float
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_imaginary_literals
+*graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_import_from_level_none
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_integer_parens
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_fstring_backslash
 *graalpython.lib-python.3.test.test_unparse.UnparseTestCase.test_invalid_fstring_constant

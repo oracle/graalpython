@@ -173,6 +173,7 @@
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_does_not_crash
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_stty_match
 *graalpython.lib-python.3.test.test_os.TestDirEntry.test_uninstantiable
+*graalpython.lib-python.3.test.test_os.TestDirEntry.test_unpickable
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_blocking
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_closerange
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_dup

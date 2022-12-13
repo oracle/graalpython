@@ -126,6 +126,8 @@
 *unittest.test.test_case.Test_TestCase.testAssertRegex
 *unittest.test.test_case.Test_TestCase.testAssertSequenceEqualMaxDiff
 *unittest.test.test_case.Test_TestCase.testAssertSetEqual
+*unittest.test.test_case.Test_TestCase.testAssertWarnsCallable
+*unittest.test.test_case.Test_TestCase.testAssertWarnsContext
 *unittest.test.test_case.Test_TestCase.testAssertWarnsModifySysModules
 *unittest.test.test_case.Test_TestCase.testAssertWarnsNoExceptionType
 *unittest.test.test_case.Test_TestCase.testAssertWarnsRegexCallable
