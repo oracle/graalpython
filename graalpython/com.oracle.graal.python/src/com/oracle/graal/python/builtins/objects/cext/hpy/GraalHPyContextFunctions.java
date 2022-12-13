@@ -3195,28 +3195,20 @@ public abstract class GraalHPyContextFunctions {
     public static final class GraalHPyCapsuleNew extends GraalHPyContextFunction {
         static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
 
-        static Object argument2(Object[] arguments) {
-            return arguments[2];
-        }
-
         @ExportMessage(limit = "3")
         Object execute(Object[] arguments,
-                        @CachedLibrary("argument2(arguments)") InteropLibrary nameLib,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode asHandleNode,
+                        @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached HPyRaiseNode raiseNode) throws ArityException {
             checkArity(arguments, 4);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            PyCapsule result = new PyCapsule();
+
             if (interopLib.isNull(arguments[1])) {
                 return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, ValueError, NULL_PTR_ERROR);
             }
-            result.setPointer(arguments[1]);
-            if (!nameLib.isNull(arguments[2])) {
-                result.setName(arguments[2]);
-            }
-            result.setDestructor(arguments[3]);
+            PyCapsule result = factory.createCapsule(arguments[1], arguments[2], arguments[3]);
             return asHandleNode.execute(context, result);
         }
     }

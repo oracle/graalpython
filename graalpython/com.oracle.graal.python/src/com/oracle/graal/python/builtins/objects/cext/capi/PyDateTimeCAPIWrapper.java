@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CREATE_DATETIME_CAPSULE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATETIME_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATE_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DELTA_BASICSIZE;
@@ -235,7 +234,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
 
-        setAttr.execute(null, datetime, T_DATETIME_CAPI, CExtNodesFactory.ToJavaNodeGen.getUncached().execute(callCapiFunction.call(FUN_CREATE_DATETIME_CAPSULE, wrapper)));
+        setAttr.execute(null, datetime, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(wrapper, "datetime.datetime_CAPI", null));
         assert getAttr.execute(null, datetime, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
     }
 

@@ -1458,4 +1458,10 @@ public abstract class ErrorMessages {
     public static final TruffleString COMPARING_STRINGS_WITH_NON_ASCII = tsLiteral("comparing strings with non-ASCII characters is not supported");
     public static final TruffleString ONLY_DEFAULT_DIGEST_LENGTHS = tsLiteral("only default digest lengths supported for shake");
     public static final TruffleString ONLY_DIGEST_SIZE_BLAKE_ARGUMENT = tsLiteral("blake2b/blake2s only supported for digest_size with non-default value");
+    public static final TruffleString PYCAPSULE_NEW_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_New called with null pointer");
+    public static final TruffleString CALLED_WITH_INVALID_PY_CAPSULE_OBJECT = tsLiteral("%s called with invalid PyCapsule object");
+    public static final TruffleString PY_CAPSULE_GET_POINTER_CALLED_WITH_INCORRECT_NAME = tsLiteral("PyCapsule_GetPointer called with incorrect name");
+    public static final TruffleString PY_CAPSULE_SET_POINTER_CALLED_WITH_NULL_POINTER = tsLiteral("PyCapsule_SetPointer called with null pointer");
+    public static final TruffleString PY_CAPSULE_IMPORT_COULD_NOT_IMPORT_MODULE_S = tsLiteral("PyCapsule_Import could not import module \"%s\"");
+    public static final TruffleString PY_CAPSULE_IMPORT_S_IS_NOT_VALID = tsLiteral("PyCapsule_Import \"%s\" is not valid");
 }

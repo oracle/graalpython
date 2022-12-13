@@ -23,9 +23,20 @@ extern "C" {
 #endif
 
 PyAPI_DATA(PyTypeObject*) PyCapsule_TypeReference;
-#define PyCapsule_Type (*PyCapsule_TypeReference)
+// #define PyCapsule_Type (*PyCapsule_TypeReference)
+PyAPI_DATA(PyTypeObject) PyCapsule_Type;
 
 typedef void (*PyCapsule_Destructor)(PyObject *);
+
+/* Internal structure of PyCapsule */
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
+
 
 #define PyCapsule_CheckExact(op) Py_IS_TYPE(op, &PyCapsule_Type)
 

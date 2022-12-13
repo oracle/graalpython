@@ -40,20 +40,37 @@
  */
 package com.oracle.graal.python.builtins.objects.capsule;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PyCapsule implements TruffleObject {
+public final class PyCapsule extends PythonBuiltinObject {
     private Object pointer;
     private Object name;
     private Object context;
     private Object destructor;
+
+    /**
+     * (mq) We are forcing all PyCapsule objects to be of a builtin type
+     * PythonBuiltinClassType.Capsule. There are, currently, no possible way to extend PyCapsule, so
+     * we can relax few checks elsewhere.
+     */
+    public PyCapsule(PythonLanguage lang, Object pointer, Object name, Object destructor) {
+        super(Capsule, Capsule.getInstanceShape(lang));
+        this.pointer = pointer;
+        this.name = name;
+        this.context = null;
+        this.destructor = destructor;
+    }
 
     public Object getPointer() {
         return pointer;
@@ -90,14 +107,8 @@ public final class PyCapsule implements TruffleObject {
     @ExportMessage
     @TruffleBoundary
     public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
-        String quote, n;
-        if (name != null) {
-            quote = "\"";
-            n = CastToTruffleStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(name)).toJavaStringUncached();
-        } else {
-            quote = "";
-            n = "NULL";
-        }
-        return String.format("<capsule object %s%s%s at %x>", quote, n, quote, hashCode());
+        return PythonCextCapsuleBuiltins.ReprNode.repr(this,
+                        CastToTruffleStringNode.getUncached(),
+                        CExtNodesFactory.FromCharPointerNodeGen.getUncached()).toJavaStringUncached();
     }
 }

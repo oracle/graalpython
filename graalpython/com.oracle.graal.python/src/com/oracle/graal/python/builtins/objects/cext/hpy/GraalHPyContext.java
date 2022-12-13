@@ -264,6 +264,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -2371,17 +2372,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     public long ctxCapsuleNew(long pointer, long name, long destructor) {
-        PyCapsule result = new PyCapsule();
         if (pointer == 0) {
             return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleNew.NULL_PTR_ERROR);
         }
-        result.setPointer(pointer);
-        if (name != 0) {
-            result.setName(name);
-        }
-        if (destructor != 0) {
-            result.setDestructor(destructor);
-        }
+        PyCapsule result = PythonObjectFactory.getUncached().createCapsule(pointer, name, destructor);
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
     }
 
