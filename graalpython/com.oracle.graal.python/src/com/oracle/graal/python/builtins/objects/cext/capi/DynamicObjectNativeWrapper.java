@@ -161,6 +161,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -1375,21 +1377,24 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "eq(TP_FLAGS, key)")
             static void doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long flags,
-                            @Cached GetTypeFlagsNode getTypeFlagsNode,
-                            @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+                            @Cached TypeNodes.SetTypeFlagsNode setTypeFlagsNode) {
                 if (object instanceof PythonBuiltinClass) {
-                    // just assert that we try to set the same flags; if there is a difference, this
-                    // means we did not properly maintain our flag definition in
-                    // TypeNodes.GetTypeFlagsNode.
-                    assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object, getTypeFlagsNode.execute(object), flags);
-                } else {
-                    writeAttributeToObjectNode.execute(object, SpecialAttributeNames.T___FLAGS__, flags);
+                    /*
+                     * Assert that we try to set the same flags, except the abc flags for sequence
+                     * and mapping. If there is a difference, this means we did not properly
+                     * maintain our flag definition in TypeNodes.GetTypeFlagsNode.
+                     */
+                    assert assertFlagsInSync(object, flags);
                 }
+                setTypeFlagsNode.execute(object, flags);
             }
 
             @TruffleBoundary
-            private static String flagsErrorMessage(PythonManagedClass object, long expected, long actual) {
-                return "type flags of " + object.getName() + " definitions are out of sync: expected " + expected + " vs. actual " + actual;
+            private static boolean assertFlagsInSync(PythonManagedClass object, long newFlags) {
+                long expected = GetTypeFlagsNode.getUncached().execute(object) & ~TypeFlags.COLLECTION_FLAGS;
+                long actual = newFlags & ~TypeFlags.COLLECTION_FLAGS;
+                assert expected == actual : "type flags of " + object.getName() + " definitions are out of sync: expected " + expected + " vs. actual " + actual;
+                return true;
             }
 
             @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
