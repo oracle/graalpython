@@ -631,6 +631,12 @@ public final class PythonContext extends Python3Core {
 
     private final GlobalInterpreterLock globalInterpreterLock = new GlobalInterpreterLock();
 
+    /*
+     * Used to avoid triggering more async handlers from an async handler. We run those only on the
+     * main thread, so it doesn't have to be thread-local.
+     */
+    private final AtomicBoolean inAsyncHandler = new AtomicBoolean(false);
+
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
@@ -753,6 +759,14 @@ public final class PythonContext extends Python3Core {
             // The number wouldn't be representable as BigInteger, so there's no practical limit
             return Integer.MAX_VALUE;
         }
+    }
+
+    public boolean tryEnterAsyncHandler() {
+        return inAsyncHandler.compareAndSet(false, true);
+    }
+
+    public void leaveAsyncHandler() {
+        inAsyncHandler.set(false);
     }
 
     public static final class ChildContextData {

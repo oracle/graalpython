@@ -46,12 +46,16 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -177,6 +181,7 @@ public class AsyncHandler {
     });
 
     private final WeakReference<PythonContext> context;
+    private final Queue<AsyncAction> rescheduled = new ConcurrentLinkedDeque<>();
     private static final int ASYNC_ACTION_DELAY = 25;
     private static final int GIL_RELEASE_DELAY = 50;
 
@@ -199,12 +204,20 @@ public class AsyncHandler {
                             @Override
                             @SuppressWarnings("try")
                             protected void perform(ThreadLocalAction.Access access) {
-                                GilNode gil = GilNode.getUncached();
-                                boolean mustRelease = gil.acquire();
-                                try {
-                                    asyncAction.execute(ctx);
-                                } finally {
-                                    gil.release(mustRelease);
+                                if (ctx.tryEnterAsyncHandler()) {
+                                    try {
+                                        GilNode gil = GilNode.getUncached();
+                                        boolean mustRelease = gil.acquire();
+                                        try {
+                                            asyncAction.execute(ctx);
+                                        } finally {
+                                            gil.release(mustRelease);
+                                        }
+                                    } finally {
+                                        ctx.leaveAsyncHandler();
+                                    }
+                                } else {
+                                    rescheduled.add(asyncAction);
                                 }
                             }
                         });
@@ -265,12 +278,13 @@ public class AsyncHandler {
 
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
-        this.callTarget = context.getLanguage().createCachedCallTarget(l -> new CallRootNode(l), CallRootNode.class);
+        this.callTarget = context.getLanguage().createCachedCallTarget(CallRootNode::new, CallRootNode.class);
+        registerAction(rescheduled::poll);
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
-        if (PythonContext.get(null).getOption(PythonOptions.NoAsyncActions)) {
+        if (ImageInfo.inImageBuildtimeCode() || context.get().getOption(PythonOptions.NoAsyncActions)) {
             return;
         }
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
