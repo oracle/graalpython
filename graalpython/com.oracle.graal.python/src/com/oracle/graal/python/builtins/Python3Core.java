@@ -1050,9 +1050,9 @@ public abstract class Python3Core {
         }
         // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
-            TruffleString module = builtinClass.getPublishInModule();
-            if (module != null) {
-                PythonModule pythonModule = lookupBuiltinModule(module);
+            TruffleString[] modules = builtinClass.getPublishInModule();
+            for (TruffleString m : modules) {
+                PythonModule pythonModule = lookupBuiltinModule(m);
                 if (pythonModule != null) {
                     pythonModule.setAttribute(builtinClass.getName(), lookupType(builtinClass));
                 }
