@@ -56,6 +56,9 @@ import mx_graalpython_bisect
 import mx_graalpython_import
 import mx_graalpython_python_benchmarks
 
+# re-export custom mx project classes so they can be used from suite.py
+from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
+
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, JAVA_DRIVER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \

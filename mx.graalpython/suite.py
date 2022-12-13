@@ -236,20 +236,9 @@ suite = {
             "dependencies": [
                 "truffle:ICU4J",
             ],
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "buildDependencies": [],
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "buildDependencies": [
-                            "com.oracle.graal.python.pegparser.generator",
-                        ],
-                    },
-                },
-            },
+            "buildDependencies": [
+                "com.oracle.graal.python.pegparser.generator",
+            ],
         },
 
         "com.oracle.graal.python.pegparser.test": {
@@ -265,19 +254,14 @@ suite = {
 
         "com.oracle.graal.python.pegparser.generator": {
             "subDir": "graalpython",
-            "native": True,
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "defaultBuild" : False,
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "defaultBuild" : True,
-                    },
-                },
-            },
+            "class" : "CMakeNinjaProject",
+            "ninja_targets" : [
+                "all",
+            ],
+            "results" : [
+                "input_files/python.gram.stamp",
+                "input_files/Python.asdl.stamp",
+            ]
         },
 
         "com.oracle.graal.python.shell": {
