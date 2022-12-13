@@ -27,7 +27,9 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.T__IMP;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
@@ -1050,11 +1052,18 @@ public abstract class Python3Core {
         }
         // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
-            TruffleString[] modules = builtinClass.getPublishInModule();
-            for (TruffleString m : modules) {
-                PythonModule pythonModule = lookupBuiltinModule(m);
+            TruffleString module = builtinClass.getPublishInModule();
+            if (module != null) {
+                PythonModule pythonModule = lookupBuiltinModule(module);
                 if (pythonModule != null) {
                     pythonModule.setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                }
+                if (module.toJavaStringUncached().equals(J_POSIX)) {
+                    // special case of aliased posix==nt
+                    pythonModule = lookupBuiltinModule(T_NT);
+                    if (pythonModule != null) {
+                        pythonModule.setAttribute(builtinClass.getName(), lookupType(builtinClass));
+                    }
                 }
             }
         }

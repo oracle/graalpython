@@ -41,7 +41,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
@@ -171,8 +170,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStaticmethod("staticmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PClassmethod("classmethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
     PInstancemethod("instancemethod", J_BUILTINS, Flags.PUBLIC_BASE_WDICT),
-    PScandirIterator("ScandirIterator", new String[] { J_POSIX, J_NT }, Flags.PRIVATE_DERIVED_WODICT),
-    PDirEntry("DirEntry", new String[] { J_POSIX, J_NT }, Flags.PUBLIC_DERIVED_WODICT),
+    PScandirIterator("ScandirIterator", J_POSIX, Flags.PRIVATE_DERIVED_WODICT),
+    PDirEntry("DirEntry", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", J__STRUCT),
     PStructUnpackIterator("unpack_iterator", J__STRUCT),
@@ -212,7 +211,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT),
     PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT),
-    PUnameResult("uname_result", new String[] { J_POSIX, J_NT }, Flags.PUBLIC_DERIVED_WODICT),
+    PUnameResult("uname_result", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT),
     PProfilerEntry("profiler_entry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT),
     PProfilerSubentry("profiler_subentry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT),
@@ -419,7 +418,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     private final TruffleString name;
-    private final TruffleString[] publishInModule;
+    private final TruffleString publishInModule;
     private final TruffleString moduleName;
     // This is the name qualified by module used for printing. But the actual __qualname__ is just
     // plain name without module
@@ -450,12 +449,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this(name, module, module, flags);
     }
 
-    PythonBuiltinClassType(String name, String[] publishInModule, String moduleName, Flags flags) {
+    PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
         this.name = toTruffleStringUncached(name);
-        this.publishInModule = new TruffleString[publishInModule.length];
-        for (int i = 0; i < publishInModule.length; i++) {
-            this.publishInModule[i] = toTruffleStringUncached(publishInModule[i]);
-        }
+        this.publishInModule = toTruffleStringUncached(publishInModule);
         this.moduleName = flags.isPublic && moduleName != null ? toTruffleStringUncached(moduleName) : null;
         if (moduleName != null && moduleName != J_BUILTINS) {
             printName = toTruffleStringUncached(moduleName + "." + name);
@@ -465,10 +461,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.basetype = flags.isBaseType;
         this.isBuiltinWithDict = flags.isBuiltinWithDict;
         this.isException = flags == Flags.EXCEPTION;
-    }
-
-    PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
-        this(name, new String[] { publishInModule }, moduleName, flags);
     }
 
     PythonBuiltinClassType(String name, String module) {
@@ -507,7 +499,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return isBuiltinWithDict;
     }
 
-    public TruffleString[] getPublishInModule() {
+    public TruffleString getPublishInModule() {
         return publishInModule;
     }
 
