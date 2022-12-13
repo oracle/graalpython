@@ -1263,7 +1263,7 @@ class TestTracebackException(unittest.TestCase):
         self.assertGreater(len(res), sys.getrecursionlimit())
         self.assertGreater(
             len([l for l in res if 'ZeroDivisionError:' in l]),
-            sys.getrecursionlimit() * 0.5)
+            sys.getrecursionlimit() * 0.25)
         self.assertIn(
             "RecursionError: maximum recursion depth exceeded", res[-1])
 

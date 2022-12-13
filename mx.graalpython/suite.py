@@ -43,6 +43,14 @@ suite = {
                 ]
             },
             {
+                "name": "sdk",
+                "version": "f1e3336ec202f7a35da0a0ed6242b4f0438957c0",
+                "subdir": True,
+                "urls": [
+                    {"url": "https://github.com/oracle/graal", "kind": "git"},
+                ]
+            },
+            {
                 "name": "tools",
                 "version": "8d8e696c5cf90071b1ec294fee067a2c9bc7e19e",
                 "subdir": True,
@@ -231,6 +239,7 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
+                        "buildDependencies": [],
                     },
                 },
                 "<others>": {
@@ -265,6 +274,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "defaultBuild" : True,
                     },
                 },
             },
@@ -474,6 +484,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "defaultBuild" : True,
                     },
                 },
             },
@@ -502,6 +513,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "defaultBuild" : True,
                     },
                 },
             },
@@ -691,36 +703,6 @@ suite = {
             "testDistribution": True,
         },
 
-        "GRAALPYTHON_CEXT": {
-            "native": True,
-            "platformDependent": True,
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "layout": {
-                            "./": "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
-                        },
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "dependencies": [
-                            "com.oracle.graal.python.cext",
-                        ],
-                        "layout": {
-                            "./": {
-                                "source_type": "dependency",
-                                "dependency": "graalpython:com.oracle.graal.python.cext",
-                                "path": "*",
-                                "exclude": ["CEXT-WINDOWS-README.md"],
-                            },
-                        },
-                    },
-                },
-            },
-            "maven": False,
-        },
-
         "GRAALPYTHON_GRAALVM_SUPPORT": {
             "native": True,
             "platformDependent": True,
@@ -728,7 +710,6 @@ suite = {
             "description": "GraalVM Python support distribution for the GraalVM",
             "distDependencies": [
                 "GRAALPYTHON_JNI",
-                "GRAALPYTHON_CEXT",
             ],
             "os_arch": {
                 "windows": {
@@ -742,7 +723,7 @@ suite = {
                             ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "extracted-dependency:GRAALPYTHON_CEXT/*",
+                                "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
                             ],
                             "./Include/": [
@@ -753,19 +734,27 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "dependencies": [
+                            "com.oracle.graal.python.cext",
+                        ],
                         "layout": {
                             "./": [
                                 "file:mx.graalpython/native-image.properties",
                             ],
-                            "./lib/python<py_ver>/": [
+                            "./lib/python<py_ver:major_minor_nodot>/": [
                                 "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                             ],
-                            "./lib/graalpy<graal_ver>/": [
+                            "./lib/graalpy<graal_ver:major_minor_nodot>/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "extracted-dependency:GRAALPYTHON_CEXT/*",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:com.oracle.graal.python.cext",
+                                    "path": "*",
+                                    "exclude": ["CEXT-WINDOWS-README.md"],
+                                },
                             ],
-                            "./include/python<py_ver>/": [
+                            "./include/python<py_ver:major_minor_nodot>/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
                             ],
                         },

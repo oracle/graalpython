@@ -147,6 +147,36 @@ def get_jdk():
     return mx.get_jdk(tag=tag)
 
 
+def full_python(args):
+    """run python from graalvm"""
+    if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
+        args.insert(0, '--python.WithJavaStacktrace=1')
+
+    if "--hosted" in args[:2]:
+        args.remove("--hosted")
+        return python(args)
+
+    if not any(arg.startswith('--experimental-options') for arg in args):
+        args.insert(0, '--experimental-options')
+
+    if mx._opts.java_dbg_port:
+        args.insert(0, f"--vm.agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:{mx._opts.java_dbg_port}")
+
+    for arg in itertools.chain(
+            itertools.chain(*map(shlex.split, reversed(mx._opts.java_args_sfx))),
+            reversed(shlex.split(mx._opts.java_args if mx._opts.java_args else "")),
+            itertools.chain(*map(shlex.split, reversed(mx._opts.java_args_pfx))),
+    ):
+        if arg.startswith("-"):
+            args.insert(0, f"--vm.{arg[1:]}")
+        else:
+            mx.warn(f"Dropping {arg}, cannot pass it to launcher")
+
+    import mx_sdk_vm_impl
+    home = mx_sdk_vm_impl.graalvm_home()
+    mx.run([os.path.join(home, "bin", "graalpy")] + args)
+
+
 def python(args, **kwargs):
     """run a Python program or shell"""
     if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
@@ -448,9 +478,6 @@ def update_unittest_tags(args):
         ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4'),
         # Temporarily disabled due to object identity or race condition (GR-24863)
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_deepcopy'),
-        # These tests are *inconsistently* triggering IllegalStateException("Coverage Tracker is already tracking") in com.oracle.truffle.tools.coverage.CoverageTracker. Race condition?
-        ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_run_as_module'),
-        ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_sys_argv_list'),
         # Temporarily disabled due to transient failures (GR-30641)
         ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
         # Disabled since this fails on Darwin when run in parallel with many other tests
@@ -472,6 +499,7 @@ def update_unittest_tags(args):
         ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakkeydict'),
         ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict'),
         ('test_deque.txt', '*graalpython.lib-python.3.test.test_deque.TestBasic.test_container_iterator'),
+        ('test_mmap.txt', '*graalpython.lib-python.3.test.test_mmap.MmapTests.test_weakref'),
         # Disabled since code object comparison is not stable for us
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),
@@ -892,10 +920,10 @@ def patch_batch_launcher(launcher_path, jvm_args):
         launcher.writelines(lines)
 
 
-def run_hpy_unittests(python_binary, args=None, include_native=True):
+def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
-        env = os.environ.copy()
+        env = env or os.environ.copy()
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
         delete_bad_env_keys(env)
@@ -947,20 +975,21 @@ def run_hpy_unittests(python_binary, args=None, include_native=True):
         if any(thread_errors):
             for t in threads:
                 mx.log_error("\n\n### Output of thread %r: \n\n%s" % (t.name, t.out))
-            mx.abort("At least one HPy testing thread failed.")
+            if nonZeroIsFatal:
+                mx.abort("At least one HPy testing thread failed.")
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, nonZeroIsFatal=True,
                          checkIfWithGraalPythonEE=False):
-    if env is None:
-        env = os.environ
-    sub_env = env.copy()
     python_path = os.path.join(_dev_pythonhome(), 'lib-python/3')
-    sub_env.update(dict(
-        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+    sub_env = dict(
         ENABLE_THREADED_GRAALPYTEST="true",
+    )
+    sub_env.update(env or os.environ)
+    sub_env.update(
         PYTHONPATH=python_path,
-    ))
+        ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
+    )
     print(f"with PYTHONPATH={python_path}")
 
     if checkIfWithGraalPythonEE:
@@ -1926,6 +1955,7 @@ def python_coverage(args):
                 GraalPythonTags.unittest,
                 GraalPythonTags.unittest_multi,
                 GraalPythonTags.unittest_jython,
+                GraalPythonTags.unittest_hpy,
             )
 
         mx.run_mx([
@@ -1947,7 +1977,7 @@ def python_coverage(args):
         ])
     if args.truffle:
         executable = python_gvm()
-        file_filter = "*lib-python*,*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*"
+        file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
         if os.environ.get("TAGGED_UNITTEST_PARTIAL"):
             variants = [
                 {"tagged": True},
@@ -1956,6 +1986,7 @@ def python_coverage(args):
             variants = [
                 {"args": []},
                 {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+                {"hpy": True},
                 # {"args": ["--llvm.managed"]},
             ]
 
@@ -1976,8 +2007,12 @@ def python_coverage(args):
             env = os.environ.copy()
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
             env['ENABLE_THREADED_GRAALPYTEST'] = "false"
+            # deselect some tagged unittests that hang with coverage enabled
+            env['TAGGED_UNITTEST_SELECTION'] = "~test_multiprocessing_spawn,test_multiprocessing_main_handling"
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
+            elif kwds.pop("hpy", False):
+                run_hpy_unittests(executable, env=env, nonZeroIsFatal=False)
             else:
                 run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
 
@@ -2051,7 +2086,12 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                 lcov = lcov.replace(f"graalpython/graalpython/include/python{py_version_short()}", "graalpython/graalpython/com.oracle.graal.python.cext/include/")
                 with open(f, 'w') as lcov_file:
                     lcov_file.write(lcov)
-                cmdargs += ["-a", f]
+
+                # check the file contains valid records
+                if mx.run(["/usr/bin/env", "lcov", "--summary", f], nonZeroIsFatal=False) == 0:
+                    cmdargs += ["-a", f]
+                else:
+                    mx.warn(f"Skipping {f}")
 
         # actually run the merge command
         mx.run(cmdargs)
@@ -2317,49 +2357,6 @@ class GraalpythonCAPIProject(GraalpythonProject):
         return GraalpythonCAPIBuildTask(args, self)
 
 
-def checkout_find_version_for_graalvm(args):
-    """
-    A quick'n'dirty way to check out the revision of the project at the given
-    path to one that imports the same truffle/graal as we do. The assumption is
-    the such a version can be reached by following the HEAD^ links
-    """
-    path = args[0]
-    projectname = os.path.basename(args[0])
-    suite = os.path.join(path, "mx.%s" % projectname, "suite.py")
-    basedir = os.path.dirname(suite)
-    while not os.path.isdir(os.path.join(basedir, ".git")):
-        basedir = os.path.dirname(basedir)
-    suite = os.path.relpath(suite, start=basedir)
-    mx.log("Using %s to find revision" % suite)
-    other_version = ""
-    for i in SUITE.suite_imports:
-        if i.name == "sulong":
-            needed_version = i.version
-            break
-    current_commit = SUITE.vc.tip(path).strip()
-    current_revision = "HEAD"
-    mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
-    while needed_version != other_version:
-        if other_version:
-            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", current_revision]).split()
-            if not parent:
-                mx.log("Got to oldest revision before finding appropriate commit, using %s" % current_commit)
-                return
-            current_revision = parent[0]
-        contents = SUITE.vc.git_command(path, ["show", "%s:%s" % (current_revision, suite)])
-        d = {}
-        try:
-            exec(contents, d, d) # pylint: disable=exec-used;
-        except:
-            mx.log("suite.py no longer parseable, falling back to %s" % current_commit)
-            return
-        suites = d["suite"]["imports"]["suites"]
-        for suitedict in suites:
-            if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
-                other_version = suitedict.get("version", "")
-                if other_version:
-                    break
-
 orig_clean = mx.command_function("clean")
 def python_clean(args):
     orig_clean(args)
@@ -2601,8 +2598,8 @@ def no_return(fn):
 # ----------------------------------------------------------------------------------------------------------------------
 mx.update_commands(SUITE, {
     'python-build-watch': [python_build_watch, ''],
-    'python': [python, '[Python args|@VM options]'],
-    'python3': [python, '[Python args|@VM options]'],
+    'python': [full_python, '[Python args|@VM options]'],
+    'python3': [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM] [Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
@@ -2614,7 +2611,6 @@ mx.update_commands(SUITE, {
     'python-retag-unittests': [retag_unittests, ''],
     'python-run-cpython-unittest': [run_cpython_test, '[-k TEST_PATTERN] [--gvm] [--svm] [--all] TESTS'],
     'python-update-unittest-tags': [update_unittest_tags, ''],
-    'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],

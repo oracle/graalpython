@@ -145,8 +145,12 @@ def make_tests_class():
     if not selection:
         working_tests = working_tests[selected::total]
     else:
-        selection = set(s.strip() for s in selection.split(","))
-        working_tests = [x for x in working_tests if x[0] in selection]
+        if selection.startswith("~"):
+            deselection = set(s.strip() for s in selection[1:].split(","))
+            working_tests = [x for x in working_tests[selected::total] if x[0] not in deselection]
+        else:
+            selection = set(s.strip() for s in selection.split(","))
+            working_tests = [x for x in working_tests if x[0] in selection]
 
     for idx, working_test in enumerate(working_tests):
         fn = make_test_function(working_test)

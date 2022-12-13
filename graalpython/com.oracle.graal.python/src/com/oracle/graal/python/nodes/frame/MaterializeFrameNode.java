@@ -41,10 +41,8 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -56,7 +54,6 @@ import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -65,7 +62,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -168,13 +164,9 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frame, frameToMaterialize, escapedFrame, location, markAsEscaped, forceSync, syncValuesNode);
     }
 
-    public static boolean isBytecodeFrame(Frame frameToSync) {
-        return frameToSync.getFrameDescriptor().getInfo() instanceof FrameInfo;
-    }
-
     private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame) {
-        if (isBytecodeFrame(frameToMaterialize)) {
-            FrameInfo info = (FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
+        FrameInfo info = (FrameInfo) frameToMaterialize.getFrameDescriptor().getInfo();
+        if (info != null) {
             pyFrame.setLasti(info.getBci(frameToMaterialize));
             pyFrame.setLocation(info.getRootNode());
         }
@@ -269,123 +261,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(Frame frame, PFrame pyframe, Frame frameToSync, Node location);
 
-        @Specialization(guards = {"!isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd",
-                        "cachedFd.getNumberOfSlots() < 32"}, limit = "1")
-        @ExplodeLoop
-        static void doLocalsStorageCachedAST(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("createClassProfile()") ValueProfile frameProfile,
-                        @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
-            LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-            MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
-            assert cachedFd == target.getFrameDescriptor();
-
-            for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                if (cachedFd.getSlotName(slot) != null) {
-                    PythonUtils.copyFrameSlot(frameToSync, target, slot);
-                }
-            }
-        }
-
-        @Specialization(guards = {"!isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd"}, limit = "1")
-        static void doLocalsStorageLoopAST(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("createClassProfile()") ValueProfile frameProfile,
-                        @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
-            LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-            MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
-            assert cachedFd == target.getFrameDescriptor();
-
-            for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                if (cachedFd.getSlotName(slot) != null) {
-                    PythonUtils.copyFrameSlot(frameToSync, target, slot);
-                }
-            }
-        }
-
-        @Specialization(guards = {"!isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)"}, replaces = {"doLocalsStorageCachedAST", "doLocalsStorageLoopAST"})
-        static void doLocalsStorageUncachedAST(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("createClassProfile()") ValueProfile frameProfile) {
-            FrameDescriptor fd = frameToSync.getFrameDescriptor();
-            try {
-                LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-                MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
-                assert fd == target.getFrameDescriptor();
-
-                for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-                    if (fd.getSlotName(slot) != null) {
-                        PythonUtils.copyFrameSlot(frameToSync, target, slot);
-                    }
-                }
-            } catch (FrameSlotTypeException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException();
-            }
-        }
-
-        @Specialization(guards = { //
-                        "!isBytecodeFrame(frameToSync)",
-                        "isDictWithCustomStorage(pyFrame)",
-                        "!hasCustomLocals(frameToSync, pyFrame)",
-                        "frameToSync.getFrameDescriptor() == cachedFd",
-        }, //
-                        limit = "1")
-        @ExplodeLoop
-        static void doGenericDictCachedAST(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
-                        @Cached(value = "getProfiles(cachedFd.getNumberOfSlots())", dimensions = 1) ConditionProfile[] profiles,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageDelItem delHashingStorageItem) {
-            // This can happen if someone received the locals dict using 'locals()' or similar and
-            // then assigned to the dictionary. Assigning will switch the storage. But we still must
-            // refresh the values.
-
-            // The cast is guaranteed by the guard.
-            PDict localsDict = (PDict) pyFrame.getLocalsDict();
-
-            for (int slot = 0; slot < cachedFd.getNumberOfSlots(); slot++) {
-                Object identifier = cachedFd.getSlotName(slot);
-                if (identifier != null) {
-                    Object value = frameToSync.getValue(slot);
-                    if (value != null) {
-                        setItemNode.execute(frame, localsDict, identifier, resolveCellValue(profiles[slot], value));
-                    } else {
-                        // delete variable
-                        delHashingStorageItem.execute(frame, localsDict.getDictStorage(), identifier, localsDict);
-                    }
-                }
-            }
-        }
-
-        @Specialization(guards = {"!isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)", "!hasCustomLocals(frameToSync, pyFrame)"}, replaces = "doGenericDictCachedAST")
-        static void doGenericDictAST(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageDelItem delHashingStorageItem) {
-            // This can happen if someone received the locals dict using 'locals()' or similar and
-            // then assigned to the dictionary. Assigning will switch the storage. But we still must
-            // refresh the values.
-
-            FrameDescriptor fd = frameToSync.getFrameDescriptor();
-            // The cast is guaranteed by the guard.
-            PDict localsDict = (PDict) pyFrame.getLocalsDict();
-
-            for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-                Object identifier = fd.getSlotName(slot);
-                if (identifier != null) {
-                    Object value = frameToSync.getValue(slot);
-                    if (value != null) {
-                        setItemNode.execute(frame, localsDict, identifier, resolveCellValue(ConditionProfile.getUncached(), value));
-                    } else {
-                        // delete variable
-                        delHashingStorageItem.execute(frame, localsDict.getDictStorage(), identifier, localsDict);
-                    }
-                }
-            }
-        }
-
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd",
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd",
                         "variableSlotCount(cachedFd) < 32"}, limit = "1")
         @ExplodeLoop
         static void doLocalsStorageCachedExploded(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
@@ -400,7 +276,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)",
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync, frameProfile)",
                         "frameToSync.getFrameDescriptor() == cachedFd"}, replaces = "doLocalsStorageCachedExploded", limit = "1")
         static void doLocalsStorageCachedLoop(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
@@ -414,7 +290,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "hasLocalsStorage(pyFrame, frameToSync, frameProfile)"}, replaces = {"doLocalsStorageCachedLoop", "doLocalsStorageCachedExploded"})
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync, frameProfile)"}, replaces = {"doLocalsStorageCachedLoop", "doLocalsStorageCachedExploded"})
         static void doLocalsStorageUncached(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile) {
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
@@ -426,7 +302,6 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         @Specialization(guards = { //
-                        "isBytecodeFrame(frameToSync)",
                         "isDictWithCustomStorage(pyFrame)",
                         "!hasCustomLocals(frameToSync, pyFrame)",
                         "frameToSync.getFrameDescriptor() == cachedFd",
@@ -437,8 +312,6 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -448,15 +321,17 @@ public abstract class MaterializeFrameNode extends Node {
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
             FrameInfo info = (FrameInfo) cachedFd.getInfo();
+            if (info == null) {
+                return;
+            }
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
-                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, setItem, delItem, updatedStorage, profile);
             }
         }
 
         @Specialization(guards = { //
-                        "isBytecodeFrame(frameToSync)",
                         "isDictWithCustomStorage(pyFrame)",
                         "!hasCustomLocals(frameToSync, pyFrame)",
                         "frameToSync.getFrameDescriptor() == cachedFd",
@@ -465,8 +340,6 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -476,19 +349,20 @@ public abstract class MaterializeFrameNode extends Node {
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
             FrameInfo info = (FrameInfo) cachedFd.getInfo();
+            if (info == null) {
+                return;
+            }
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = profiles[slot];
-                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, setItem, delItem, updatedStorage, profile);
             }
         }
 
-        @Specialization(guards = {"isBytecodeFrame(frameToSync)", "isDictWithCustomStorage(pyFrame)", "!hasCustomLocals(frameToSync, pyFrame)"}, replaces = {"doGenericDictCachedExploded",
+        @Specialization(guards = {"isDictWithCustomStorage(pyFrame)", "!hasCustomLocals(frameToSync, pyFrame)"}, replaces = {"doGenericDictCachedExploded",
                         "doGenericDictCachedLoop"})
         static void doGenericDict(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached BranchProfile updatedStorage,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached HashingStorageGetItem getItem,
                         @Cached HashingStorageSetItem setItem,
                         @Cached HashingStorageDelItem delItem) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
@@ -498,10 +372,13 @@ public abstract class MaterializeFrameNode extends Node {
             // The cast is guaranteed by the guard.
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
             FrameInfo info = (FrameInfo) frameToSync.getFrameDescriptor().getInfo();
+            if (info == null) {
+                return;
+            }
             int slotCount = info.getVariableCount();
             for (int slot = 0; slot < slotCount; slot++) {
                 ConditionProfile profile = ConditionProfile.getUncached();
-                syncDict(frame, slot, info, frameToSync, localsDict, getItem, setItem, delItem, hasFrame, updatedStorage, profile);
+                syncDict(frame, slot, info, frameToSync, localsDict, setItem, delItem, updatedStorage, profile);
             }
         }
 
@@ -512,8 +389,8 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         private static void syncDict(VirtualFrame frame, int slot, FrameInfo info, Frame frameToSync, PDict localsDict,
-                        HashingStorageGetItem getItem, HashingStorageSetItem setItem, HashingStorageDelItem delItem,
-                        ConditionProfile hasFrame, BranchProfile updatedStorage, ConditionProfile profile) {
+                        HashingStorageSetItem setItem, HashingStorageDelItem delItem,
+                        BranchProfile updatedStorage, ConditionProfile profile) {
             HashingStorage storage = localsDict.getDictStorage();
             TruffleString identifier = info.getVariableName(slot);
             Object value = frameToSync.getValue(slot);
@@ -533,13 +410,11 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        // @ImportStatic doesn't work on this for some reason
-        protected static boolean isBytecodeFrame(Frame frameToSync) {
-            return MaterializeFrameNode.isBytecodeFrame(frameToSync);
-        }
-
         protected static int variableSlotCount(FrameDescriptor fd) {
             FrameInfo info = (FrameInfo) fd.getInfo();
+            if (info == null) {
+                return 0;
+            }
             return info.getVariableCount();
         }
 
@@ -580,13 +455,6 @@ public abstract class MaterializeFrameNode extends Node {
                 return frameProfile.profile(((LocalsStorage) storage).getFrame()).getFrameDescriptor();
             }
             return null;
-        }
-
-        private static Object resolveCellValue(ConditionProfile profile, Object value) {
-            if (profile.profile(value instanceof PCell)) {
-                return ((PCell) value).getRef();
-            }
-            return value;
         }
 
         public static SyncFrameValuesNode create() {

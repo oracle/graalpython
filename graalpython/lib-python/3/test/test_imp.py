@@ -302,7 +302,7 @@ class ImportTests(unittest.TestCase):
     @unittest.skipIf(sys.dont_write_bytecode,
         "test meaningful only when writing bytecode")
     def test_bug7732(self):
-        with os_helper.temp_cwd():
+        with os_helper.temp_cwd(name=None):
             source = os_helper.TESTFN + '.py'
             os.mkdir(source)
             self.assertRaisesRegex(ImportError, '^No module',
@@ -367,7 +367,8 @@ class ImportTests(unittest.TestCase):
 
     def test_find_and_load_checked_pyc(self):
         # issue 34056
-        with os_helper.temp_cwd():
+        import gc; gc.collect()
+        with os_helper.temp_cwd(name=None):
             with open('mymod.py', 'wb') as fp:
                 fp.write(b'x = 42\n')
             py_compile.compile(

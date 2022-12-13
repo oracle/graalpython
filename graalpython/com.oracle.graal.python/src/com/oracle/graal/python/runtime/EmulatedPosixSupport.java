@@ -252,6 +252,7 @@ import com.oracle.truffle.api.TruffleFile.Attributes;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -1773,11 +1774,15 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public long[] waitpid(long pid, int options) throws PosixException {
+    public long[] waitpid(long pid, int options,
+                    @CachedLibrary("this") PosixSupportLibrary posixLib) throws PosixException {
         try {
             if (options == 0) {
-                int exitStatus = waitpid((int) pid);
-                return new long[]{pid, exitStatus};
+                int[] exitStatus = new int[1];
+                TruffleSafepoint.setBlockedThreadInterruptible(posixLib, (s) -> {
+                    exitStatus[0] = s.waitpid((int) pid);
+                }, this);
+                return new long[]{pid, exitStatus[0]};
             } else if (options == WNOHANG.value) {
                 // TODO: simplify once the super class is merged with this class
                 int[] res = exitStatus((int) pid);
@@ -1793,9 +1798,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             } else {
                 throw posixException(OSErrorEnum.ESRCH);
             }
-        } catch (InterruptedException e) {
-            interruptThread();
-            throw posixException(OSErrorEnum.EINTR);
         }
     }
 
