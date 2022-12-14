@@ -443,10 +443,12 @@ class NativeBuiltinModule:
 
 
 builtin_exts = (
+    NativeBuiltinModule("_cpython_struct"),
+    # the above modules are (so far), the only supported ones on windows
+)  + () if WIN32 else (
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_mmap"),
-    NativeBuiltinModule("_cpython_struct"),
     NativeBuiltinModule("_testcapi", core=False),
     NativeBuiltinModule("_testmultiphase"),
     NativeBuiltinModule("_ctypes_test"),
@@ -484,14 +486,24 @@ def build_libpython(capi_home):
         extra_compile_args=cflags_warnings,
     )()
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
-    setup(
-        script_name='setup' + libpython_name,
-        script_args=args,
-        name=libpython_name,
-        version='1.0',
-        description="Graal Python's C API",
-        ext_modules=[module],
-    )
+    if WIN32:
+        # need to link with sulongs libs instead of libpython for this one
+        get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_LINUX"] + " ".join([
+            f" -L{lpath}" for lpath in __graalpython__.get_toolchain_paths("LD_LIBRARY_PATH")
+        ]) + f" -lgraalvm-llvm -lsulong-native"
+    try:
+        setup(
+            script_name='setup' + libpython_name,
+            script_args=args,
+            name=libpython_name,
+            version='1.0',
+            description="Graal Python's C API",
+            ext_modules=[module],
+        )
+    finally:
+        if WIN32:
+            # reset LDSHARED
+            get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_WINDOWS"]
 
 
 def build_libhpy(capi_home):
