@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -73,24 +72,20 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.object.HiddenKey;
 
@@ -176,30 +171,38 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", minNumOfPositionalArgs = 1)
+    @Builtin(name = "alarm", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, declaresExplicitSelf = true, parameterNames = {"$mod", "seconds"})
+    @ArgumentClinic(name = "seconds", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class AlarmNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        int alarm(long seconds) {
-            Signals.scheduleAlarm(seconds);
-            return 0;
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        int alarm(PInt seconds) throws OverflowException {
-            Signals.scheduleAlarm(seconds.longValueExact());
-            return 0;
-        }
+    abstract static class AlarmNode extends PythonBinaryClinicBuiltinNode {
+        private static final HiddenKey CURRENT_ALARM = new HiddenKey("current_alarm");
 
         @Specialization
-        int alarmOvf(PInt seconds) {
-            try {
-                Signals.scheduleAlarm(seconds.longValueExact());
-                return 0;
-            } catch (OverflowException e) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+        @TruffleBoundary
+        int alarm(PythonModule module, int seconds) {
+            int remaining = 0;
+            Object currentAlarmObj = module.getAttribute(CURRENT_ALARM);
+            if (currentAlarmObj instanceof Signals.Alarm) {
+                Signals.Alarm currentAlarm = (Signals.Alarm) currentAlarmObj;
+                if (currentAlarm.isRunning()) {
+                    remaining = currentAlarm.getRemainingSeconds();
+                    if (remaining < 0) {
+                        remaining = 0;
+                    }
+                    currentAlarm.cancel();
+                }
             }
+            if (seconds > 0) {
+                Signals.Alarm newAlarm = new Signals.Alarm(seconds);
+                module.setAttribute(CURRENT_ALARM, newAlarm);
+                newAlarm.start();
+            }
+            return remaining;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.AlarmNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -488,30 +491,39 @@ final class Signals {
         }
     }
 
-    private static class Alarm implements Runnable {
-        private final long seconds;
+    final static class Alarm {
+        final int seconds;
+        final long startMillis;
+        private Thread thread;
 
-        Alarm(long seconds) {
+        public Alarm(int seconds) {
             this.seconds = seconds;
+            startMillis = System.currentTimeMillis();
         }
 
-        @Override
-        public void run() {
-            long t0 = System.currentTimeMillis();
-            while ((System.currentTimeMillis() - t0) < seconds * 1000) {
+        public void start() {
+            thread = new Thread(() -> {
                 try {
-                    Thread.sleep(seconds * 1000);
+                    Thread.sleep((long) seconds * 1000);
+                    sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    // Cancelled
                 }
-            }
-            sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
+            });
+            thread.start();
         }
-    }
 
-    @TruffleBoundary
-    synchronized static void scheduleAlarm(long seconds) {
-        new Thread(new Alarm(seconds)).start();
+        public boolean isRunning() {
+            return thread.isAlive();
+        }
+
+        public void cancel() {
+            thread.interrupt();
+        }
+
+        public int getRemainingSeconds() {
+            return seconds - (int) ((System.currentTimeMillis() - startMillis) / 1000);
+        }
     }
 
     @TruffleBoundary
