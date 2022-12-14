@@ -461,18 +461,6 @@ suite = {
                 "XZ-5.2.6": "<path:XZ-5.2.6>",
                 "BZIP2": "<path:BZIP2>",
             },
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "defaultBuild": False,
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "defaultBuild" : True,
-                    },
-                },
-            },
         },
 
         "com.oracle.graal.python.jni": {
@@ -696,6 +684,9 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON_JNI",
             ],
+            "dependencies": [
+                "com.oracle.graal.python.cext",
+            ],
             "os_arch": {
                 "windows": {
                     "<others>": {
@@ -708,8 +699,12 @@ suite = {
                             ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:com.oracle.graal.python.cext",
+                                    "path": "*",
+                                },
                             ],
                             "./Include/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
@@ -719,9 +714,6 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "dependencies": [
-                            "com.oracle.graal.python.cext",
-                        ],
                         "layout": {
                             "./": [
                                 "file:mx.graalpython/native-image.properties",

@@ -443,9 +443,8 @@ class NativeBuiltinModule:
 
 
 builtin_exts = (
-    NativeBuiltinModule("_cpython_struct"),
-    # the above modules are (so far), the only supported ones on windows
-)  + () if WIN32 else (
+    # the modules included in this list are supported on windows, too
+) + () if WIN32 else (
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_mmap"),
@@ -488,9 +487,10 @@ def build_libpython(capi_home):
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
     if WIN32:
         # need to link with sulongs libs instead of libpython for this one
-        get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_LINUX"] + " ".join([
+        llvm_libs = " ".join([
             f" -L{lpath}" for lpath in __graalpython__.get_toolchain_paths("LD_LIBRARY_PATH")
         ]) + f" -lgraalvm-llvm -lsulong-native"
+        get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_LINUX"] + llvm_libs
     try:
         setup(
             script_name='setup' + libpython_name,
@@ -502,8 +502,9 @@ def build_libpython(capi_home):
         )
     finally:
         if WIN32:
-            # reset LDSHARED
-            get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_WINDOWS"]
+            # reset LDSHARED, but keep linking with sulong libs so we can use internal
+            # APIs in shipped extensions
+            get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_WINDOWS"] + llvm_libs
 
 
 def build_libhpy(capi_home):
