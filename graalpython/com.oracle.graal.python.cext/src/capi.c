@@ -139,7 +139,7 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     PyBufferProcs* as_buffer = structure->tp_as_buffer;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
-    type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
+    type_handle->tp_flags = original_flags | Py_TPFLAGS_READY | Py_TPFLAGS_IMMUTABLETYPE;
     type_handle->tp_basicsize = basicsize;
     type_handle->tp_itemsize = itemsize;
     if (alloc_fun) {

@@ -49,6 +49,7 @@ public abstract class TypeFlags {
     public static final long SEQUENCE = (1L << 5);
     public static final long MAPPING = (1L << 6);
     public static final long HEAPTYPE = (1L << 9);
+    public static final long IMMUTABLETYPE = (1L << 8);
     public static final long BASETYPE = (1L << 10);
     public static final long HAVE_VECTORCALL = (1L << 11);
     public static final long READY = (1L << 12);
@@ -72,4 +73,5 @@ public abstract class TypeFlags {
     public static final long HAVE_FINALIZE = 1L;
 
     public static final long COLLECTION_FLAGS = SEQUENCE | MAPPING;
+    public static final long SUBCLASS_FLAGS = LONG_SUBCLASS | LIST_SUBCLASS | TUPLE_SUBCLASS | BYTES_SUBCLASS | UNICODE_SUBCLASS | DICT_SUBCLASS | BASE_EXC_SUBCLASS | TYPE_SUBCLASS;
 }

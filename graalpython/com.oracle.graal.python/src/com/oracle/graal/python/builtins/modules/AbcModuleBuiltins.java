@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.COLLECTION_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLETYPE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -135,7 +136,7 @@ public class AbcModuleBuiltins extends PythonBuiltins {
             long origTpFlags = getFlags.execute(child);
             long tpFlags = origTpFlags & ~COLLECTION_FLAGS;
             tpFlags |= flag;
-            if (tpFlags == origTpFlags) {
+            if (tpFlags == origTpFlags || (origTpFlags & IMMUTABLETYPE) != 0) {
                 return;
             }
             setTypeFlagsNode.execute(child, tpFlags);

@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCL
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IMMUTABLETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
@@ -64,6 +65,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SUBCLASS_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
@@ -423,7 +425,8 @@ public abstract class TypeNodes {
                     break;
             }
             // we always claim that all types are fully initialized
-            return result | READY;
+            // so far, all builtin types we care about are IMMUTABLE
+            return result | READY | IMMUTABLETYPE;
         }
 
         public static GetTypeFlagsNode getUncached() {
@@ -469,7 +472,7 @@ public abstract class TypeNodes {
             // If multiple inheritance, the first one wins.
             flags &= ~COLLECTION_FLAGS;
         }
-        result |= flags;
+        result |= flags & (COLLECTION_FLAGS | SUBCLASS_FLAGS | MATCH_SELF);
         return result;
     }
 
