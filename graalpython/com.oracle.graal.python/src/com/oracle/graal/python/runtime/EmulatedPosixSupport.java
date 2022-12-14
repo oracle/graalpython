@@ -1685,10 +1685,19 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
         TruffleFile file = resolvePath(dirFd, pathToTruffleString(path, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
-        try {
-            file.setPosixPermissions(permissions, getLinkOptions(followSymlinks));
-        } catch (Exception e) {
-            throw posixException(OSErrorEnum.fromException(e, eqNode));
+        if (getPythonOS() == PLATFORM_WIN32) {
+            // cmp cpython's simple chmod implementation
+            if (permissions.contains(PosixFilePermission.OWNER_WRITE)) {
+                // TODO: set writable
+            } else {
+                // TODO: set read-only
+            }
+        } else {
+            try {
+                file.setPosixPermissions(permissions, getLinkOptions(followSymlinks));
+            } catch (Exception e) {
+                throw posixException(OSErrorEnum.fromException(e, eqNode));
+            }
         }
     }
 
