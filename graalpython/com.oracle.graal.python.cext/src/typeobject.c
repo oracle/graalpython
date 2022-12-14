@@ -1136,7 +1136,8 @@ PyType_FromModuleAndSpec(PyObject *module, PyType_Spec *spec, PyObject *bases)
         goto fail;
 
     if (type->tp_dictoffset) {
-        res->ht_cached_keys = _PyDict_NewKeysForClass();
+        /* TODO(tfel): we cannot currently meaningfully provide this, patched out */
+        /* res->ht_cached_keys = _PyDict_NewKeysForClass(); */
     }
 
     if (type->tp_doc) {

@@ -61,7 +61,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.NativeBu
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
@@ -339,12 +341,47 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyByteArray_FromStringAndSize", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
+    abstract static class PyByteArrayFromStringAndSizeNode extends NativeBuiltin {
+        @Specialization
+        Object doGeneric(VirtualFrame frame, PythonNativeWrapper object, long size,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
+            PByteArray result;
+            if (size >= 0 && size < ary.length) {
+                // cast to int is guaranteed because of 'size < ary.length'
+                result = factory().createByteArray(Arrays.copyOf(ary, (int) size));
+            } else {
+                result = factory().createByteArray(ary);
+            }
+            return toSulongNode.execute(result);
+        }
+
+        @Specialization(guards = "!isNativeWrapper(nativePointer)")
+        Object doNativePointer(VirtualFrame frame, Object nativePointer, long size,
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            try {
+                return toSulongNode.execute(factory().createByteArray(getByteArrayNode.execute(nativePointer, size)));
+            } catch (InteropException e) {
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.TypeError, ErrorMessages.M, e);
+            } catch (OverflowException e) {
+                return raiseNative(frame, getContext().getNativeNull(), PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
+            }
+        }
+    }
+
     @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
+    @Builtin(name = "PyByteArray_Resize", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PyBytesResize extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static int resize(VirtualFrame frame, PBytes self, long newSizeL,
+        static int resize(VirtualFrame frame, PBytesLike self, long newSizeL,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToByteNode castToByteNode) {
@@ -363,7 +400,7 @@ public final class PythonCextBytesBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBytes(self)")
         static int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a set object", self);
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
 
     }

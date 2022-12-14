@@ -68,6 +68,19 @@ PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
 }
 
+UPCALL_ID(PyByteArray_FromStringAndSize);
+UPCALL_ID(PyTruffle_ByteArray_EmptyWithCapacity);
+PyObject* PyByteArray_FromStringAndSize(const char* str, Py_ssize_t sz) {
+    if (sz < 0) {
+        PyErr_SetString(PyExc_SystemError, "Negative size passed to PyByteArray_FromStringAndSize");
+        return NULL;
+    }
+    if (str != NULL) {
+        return ((fromStringAndSize_fun_t)_jls_PyByteArray_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
+    }
+    return UPCALL_CEXT_O(_jls_PyTruffle_ByteArray_EmptyWithCapacity, sz);
+}
+
 PyObject * PyBytes_FromString(const char *str) {
 	if (str != NULL) {
 		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, strlen(str)), strlen(str));
@@ -284,6 +297,11 @@ PyObject *_PyBytes_Join(PyObject *sep, PyObject *x) {
 UPCALL_ID(_PyBytes_Resize);
 int _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize) {
     return UPCALL_CEXT_I(_jls__PyBytes_Resize, native_to_java(*pv), newsize);
+}
+
+UPCALL_ID(PyByteArray_Resize);
+int PyByteArray_Resize(PyObject *pv, Py_ssize_t newsize) {
+    return UPCALL_CEXT_I(_jls_PyByteArray_Resize, native_to_java(pv), newsize);
 }
 
 UPCALL_ID(PyBytes_FromObject);
