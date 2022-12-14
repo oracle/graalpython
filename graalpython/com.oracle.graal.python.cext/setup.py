@@ -604,8 +604,13 @@ def build(capi_home):
         import distutils.ccompiler
         import distutils.command.build_ext
         original_compile = distutils.ccompiler.CCompiler.compile
+        original_object_filenames = distutils.ccompiler.CCompiler.object_filenames
         original_build_extensions = distutils.command.build_ext.build_ext.build_extensions
+        def stripped_object_filenames(*args, **kwargs):
+            kwargs.update(dict(strip_dir=1))
+            return original_object_filenames(*args, **kwargs)
         distutils.ccompiler.CCompiler.compile = pcompiler
+        distutils.ccompiler.CCompiler.object_filenames = stripped_object_filenames
         distutils.command.build_ext.build_ext.build_extensions = build_extensions
 
     try:
@@ -631,6 +636,7 @@ def build(capi_home):
     finally:
         if threaded:
             distutils.ccompiler.CCompiler.compile = original_compile
+            distutils.ccompiler.CCompiler.object_filenames = original_object_filenames
             distutils.command.build_ext.build_ext.build_extensions = original_build_extensions
 
 
