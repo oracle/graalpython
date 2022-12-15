@@ -1114,7 +1114,11 @@ def graalpython_gate_runner(args, tasks):
             mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "\n".join(["win32"])
             if success not in out.data:
-                mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
+            mx.run([svm_image, "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            success = "b'abcd'"
+            if success not in out.data:
+                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker]) as task:
         if task:
