@@ -204,21 +204,37 @@ public class AsyncHandler {
                             @Override
                             @SuppressWarnings("try")
                             protected void perform(ThreadLocalAction.Access access) {
-                                if (ctx.tryEnterAsyncHandler()) {
-                                    try {
-                                        GilNode gil = GilNode.getUncached();
-                                        boolean mustRelease = gil.acquire();
+                                /*
+                                 * Explanation of the rescheduling mechanism: We don't want async
+                                 * actions to trigger within async other async actions as it causes
+                                 * weird behavior when, for example, a signal handler triggers in a
+                                 * weakref callback. So we have a boolean "lock" that doesn't allow
+                                 * us to enter async action handler if another one is already in
+                                 * progress and instead we put those into a queue. The queue is then
+                                 * drained by the outer async handler that was holding the "lock".
+                                 * This all happens on the main thread, so if something holds the
+                                 * lock, it's above us on the stack.
+                                 */
+                                AsyncAction action = asyncAction;
+                                do {
+                                    if (ctx.tryEnterAsyncHandler()) {
                                         try {
-                                            asyncAction.execute(ctx);
+                                            GilNode gil = GilNode.getUncached();
+                                            boolean mustRelease = gil.acquire();
+                                            try {
+                                                action.execute(ctx);
+                                            } finally {
+                                                gil.release(mustRelease);
+                                            }
                                         } finally {
-                                            gil.release(mustRelease);
+                                            ctx.leaveAsyncHandler();
                                         }
-                                    } finally {
-                                        ctx.leaveAsyncHandler();
+                                        action = rescheduled.poll();
+                                    } else {
+                                        rescheduled.add(action);
+                                        return;
                                     }
-                                } else {
-                                    rescheduled.add(asyncAction);
-                                }
+                                } while (action != null);
                             }
                         });
                     }
@@ -279,7 +295,6 @@ public class AsyncHandler {
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
         this.callTarget = context.getLanguage().createCachedCallTarget(CallRootNode::new, CallRootNode.class);
-        registerAction(rescheduled::poll);
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {
