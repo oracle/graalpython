@@ -89,6 +89,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -155,6 +156,7 @@ public abstract class StringNodes {
             return materialized;
         }
 
+        @NeverDefault
         public static StringMaterializeNode create() {
             return StringNodesFactory.StringMaterializeNodeGen.create();
         }

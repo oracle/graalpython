@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -103,6 +104,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
             return lookup(klass, key, getMroNode, readAttrNode, false, DynamicObjectLibrary.getUncached());
         }
 
+        @NeverDefault
         public static LookupAttributeInMRONode.Dynamic create() {
             return LookupAttributeInMRONodeGen.DynamicNodeGen.create();
         }
@@ -122,6 +124,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         this.skipNonStaticBases = skipNonStaticBases;
     }
 
+    @NeverDefault
     public static LookupAttributeInMRONode create(TruffleString key) {
         return LookupAttributeInMRONodeGen.create(key, false);
     }
@@ -130,6 +133,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
      * Specific case to facilitate lookup on native and built-in classes only. This is useful for
      * certain slot wrappers.
      */
+    @NeverDefault
     public static LookupAttributeInMRONode createForLookupOfUnmanagedClasses(TruffleString key) {
         return LookupAttributeInMRONodeGen.create(key, true);
     }
@@ -283,6 +287,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return lookupResult.getFromMro(getMro(klass), key);
     }
 
+    @NeverDefault
     protected static ReadAttributeFromObjectNode[] create(int size) {
         ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
         for (int i = 0; i < size; i++) {

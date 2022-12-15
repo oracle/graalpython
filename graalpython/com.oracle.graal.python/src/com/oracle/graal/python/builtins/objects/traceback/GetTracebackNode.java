@@ -45,6 +45,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -139,6 +140,7 @@ public abstract class GetTracebackNode extends Node {
         return newTraceback;
     }
 
+    @NeverDefault
     public static GetTracebackNode create() {
         return GetTracebackNodeGen.create();
     }

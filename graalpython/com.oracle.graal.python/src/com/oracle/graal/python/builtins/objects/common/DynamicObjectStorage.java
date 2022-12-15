@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -208,7 +209,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object notString(Frame frame, DynamicObjectStorage self, Object key, long hashIn,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
-                        @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
+                        @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1, neverDefault = true) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
@@ -322,6 +323,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     abstract static class Copy extends Node {
         abstract DynamicObjectStorage execute(DynamicObjectStorage receiver);
 
+        @NeverDefault
         static DynamicObjectLibrary[] createAccess(int length) {
             DynamicObjectLibrary[] result = new DynamicObjectLibrary[length];
             for (int i = 0; i < length; i++) {
@@ -336,7 +338,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @SuppressWarnings("unused") @Bind("receiver.store") DynamicObject store,
                         @SuppressWarnings("unused") @CachedLibrary("store") DynamicObjectLibrary dylib,
                         @Bind("dylib.getKeyArray(store)") Object[] keys,
-                        @Cached("keys.length") int cachedLength,
+                        @Cached(value = "keys.length", neverDefault = false) int cachedLength,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] readLib,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib) {
             DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());

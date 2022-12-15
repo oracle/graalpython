@@ -51,6 +51,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -97,54 +98,67 @@ public abstract class IndexNodes {
             return errorMessage;
         }
 
+        @NeverDefault
         public static NormalizeIndexNode create() {
             return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, true);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode create(TruffleString errorMessage) {
             return new NormalizeIndexNode(errorMessage, true);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode create(boolean boundsCheck) {
             return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, boundsCheck);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode create(TruffleString errorMessage, boolean boundsCheck) {
             return new NormalizeIndexNode(errorMessage, boundsCheck);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forList() {
             return create(ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forListAssign() {
             return create(ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forTuple() {
             return create(ErrorMessages.TUPLE_OUT_OF_BOUNDS);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forTupleAssign() {
             return create(ErrorMessages.TUPLE_ASSIGN_OUT_OF_BOUNDS);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forArray() {
             return create(ErrorMessages.ARRAY_OUT_OF_BOUNDS);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forArrayAssign() {
             return create(ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forPop() {
             return create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forRange() {
             return create(ErrorMessages.RANGE_OUT_OF_BOUNDS);
         }
 
+        @NeverDefault
         public static NormalizeIndexNode forBytearray() {
             return create(ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
         }
@@ -161,18 +175,17 @@ public abstract class IndexNodes {
 
         public abstract long executeLong(long index, long length, TruffleString errorMessage);
 
+        @NeverDefault
         public static NormalizeIndexCustomMessageNode create() {
             return NormalizeIndexWithBoundsCheckNodeGen.create();
         }
 
+        @NeverDefault
         public static NormalizeIndexCustomMessageNode getUncached() {
             return NormalizeIndexWithBoundsCheckNodeGen.getUncached();
         }
 
-        public static NormalizeIndexCustomMessageNode createWithoutBoundsCheck() {
-            return NormalizeIndexWithoutBoundsCheckNodeGen.create();
-        }
-
+        @NeverDefault
         public static NormalizeIndexCustomMessageNode getUncachedWithoutBoundsCheck() {
             return NormalizeIndexWithoutBoundsCheckNodeGen.getUncached();
         }

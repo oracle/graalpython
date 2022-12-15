@@ -131,6 +131,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -2586,6 +2587,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static FsConverterNode create() {
             return PosixModuleBuiltinsFactory.FsConverterNodeGen.create();
         }
@@ -2647,6 +2649,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+        @NeverDefault
         public static DirFdConversionNode create() {
             return PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create();
         }
@@ -2792,6 +2795,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static PathConversionNode create(@BuiltinName String functionName, @ArgumentName String argumentName, boolean nullable, boolean allowFd) {
             return PosixModuleBuiltinsFactory.PathConversionNodeGen.create(functionName, argumentName, nullable, allowFd);
         }
@@ -2819,6 +2823,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Long)
+        @NeverDefault
         public static OffsetConversionNode create() {
             return PosixModuleBuiltinsFactory.OffsetConversionNodeGen.create();
         }
@@ -2836,6 +2841,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+        @NeverDefault
         public static FileDescriptorConversionNode create() {
             return PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create();
         }
@@ -2863,6 +2869,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        @NeverDefault
         public static PidtConversionNode create() {
             // TODO on platforms with sizeof(pid_t) == 4 (includes linux), the converter should
             // check for overflow
@@ -2916,6 +2923,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        @NeverDefault
         public static UidConversionNode create() {
             return PosixModuleBuiltinsFactory.UidConversionNodeGen.create();
         }

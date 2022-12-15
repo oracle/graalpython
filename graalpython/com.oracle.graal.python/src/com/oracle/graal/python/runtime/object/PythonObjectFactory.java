@@ -221,6 +221,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -256,6 +257,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 public abstract class PythonObjectFactory extends Node {
 
+    @NeverDefault
     public static PythonObjectFactory create() {
         return PythonObjectFactoryNodeGen.create();
     }
@@ -284,6 +286,7 @@ public abstract class PythonObjectFactory extends Node {
         return null;
     }
 
+    @NeverDefault
     protected AllocationReporter getAllocationReporter() {
         return PythonContext.get(this).getAllocationReporter();
     }

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
@@ -85,6 +87,7 @@ public abstract class DeleteDictNode extends PNodeWithContext {
         object.setDict(dylib, newDict);
     }
 
+    @NeverDefault
     public static DeleteDictNode create() {
         return DeleteDictNodeGen.create();
     }

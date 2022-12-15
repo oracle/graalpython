@@ -263,6 +263,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -669,6 +670,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return T_OCT_PREFIX;
         }
 
+        @NeverDefault
         public static OctNode create() {
             return OctNodeFactory.create();
         }
@@ -696,6 +698,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return T_HEX_PREFIX;
         }
 
+        @NeverDefault
         public static HexNode create() {
             return HexNodeFactory.create();
         }
@@ -1276,6 +1279,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_GETATTR, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
+        @NeverDefault
         public static GetAttrNode create() {
             return GetAttrNodeFactory.create();
         }
@@ -1367,10 +1371,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
 
+        @NeverDefault
         protected final RecursiveBinaryCheckBaseNode createRecursive() {
             return createRecursive((byte) (depth + 1));
         }
 
+        @NeverDefault
         protected final RecursiveBinaryCheckBaseNode createNonRecursive() {
             return createRecursive(NON_RECURSIVE);
         }
@@ -1535,6 +1541,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return isSubtypeNode.execute(frame, derived, cls);
         }
 
+        @NeverDefault
         public static IsSubClassNode create() {
             return BuiltinFunctionsFactory.IsSubClassNodeFactory.create();
         }
@@ -1579,6 +1586,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @CompilationFinal private boolean seenNonBoolean = false;
 
+        @NeverDefault
         protected final BinaryComparisonNode createComparison() {
             if (this instanceof MaxNode) {
                 return BinaryComparisonNode.GtNode.create();
@@ -1761,6 +1769,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected LookupAndCallUnaryNode createNextCall() {
             return LookupAndCallUnaryNode.create(T___NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
                 @Override
@@ -1973,6 +1982,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return res;
         }
 
+        @NeverDefault
         public static FormatNode create() {
             return BuiltinFunctionsFactory.FormatNodeFactory.create();
         }
@@ -2105,10 +2115,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = J_POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
+        @NeverDefault
         static BinaryOpNode binaryPow() {
             return BinaryArithmetic.Pow.create();
         }
 
+        @NeverDefault
         static LookupAndCallTernaryNode ternaryPow() {
             return TernaryArithmetic.Pow.create();
         }
@@ -2267,6 +2279,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return callerFrame.getLocals();
         }
 
+        @NeverDefault
         public static LocalsNode create() {
             return BuiltinFunctionsFactory.LocalsNodeFactory.create(null);
         }

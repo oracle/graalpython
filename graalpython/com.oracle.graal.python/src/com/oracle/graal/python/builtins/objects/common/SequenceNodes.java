@@ -54,6 +54,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -77,6 +78,7 @@ public abstract class SequenceNodes {
             return getStorage.execute(seq).length();
         }
 
+        @NeverDefault
         public static LenNode create() {
             return SequenceNodesFactory.LenNodeGen.create();
         }
@@ -112,6 +114,7 @@ public abstract class SequenceNodes {
             return object instanceof PSequence;
         }
 
+        @NeverDefault
         public static GetSequenceStorageNode create() {
             return SequenceNodesFactory.GetSequenceStorageNodeGen.create();
         }

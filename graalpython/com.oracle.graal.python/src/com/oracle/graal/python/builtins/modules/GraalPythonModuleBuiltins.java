@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
@@ -443,6 +445,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @NeverDefault
         public static DebugNode create() {
             return DebugNodeFactory.create(null);
         }

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_COPY;
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_READ;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
@@ -306,6 +308,7 @@ public class MMapBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected static CastToByteNode createCoerce() {
             return CastToByteNode.create(true);
         }

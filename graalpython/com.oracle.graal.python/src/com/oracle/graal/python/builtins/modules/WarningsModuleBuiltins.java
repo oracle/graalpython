@@ -132,6 +132,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -236,6 +237,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child TruffleString.EqualNode equalNode;
         @Child TruffleString.SubstringNode substringNode;
 
+        @NeverDefault
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
         }
@@ -1036,6 +1038,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @NeverDefault
         public static WarnBuiltinNode create() {
             return WarnBuiltinNodeFactory.create(null);
         }
@@ -1108,6 +1111,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         private static final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
         private static final WarnNode UNCACHED = new WarnNodeUncached();
 
+        @NeverDefault
         public static WarnNode create() {
             return new WarnNodeCached();
         }

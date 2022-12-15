@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.Frame;
@@ -59,7 +60,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.IntValueProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
@@ -154,9 +155,10 @@ public final class PythonScopes implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasMembers(@Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile) {
-        int length = lengthProfile.profile(scopes.length);
+    boolean hasMembers(@Bind("$node") Node inliningTarget,
+                    @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         for (int i = scopeIndex; i < length; i++) {
             Object vars = this.scopes[i];
             if (interop.hasMembers(vars)) {
@@ -168,9 +170,10 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile) throws UnsupportedMessageException {
-        int length = lengthProfile.profile(scopes.length);
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) throws UnsupportedMessageException {
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         Object[] keys = new Object[length - scopeIndex];
         for (int i = scopeIndex; i < length; i++) {
             keys[i - scopeIndex] = interop.getMembers(scopes[i]);
@@ -180,9 +183,10 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     boolean isMemberReadable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile) {
-        int length = lengthProfile.profile(scopes.length);
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         for (int i = scopeIndex; i < length; i++) {
             Object scope = this.scopes[i];
             if (interop.isMemberReadable(scope, member)) {
@@ -196,9 +200,10 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     Object readMember(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile) throws UnknownIdentifierException, UnsupportedMessageException {
-        int length = lengthProfile.profile(scopes.length);
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         for (int i = scopeIndex; i < length; i++) {
             Object scope = this.scopes[i];
             if (interop.isMemberExisting(scope, member)) {
@@ -210,10 +215,11 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     void writeMember(String member, Object value,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile)
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile)
                     throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
-        int length = lengthProfile.profile(scopes.length);
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         for (int i = scopeIndex; i < length; i++) {
             Object scope = this.scopes[i];
             if (interop.isMemberExisting(scope, member)) {
@@ -226,9 +232,10 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     boolean isMemberModifiable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile) {
-        int length = lengthProfile.profile(scopes.length);
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         for (int i = scopeIndex; i < length; i++) {
             Object scope = this.scopes[i];
             if (interop.isMemberModifiable(scope, member)) {
@@ -242,9 +249,10 @@ public final class PythonScopes implements TruffleObject {
 
     @ExportMessage
     boolean isMemberInsertable(String member,
+                    @Bind("$node") Node inliningTarget,
                     @Shared("interop") @CachedLibrary(limit = "LIMIT") InteropLibrary interop,
-                    @Shared("lenghtProfile") @Cached("createIdentityProfile()") IntValueProfile lengthProfile) {
-        int length = lengthProfile.profile(scopes.length);
+                    @Shared("lenghtProfile") @Cached InlinedIntValueProfile lengthProfile) {
+        int length = lengthProfile.profile(inliningTarget, scopes.length);
         boolean wasInsertable = false;
         for (int i = scopeIndex; i < length; i++) {
             Object scope = this.scopes[i];

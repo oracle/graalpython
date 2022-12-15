@@ -48,6 +48,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -114,6 +115,7 @@ public abstract class PForeignToPTypeNode extends Node {
         return pe.getUnreifiedException();
     }
 
+    @NeverDefault
     public static PForeignToPTypeNode create() {
         return PForeignToPTypeNodeGen.create();
     }

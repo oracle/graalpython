@@ -53,6 +53,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
@@ -104,6 +105,7 @@ public final class ReadCallerFrameNode extends Node {
     protected ReadCallerFrameNode() {
     }
 
+    @NeverDefault
     public static ReadCallerFrameNode create() {
         return new ReadCallerFrameNode();
     }

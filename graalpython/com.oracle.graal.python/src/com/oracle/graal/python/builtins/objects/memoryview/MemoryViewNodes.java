@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -371,6 +372,7 @@ public class MemoryViewNodes {
             return owner instanceof PMMap;
         }
 
+        @NeverDefault
         protected static CastToByteNode createCoerce() {
             return CastToByteNode.create(true);
         }
@@ -678,6 +680,7 @@ public class MemoryViewNodes {
             return destOffset;
         }
 
+        @NeverDefault
         public static ToJavaBytesNode create() {
             return MemoryViewNodesFactory.ToJavaBytesNodeGen.create();
         }

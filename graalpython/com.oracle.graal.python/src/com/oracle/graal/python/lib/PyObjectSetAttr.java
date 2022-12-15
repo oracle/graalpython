@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -138,6 +139,7 @@ public abstract class PyObjectSetAttr extends PNodeWithContext {
         throw raise.raise(TypeError, ATTR_NAME_MUST_BE_STRING, name);
     }
 
+    @NeverDefault
     public static PyObjectSetAttr create() {
         return PyObjectSetAttrNodeGen.create();
     }

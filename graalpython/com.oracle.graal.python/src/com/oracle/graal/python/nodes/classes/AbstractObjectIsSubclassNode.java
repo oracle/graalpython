@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -63,6 +65,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     static final int MAX_RECURSION = 3; // Don't use PythonOptions to avoid language reference
 
+    @NeverDefault
     public static AbstractObjectIsSubclassNode create() {
         return AbstractObjectIsSubclassNodeGen.create();
     }

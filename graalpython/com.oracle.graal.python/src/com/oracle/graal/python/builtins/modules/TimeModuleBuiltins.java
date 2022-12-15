@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
@@ -581,6 +583,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return System.nanoTime();
         }
 
+        @NeverDefault
         public static SleepNode create() {
             return TimeModuleBuiltinsFactory.SleepNodeFactory.create(null);
         }

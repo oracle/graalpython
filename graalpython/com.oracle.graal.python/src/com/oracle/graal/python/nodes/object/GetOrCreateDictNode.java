@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -86,6 +87,7 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
         return dict;
     }
 
+    @NeverDefault
     public static GetOrCreateDictNode create() {
         return GetOrCreateDictNodeGen.create();
     }

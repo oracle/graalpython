@@ -154,6 +154,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -424,6 +425,7 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @NeverDefault
         public static AddNode create() {
             return IntBuiltinsFactory.AddNodeFactory.create();
         }
@@ -504,6 +506,7 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @NeverDefault
         public static SubNode create() {
             return IntBuiltinsFactory.SubNodeFactory.create();
         }
@@ -601,6 +604,7 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @NeverDefault
         public static TrueDivNode create() {
             return IntBuiltinsFactory.TrueDivNodeFactory.create();
         }
@@ -718,6 +722,7 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @NeverDefault
         public static FloorDivNode create() {
             return IntBuiltinsFactory.FloorDivNodeFactory.create();
         }
@@ -871,6 +876,7 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @NeverDefault
         public static ModNode create() {
             return IntBuiltinsFactory.ModNodeFactory.create();
         }
@@ -962,6 +968,7 @@ public class IntBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @NeverDefault
         public static MulNode create() {
             return IntBuiltinsFactory.MulNodeFactory.create();
         }
@@ -1254,6 +1261,7 @@ public class IntBuiltins extends PythonBuiltins {
             return a.pow((int) b);
         }
 
+        @NeverDefault
         public static PowNode create() {
             return IntBuiltinsFactory.PowNodeFactory.create();
         }
@@ -1410,6 +1418,7 @@ public class IntBuiltins extends PythonBuiltins {
             return value.negate();
         }
 
+        @NeverDefault
         public static NegNode create() {
             return IntBuiltinsFactory.NegNodeFactory.create();
         }
@@ -1611,6 +1620,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         public static LShiftNode create() {
             return IntBuiltinsFactory.LShiftNodeFactory.create();
         }
@@ -1712,6 +1722,7 @@ public class IntBuiltins extends PythonBuiltins {
             return left.shiftRight(right);
         }
 
+        @NeverDefault
         public static RShiftNode create() {
             return IntBuiltinsFactory.RShiftNodeFactory.create();
         }
@@ -1831,6 +1842,7 @@ public class IntBuiltins extends PythonBuiltins {
             return left.and(right);
         }
 
+        @NeverDefault
         public static AndNode create() {
             return IntBuiltinsFactory.AndNodeFactory.create();
         }
@@ -1858,6 +1870,7 @@ public class IntBuiltins extends PythonBuiltins {
             return left.or(right);
         }
 
+        @NeverDefault
         public static OrNode create() {
             return IntBuiltinsFactory.OrNodeFactory.create();
         }
@@ -1884,6 +1897,7 @@ public class IntBuiltins extends PythonBuiltins {
             return left.xor(right);
         }
 
+        @NeverDefault
         public static XorNode create() {
             return IntBuiltinsFactory.XorNodeFactory.create();
         }
@@ -2531,6 +2545,7 @@ public class IntBuiltins extends PythonBuiltins {
             return asSizeNode.executeExact(frame, object);
         }
 
+        @NeverDefault
         public static ToBytesNode create() {
             return IntBuiltinsFactory.ToBytesNodeFactory.create(null);
         }

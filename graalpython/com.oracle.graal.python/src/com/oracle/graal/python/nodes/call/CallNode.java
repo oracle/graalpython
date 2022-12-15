@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -85,6 +86,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
 @GenerateUncached
 public abstract class CallNode extends PNodeWithContext {
+    @NeverDefault
     public static CallNode create() {
         return CallNodeGen.create();
     }

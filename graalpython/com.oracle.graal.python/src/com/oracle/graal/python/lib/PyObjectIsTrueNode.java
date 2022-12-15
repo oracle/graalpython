@@ -63,6 +63,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -205,6 +206,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         }
     }
 
+    @NeverDefault
     public static PyObjectIsTrueNode create() {
         return PyObjectIsTrueNodeGen.create();
     }

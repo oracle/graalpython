@@ -51,6 +51,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -88,6 +89,7 @@ public abstract class ReadFromLocalsNode extends PNodeWithContext implements Acc
         }
     }
 
+    @NeverDefault
     public static ReadFromLocalsNode create() {
         return ReadFromLocalsNodeGen.create();
     }

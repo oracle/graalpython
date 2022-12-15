@@ -106,6 +106,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -259,6 +260,7 @@ public class ComplexBuiltins extends PythonBuiltins {
             return (int) ((Double.doubleToRawLongBits(d) >>> 52) & 0x7ff) - 1023;
         }
 
+        @NeverDefault
         public static AbsNode create() {
             return ComplexBuiltinsFactory.AbsNodeFactory.create();
         }
@@ -306,6 +308,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         public abstract PComplex executeComplex(VirtualFrame frame, Object left, Object right);
 
+        @NeverDefault
         public static DivNode create() {
             return ComplexBuiltinsFactory.DivNodeFactory.create();
         }

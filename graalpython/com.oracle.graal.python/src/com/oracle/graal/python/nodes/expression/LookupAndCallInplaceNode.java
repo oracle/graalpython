@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -111,6 +112,7 @@ public abstract class LookupAndCallInplaceNode extends PNodeWithContext implemen
 
     public abstract Object executeTernary(VirtualFrame frame, Object x, Object y, Object z);
 
+    @NeverDefault
     protected final LookupInMROBaseNode createInplaceLookup() {
         if (arithmetic.slot != null) {
             return LookupCallableSlotInMRONode.create(arithmetic.slot);

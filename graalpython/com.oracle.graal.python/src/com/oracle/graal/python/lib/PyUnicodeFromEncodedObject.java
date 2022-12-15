@@ -54,6 +54,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -115,6 +116,7 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithIndirectCall {
         }
     }
 
+    @NeverDefault
     public static PyUnicodeFromEncodedObject create() {
         return PyUnicodeFromEncodedObjectNodeGen.create(Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }

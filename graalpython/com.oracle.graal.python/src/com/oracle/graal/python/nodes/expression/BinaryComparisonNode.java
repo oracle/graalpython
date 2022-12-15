@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -154,6 +155,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return result;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallNode() {
             return LookupAndCallBinaryNode.create(SpecialMethodSlot.Le, SpecialMethodSlot.Ge, true, true);
         }
@@ -163,6 +165,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return "<=";
         }
 
+        @NeverDefault
         public static LeNode create() {
             return LeNodeGen.create();
         }
@@ -227,6 +230,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return result;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallNode() {
             return LookupAndCallBinaryNode.create(SpecialMethodSlot.Lt, SpecialMethodSlot.Gt, true, true);
         }
@@ -236,6 +240,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return "<";
         }
 
+        @NeverDefault
         public static LtNode create() {
             return LtNodeGen.create();
         }
@@ -300,6 +305,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return result;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallNode() {
             return LookupAndCallBinaryNode.create(SpecialMethodSlot.Ge, SpecialMethodSlot.Le, true, true);
         }
@@ -309,6 +315,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return ">=";
         }
 
+        @NeverDefault
         public static GeNode create() {
             return GeNodeGen.create();
         }
@@ -373,6 +380,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return result;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallNode() {
             return LookupAndCallBinaryNode.create(SpecialMethodSlot.Gt, SpecialMethodSlot.Lt, true, true);
         }
@@ -382,6 +390,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return ">";
         }
 
+        @NeverDefault
         public static GtNode create() {
             return GtNodeGen.create();
         }
@@ -448,10 +457,12 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return result;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallNode() {
             return LookupAndCallBinaryNode.create(SpecialMethodSlot.Eq, SpecialMethodSlot.Eq, true, true);
         }
 
+        @NeverDefault
         public static EqNode create() {
             return EqNodeGen.create();
         }
@@ -518,10 +529,12 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
             return result;
         }
 
+        @NeverDefault
         protected static LookupAndCallBinaryNode createCallNode() {
             return LookupAndCallBinaryNode.create(SpecialMethodSlot.Ne, SpecialMethodSlot.Ne, true, true);
         }
 
+        @NeverDefault
         public static NeNode create() {
             return NeNodeGen.create();
         }

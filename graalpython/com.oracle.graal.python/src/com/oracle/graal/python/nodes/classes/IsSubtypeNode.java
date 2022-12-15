@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -330,6 +331,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return cls instanceof PythonBuiltinClass || cls instanceof PythonBuiltinClassType;
     }
 
+    @NeverDefault
     public static IsSubtypeNode create() {
         return IsSubtypeNodeGen.create();
     }

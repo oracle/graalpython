@@ -45,6 +45,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -68,6 +69,7 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
 
     public abstract boolean execute(Object primary, Object key, Object value);
 
+    @NeverDefault
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();
     }

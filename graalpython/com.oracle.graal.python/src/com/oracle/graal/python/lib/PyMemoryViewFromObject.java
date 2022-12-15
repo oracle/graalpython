@@ -68,6 +68,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -157,6 +158,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCa
         }
     }
 
+    @NeverDefault
     public static PyMemoryViewFromObject create() {
         return PyMemoryViewFromObjectNodeGen.create();
     }

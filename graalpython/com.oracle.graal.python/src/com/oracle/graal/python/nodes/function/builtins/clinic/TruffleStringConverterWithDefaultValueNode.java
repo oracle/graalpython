@@ -45,6 +45,7 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class TruffleStringConverterWithDefaultValueNode extends TruffleStringConverterNode {
@@ -74,6 +75,7 @@ public abstract class TruffleStringConverterWithDefaultValueNode extends Truffle
     }
 
     @ClinicConverterFactory
+    @NeverDefault
     public static TruffleStringConverterWithDefaultValueNode create(@BuiltinName String builtinName, @DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return TruffleStringConverterWithDefaultValueNodeGen.create(builtinName, defaultValue, useDefaultForNone);
     }

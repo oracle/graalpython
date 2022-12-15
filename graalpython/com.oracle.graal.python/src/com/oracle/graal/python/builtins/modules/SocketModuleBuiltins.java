@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
@@ -352,6 +354,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected static IdnaFromStringOrBytesConverterNode createIdnaConverter() {
             return IdnaFromStringOrBytesConverterNode.create("gethostbyname", 1);
         }
@@ -650,6 +653,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected static IdnaFromStringOrBytesConverterNode createIdna() {
             return IdnaFromStringOrBytesConverterNode.create("getaddrinfo", 1);
         }

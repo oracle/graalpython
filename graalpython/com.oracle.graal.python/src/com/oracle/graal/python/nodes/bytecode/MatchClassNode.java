@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -56,22 +60,18 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 public abstract class MatchClassNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object subject, Object type, int nargs, TruffleString[] kwArgs);
 
     @Specialization
-    Object match(VirtualFrame frame, Object subject, Object type, int nargs, @SuppressWarnings("unused") TruffleString[] kwArgsArg,
+    Object match(VirtualFrame frame, Object subject, Object type, int nargs, @NeverDefault @SuppressWarnings("unused") TruffleString[] kwArgsArg,
                     @Cached(value = "kwArgsArg", dimensions = 1) TruffleString[] kwArgs,
                     @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,

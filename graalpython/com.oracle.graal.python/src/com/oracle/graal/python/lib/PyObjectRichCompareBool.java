@@ -63,6 +63,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -347,6 +348,7 @@ public abstract class PyObjectRichCompareBool {
             return false;
         }
 
+        @NeverDefault
         public static EqNode create() {
             return PyObjectRichCompareBoolFactory.EqNodeGen.create();
         }
@@ -411,6 +413,7 @@ public abstract class PyObjectRichCompareBool {
             return true;
         }
 
+        @NeverDefault
         public static NeNode create() {
             return PyObjectRichCompareBoolFactory.NeNodeGen.create();
         }
@@ -464,6 +467,7 @@ public abstract class PyObjectRichCompareBool {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
         }
 
+        @NeverDefault
         public static LtNode create() {
             return PyObjectRichCompareBoolFactory.LtNodeGen.create();
         }
@@ -516,6 +520,7 @@ public abstract class PyObjectRichCompareBool {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
         }
 
+        @NeverDefault
         public static LeNode create() {
             return PyObjectRichCompareBoolFactory.LeNodeGen.create();
         }
@@ -568,6 +573,7 @@ public abstract class PyObjectRichCompareBool {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
         }
 
+        @NeverDefault
         public static GtNode create() {
             return PyObjectRichCompareBoolFactory.GtNodeGen.create();
         }
@@ -620,6 +626,7 @@ public abstract class PyObjectRichCompareBool {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
         }
 
+        @NeverDefault
         public static GeNode create() {
             return PyObjectRichCompareBoolFactory.GeNodeGen.create();
         }

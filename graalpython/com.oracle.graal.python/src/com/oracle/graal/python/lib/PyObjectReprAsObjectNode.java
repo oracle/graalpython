@@ -58,6 +58,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -111,6 +112,7 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
         return defaultRepr.execute(frame, obj);
     }
 
+    @NeverDefault
     public static PyObjectReprAsObjectNode create() {
         return PyObjectReprAsObjectNodeGen.create();
     }

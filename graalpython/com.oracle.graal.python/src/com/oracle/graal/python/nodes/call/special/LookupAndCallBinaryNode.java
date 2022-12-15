@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -81,6 +82,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
+    @NeverDefault
     public static LookupAndCallBinaryNode create(TruffleString name) {
         // Use SpecialMethodSlot overload for special slots, if there is a need to create
         // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
@@ -89,18 +91,22 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupAndCallNonReversibleBinaryNodeGen.create(name, null, false);
     }
 
+    @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot) {
         return LookupAndCallNonReversibleBinaryNodeGen.create(slot, null, false);
     }
 
+    @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallNonReversibleBinaryNodeGen.create(slot, handlerFactory, false);
     }
 
+    @NeverDefault
     public static LookupAndCallBinaryNode createReversible(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, handlerFactory, false, false);
     }
 
+    @NeverDefault
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, SpecialMethodSlot rslot, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
         return LookupAndCallReversibleBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
     }

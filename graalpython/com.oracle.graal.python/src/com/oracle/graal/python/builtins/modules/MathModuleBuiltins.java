@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -1086,6 +1088,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             throw raise(SystemError, ErrorMessages.GCD_FOR_NATIVE_NOT_SUPPORTED);
         }
 
+        @NeverDefault
         public static Gcd2Node create() {
             return MathModuleBuiltinsFactory.Gcd2NodeGen.create(false);
         }

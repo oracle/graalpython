@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
@@ -50,19 +53,17 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_GET;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 public abstract class MatchKeysNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object map, Object[] keys);
 
     @Specialization(guards = {"keys.length > 0", "keys.length <= 32"})
-    static Object match(VirtualFrame frame, Object map, Object[] keysArg,
+    static Object match(VirtualFrame frame, Object map, @NeverDefault Object[] keysArg,
                     @Cached(value = "keysArg", dimensions = 1) Object[] keys,
                     @Cached PyObjectRichCompareBool.EqNode compareNode,
                     @Cached PyObjectCallMethodObjArgs callMethod,

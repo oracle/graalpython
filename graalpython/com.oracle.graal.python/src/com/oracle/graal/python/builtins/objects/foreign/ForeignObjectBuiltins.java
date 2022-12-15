@@ -26,6 +26,8 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -852,6 +854,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
 
+        @NeverDefault
         public static CallNode create() {
             return ForeignObjectBuiltinsFactory.CallNodeFactory.create(null);
         }

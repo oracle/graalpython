@@ -108,6 +108,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -346,6 +347,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
             return LookupAndCallVarargsNode.create(T___INIT__);
         }
 
+        @NeverDefault
         protected SetAttributeNode createSetAttr() {
             return SetAttributeNode.create(T_ATTR_ENCODING);
         }

@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.objectHashCodeAsHexString;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 
@@ -140,6 +142,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             return self.getLine();
         }
 
+        @NeverDefault
         public static GetLinenoNode create() {
             return FrameBuiltinsFactory.GetLinenoNodeFactory.create(null);
         }
@@ -207,6 +210,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             return factory().createCode(ct);
         }
 
+        @NeverDefault
         public static GetCodeNode create() {
             return FrameBuiltinsFactory.GetCodeNodeFactory.create(null);
         }

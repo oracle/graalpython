@@ -46,6 +46,7 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -61,11 +62,13 @@ public abstract class JavaLongConversionNode extends LongConversionBaseNode {
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    @NeverDefault
     public static JavaLongConversionNode create(@DefaultValue long defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return JavaLongConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    @NeverDefault
     public static JavaLongConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
         assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
         return JavaLongConversionNodeGen.create(0, false);

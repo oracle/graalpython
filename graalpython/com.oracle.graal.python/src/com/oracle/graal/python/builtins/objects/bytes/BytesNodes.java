@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -106,6 +107,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -202,6 +204,11 @@ public abstract class BytesNodes {
             }
             return joinedBytes;
         }
+
+        @NeverDefault
+        public static BytesJoinNode create() {
+            return BytesJoinNodeGen.create();
+        }
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -238,6 +245,7 @@ public abstract class BytesNodes {
             }
         }
 
+        @NeverDefault
         public static ToBytesNode create() {
             return ToBytesNodeGen.create(TypeError, EXPECTED_BYTESLIKE_GOT_P);
         }
@@ -374,6 +382,7 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        @NeverDefault
         public static FindNode create() {
             return FindNodeGen.create();
         }
@@ -409,6 +418,7 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        @NeverDefault
         public static RFindNode create() {
             return BytesNodesFactory.RFindNodeGen.create();
         }
@@ -561,6 +571,7 @@ public abstract class BytesNodes {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static ExpectStringNode create(@ArgumentIndex int argNum, String className) {
             return BytesNodesFactory.ExpectStringNodeGen.create(argNum, className);
         }

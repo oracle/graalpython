@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
@@ -107,6 +109,7 @@ public class MethodWrapperBuiltins extends PythonBuiltins {
                             PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
+        @NeverDefault
         protected static GetAttributeNode createGetAttributeNode() {
             return GetAttributeNode.create(T___NAME__);
         }

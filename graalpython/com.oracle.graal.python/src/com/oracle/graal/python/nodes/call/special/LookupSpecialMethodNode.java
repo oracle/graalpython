@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -63,6 +64,7 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
         this.name = name;
     }
 
+    @NeverDefault
     public static LookupSpecialMethodNode create(TruffleString name) {
         return LookupSpecialMethodNodeGen.create(name);
     }
@@ -79,6 +81,7 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
 
         public abstract Object execute(Frame frame, Object type, TruffleString name, Object receiver);
 
+        @NeverDefault
         public static Dynamic create() {
             return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
         }

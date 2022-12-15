@@ -233,6 +233,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -796,6 +797,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         public static ExcInfoNode create() {
             return ExcInfoNodeFactory.create(null);
         }
@@ -959,6 +961,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return asSizeNode;
         }
 
+        @NeverDefault
         protected LookupAndCallUnaryNode createWithError() {
             return LookupAndCallUnaryNode.create(T___SIZEOF__, () -> new NoAttributeHandler() {
                 @Override
@@ -968,6 +971,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             });
         }
 
+        @NeverDefault
         protected static LookupAndCallUnaryNode createWithoutError() {
             return LookupAndCallUnaryNode.create(T___SIZEOF__);
         }

@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
+    @NeverDefault
     public static CallBinaryMethodNode create() {
         return CallBinaryMethodNodeGen.create();
     }

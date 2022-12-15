@@ -84,6 +84,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -354,18 +355,22 @@ public class DirEntryBuiltins extends PythonBuiltins {
             return statHelperNode;
         }
 
+        @NeverDefault
         static TestModeNode create(long expectedMode, int expectedDirEntryType) {
             return DirEntryBuiltinsFactory.TestModeNodeGen.create(expectedMode, expectedDirEntryType);
         }
 
+        @NeverDefault
         static TestModeNode createLnk() {
             return create(S_IFLNK.value, DT_LNK.value);
         }
 
+        @NeverDefault
         static TestModeNode createReg() {
             return create(S_IFREG.value, DT_REG.value);
         }
 
+        @NeverDefault
         static TestModeNode createDir() {
             return create(S_IFDIR.value, DT_DIR.value);
         }

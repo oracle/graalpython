@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -78,6 +79,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 public abstract class MaterializeFrameNode extends Node {
 
+    @NeverDefault
     public static MaterializeFrameNode create() {
         return MaterializeFrameNodeGen.create();
     }
@@ -122,7 +124,7 @@ public abstract class MaterializeFrameNode extends Node {
                     "!hasCustomLocals(frameToMaterialize)"}, limit = "1")
     static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync,
                     @SuppressWarnings("unused") boolean updateLocationIfMissing, Frame frameToMaterialize,
-                    @Cached("frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
+                    @Cached(value = "frameToMaterialize.getFrameDescriptor()", neverDefault = true) FrameDescriptor cachedFD,
                     @Shared("factory") @Cached PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(cachedFD);
@@ -249,7 +251,7 @@ public abstract class MaterializeFrameNode extends Node {
         @ExplodeLoop
         static void doLocalsStorageCachedExploded(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
-                        @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
+                        @Cached(value = "frameToSync.getFrameDescriptor()", neverDefault = true) FrameDescriptor cachedFd) {
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
@@ -263,7 +265,7 @@ public abstract class MaterializeFrameNode extends Node {
                         "frameToSync.getFrameDescriptor() == cachedFd"}, replaces = "doLocalsStorageCachedExploded", limit = "1")
         static void doLocalsStorageCachedLoop(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Cached("createClassProfile()") ValueProfile frameProfile,
-                        @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
+                        @Cached(value = "frameToSync.getFrameDescriptor()", neverDefault = true) FrameDescriptor cachedFd) {
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
             MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
@@ -292,7 +294,7 @@ public abstract class MaterializeFrameNode extends Node {
         }, limit = "1")
         @ExplodeLoop
         static void doGenericDictCachedExploded(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
+                        @Cached(value = "frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
                         @Cached HashingStorageSetItem setItem,
@@ -320,7 +322,7 @@ public abstract class MaterializeFrameNode extends Node {
                         "frameToSync.getFrameDescriptor() == cachedFd",
         }, limit = "1", replaces = "doGenericDictCachedExploded")
         static void doGenericDictCachedLoop(VirtualFrame frame, PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Cached("frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
+                        @Cached(value = "frameToSync.getFrameDescriptor()") @SuppressWarnings("unused") FrameDescriptor cachedFd,
                         @Cached(value = "getProfiles(variableSlotCount(cachedFd))", dimensions = 1) ConditionProfile[] profiles,
                         @Cached BranchProfile updatedStorage,
                         @Cached HashingStorageSetItem setItem,

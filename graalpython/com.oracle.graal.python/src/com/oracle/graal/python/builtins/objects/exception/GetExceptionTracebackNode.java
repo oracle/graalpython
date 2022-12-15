@@ -73,10 +73,6 @@ public abstract class GetExceptionTracebackNode extends Node {
         return PNone.NONE;
     }
 
-    public static GetExceptionTracebackNode create() {
-        return GetExceptionTracebackNodeGen.create();
-    }
-
     public static GetExceptionTracebackNode getUncached() {
         return GetExceptionTracebackNodeGen.getUncached();
     }

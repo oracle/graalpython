@@ -149,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemsizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
@@ -213,6 +212,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -493,6 +493,7 @@ public abstract class TypeNodes {
             return getMroStorageNode.execute(obj).getInternalClassArray();
         }
 
+        @NeverDefault
         public static GetMroNode create() {
             return TypeNodesFactory.GetMroNodeGen.create();
         }
@@ -597,6 +598,7 @@ public abstract class TypeNodes {
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
+        @NeverDefault
         public static GetMroStorageNode create() {
             return GetMroStorageNodeGen.create();
         }
@@ -641,6 +643,7 @@ public abstract class TypeNodes {
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
 
+        @NeverDefault
         public static GetNameNode create() {
             return GetNameNodeGen.create();
         }
@@ -839,6 +842,7 @@ public abstract class TypeNodes {
             };
         }
 
+        @NeverDefault
         public static GetSubclassesNode create() {
             return GetSubclassesNodeGen.create();
         }
@@ -946,6 +950,7 @@ public abstract class TypeNodes {
     @GenerateUncached
     public abstract static class GetBestBaseClassNode extends PNodeWithContext {
 
+        @NeverDefault
         static GetBestBaseClassNode create() {
             return TypeNodesFactory.GetBestBaseClassNodeGen.create();
         }
@@ -1408,6 +1413,7 @@ public abstract class TypeNodes {
             return false;
         }
 
+        @NeverDefault
         public static IsSameTypeNode create() {
             return IsSameTypeNodeGen.create();
         }
@@ -1649,6 +1655,7 @@ public abstract class TypeNodes {
             return false;
         }
 
+        @NeverDefault
         public static IsTypeNode create() {
             return IsTypeNodeGen.create();
         }

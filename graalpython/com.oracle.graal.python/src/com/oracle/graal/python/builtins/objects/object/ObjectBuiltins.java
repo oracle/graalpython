@@ -404,14 +404,13 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         protected static int tsLen(TruffleString ts) {
             CompilerAsserts.neverPartOfCompilation();
-            return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING);
+            return TruffleString.CodePointLengthNode.getUncached().execute(ts, TS_ENCODING) + 1;
         }
 
         // Shortcut, only useful for interpreter performance, but doesn't hurt peak
-        @Specialization(guards = {"keyObj == cachedKey", "cachedKeyLen < 32"}, limit = "1")
+        @Specialization(guards = {"keyObj == cachedKey", "tsLen(cachedKey) < 32"}, limit = "1")
         protected Object doItTruffleString(VirtualFrame frame, Object object, @SuppressWarnings("unused") TruffleString keyObj,
                         @SuppressWarnings("unused") @Cached("keyObj") TruffleString cachedKey,
-                        @SuppressWarnings("unused") @Cached("tsLen(cachedKey)") int cachedKeyLen,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             Object type = getClassNode.execute(object);
@@ -564,6 +563,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             return writeNode.execute(object, key, value);
         }
 
+        @NeverDefault
         public static SetattrNode create() {
             return ObjectBuiltinsFactory.SetattrNodeFactory.create();
         }

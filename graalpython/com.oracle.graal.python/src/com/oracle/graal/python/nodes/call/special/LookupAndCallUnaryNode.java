@@ -55,6 +55,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -76,18 +77,22 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
 
+    @NeverDefault
     public static LookupAndCallUnaryNode create(TruffleString name) {
         return LookupAndCallUnaryNodeGen.create(name, null);
     }
 
+    @NeverDefault
     public static LookupAndCallUnaryNode create(SpecialMethodSlot slot) {
         return LookupAndCallUnaryNodeGen.create(slot, null);
     }
 
+    @NeverDefault
     public static LookupAndCallUnaryNode create(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
         return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
     }
 
+    @NeverDefault
     public static LookupAndCallUnaryNode create(SpecialMethodSlot slot, Supplier<NoAttributeHandler> handlerFactory) {
         return LookupAndCallUnaryNodeGen.create(slot, handlerFactory);
     }
@@ -184,6 +189,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
         }
     }
 
+    @NeverDefault
     protected final LookupSpecialBaseNode createLookup() {
         if (slot != null) {
             return LookupSpecialMethodSlotNode.create(slot);

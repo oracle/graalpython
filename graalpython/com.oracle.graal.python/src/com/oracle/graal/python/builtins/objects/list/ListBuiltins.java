@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -124,6 +123,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -308,6 +308,7 @@ public class ListBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
+        @NeverDefault
         protected static GetItemNode create() {
             return ListBuiltinsFactory.GetItemNodeFactory.create();
         }
@@ -349,6 +350,7 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected static SetItemNode create() {
             return ListBuiltinsFactory.SetItemNodeFactory.create();
         }
@@ -389,10 +391,12 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.ExtendNode createExtend() {
             return SequenceStorageNodes.ExtendNode.create(ListGeneralizationNode.SUPPLIER);
         }
 
+        @NeverDefault
         public static ListExtendNode create() {
             return ListBuiltinsFactory.ListExtendNodeFactory.create();
         }
@@ -580,10 +584,12 @@ public class ListBuiltins extends PythonBuiltins {
             return this.getItemNode;
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.DeleteNode createDelete() {
             return SequenceStorageNodes.DeleteNode.create(createNormalize());
         }
 
+        @NeverDefault
         private static NormalizeIndexNode createNormalize() {
             return NormalizeIndexNode.create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
         }
@@ -802,6 +808,7 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @NeverDefault
         public static ListSortNode create() {
             return ListBuiltinsFactory.ListSortNodeFactory.create(null);
         }
@@ -838,6 +845,7 @@ public class ListBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "list", right, "list");
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.ConcatNode createConcat() {
             return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
         }
@@ -861,6 +869,7 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.ExtendNode createExtend() {
             return SequenceStorageNodes.ExtendNode.create(ListGeneralizationNode.SUPPLIER);
         }

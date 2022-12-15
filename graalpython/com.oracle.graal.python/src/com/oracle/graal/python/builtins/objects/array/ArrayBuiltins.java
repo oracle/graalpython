@@ -121,6 +121,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -366,6 +367,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             throw new AbstractMethodError("compareLengths");
         }
 
+        @NeverDefault
         protected BinaryComparisonNode createComparison() {
             throw new AbstractMethodError("createComparison");
         }
@@ -376,7 +378,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class LtNode extends AbstractComparisonNode {
 
         @Override
-        protected BinaryComparisonNode createComparison() {
+        @NeverDefault
+        protected final BinaryComparisonNode createComparison() {
             return BinaryComparisonNode.LtNode.create();
         }
 
@@ -391,7 +394,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class GtNode extends AbstractComparisonNode {
 
         @Override
-        protected BinaryComparisonNode createComparison() {
+        @NeverDefault
+        protected final BinaryComparisonNode createComparison() {
             return BinaryComparisonNode.GtNode.create();
         }
 
@@ -406,7 +410,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class LeNode extends AbstractComparisonNode {
 
         @Override
-        protected BinaryComparisonNode createComparison() {
+        @NeverDefault
+        protected final BinaryComparisonNode createComparison() {
             return BinaryComparisonNode.LeNode.create();
         }
 
@@ -421,7 +426,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class GeNode extends AbstractComparisonNode {
 
         @Override
-        protected BinaryComparisonNode createComparison() {
+        @NeverDefault
+        protected final BinaryComparisonNode createComparison() {
             return BinaryComparisonNode.GeNode.create();
         }
 

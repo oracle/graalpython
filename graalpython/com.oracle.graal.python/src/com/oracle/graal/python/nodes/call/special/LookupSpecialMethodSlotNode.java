@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -71,6 +72,7 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
         }
     }
 
+    @NeverDefault
     public static LookupSpecialMethodSlotNode create(SpecialMethodSlot slot) {
         return LookupSpecialMethodSlotNodeFactory.CachedLookupNodeGen.create(slot);
     }

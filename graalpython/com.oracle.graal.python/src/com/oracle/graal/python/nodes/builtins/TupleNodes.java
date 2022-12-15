@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -129,6 +130,7 @@ public abstract class TupleNodes {
             return true;
         }
 
+        @NeverDefault
         public static ConstructTupleNode create() {
             return TupleNodesFactory.ConstructTupleNodeGen.create();
         }

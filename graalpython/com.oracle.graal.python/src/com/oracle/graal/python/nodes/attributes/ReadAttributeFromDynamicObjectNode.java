@@ -50,6 +50,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -62,6 +63,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, PythonOptions.class})
 @GenerateUncached
 public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttributeNode {
+    @NeverDefault
     public static ReadAttributeFromDynamicObjectNode create() {
         return ReadAttributeFromDynamicObjectNodeGen.create();
     }

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PTR_ARRAY_TYPE_ID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NATIVE_HANDLE_FOR_ARRAY;
@@ -502,10 +504,12 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         public abstract Object execute(Object delegate);
 
+        @NeverDefault
         protected static Object callGetByteArrayTypeIDUncached() {
             return PCallCapiFunction.getUncached().call(FUN_GET_BYTE_ARRAY_TYPE_ID, 0);
         }
 
+        @NeverDefault
         protected static Object callGetPtrArrayTypeIDUncached() {
             return PCallCapiFunction.getUncached().call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
         }

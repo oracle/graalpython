@@ -241,6 +241,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1453,6 +1454,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj) || obj instanceof PythonNativeVoidPtr;
         }
 
+        @NeverDefault
         protected static FloatBuiltins.IntNode createFloatInt() {
             return FloatBuiltinsFactory.IntNodeFactory.create();
         }
@@ -2260,6 +2262,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, subclass, superclass);
         }
 
+        @NeverDefault
         public static TypeNode create() {
             return BuiltinConstructorsFactory.TypeNodeFactory.create();
         }
@@ -2818,6 +2821,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return memoryViewFromObject.execute(frame, object);
         }
 
+        @NeverDefault
         public static MemoryViewNode create() {
             return BuiltinConstructorsFactory.MemoryViewNodeFactory.create(null);
         }

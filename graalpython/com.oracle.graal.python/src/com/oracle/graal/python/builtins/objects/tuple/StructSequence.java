@@ -107,6 +107,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -330,6 +331,7 @@ public class StructSequence {
             this.inSequence = desc.inSequence;
         }
 
+        @NeverDefault
         public static NewNode create(Descriptor desc) {
             return NewNodeGen.create(desc);
         }

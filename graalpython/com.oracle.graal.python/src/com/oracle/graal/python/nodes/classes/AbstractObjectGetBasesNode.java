@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @GenerateUncached
 @ImportStatic({SpecialMethodNames.class})
 public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
+    @NeverDefault
     public static AbstractObjectGetBasesNode create() {
         return AbstractObjectGetBasesNodeGen.create();
     }

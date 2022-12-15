@@ -51,6 +51,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -118,6 +119,7 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
         return lookupIndex.execute(type) != PNone.NO_VALUE;
     }
 
+    @NeverDefault
     public static PyIndexCheckNode create() {
         return PyIndexCheckNodeGen.create();
     }

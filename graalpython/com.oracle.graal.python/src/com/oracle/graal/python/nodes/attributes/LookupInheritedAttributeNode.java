@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -59,6 +60,7 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
         lookupInMRONode = LookupAttributeInMRONode.create(key);
     }
 
+    @NeverDefault
     public static LookupInheritedAttributeNode create(TruffleString key) {
         return new LookupInheritedAttributeNode(key);
     }
@@ -91,6 +93,7 @@ public final class LookupInheritedAttributeNode extends PNodeWithContext {
             return lookupAttrInMroNode.execute(getClassNode.execute(object), key);
         }
 
+        @NeverDefault
         public static Dynamic create() {
             return LookupInheritedAttributeNodeFactory.DynamicNodeGen.create();
         }

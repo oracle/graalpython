@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -398,6 +399,7 @@ public class IONodes {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static CreateIOModeNode create(boolean warnUniversal) {
             return IONodesFactory.CreateIOModeNodeGen.create(warnUniversal);
         }
@@ -449,6 +451,7 @@ public class IONodes {
         }
 
         @ClinicConverterFactory
+        @NeverDefault
         public static CastOpenNameNode create() {
             return IONodesFactory.CastOpenNameNodeGen.create();
         }

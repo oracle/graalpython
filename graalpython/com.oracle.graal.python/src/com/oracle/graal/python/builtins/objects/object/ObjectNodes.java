@@ -144,6 +144,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -448,6 +449,7 @@ public abstract class ObjectNodes {
             return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PTuple);
         }
 
+        @NeverDefault
         public static FastIsTupleSubClassNode create() {
             return ObjectNodesFactory.FastIsTupleSubClassNodeGen.create();
         }
@@ -849,6 +851,7 @@ public abstract class ObjectNodes {
             return toStringNode.execute(sb);
         }
 
+        @NeverDefault
         public static GetFullyQualifiedNameNode create() {
             return GetFullyQualifiedNameNodeGen.create();
         }
@@ -888,6 +891,7 @@ public abstract class ObjectNodes {
             return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
 
+        @NeverDefault
         public static DefaultObjectReprNode create() {
             return ObjectNodesFactory.DefaultObjectReprNodeGen.create();
         }

@@ -172,6 +172,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -2343,6 +2344,7 @@ public class GraalHPyNodes {
     abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
         public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
 
+        @NeverDefault
         public static HPyAttachFunctionTypeNode create() {
             PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
@@ -2539,7 +2541,7 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = {"!isPTuple(exc)", "!isTupleSubtype(exc, getClassNode, isSubtypeNode)"})
-        int execute(GraalHPyContext context, Object err, Object exc,
+        int others(GraalHPyContext context, Object err, Object exc,
                         @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached ReadAttributeFromObjectNode readAttr,

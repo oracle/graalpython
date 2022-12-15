@@ -99,6 +99,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -184,6 +185,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", key);
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.GetItemNode createGetItem() {
             return SequenceStorageNodes.GetItemNode.create(IndexNodes.NormalizeIndexNode.create(), (s, f) -> f.createByteArray(s));
         }
@@ -260,6 +262,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
             // Note the error message should never be reached, because the storage should always be
             // writeable and so SetItemScalarNode should always have a specialization for it and
@@ -436,6 +439,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             throw raise(ValueError, ErrorMessages.NOT_IN_BYTEARRAY);
         }
 
+        @NeverDefault
         protected CastToByteNode createCast() {
             return CastToByteNode.create(val -> {
                 throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
@@ -481,10 +485,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.DeleteNode createDelete() {
             return SequenceStorageNodes.DeleteNode.create(createNormalize());
         }
 
+        @NeverDefault
         private static NormalizeIndexNode createNormalize() {
             return NormalizeIndexNode.create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
         }
@@ -522,6 +528,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @NeverDefault
         protected CastToByteNode createCast() {
             return CastToByteNode.create(val -> {
                 throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
@@ -583,6 +590,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             assert self.getSequenceStorage() == execute : "Unexpected storage generalization!";
         }
 
+        @NeverDefault
         protected static SequenceStorageNodes.ExtendNode createExtend() {
             return SequenceStorageNodes.ExtendNode.create(BytesLikeNoGeneralizationNode.SUPPLIER);
         }

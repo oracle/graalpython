@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import com.oracle.truffle.api.dsl.NeverDefault;
+
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
@@ -289,6 +291,7 @@ public class BufferedIONodes {
             return n;
         }
 
+        @NeverDefault
         public static RawTellNode create() {
             return BufferedIONodesFactory.RawTellNodeGen.create(false);
         }

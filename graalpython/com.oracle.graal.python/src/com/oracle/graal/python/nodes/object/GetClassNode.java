@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class})
 @GenerateUncached
 public abstract class GetClassNode extends PNodeWithContext {
+    @NeverDefault
     public static GetClassNode create() {
         return GetClassNodeGen.create();
     }

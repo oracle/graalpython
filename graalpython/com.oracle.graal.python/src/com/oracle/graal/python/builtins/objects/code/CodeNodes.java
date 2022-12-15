@@ -68,6 +68,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -174,6 +175,7 @@ public abstract class CodeNodes {
             }
         }
 
+        @NeverDefault
         public static CreateCodeNode create() {
             return new CreateCodeNode();
         }
@@ -235,6 +237,7 @@ public abstract class CodeNodes {
             }
         }
 
+        @NeverDefault
         public static GetCodeCallTargetNode create() {
             return new GetCodeCallTargetNode(true);
         }
@@ -299,6 +302,7 @@ public abstract class CodeNodes {
             return getCodeCallTargetNode.execute(code).getRootNode();
         }
 
+        @NeverDefault
         public static GetCodeRootNode create() {
             return new GetCodeRootNode(true);
         }

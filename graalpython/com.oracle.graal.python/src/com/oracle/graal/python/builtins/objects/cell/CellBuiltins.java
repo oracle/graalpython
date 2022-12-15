@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -309,9 +310,9 @@ public class CellBuiltins extends PythonBuiltins {
         public abstract Object execute(PCell self);
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.isEffectivelyFinalAssumption()"}, limit = "1")
-        Object cached(@SuppressWarnings("unused") PCell self,
+        Object cached(@NeverDefault @SuppressWarnings("unused") PCell self,
                         @SuppressWarnings("unused") @Cached("self") PCell cachedSelf,
-                        @Cached("self.getRef()") Object ref) {
+                        @Cached(value = "self.getRef()", neverDefault = false) Object ref) {
             return ref;
         }
 
@@ -320,6 +321,7 @@ public class CellBuiltins extends PythonBuiltins {
             return self.getRef();
         }
 
+        @NeverDefault
         public static GetRefNode create() {
             return GetRefNodeGen.create();
         }

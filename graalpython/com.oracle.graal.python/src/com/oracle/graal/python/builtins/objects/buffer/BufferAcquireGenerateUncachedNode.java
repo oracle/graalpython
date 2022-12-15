@@ -49,6 +49,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 
@@ -96,6 +97,7 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
 
     public abstract void release(VirtualFrame frame, Object receiver);
 
+    @NeverDefault
     public static BufferAcquireGenerateUncachedNode create(int limit) {
         return new IndirectCallHelperCachedNode(limit);
     }

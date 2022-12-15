@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -76,10 +77,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, PythonOptions.class})
 @ReportPolymorphism
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
+    @NeverDefault
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNotTypeNodeGen.create();
     }
 
+    @NeverDefault
     public static ReadAttributeFromObjectNode createForceType() {
         return ReadAttributeFromObjectTpDictNodeGen.create();
     }

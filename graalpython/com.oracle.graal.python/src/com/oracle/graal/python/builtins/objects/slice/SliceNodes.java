@@ -198,10 +198,6 @@ public abstract class SliceNodes {
                         @Cached PRaiseNode raise) {
             throw raise.raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
-
-        public static ComputeIndices create() {
-            return SliceNodesFactory.ComputeIndicesNodeGen.create();
-        }
     }
 
     /**
@@ -261,10 +257,6 @@ public abstract class SliceNodes {
                         @Cached SliceLossyCastToInt step,
                         @Cached PythonObjectFactory factory) {
             return factory.createObjectSlice(start.execute(slice.getStart()), stop.execute(slice.getStop()), step.execute(slice.getStep()));
-        }
-
-        public static CoerceToIntSlice create() {
-            return SliceNodesFactory.CoerceToIntSliceNodeGen.create();
         }
     }
 
