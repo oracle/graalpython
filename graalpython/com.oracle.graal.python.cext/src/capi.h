@@ -44,6 +44,11 @@
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
 
+#ifdef MS_WINDOWS
+// define the below, otherwise windows' sdk defines complex to _complex and breaks us
+#define _COMPLEX_DEFINED
+#endif
+
 #include <graalvm/llvm/polyglot.h>
 
 #include "Python.h"

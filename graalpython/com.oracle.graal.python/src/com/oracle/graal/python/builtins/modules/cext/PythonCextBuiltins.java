@@ -1331,6 +1331,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         static Object createCache(int steal) {
             return new NativeReferenceCache(steal != 0);
         }
+
+        @Specialization
+        static Object createCache(long steal) {
+            return new NativeReferenceCache(steal != 0);
+        }
     }
 
     @Builtin(name = "PyTruffle_Decorate_Function", minNumOfPositionalArgs = 2)
