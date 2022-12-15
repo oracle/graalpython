@@ -451,7 +451,7 @@ builtin_exts = (
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_cpython_struct"),
-) + () if WIN32 else (
+) + (() if WIN32 else (
     NativeBuiltinModule("_testcapi", core=False),
     NativeBuiltinModule("_testmultiphase"),
     NativeBuiltinModule("_ctypes_test"),
@@ -477,7 +477,7 @@ builtin_exts = (
             'expat/xmltok_impl.h',
         ],
     ),
-)
+))
 
 
 def build_libpython(capi_home):
@@ -629,19 +629,19 @@ def build(capi_home):
             return # TODO: ...
         build_libposix(capi_home)
         build_nativelibsupport(capi_home,
-                               subdir="zlib",
-                               libname="libzsupport",
-                               libs=['z'])
+                                subdir="zlib",
+                                libname="libzsupport",
+                                libs=['z'])
         build_nativelibsupport(capi_home,
-                               subdir="lzma",
-                               libname="liblzmasupport",
-                               deps=[LZMADepedency("lzma", "xz==5.2.6", "XZ-5.2.6")],
-                               extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
+                                subdir="bz2",
+                                libname="libbz2support",
+                                deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
+                                extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
         build_nativelibsupport(capi_home,
-                               subdir="bz2",
-                               libname="libbz2support",
-                               deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
-                               extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
+                                subdir="lzma",
+                                libname="liblzmasupport",
+                                deps=[LZMADepedency("lzma", "xz==5.2.6", "XZ-5.2.6")],
+                                extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
     finally:
         if threaded:
             distutils.ccompiler.CCompiler.compile = original_compile

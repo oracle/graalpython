@@ -1687,11 +1687,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         if (getPythonOS() == PLATFORM_WIN32) {
             // cmp cpython's simple chmod implementation
+            /*
             if (permissions.contains(PosixFilePermission.OWNER_WRITE)) {
                 // TODO: set writable
             } else {
                 // TODO: set read-only
             }
+            */
         } else {
             try {
                 file.setPosixPermissions(permissions, getLinkOptions(followSymlinks));
