@@ -78,7 +78,7 @@ def _get_posix_vars():
     g['USE_GNU_SOURCE'] = gnu_source
     cflags_default = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -DGRAALVM_PYTHON_LLVM"
     if win32_native:
-        cflags_default += " -DMS_WINDOWS"
+        cflags_default += " -DMS_WINDOWS -DPy_ENABLE_SHARED -DHAVE_DECLSPEC_DLL"
     g['CFLAGS_DEFAULT'] = cflags_default
     g['CFLAGS'] = cflags_default + " " + gnu_source
     g['LDFLAGS'] = ""

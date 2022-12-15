@@ -52,8 +52,8 @@ extern "C" {
 #endif
 
 // GraalVM change: use our own globals instead of interpreter state
-extern PyObject* _PyTruffle_Zero;
-extern PyObject* _PyTruffle_One;
+PyAPI_DATA(PyObject*) _PyTruffle_Zero;
+PyAPI_DATA(PyObject*) _PyTruffle_One;
 
 // Return a borrowed reference to the zero singleton.
 // The function cannot return NULL.

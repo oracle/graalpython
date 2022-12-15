@@ -6,6 +6,11 @@
 
 #include "../src/capi.h"
 
+#ifdef MS_WINDOWS
+// we do not want to include windows sdk headers to build
+typedef void* HANDLE;
+#endif
+
 typedef enum
 {
     ACCESS_DEFAULT,

@@ -231,7 +231,7 @@ PyAPI_DATA(free_upcall_fun_t) free_upcall;
 
 #define resolve_handle_cached(__cache__, __addr__) (__cache__)(__addr__)
 
-void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
+PyAPI_FUNC(void) initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
 
 void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members);
 
@@ -414,7 +414,11 @@ static inline int get_method_flags_wrapper(int flags) {
 } \
 
 
-int PyTruffle_Debug(void *arg);
+PyAPI_FUNC(int) PyTruffle_Debug(void *arg);
+// declare these two pointers here, so that the windows declspec import/export
+// dance is correct
+PyAPI_DATA(PyObject*) _PyTruffle_Zero;
+PyAPI_DATA(PyObject*) _PyTruffle_One;
 
 PyAPI_DATA(PyObject) marker_struct;
 PyAPI_DATA(PyObject*) wrapped_null;
@@ -443,5 +447,15 @@ typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
 typedef int (*setitem_fun_t)(PyObject*, Py_ssize_t, PyObject*);
+
+// export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
+PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);
+PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject *, const char *, ...);
+PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
+                                                  const char *, char **, ...);
+PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject *, const char *, va_list);
+PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
+                                                  const char *, char **, va_list);
+
 
 #endif

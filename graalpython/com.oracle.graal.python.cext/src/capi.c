@@ -247,7 +247,7 @@ POLYGLOT_DECLARE_TYPE(Py_buffer);
 
 #define REGISTER_BASIC_TYPE(typename)                                     \
     POLYGLOT_DECLARE_TYPE(typename);                                      \
-    NO_INLINE polyglot_typeid get_ ## typename ## _typeid(void)  {        \
+    NO_INLINE PyAPI_FUNC(polyglot_typeid) get_ ## typename ## _typeid(void)  { \
         return polyglot_ ## typename ## _typeid();                        \
     }
 
@@ -294,7 +294,7 @@ REGISTER_BASIC_TYPE(PyThreadState);
 #define REGISTER_POINTER_TYPE(basetype, ptrtype)                                  \
     typedef basetype* ptrtype;                                                    \
     POLYGLOT_DECLARE_TYPE(ptrtype);                                               \
-    NO_INLINE polyglot_typeid get_ ## ptrtype ## _typeid(void)  {                 \
+    NO_INLINE PyAPI_FUNC(polyglot_typeid) get_ ## ptrtype ## _typeid(void)  { \
         return polyglot_array_typeid(polyglot_ ## basetype ## _typeid(), 1);      \
     }
 

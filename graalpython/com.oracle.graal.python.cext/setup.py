@@ -415,6 +415,7 @@ class NativeBuiltinModule:
         sources = kwargs.pop("sources", [os.path.join("modules", self.name + ".c")])
 
         core = kwargs.pop("core", True)
+        core_module = kwargs.pop("core_module", True)
 
         libs, library_dirs, include_dirs = _build_deps(self.deps)
 
@@ -429,6 +430,8 @@ class NativeBuiltinModule:
         define_macros = kwargs.pop("define_macros", [])
         if core:
             define_macros.append(("Py_BUILD_CORE", None))
+        if core_module:
+            define_macros.append(("Py_BUILD_CORE_MODULE", None))
 
         return Extension(
             self.name,
@@ -444,11 +447,11 @@ class NativeBuiltinModule:
 
 builtin_exts = (
     # the modules included in this list are supported on windows, too
-) + () if WIN32 else (
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_cpython_struct"),
+) + () if WIN32 else (
     NativeBuiltinModule("_testcapi", core=False),
     NativeBuiltinModule("_testmultiphase"),
     NativeBuiltinModule("_ctypes_test"),
@@ -484,6 +487,7 @@ def build_libpython(capi_home):
         libpython_name,
         sources=files,
         extra_compile_args=cflags_warnings,
+        core_module=False,
     )()
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
     if WIN32:
@@ -606,20 +610,23 @@ def build(capi_home):
         import distutils.ccompiler
         import distutils.command.build_ext
         original_compile = distutils.ccompiler.CCompiler.compile
-        original_object_filenames = distutils.ccompiler.CCompiler.object_filenames
         original_build_extensions = distutils.command.build_ext.build_ext.build_extensions
+        distutils.ccompiler.CCompiler.compile = pcompiler
+        distutils.command.build_ext.build_ext.build_extensions = build_extensions
+    if WIN32:
+        # avoid long paths on win32
+        original_object_filenames = distutils.ccompiler.CCompiler.object_filenames
         def stripped_object_filenames(*args, **kwargs):
             kwargs.update(dict(strip_dir=1))
             return original_object_filenames(*args, **kwargs)
-        distutils.ccompiler.CCompiler.compile = pcompiler
         distutils.ccompiler.CCompiler.object_filenames = stripped_object_filenames
-        distutils.command.build_ext.build_ext.build_extensions = build_extensions
 
     try:
         build_libpython(capi_home)
-        if WIN32:  # TODO...
-            return
+        build_builtin_exts(capi_home)
         build_libhpy(capi_home)
+        if WIN32:
+            return # TODO: ...
         build_libposix(capi_home)
         build_nativelibsupport(capi_home,
                                subdir="zlib",
@@ -635,12 +642,12 @@ def build(capi_home):
                                libname="libbz2support",
                                deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
                                extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
-        build_builtin_exts(capi_home)
     finally:
         if threaded:
             distutils.ccompiler.CCompiler.compile = original_compile
-            distutils.ccompiler.CCompiler.object_filenames = original_object_filenames
             distutils.command.build_ext.build_ext.build_extensions = original_build_extensions
+        if WIN32:
+            distutils.ccompiler.CCompiler.object_filenames = original_object_filenames
 
 
 if __name__ == "__main__":
