@@ -769,6 +769,7 @@ class UnicodeTest(unittest.TestCase):
         self.checkequal('Format,This-As*Title;String', "fOrMaT,thIs-aS*titLe;String", 'title', )
         self.checkequal('Getint', "getInt", 'title')
         self.checkraises(TypeError, 'hello', 'title', 42)
+        self.checkequal('Foo.Bar', 'foo.bar', 'title')
 
     def test_title_uni(self):
         self.assertEqual('\U0001044F'.title(), '\U00010427')

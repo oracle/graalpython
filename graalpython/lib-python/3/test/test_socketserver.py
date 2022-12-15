@@ -75,7 +75,8 @@ class SocketServerTest(unittest.TestCase):
     """Test all socket servers."""
 
     def setUp(self):
-        signal_alarm(60)  # Kill deadlocks after 60 seconds.
+        # GraalVM change: increase timeout
+        signal_alarm(120)  # Kill deadlocks after 60 seconds.
         self.port_seed = 0
         self.test_files = []
 

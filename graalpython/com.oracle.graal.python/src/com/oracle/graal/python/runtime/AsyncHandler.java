@@ -46,12 +46,16 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -117,6 +121,10 @@ public class AsyncHandler {
             return false;
         }
 
+        protected void handleException(PException e) {
+            throw e;
+        }
+
         @Override
         public final void execute(PythonContext context) {
             Debugger debugger = null;
@@ -150,13 +158,8 @@ public class AsyncHandler {
                     debugger.disableStepping();
                     try {
                         GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
-                    } catch (RuntimeException e) {
-                        // we cannot raise the exception here (well, we could, but CPython
-                        // doesn't), so we do what they do and just print it
-
-                        // Just print a Python-like stack trace; CPython does the same (see
-                        // 'weakrefobject.c: handle_callback')
-                        ExceptionUtils.printPythonLikeStackTrace(e);
+                    } catch (PException e) {
+                        handleException(e);
                     } finally {
                         debugger.restoreStepping();
                         if (!alreadyTracing) {
@@ -178,6 +181,7 @@ public class AsyncHandler {
     });
 
     private final WeakReference<PythonContext> context;
+    private final Queue<AsyncAction> rescheduled = new ConcurrentLinkedDeque<>();
     private static final int ASYNC_ACTION_DELAY = 25;
     private static final int GIL_RELEASE_DELAY = 50;
 
@@ -200,13 +204,37 @@ public class AsyncHandler {
                             @Override
                             @SuppressWarnings("try")
                             protected void perform(ThreadLocalAction.Access access) {
-                                GilNode gil = GilNode.getUncached();
-                                boolean mustRelease = gil.acquire();
-                                try {
-                                    asyncAction.execute(ctx);
-                                } finally {
-                                    gil.release(mustRelease);
-                                }
+                                /*
+                                 * Explanation of the rescheduling mechanism: We don't want async
+                                 * actions to trigger within async other async actions as it causes
+                                 * weird behavior when, for example, a signal handler triggers in a
+                                 * weakref callback. So we have a boolean "lock" that doesn't allow
+                                 * us to enter async action handler if another one is already in
+                                 * progress and instead we put those into a queue. The queue is then
+                                 * drained by the outer async handler that was holding the "lock".
+                                 * This all happens on the main thread, so if something holds the
+                                 * lock, it's above us on the stack.
+                                 */
+                                AsyncAction action = asyncAction;
+                                do {
+                                    if (ctx.tryEnterAsyncHandler()) {
+                                        try {
+                                            GilNode gil = GilNode.getUncached();
+                                            boolean mustRelease = gil.acquire();
+                                            try {
+                                                action.execute(ctx);
+                                            } finally {
+                                                gil.release(mustRelease);
+                                            }
+                                        } finally {
+                                            ctx.leaveAsyncHandler();
+                                        }
+                                        action = rescheduled.poll();
+                                    } else {
+                                        rescheduled.add(action);
+                                        return;
+                                    }
+                                } while (action != null);
                             }
                         });
                     }
@@ -266,12 +294,12 @@ public class AsyncHandler {
 
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
-        this.callTarget = context.getLanguage().createCachedCallTarget(l -> new CallRootNode(l), CallRootNode.class);
+        this.callTarget = context.getLanguage().createCachedCallTarget(CallRootNode::new, CallRootNode.class);
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
-        if (PythonContext.get(null).getOption(PythonOptions.NoAsyncActions)) {
+        if (ImageInfo.inImageBuildtimeCode() || context.get().getOption(PythonOptions.NoAsyncActions)) {
             return;
         }
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);

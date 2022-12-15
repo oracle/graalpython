@@ -149,6 +149,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -2294,27 +2295,54 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "title", minNumOfPositionalArgs = 1)
+    @Builtin(name = "title", minNumOfPositionalArgs = 1, parameterNames = {"$self"})
+    @ArgumentClinic(name = "$self", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class TitleNode extends PythonUnaryBuiltinNode {
+    abstract static class TitleNode extends PythonUnaryClinicBuiltinNode {
 
         @Specialization
-        static TruffleString doString(TruffleString self,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(doTitle(toJavaStringNode.execute(self)), TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            return fromJavaStringNode.execute(doTitle(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "title", self)), TS_ENCODING);
-        }
-
         @TruffleBoundary
-        private static String doTitle(String self) {
-            return UCharacter.toTitleCase(Locale.ROOT, self, null);
+        static TruffleString doString(TruffleString self,
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, self.byteLength(TS_ENCODING));
+            TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
+            int start = 0;
+            int end = 0;
+            while (it.hasNext()) {
+                final int cp = nextNode.execute(it);
+                if (!UCharacter.isLowerCase(cp) && !UCharacter.isUpperCase(cp)) {
+                    if (start == end) {
+                        appendCodePointNode.execute(sb, cp, 1, true);
+                    } else {
+                        appendSegment(self, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end);
+                    }
+                    start = end + 1;
+                }
+                end++;
+            }
+            if (start != end) {
+                appendSegment(self, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end - 1);
+            }
+            return toStringNode.execute(sb);
+        }
+
+        private static void appendSegment(TruffleString self, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleString.SubstringNode substringNode,
+                        TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.FromJavaStringNode fromJavaStringNode, TruffleStringBuilder sb, int start, int end) {
+            TruffleString segment = substringNode.execute(self, start, end - start + 1, TS_ENCODING, true);
+            String titleSegment = UCharacter.toTitleCase(Locale.ROOT, toJavaStringNode.execute(segment), null);
+            appendStringNode.execute(sb, fromJavaStringNode.execute(titleSegment, TS_ENCODING));
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.TitleNodeClinicProviderGen.INSTANCE;
         }
     }
 
