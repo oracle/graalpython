@@ -266,7 +266,12 @@ public abstract class TypeNodes {
         @Specialization
         static long doNative(PythonNativeClass clazz,
                         @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-            return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
+            Object result = getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
+            if (result instanceof Long) {
+                return (long) result;
+            } else {
+                return (int) result;
+            }
         }
 
         @TruffleBoundary

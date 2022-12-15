@@ -91,12 +91,12 @@ PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 
 typedef void (*init_upcall)();
 
-extern void *PY_TRUFFLE_CEXT;
-extern void *PY_BUILTIN;
-extern void *Py_NoValue;
-extern init_upcall upcalls[];
-extern unsigned init_upcall_n;
-extern uint32_t Py_Truffle_Options;
+PyAPI_DATA(void) *PY_TRUFFLE_CEXT;
+PyAPI_DATA(void) *PY_BUILTIN;
+PyAPI_DATA(void) *Py_NoValue;
+PyAPI_DATA(init_upcall) upcalls[];
+PyAPI_DATA(unsigned) init_upcall_n;
+PyAPI_DATA(uint32_t) Py_Truffle_Options;
 
 /* upcall helpers */
 MUST_INLINE
@@ -211,19 +211,19 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_float(obj) ((float)as_double(obj))
 
 typedef void* (*cache_t)(uint64_t);
-extern cache_t cache;
+PyAPI_DATA(cache_t) cache;
 
 typedef PyObject* (*ptr_cache_t)(PyObject *);
 typedef PyTypeObject* (*type_ptr_cache_t)(PyTypeObject *, int64_t);
-extern ptr_cache_t ptr_cache;
-extern ptr_cache_t ptr_cache_stealing;
-extern type_ptr_cache_t type_ptr_cache;
+PyAPI_DATA(ptr_cache_t) ptr_cache;
+PyAPI_DATA(ptr_cache_t) ptr_cache_stealing;
+PyAPI_DATA(type_ptr_cache_t) type_ptr_cache;
 
 typedef int (*alloc_upcall_fun_t)(void *, Py_ssize_t);
-extern alloc_upcall_fun_t alloc_upcall;
+PyAPI_DATA(alloc_upcall_fun_t) alloc_upcall;
 
 typedef int (*free_upcall_fun_t)(void *);
-extern free_upcall_fun_t free_upcall;
+PyAPI_DATA(free_upcall_fun_t) free_upcall;
 
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
@@ -409,15 +409,15 @@ static inline int get_method_flags_wrapper(int flags) {
 #define PY_TRUFFLE_TYPE_WITH_ITEMSIZE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ITEMSIZE__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ITEMSIZE__, 0, 0, 0, 0)
 
 /** to be used from Java code only; returns a type's basic size */
-#define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \
+#define BASICSIZE_GETTER(__typename__) PyAPI_FUNC(Py_ssize_t) get_ ## __typename__ ## _basicsize() { \
 	return sizeof(__typename__); \
 } \
 
 
 int PyTruffle_Debug(void *arg);
 
-extern PyObject marker_struct;
-extern PyObject* wrapped_null;
+PyAPI_DATA(PyObject) marker_struct;
+PyAPI_DATA(PyObject*) wrapped_null;
 
 /* An error marker object.
  * The object should not be converted to_java and is intended to be returned in the error case.

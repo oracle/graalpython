@@ -413,15 +413,15 @@ PyObject* to_sulong(void *o) {
 
 /** to be used from Java code only; reads native fields */
 #define TYPE_FIELD_GETTER(RECEIVER, NAME) \
-PyTypeObject* get_##NAME(RECEIVER obj) {                   \
+PyAPI_FUNC(PyTypeObject*) get_##NAME(RECEIVER obj) {                   \
     return native_type_to_java(obj->NAME);          \
 }
 #define OBJECT_FIELD_GETTER(RECEIVER, NAME) \
-PyObject* get_##NAME(RECEIVER obj) {                   \
+PyAPI_FUNC(PyObject*) get_##NAME(RECEIVER obj) {                   \
     return native_to_java((PyObject*) obj->NAME);          \
 }
 #define PRIMITIVE_FIELD_GETTER(RECEIVER, RESULT, NAME) \
-RESULT get_##NAME(RECEIVER obj) {                      \
+PyAPI_FUNC(RESULT) get_##NAME(RECEIVER obj) {                      \
     return obj->NAME;                                  \
 }
 
@@ -449,7 +449,7 @@ PRIMITIVE_FIELD_GETTER(PyTypeObject*, unsigned long, tp_flags)
  * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
  * returns a typed pointer that can be used as interop array.
  */
-PyMethodDef* get_PyModuleDef_m_methods(PyModuleDef* moduleDef) {
+PyAPI_FUNC(PyMethodDef*) get_PyModuleDef_m_methods(PyModuleDef* moduleDef) {
     PyMethodDef* members = moduleDef->m_methods;
     if (members) {
         uint64_t i = 0;
@@ -466,7 +466,7 @@ POLYGLOT_DECLARE_TYPE(PyModuleDef_Slot);
  * To be used from Java code only. Reads native 'PyModuleDef.m_slots' field and
  * returns a typed pointer that can be used as interop array.
  */
-PyModuleDef_Slot* get_PyModuleDef_m_slots(PyModuleDef* moduleDef) {
+PyAPI_FUNC(PyModuleDef_Slot*) get_PyModuleDef_m_slots(PyModuleDef* moduleDef) {
     PyModuleDef_Slot* slots = moduleDef->m_slots;
     if (slots) {
         uint64_t i = 0;
@@ -479,47 +479,47 @@ PyModuleDef_Slot* get_PyModuleDef_m_slots(PyModuleDef* moduleDef) {
 }
 
 /** to be used from Java code only; returns the type ID for a byte array */
-polyglot_typeid get_byte_array_typeid(uint64_t len) {
+PyAPI_FUNC(polyglot_typeid) get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
 }
 
 /** to be used from Java code only; returns the type ID for a uint32_t array */
-polyglot_typeid get_uint32_t_array_typeid(uint64_t len) {
+PyAPI_FUNC(polyglot_typeid) get_uint32_t_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_uint32_t_typeid(), len);
 }
 
 /** to be used from Java code only; returns the type ID for a 'PyObject*' array */
-polyglot_typeid get_ptr_array_typeid(uint64_t len) {
+PyAPI_FUNC(polyglot_typeid) get_ptr_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_PyObjectPtr_typeid(), len);
 }
 
 /** to be used from Java code only; returns the type ID PyThreadState */
-polyglot_typeid get_thread_state_typeid() {
+PyAPI_FUNC(polyglot_typeid) get_thread_state_typeid() {
     return polyglot_PyThreadState_typeid();
 }
 
 /** to be used from Java code only; returns the type ID newfunc */
-polyglot_typeid get_newfunc_typeid() {
+PyAPI_FUNC(polyglot_typeid) get_newfunc_typeid() {
     return polyglot_newfunc_typeid();
 }
 
 /** to be used from Java code only; calls INCREF */
-void PyTruffle_INCREF(PyObject* obj) {
+PyAPI_FUNC(void) PyTruffle_INCREF(PyObject* obj) {
     Py_INCREF(obj);
 }
 
 /** to be used from Java code only; calls DECREF */
-void PyTruffle_DECREF(PyObject* obj) {
+PyAPI_FUNC(void) PyTruffle_DECREF(PyObject* obj) {
     Py_DECREF(obj);
 }
 
 /** to be used from Java code only; calls DECREF */
-Py_ssize_t PyTruffle_ADDREF(PyObject* obj, Py_ssize_t value) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_ADDREF(PyObject* obj, Py_ssize_t value) {
     return (obj->ob_refcnt += value);
 }
 
 /** to be used from Java code only; calls DECREF */
-Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
     if (new_value == 0) {
         _Py_Dealloc(obj);
@@ -533,7 +533,7 @@ Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
 }
 
 /** to be used from Java code only; calls DECREF */
-Py_ssize_t PyTruffle_bulk_SUBREF(PyObject *ptrArray[], Py_ssize_t values[], int64_t len) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_bulk_SUBREF(PyObject *ptrArray[], Py_ssize_t values[], int64_t len) {
     int64_t i;
     PyObject *obj;
     Py_ssize_t value;
@@ -561,12 +561,12 @@ typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;
 
-uint64_t PyTruffle_Wchar_Size() {
+PyAPI_FUNC(uint64_t) PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
-void PyTruffle_Free(void *obj) {
+PyAPI_FUNC(void) PyTruffle_Free(void *obj) {
     if (points_to_handle_space(obj) && is_handle(obj)) {
         release_handle(obj);
     } else {
@@ -575,11 +575,11 @@ void PyTruffle_Free(void *obj) {
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
-void* NativeHandle_ForArray(void* jobj, Py_ssize_t element_size) {
+PyAPI_FUNC(void*) NativeHandle_ForArray(void* jobj, Py_ssize_t element_size) {
     return create_deref_handle(jobj);
 }
 
-const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
+PyAPI_FUNC(const char*) PyTruffle_StringToCstr(void* o, int32_t strLen) {
     const char *buffer;
     const char *str;
     uint64_t bufsize = 4 * (strLen + 1) * sizeof(char);
@@ -598,19 +598,19 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
 }
 
 /* Use this function to decode a C char array to a Java string using the source file encoding. */
-void* PyTruffle_CstrToString(void* o) {
+PyAPI_FUNC(void*) PyTruffle_CstrToString(void* o) {
     return polyglot_from_string(o, SRC_CS);
 }
 
 /* Use this function to decode a C ASCII string to a Java string. */
-void* PyTruffle_AsciiToString(void* ptr) {
+PyAPI_FUNC(void*) PyTruffle_AsciiToString(void* ptr) {
     return polyglot_from_string(ptr, "ascii");
 }
 
 /* To be used from Java code only.
  * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
  * This function roughly corresponds to CPython's 'object_new'. */
-PyObject* PyTruffle_Object_New(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
+PyAPI_FUNC(PyObject*) PyTruffle_Object_New(PyTypeObject* cls, PyTypeObject* dominatingNativeClass, PyObject* args, PyObject* kwds) {
     return native_to_java_stealing(dominatingNativeClass->tp_alloc(cls, 0));
 }
 
@@ -638,29 +638,29 @@ PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
 PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
 PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
 
-Py_ssize_t PyTruffle_Object_Size(PyObject *op) {
+PyAPI_FUNC(Py_ssize_t) PyTruffle_Object_Size(PyObject *op) {
     return ((PyVarObject*)op)->ob_size;
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
-int ReadShortMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadShortMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, short);
 }
 
-int ReadIntMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadIntMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, int);
 }
 
-long ReadLongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(long) ReadLongMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, long);
 }
 
-double ReadFloatMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(double) ReadFloatMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, float);
 }
 
-double ReadDoubleMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(double) ReadDoubleMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, double);
 }
 
@@ -687,27 +687,27 @@ PyObject* ReadObjectMember(PyObject* object, Py_ssize_t offset) {
     return native_to_java(member);
 }
 
-int ReadCharMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadCharMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, char);
 }
 
-int ReadUByteMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadUByteMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned char);
 }
 
-int ReadUShortMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(int) ReadUShortMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned short);
 }
 
-long ReadUIntMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(long) ReadUIntMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned int);
 }
 
-unsigned long ReadULongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(unsigned long) ReadULongMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned long);
 }
 
-PyObject* ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(PyObject*) ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
         return NULL;
@@ -717,52 +717,52 @@ PyObject* ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
     }
 }
 
-long long ReadLongLongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(long long) ReadLongLongMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, long long);
 }
 
-unsigned long long ReadULongLongMember(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(unsigned long long) ReadULongLongMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, unsigned long long);
 }
 
-Py_ssize_t ReadPySSizeT(PyObject* object, Py_ssize_t offset) {
+PyAPI_FUNC(Py_ssize_t) ReadPySSizeT(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, Py_ssize_t);
 }
 
 
 #define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (T)(value)
 
-int WriteShortMember(PyObject* object, Py_ssize_t offset, short value) {
+PyAPI_FUNC(int) WriteShortMember(PyObject* object, Py_ssize_t offset, short value) {
     WriteMember(object, offset, value, short);
     return 0;
 }
 
-int WriteIntMember(PyObject* object, Py_ssize_t offset, int value) {
+PyAPI_FUNC(int) WriteIntMember(PyObject* object, Py_ssize_t offset, int value) {
     WriteMember(object, offset, value, int);
     return 0;
 }
 
-int WriteLongMember(PyObject* object, Py_ssize_t offset, long value) {
+PyAPI_FUNC(int) WriteLongMember(PyObject* object, Py_ssize_t offset, long value) {
     WriteMember(object, offset, value, long);
     return 0;
 }
 
-int WriteFloatMember(PyObject* object, Py_ssize_t offset, float value) {
+PyAPI_FUNC(int) WriteFloatMember(PyObject* object, Py_ssize_t offset, float value) {
     WriteMember(object, offset, value, float);
     return 0;
 }
 
-int WriteDoubleMember(PyObject* object, Py_ssize_t offset, double value) {
+PyAPI_FUNC(int) WriteDoubleMember(PyObject* object, Py_ssize_t offset, double value) {
     WriteMember(object, offset, value, double);
     return 0;
 }
 
-int WriteStringMember(PyObject* object, Py_ssize_t offset, char* value) {
+PyAPI_FUNC(int) WriteStringMember(PyObject* object, Py_ssize_t offset, char* value) {
     WriteMember(object, offset, value, char*);
     return 0;
 }
 
-int WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
+PyAPI_FUNC(int) WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
     char *addr = (char*) (((char*) object) + offset);
     size_t n;
     if (polyglot_has_array_elements(value)) {
@@ -774,7 +774,7 @@ int WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
     return 0;
 }
 
-int WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
+PyAPI_FUNC(int) WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     /* We first need to decref the old value. */
     PyObject *oldv = ReadMember(object, offset, PyObject*);
     Py_XINCREF(value);
@@ -783,37 +783,37 @@ int WriteObjectMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     return 0;
 }
 
-int WriteCharMember(PyObject* object, Py_ssize_t offset, char value) {
+PyAPI_FUNC(int) WriteCharMember(PyObject* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
     return 0;
 }
 
-int WriteByteMember(PyObject* object, Py_ssize_t offset, char value) {
+PyAPI_FUNC(int) WriteByteMember(PyObject* object, Py_ssize_t offset, char value) {
     WriteMember(object, offset, value, char);
     return 0;
 }
 
-int WriteUByteMember(PyObject* object, Py_ssize_t offset, unsigned char value) {
+PyAPI_FUNC(int) WriteUByteMember(PyObject* object, Py_ssize_t offset, unsigned char value) {
     WriteMember(object, offset, value, uint8_t);
     return 0;
 }
 
-int WriteUShortMember(PyObject* object, Py_ssize_t offset, unsigned short value) {
+PyAPI_FUNC(int) WriteUShortMember(PyObject* object, Py_ssize_t offset, unsigned short value) {
     WriteMember(object, offset, value, unsigned short);
     return 0;
 }
 
-int WriteUIntMember(PyObject* object, Py_ssize_t offset, unsigned int value) {
+PyAPI_FUNC(int) WriteUIntMember(PyObject* object, Py_ssize_t offset, unsigned int value) {
     WriteMember(object, offset, value, unsigned int);
     return 0;
 }
 
-int WriteULongMember(PyObject* object, Py_ssize_t offset, unsigned long value) {
+PyAPI_FUNC(int) WriteULongMember(PyObject* object, Py_ssize_t offset, unsigned long value) {
     WriteMember(object, offset, value, unsigned long);
     return 0;
 }
 
-int WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
+PyAPI_FUNC(int) WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     PyObject *oldv = ReadMember(object, offset, PyObject*);
     if (value == NULL && oldv == NULL) {
         return 1;
@@ -824,17 +824,17 @@ int WriteObjectExMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     return 0;
 }
 
-int WriteLongLongMember(PyObject* object, Py_ssize_t offset, long long value) {
+PyAPI_FUNC(int) WriteLongLongMember(PyObject* object, Py_ssize_t offset, long long value) {
     WriteMember(object, offset, value, long long);
     return 0;
 }
 
-int WriteULongLongMember(PyObject* object, Py_ssize_t offset, unsigned long long value) {
+PyAPI_FUNC(int) WriteULongLongMember(PyObject* object, Py_ssize_t offset, unsigned long long value) {
     WriteMember(object, offset, value, unsigned long long);
     return 0;
 }
 
-int WritePySSizeT(PyObject* object, Py_ssize_t offset, Py_ssize_t value) {
+PyAPI_FUNC(int) WritePySSizeT(PyObject* object, Py_ssize_t offset, Py_ssize_t value) {
     WriteMember(object, offset, value, Py_ssize_t);
     return 0;
 }
@@ -849,17 +849,17 @@ PyObject marker_struct = {
 #undef ReadMember
 #undef WriteMember
 
-int PyTruffle_Debug(void *arg) {
+PyAPI_FUNC(int) PyTruffle_Debug(void *arg) {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
     return 0;
 }
 
-int PyTruffle_ToNative(void *arg) {
+PyAPI_FUNC(int) PyTruffle_ToNative(void *arg) {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ToNative", arg);
     return 0;
 }
 
-int truffle_ptr_compare(void* x, void* y, int op) {
+PyAPI_FUNC(int) truffle_ptr_compare(void* x, void* y, int op) {
     switch (op) {
     case Py_LT:
         return x < y;
@@ -878,42 +878,42 @@ int truffle_ptr_compare(void* x, void* y, int op) {
     }
 }
 
-void* truffle_ptr_add(void* x, Py_ssize_t y) {
+PyAPI_FUNC(void*) truffle_ptr_add(void* x, Py_ssize_t y) {
     return x + y;
 }
 
-double truffle_read_ob_fval(PyFloatObject* fobj) {
+PyAPI_FUNC(double) truffle_read_ob_fval(PyFloatObject* fobj) {
     return fobj->ob_fval;
 }
 
-void truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
+PyAPI_FUNC(void) truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
     memcpy(dest + dest_offset, src + src_offset, len);
 }
 
 /* called from Java to get number of bits per long digit */
-int32_t get_long_bits_in_digit() {
+PyAPI_FUNC(int32_t) get_long_bits_in_digit() {
     return PYLONG_BITS_IN_DIGIT;
 }
 
-void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
+PyAPI_FUNC(void) register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, PyMemberDef* members) {
     if (getsets || members) {
         polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
     }
 }
 
-PyObject* truffle_create_datetime_capsule(void *object) {
+PyAPI_FUNC(PyObject*) truffle_create_datetime_capsule(void *object) {
     if (PyType_Ready(&PyCapsule_Type) < 0) {
         return NULL;
     }
     return PyCapsule_New(object, "datetime.datetime_CAPI", NULL);
 }
 
-int truffle_subclass_check(PyObject* type) {
+PyAPI_FUNC(int) truffle_subclass_check(PyObject* type) {
     return PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
 }
 
 // Implements the basesisze check in typeobject.c:_PyObject_GetState
-int tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_num) {
+PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_num) {
     Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
     if (type->tp_dictoffset)
         basicsize += sizeof(PyObject *);
