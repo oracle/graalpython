@@ -667,6 +667,29 @@ def _join_bin(home, name):
 def python_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-bash-launcher")
     launcher = _join_bin(home, "graalpy")
+
+    if mx_gate.get_jacoco_agent_args():
+        # patch our launchers created under jacoco to also run with jacoco
+        def graalvm_vm_arg(java_arg):
+            if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
+                with open(java_arg[1:], "r") as f:
+                    java_arg = f.read()
+            assert java_arg[0] == "-", java_arg
+            return shlex.quote(f'--vm.{java_arg[1:]}')
+        agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
+
+        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+        # with the arguments. We also disable compilation, it hardly helps for this use case
+        original_launcher = os.path.abspath(os.path.realpath(launcher))
+        bash_launcher = f'{original_launcher}.sh'
+        with open(bash_launcher, "w") as f:
+            f.write("#!/bin/sh\n")
+            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
+            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
+        os.chmod(bash_launcher, 0o775)
+        mx.log(f"Replaced {launcher} with {bash_launcher} to collect coverage")
+        return bash_launcher
+
     mx.log(launcher)
     return launcher
 
@@ -799,7 +822,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
-    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+    if not DISABLE_REBUILD:
+        mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
     args = args or []
     args = ["--experimental-options=true",
@@ -830,29 +854,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     if mx_gate.get_jacoco_agent_args():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
-        # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
-        def graalvm_vm_arg(java_arg):
-            if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
-                with open(java_arg[1:], "r") as f:
-                    java_arg = f.read()
-            assert java_arg[0] == "-", java_arg
-            return shlex.quote(f'--vm.{java_arg[1:]}')
-        agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
-
-        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
-        # with the arguments. We also disable compilation, it hardly helps for this use case
-        original_launcher = os.path.abspath(os.path.realpath(python_binary))
-        bash_launcher = f'{original_launcher}.sh'
-        with open(bash_launcher, "w") as f:
-            f.write("#!/bin/sh\n")
-            exe_arg = shlex.quote(f"--python.Executable={bash_launcher}")
-            f.write(f'exec {original_launcher} --jvm {exe_arg} {agent_args} "$@"\n')
-        os.chmod(bash_launcher, 0o775)
+        with open(python_binary, "r") as f:
+            assert f.read(9) == "#!/bin/sh"
 
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
         for testfile in testfiles:
-            mx.run([bash_launcher] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+            mx.run([python_binary] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
     else:
         if javaAsserts:
             args += ['-ea']
@@ -933,26 +941,43 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
         mx.log("Ensure 'setuptools' is installed")
         mx.run([python_binary] + args + ["-m", "ginstall", "install", "--user", "pytest"], nonZeroIsFatal=True, env=env)
-        # parallelize
-        import threading
-        threads = []
-        lock = threading.RLock()
+        if not mx_gate.get_jacoco_agent_args():
+            # parallelize
+            import threading
+            threads = []
+            lock = threading.RLock()
 
-        class HPyUnitTestsThread(threading.Thread):
-            def __init__(self, **tkwargs):
-                super().__init__(**tkwargs)
-                self.out = mx.LinesOutputCapture()
-                self.result = None
+            class HPyUnitTestsThread(threading.Thread):
+                def __init__(self, **tkwargs):
+                    super().__init__(**tkwargs)
+                    self.out = mx.LinesOutputCapture()
+                    self.result = None
 
-            def run(self):
-                # Note: for some reason catching BaseException is not enough to catch mx.abort,
-                # so we use nonZeroIsFatal=False instead.
-                try:
+                def run(self):
+                    # Note: for some reason catching BaseException is not enough to catch mx.abort,
+                    # so we use nonZeroIsFatal=False instead.
+                    try:
+                        self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
+                                                      env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
+                                                      out=self.out, err=self.out)
+                    except BaseException as e: # pylint: disable=broad-except;
+                        self.result = e
+        else:
+            threads = []
+            class HPyUnitTestsThread:
+                def __init__(self, name):
+                    self.name = name
+                    self.out = mx.LinesOutputCapture()
+
+                def start(self):
                     self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
-                                                  env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
-                                                  out=self.out, err=self.out)
-                except BaseException as e: # pylint: disable=broad-except;
-                    self.result = e
+                                                       env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal)
+
+                def join(self, *args, **kwargs):
+                    return
+
+                def is_alive(self):
+                    return False
 
         abi_list = ['cpython', 'universal']
         if include_native:
@@ -1049,7 +1074,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_svm())
+            run_hpy_unittests(python_gvm() if mx_gate.get_jacoco_agent_args() else python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
@@ -1938,6 +1963,11 @@ def python_coverage(args):
     parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
     args = parser.parse_args(args)
 
+    # do not endlessly rebuild tests
+    mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
+    env = os.environ.copy()
+    env["GRAALPYTHON_MX_DISABLE_REBUILD"] = "True"
+
     if args.jacoco:
         jacoco_args = [
             '--jacoco-omit-excluded',
@@ -1965,7 +1995,7 @@ def python_coverage(args):
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
             '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
-        ] + jacoco_args)
+        ] + jacoco_args, env=env)
         mx.run_mx([
             '--strict-compliance',
             '--kill-with-sigquit',
@@ -1975,7 +2005,7 @@ def python_coverage(args):
             'coverage',
             '--generic-paths',
             '--exclude-src-gen',
-        ])
+        ], env=env)
     if args.truffle:
         executable = python_gvm()
         file_filter = f"*lib-graalpython*,*graalpython/include*,*com.oracle.graal.python.cext*,*lib/graalpy{graal_version_short()}*,*include/python{py_version_short()}*"
@@ -2005,7 +2035,6 @@ def python_coverage(args):
                 "--coverage.Output=lcov",
                 f"--coverage.OutputFile={outfile}",
             ]
-            env = os.environ.copy()
             env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
             env['ENABLE_THREADED_GRAALPYTEST'] = "false"
             # deselect some tagged unittests that hang with coverage enabled
@@ -2059,7 +2088,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=" + lcov_file,
                     f.name
-                ])
+                ], env=None)
 
         home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
         suite_dir = SUITE.dir
