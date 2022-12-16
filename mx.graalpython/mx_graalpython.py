@@ -496,6 +496,7 @@ def update_unittest_tags(args):
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_object_dead'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_all_freed'),
+        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_equality'),
         ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakkeydict'),
         ('test_copy.txt', '*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_weakkeydict'),
         ('test_deque.txt', '*graalpython.lib-python.3.test.test_deque.TestBasic.test_container_iterator'),

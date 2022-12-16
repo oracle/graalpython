@@ -1,0 +1,27 @@
+From 40ef0c8015fc9fae1e8825c1cf563d249afcc8a0 Mon Sep 17 00:00:00 2001
+From: Michael Simacek <michael.simacek@oracle.com>
+Date: Mon, 12 Dec 2022 14:07:03 +0100
+Subject: [PATCH] Adapt
+
+---
+ src/lxml/etree.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/lxml/etree.c b/src/lxml/etree.c
+index 28ad548..cb066dc 100644
+--- a/src/lxml/etree.c
++++ b/src/lxml/etree.c
+@@ -49931,6 +49931,10 @@ static void __pyx_f_4lxml_5etree__receiveGenericError(void *__pyx_v_c_log_handle
+  *                     c_text = c_str  # msg == "%s..."
+  */
+         __pyx_v_c_str = va_charptr(__pyx_v_args);
++        /* XXX GraalVM change: Sulong doesn't support varargs in a native callback */
++        if (__pyx_v_c_str == NULL) {
++            __pyx_v_c_str = "<unknown>";
++        }
+ 
+         /* "src/lxml/xmlerror.pxi":724
+  *                 format_count += 1
+-- 
+2.38.1
+

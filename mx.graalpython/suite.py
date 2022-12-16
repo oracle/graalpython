@@ -458,6 +458,7 @@ suite = {
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
             "args": [
+                "--python.CAPI=/dev/null",
                 "<src_dir:com.oracle.graal.python.cext>/setup.py",
                 "<output_root:com.oracle.graal.python.cext>",
             ],

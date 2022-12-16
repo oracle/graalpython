@@ -465,6 +465,11 @@ int PyType_Ready(PyTypeObject* cls) {
     Py_ssize_t n;
     Py_ssize_t i;
 
+    /* Historically, all static types were immutable. See bpo-43908 */
+    if (!(cls->tp_flags & Py_TPFLAGS_HEAPTYPE)) {
+        cls->tp_flags |= Py_TPFLAGS_IMMUTABLETYPE;
+    }
+
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
     if ((cls->tp_flags & Py_TPFLAGS_READY) || (cls->tp_flags & Py_TPFLAGS_READYING)) {
         return 0;
