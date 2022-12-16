@@ -89,6 +89,8 @@ SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--l
 # Allows disabling rebuild for some mx commands such as graalpytest
 DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 
+if os.environ.get("CI") == "true" and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
+    os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
 
 def _sibling(filename):
     return os.path.join(os.path.dirname(__file__), filename)
