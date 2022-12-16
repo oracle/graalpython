@@ -64,7 +64,7 @@ darwin_native = MACOS and __graalpython__.platform_id == "native"
 win32_native = WIN32 and __graalpython__.platform_id == "native"
 relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
-SOABI = get_config_var("SOABI")
+SOABI = get_config_var("SOABI") or so_ext.split(".")[1]
 is_managed = 'managed' in SOABI
 lib_ext = 'dylib' if MACOS else ('pyd' if WIN32 else 'so')
 
@@ -415,6 +415,7 @@ class NativeBuiltinModule:
         sources = kwargs.pop("sources", [os.path.join("modules", self.name + ".c")])
 
         core = kwargs.pop("core", True)
+        core_module = kwargs.pop("core_module", True)
 
         libs, library_dirs, include_dirs = _build_deps(self.deps)
 
@@ -429,6 +430,8 @@ class NativeBuiltinModule:
         define_macros = kwargs.pop("define_macros", [])
         if core:
             define_macros.append(("Py_BUILD_CORE", None))
+        if core_module:
+            define_macros.append(("Py_BUILD_CORE_MODULE", None))
 
         return Extension(
             self.name,
@@ -443,10 +446,12 @@ class NativeBuiltinModule:
 
 
 builtin_exts = (
+    # the modules included in this list are supported on windows, too
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_cpython_struct"),
+) + (() if WIN32 else (
     NativeBuiltinModule("_testcapi", core=False),
     NativeBuiltinModule("_testmultiphase"),
     NativeBuiltinModule("_ctypes_test"),
@@ -472,7 +477,7 @@ builtin_exts = (
             'expat/xmltok_impl.h',
         ],
     ),
-)
+))
 
 
 def build_libpython(capi_home):
@@ -482,16 +487,29 @@ def build_libpython(capi_home):
         libpython_name,
         sources=files,
         extra_compile_args=cflags_warnings,
+        core_module=False,
     )()
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean", "--all"]
-    setup(
-        script_name='setup' + libpython_name,
-        script_args=args,
-        name=libpython_name,
-        version='1.0',
-        description="Graal Python's C API",
-        ext_modules=[module],
-    )
+    if WIN32:
+        # need to link with sulongs libs instead of libpython for this one
+        llvm_libs = " ".join([
+            f" -L{lpath}" for lpath in __graalpython__.get_toolchain_paths("LD_LIBRARY_PATH")
+        ]) + f" -lgraalvm-llvm -lsulong-native"
+        get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_LINUX"] + llvm_libs
+    try:
+        setup(
+            script_name='setup' + libpython_name,
+            script_args=args,
+            name=libpython_name,
+            version='1.0',
+            description="Graal Python's C API",
+            ext_modules=[module],
+        )
+    finally:
+        if WIN32:
+            # reset LDSHARED, but keep linking with sulong libs so we can use internal
+            # APIs in shipped extensions
+            get_config_vars()["LDSHARED"] = get_config_vars()["LDSHARED_WINDOWS"] + llvm_libs
 
 
 def build_libhpy(capi_home):
@@ -595,9 +613,20 @@ def build(capi_home):
         original_build_extensions = distutils.command.build_ext.build_ext.build_extensions
         distutils.ccompiler.CCompiler.compile = pcompiler
         distutils.command.build_ext.build_ext.build_extensions = build_extensions
+    if WIN32:
+        # avoid long paths on win32
+        original_object_filenames = distutils.ccompiler.CCompiler.object_filenames
+        def stripped_object_filenames(*args, **kwargs):
+            kwargs.update(dict(strip_dir=1))
+            return original_object_filenames(*args, **kwargs)
+        distutils.ccompiler.CCompiler.object_filenames = stripped_object_filenames
 
     try:
+        build_libpython(capi_home)
+        build_builtin_exts(capi_home)
         build_libhpy(capi_home)
+        if WIN32:
+            return # TODO: ...
         build_libposix(capi_home)
         build_nativelibsupport(capi_home,
                                 subdir="zlib",
@@ -613,12 +642,12 @@ def build(capi_home):
                                 libname="liblzmasupport",
                                 deps=[LZMADepedency("lzma", "xz==5.2.6", "XZ-5.2.6")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
-        build_libpython(capi_home)
-        build_builtin_exts(capi_home)
     finally:
         if threaded:
             distutils.ccompiler.CCompiler.compile = original_compile
             distutils.command.build_ext.build_ext.build_extensions = original_build_extensions
+        if WIN32:
+            distutils.ccompiler.CCompiler.object_filenames = original_object_filenames
 
 
 if __name__ == "__main__":

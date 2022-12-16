@@ -43,13 +43,6 @@ def spawn(cmd, search_path=1, verbose=0, dry_run=0):
     log.info(' '.join(cmd))
     if dry_run:
         return
-    # TODO: Begin Truffle change
-    import shlex
-    status = os.system(shlex.join(cmd))
-    if status != 0:
-        raise DistutilsExecError( "command %r failed with exit status %d" % (cmd, status))
-    return
-    # End of Truffle change
 
     if search_path:
         executable = find_executable(cmd[0])

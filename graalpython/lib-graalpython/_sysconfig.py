@@ -65,6 +65,8 @@ def _get_posix_vars():
         f'python{sys.version_info[0]}.{sys.version_info[1]}{sys.abiflags}'
     )
 
+    fpic = "" if win32_native else "-fPIC"
+
     g = {}
     g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
@@ -75,14 +77,20 @@ def _get_posix_vars():
     gnu_source = "-D_GNU_SOURCE=1"
     g['USE_GNU_SOURCE'] = gnu_source
     cflags_default = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -DGRAALVM_PYTHON_LLVM"
+    if win32_native:
+        cflags_default += " -DMS_WINDOWS -DPy_ENABLE_SHARED -DHAVE_DECLSPEC_DLL"
     g['CFLAGS_DEFAULT'] = cflags_default
     g['CFLAGS'] = cflags_default + " " + gnu_source
     g['LDFLAGS'] = ""
-    g['CCSHARED'] = "-fPIC"
-    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_tool_path('CC')
+    g['CCSHARED'] = fpic
+    g['LDSHARED_LINUX'] = "%s -shared %s" % (__graalpython__.get_toolchain_tool_path('CC'), fpic)
     if darwin_native:
         g['LDSHARED'] = __graalpython__.get_toolchain_tool_path('CC') + " -bundle -undefined dynamic_lookup"
         g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
+    elif win32_native:
+        g['LDFLAGS'] = f"-L{__graalpython__.capi_home.replace(os.path.sep, '/')} -llibpython.{so_abi}"
+        g['LDSHARED_WINDOWS'] = f"{g['LDSHARED_LINUX']} {g['LDFLAGS']}"
+        g['LDSHARED'] = g['LDSHARED_WINDOWS']
     else:
         g['LDSHARED'] = g['LDSHARED_LINUX']
     g['SOABI'] = so_abi

@@ -211,7 +211,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT),
     PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT),
-    PUnameResult("uname_result", "posix", Flags.PUBLIC_DERIVED_WODICT),
+    PUnameResult("uname_result", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT),
     PProfilerEntry("profiler_entry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT),
     PProfilerSubentry("profiler_subentry", "_lsprof", Flags.PUBLIC_DERIVED_WODICT),

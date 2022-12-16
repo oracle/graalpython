@@ -56,6 +56,9 @@ import mx_graalpython_bisect
 import mx_graalpython_import
 import mx_graalpython_python_benchmarks
 
+# re-export custom mx project classes so they can be used from suite.py
+from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
+
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, JAVA_DRIVER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
@@ -174,7 +177,7 @@ def full_python(args):
 
     import mx_sdk_vm_impl
     home = mx_sdk_vm_impl.graalvm_home()
-    mx.run([os.path.join(home, "bin", "graalpy")] + args)
+    mx.run([os.path.join(home, "bin", f"graalpy{'.cmd' if mx.is_windows() else ''}")] + args)
 
 
 def python(args, **kwargs):
@@ -1111,7 +1114,11 @@ def graalpython_gate_runner(args, tasks):
             mx.run([svm_image, "-v", "-S", "--log.python.level=FINEST", "-c", "import sys; print(sys.platform)"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
             success = "\n".join(["win32"])
             if success not in out.data:
-                mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
+                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
+            mx.run([svm_image, "-c", "import struct; print(struct.pack('>I', 0x61626364))"], nonZeroIsFatal=True, out=mx.TeeOutputCapture(out), err=mx.TeeOutputCapture(out))
+            success = "b'abcd'"
+            if success not in out.data:
+                mx.abort(f'Output from generated SVM image "{svm_image}" did not match success pattern:\nExpected\n{success}\nGot\n{out.data}')
 
     with Task('Python SVM Truffle TCK', tasks, tags=[GraalPythonTags.language_checker]) as task:
         if task:
@@ -2270,7 +2277,10 @@ class GraalpythonCAPIBuildTask(GraalpythonBuildTask):
         return super().run(args, env=env, cwd=cwd, **kwargs)
 
     def _dev_headers_dir(self):
-        return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
+        if sys.platform == "win32":
+            return os.path.join(SUITE.dir, "graalpython", "include")
+        else:
+            return os.path.join(SUITE.dir, "graalpython", "include", f"python{py_version_short()}")
 
     def _prepare_headers(self):
         target_dir = self._dev_headers_dir()

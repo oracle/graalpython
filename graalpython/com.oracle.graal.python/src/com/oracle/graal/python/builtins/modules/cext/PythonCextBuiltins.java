@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.C
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -1036,6 +1037,46 @@ public final class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_ByteArray_EmptyWithCapacity", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleByteArrayEmptyWithCapacityNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PByteArray doInt(int size) {
+            return factory().createByteArray(new byte[size]);
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        PByteArray doLong(long size) throws OverflowException {
+            return doInt(PInt.intValueExact(size));
+        }
+
+        @Specialization(replaces = "doLong")
+        PByteArray doLongOvf(long size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return doInt(PInt.intValueExact(size));
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+            }
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        PByteArray doPInt(PInt size) throws OverflowException {
+            return doInt(size.intValueExact());
+        }
+
+        @Specialization(replaces = "doPInt")
+        PByteArray doPIntOvf(PInt size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return doInt(size.intValueExact());
+            } catch (OverflowException e) {
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
+            }
+        }
+    }
+
     private abstract static class UpcallLandingNode extends PythonVarargsBuiltinNode {
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -1288,6 +1329,11 @@ public final class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTrufflePtrCacheCreate extends PythonUnaryBuiltinNode {
         @Specialization
         static Object createCache(int steal) {
+            return new NativeReferenceCache(steal != 0);
+        }
+
+        @Specialization
+        static Object createCache(long steal) {
             return new NativeReferenceCache(steal != 0);
         }
     }

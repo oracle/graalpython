@@ -373,7 +373,13 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         @Specialization
         Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_WINERROR, OS_ERROR_ATTR_FACTORY);
+            Object result = attrNode.execute(self, value, IDX_WINERROR, OS_ERROR_ATTR_FACTORY);
+            if (result instanceof PNone) {
+                // TODO: fallback to errno for now
+                return attrNode.execute(self, value, IDX_ERRNO, OS_ERROR_ATTR_FACTORY);
+            } else {
+                return result;
+            }
         }
     }
 

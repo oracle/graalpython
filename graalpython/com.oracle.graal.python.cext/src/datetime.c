@@ -70,7 +70,7 @@ POLYGLOT_DECLARE_TYPE(PyDateTime_Delta);
 POLYGLOT_DECLARE_TYPE(PyDateTime_TZInfo);
 
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
-extern polyglot_typeid set_PyDateTime_typeids(PyTypeObject* dateType, PyTypeObject* dateTimeType, PyTypeObject* timeType, PyTypeObject* deltaType, PyTypeObject* tzinfoType) {
+PyAPI_FUNC(polyglot_typeid) set_PyDateTime_typeids(PyTypeObject* dateType, PyTypeObject* dateTimeType, PyTypeObject* timeType, PyTypeObject* deltaType, PyTypeObject* tzinfoType) {
     /* safe native get/set descriptors */
     PyGetSetDef* getsets_date= PyDateTime_DateType.tp_getset;
     PyGetSetDef* getsets_time = PyDateTime_TimeType.tp_getset;

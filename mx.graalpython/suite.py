@@ -236,20 +236,9 @@ suite = {
             "dependencies": [
                 "truffle:ICU4J",
             ],
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "buildDependencies": [],
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "buildDependencies": [
-                            "com.oracle.graal.python.pegparser.generator",
-                        ],
-                    },
-                },
-            },
+            "buildDependencies": [
+                "com.oracle.graal.python.pegparser.generator",
+            ],
         },
 
         "com.oracle.graal.python.pegparser.test": {
@@ -265,19 +254,14 @@ suite = {
 
         "com.oracle.graal.python.pegparser.generator": {
             "subDir": "graalpython",
-            "native": True,
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "defaultBuild" : False,
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "defaultBuild" : True,
-                    },
-                },
-            },
+            "class" : "CMakeNinjaProject",
+            "ninja_targets" : [
+                "all",
+            ],
+            "results" : [
+                "input_files/python.gram.stamp",
+                "input_files/Python.asdl.stamp",
+            ]
         },
 
         "com.oracle.graal.python.shell": {
@@ -457,11 +441,25 @@ suite = {
             "vpath": True,
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
-            "args": [
-                "--python.CAPI=/dev/null",
-                "<src_dir:com.oracle.graal.python.cext>/setup.py",
-                "<output_root:com.oracle.graal.python.cext>",
-            ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "args": [
+                            "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                            "<output_root:com.oracle.graal.python.cext>",
+                        ],
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "args": [
+                            "--python.CAPI=/dev/null",
+                            "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                            "<output_root:com.oracle.graal.python.cext>",
+                        ],
+                    },
+                },
+            },
             "buildDependencies": [
                 "GRAALPYTHON",
                 "sulong:SULONG_HOME",
@@ -476,18 +474,6 @@ suite = {
                 "OS": "<os>",
                 "XZ-5.2.6": "<path:XZ-5.2.6>",
                 "BZIP2": "<path:BZIP2>",
-            },
-            "os_arch": {
-                "windows": {
-                    "<others>": {
-                        "defaultBuild": False,
-                    },
-                },
-                "<others>": {
-                    "<others>": {
-                        "defaultBuild" : True,
-                    },
-                },
             },
         },
 
@@ -712,6 +698,9 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON_JNI",
             ],
+            "dependencies": [
+                "com.oracle.graal.python.cext",
+            ],
             "os_arch": {
                 "windows": {
                     "<others>": {
@@ -724,8 +713,12 @@ suite = {
                             ],
                             "./lib-graalpython/": [
                                 "file:graalpython/lib-graalpython/*",
-                                "file:graalpython/com.oracle.graal.python.cext/CEXT-WINDOWS-README.md",
                                 "extracted-dependency:GRAALPYTHON_JNI/*",
+                                {
+                                    "source_type": "dependency",
+                                    "dependency": "graalpython:com.oracle.graal.python.cext",
+                                    "path": "*",
+                                },
                             ],
                             "./Include/": [
                                 "file:graalpython/com.oracle.graal.python.cext/include/*",
@@ -735,9 +728,6 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "dependencies": [
-                            "com.oracle.graal.python.cext",
-                        ],
                         "layout": {
                             "./": [
                                 "file:mx.graalpython/native-image.properties",
