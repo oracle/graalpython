@@ -441,11 +441,25 @@ suite = {
             "vpath": True,
             "type": "GraalpythonCAPIProject",
             "platformDependent": False,
-            "args": [
-                "--python.CAPI=/dev/null",
-                "<src_dir:com.oracle.graal.python.cext>/setup.py",
-                "<output_root:com.oracle.graal.python.cext>",
-            ],
+            "os_arch": {
+                "windows": {
+                    "<others>": {
+                        "args": [
+                            "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                            "<output_root:com.oracle.graal.python.cext>",
+                        ],
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "args": [
+                            "--python.CAPI=/dev/null",
+                            "<src_dir:com.oracle.graal.python.cext>/setup.py",
+                            "<output_root:com.oracle.graal.python.cext>",
+                        ],
+                    },
+                },
+            },
             "buildDependencies": [
                 "GRAALPYTHON",
                 "sulong:SULONG_HOME",

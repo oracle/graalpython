@@ -924,6 +924,6 @@ PyAPI_FUNC(int) tuffle_check_basesize_for_getstate(PyTypeObject* type, int slot_
     return type->tp_basicsize > basicsize;
 }
 
-void truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
+PyAPI_FUNC(void) truffle_set_tp_flags(PyTypeObject* type, unsigned long flags) {
     type->tp_flags = flags;
 }
