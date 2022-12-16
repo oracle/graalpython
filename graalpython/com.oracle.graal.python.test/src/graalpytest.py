@@ -70,11 +70,20 @@ SERIAL_TESTS = [
 ]
 
 
+# A list of tests with minor transient issues, which can be retried once
+TRANSIENTS = [
+    'test_multiprocessing_spawn',
+    'test_weakref',
+    'test_ssl',
+    'test_threading',
+]
+
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
     raise ImportError("posix or nt module is required in builtin modules")
 
 FAIL = '\033[91m'
+RETRY = '\033[93m'
 ENDC = '\033[0m'
 BOLD = '\033[1m'
 
@@ -337,6 +346,7 @@ def dump_truffle_ast(func):
 
 
 class TestCase(object):
+    fail_fast = os.environ.get(b"GRAALPYTEST_FAIL_FAST", "") == b"true"
 
     def __init__(self):
         self.exceptions = []
@@ -379,7 +389,7 @@ class TestCase(object):
                 for arg_vec in fixture_args:
                     func(*arg_vec)
             else:
-                func()                
+                func()
         except BaseException as e:
             if isinstance(e, SkipTest):
                 return _skipped_marker
@@ -422,8 +432,33 @@ class TestCase(object):
                 with print_lock:
                     if r is _skipped_marker:
                         self.skipped()
+                    elif r:
+                        self.success(end)
                     else:
-                        self.success(end) if r else self.failure(end)
+                        transient_marker = [name for name in TRANSIENTS if name in func.__qualname__]
+                        if transient_marker:
+                            if verbose:
+                                print("[%.3fs]" % end, end=" ")
+                                print(RETRY, BOLD, "Transient %s matched" % transient_marker[0], ENDC, sep="", end=" ")
+                            else:
+                                print("T", end="", flush=True)
+                            try:
+                                TRANSIENTS.remove(transient_marker[0])
+                            except:
+                                print("!ERROR! TRANSIENT %s matches more than one test!" % transient_marker[0])
+                                # transient markers may match more than one test. they shouldn't, but
+                                # in case they do, this is racy and we don't want to fail here
+                                pass
+                            do_run()
+                        else:
+                            self.failure(end)
+                            if TestCase.fail_fast:
+                                if verbose:
+                                    print(FAIL, BOLD)
+                                print("\nFailing fast since GRAALPYTEST_FAIL_FAST is set ...")
+                                if verbose:
+                                    print(ENDC)
+                                sys.exit(1)
             force_serial_execution = any(name in func.__qualname__ for name in SERIAL_TESTS)
             if force_serial_execution:
                 ThreadPool.shutdown()
@@ -558,7 +593,7 @@ class TestCase(object):
                             return True
                 elif self._match_exc(self.exc_type, exc_type, exc):
                     return True
-            
+
         def _match_exc(self, expected_exc_type, actual_exc_type, actual_exc):
             import re
             if expected_exc_type in actual_exc_type.mro():
