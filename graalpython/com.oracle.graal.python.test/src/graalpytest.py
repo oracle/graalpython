@@ -67,6 +67,8 @@ SERIAL_TESTS = [
     'test_multiprocessing_spawn',
     # trying to avoid transient issues there, not sure about the reason
     'test_unittest',
+    'test_glob',
+    'test_logging',
 ]
 
 
