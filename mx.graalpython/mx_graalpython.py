@@ -828,11 +828,11 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False, disable_rebuild=False):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
-    if not DISABLE_REBUILD and not disable_rebuild:
+    if not DISABLE_REBUILD:
         mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
     args = args or []
@@ -968,8 +968,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                     # so we use nonZeroIsFatal=False instead.
                     try:
                         self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
-                                                           env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
-                                                           out=self.out, err=self.out, disable_rebuild=True)
+                                                      env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
+                                                      out=self.out, err=self.out)
                     except BaseException as e: # pylint: disable=broad-except;
                         self.result = e
         else:
@@ -981,7 +981,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
                 def start(self):
                     self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
-                                                       env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal, disable_rebuild=True)
+                                                       env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal)
 
                 def join(self, *args, **kwargs):
                     return
@@ -1039,7 +1039,6 @@ def run_tagged_unittests(python_binary, env=None, cwd=None, javaAsserts=False, n
         cwd=cwd,
         javaAsserts=javaAsserts,
         nonZeroIsFatal=nonZeroIsFatal,
-        disable_rebuild=True,
     )
 
 
