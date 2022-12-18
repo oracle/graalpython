@@ -152,8 +152,11 @@ def get_jdk():
     return mx.get_jdk(tag=tag)
 
 
-def full_python(args):
-    """run python from graalvm"""
+def full_python(args, **kwargs):
+    """run python from graalvm (unless kwargs are given)"""
+    if kwargs:
+        return python(args, **kwargs)
+
     if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
         args.insert(0, '--python.WithJavaStacktrace=1')
 
