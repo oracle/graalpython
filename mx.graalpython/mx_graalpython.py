@@ -1615,9 +1615,6 @@ def update_import_cmd(args):
     shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
-    with open(join(overlaydir, "fastr", "common.libsonnet")) as fastrCommon:
-        with open(join(overlaydir, "python", "fastr-common.libsonnet"), "w") as fastrCopy:
-            fastrCopy.write(fastrCommon.read().replace("graal_common.json", "../python/graal-common.json"))
 
     # update the graal-enterprise revision in the overlay (used by benchmarks)
     with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
