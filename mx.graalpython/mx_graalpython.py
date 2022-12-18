@@ -714,6 +714,8 @@ def python_enterprise_gvm(_=None):
 
 
 def python_svm(_=None):
+    if mx_gate.get_jacoco_agent_args():
+        return python_gvm()
     home = _graalvm_home(envfile="graalpython-launcher")
     launcher = _join_bin(home, "graalpy")
     mx.log(launcher)
@@ -1080,7 +1082,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_gvm() if mx_gate.get_jacoco_agent_args() else python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+            run_hpy_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
