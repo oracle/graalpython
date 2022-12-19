@@ -152,8 +152,11 @@ def get_jdk():
     return mx.get_jdk(tag=tag)
 
 
-def full_python(args):
-    """run python from graalvm"""
+def full_python(args, **kwargs):
+    """run python from graalvm (unless kwargs are given)"""
+    if kwargs:
+        return python(args, **kwargs)
+
     if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
         args.insert(0, '--python.WithJavaStacktrace=1')
 
@@ -714,6 +717,8 @@ def python_enterprise_gvm(_=None):
 
 
 def python_svm(_=None):
+    if mx_gate.get_jacoco_agent_args():
+        return python_gvm()
     home = _graalvm_home(envfile="graalpython-launcher")
     launcher = _join_bin(home, "graalpy")
     mx.log(launcher)
@@ -1079,7 +1084,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_gvm() if mx_gate.get_jacoco_agent_args() else python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+            run_hpy_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
@@ -1609,9 +1614,6 @@ def update_import_cmd(args):
     shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
-    with open(join(overlaydir, "fastr", "common.libsonnet")) as fastrCommon:
-        with open(join(overlaydir, "python", "fastr-common.libsonnet"), "w") as fastrCopy:
-            fastrCopy.write(fastrCommon.read().replace("graal_common.json", "../python/graal-common.json"))
 
     # update the graal-enterprise revision in the overlay (used by benchmarks)
     with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:

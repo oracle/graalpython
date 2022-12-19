@@ -8,6 +8,12 @@ from test.support.os_helper import (TESTFN, skip_unless_symlink,
                                     can_symlink, create_empty_file, change_cwd)
 
 
+# GraalVm skip
+def skip_if_aarch64(test):
+    return test if (os.uname().machine not in ("aarch64")) else unittest.skip(msg)(test)
+
+
+@skip_if_aarch64
 class GlobTests(unittest.TestCase):
     dir_fd = None
 
@@ -332,6 +338,7 @@ class GlobTests(unittest.TestCase):
                 self.assertEqual(next(it), p)
 
 
+@skip_if_aarch64
 @skip_unless_symlink
 class SymlinkLoopGlobTests(unittest.TestCase):
 
