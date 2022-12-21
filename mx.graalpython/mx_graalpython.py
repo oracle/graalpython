@@ -499,6 +499,9 @@ def update_unittest_tags(args):
         ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_apop_normal'),
         ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_capa'),
         ('test_poplib.txt', '*graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_dele'),
+        # Disabled because these tests hand on Darwin
+        ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_1_ok'),
+        ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_10_ok'),
         # GC-related transients
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead'),
