@@ -259,8 +259,8 @@ suite = {
                 "all",
             ],
             "results" : [
-                "input_files/python.gram.stamp",
-                "input_files/Python.asdl.stamp",
+                "Parser.java",
+                "Python.asdl.stamp",
             ]
         },
 
