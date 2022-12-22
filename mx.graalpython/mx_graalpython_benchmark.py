@@ -234,7 +234,7 @@ class CPythonVm(AbstractPythonIterationsControlVm):
         venv = self._virtualenv if self._virtualenv else mx.get_env(ENV_VIRTUAL_ENV)
         if venv:
             mx.log(f"CPythonVM virtualenv={venv}")
-            return os.path.join(venv, CPythonVm.PYTHON_INTERPRETER)
+            return os.path.join(venv, 'bin', CPythonVm.PYTHON_INTERPRETER)
         home = mx.get_env(ENV_PYTHON3_HOME)
         if home:
             mx.log(f"CPythonVM python3 home={home}")
