@@ -231,14 +231,14 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 
     @property
     def interpreter(self):
-        home = mx.get_env(ENV_PYTHON3_HOME)
-        if home:
-            mx.log(f"CPythonVM python3 home={home}")
-            return os.path.join(home, CPythonVm.PYTHON_INTERPRETER)
         venv = self._virtualenv if self._virtualenv else mx.get_env(ENV_VIRTUAL_ENV)
         if venv:
             mx.log(f"CPythonVM virtualenv={venv}")
             return os.path.join(venv, CPythonVm.PYTHON_INTERPRETER)
+        home = mx.get_env(ENV_PYTHON3_HOME)
+        if home:
+            mx.log(f"CPythonVM python3 home={home}")
+            return os.path.join(home, CPythonVm.PYTHON_INTERPRETER)
         return CPythonVm.PYTHON_INTERPRETER
 
     def name(self):
