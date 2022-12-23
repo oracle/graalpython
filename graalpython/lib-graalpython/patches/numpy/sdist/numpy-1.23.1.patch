@@ -144,7 +144,7 @@ index 4b802de..269d4c4 100644
          cmd.temp_files.append("_configtest")
          cmd.compiler.link_executable([obj], "_configtest")
 diff --git a/numpy/core/src/common/npy_hashtable.c b/numpy/core/src/common/npy_hashtable.c
-index af9e2df..afbba34 100644
+index af9e2df..042d854 100644
 --- a/numpy/core/src/common/npy_hashtable.c
 +++ b/numpy/core/src/common/npy_hashtable.c
 @@ -44,7 +44,8 @@ identity_list_hash(PyObject *const *v, int len)
@@ -153,7 +153,7 @@ index af9e2df..afbba34 100644
           */
 -        size_t y = (size_t)v[i];
 +        // size_t y = (size_t)v[i];
-+        Py_hash_t y = PyObject_Hash(v[i]);
++        Py_hash_t y = v[i] == NULL ? 0 : PyObject_Hash(v[i]);
          Py_uhash_t lane = (y >> 4) | (y << (8 * SIZEOF_VOID_P - 4));
          acc += lane * _NpyHASH_XXPRIME_2;
          acc = _NpyHASH_XXROTATE(acc);

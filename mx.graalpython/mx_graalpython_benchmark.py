@@ -49,6 +49,7 @@ SUITE = mx.suite("graalpython")
 # ----------------------------------------------------------------------------------------------------------------------
 ENV_PYPY_HOME = "PYPY_HOME"
 ENV_PYTHON3_HOME = "PYTHON3_HOME"
+ENV_VIRTUAL_ENV = "VIRTUAL_ENV"
 ENV_JYTHON_JAR = "JYTHON_JAR"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
@@ -230,11 +231,14 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 
     @property
     def interpreter(self):
+        venv = self._virtualenv if self._virtualenv else mx.get_env(ENV_VIRTUAL_ENV)
+        if venv:
+            mx.log(f"CPythonVM virtualenv={venv}")
+            return os.path.join(venv, 'bin', CPythonVm.PYTHON_INTERPRETER)
         home = mx.get_env(ENV_PYTHON3_HOME)
         if home:
+            mx.log(f"CPythonVM python3 home={home}")
             return os.path.join(home, CPythonVm.PYTHON_INTERPRETER)
-        if self._virtualenv:
-            return os.path.join(self._virtualenv, CPythonVm.PYTHON_INTERPRETER)
         return CPythonVm.PYTHON_INTERPRETER
 
     def name(self):
