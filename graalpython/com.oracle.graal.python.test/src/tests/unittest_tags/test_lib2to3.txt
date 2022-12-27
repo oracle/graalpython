@@ -439,6 +439,7 @@
 *lib2to3.tests.test_fixers.Test_urllib.test_import_module_as
 *lib2to3.tests.test_fixers.Test_urllib.test_import_module_usage
 *lib2to3.tests.test_fixers.Test_urllib.test_indented
+*lib2to3.tests.test_fixers.Test_urllib.test_single_import
 *lib2to3.tests.test_fixers.Test_urllib.test_star
 *lib2to3.tests.test_fixers.Test_xrange.test_in_consuming_context
 *lib2to3.tests.test_fixers.Test_xrange.test_in_contains_test
