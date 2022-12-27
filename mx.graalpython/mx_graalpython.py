@@ -502,6 +502,7 @@ def update_unittest_tags(args):
         # Disabled because these tests hand on Darwin
         ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_1_ok'),
         ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_config_10_ok'),
+        ('test_logging.txt', '*graalpython.lib-python.3.test.test_logging.ConfigDictTest.test_listen_verify'),
         # GC-related transients
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles'),
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.WeakMethodTestCase.test_callback_when_method_dead'),
@@ -529,6 +530,7 @@ def update_unittest_tags(args):
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_default_timeout'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestBarrier.test_timeout'),
+        ('test_pty.txt', '*graalpython.lib-python.3.test.test_pty.PtyTest.test_openpty'),
         # Disabled due to transient stack overflow that fails to get caught and crashes the VM
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.test_badisinstance'),
         ('test_exceptions.txt', '*graalpython.lib-python.3.test.test_exceptions.ExceptionTests.testInfiniteRecursion'),
