@@ -1975,7 +1975,21 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
+        @Specialization(guards = {"dest == left", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == left.getClass()"})
+        SequenceStorage doManagedManagedSameTypeInplace(@SuppressWarnings("unused") SequenceStorage dest, SequenceStorage left, SequenceStorage right,
+                        @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            SequenceStorage leftProfiled = cachedClass.cast(left);
+            SequenceStorage rightProfiled = cachedClass.cast(right);
+            Object arr1 = leftProfiled.getInternalArrayObject();
+            int len1 = leftProfiled.length();
+            Object arr2 = rightProfiled.getInternalArrayObject();
+            int len2 = rightProfiled.length();
+            PythonUtils.arraycopy(arr2, 0, arr1, len1, len2);
+            getSetLenNode().execute(leftProfiled, len1 + len2);
+            return leftProfiled;
+        }
+
+        @Specialization(guards = {"dest != left", "dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
         SequenceStorage doManagedManagedSameType(SequenceStorage dest, SequenceStorage left, SequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
             SequenceStorage destProfiled = cachedClass.cast(dest);
@@ -2014,7 +2028,18 @@ public abstract class SequenceStorageNodes {
             return destProfiled;
         }
 
-        @Specialization
+        @Specialization(guards = "dest == left")
+        SequenceStorage doGenericInplace(@SuppressWarnings("unused") SequenceStorage dest, SequenceStorage left, SequenceStorage right) {
+            int len1 = left.length();
+            int len2 = right.length();
+            for (int i = 0; i < len2; i++) {
+                getSetItemNode().execute(left, i + len1, getGetRightItemNode().execute(right, i));
+            }
+            getSetLenNode().execute(left, len1 + len2);
+            return left;
+        }
+
+        @Specialization(guards = "dest != left")
         SequenceStorage doGeneric(SequenceStorage dest, SequenceStorage left, SequenceStorage right) {
             int len1 = left.length();
             int len2 = right.length();
@@ -2202,14 +2227,18 @@ public abstract class SequenceStorageNodes {
                 lenResult = lengthResult(lenLeft, right.length());
             }
             SequenceStorage dest = null;
-            try {
-                // EnsureCapacityNode handles the overflow and raises an error
-                dest = ensureCapacityNode.execute(left, lenResult);
-                return concatStoragesNode.execute(dest, left, right);
-            } catch (SequenceStoreException e) {
-                dest = generalizeStore(dest, e.getIndicationValue());
-                dest = ensureCapacityNode.execute(dest, lenResult);
-                return concatStoragesNode.execute(dest, left, right);
+            while (true) {
+                // unbounded loop should not be a problem for PE because generalizeStore() in the
+                // catch block immediately de-opts in the first iteration, i.e. if the storages are
+                // compatible and SequenceStoreException does not happen, then this compiles as if
+                // the while loop was not here at all
+                try {
+                    // EnsureCapacityNode handles the overflow and raises an error
+                    dest = ensureCapacityNode.execute(left, lenResult);
+                    return concatStoragesNode.execute(dest, left, right);
+                } catch (SequenceStoreException e) {
+                    left = generalizeStore(dest, e.getIndicationValue());
+                }
             }
         }
 
