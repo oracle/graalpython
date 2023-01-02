@@ -1983,6 +1983,7 @@ def python_coverage(args):
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
     env = os.environ.copy()
     env["GRAALPYTHON_MX_DISABLE_REBUILD"] = "True"
+    env["GRAALPYTEST_FAIL_FAST"] = "False"
 
     if args.jacoco:
         jacoco_args = [
