@@ -1977,7 +1977,6 @@ def python_coverage(args):
     parser = ArgumentParser(prog='mx python-coverage')
     parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
     parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
-    parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
     args = parser.parse_args(args)
 
     # do not endlessly rebuild tests
