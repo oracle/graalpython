@@ -1,10 +1,11 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
 import seq_tests
 import sys
+import unittest
 # import pickle
 
 LONG_NUMBER = 6227020800;
@@ -154,7 +155,7 @@ class ListTest(list_tests.CommonTest):
     def test_getitem(self):
         l = [1, 2, 3]
         self.assertEqual(1, l[False])
-        
+
         class IdxObj:
             __cnt = 0
             def __index__(self):
@@ -376,19 +377,19 @@ class ListTest(list_tests.CommonTest):
         a = ["1", "2", "3", "4", "5", "6"]
         a[5:8:1] = ["42", "42", "42"]
         self.assertEqual(["1", "2", "3", "4", "5", '42', '42', '42'], a)
-        
+
         a = [1, 2, 3, 4]
         a[-9223372036854775809:9223372036854775808] = [9, 10, 11, 12]
         self.assertEqual([9, 10, 11, 12], a)
-        
+
         try:
             a = [1, 2, 3, 4]
             a[-1000:1000:999999999999999999999999999999999999999999999999999999999999999999999999999] = [5,6,7,8]
-        except ValueError: 
+        except ValueError:
             self.assertEqual([1, 2, 3, 4], a)
         else:
             assert False, "expected ValueError"
-            
+
         a = [1, 2, 3, 4]
         a[:] = map(next, [iter([None,]), iter([None,])])
         self.assertEqual([None, None], a)
@@ -833,3 +834,12 @@ class ListCompareTest(CompareTest):
         self.assertEqual(l1 <= [1, 1], 'OK:False')
         self.assertEqual(l1 <= [1, 10], 'OK:True')
         self.assertEqual(l1 <= [1, 10, 0], 'OK:True')
+
+    def test_generalize_store(self):
+        l = [1]
+        l += [0x100000000, 'a']
+        self.assertEqual([1, 0x100000000, 'a'], l)
+
+
+if __name__ == '__main__':
+    unittest.main()
