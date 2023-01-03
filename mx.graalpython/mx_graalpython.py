@@ -92,6 +92,12 @@ SANDBOXED_OPTIONS = ['--llvm.managed', '--llvm.deadPointerProtection=MASK', '--l
 # Allows disabling rebuild for some mx commands such as graalpytest
 DISABLE_REBUILD = os.environ.get('GRAALPYTHON_MX_DISABLE_REBUILD', False)
 
+_COLLECTING_COVERAGE = False
+
+def is_collectiong_coverage():
+    return bool(mx_gate.get_jacoco_agent_args() or _COLLECTING_COVERAGE)
+
+
 if os.environ.get("CI") == "true" and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
     os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
 
@@ -682,7 +688,9 @@ def python_gvm(_=None):
     launcher = _join_bin(home, "graalpy")
 
     if mx_gate.get_jacoco_agent_args():
-        # patch our launchers created under jacoco to also run with jacoco
+        # patch our launchers created under jacoco to also run with jacoco.
+        # do not use is_collectiong_coverage() here, we only want to patch when
+        # jacoco agent is requested.
         def graalvm_vm_arg(java_arg):
             if java_arg.startswith("@") and os.path.exists(java_arg[1:]):
                 with open(java_arg[1:], "r") as f:
@@ -867,10 +875,11 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += [_graalpytest_driver(), "-v"]
 
-    if mx_gate.get_jacoco_agent_args():
+    if is_collectiong_coverage():
         env['ENABLE_THREADED_GRAALPYTEST'] = "false"
-        with open(python_binary, "r") as f:
-            assert f.read(9) == "#!/bin/sh"
+        if mx_gate.get_jacoco_agent_args():
+            with open(python_binary, "r") as f:
+                assert f.read(9) == "#!/bin/sh"
 
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
@@ -955,8 +964,9 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
         env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
         mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
         mx.log("Ensure 'setuptools' is installed")
-        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--user", "pytest"], nonZeroIsFatal=True, env=env)
-        if not mx_gate.get_jacoco_agent_args():
+        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--user", "pytest"],
+               nonZeroIsFatal=nonZeroIsFatal, env=env, timeout=timeout)
+        if not is_collectiong_coverage():
             # parallelize
             import threading
             threads = []
@@ -1058,7 +1068,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             mx.run(["env"])
-            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+            run_python_unittests(python_gvm(), javaAsserts=True, nonZeroIsFatal=(not is_collectiong_coverage()))
 
     with Task('GraalPython Python unittests with CPython', tasks, tags=[GraalPythonTags.unittest_cpython]) as task:
         if task:
@@ -1078,7 +1088,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+            run_python_unittests(python_gvm(), args=["-multi-context"], javaAsserts=True, nonZeroIsFatal=(not is_collectiong_coverage()))
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
@@ -1090,7 +1100,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+            run_hpy_unittests(python_svm(), nonZeroIsFatal=(not is_collectiong_coverage()))
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
@@ -1104,7 +1114,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             # don't fail this task if we're running with the jacoco agent, we know that some tests don't pass with it enabled
-            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not mx_gate.get_jacoco_agent_args()))
+            run_tagged_unittests(python_svm(), nonZeroIsFatal=(not is_collectiong_coverage()))
 
     with Task('GraalPython sandboxed Python tests', tasks, tags=[GraalPythonTags.tagged_sandboxed]) as task:
         if task:
@@ -1985,6 +1995,9 @@ def python_coverage(args):
     env = os.environ.copy()
     env["GRAALPYTHON_MX_DISABLE_REBUILD"] = "True"
     env["GRAALPYTEST_FAIL_FAST"] = "False"
+
+    global _COLLECTING_COVERAGE
+    _COLLECTING_COVERAGE = True
 
     if args.jacoco:
         jacoco_args = [

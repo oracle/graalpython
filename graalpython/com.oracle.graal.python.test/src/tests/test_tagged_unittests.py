@@ -186,11 +186,11 @@ def parse_unittest_output(output):
 
 
 def run_with_timeout(cmd, *args, **kwargs):
-    p = subprocess.run(["/usr/bin/which", "timeout" if sys.platform != 'darwin' else 'gtimeout'], **kwargs)
-    if p.returncode != 0:
+    p = subprocess.getstatusoutput("which timeout" if sys.platform != 'darwin' else "which gtimeout")
+    if p[0] != 0:
         print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
     else:
-        timeout = p.stdout.strip()
+        timeout = p[1].strip()
         cmd = [timeout, "-s", "9", str(TIMEOUT)] + cmd
     return subprocess.run(cmd, *args, **kwargs)
 
