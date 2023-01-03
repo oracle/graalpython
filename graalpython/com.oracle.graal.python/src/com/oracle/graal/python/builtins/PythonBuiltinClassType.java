@@ -261,6 +261,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CSVReader("Reader", "_csv", Flags.PUBLIC_BASE_WODICT),
     CSVWriter("Writer", "_csv", Flags.PUBLIC_BASE_WODICT),
 
+    // hashlib
+    MD5("md5", "_md5", null, Flags.PUBLIC_BASE_WODICT),
+    SHA1Type("sha1", "_sha1", null, Flags.PUBLIC_BASE_WODICT),
+    SHA224Type("sha224", "_sha256", null, Flags.PUBLIC_BASE_WODICT),
+    SHA256Type("sha256", "_sha256", null, Flags.PUBLIC_BASE_WODICT),
+    SHA384Type("sha384", "_sha512", null, Flags.PUBLIC_BASE_WODICT),
+    SHA512Type("sha512", "_sha512", null, Flags.PUBLIC_BASE_WODICT),
+    UnsupportedDigestmodError("ValueError", "_hashlib", null, Flags.EXCEPTION),
+
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", "ast", Flags.PUBLIC_BASE_WDICT),
 

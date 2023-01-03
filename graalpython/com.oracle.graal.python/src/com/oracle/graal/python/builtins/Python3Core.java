@@ -54,10 +54,10 @@ import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
@@ -180,6 +180,12 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.DigestObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Md5ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha1ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
@@ -640,6 +646,14 @@ public abstract class Python3Core {
                         new OperatorModuleBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImporterBuiltins(),
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImportModuleBuiltins(),
+
+                        // hashlib
+                        PythonOptions.WITHOUT_SSL ? null : new HashlibModuleBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new Md5ModuleBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new Sha1ModuleBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new Sha256ModuleBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new Sha512ModuleBuiltins(),
+                        PythonOptions.WITHOUT_SSL ? null : new DigestObjectBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
