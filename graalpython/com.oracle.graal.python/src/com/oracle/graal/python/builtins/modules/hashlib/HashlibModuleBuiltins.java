@@ -42,26 +42,52 @@ package com.oracle.graal.python.builtins.modules.hashlib;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsClinicProviders.HmacDigestNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsClinicProviders.HmacNewNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltinsClinicProviders.NewNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "_hashlib")
 public class HashlibModuleBuiltins extends PythonBuiltins {
@@ -70,8 +96,18 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         return HashlibModuleBuiltinsFactory.getFactories();
     }
 
+    private static final Map<String, String> NAME_MAPPINGS = Map.of(
+                    "sha3_sha224", "sha3-sha224",
+                    "sha3_sha256", "sha3-sha256",
+                    "sha3_sha384", "sha3-sha384",
+                    "sha3_sha512", "sha3-sha512",
+                    "shake_128", "SHAKE128",
+                    "shake_256", "SHAKE256"
+    );
+
     private static final String[] DIGEST_ALGORITHMS;
     static {
+        Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
         var digests = new ArrayList<String>();
         for (var provider : Security.getProviders()) {
             for (var service : provider.getServices()) {
@@ -91,7 +127,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         }
         addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(EconomicMapStorage.create(algos)));
 
-        // all our builtin hashes are cryptographically secure, alias them
+        // we do not use openssl, but rely on the Java providers for everything, so we just alias these
         var dylib = DynamicObjectLibrary.getUncached();
         addDigestAlias(core, dylib, "md5", "_md5");
         addDigestAlias(core, dylib, "sha1", "_sha1");
@@ -103,12 +139,176 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         addDigestAlias(core, dylib, "sha3_sha256", "_sha3");
         addDigestAlias(core, dylib, "sha3_sha384", "_sha3");
         addDigestAlias(core, dylib, "sha3_sha512", "_sha3");
+        addDigestAlias(core, dylib, "shake_128", "_sha3");
+        addDigestAlias(core, dylib, "shake_256", "_sha3");
 
         super.initialize(core);
     }
 
     private final void addDigestAlias(Python3Core core, DynamicObjectLibrary dylib, String digest, String module) {
         addBuiltinConstant("openssl_" + digest, dylib.getOrDefault(core.lookupBuiltinModule(toTruffleStringUncached(module)).getStorage(), toTruffleStringUncached(digest), PNone.NO_VALUE));
+    }
+
+    @Builtin(name = "compare_digest", parameterNames = {"a", "b"})
+    @GenerateNodeFactory
+    abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"isString(a)", "isString(b)"})
+        Object cmpStrings(Object a, Object b,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached CastToTruffleStringNode castA,
+                        @Cached CastToTruffleStringNode castB) {
+            InternalByteArray bytesA = getInternalByteArrayNode.execute(castA.execute(a), Encoding.US_ASCII);
+            InternalByteArray bytesB = getInternalByteArrayNode.execute(castB.execute(b), Encoding.US_ASCII);
+            return cmp(bytesA.getArray(), bytesA.getOffset(), bytesA.getLength(), bytesB.getArray(), bytesB.getOffset(), bytesB.getLength());
+        }
+
+        @Specialization
+        boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib) {
+            if (acquireLib.hasBuffer(a) && acquireLib.hasBuffer(b)) {
+                Object bufferA = acquireLib.acquireReadonly(a, frame, this);
+                try {
+                    Object bufferB = acquireLib.acquireReadonly(b, frame, this);
+                    try {
+                        byte[] bytesA = accessLib.getInternalOrCopiedByteArray(bufferA);
+                        byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
+                        return cmp(bytesA, 0, bytesA.length, bytesB, 0, bytesB.length);
+                    } finally {
+                        accessLib.release(bufferB);
+                    }
+                } finally {
+                    accessLib.release(bufferA);
+                }
+            } else {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
+            }
+        }
+
+        @TruffleBoundary
+        boolean cmp(byte[] a, int offA, int lenA, byte[] b, int offB, int lenB) {
+            MessageDigest mda, mdb;
+            try {
+                mda = MessageDigest.getInstance("sha256");
+                mdb = MessageDigest.getInstance("sha256");
+            } catch (NoSuchAlgorithmException e) {
+                return false;
+            }
+            mda.update(a, offA, lenA);
+            byte[] da = mda.digest();
+            mdb.update(b, offB, lenB);
+            byte[] db = mdb.digest();
+            int res = 0;
+            for (int i = 0; i < da.length; i++) {
+                res |= da[i] ^ db[i];
+            }
+            return res == 0;
+        }
+    }
+
+    @Builtin(name = "hmac_digest", parameterNames = {"key", "msg", "digest"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "key", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "msg", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "digest", conversion = ArgumentClinic.ClinicConversion.TString)
+    abstract static class HmacDigestNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return HmacDigestNodeClinicProviderGen.INSTANCE;
+        }
+
+        @TruffleBoundary
+        @Specialization
+        Object hmacDigest(Object key, Object msg, TruffleString digest,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            try {
+                String algorithm = "hmac" + digest.toJavaStringUncached().toLowerCase();
+                SecretKeySpec secretKeySpec = new SecretKeySpec(bufferLib.getInternalOrCopiedByteArray(key), algorithm);
+                Mac mac = Mac.getInstance(algorithm);
+                mac.init(secretKeySpec);
+                byte[] result = mac.doFinal(bufferLib.getInternalOrCopiedByteArray(msg));
+                return factory().createBytes(result);
+            } catch (InvalidKeyException | NoSuchAlgorithmException e) {
+                throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+            } finally {
+                bufferLib.release(key);
+                bufferLib.release(msg);
+            }
+        }
+    }
+
+    @Builtin(name = "hmac_new", parameterNames = {"key", "msg", "digest"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "key", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "msg", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "digest", conversion = ArgumentClinic.ClinicConversion.TString)
+    abstract static class HmacNewNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return HmacNewNodeClinicProviderGen.INSTANCE;
+        }
+
+        @TruffleBoundary
+        @Specialization
+        Object hmacDigest(Object key, Object msg, TruffleString digest,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            try {
+                String algorithm = digest.toJavaStringUncached();
+                SecretKeySpec secretKeySpec = new SecretKeySpec(bufferLib.getInternalOrCopiedByteArray(key), algorithm);
+                Mac mac = Mac.getInstance(algorithm);
+                mac.init(secretKeySpec);
+                mac.update(bufferLib.getInternalOrCopiedByteArray(msg));
+                return factory().trace(new DigestObject(PythonBuiltinClassType.HashlibHmac, mac));
+            } catch (InvalidKeyException | NoSuchAlgorithmException e) {
+                throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+            } finally {
+                bufferLib.release(key);
+                bufferLib.release(msg);
+            }
+        }
+    }
+
+    @Builtin(name = "new", minNumOfPositionalArgs = 1, parameterNames = {"name", "string"}, keywordOnlyNames = {"usedforsecurity"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
+    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "usedforsecurity", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
+    abstract static class NewNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NewNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
+                        @Cached CastToJavaStringNode castStr,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            try {
+                byte[] bytes;
+                if (buffer != PNone.NO_VALUE) {
+                    bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                } else {
+                    bytes = null;
+                }
+                return factory().trace(new DigestObject(PythonBuiltinClassType.HashlibHash, createDigest(castStr.execute(name), bytes)));
+            } catch (NoSuchAlgorithmException e) {
+                throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+            } finally {
+                bufferLib.release(buffer, frame, this);
+            }
+        }
+
+        @TruffleBoundary
+        private static MessageDigest createDigest(String inputName, byte[] bytes) throws NoSuchAlgorithmException {
+            MessageDigest digest;
+            String name = NAME_MAPPINGS.getOrDefault(inputName, inputName);
+            digest = MessageDigest.getInstance(name);
+            if (bytes != null) {
+                digest.update(bytes);
+            }
+            return digest;
+        }
+
     }
 
     @Builtin(name = "HASH", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)

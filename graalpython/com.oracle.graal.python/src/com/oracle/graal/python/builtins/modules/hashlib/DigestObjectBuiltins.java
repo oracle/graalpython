@@ -77,46 +77,33 @@ public class DigestObjectBuiltins extends PythonBuiltins {
     @Builtin(name = "copy", parameterNames = {"self"})
     @GenerateNodeFactory
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
+        @Specialization
         DigestObject copy(DigestObject self) {
             try {
-                return factory().trace(new DigestObject(self.getType(), op(self)));
+                return factory().trace(self.copy());
             } catch (CloneNotSupportedException e) {
                 throw raise(PythonBuiltinClassType.ValueError);
             }
-        }
-
-        @TruffleBoundary
-        static MessageDigest op(DigestObject self) throws CloneNotSupportedException {
-            return (MessageDigest) self.getDigest().clone();
         }
     }
 
     @Builtin(name = "digest", parameterNames = {"self"})
     @GenerateNodeFactory
     abstract static class DigestNode extends PythonUnaryBuiltinNode {
+        @Specialization
         PBytes digest(DigestObject self) {
-            byte[] digest = op(self);
-            return factory().createBytes(digest);
-        }
-
-        @TruffleBoundary
-        static byte[] op(DigestObject self) {
-            return self.getDigest().digest();
+            return factory().createBytes(self.digest());
         }
     }
 
     @Builtin(name = "hexdigest", parameterNames = {"self"})
     @GenerateNodeFactory
     abstract static class HexdigestNode extends PythonUnaryBuiltinNode {
+        @Specialization
         TruffleString hexdigest(DigestObject self,
                         @Cached BytesNodes.ByteToHexNode toHexNode) {
-            byte[] digest = op(self);
+            byte[] digest = self.digest();
             return toHexNode.execute(digest, digest.length, (byte) 0, 0);
-        }
-
-        @TruffleBoundary
-        static byte[] op(DigestObject self) {
-            return self.getDigest().digest();
         }
     }
 
@@ -129,19 +116,15 @@ public class DigestObjectBuiltins extends PythonBuiltins {
             return UpdateNodeClinicProviderGen.INSTANCE;
         }
 
+        @Specialization(limit = "3")
         PNone update(VirtualFrame frame, DigestObject self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                update(self, bufferLib.getInternalOrCopiedByteArray(buffer));
+                self.update(bufferLib.getInternalOrCopiedByteArray(buffer));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static void update(DigestObject self, byte[] buffer) {
-            self.getDigest().update(buffer);
         }
     }
 
@@ -151,14 +134,26 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static int get(DigestObject self) {
-            switch (self.getDigest().getAlgorithm()) {
-                case "sha1":
-                case "sha224":
-                case "sha256":
+            switch (self.getType()) {
+                case SHA1Type:
+                case SHA224Type:
+                case SHA256Type:
                     return 64;
-                case "sha384":
-                case "sha512":
+                case SHA384Type:
+                case SHA512Type:
                     return 128;
+                case Sha3SHA224Type:
+                    return 1152;
+                case Sha3SHA256Type:
+                    return 1088;
+                case Sha3SHA384Type:
+                    return 832;
+                case Sha3SHA512Type:
+                    return 576;
+                case Sha3Shake128Type:
+                    return 1344;
+                case Sha3Shake256Type:
+                    return 1088;
                 default: return -1;
             }
         }

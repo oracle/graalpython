@@ -42,16 +42,31 @@ package com.oracle.graal.python.builtins.modules.hashlib;
 
 import java.security.MessageDigest;
 
+import javax.crypto.Mac;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class DigestObject extends PythonAbstractObject {
     private final PythonBuiltinClassType digestType;
     private final MessageDigest digest;
+    private final Mac mac;
 
     DigestObject(final PythonBuiltinClassType digestType, final MessageDigest digest) {
         this.digestType = digestType;
         this.digest = digest;
+        this.mac = null;
+    }
+
+    DigestObject(final PythonBuiltinClassType type, final Mac mac) {
+        this.digestType = type;
+        this.mac = mac;
+        this.digest = null;
+    }
+
+    Mac getMac() {
+        return mac;
     }
 
     MessageDigest getDigest() {
@@ -64,5 +79,32 @@ public class DigestObject extends PythonAbstractObject {
 
     public int compareTo(final Object o) {
         return this.hashCode() - o.hashCode();
+    }
+
+    @TruffleBoundary
+    public DigestObject copy() throws CloneNotSupportedException {
+        if (digest != null) {
+            return new DigestObject(digestType, (MessageDigest) digest.clone());
+        } else {
+            return new DigestObject(digestType, (Mac) mac.clone());
+        }
+    }
+
+    @TruffleBoundary
+    public byte[] digest() {
+        if (digest != null) {
+            return digest.digest();
+        } else {
+            return mac.doFinal();
+        }
+    }
+
+    @TruffleBoundary
+    public void update(byte[] data) {
+        if (digest != null) {
+            digest.update(data);
+        } else {
+            mac.update(data);
+        }
     }
 }

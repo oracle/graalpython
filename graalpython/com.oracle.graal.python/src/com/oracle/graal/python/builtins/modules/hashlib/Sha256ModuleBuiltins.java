@@ -108,7 +108,7 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
             try {
                 digest = createDigest(bytes);
             } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError);
+                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
             }
             return factory.trace(new DigestObject(PythonBuiltinClassType.SHA224Type, digest));
         }
@@ -157,7 +157,7 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
             try {
                 digest = createDigest(bytes);
             } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError);
+                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
             }
             return factory.trace(new DigestObject(PythonBuiltinClassType.SHA256Type, digest));
         }

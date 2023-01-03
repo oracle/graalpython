@@ -185,6 +185,7 @@ import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Md5ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha1ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha3ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;

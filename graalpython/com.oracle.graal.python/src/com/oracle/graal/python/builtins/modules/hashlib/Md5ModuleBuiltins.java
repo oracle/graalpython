@@ -107,7 +107,7 @@ public class Md5ModuleBuiltins extends PythonBuiltins {
             try {
                 digest = createDigest(bytes);
             } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError);
+                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
             }
             return factory.trace(new DigestObject(PythonBuiltinClassType.MD5Type, digest));
         }

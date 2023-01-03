@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -76,6 +75,8 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "sha3_sha256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA256Type)
     @Builtin(name = "sha3_sha384", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA384Type)
     @Builtin(name = "sha3_sha512", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA512Type)
+    @Builtin(name = "sha3_shake128", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake128Type)
+    @Builtin(name = "sha3_shake256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake256Type)
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization(guards = "!isPNone(value)", limit = "1")
@@ -111,7 +112,7 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
             try {
                 digest = createDigest(resultType, bytes);
             } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError);
+                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
             }
             return factory.trace(new DigestObject(resultType, digest));
         }
@@ -131,6 +132,12 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
                     break;
                 case Sha3SHA512Type:
                     digest = MessageDigest.getInstance("sha3-512");
+                    break;
+                case Sha3Shake128Type:
+                    digest = MessageDigest.getInstance("SHAKE128");
+                    break;
+                case Sha3Shake256Type:
+                    digest = MessageDigest.getInstance("SHAKE256");
                     break;
                 default:
                     break;
