@@ -262,13 +262,20 @@ public enum PythonBuiltinClassType implements TruffleObject {
     CSVWriter("Writer", "_csv", Flags.PUBLIC_BASE_WODICT),
 
     // hashlib
-    MD5("md5", "_md5", null, Flags.PUBLIC_BASE_WODICT),
-    SHA1Type("sha1", "_sha1", null, Flags.PUBLIC_BASE_WODICT),
-    SHA224Type("sha224", "_sha256", null, Flags.PUBLIC_BASE_WODICT),
-    SHA256Type("sha256", "_sha256", null, Flags.PUBLIC_BASE_WODICT),
-    SHA384Type("sha384", "_sha512", null, Flags.PUBLIC_BASE_WODICT),
-    SHA512Type("sha512", "_sha512", null, Flags.PUBLIC_BASE_WODICT),
-    UnsupportedDigestmodError("ValueError", "_hashlib", null, Flags.EXCEPTION),
+    MD5Type("md5", "_md5", Flags.PUBLIC_BASE_WODICT),
+    SHA1Type("sha1", "_sha1", Flags.PUBLIC_BASE_WODICT),
+    SHA224Type("sha224", "_sha256", Flags.PUBLIC_BASE_WODICT),
+    SHA256Type("sha256", "_sha256", Flags.PUBLIC_BASE_WODICT),
+    SHA384Type("sha384", "_sha512", Flags.PUBLIC_BASE_WODICT),
+    SHA512Type("sha512", "_sha512", Flags.PUBLIC_BASE_WODICT),
+    Sha3SHA224Type("sha224", "_sha3", Flags.PUBLIC_BASE_WODICT),
+    Sha3SHA256Type("sha256", "_sha3", Flags.PUBLIC_BASE_WODICT),
+    Sha3SHA384Type("sha384", "_sha3", Flags.PUBLIC_BASE_WODICT),
+    Sha3SHA512Type("sha512", "_sha3", Flags.PUBLIC_BASE_WODICT),
+    HashlibHash("HASH", "_hashlib", Flags.PUBLIC_BASE_WODICT),
+    HashlibHashXof("HASHXOF", "_hashlib", Flags.PUBLIC_DERIVED_WODICT),
+    HashlibHmac("HMAC", "_hashlib", Flags.PUBLIC_BASE_WODICT),
+    UnsupportedDigestmodError("ValueError", "_hashlib", Flags.EXCEPTION),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", "ast", Flags.PUBLIC_BASE_WDICT),
@@ -729,6 +736,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PFileIO.base = PRawIOBase;
         PTextIOWrapper.base = PTextIOBase;
         PStringIO.base = PTextIOBase;
+
+        // hashlib
+        HashlibHashXof.base = HashlibHash;
 
         // _ctypes
         StgDict.base = PDict;

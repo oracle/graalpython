@@ -45,7 +45,7 @@ import java.security.MessageDigest;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 
-class DigestObject extends PythonAbstractObject {
+public class DigestObject extends PythonAbstractObject {
     private final PythonBuiltinClassType digestType;
     private final MessageDigest digest;
 

@@ -40,19 +40,104 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+
+import java.security.MessageDigest;
+import java.security.Security;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @CoreFunctions(defineModule = "_hashlib")
 public class HashlibModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();//HashlibModuleBuiltinsFactory.getFactories();
+        return HashlibModuleBuiltinsFactory.getFactories();
     }
 
+    private static final String[] DIGEST_ALGORITHMS;
+    static {
+        var digests = new ArrayList<String>();
+        for (var provider : Security.getProviders()) {
+            for (var service : provider.getServices()) {
+                if (service.getType().equalsIgnoreCase(MessageDigest.class.getSimpleName())) {
+                    digests.add(service.getAlgorithm());
+                }
+            }
+        }
+        DIGEST_ALGORITHMS = digests.toArray(new String[digests.size()]);
+    }
+
+    @Override
+    public void initialize(Python3Core core) {
+        var algos = new LinkedHashMap<String, Object>();
+        for (var digest : DIGEST_ALGORITHMS) {
+            algos.put(digest, PNone.NONE);
+        }
+        addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(EconomicMapStorage.create(algos)));
+
+        // all our builtin hashes are cryptographically secure, alias them
+        var dylib = DynamicObjectLibrary.getUncached();
+        addDigestAlias(core, dylib, "md5", "_md5");
+        addDigestAlias(core, dylib, "sha1", "_sha1");
+        addDigestAlias(core, dylib, "sha224", "_sha256");
+        addDigestAlias(core, dylib, "sha256", "_sha256");
+        addDigestAlias(core, dylib, "sha384", "_sha512");
+        addDigestAlias(core, dylib, "sha512", "_sha512");
+        addDigestAlias(core, dylib, "sha3_sha224", "_sha3");
+        addDigestAlias(core, dylib, "sha3_sha256", "_sha3");
+        addDigestAlias(core, dylib, "sha3_sha384", "_sha3");
+        addDigestAlias(core, dylib, "sha3_sha512", "_sha3");
+
+        super.initialize(core);
+    }
+
+    private final void addDigestAlias(Python3Core core, DynamicObjectLibrary dylib, String digest, String module) {
+        addBuiltinConstant("openssl_" + digest, dylib.getOrDefault(core.lookupBuiltinModule(toTruffleStringUncached(module)).getStorage(), toTruffleStringUncached(digest), PNone.NO_VALUE));
+    }
+
+    @Builtin(name = "HASH", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
+    @GenerateNodeFactory
+    abstract static class HashNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object hash(Object args, Object kwargs) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
+        }
+    }
+
+    @Builtin(name = "HASHXOF", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
+    @GenerateNodeFactory
+    abstract static class HashxofNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object hash(Object args, Object kwargs) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
+        }
+    }
+
+    @Builtin(name = "HMAC", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
+    @GenerateNodeFactory
+    abstract static class HmacNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object hash(Object args, Object kwargs) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
+        }
+    }
 }
