@@ -222,12 +222,8 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         Object hmacDigest(Object key, Object msg, TruffleString digest,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             try {
-                String algorithm = "hmac" + digest.toJavaStringUncached().toLowerCase();
-                SecretKeySpec secretKeySpec = new SecretKeySpec(bufferLib.getInternalOrCopiedByteArray(key), algorithm);
-                Mac mac = Mac.getInstance(algorithm);
-                mac.init(secretKeySpec);
-                byte[] result = mac.doFinal(bufferLib.getInternalOrCopiedByteArray(msg));
-                return factory().createBytes(result);
+                Mac mac = createMac(digest, key, bufferLib, msg, bufferLib);
+                return factory().createBytes(mac.doFinal());
             } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
             } finally {
@@ -253,11 +249,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         Object hmacDigest(Object key, Object msg, TruffleString digest,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             try {
-                String algorithm = digest.toJavaStringUncached();
-                SecretKeySpec secretKeySpec = new SecretKeySpec(bufferLib.getInternalOrCopiedByteArray(key), algorithm);
-                Mac mac = Mac.getInstance(algorithm);
-                mac.init(secretKeySpec);
-                mac.update(bufferLib.getInternalOrCopiedByteArray(msg));
+                Mac mac = createMac(digest, key, bufferLib, msg, bufferLib);
                 return factory().trace(new DigestObject(PythonBuiltinClassType.HashlibHmac, mac));
             } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
@@ -266,6 +258,15 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                 bufferLib.release(msg);
             }
         }
+    }
+
+    static Mac createMac(TruffleString digest, Object key, PythonBufferAccessLibrary keyLib, Object msg, PythonBufferAccessLibrary msgLib) throws NoSuchAlgorithmException, InvalidKeyException {
+        String algorithm = "hmac" + digest.toJavaStringUncached().toLowerCase();
+        SecretKeySpec secretKeySpec = new SecretKeySpec(keyLib.getInternalOrCopiedByteArray(key), algorithm);
+        Mac mac = Mac.getInstance(algorithm);
+        mac.init(secretKeySpec);
+        mac.update(msgLib.getInternalOrCopiedByteArray(msg));
+        return mac;
     }
 
     @Builtin(name = "new", minNumOfPositionalArgs = 1, parameterNames = {"name", "string"}, keywordOnlyNames = {"usedforsecurity"})
@@ -284,12 +285,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castStr,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             try {
-                byte[] bytes;
-                if (buffer != PNone.NO_VALUE) {
-                    bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                } else {
-                    bytes = null;
-                }
+                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
                 return factory().trace(new DigestObject(PythonBuiltinClassType.HashlibHash, createDigest(castStr.execute(name), bytes)));
             } catch (NoSuchAlgorithmException e) {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
@@ -308,22 +304,11 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
             }
             return digest;
         }
-
     }
 
     @Builtin(name = "HASH", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
     @GenerateNodeFactory
     abstract static class HashNode extends PythonBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object hash(Object args, Object kwargs) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
-        }
-    }
-
-    @Builtin(name = "HASHXOF", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
-    @GenerateNodeFactory
-    abstract static class HashxofNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object hash(Object args, Object kwargs) {

@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha1ModuleBuiltinsClinicProviders.Sha1FunctionNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -57,10 +58,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -84,32 +83,22 @@ public class Sha1ModuleBuiltins extends PythonBuiltins {
             return Sha1FunctionNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!isPNone(buffer)", limit = "1")
+        @Specialization
         Object sha1(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raise) {
             try {
-                return createSha1(factory(), raise, bufferLib.getInternalOrCopiedByteArray(buffer));
+                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
+                MessageDigest digest;
+                try {
+                    digest = createDigest(bytes);
+                } catch (NoSuchAlgorithmException e) {
+                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                }
+                return factory().trace(new DigestObject(PythonBuiltinClassType.SHA1Type, digest));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(buffer)")
-        Object sha1Default(Object buffer, boolean usedForSecurity,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            return createSha1(factory(), raise, null);
-        }
-
-        static Object createSha1(PythonObjectFactory factory, PRaiseNode raise, byte[] bytes) {
-            MessageDigest digest;
-            try {
-                digest = createDigest(bytes);
-            } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-            }
-            return factory.trace(new DigestObject(PythonBuiltinClassType.SHA1Type, digest));
         }
 
         @TruffleBoundary

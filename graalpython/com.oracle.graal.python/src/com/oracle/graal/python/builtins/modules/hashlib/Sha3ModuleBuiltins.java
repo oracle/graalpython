@@ -51,13 +51,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -79,42 +79,37 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "sha3_shake256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake256Type)
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {
-        @Specialization(guards = "!isPNone(value)", limit = "1")
+        @Specialization
         Object sha(VirtualFrame frame, Object type, Object value, @SuppressWarnings("unused") Object usedForSecurity,
-                        @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            Object buffer = acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
+                        @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raise) {
+            Object buffer = null;
+            if (acquireLib.hasBuffer(type)) {
+                buffer = acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
+            }
             try {
-                return createSha(factory(), raise, type, bufferLib.getInternalOrCopiedByteArray(buffer));
+                byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
+                MessageDigest digest;
+                PythonBuiltinClassType resultType = null;
+                if (type instanceof PythonBuiltinClass builtinType) {
+                    resultType = builtinType.getType();
+                } else if (type instanceof PythonBuiltinClassType enumType) {
+                    resultType = enumType;
+                } else {
+                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, ErrorMessages.WRONG_TYPE);
+                }
+                try {
+                    digest = createDigest(resultType, bytes);
+                } catch (NoSuchAlgorithmException e) {
+                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                }
+                return factory().trace(new DigestObject(resultType, digest));
             } finally {
-                bufferLib.release(buffer, frame, this);
+                if (buffer != null) {
+                    bufferLib.release(buffer, frame, this);
+                }
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(value)")
-        Object shaDefault(Object type, Object value, Object usedForSecurity,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            return createSha(factory(), raise, type, null);
-        }
-
-        static Object createSha(PythonObjectFactory factory, PRaiseNode raise, Object type, byte[] bytes) {
-            MessageDigest digest;
-            PythonBuiltinClassType resultType = null;
-            if (type instanceof PythonBuiltinClass builtinType) {
-                resultType = builtinType.getType();
-            } else if (type instanceof PythonBuiltinClassType enumType) {
-                resultType = enumType;
-            } else {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError);
-            }
-            try {
-                digest = createDigest(resultType, bytes);
-            } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-            }
-            return factory.trace(new DigestObject(resultType, digest));
         }
 
         @TruffleBoundary
@@ -140,9 +135,9 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
                     digest = MessageDigest.getInstance("SHAKE256");
                     break;
                 default:
-                    break;
+                    throw CompilerDirectives.shouldNotReachHere();
             }
-            if (digest != null && bytes != null) {
+            if (bytes != null) {
                 digest.update(bytes);
             }
             return digest;

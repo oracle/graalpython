@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
-import java.security.MessageDigest;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -67,7 +66,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type, PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHashXof, PythonBuiltinClassType.HashlibHmac})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type, PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac})
 public class DigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -135,6 +134,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization
         static int get(DigestObject self) {
             switch (self.getType()) {
+                case MD5Type:
                 case SHA1Type:
                 case SHA224Type:
                 case SHA256Type:
@@ -154,7 +154,8 @@ public class DigestObjectBuiltins extends PythonBuiltins {
                     return 1344;
                 case Sha3Shake256Type:
                     return 1088;
-                default: return -1;
+                default:
+                    return -1;
             }
         }
     }

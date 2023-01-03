@@ -49,8 +49,9 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltinsClinicProviders.Sha256FunctionNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltinsClinicProviders.Sha224FunctionNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltinsClinicProviders.Sha256FunctionNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -58,10 +59,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,32 +84,22 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
             return Sha224FunctionNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!isPNone(buffer)", limit = "1")
+        @Specialization
         Object sha224(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raise) {
             try {
-                return createSha224(factory(), raise, bufferLib.getInternalOrCopiedByteArray(buffer));
+                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
+                MessageDigest digest;
+                try {
+                    digest = createDigest(bytes);
+                } catch (NoSuchAlgorithmException e) {
+                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                }
+                return factory().trace(new DigestObject(PythonBuiltinClassType.SHA224Type, digest));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(buffer)")
-        Object sha224Default(Object buffer, boolean usedForSecurity,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            return createSha224(factory(), raise, null);
-        }
-
-        static Object createSha224(PythonObjectFactory factory, PRaiseNode raise, byte[] bytes) {
-            MessageDigest digest;
-            try {
-                digest = createDigest(bytes);
-            } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-            }
-            return factory.trace(new DigestObject(PythonBuiltinClassType.SHA224Type, digest));
         }
 
         @TruffleBoundary
@@ -134,32 +123,22 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
             return Sha256FunctionNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!isPNone(buffer)", limit = "1")
+        @Specialization
         Object sha256(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raise) {
             try {
-                return createSha256(factory(), raise, bufferLib.getInternalOrCopiedByteArray(buffer));
+                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
+                MessageDigest digest;
+                try {
+                    digest = createDigest(bytes);
+                } catch (NoSuchAlgorithmException e) {
+                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                }
+                return factory().trace(new DigestObject(PythonBuiltinClassType.SHA256Type, digest));
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isPNone(buffer)")
-        Object sha256Default(Object buffer, boolean usedForSecurity,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            return createSha256(factory(), raise, null);
-        }
-
-        static Object createSha256(PythonObjectFactory factory, PRaiseNode raise, byte[] bytes) {
-            MessageDigest digest;
-            try {
-                digest = createDigest(bytes);
-            } catch (NoSuchAlgorithmException e) {
-                throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-            }
-            return factory.trace(new DigestObject(PythonBuiltinClassType.SHA256Type, digest));
         }
 
         @TruffleBoundary
