@@ -125,6 +125,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
+    static final TruffleString T_PYDATETIME_CAPSULE_NAME = tsLiteral("datetime.datetime_CAPI");
 
     private static final String J_DATE_TYPE = "DateType";
     private static final String J_DATETIME_TYPE = "DateTimeType";
@@ -234,7 +235,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
 
-        setAttr.execute(null, datetime, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(wrapper, "datetime.datetime_CAPI", null));
+        setAttr.execute(null, datetime, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(wrapper, T_PYDATETIME_CAPSULE_NAME, null));
         assert getAttr.execute(null, datetime, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
     }
 

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_INVALID_PY
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.ErrorMessages.PY_CAPSULE_IMPORT_S_IS_NOT_VALID;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -104,14 +105,9 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @Fallback
-        static boolean fallback(Object name1, Object name2,
-                        @Cached CastToTruffleStringNode cast,
-                        @Cached CExtNodes.FromCharPointerNode fromCharPtr,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
+        @Specialization
+        static boolean ts(TruffleString n1, TruffleString n2,
                         @Cached TruffleString.EqualNode equalNode) {
-            TruffleString n1 = lib.isNull(name1) ? null : cast.execute(fromCharPtr.execute(name1));
-            TruffleString n2 = lib.isNull(name2) ? null : cast.execute(fromCharPtr.execute(name2));
             if (n1 == null && n2 == null) {
                 return true;
             }
@@ -119,6 +115,23 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
                 return false;
             }
             return equalNode.execute(n1, n2, TS_ENCODING);
+        }
+
+        @Fallback
+        static boolean fallback(Object name1, Object name2,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached CExtNodes.FromCharPointerNode fromCharPtr,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached TruffleString.EqualNode equalNode) {
+            TruffleString n1 = name1 instanceof TruffleString ? (TruffleString) name1 : null;
+            TruffleString n2 = name2 instanceof TruffleString ? (TruffleString) name2 : null;
+            if (n1 == null) {
+                n1 = lib.isNull(name1) ? null : cast.execute(fromCharPtr.execute(name1));
+            }
+            if (n2 == null) {
+                n2 = lib.isNull(name2) ? null : cast.execute(fromCharPtr.execute(name2));
+            }
+            return ts(n1, n2, equalNode);
         }
     }
 
@@ -422,38 +435,38 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyCapsuleImportNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object doit(VirtualFrame frame, TruffleString name, int noBlock,
+        public Object doit(TruffleString name, int noBlock,
                         @Cached NameMatchesNode nameMatchesNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached AbstractImportNode.PyImportImportModuleLevelObject pyImportImportModule,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 TruffleString trace = name;
-                Object mod = null;
                 Object object = null;
                 while (trace != null) {
-                    if (mod == null) {
+                    int traceLen = codePointLengthNode.execute(trace, TS_ENCODING);
+                    int dotIdx = indexOfStringNode.execute(trace, dotChar, 0, traceLen, TS_ENCODING);
+                    TruffleString dot = null;
+                    if (dotIdx >= 0) {
+                        dot = substringNode.execute(trace, dotIdx + 1, traceLen - dotIdx - 1, TS_ENCODING, false);
+                        trace = substringNode.execute(trace, 0, dotIdx, TS_ENCODING, false);
+                    }
+                    if (object == null) {
                         if (noBlock == 1) {
                             // object = PyImport_ImportModuleNoBlock(trace);
                             throw raise(SystemError, NOT_IMPLEMENTED);
                         } else {
-                            mod = pyImportImportModule.execute(frame, getContext(), trace, null, null, 0);
-                            if (mod == PNone.NO_VALUE) {
+                            object = AbstractImportNode.importModule(trace, T_IMPORT_ALL);
+                            if (object == PNone.NO_VALUE) {
                                 throw raise(ImportError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, trace);
                             }
                         }
                     } else {
-                        object = getAttrNode.execute(mod, trace);
+                        object = getAttrNode.execute(object, trace);
                     }
-
-                    int dotIdx = indexOfStringNode.execute(trace, dotChar, 0, trace.byteLength(TS_ENCODING), TS_ENCODING);
-                    if (dotIdx < 0) {
-                        trace = null;
-                    } else {
-                        trace = substringNode.execute(trace, 0, dotIdx, TS_ENCODING, false);
-                    }
+                    trace = dot;
                 }
 
                 /* compare attribute name to module.name by hand */

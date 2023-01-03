@@ -3195,7 +3195,7 @@ public abstract class GraalHPyContextFunctions {
     public static final class GraalHPyCapsuleNew extends GraalHPyContextFunction {
         static final TruffleString NULL_PTR_ERROR = tsLiteral("HPyCapsule_New called with null pointer");
 
-        @ExportMessage(limit = "3")
+        @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsHandleNode asHandleNode,
