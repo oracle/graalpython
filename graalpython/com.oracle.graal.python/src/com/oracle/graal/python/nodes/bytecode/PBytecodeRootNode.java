@@ -687,7 +687,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public boolean isPythonInternal() {
-        return pythonInternal;
+        return pythonInternal || isInternal();
     }
 
     public void setPythonInternal(boolean pythonInternal) {
