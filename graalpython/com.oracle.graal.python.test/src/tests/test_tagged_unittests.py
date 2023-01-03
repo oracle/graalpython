@@ -48,6 +48,7 @@ if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "_
 else:
     TAGS_DIR = "null"
 
+TIMEOUT = 90 * 60
 RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
 LINE = "=" * 80
 
@@ -95,11 +96,13 @@ def make_test_function(working_test):
         if os.environ.get("ENABLE_THREADED_GRAALPYTEST") == "true":
             run_serialize_out(cmd)
         else:
-            subprocess.check_call(cmd)
+            rcode = run_with_timeout(cmd).returncode
+            if rcode:
+                raise CalledProcessError(rcode, cmd)
             print(working_test[0], "was finished.")
 
     def run_serialize_out(cmd):
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        result = run_with_timeout(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         append_out = "-v" in sys.argv
         if result.returncode:
             message = f"{working_test[0]} failed with exit code {result.returncode}.\n"
@@ -182,6 +185,16 @@ def parse_unittest_output(output):
             return
 
 
+def run_with_timeout(cmd, *args, **kwargs):
+    p = subprocess.run(["/usr/bin/which", "timeout" if sys.platform != 'darwin' else 'gtimeout'], **kwargs)
+    if p.returncode != 0:
+        print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
+    else:
+        timeout = p.stdout.strip()
+        cmd = [timeout, "-s", "9", str(TIMEOUT)] + cmd
+    return subprocess.run(cmd, *args, **kwargs)
+
+
 def main():
     executable = sys.executable.split(" ")  # HACK: our sys.executable on Java is a cmdline
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
@@ -189,26 +202,20 @@ def main():
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
     maxrepeats = 4
-    tout = "360"
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
         elif arg.startswith("--maxrepeats="):
             maxrepeats = int(arg.partition("=")[2])
         elif arg.startswith("--timeout="):
-            tout = arg.partition("=")[2]
+            global TIMEOUT
+            TIMEOUT = arg.partition("=")[2]
         elif arg == "--help":
             print(sys.argv[0] + " [--retag] [--maxrepeats=n] [glob]")
         else:
             if not (arg.endswith(".py") or arg.endswith("*")):
                 arg += ".py"
             glob_pattern = os.path.join(os.path.dirname(test.__file__), arg)
-
-    p = subprocess.run(["/usr/bin/which", "timeout" if sys.platform != 'darwin' else 'gtimeout'], **kwargs)
-    if p.returncode != 0:
-        print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
-        sys.exit(1)
-    timeout = p.stdout.strip()
 
     testfiles = glob.glob(glob_pattern)
     testfiles += glob.glob(glob_pattern.replace(".py", "/__init__.py"))
@@ -226,7 +233,7 @@ def main():
             else:
                 testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", tout] + executable
+            cmd = executable
             if repeat == 0:
                 # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
@@ -250,7 +257,7 @@ def main():
             cmd.append(testfile)
 
             print(" ".join(cmd))
-            p = subprocess.run(cmd, errors='backslashreplace', **kwargs)
+            p = run_with_timeout(cmd, errors='backslashreplace', **kwargs)
             print("*stdout*")
             print(p.stdout)
             print("*stderr*")
