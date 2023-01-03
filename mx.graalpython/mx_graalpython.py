@@ -833,7 +833,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 
 def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None,
-                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False):
+                         use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, javaAsserts=False, timeout=None):
     if lock:
         lock.acquire()
     # ensure that the test distribution is up-to-date
@@ -875,7 +875,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
         for testfile in testfiles:
-            mx.run([python_binary] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+            mx.run([python_binary] + args + [testfile], nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
     else:
         if javaAsserts:
             args += ['-ea']
@@ -884,7 +884,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         mx.logv(" ".join([python_binary] + args))
         if lock:
             lock.release()
-        return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err)
+        return mx.run([python_binary] + args, nonZeroIsFatal=nonZeroIsFatal, env=env, cwd=cwd, out=out, err=err, timeout=timeout)
 
 
 def get_venv_env(env_dir):
@@ -944,7 +944,7 @@ def patch_batch_launcher(launcher_path, jvm_args):
         launcher.writelines(lines)
 
 
-def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True):
+def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, nonZeroIsFatal=True, timeout=None):
     args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
         env = env or os.environ.copy()
@@ -974,7 +974,7 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
                     try:
                         self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
                                                       env=tenv, use_pytest=True, lock=lock, nonZeroIsFatal=False,
-                                                      out=self.out, err=self.out)
+                                                      out=self.out, err=self.out, timeout=timeout)
                     except BaseException as e: # pylint: disable=broad-except;
                         self.result = e
         else:
@@ -986,7 +986,8 @@ def run_hpy_unittests(python_binary, args=None, include_native=True, env=None, n
 
                 def start(self):
                     self.result = run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()],
-                                                       env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal)
+                                                       env=tenv, use_pytest=True, nonZeroIsFatal=nonZeroIsFatal,
+                                                       timeout=timeout)
 
                 def join(self, *args, **kwargs):
                     return
@@ -2059,9 +2060,9 @@ def python_coverage(args):
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False)
             elif kwds.pop("hpy", False):
-                run_hpy_unittests(executable, env=env, nonZeroIsFatal=False)
+                run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
-                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
+                run_python_unittests(executable, env=env, javaAsserts=True, nonZeroIsFatal=False, timeout=3600, **kwds) # pylint: disable=unexpected-keyword-arg;
 
         # generate a synthetic lcov file that includes all sources with 0
         # coverage. this is to ensure all sources actuall show up - otherwise,
