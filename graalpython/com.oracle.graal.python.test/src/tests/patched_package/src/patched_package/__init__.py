@@ -36,45 +36,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#!/bin/bash
-set -eo pipefail
 
-if [ $# -ne 2 ]; then
-    echo "Patches budled wheels"
-    echo "Usage: repack-bundled-wheels.sh package_name path/to/a/patch/file.patch"
-    echo "Example: repack-bundled-wheels.sh setuptools graalpython/lib-graalpython/patches/setuptools/whl/setuptools-63.patch"
-    exit 1
-fi
-
-GIT_DIR="$(realpath "$(dirname "$0")/..")"
-BUNDLED_DIR="graalpython/lib-python/3/ensurepip/_bundled"
-
-check_file() {
-    if [ ! -f "$1" ]; then
-        echo "File $1 does not exist"
-        exit 1
-    fi
-}
-
-patch_wheel() {
-    cd "$GIT_DIR"
-    local name="$1"
-    local patch="$2"
-    local wheel="$(echo $BUNDLED_DIR/$name-*.whl)"
-    check_file "$patch"
-    check_file "$wheel"
-    local tmpdir="$(basename -s '.whl' "$wheel")"
-    rm -rf "$tmpdir"
-    mkdir "$tmpdir"
-    git fetch origin python-import
-    git show "origin/python-import:$wheel" > tmp.whl
-    cd "$tmpdir"
-    unzip ../tmp.whl
-    rm ../tmp.whl
-    patch -p1 < "../$patch"
-    echo 'Marker file for GraalPy' > "$name/.graalpy_bundled"
-    zip -r "../$wheel" .
-    rm -rf "$tmpdir"
-}
-
-patch_wheel "$@"
+def test_fun():
+    return 'Unpatched'
