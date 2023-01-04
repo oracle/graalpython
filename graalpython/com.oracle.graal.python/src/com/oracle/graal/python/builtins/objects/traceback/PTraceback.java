@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public final class PTraceback extends PythonBuiltinObject {
     public static final int UNKNOWN_LINE_NUMBER = -2;
@@ -76,7 +76,6 @@ public final class PTraceback extends PythonBuiltinObject {
         this.lazyTraceback = lazyTraceback;
         this.frameInfo = lazyTraceback.getFrameInfo();
         this.frame = lazyTraceback.getFrame();
-        this.lineno = lazyTraceback.getLineNo();
     }
 
     public PFrame getFrame() {
@@ -92,6 +91,9 @@ public final class PTraceback extends PythonBuiltinObject {
     }
 
     public int getLineno() {
+        if (lineno == UNKNOWN_LINE_NUMBER) {
+            lineno = lazyTraceback.getLineNo();
+        }
         return lineno;
     }
 
