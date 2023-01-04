@@ -78,6 +78,13 @@ public final class PTraceback extends PythonBuiltinObject {
         this.frame = lazyTraceback.getFrame();
     }
 
+    public void copyFrom(PTraceback other) {
+        frame = other.frame;
+        frameInfo = other.frameInfo;
+        lineno = other.lineno;
+        next = other.next;
+    }
+
     public PFrame getFrame() {
         return frame;
     }
@@ -91,7 +98,7 @@ public final class PTraceback extends PythonBuiltinObject {
     }
 
     public int getLineno() {
-        if (lineno == UNKNOWN_LINE_NUMBER) {
+        if (lineno == UNKNOWN_LINE_NUMBER && lazyTraceback != null) {
             lineno = lazyTraceback.getLineNo();
         }
         return lineno;

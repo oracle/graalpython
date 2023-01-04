@@ -80,12 +80,13 @@ public final class PException extends AbstractTruffleException {
 
     private String message = null;
     protected final PBaseException pythonException;
-    private boolean hideLocation = false;
     private PFrame.Reference frameInfo;
     private PBytecodeRootNode catchRootNode;
     private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
+    private boolean skipFirstTracebackFrame;
+    private boolean needsToSkipFirstTracebackFrame;
     private int tracebackFrameCount;
 
     private PException(PBaseException actual, Node node) {
@@ -166,12 +167,21 @@ public final class PException extends AbstractTruffleException {
         return getMessage();
     }
 
-    public boolean shouldHideLocation() {
-        return hideLocation;
+    public int getTracebackStartIndex() {
+        return skipFirstTracebackFrame ? 1 : 0;
     }
 
-    public void setHideLocation(boolean hideLocation) {
-        this.hideLocation = hideLocation;
+    public void skipFirstTracebackFrame() {
+        this.skipFirstTracebackFrame = true;
+        this.needsToSkipFirstTracebackFrame = true;
+    }
+
+    public boolean needsToSkipFirstTracebackFrame() {
+        return needsToSkipFirstTracebackFrame;
+    }
+
+    public boolean catchingFrameWantedForTraceback() {
+        return !needsToSkipFirstTracebackFrame && catchRootNode != null && catchRootNode.visibleInTracebacks();
     }
 
     public PBytecodeRootNode getCatchRootNode() {
@@ -300,8 +310,12 @@ public final class PException extends AbstractTruffleException {
         return tracebackFrameCount;
     }
 
-    public void notifyAddedTracebackFrame() {
-        tracebackFrameCount++;
+    public void notifyAddedTracebackFrame(boolean visible) {
+        if (needsToSkipFirstTracebackFrame) {
+            needsToSkipFirstTracebackFrame = false;
+        } else if (visible) {
+            tracebackFrameCount++;
+        }
     }
 
     /**

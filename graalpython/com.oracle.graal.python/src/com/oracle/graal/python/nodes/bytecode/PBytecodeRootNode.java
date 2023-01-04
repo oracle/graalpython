@@ -2237,8 +2237,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     CompilerAsserts.partialEvaluationConstant(targetIndex);
                     chainPythonExceptions(virtualFrame, mutableData, pe);
                     if (targetIndex == -1) {
-                        reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, e, pe, tracingEnabled, profilingEnabled);
-                        throw e;
+                        throw reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, e, pe, tracingEnabled, profilingEnabled);
                     }
                     if (pe != null) {
                         pe.setCatchingFrameReference(virtualFrame, this, beginBci);
@@ -2978,13 +2977,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot, int beginBci,
-                    Throwable e, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
+    private PException reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot,
+                    int beginBci, Throwable e, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
         // For tracebacks
         setCurrentBci(virtualFrame, bciSlot, beginBci);
-        if (visibleInTracebacks()) {
-            pe.notifyAddedTracebackFrame();
-        }
+        pe.notifyAddedTracebackFrame(visibleInTracebacks());
         if (isGeneratorOrCoroutine) {
             if (localFrame != virtualFrame) {
                 // Unwind the generator frame stack
@@ -2997,7 +2994,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
         if (e == pe) {
             throw pe;
-        } else if (pe != null) {
+        } else {
             throw pe.getExceptionForReraise();
         }
     }

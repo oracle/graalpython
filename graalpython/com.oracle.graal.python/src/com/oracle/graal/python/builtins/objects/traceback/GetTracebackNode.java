@@ -126,7 +126,11 @@ public abstract class GetTracebackNode extends Node {
         LazyTraceback current = tb;
         do {
             if (!current.isEmptySegment()) {
-                newTraceback = factory.createTraceback(current);
+                if (current.isMaterialized()) {
+                    newTraceback = current.getTraceback();
+                } else {
+                    newTraceback = factory.createTraceback(current);
+                }
                 break;
             }
             current = current.getNextChain();

@@ -120,9 +120,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             PException pException = lazyTraceback.getException();
             List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(pException);
             if (stackTrace != null) {
-                int truffleIndex = pException.shouldHideLocation() ? 1 : 0;
-                int pyIndex = truffleIndex;
-                for (; truffleIndex < stackTrace.size() && pyIndex < pException.getTracebackFrameCount(); truffleIndex++) {
+                for (int truffleIndex = pException.getTracebackStartIndex(), pyIndex = 0; truffleIndex < stackTrace.size() && pyIndex < pException.getTracebackFrameCount(); truffleIndex++) {
                     TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
@@ -136,9 +134,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 tb.setNext(next);
             } else {
                 assert next != null;
-                tb.setLineno(next.getLineno());
-                tb.setFrame(next.getFrame());
-                tb.setNext(next.getNext());
+                tb.copyFrom(next);
             }
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }

@@ -146,10 +146,7 @@ public class LazyTraceback {
         if (catchingFrameWantedForTraceback()) {
             count++;
         }
-        if (exception.shouldHideLocation()) {
-            count--;
-        }
-        return count <= 0;
+        return count == 0;
     }
 
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
@@ -165,6 +162,6 @@ public class LazyTraceback {
     }
 
     public boolean catchingFrameWantedForTraceback() {
-        return (frame != null || frameInfo != null) && exception != null && exception.getCatchRootNode() != null && exception.getCatchRootNode().visibleInTracebacks();
+        return (frame != null || frameInfo != null) && exception != null && exception.catchingFrameWantedForTraceback();
     }
 }

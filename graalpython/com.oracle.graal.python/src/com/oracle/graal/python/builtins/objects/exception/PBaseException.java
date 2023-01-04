@@ -269,7 +269,7 @@ public final class PBaseException extends PythonObject {
             }
             sb.append(") )");
         } else if (hasMessageFormat) {
-            sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append('"');
+            sb.append("(\"").append(messageFormat.toJavaStringUncached()).append("\")");
         }
         return sb.toString();
     }
@@ -306,7 +306,7 @@ public final class PBaseException extends PythonObject {
     public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
         setTraceback(reraiseTraceback);
         PException newException = PException.fromObject(this, exception.getLocation(), false);
-        newException.setHideLocation(true);
+        newException.skipFirstTracebackFrame();
         return newException;
     }
 
