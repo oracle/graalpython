@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -626,7 +626,9 @@ public final class PythonUtils {
         RootCallTarget callTarget = language.createCachedCallTarget(rootNodeSupplier, nodeClass, idx);
         PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
         GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
-        callable.setAttribute(T___DOC__, doc);
+        if (doc != null) {
+            callable.setAttribute(T___DOC__, doc);
+        }
         WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
     }
 

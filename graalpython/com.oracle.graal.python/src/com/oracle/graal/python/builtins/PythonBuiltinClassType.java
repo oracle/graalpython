@@ -210,6 +210,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBytesIOBuf("_BytesIOBuffer", "_io", Flags.PRIVATE_BASE_WODICT),
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT),
+    PStatvfsResult("statvfs_result", "os", Flags.PUBLIC_DERIVED_WODICT),
     PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT),
     PUnameResult("uname_result", J_POSIX, Flags.PUBLIC_DERIVED_WODICT),
     PStructTime("struct_time", "time", Flags.PUBLIC_DERIVED_WODICT),
@@ -603,6 +604,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PProfilerSubentry.redefinedSlots = reprAndNew;
         PThreadInfo.redefinedSlots = reprAndNew;
         PStatResult.redefinedSlots = repr;
+        PStatvfsResult.redefinedSlots = repr;
         PFloatInfo.redefinedSlots = reprAndNew;
         PVersionInfo.redefinedSlots = repr;
         PFlags.redefinedSlots = repr;
@@ -706,6 +708,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         EncodingWarning.base = Warning;
 
         PStatResult.base = PTuple;
+        PStatvfsResult.base = PTuple;
         PTerminalSize.base = PTuple;
         PUnameResult.base = PTuple;
         PStructTime.base = PTuple;

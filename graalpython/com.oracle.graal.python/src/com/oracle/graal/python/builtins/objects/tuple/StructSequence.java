@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -141,7 +141,7 @@ public class StructSequence {
         public final boolean allowInstances;
 
         public Descriptor(TruffleString docString, int inSequence, TruffleString[] fieldNames, TruffleString[] fieldDocStrings, boolean allowInstances) {
-            assert fieldNames.length == fieldDocStrings.length;
+            assert fieldDocStrings == null || fieldNames.length == fieldDocStrings.length;
             this.docString = docString;
             this.inSequence = inSequence;
             this.fieldNames = fieldNames;
@@ -254,7 +254,8 @@ public class StructSequence {
         int unnamedFields = 0;
         for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
             if (desc.fieldNames[idx] != null) {
-                createMember(factory, language, klass, desc.fieldNames[idx], desc.fieldDocStrings[idx], idx);
+                TruffleString doc = desc.fieldDocStrings == null ? null : desc.fieldDocStrings[idx];
+                createMember(factory, language, klass, desc.fieldNames[idx], doc, idx);
             } else {
                 unnamedFields++;
             }
