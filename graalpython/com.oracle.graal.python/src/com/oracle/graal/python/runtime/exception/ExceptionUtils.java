@@ -262,9 +262,6 @@ public final class ExceptionUtils {
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
-        PException pe = PException.fromObject(pythonException, node, e);
-        // TODO recheck if still necessary
-        pe.skipFirstTracebackFrame();
-        return pe;
+        return PException.fromObject(pythonException, node, e);
     }
 }
