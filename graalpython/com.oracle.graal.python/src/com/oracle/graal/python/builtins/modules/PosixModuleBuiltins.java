@@ -1158,6 +1158,49 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "statvfs", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @GenerateNodeFactory
+    abstract static class StatvfsNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.StatvfsNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple doStatvfsPath(VirtualFrame frame, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+            try {
+                long[] out = posixLib.statvfs(getPosixSupport(), path.value);
+                return createStatvfsResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+
+        @Specialization()
+        PTuple doStatvfsFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
+            try {
+                long[] out = posixLib.fstatvfs(getPosixSupport(), fd.fd);
+                return createStatvfsResult(factory(), positiveLongProfile, out);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
+            }
+        }
+
+        private static PTuple createStatvfsResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+            Object[] res = new Object[out.length];
+            for (int i = 0; i < out.length; i++) {
+                res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+            }
+            return factory.createStructSeq(STATVFS_RESULT_DESC, res);
+        }
+    }
+
     @Builtin(name = "uname", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class UnameNode extends PythonBuiltinNode {

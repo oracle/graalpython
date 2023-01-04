@@ -981,6 +981,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long[] statvfs(Object path) {
+        throw new UnsupportedPosixFeatureException("Emulated statvfs not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long[] fstatvfs(int fd) {
+        throw new UnsupportedPosixFeatureException("Emulated fstatvfs not supported");
+    }
+
     private static long[] fstatWithoutPath(Channel fileChannel) {
         int mode = 0;
         if (fileChannel instanceof ReadableByteChannel) {

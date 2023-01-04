@@ -161,6 +161,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_flock("(sint32, sint32):sint32"),
         call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
         call_fstat("(sint32, [sint64]):sint32"),
+        call_statvfs("([sint8], [sint64]):sint32"),
+        call_fstatvfs("(sint32, [sint64]):sint32"),
         call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
         call_unlinkat("(sint32, [sint8], sint32):sint32"),
         call_symlinkat("([sint8], sint32, [sint8]):sint32"),
@@ -663,6 +665,28 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_fstat, fd, wrap(out));
+        if (res != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+        return out;
+    }
+
+    @ExportMessage
+    public long[] statvfs(Object path,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] out = new long[11];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_statvfs, pathToCString(path), wrap(out));
+        if (res != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+        return out;
+    }
+
+    @ExportMessage
+    public long[] fstatvfs(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] out = new long[11];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_fstatvfs, fd, wrap(out));
         if (res != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }

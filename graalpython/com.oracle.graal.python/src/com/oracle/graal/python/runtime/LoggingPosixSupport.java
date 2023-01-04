@@ -357,6 +357,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long[] statvfs(Object path,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("statvfs", "%s", path);
+        try {
+            return logExit("statvfs", "%s", lib.statvfs(delegate, path));
+        } catch (PosixException e) {
+            throw logException("statvfs", e);
+        }
+    }
+
+    @ExportMessage
+    final long[] fstatvfs(int fd,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fstatvfs", "%d", fd);
+        try {
+            return logExit("fstatvfs", "%s", lib.fstatvfs(delegate, fd));
+        } catch (PosixException e) {
+            throw logException("fstatvfs", e);
+        }
+    }
+
+    @ExportMessage
     final Object[] uname(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("uname", "");
