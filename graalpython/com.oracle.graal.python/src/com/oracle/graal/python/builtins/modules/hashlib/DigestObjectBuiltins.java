@@ -130,7 +130,6 @@ public class DigestObjectBuiltins extends PythonBuiltins {
     @Builtin(name = "block_size", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class BlockSizeNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
         @Specialization
         static int get(DigestObject self) {
             switch (self.getType()) {
@@ -154,8 +153,13 @@ public class DigestObjectBuiltins extends PythonBuiltins {
                     return 1344;
                 case Sha3Shake256Type:
                     return 1088;
+                case HashlibHash:
+                case HashlibHmac:
+                    // go behind truffle boundary for this
+                    return self.getBlockSize();
                 default:
-                    return -1;
+                    // use a small default
+                    return 64;
             }
         }
     }
@@ -166,7 +170,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static int get(DigestObject self) {
-            return self.getDigest().getDigestLength();
+            return self.getDigestLength();
         }
     }
 
@@ -176,7 +180,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         TruffleString get(DigestObject self) {
-            return PythonUtils.toTruffleStringUncached(self.getDigest().getAlgorithm());
+            return PythonUtils.toTruffleStringUncached(self.getAlgorithm());
         }
     }
 }

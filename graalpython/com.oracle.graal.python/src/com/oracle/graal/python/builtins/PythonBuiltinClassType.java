@@ -738,6 +738,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PTextIOWrapper.base = PTextIOBase;
         PStringIO.base = PTextIOBase;
 
+        // hashlib
+        UnsupportedDigestmodError.base = ValueError;
+
         // _ctypes
         StgDict.base = PDict;
         PyCStructType.base = PythonClass;

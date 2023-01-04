@@ -52,6 +52,7 @@ public class DigestObject extends PythonAbstractObject {
     private final PythonBuiltinClassType digestType;
     private final MessageDigest digest;
     private final Mac mac;
+    private byte[] finalDigest = null;
 
     DigestObject(final PythonBuiltinClassType digestType, final MessageDigest digest) {
         this.digestType = digestType;
@@ -92,11 +93,14 @@ public class DigestObject extends PythonAbstractObject {
 
     @TruffleBoundary
     public byte[] digest() {
-        if (digest != null) {
-            return digest.digest();
-        } else {
-            return mac.doFinal();
+        if (finalDigest == null) {
+            if (digest != null) {
+                finalDigest = digest.digest();
+            } else {
+                finalDigest = mac.doFinal();
+            }
         }
+        return finalDigest;
     }
 
     @TruffleBoundary
@@ -105,6 +109,63 @@ public class DigestObject extends PythonAbstractObject {
             digest.update(data);
         } else {
             mac.update(data);
+        }
+    }
+
+    @TruffleBoundary
+    public int getDigestLength() {
+        if (digest != null) {
+            return digest.getDigestLength();
+        } else {
+            return mac.getMacLength();
+        }
+    }
+
+    @TruffleBoundary
+    public int getBlockSize() {
+        String algorithm = getAlgorithm().toLowerCase();
+        switch (algorithm) {
+            case "md5":
+            case "hmac-md5":
+            case "sha1":
+            case "hmac-sha1":
+            case "sha224":
+            case "hmac-sha224":
+            case "sha256":
+            case "hmac-sha256":
+                return 64;
+            case "sha384":
+            case "hmac-sha384":
+            case "sha512":
+            case "hmac-sha512":
+                return 128;
+            case "sha3-224":
+            case "hmac-sha3-224":
+                return 1152;
+            case "sha3-256":
+            case "hmac-sha3-256":
+                return 1088;
+            case "sha3-384":
+            case "hmac-sha3-384":
+                return 832;
+            case "sha3-512":
+            case "hmac-sha3-512":
+                return 576;
+            case "shake128":
+                return 1344;
+            case "shake256":
+                return 1088;
+            default:
+                return 64;
+        }
+    }
+
+    public String getAlgorithm() {
+        if (digest != null) {
+            return digest.getAlgorithm();
+        } else {
+            String algorithmWithHmacPrefix = mac.getAlgorithm();
+            return algorithmWithHmacPrefix.replace("hmac", "hmac-");
         }
     }
 }
