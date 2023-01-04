@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
@@ -62,6 +61,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -278,7 +278,8 @@ public final class FrameBuiltins extends PythonBuiltins {
                     callerFrame = materialize(frame, readCallerFrame, backref, notMaterialized);
                 }
                 assert callerFrame.getRef() == backref;
-                if (!PRootNode.isPythonInternal(callerFrame.getLocation().getRootNode())) {
+                RootNode rootNode = callerFrame.getLocation().getRootNode();
+                if (rootNode != null && !rootNode.isInternal()) {
                     return callerFrame;
                 }
             }

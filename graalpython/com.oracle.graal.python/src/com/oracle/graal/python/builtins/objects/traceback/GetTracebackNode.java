@@ -42,13 +42,13 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 /**
  * <strong>Summary of our implementation of traceback handling</strong>
@@ -119,38 +119,19 @@ public abstract class GetTracebackNode extends Node {
         return tb.getTraceback();
     }
 
-    @TruffleBoundary
-    @Specialization(guards = "!tb.isMaterialized()")
-    PTraceback traverse(LazyTraceback tb,
-                    @Cached PythonObjectFactory factory) {
-        // The logic of skipping and cutting off frames here and in MaterializeTruffleStacktraceNode
-        // must match
-        boolean skipFirst = tb.getException().shouldHideLocation();
-        for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
-            if (tb.getException().shouldCutOffTraceback(element)) {
+    @Fallback
+    PTraceback getTraceback(LazyTraceback tb,
+                    @Cached PythonObjectFactory factory,
+                    @Cached LoopConditionProfile loopConditionProfile) {
+        PTraceback newTraceback = null;
+        LazyTraceback current = tb;
+        do {
+            if (!current.isEmptySegment()) {
+                newTraceback = factory.createTraceback(current);
                 break;
             }
-            if (skipFirst) {
-                skipFirst = false;
-                continue;
-            }
-            if (LazyTraceback.elementWantedForTraceback(element)) {
-                return createTraceback(tb, factory);
-            }
-        }
-        if (tb.catchingFrameWantedForTraceback() && !skipFirst) {
-            return createTraceback(tb, factory);
-        }
-        PTraceback newTraceback = null;
-        if (tb.getNextChain() != null) {
-            newTraceback = execute(tb.getNextChain());
-        }
-        tb.setTraceback(newTraceback);
-        return newTraceback;
-    }
-
-    private static PTraceback createTraceback(LazyTraceback tb, PythonObjectFactory factory) {
-        PTraceback newTraceback = factory.createTraceback(tb);
+            current = current.getNextChain();
+        } while (loopConditionProfile.profile(current != null));
         tb.setTraceback(newTraceback);
         return newTraceback;
     }

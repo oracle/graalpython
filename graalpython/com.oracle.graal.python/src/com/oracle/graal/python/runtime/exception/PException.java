@@ -49,17 +49,12 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleStackTrace;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -86,12 +81,12 @@ public final class PException extends AbstractTruffleException {
     private String message = null;
     protected final PBaseException pythonException;
     private boolean hideLocation = false;
-    private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
     private Node catchLocation;
     private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
+    private int tracebackFrameCount;
 
     private PException(PBaseException actual, Node node) {
         super(node);
@@ -241,23 +236,6 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
-    @TruffleBoundary
-    public Iterable<TruffleStackTraceElement> getTruffleStackTrace() {
-        if (tracebackCutoffTarget == null) {
-            tracebackCutoffTarget = Truffle.getRuntime().iterateFrames(FrameInstance::getCallTarget, 0);
-        }
-        // Cause may contain wrapped Java exception
-        if (getCause() != null) {
-            return TruffleStackTrace.getStackTrace(getCause());
-        } else {
-            return TruffleStackTrace.getStackTrace(this);
-        }
-    }
-
-    public boolean shouldCutOffTraceback(TruffleStackTraceElement element) {
-        return tracebackCutoffTarget != null && element.getTarget() == tracebackCutoffTarget;
-    }
-
     public void setCatchingFrameReference(PFrame.Reference frameInfo, Node catchLocation) {
         this.frameInfo = frameInfo;
         this.catchLocation = catchLocation;
@@ -341,6 +319,14 @@ public final class PException extends AbstractTruffleException {
             traceback = pythonException.internalReifyException(frameInfo);
             reified = true;
         }
+    }
+
+    public int getTracebackFrameCount() {
+        return tracebackFrameCount;
+    }
+
+    public void notifyAddedTracebackFrame() {
+        tracebackFrameCount++;
     }
 
     /**

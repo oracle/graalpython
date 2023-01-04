@@ -263,10 +263,8 @@ public final class ExceptionUtils {
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
         PException pe = PException.fromObject(pythonException, node, e);
+        // TODO recheck if still necessary
         pe.setHideLocation(true);
-        // Host exceptions have their stacktrace already filled in, call this to set
-        // the cutoff point to the catch site
-        pe.getTruffleStackTrace();
         return pe;
     }
 }

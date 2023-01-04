@@ -43,15 +43,12 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.UNKNOWN_LINE_NUMBER;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -141,12 +138,30 @@ public class LazyTraceback {
         return materialized;
     }
 
+    public boolean isEmptySegment() {
+        if (materialized) {
+            return traceback == null;
+        }
+        int count = exception.getTracebackFrameCount();
+        if (catchingFrameWantedForTraceback()) {
+            count++;
+        }
+        if (exception.shouldHideLocation()) {
+            count--;
+        }
+        return count <= 0;
+    }
+
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
         Frame frame = element.getFrame();
-        // only include frames of non-builtin python functions
-        RootNode rootNode = element.getTarget().getRootNode();
-        return PArguments.isPythonFrame(frame) &&
-                        locationWantedForTraceback(rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode ? rootNode : element.getLocation());
+        if (frame != null) {
+            // only include frames of non-builtin python functions
+            Object info = frame.getFrameDescriptor().getInfo();
+            if (info instanceof FrameInfo) {
+                return ((FrameInfo) info).getRootNode().visibleInTracebacks();
+            }
+        }
+        return false;
     }
 
     public boolean catchingFrameWantedForTraceback() {
