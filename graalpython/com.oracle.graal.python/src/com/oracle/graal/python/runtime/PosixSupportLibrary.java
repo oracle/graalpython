@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -288,6 +288,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset) throws PosixException;
 
     public abstract byte mmapReadByte(Object receiver, Object mmap, long index) throws PosixException;
+
+    public abstract void mmapWriteByte(Object receiver, Object mmap, long index, byte value) throws PosixException;
 
     public abstract int mmapReadBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
 

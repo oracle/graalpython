@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -100,6 +101,11 @@ public final class PMMap extends PythonObject {
         return handle == null;
     }
 
+    @ExportMessage
+    boolean isReadonly() {
+        return !isWriteable();
+    }
+
     public boolean isWriteable() {
         return access != ACCESS_READ;
     }
@@ -139,11 +145,27 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     byte readByte(int byteOffset,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @Cached BranchProfile gotException,
-                    @Cached PConstructAndRaiseNode raiseNode,
-                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                    @Shared("gotException") @Cached BranchProfile gotException,
+                    @Shared("raiseNode") @Cached PConstructAndRaiseNode raiseNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
         try {
             return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
+        } catch (PosixException e) {
+            // TODO(fa) how to handle?
+            gotException.enter();
+            throw raiseNode.raiseOSError(null, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING), null, null);
+        }
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset,
+                    byte value,
+                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                    @Shared("gotException") @Cached BranchProfile gotException,
+                    @Shared("raiseNode") @Cached PConstructAndRaiseNode raiseNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        try {
+            posixLib.mmapWriteByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset, value);
         } catch (PosixException e) {
             // TODO(fa) how to handle?
             gotException.enter();
