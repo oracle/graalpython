@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.statement.AbstractImportNode.T_IMPORT_ALL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 import java.util.List;
 
@@ -501,6 +502,7 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         public static TruffleString repr(PyCapsule self,
                         @Cached CastToTruffleStringNode cast,
                         @Cached CExtNodes.FromCharPointerNode fromCharPtr) {
