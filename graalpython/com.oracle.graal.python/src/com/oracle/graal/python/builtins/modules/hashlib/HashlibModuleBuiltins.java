@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -111,24 +111,23 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                     "sha3_sha384", "sha3-sha384",
                     "sha3_sha512", "sha3-sha512",
                     "shake_128", "SHAKE128",
-                    "shake_256", "SHAKE256"
-    );
+                    "shake_256", "SHAKE256");
 
     private static final String CONSTRUCTORS = "_constructors";
     private static final HiddenKey ORIGINAL_CONSTRUCTORS = new HiddenKey(CONSTRUCTORS);
-    private static final String[] DIGEST_ALIASES = new String[] {
-        "md5", "_md5",
-        "sha1", "_sha1",
-        "sha224", "_sha256",
-        "sha256", "_sha256",
-        "sha384", "_sha512",
-        "sha512", "_sha512",
-        "sha3_sha224", "_sha3",
-        "sha3_sha256", "_sha3",
-        "sha3_sha384", "_sha3",
-        "sha3_sha512", "_sha3",
-        "shake_128", "_sha3",
-        "shake_256", "_sha3"
+    private static final String[] DIGEST_ALIASES = new String[]{
+                    "md5", "_md5",
+                    "sha1", "_sha1",
+                    "sha224", "_sha256",
+                    "sha256", "_sha256",
+                    "sha384", "_sha512",
+                    "sha512", "_sha512",
+                    "sha3_sha224", "_sha3",
+                    "sha3_sha256", "_sha3",
+                    "sha3_sha384", "_sha3",
+                    "sha3_sha512", "_sha3",
+                    "shake_128", "_sha3",
+                    "shake_256", "_sha3"
     };
     private static final String[] DIGEST_ALGORITHMS;
     static {
@@ -288,7 +287,8 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                         @Shared("castStr") @Cached CastToTruffleStringNode castStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            EconomicMapStorage constructors = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS); // cast guaranteed in our initialize
+            // cast guaranteed in our initialize
+            EconomicMapStorage constructors = (EconomicMapStorage) readNode.execute(self, ORIGINAL_CONSTRUCTORS);
             Object name = getItemNode.execute(frame, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize

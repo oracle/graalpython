@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type, PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type,
+                PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac})
 public class DigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -174,7 +175,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "name", minNumOfPositionalArgs = 1,isGetter = true)
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
