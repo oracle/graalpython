@@ -165,10 +165,6 @@ public class LazyTraceback {
     }
 
     public boolean catchingFrameWantedForTraceback() {
-        return (frame != null || frameInfo != null) && locationWantedForTraceback(exception.getCatchLocation());
-    }
-
-    private static boolean locationWantedForTraceback(Node location) {
-        return location != null && location.getRootNode() != null && !location.getRootNode().isInternal();
+        return (frame != null || frameInfo != null) && exception != null && exception.getCatchRootNode() != null && exception.getCatchRootNode().visibleInTracebacks();
     }
 }

@@ -2683,9 +2683,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void traceException(VirtualFrame virtualFrame, MutableLoopData mutableData, int bci, PException pe) {
         mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         if (mutableData.getPyFrame().getLocalTraceFun() != null) {
-            Object traceback = GetExceptionTracebackNode.getUncached().execute(pe);
-            PBaseException peForPython = pe.setCatchingFrameAndGetEscapedException(virtualFrame, this);
+            pe.setCatchingFrameReference(virtualFrame, this, bci);
+            PBaseException peForPython = pe.getEscapedException();
             Object peType = GetClassNode.getUncached().execute(peForPython);
+            Object traceback = GetExceptionTracebackNode.getUncached().execute(pe);
             invokeTraceFunction(virtualFrame,
                             factory.createTuple(new Object[]{peType, peForPython, traceback}), mutableData.getThreadState(this),
                             mutableData,

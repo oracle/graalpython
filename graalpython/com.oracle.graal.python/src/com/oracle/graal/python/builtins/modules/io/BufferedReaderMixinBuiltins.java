@@ -143,7 +143,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             try {
                 n = asSizeNode.executeExact(frame, res, ValueError);
             } catch (PException e) {
-                throw raise(frame, OSError, e, ErrorMessages.RAW_READINTO_FAILED);
+                throw raise(OSError, e, ErrorMessages.RAW_READINTO_FAILED);
             }
             if (osError.profile(n < 0 || n > len)) {
                 throw raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);

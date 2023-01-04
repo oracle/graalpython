@@ -82,7 +82,7 @@ public final class PException extends AbstractTruffleException {
     protected final PBaseException pythonException;
     private boolean hideLocation = false;
     private PFrame.Reference frameInfo;
-    private Node catchLocation;
+    private PBytecodeRootNode catchRootNode;
     private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
@@ -174,8 +174,8 @@ public final class PException extends AbstractTruffleException {
         this.hideLocation = hideLocation;
     }
 
-    public Node getCatchLocation() {
-        return catchLocation;
+    public PBytecodeRootNode getCatchRootNode() {
+        return catchRootNode;
     }
 
     public int getCatchBci() {
@@ -185,8 +185,7 @@ public final class PException extends AbstractTruffleException {
     /**
      * Return the associated {@link PBaseException}. This method doesn't ensure traceback
      * consistency and should be avoided unless you can guarantee that the exception will not escape
-     * to the program. Use {@link PException#setCatchingFrameAndGetEscapedException(Frame, Node)
-     * reifyAndGetPythonException}.
+     * to the program. Use {@link PException#getEscapedException()}.
      */
     public PBaseException getUnreifiedException() {
         return pythonException;
@@ -236,34 +235,10 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
-    public void setCatchingFrameReference(PFrame.Reference frameInfo, Node catchLocation) {
-        this.frameInfo = frameInfo;
-        this.catchLocation = catchLocation;
-    }
-
-    /**
-     * Save the exception handler's frame for the traceback. Should be called by all
-     * exception-handling structures that need their current frame to be visible in the traceback,
-     * i.e except, finally and __exit__. The frame is not yet marked as escaped.
-     *
-     * @param frame The current frame of the exception handler.
-     */
-    public void setCatchingFrameReference(Frame frame, Node catchLocation) {
-        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
-    }
-
     public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
-        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+        this.frameInfo = PArguments.getCurrentFrameInfo(frame);
+        this.catchRootNode = catchLocation;
         this.catchBci = catchBci;
-    }
-
-    /**
-     * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference, Node)} and @{link
-     * {@link #getEscapedException()}}
-     */
-    public PBaseException setCatchingFrameAndGetEscapedException(Frame frame, Node catchLocation) {
-        setCatchingFrameReference(frame, catchLocation);
-        return this.getEscapedException();
     }
 
     public void markFrameEscaped() {
@@ -302,8 +277,8 @@ public final class PException extends AbstractTruffleException {
 
     /**
      * If not done already, create the traceback for this exception state using the frame previously
-     * provided to {@link #setCatchingFrameReference(PFrame.Reference, Node)} and sync it to the
-     * attached python exception
+     * provided to {@link #setCatchingFrameReference(Frame, PBytecodeRootNode, int)} and sync it to
+     * the attached python exception.
      */
     public void ensureReified() {
         if (!reified) {

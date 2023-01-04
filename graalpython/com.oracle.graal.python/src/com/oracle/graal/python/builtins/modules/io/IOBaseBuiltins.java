@@ -260,7 +260,7 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                         setAttributeNode.execute(frame, self, true);
                     } catch (PException e1) {
                         PBaseException ee = e1.getEscapedException();
-                        ee.setContext(e.setCatchingFrameAndGetEscapedException(frame, this));
+                        ee.setContext(e.getEscapedException());
                         throw getRaiseNode().raiseExceptionObject(ee);
                     }
                     throw e.getExceptionForReraise();

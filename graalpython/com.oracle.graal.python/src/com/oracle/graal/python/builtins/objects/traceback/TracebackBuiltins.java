@@ -132,8 +132,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 }
             }
             if (lazyTraceback.catchingFrameWantedForTraceback()) {
-                PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
-                tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
+                tb.setLineno(pException.getCatchRootNode().bciToLine(pException.getCatchBci()));
                 tb.setNext(next);
             } else {
                 assert next != null;
