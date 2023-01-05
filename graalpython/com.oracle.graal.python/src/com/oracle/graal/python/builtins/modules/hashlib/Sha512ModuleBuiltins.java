@@ -40,32 +40,20 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltinsClinicProviders.Sha384FunctionNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltinsClinicProviders.Sha512FunctionNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_sha512")
 public class Sha512ModuleBuiltins extends PythonBuiltins {
@@ -76,79 +64,21 @@ public class Sha512ModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "sha384", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
     @GenerateNodeFactory
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "usedforsecurity", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
-    abstract static class Sha384FunctionNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return Sha384FunctionNodeClinicProviderGen.INSTANCE;
-        }
-
+    abstract static class Sha384FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object sha384(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
-            try {
-                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
-                MessageDigest digest;
-                try {
-                    digest = createDigest(bytes);
-                } catch (NoSuchAlgorithmException e) {
-                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-                }
-                return factory().createDigestObject(PythonBuiltinClassType.SHA384Type, digest);
-            } finally {
-                bufferLib.release(buffer, frame, this);
-            }
-        }
-
-        @TruffleBoundary
-        private static MessageDigest createDigest(byte[] bytes) throws NoSuchAlgorithmException {
-            MessageDigest digest;
-            digest = MessageDigest.getInstance("sha384");
-            if (bytes != null) {
-                digest.update(bytes);
-            }
-            return digest;
+        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+            return createNode.execute(frame, PythonBuiltinClassType.SHA384Type, "sha384", buffer, this);
         }
     }
 
     @Builtin(name = "sha512", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
     @GenerateNodeFactory
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "usedforsecurity", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
-    abstract static class Sha512FunctionNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return Sha512FunctionNodeClinicProviderGen.INSTANCE;
-        }
-
+    abstract static class Sha512FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object sha512(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
-            try {
-                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
-                MessageDigest digest;
-                try {
-                    digest = createDigest(bytes);
-                } catch (NoSuchAlgorithmException e) {
-                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-                }
-                return factory().createDigestObject(PythonBuiltinClassType.SHA512Type, digest);
-            } finally {
-                bufferLib.release(buffer, frame, this);
-            }
-        }
-
-        @TruffleBoundary
-        private static MessageDigest createDigest(byte[] bytes) throws NoSuchAlgorithmException {
-            MessageDigest digest;
-            digest = MessageDigest.getInstance("sha512");
-            if (bytes != null) {
-                digest.update(bytes);
-            }
-            return digest;
+        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+            return createNode.execute(frame, PythonBuiltinClassType.SHA512Type, "sha512", buffer, this);
         }
     }
 

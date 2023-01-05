@@ -40,31 +40,20 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.hashlib.Md5ModuleBuiltinsClinicProviders.Md5FunctionNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_md5")
 public class Md5ModuleBuiltins extends PythonBuiltins {
@@ -75,40 +64,11 @@ public class Md5ModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "md5", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
     @GenerateNodeFactory
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
-    @ArgumentClinic(name = "usedforsecurity", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
-    abstract static class Md5FunctionNode extends PythonClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return Md5FunctionNodeClinicProviderGen.INSTANCE;
-        }
-
+    abstract static class Md5FunctionNode extends PythonBuiltinNode {
         @Specialization
-        Object md5(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
-            try {
-                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
-                MessageDigest digest;
-                try {
-                    digest = createDigest(bytes);
-                } catch (NoSuchAlgorithmException e) {
-                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-                }
-                return factory().createDigestObject(PythonBuiltinClassType.MD5Type, digest);
-            } finally {
-                bufferLib.release(buffer, frame, this);
-            }
-        }
-
-        @TruffleBoundary
-        private static MessageDigest createDigest(byte[] bytes) throws NoSuchAlgorithmException {
-            MessageDigest digest;
-            digest = MessageDigest.getInstance("md5");
-            if (bytes != null) {
-                digest.update(bytes);
-            }
-            return digest;
+        Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+            return createNode.execute(frame, PythonBuiltinClassType.MD5Type, "md5", buffer, this);
         }
     }
 

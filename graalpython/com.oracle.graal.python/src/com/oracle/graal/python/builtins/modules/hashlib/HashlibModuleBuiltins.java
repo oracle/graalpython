@@ -56,6 +56,7 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -71,6 +72,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -80,6 +83,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -88,6 +93,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -349,10 +355,52 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         return mac;
     }
 
+    abstract static class CreateDigestNode extends Node {
+        abstract Object execute(VirtualFrame frame, PythonBuiltinClassType type, String name, Object buffer, PythonBuiltinBaseNode indirectCallNode);
+
+        @Specialization
+        Object create(VirtualFrame frame, PythonBuiltinClassType type, String name, Object value, PythonBuiltinBaseNode indirectCallNode,
+                        @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raise) {
+            Object buffer;
+            if (value instanceof PNone) {
+                buffer = null;
+            } else if (acquireLib.hasBuffer(value)) {
+                buffer = acquireLib.acquireReadonly(value, frame, indirectCallNode);
+            } else {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, value);
+            }
+            try {
+                byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
+                MessageDigest digest;
+                try {
+                    digest = createDigest(name, bytes);
+                } catch (NoSuchAlgorithmException e) {
+                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
+                }
+                return factory.createDigestObject(type, digest);
+            } finally {
+                if (buffer != null) {
+                    bufferLib.release(buffer, frame, indirectCallNode);
+                }
+            }
+        }
+
+        @TruffleBoundary
+        private static MessageDigest createDigest(String name, byte[] bytes) throws NoSuchAlgorithmException {
+            MessageDigest digest = MessageDigest.getInstance(name);
+            if (bytes != null) {
+                digest.update(bytes);
+            }
+            return digest;
+        }
+    }
+
     @Builtin(name = "new", minNumOfPositionalArgs = 1, parameterNames = {"name", "string"}, keywordOnlyNames = {"usedforsecurity"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
-    @ArgumentClinic(name = "string", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "usedforsecurity", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     abstract static class NewNode extends PythonClinicBuiltinNode {
         @Override
@@ -362,27 +410,14 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
-                        @Cached CastToJavaStringNode castStr,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            try {
-                byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
-                return factory().createDigestObject(PythonBuiltinClassType.HashlibHash, createDigest(castStr.execute(name), bytes));
-            } catch (NoSuchAlgorithmException e) {
-                throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-            } finally {
-                bufferLib.release(buffer, frame, this);
-            }
+                        @Cached CreateDigestNode createNode,
+                        @Cached CastToJavaStringNode castStr) {
+            return createNode.execute(frame, PythonBuiltinClassType.HashlibHash, getName(castStr.execute(name)), buffer, this);
         }
 
         @TruffleBoundary
-        private static MessageDigest createDigest(String inputName, byte[] bytes) throws NoSuchAlgorithmException {
-            MessageDigest digest;
-            String name = NAME_MAPPINGS.getOrDefault(inputName, inputName);
-            digest = MessageDigest.getInstance(name);
-            if (bytes != null) {
-                digest.update(bytes);
-            }
-            return digest;
+        private static String getName(String inputName) {
+            return NAME_MAPPINGS.getOrDefault(inputName, inputName);
         }
     }
 

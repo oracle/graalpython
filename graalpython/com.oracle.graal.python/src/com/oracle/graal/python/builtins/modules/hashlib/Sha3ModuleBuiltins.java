@@ -40,29 +40,22 @@
  */
 package com.oracle.graal.python.builtins.modules.hashlib;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_sha3")
 public class Sha3ModuleBuiltins extends PythonBuiltins {
@@ -86,67 +79,36 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization
-        Object sha(VirtualFrame frame, Object type, Object value, @SuppressWarnings("unused") Object usedForSecurity,
-                        @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
-            Object buffer = null;
-            if (acquireLib.hasBuffer(value)) {
-                buffer = acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
+        Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+            PythonBuiltinClassType resultType = null;
+            if (type instanceof PythonBuiltinClass builtinType) {
+                resultType = builtinType.getType();
+            } else if (type instanceof PythonBuiltinClassType enumType) {
+                resultType = enumType;
+            } else {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
-            try {
-                byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
-                MessageDigest digest;
-                PythonBuiltinClassType resultType = null;
-                if (type instanceof PythonBuiltinClass builtinType) {
-                    resultType = builtinType.getType();
-                } else if (type instanceof PythonBuiltinClassType enumType) {
-                    resultType = enumType;
-                } else {
-                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, ErrorMessages.WRONG_TYPE);
-                }
-                try {
-                    digest = createDigest(resultType, bytes);
-                } catch (NoSuchAlgorithmException e) {
-                    throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
-                }
-                return factory().createDigestObject(resultType, digest);
-            } finally {
-                if (buffer != null) {
-                    bufferLib.release(buffer, frame, this);
-                }
-            }
+            return createNode.execute(frame, resultType, nameFromType(resultType), buffer, this);
         }
 
-        @TruffleBoundary
-        private static MessageDigest createDigest(PythonBuiltinClassType type, byte[] bytes) throws NoSuchAlgorithmException {
-            MessageDigest digest = null;
+        private static String nameFromType(PythonBuiltinClassType type) {
             switch (type) {
                 case Sha3SHA224Type:
-                    digest = MessageDigest.getInstance("sha3-224");
-                    break;
+                    return "sha3-224";
                 case Sha3SHA256Type:
-                    digest = MessageDigest.getInstance("sha3-256");
-                    break;
+                    return "sha3-256";
                 case Sha3SHA384Type:
-                    digest = MessageDigest.getInstance("sha3-384");
-                    break;
+                    return "sha3-384";
                 case Sha3SHA512Type:
-                    digest = MessageDigest.getInstance("sha3-512");
-                    break;
+                    return "sha3-512";
                 case Sha3Shake128Type:
-                    digest = MessageDigest.getInstance("SHAKE128");
-                    break;
+                    return "SHAKE128";
                 case Sha3Shake256Type:
-                    digest = MessageDigest.getInstance("SHAKE256");
-                    break;
+                    return "SHAKE256";
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
-            if (bytes != null) {
-                digest.update(bytes);
-            }
-            return digest;
         }
     }
 }
