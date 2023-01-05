@@ -132,7 +132,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
     private static final String[] DIGEST_ALGORITHMS;
     static {
         Security.addProvider(CertUtils.BOUNCYCASTLE_PROVIDER);
-        var digests = new ArrayList<String>();
+        ArrayList<String> digests = new ArrayList<>();
         for (var provider : Security.getProviders()) {
             for (var service : provider.getServices()) {
                 if (service.getType().equalsIgnoreCase(MessageDigest.class.getSimpleName())) {
@@ -145,16 +145,16 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        var algos = new LinkedHashMap<String, Object>();
+        LinkedHashMap<String, Object> algos = new LinkedHashMap<>();
         for (var digest : DIGEST_ALGORITHMS) {
             algos.put(digest, PNone.NONE);
         }
         addBuiltinConstant("openssl_md_meth_names", core.factory().createFrozenSet(EconomicMapStorage.create(algos)));
 
-        var storage = EconomicMapStorage.create();
+        EconomicMapStorage storage = EconomicMapStorage.create();
         addBuiltinConstant(CONSTRUCTORS, core.factory().createMappingproxy(core.factory().createDict(storage)));
         addBuiltinConstant(ORIGINAL_CONSTRUCTORS, storage);
-        var readNode = ReadAttributeFromDynamicObjectNode.getUncached();
+        ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
         for (int i = 0; i < DIGEST_ALIASES.length; i += 2) {
             addDigestAlias(core, readNode, DIGEST_ALIASES[i], DIGEST_ALIASES[i + 1]);
         }
