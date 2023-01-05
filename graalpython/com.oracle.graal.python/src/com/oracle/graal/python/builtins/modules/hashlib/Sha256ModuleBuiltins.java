@@ -70,7 +70,7 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
             return createNode.execute(frame, PythonBuiltinClassType.SHA224Type, "sha224", buffer, this);
         }
-     }
+    }
 
     @Builtin(name = "sha256", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
     @GenerateNodeFactory
