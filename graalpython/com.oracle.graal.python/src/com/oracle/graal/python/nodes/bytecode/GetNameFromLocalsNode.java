@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,12 +61,12 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
 /**
  * Helper node to be used when it's known that a name must be read from a custom locals dict instead
  * of the frame
  */
+@GenerateUncached
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class GetNameFromLocalsNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object locals, TruffleString name, boolean cellvar);
 

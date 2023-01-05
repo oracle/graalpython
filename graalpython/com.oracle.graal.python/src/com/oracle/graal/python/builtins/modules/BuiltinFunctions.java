@@ -215,9 +215,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -276,7 +274,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -761,15 +758,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         // logic like in 'Objects/object.c: _dir_locals'
         @Specialization(guards = "isNoValue(object)")
         Object locals(VirtualFrame frame, @SuppressWarnings("unused") Object object,
-                        @Cached ReadLocalsNode readLocalsNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached MaterializeFrameNode materializeNode,
-                        @Cached ConditionProfile inGenerator,
                         @Cached("create(T_KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
 
-            Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
+            Object localsDict = LocalsNode.getLocalsDict(frame, readCallerFrameNode);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
             PList list = constructListNode.execute(frame, keysObj);
             sortNode.execute(frame, list);
@@ -860,8 +854,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setGlobals(args, callerFrame.getGlobals());
         }
 
-        private static void inheritLocals(PFrame callerFrame, Object[] args, ReadLocalsNode getLocalsNode) {
-            Object callerLocals = getLocalsNode.execute(callerFrame);
+        private static void inheritLocals(PFrame callerFrame, Object[] args) {
+            Object callerLocals = callerFrame.getLocals();
             setCustomLocals(args, callerLocals);
         }
 
@@ -889,13 +883,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached ReadLocalsNode getLocalsNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
-            inheritLocals(callerFrame, args, getLocalsNode);
+            inheritLocals(callerFrame, args);
 
             return invokeNode.execute(frame, getCt.execute(code), args);
         }
@@ -2266,22 +2259,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object locals(VirtualFrame frame,
-                        @Cached ReadLocalsNode readLocalsNode,
-                        @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached MaterializeFrameNode materializeNode,
-                        @Cached ConditionProfile inGenerator) {
-            return getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
+                        @Cached ReadCallerFrameNode readCallerFrameNode) {
+            return getLocalsDict(frame, readCallerFrameNode);
         }
 
-        static Object getLocalsDict(VirtualFrame frame, Node n, ReadLocalsNode readLocalsNode, ReadCallerFrameNode readCallerFrameNode, MaterializeFrameNode materializeNode,
-                        ConditionProfile inGenerator) {
+        static Object getLocalsDict(VirtualFrame frame, ReadCallerFrameNode readCallerFrameNode) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-            Frame generatorFrame = PArguments.getGeneratorFrame(callerFrame.getArguments());
-            if (inGenerator.profile(generatorFrame == null)) {
-                return readLocalsNode.execute(callerFrame);
-            } else {
-                return readLocalsNode.execute(materializeNode.execute(frame, n, false, false, generatorFrame));
-            }
+            return callerFrame.getLocals();
         }
 
         public static LocalsNode create() {

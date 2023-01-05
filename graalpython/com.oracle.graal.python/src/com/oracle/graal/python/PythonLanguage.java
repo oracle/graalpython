@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -73,7 +73,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.NodeFactory;
 import com.oracle.graal.python.pegparser.Parser;
@@ -589,14 +588,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Child private GilNode gilNode = GilNode.create();
             @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
             @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
-            @Child private ReadLocalsNode readLocalsNode = ReadLocalsNode.create();
 
             @Override
             public Object execute(VirtualFrame frame) {
                 Object[] arguments = PArguments.create();
                 // escape?
                 PFrame pFrame = materializeFrameNode.execute(frame, this, false, true, frame);
-                Object locals = readLocalsNode.execute(pFrame);
+                Object locals = pFrame.getLocals();
                 PArguments.setCustomLocals(arguments, locals);
                 PArguments.setSpecialArgument(arguments, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));

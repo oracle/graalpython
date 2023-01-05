@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -103,15 +103,6 @@ public final class PArguments {
 
     public static boolean isPythonFrame(Object[] frameArgs) {
         return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_KEYWORD_ARGUMENTS] instanceof PKeyword[];
-    }
-
-    public static boolean isGeneratorFrame(Frame frame) {
-        return frame != null && isGeneratorFrame(frame.getArguments());
-    }
-
-    public static boolean isGeneratorFrame(Object[] frameArgs) {
-        // a generator frame never has a frame info
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CALLER_FRAME_INFO] instanceof PDict;
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -381,7 +372,6 @@ public final class PArguments {
 
         // copy only some carefully picked internal arguments
         setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
-        setGeneratorFrame(copiedArgs, getGeneratorFrameSafe(arguments));
         setGlobals(copiedArgs, getGlobals(arguments));
         setClosure(copiedArgs, getClosure(arguments));
 

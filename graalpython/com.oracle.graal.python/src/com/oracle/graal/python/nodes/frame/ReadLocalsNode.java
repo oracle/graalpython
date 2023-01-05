@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,9 +43,6 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -55,27 +52,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * <emph>not</emph> let the frame escape.
  **/
 public abstract class ReadLocalsNode extends Node {
-    public abstract Object execute(PFrame frame);
-
-    protected static boolean isGeneratorFrame(PFrame frame) {
-        return PArguments.isGeneratorFrame(frame.getArguments());
-    }
-
-    @Specialization(guards = {"isGeneratorFrame(frame)"})
-    static Object doGeneratorFrame(PFrame frame) {
-        return PArguments.getGeneratorFrameLocals(frame.getArguments());
-    }
-
-    @Specialization(guards = {"!isGeneratorFrame(frame)"})
-    static Object frameToUpdate(PFrame frame,
-                    @Cached PythonObjectFactory factory) {
-        return frame.getLocals(factory);
-    }
-
-    public static ReadLocalsNode create() {
-        return ReadLocalsNodeGen.create();
-    }
-
+    // TODO remove
     /**
      * Fast access to custom locals if a custom dict was provided by the caller and the python frame
      * does not escape.
@@ -87,8 +64,8 @@ public abstract class ReadLocalsNode extends Node {
      */
     public static PythonObject fastGetCustomLocalsOrGlobals(VirtualFrame frame, ConditionProfile havePyFrame, ConditionProfile haveCustomLocals) {
         PFrame pyFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
-        if (havePyFrame.profile(pyFrame != null) && haveCustomLocals.profile(pyFrame.getLocals(null) != null)) {
-            return (PythonObject) pyFrame.getLocals(null);
+        if (havePyFrame.profile(pyFrame != null) && haveCustomLocals.profile(pyFrame.getLocals() != null)) {
+            return (PythonObject) pyFrame.getLocals();
         }
         // return the globals
         return PArguments.getGlobals(frame);

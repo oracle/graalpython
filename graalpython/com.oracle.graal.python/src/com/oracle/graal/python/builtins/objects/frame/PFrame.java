@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -275,14 +275,11 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     /**
-     * Prefer to use the {@link GetLocalsNode}.<br/>
-     * <br/>
-     *
-     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
-     * dictionary may have been modified and should then be updated with the current frame locals.
-     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     * Returns a dictionary with the locals. Note that the dictionary may have been modified and
+     * should then be updated with the current frame locals. To that end, use the
+     * {@link MaterializeFrameNode}.
      */
-    public Object getLocals(@SuppressWarnings("unused") PythonObjectFactory factory) {
+    public Object getLocals() {
         assert localsDict != null;
         return localsDict;
     }
