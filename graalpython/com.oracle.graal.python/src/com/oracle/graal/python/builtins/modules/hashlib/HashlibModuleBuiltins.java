@@ -338,7 +338,8 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     static Mac createMac(TruffleString digest, byte[] key, byte[] msg) throws NoSuchAlgorithmException, InvalidKeyException {
-        String algorithm = "hmac" + digest.toJavaStringUncached().toLowerCase();
+        String inputName = digest.toJavaStringUncached().toLowerCase();
+        String algorithm = "hmac" + NAME_MAPPINGS.getOrDefault(inputName, inputName);
         SecretKeySpec secretKeySpec = new SecretKeySpec(key, algorithm);
         Mac mac = Mac.getInstance(algorithm);
         mac.init(secretKeySpec);
