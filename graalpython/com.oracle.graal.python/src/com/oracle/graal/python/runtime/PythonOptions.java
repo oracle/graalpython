@@ -83,6 +83,12 @@ public final class PythonOptions {
     public static final boolean WITHOUT_SSL = Boolean.getBoolean("python.WithoutSSL");
 
     /**
+     * Whether cryptographic hashing functions are implemented via java.security.MessageDigest,
+     * javax.crypto.Mac and related functions.
+     */
+    public static final boolean WITHOUT_DIGEST = Boolean.getBoolean("python.WithoutDigest");
+
+    /**
      * Whether Java classes are included that relate to Unix-specific access, modify process
      * properties such as the default timezone, access the platform's Runtime MXBean, or spawn
      * subprocesses are available.

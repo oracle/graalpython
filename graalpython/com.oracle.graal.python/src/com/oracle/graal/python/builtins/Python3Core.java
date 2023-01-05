@@ -649,13 +649,13 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_COMPRESSION_LIBRARIES ? null : new ZipImportModuleBuiltins(),
 
                         // hashlib
-                        PythonOptions.WITHOUT_SSL ? null : new Md5ModuleBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new Sha1ModuleBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new Sha256ModuleBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new Sha512ModuleBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new Sha3ModuleBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new DigestObjectBuiltins(),
-                        PythonOptions.WITHOUT_SSL ? null : new HashlibModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new Md5ModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new Sha1ModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new Sha256ModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
 
                         // itertools
                         new AccumulateBuiltins(),
