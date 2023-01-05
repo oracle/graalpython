@@ -133,35 +133,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
     abstract static class BlockSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int get(DigestObject self) {
-            switch (self.getType()) {
-                case MD5Type:
-                case SHA1Type:
-                case SHA224Type:
-                case SHA256Type:
-                    return 64;
-                case SHA384Type:
-                case SHA512Type:
-                    return 128;
-                case Sha3SHA224Type:
-                    return 1152;
-                case Sha3SHA256Type:
-                    return 1088;
-                case Sha3SHA384Type:
-                    return 832;
-                case Sha3SHA512Type:
-                    return 576;
-                case Sha3Shake128Type:
-                    return 1344;
-                case Sha3Shake256Type:
-                    return 1088;
-                case HashlibHash:
-                case HashlibHmac:
-                    // go behind truffle boundary for this
-                    return self.getBlockSize();
-                default:
-                    // use a small default
-                    return 64;
-            }
+            return self.getBlockSize();
         }
     }
 

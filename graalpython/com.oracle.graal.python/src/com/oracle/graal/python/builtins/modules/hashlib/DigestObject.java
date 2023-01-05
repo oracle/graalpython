@@ -47,6 +47,7 @@ import javax.crypto.Mac;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
@@ -118,42 +119,88 @@ public final class DigestObject extends PythonBuiltinObject {
         }
     }
 
-    @TruffleBoundary
+    // The JDK does not expose the block sizes used by digests, so
+    // they are hardcoded here. We use a switch over the type because
+    // that is likely to fold away during compilation
     public int getBlockSize() {
+        PythonBuiltinClassType mainDigestType = getMainDigestType();
+        switch (mainDigestType) {
+            case MD5Type:
+            case SHA1Type:
+            case SHA224Type:
+            case SHA256Type:
+                return 64;
+            case SHA384Type:
+            case SHA512Type:
+                return 128;
+            case Sha3SHA224Type:
+                return 144;
+            case Sha3SHA256Type:
+                return 136;
+            case Sha3SHA384Type:
+                return 104;
+            case Sha3SHA512Type:
+                return 72;
+            case Sha3Shake128Type:
+                return 168;
+            case Sha3Shake256Type:
+                return 136;
+            default:
+                throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    private PythonBuiltinClassType getMainDigestType() {
+        PythonBuiltinClassType actualType = getType();
+        switch (actualType) {
+            case HashlibHash:
+            case HashlibHmac:
+                return determineMainDigestType();
+            default:
+                return actualType;
+        }
+    }
+
+    private PythonBuiltinClassType determineMainDigestType() {
         String algorithm = getAlgorithm().toLowerCase();
         switch (algorithm) {
             case "md5":
             case "hmac-md5":
+                return PythonBuiltinClassType.MD5Type;
             case "sha1":
             case "hmac-sha1":
+                return PythonBuiltinClassType.SHA1Type;
             case "sha224":
             case "hmac-sha224":
+                return PythonBuiltinClassType.SHA224Type;
             case "sha256":
             case "hmac-sha256":
-                return 64;
+                return PythonBuiltinClassType.SHA256Type;
             case "sha384":
             case "hmac-sha384":
+                return PythonBuiltinClassType.SHA384Type;
             case "sha512":
             case "hmac-sha512":
-                return 128;
+                return PythonBuiltinClassType.SHA512Type;
             case "sha3-224":
             case "hmac-sha3-224":
-                return 1152;
+                return PythonBuiltinClassType.Sha3SHA224Type;
             case "sha3-256":
             case "hmac-sha3-256":
-                return 1088;
+                return PythonBuiltinClassType.Sha3SHA256Type;
             case "sha3-384":
             case "hmac-sha3-384":
-                return 832;
+                return PythonBuiltinClassType.Sha3SHA384Type;
             case "sha3-512":
             case "hmac-sha3-512":
-                return 576;
+                return PythonBuiltinClassType.Sha3SHA512Type;
             case "shake128":
-                return 1344;
+                return PythonBuiltinClassType.Sha3Shake128Type;
             case "shake256":
-                return 1088;
+                return PythonBuiltinClassType.Sha3Shake256Type;
             default:
-                return 64;
+                // default to assume the same blocksize as MD5
+                return PythonBuiltinClassType.MD5Type;
         }
     }
 
