@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,9 +27,11 @@ package com.oracle.graal.python.runtime.object;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Semaphore;
 
+import javax.crypto.Mac;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
@@ -49,6 +51,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
+import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PBytesIO;
 import com.oracle.graal.python.builtins.modules.io.PBytesIOBuffer;
@@ -1488,5 +1491,13 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PUnionType createUnionType(Object[] args) {
         return trace(new PUnionType(PythonBuiltinClassType.PUnionType, getShape(PythonBuiltinClassType.PUnionType), createTuple(args)));
+    }
+
+    public final DigestObject createDigestObject(PythonBuiltinClassType type, MessageDigest digest) {
+        return trace(new DigestObject(type, getShape(type), digest));
+    }
+
+    public final DigestObject createDigestObject(PythonBuiltinClassType type, Mac mac) {
+        return trace(new DigestObject(type, getShape(type), mac));
     }
 }

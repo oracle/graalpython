@@ -96,7 +96,7 @@ public class Sha512ModuleBuiltins extends PythonBuiltins {
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
-                return factory().trace(new DigestObject(PythonBuiltinClassType.SHA384Type, digest));
+                return factory().createDigestObject(PythonBuiltinClassType.SHA384Type, digest);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
@@ -135,7 +135,7 @@ public class Sha512ModuleBuiltins extends PythonBuiltins {
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
-                return factory().trace(new DigestObject(PythonBuiltinClassType.SHA512Type, digest));
+                return factory().createDigestObject(PythonBuiltinClassType.SHA512Type, digest);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }

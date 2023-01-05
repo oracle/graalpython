@@ -45,23 +45,24 @@ import java.security.MessageDigest;
 import javax.crypto.Mac;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
-public class DigestObject extends PythonAbstractObject {
-    private final PythonBuiltinClassType digestType;
+public final class DigestObject extends PythonBuiltinObject {
     private final MessageDigest digest;
     private final Mac mac;
     private byte[] finalDigest = null;
 
-    DigestObject(final PythonBuiltinClassType digestType, final MessageDigest digest) {
-        this.digestType = digestType;
+    public DigestObject(PythonBuiltinClassType digestType, Shape instanceShape, MessageDigest digest) {
+        super(digestType, instanceShape);
         this.digest = digest;
         this.mac = null;
     }
 
-    DigestObject(final PythonBuiltinClassType type, final Mac mac) {
-        this.digestType = type;
+    public DigestObject(PythonBuiltinClassType digestType, Shape instanceShape, Mac mac) {
+        super(digestType, instanceShape);
         this.mac = mac;
         this.digest = null;
     }
@@ -75,19 +76,15 @@ public class DigestObject extends PythonAbstractObject {
     }
 
     public PythonBuiltinClassType getType() {
-        return digestType;
-    }
-
-    public int compareTo(final Object o) {
-        return this.hashCode() - o.hashCode();
+        return (PythonBuiltinClassType) getInitialPythonClass();
     }
 
     @TruffleBoundary
-    public DigestObject copy() throws CloneNotSupportedException {
+    public DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
         if (digest != null) {
-            return new DigestObject(digestType, (MessageDigest) digest.clone());
+            return factory.createDigestObject(getType(), (MessageDigest) digest.clone());
         } else {
-            return new DigestObject(digestType, (Mac) mac.clone());
+            return factory.createDigestObject(getType(), (Mac) mac.clone());
         }
     }
 

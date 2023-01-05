@@ -91,7 +91,7 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raise) {
             Object buffer = null;
-            if (acquireLib.hasBuffer(type)) {
+            if (acquireLib.hasBuffer(value)) {
                 buffer = acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
             }
             try {
@@ -110,7 +110,7 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
-                return factory().trace(new DigestObject(resultType, digest));
+                return factory().createDigestObject(resultType, digest);
             } finally {
                 if (buffer != null) {
                     bufferLib.release(buffer, frame, this);

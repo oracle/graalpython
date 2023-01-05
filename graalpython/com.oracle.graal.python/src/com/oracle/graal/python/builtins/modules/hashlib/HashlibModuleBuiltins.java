@@ -322,7 +322,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                 try {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
                     Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), msgBytes);
-                    return factory().trace(new DigestObject(PythonBuiltinClassType.HashlibHmac, mac));
+                    return factory().createDigestObject(PythonBuiltinClassType.HashlibHmac, mac);
                 } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                     throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 } finally {
@@ -366,7 +366,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             try {
                 byte[] bytes = buffer instanceof PNone ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
-                return factory().trace(new DigestObject(PythonBuiltinClassType.HashlibHash, createDigest(castStr.execute(name), bytes)));
+                return factory().createDigestObject(PythonBuiltinClassType.HashlibHash, createDigest(castStr.execute(name), bytes));
             } catch (NoSuchAlgorithmException e) {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
             } finally {

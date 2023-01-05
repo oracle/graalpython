@@ -95,7 +95,7 @@ public class Sha1ModuleBuiltins extends PythonBuiltins {
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
-                return factory().trace(new DigestObject(PythonBuiltinClassType.SHA1Type, digest));
+                return factory().createDigestObject(PythonBuiltinClassType.SHA1Type, digest);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }

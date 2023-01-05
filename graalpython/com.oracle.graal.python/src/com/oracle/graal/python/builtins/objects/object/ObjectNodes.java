@@ -79,7 +79,6 @@ import org.graalvm.collections.Pair;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -170,7 +169,7 @@ public abstract class ObjectNodes {
         }
 
         protected static boolean isIDableObject(Object object) {
-            return object instanceof PythonObject || object instanceof PythonAbstractNativeObject || object instanceof DigestObject;
+            return object instanceof PythonObject || object instanceof PythonAbstractNativeObject;
         }
 
         @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption(readNode)")
@@ -376,13 +375,7 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isDefaultCase(self)")
         static Object id(PythonObject self,
-                        @Shared("getObjectIdNode") @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(self);
-        }
-
-        @Specialization
-        static Object id(DigestObject self,
-                        @Shared("getObjectIdNode") @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
         }
 

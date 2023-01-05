@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.object;
 import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -205,11 +204,6 @@ public abstract class GetClassNode extends PNodeWithContext {
     @Specialization
     static Object getNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
         return PythonBuiltinClassType.PInt;
-    }
-
-    @Specialization
-    static Object getDigest(@SuppressWarnings("unused") DigestObject object) {
-        return object.getType();
     }
 
     @Specialization

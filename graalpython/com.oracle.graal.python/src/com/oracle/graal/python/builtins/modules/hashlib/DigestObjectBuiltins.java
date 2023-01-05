@@ -80,7 +80,7 @@ public class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization
         DigestObject copy(DigestObject self) {
             try {
-                return factory().trace(self.copy());
+                return self.copy(factory());
             } catch (CloneNotSupportedException e) {
                 throw raise(PythonBuiltinClassType.ValueError);
             }
