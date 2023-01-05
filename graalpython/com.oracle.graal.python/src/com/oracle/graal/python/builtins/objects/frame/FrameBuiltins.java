@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
@@ -62,6 +61,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -249,6 +249,10 @@ public final class FrameBuiltins extends PythonBuiltins {
             PFrame.Reference backref;
             for (PFrame cur = self;; cur = backref.getPyFrame()) {
                 backref = cur.getBackref();
+                if (backref == Reference.EMPTY) {
+                    return PNone.NONE;
+                }
+                PFrame callerFrame;
                 if (backref == null) {
                     noBackref.enter();
                     // The backref is not there. There's three cases:
@@ -256,7 +260,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    PFrame callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
+                    callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
 
                     // We don't need to mark the caller frame as 'escaped' because if 'self' is
                     // escaped, the caller frame will be escaped when leaving the current function.
@@ -270,17 +274,14 @@ public final class FrameBuiltins extends PythonBuiltins {
                         backref = callerFrame.getRef();
                         cur.setBackref(backref);
                     }
+                } else {
+                    callerFrame = materialize(frame, readCallerFrame, backref, notMaterialized);
                 }
-
-                if (backref == Reference.EMPTY) {
-                    return PNone.NONE;
-                } else if (!PRootNode.isPythonInternal(backref.getCallNode().getRootNode())) {
-                    PFrame fback = materialize(frame, readCallerFrame, backref, notMaterialized);
-                    assert fback.getRef() == backref;
-                    return fback;
+                assert callerFrame.getRef() == backref;
+                RootNode rootNode = callerFrame.getLocation().getRootNode();
+                if (rootNode != null && !rootNode.isInternal()) {
+                    return callerFrame;
                 }
-
-                assert backref.getPyFrame() != null;
             }
         }
 

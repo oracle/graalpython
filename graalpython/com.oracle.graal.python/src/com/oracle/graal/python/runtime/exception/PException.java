@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,17 +49,12 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleStackTrace;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -85,13 +80,13 @@ public final class PException extends AbstractTruffleException {
 
     private String message = null;
     protected final PBaseException pythonException;
-    private boolean hideLocation = false;
-    private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
-    private Node catchLocation;
+    private PBytecodeRootNode catchRootNode;
     private int catchBci;
     private LazyTraceback traceback;
     private boolean reified = false;
+    private boolean skipFirstTracebackFrame;
+    private int tracebackFrameCount;
 
     private PException(PBaseException actual, Node node) {
         super(node);
@@ -171,16 +166,21 @@ public final class PException extends AbstractTruffleException {
         return getMessage();
     }
 
-    public boolean shouldHideLocation() {
-        return hideLocation;
+    public int getTracebackStartIndex() {
+        return skipFirstTracebackFrame ? 1 : 0;
     }
 
-    public void setHideLocation(boolean hideLocation) {
-        this.hideLocation = hideLocation;
+    public void skipFirstTracebackFrame() {
+        this.skipFirstTracebackFrame = true;
+        this.tracebackFrameCount = -1;
     }
 
-    public Node getCatchLocation() {
-        return catchLocation;
+    public boolean catchingFrameWantedForTraceback() {
+        return tracebackFrameCount >= 0 && catchRootNode != null && catchRootNode.frameIsVisibleToPython();
+    }
+
+    public PBytecodeRootNode getCatchRootNode() {
+        return catchRootNode;
     }
 
     public int getCatchBci() {
@@ -190,8 +190,7 @@ public final class PException extends AbstractTruffleException {
     /**
      * Return the associated {@link PBaseException}. This method doesn't ensure traceback
      * consistency and should be avoided unless you can guarantee that the exception will not escape
-     * to the program. Use {@link PException#setCatchingFrameAndGetEscapedException(Frame, Node)
-     * reifyAndGetPythonException}.
+     * to the program. Use {@link PException#getEscapedException()}.
      */
     public PBaseException getUnreifiedException() {
         return pythonException;
@@ -241,51 +240,10 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
-    @TruffleBoundary
-    public Iterable<TruffleStackTraceElement> getTruffleStackTrace() {
-        if (tracebackCutoffTarget == null) {
-            tracebackCutoffTarget = Truffle.getRuntime().iterateFrames(FrameInstance::getCallTarget, 0);
-        }
-        // Cause may contain wrapped Java exception
-        if (getCause() != null) {
-            return TruffleStackTrace.getStackTrace(getCause());
-        } else {
-            return TruffleStackTrace.getStackTrace(this);
-        }
-    }
-
-    public boolean shouldCutOffTraceback(TruffleStackTraceElement element) {
-        return tracebackCutoffTarget != null && element.getTarget() == tracebackCutoffTarget;
-    }
-
-    public void setCatchingFrameReference(PFrame.Reference frameInfo, Node catchLocation) {
-        this.frameInfo = frameInfo;
-        this.catchLocation = catchLocation;
-    }
-
-    /**
-     * Save the exception handler's frame for the traceback. Should be called by all
-     * exception-handling structures that need their current frame to be visible in the traceback,
-     * i.e except, finally and __exit__. The frame is not yet marked as escaped.
-     *
-     * @param frame The current frame of the exception handler.
-     */
-    public void setCatchingFrameReference(Frame frame, Node catchLocation) {
-        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
-    }
-
     public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
-        setCatchingFrameReference(PArguments.getCurrentFrameInfo(frame), catchLocation);
+        this.frameInfo = PArguments.getCurrentFrameInfo(frame);
+        this.catchRootNode = catchLocation;
         this.catchBci = catchBci;
-    }
-
-    /**
-     * Shortcut for {@link #setCatchingFrameReference(PFrame.Reference, Node)} and @{link
-     * {@link #getEscapedException()}}
-     */
-    public PBaseException setCatchingFrameAndGetEscapedException(Frame frame, Node catchLocation) {
-        setCatchingFrameReference(frame, catchLocation);
-        return this.getEscapedException();
     }
 
     public void markFrameEscaped() {
@@ -324,8 +282,8 @@ public final class PException extends AbstractTruffleException {
 
     /**
      * If not done already, create the traceback for this exception state using the frame previously
-     * provided to {@link #setCatchingFrameReference(PFrame.Reference, Node)} and sync it to the
-     * attached python exception
+     * provided to {@link #setCatchingFrameReference(Frame, PBytecodeRootNode, int)} and sync it to
+     * the attached python exception.
      */
     public void ensureReified() {
         if (!reified) {
@@ -343,6 +301,16 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
+    public int getTracebackFrameCount() {
+        return tracebackFrameCount;
+    }
+
+    public void notifyAddedTracebackFrame(boolean visible) {
+        if (visible) {
+            tracebackFrameCount++;
+        }
+    }
+
     /**
      * Prepare a new exception to be thrown to provide the semantics of a reraise. The difference
      * between this method and creating a new exception using
@@ -350,8 +318,23 @@ public final class PException extends AbstractTruffleException {
      * traceback look like the last catch didn't happen, which is desired in `raise` without
      * arguments, at the end of `finally`, `__exit__`...
      */
-    public PException getExceptionForReraise() {
-        return pythonException.getExceptionForReraise(getTraceback());
+    public PException getExceptionForReraise(boolean rootNodeVisible) {
+        PException pe = pythonException.getExceptionForReraise(getTraceback());
+        if (rootNodeVisible) {
+            pe.skipFirstTracebackFrame();
+        }
+        return pe;
+    }
+
+    /**
+     * Equivalent of CPython's {_PyErr_ChainExceptions}. Performs a simple exception chaining
+     * without checking for cycles (not suitable to implement try-except).
+     */
+    public PException chainException(PException e) {
+        PBaseException chainedException = e.getEscapedException();
+        chainedException.setTraceback(e.getTraceback());
+        getUnreifiedException().setContext(chainedException);
+        return this;
     }
 
     @TruffleBoundary
@@ -376,7 +359,7 @@ public final class PException extends AbstractTruffleException {
     RuntimeException throwException(@Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            throw getExceptionForReraise();
+            throw getExceptionForReraise(false);
         } finally {
             gil.release(mustRelease);
         }

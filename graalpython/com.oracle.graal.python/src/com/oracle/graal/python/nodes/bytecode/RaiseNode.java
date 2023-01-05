@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -57,7 +57,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class RaiseNode extends PNodeWithContext {
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
-    public abstract void execute(VirtualFrame frame, Object typeOrExceptionObject, Object cause);
+    public abstract void execute(VirtualFrame frame, Object typeOrExceptionObject, Object cause, boolean rootNodeVisible);
 
     @ImportStatic(PGuards.class)
     public abstract static class SetExceptionCauseNode extends Node {
@@ -114,7 +114,7 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     // raise
     @Specialization(guards = "isNoValue(type)")
-    static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
+    static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause, boolean rootNodeVisible,
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                     @Cached ConditionProfile hasCurrentException) {
@@ -122,12 +122,12 @@ public abstract class RaiseNode extends PNodeWithContext {
         if (hasCurrentException.profile(caughtException == null)) {
             throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);
         }
-        throw caughtException.getExceptionForReraise();
+        throw caughtException.getExceptionForReraise(rootNodeVisible);
     }
 
     // raise <exception>
     @Specialization(guards = "isNoValue(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Cached BranchProfile isReraise) {
         if (exception.getException() != null) {
             isReraise.enter();
@@ -138,7 +138,7 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     // raise <exception> from *
     @Specialization(guards = "!isNoValue(cause)")
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Cached BranchProfile isReraise,
                     @Cached SetExceptionCauseNode setExceptionCauseNode) {
         if (exception.getException() != null) {
@@ -158,7 +158,7 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     // raise <class>
     @Specialization(guards = {"isPythonClass(pythonClass)", "isNoValue(cause)"})
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, @SuppressWarnings("unused") PNone cause,
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Cached ValidExceptionNode validException,
                     @Cached CallNode callConstructor,
                     @Cached BranchProfile constructorTypeErrorProfile,
@@ -175,7 +175,7 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     // raise <class> from *
     @Specialization(guards = {"isPythonClass(pythonClass)", "!isNoValue(cause)"})
-    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, Object cause,
+    void doRaise(@SuppressWarnings("unused") VirtualFrame frame, Object pythonClass, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @Cached ValidExceptionNode validException,
                     @Cached PRaiseNode raise,
                     @Cached CallNode callConstructor,
@@ -193,7 +193,7 @@ public abstract class RaiseNode extends PNodeWithContext {
     // raise <invalid> [from *]
     @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)", limit = "3")
     @SuppressWarnings("unused")
-    static void doRaise(VirtualFrame frame, Object exception, Object cause,
+    static void doRaise(VirtualFrame frame, Object exception, Object cause, @SuppressWarnings("unused") boolean rootNodeVisible,
                     @CachedLibrary("exception") InteropLibrary lib,
                     @Cached PRaiseNode raise) {
         if (lib.isException(exception)) {

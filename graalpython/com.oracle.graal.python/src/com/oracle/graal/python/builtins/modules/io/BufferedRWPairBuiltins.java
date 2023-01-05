@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,7 +70,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INIT__;
-import static com.oracle.graal.python.runtime.exception.ExceptionUtils.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -318,8 +317,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
 
         static Object chainedError(PException first, PException second, ConditionProfile gotFirst) {
             if (gotFirst.profile(first != null)) {
-                chainExceptions(second.getEscapedException(), first);
-                throw second.getExceptionForReraise();
+                throw second.chainException(first);
             } else {
                 throw second;
             }

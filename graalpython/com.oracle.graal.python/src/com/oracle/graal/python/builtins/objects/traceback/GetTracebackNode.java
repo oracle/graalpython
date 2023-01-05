@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,12 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 /**
  * <strong>Summary of our implementation of traceback handling</strong>
@@ -99,13 +98,13 @@ import com.oracle.truffle.api.nodes.Node;
  * <ul>
  * <li>When you catch a {@link PException PException} and need to obtain its corresponding
  * {@link com.oracle.graal.python.builtins.objects.exception.PBaseException PBaseException}, use the
- * {@link PException#setCatchingFrameAndGetEscapedException(Frame, Node)} method, unless you're just
- * doing a simple class check. Try to avoid the {@link PException#getUnreifiedException()
- * getExceptionObject} method unless you know what you're doing.</li>
+ * {@link PException#getEscapedException()} method, unless you're just doing a simple class check.
+ * Try to avoid the {@link PException#getUnreifiedException()} method unless you know what you're
+ * doing.</li>
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
  * the program, because its Truffle stacktrace may already be frozen and it would not capture more
  * frames. If you need to rethrow without the catching site appearing in the traceback, use
- * {@link PException#getExceptionForReraise()} method to obtain a fresh {@link PException
+ * {@link PException#getExceptionForReraise(boolean)} method to obtain a fresh {@link PException
  * PException} to throw</li>
  * </ul>
  * </p>
@@ -119,38 +118,23 @@ public abstract class GetTracebackNode extends Node {
         return tb.getTraceback();
     }
 
-    @TruffleBoundary
-    @Specialization(guards = "!tb.isMaterialized()")
-    PTraceback traverse(LazyTraceback tb,
-                    @Cached PythonObjectFactory factory) {
-        // The logic of skipping and cutting off frames here and in MaterializeTruffleStacktraceNode
-        // must match
-        boolean skipFirst = tb.getException().shouldHideLocation();
-        for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
-            if (tb.getException().shouldCutOffTraceback(element)) {
+    @Fallback
+    PTraceback getTraceback(LazyTraceback tb,
+                    @Cached PythonObjectFactory factory,
+                    @Cached LoopConditionProfile loopConditionProfile) {
+        PTraceback newTraceback = null;
+        LazyTraceback current = tb;
+        do {
+            if (!current.isEmptySegment()) {
+                if (current.isMaterialized()) {
+                    newTraceback = current.getTraceback();
+                } else {
+                    newTraceback = factory.createTraceback(current);
+                }
                 break;
             }
-            if (skipFirst) {
-                skipFirst = false;
-                continue;
-            }
-            if (LazyTraceback.elementWantedForTraceback(element)) {
-                return createTraceback(tb, factory);
-            }
-        }
-        if (tb.catchingFrameWantedForTraceback() && !skipFirst) {
-            return createTraceback(tb, factory);
-        }
-        PTraceback newTraceback = null;
-        if (tb.getNextChain() != null) {
-            newTraceback = execute(tb.getNextChain());
-        }
-        tb.setTraceback(newTraceback);
-        return newTraceback;
-    }
-
-    private static PTraceback createTraceback(LazyTraceback tb, PythonObjectFactory factory) {
-        PTraceback newTraceback = factory.createTraceback(tb);
+            current = current.getNextChain();
+        } while (loopConditionProfile.profile(current != null));
         tb.setTraceback(newTraceback);
         return newTraceback;
     }

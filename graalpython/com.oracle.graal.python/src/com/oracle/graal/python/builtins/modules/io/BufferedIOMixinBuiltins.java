@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,7 +77,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_S_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNSUPPORTED_WHENCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
-import static com.oracle.graal.python.runtime.exception.ExceptionUtils.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -171,8 +170,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 try {
                     close(frame, self, lock, callMethodClose);
                 } catch (PException ee) {
-                    chainExceptions(ee.getEscapedException(), e);
-                    throw ee.getExceptionForReraise();
+                    throw ee.chainException(e);
                 }
                 throw e;
             }

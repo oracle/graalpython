@@ -37,3 +37,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+class ContextManager:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return True
+
+
+def measure(n):
+    for i in range(n):
+        with ContextManager():
+            if i % 2 == 1:
+                raise RuntimeError
+
+
+def __benchmark__(num=1000000):
+    measure(num)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PNodeWithRaise extends PNodeWithContext {
@@ -76,8 +75,8 @@ public class PNodeWithRaise extends PNodeWithContext {
         return getRaiseNode().raise(type, cause, format, arguments);
     }
 
-    public final PException raise(VirtualFrame frame, PythonBuiltinClassType type, PException cause, TruffleString format, Object... arguments) {
-        return getRaiseNode().raise(type, cause.setCatchingFrameAndGetEscapedException(frame, this), format, arguments);
+    public final PException raise(PythonBuiltinClassType type, PException cause, TruffleString format, Object... arguments) {
+        return getRaiseNode().raise(type, cause.getEscapedException(), format, arguments);
     }
 
     public final PException raise(PythonBuiltinClassType type, TruffleString format, Object... arguments) {

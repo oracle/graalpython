@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.tsArray;
+
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
@@ -57,8 +59,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
-import static com.oracle.graal.python.util.PythonUtils.tsArray;
 
 public class ConversionNodeTests {
     static final Signature SIGNATURE = new Signature(-1, false, -1, false, tsArray("arg"), null);
@@ -109,9 +109,8 @@ public class ConversionNodeTests {
             }
         } catch (PException e) {
             // materialize PException's error message since we are leaving Python
-            PException exceptionForReraise = e.getExceptionForReraise();
-            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
-            throw exceptionForReraise;
+            e.setMessage(e.getUnreifiedException().getFormattedMessage());
+            throw e;
         }
     }
 

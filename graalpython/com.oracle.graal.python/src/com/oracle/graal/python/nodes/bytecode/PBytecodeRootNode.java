@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -462,6 +462,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private final Signature signature;
     private final TruffleString name;
+    private final boolean internal;
     private boolean pythonInternal;
 
     final int celloffset;
@@ -623,6 +624,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.stackoffset = freeoffset + co.freevars.length;
         this.bcioffset = stackoffset + co.stacksize;
         this.source = source;
+        this.internal = source.isInternal();
         this.parserErrorCallback = parserErrorCallback;
         this.signature = sign;
         this.bytecode = PythonUtils.arrayCopyOf(co.code, co.code.length);
@@ -2235,8 +2237,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     CompilerAsserts.partialEvaluationConstant(targetIndex);
                     chainPythonExceptions(virtualFrame, mutableData, pe);
                     if (targetIndex == -1) {
-                        reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, e, pe, tracingEnabled, profilingEnabled);
-                        throw e;
+                        throw reraiseUnhandledException(virtualFrame, localFrame, initialStackTop, isGeneratorOrCoroutine, mutableData, bciSlot, beginBci, pe, tracingEnabled, profilingEnabled);
                     }
                     if (pe != null) {
                         pe.setCatchingFrameReference(virtualFrame, this, beginBci);
@@ -2419,7 +2420,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private int bytecodeExitWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         ExitWithNode exitWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_WITH_NODE, ExitWithNodeGen.class, NODE_EXIT_WITH, useCachedNodes);
-        return exitWithNode.execute(virtualFrame, stackTop);
+        return exitWithNode.execute(virtualFrame, stackTop, frameIsVisibleToPython());
     }
 
     @BytecodeInterpreterSwitch
@@ -2470,7 +2471,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object exception = virtualFrame.getObject(stackTop);
         Object origException = exception;
         if (!(exception instanceof PException)) {
-            exception = wrapJavaException((Throwable) exception, factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.M, new Object[]{exception}));
+            exception = ExceptionUtils.wrapJavaException((Throwable) exception, this, factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.M, new Object[]{exception}));
         }
         if (!mutableData.fetchedException) {
             mutableData.outerException = PArguments.getException(arguments);
@@ -2652,11 +2653,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private boolean isTracingEnabled(Assumption noTrace, MutableLoopData mutableData) {
-        return !noTrace.isValid() && mutableData.getThreadState(this).getTraceFun() != null;
+        return !noTrace.isValid() && mutableData.getThreadState(this).getTraceFun() != null && frameIsVisibleToPython();
     }
 
     private boolean isProfilingEnabled(Assumption noTracing, MutableLoopData mutableData) {
-        return !noTracing.isValid() && mutableData.getThreadState(this).getProfileFun() != null;
+        return !noTracing.isValid() && mutableData.getThreadState(this).getProfileFun() != null && frameIsVisibleToPython();
     }
 
     private void traceOrProfileYield(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, boolean tracingEnabled, boolean profilingEnabled) {
@@ -2681,9 +2682,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void traceException(VirtualFrame virtualFrame, MutableLoopData mutableData, int bci, PException pe) {
         mutableData.setPyFrame(ensurePyFrame(virtualFrame));
         if (mutableData.getPyFrame().getLocalTraceFun() != null) {
-            Object traceback = GetExceptionTracebackNode.getUncached().execute(pe);
-            PBaseException peForPython = pe.setCatchingFrameAndGetEscapedException(virtualFrame, this);
+            pe.setCatchingFrameReference(virtualFrame, this, bci);
+            PBaseException peForPython = pe.getEscapedException();
             Object peType = GetClassNode.getUncached().execute(peForPython);
+            Object traceback = GetExceptionTracebackNode.getUncached().execute(pe);
             invokeTraceFunction(virtualFrame,
                             factory.createTuple(new Object[]{peType, peForPython, traceback}), mutableData.getThreadState(this),
                             mutableData,
@@ -2975,10 +2977,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot, int beginBci,
-                    Throwable e, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
+    private PException reraiseUnhandledException(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, boolean isGeneratorOrCoroutine, MutableLoopData mutableData, int bciSlot,
+                    int beginBci, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
         // For tracebacks
         setCurrentBci(virtualFrame, bciSlot, beginBci);
+        pe.notifyAddedTracebackFrame(frameIsVisibleToPython());
         if (isGeneratorOrCoroutine) {
             if (localFrame != virtualFrame) {
                 // Unwind the generator frame stack
@@ -2989,11 +2992,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             LoopNode.reportLoopCount(this, mutableData.loopCount);
         }
         traceOrProfileReturn(virtualFrame, mutableData, PNone.NONE, tracingEnabled, profilingEnabled);
-        if (e == pe) {
-            throw pe;
-        } else if (pe != null) {
-            throw pe.getExceptionForReraise();
-        }
+        throw pe;
     }
 
     @InliningCutoff
@@ -4349,23 +4348,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return null;
         }
         if (PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions) && (e instanceof Exception || e instanceof AssertionError)) {
-            return wrapJavaException(e, factory.createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
+            return ExceptionUtils.wrapJavaException(e, this, factory.createBaseException(SystemError, ErrorMessages.M, new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             PythonContext.get(this).reacquireGilAfterStackOverflow();
-            return wrapJavaException(e, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
+            return ExceptionUtils.wrapJavaException(e, this, factory.createBaseException(RecursionError, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED, new Object[]{}));
         }
         return null;
-    }
-
-    public PException wrapJavaException(Throwable e, PBaseException pythonException) {
-        PException pe = PException.fromObject(pythonException, this, e);
-        pe.setHideLocation(true);
-        // Host exceptions have their stacktrace already filled in, call this to set
-        // the cutoff point to the catch site
-        pe.getTruffleStackTrace();
-        return pe;
     }
 
     @ExplodeLoop
@@ -4497,7 +4487,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private PException bytecodeEndExcHandler(VirtualFrame virtualFrame, int stackTop) {
         Object exception = virtualFrame.getObject(stackTop);
         if (exception instanceof PException) {
-            throw ((PException) exception).getExceptionForReraise();
+            throw ((PException) exception).getExceptionForReraise(frameIsVisibleToPython());
         } else if (exception instanceof AbstractTruffleException) {
             throw (AbstractTruffleException) exception;
         } else {
@@ -5137,7 +5127,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else {
             exception = PNone.NO_VALUE;
         }
-        raiseNode.execute(virtualFrame, exception, cause);
+        raiseNode.execute(virtualFrame, exception, cause, frameIsVisibleToPython());
         throw CompilerDirectives.shouldNotReachHere();
     }
 
@@ -5545,6 +5535,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return co.startLine;
     }
 
+    public boolean frameIsVisibleToPython() {
+        return !internal;
+    }
+
     @Override
     public SourceSection getSourceSection() {
         if (sourceSection != null) {
@@ -5564,7 +5558,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public boolean isInternal() {
-        return source != null && source.isInternal();
+        return internal;
     }
 
     @Override

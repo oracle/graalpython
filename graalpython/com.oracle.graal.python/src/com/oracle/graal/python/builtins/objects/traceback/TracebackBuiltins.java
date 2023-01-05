@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,45 +107,34 @@ public final class TracebackBuiltins extends PythonBuiltins {
              * creep in. They would be incorrect because we are no longer in the location where the
              * exception was caught, and unwanted because Python doesn't include frames from the
              * active stack in the traceback. Truffle doesn't tell us where the boundary between
-             * exception frames and frames from the Java stack is, so we cut it off when we see the
-             * current call target in the stacktrace.
+             * exception frames and frames from the Java stack is, so we cut it off based on our
+             * counting we did in the bytecode root node.
              */
             PTraceback next = null;
-            if (tb.getLazyTraceback().getNextChain() != null) {
-                next = getTracebackNode.execute(tb.getLazyTraceback().getNextChain());
+            LazyTraceback lazyTraceback = tb.getLazyTraceback();
+            if (lazyTraceback.getNextChain() != null) {
+                next = getTracebackNode.execute(lazyTraceback.getNextChain());
             }
             // The logic of skipping and cutting off frames here and in GetTracebackNode must be the
             // same
-            PException pException = tb.getLazyTraceback().getException();
-            boolean skipFirst = pException.shouldHideLocation();
-            for (TruffleStackTraceElement element : pException.getTruffleStackTrace()) {
-                if (pException.shouldCutOffTraceback(element)) {
-                    break;
-                }
-                if (skipFirst) {
-                    skipFirst = false;
-                    continue;
-                }
-                if (LazyTraceback.elementWantedForTraceback(element)) {
-                    /*
-                     * Bytecode tracebacks pull location data from corresponding stacktrace element.
-                     * AST tracebacks pull locations from the call node of the element "above".
-                     */
+            PException pException = lazyTraceback.getException();
+            List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(pException);
+            if (stackTrace != null) {
+                for (int truffleIndex = pException.getTracebackStartIndex(), pyIndex = 0; truffleIndex < stackTrace.size() && pyIndex < pException.getTracebackFrameCount(); truffleIndex++) {
+                    TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
                         next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                        pyIndex++;
                     }
                 }
             }
-            if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
-                PBytecodeRootNode rootNode = (PBytecodeRootNode) pException.getCatchLocation();
-                tb.setLineno(rootNode.bciToLine(pException.getCatchBci()));
+            if (lazyTraceback.catchingFrameWantedForTraceback()) {
+                tb.setLineno(pException.getCatchRootNode().bciToLine(pException.getCatchBci()));
                 tb.setNext(next);
             } else {
                 assert next != null;
-                tb.setLineno(next.getLineno());
-                tb.setFrame(next.getFrame());
-                tb.setNext(next.getNext());
+                tb.copyFrom(next);
             }
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }

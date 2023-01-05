@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,7 +86,7 @@ public abstract class LoadCExtException extends Exception {
 
         public PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
             if (cause != null) {
-                throw cause.getExceptionForReraise();
+                throw cause.getExceptionForReraise(false);
             }
             throw raiseNode.executeWithFmtMessageAndArgs(frame, SystemError, formatString, formatArgs, null);
         }

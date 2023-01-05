@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -269,7 +269,7 @@ public final class PBaseException extends PythonObject {
             }
             sb.append(") )");
         } else if (hasMessageFormat) {
-            sb.append("(fmt=\"").append(messageFormat.toJavaStringUncached()).append('"');
+            sb.append("(\"").append(messageFormat.toJavaStringUncached()).append("\")");
         }
         return sb.toString();
     }
@@ -298,16 +298,10 @@ public final class PBaseException extends PythonObject {
      * accumulating more frames by being reraised in the meantime. That's why this method takes an
      * explicit traceback argument
      * </p>
-     *
-     * <p>
-     * Reraises shouldn't be visible in the stacktrace. We mark them as such.
-     * </p>
      **/
     public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
         setTraceback(reraiseTraceback);
-        PException newException = PException.fromObject(this, exception.getLocation(), false);
-        newException.setHideLocation(true);
-        return newException;
+        return PException.fromObject(this, exception.getLocation(), false);
     }
 
     @ExportMessage

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public final class PTraceback extends PythonBuiltinObject {
     public static final int UNKNOWN_LINE_NUMBER = -2;
@@ -76,7 +76,13 @@ public final class PTraceback extends PythonBuiltinObject {
         this.lazyTraceback = lazyTraceback;
         this.frameInfo = lazyTraceback.getFrameInfo();
         this.frame = lazyTraceback.getFrame();
-        this.lineno = lazyTraceback.getLineNo();
+    }
+
+    public void copyFrom(PTraceback other) {
+        frame = other.frame;
+        frameInfo = other.frameInfo;
+        lineno = other.lineno;
+        next = other.next;
     }
 
     public PFrame getFrame() {
@@ -92,6 +98,9 @@ public final class PTraceback extends PythonBuiltinObject {
     }
 
     public int getLineno() {
+        if (lineno == UNKNOWN_LINE_NUMBER && lazyTraceback != null) {
+            lineno = lazyTraceback.getLineNo();
+        }
         return lineno;
     }
 

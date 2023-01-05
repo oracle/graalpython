@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2023, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -103,6 +103,7 @@ MICRO_BENCHMARKS = {
     'try-except-store-simple': ITER_10 + ['500_000_000'],
     'try-except-store-two-types': ITER_10 + ['100_000_000'],
     'try-except-two-types': ITER_10 + ['100_000_000'],
+    'with-exception': ITER_10 + ['100_000_000'],
     'tuple-indexing-from-constructor': ITER_10 + ['10000000'],
     'tuple-indexing-from-literal': ITER_10 + ['10000000'],
     'repeated-import': ITER_10 + ['10000000'],
@@ -153,6 +154,7 @@ MICRO_BENCHMARKS_SMALL = {
     'try-except-store-simple': ITER_6 + WARMUP_2 + ['2_000_000'],
     'try-except-store-two-types': ITER_6 + WARMUP_2 + ['1_000_000'],
     'try-except-two-types': ITER_6 + WARMUP_2 + ['1_000_000'],
+    'with-exception': ITER_6 + WARMUP_2 + ['5_000_000'],
     'tuple-indexing-from-constructor': ITER_6 + WARMUP_2 + ['250_000'],
     'tuple-indexing-from-literal': ITER_6 + WARMUP_2 + ['400_000'],
 }

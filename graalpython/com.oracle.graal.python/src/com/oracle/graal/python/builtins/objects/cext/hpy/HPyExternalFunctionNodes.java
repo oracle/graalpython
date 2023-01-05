@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1083,7 +1083,7 @@ public abstract class HPyExternalFunctionNodes {
                 if (!errOccurred) {
                     throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION, name);
                 } else {
-                    throw currentException.getExceptionForReraise();
+                    throw currentException.getExceptionForReraise(false);
                 }
             } else if (errOccurred) {
                 // consume exception

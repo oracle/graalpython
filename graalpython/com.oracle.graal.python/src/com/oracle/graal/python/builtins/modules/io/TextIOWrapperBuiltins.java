@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,7 +120,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REPR__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
-import static com.oracle.graal.python.runtime.exception.ExceptionUtils.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -555,8 +554,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         callMethodClose.execute(frame, self.getBuffer(), T_CLOSE);
                         throw e;
                     } catch (PException ee) {
-                        chainExceptions(ee.getEscapedException(), e);
-                        throw ee.getExceptionForReraise();
+                        throw ee.chainException(e);
                     }
                 }
                 return callMethodClose.execute(frame, self.getBuffer(), T_CLOSE);

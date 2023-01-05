@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -162,7 +162,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             try {
                 result = (GeneratorYieldResult) call.execute(frame, null, null, null, arguments);
             } catch (PException e) {
-                throw handleException(frame, self, errorProfile, raiseNode, e);
+                throw handleException(self, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter();
                 throw handleReturn(self, e, raiseNode);
@@ -193,7 +193,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                     result = (GeneratorYieldResult) call.execute(self.getCurrentCallTarget(), arguments);
                 }
             } catch (PException e) {
-                throw handleException(frame, self, errorProfile, raiseNode, e);
+                throw handleException(self, errorProfile, raiseNode, e);
             } catch (GeneratorReturnException e) {
                 returnProfile.enter();
                 throw handleReturn(self, e, raiseNode);
@@ -203,12 +203,12 @@ public class GeneratorBuiltins extends PythonBuiltins {
             return handleResult(self, result);
         }
 
-        private PException handleException(VirtualFrame frame, PGenerator self, IsBuiltinClassProfile errorProfile, PRaiseNode raiseNode, PException e) {
+        private PException handleException(PGenerator self, IsBuiltinClassProfile errorProfile, PRaiseNode raiseNode, PException e) {
             self.markAsFinished();
             // PEP 479 - StopIteration raised from generator body needs to be wrapped in
             // RuntimeError
             e.expectStopIteration(errorProfile);
-            throw raiseNode.raise(RuntimeError, e.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
+            throw raiseNode.raise(RuntimeError, e.getEscapedException(), ErrorMessages.GENERATOR_RAISED_STOPITER);
         }
 
         private Object handleResult(PGenerator self, GeneratorYieldResult result) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,7 +95,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.GetNextNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -259,11 +258,9 @@ public final class IOBaseBuiltins extends PythonBuiltins {
                     try {
                         setAttributeNode.execute(frame, self, true);
                     } catch (PException e1) {
-                        PBaseException ee = e1.getEscapedException();
-                        ee.setContext(e.setCatchingFrameAndGetEscapedException(frame, this));
-                        throw getRaiseNode().raiseExceptionObject(ee);
+                        throw e1.chainException(e);
                     }
-                    throw e.getExceptionForReraise();
+                    throw e;
                 }
                 setAttributeNode.execute(frame, self, true);
             }
