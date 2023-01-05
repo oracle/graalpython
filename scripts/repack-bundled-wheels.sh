@@ -39,13 +39,6 @@
 #!/bin/bash
 set -eo pipefail
 
-if [ $# -ne 2 ]; then
-    echo "Patches budled wheels"
-    echo "Usage: repack-bundled-wheels.sh package_name path/to/a/patch/file.patch"
-    echo "Example: repack-bundled-wheels.sh setuptools graalpython/lib-graalpython/patches/setuptools/whl/setuptools-63.patch"
-    exit 1
-fi
-
 GIT_DIR="$(realpath "$(dirname "$0")/..")"
 BUNDLED_DIR="graalpython/lib-python/3/ensurepip/_bundled"
 
@@ -66,8 +59,7 @@ patch_wheel() {
     local tmpdir="$(basename -s '.whl' "$wheel")"
     rm -rf "$tmpdir"
     mkdir "$tmpdir"
-    git fetch origin python-import
-    git show "origin/python-import:$wheel" > tmp.whl
+    git show "python-import:$wheel" > tmp.whl
     cd "$tmpdir"
     unzip ../tmp.whl
     rm ../tmp.whl
@@ -77,4 +69,5 @@ patch_wheel() {
     rm -rf "$tmpdir"
 }
 
-patch_wheel "$@"
+patch_wheel setuptools graalpython/lib-graalpython/patches/setuptools/whl/setuptools-63.patch
+patch_wheel pip graalpython/lib-graalpython/patches/pip/whl/pip-22.2.2.patch
