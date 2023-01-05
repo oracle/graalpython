@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -349,7 +349,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                  * Python exceptions that occur during the HPy API initialization are just passed
                  * through.
                  */
-                throw e.getExceptionForReraise();
+                throw e.getExceptionForReraise(false);
             } catch (RuntimeException | InteropException e) {
                 throw new ApiInitException(CExtContext.wrapJavaException(e, node), name, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
             }
@@ -1118,8 +1118,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                              * never receive a Python exception. If it happens, consider that to be
                              * a problem (however, it is not fatal problem).
                              */
-                            PException exceptionForReraise = e.getExceptionForReraise();
-                            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
+                            e.setMessage(e.getUnreifiedException().getFormattedMessage());
                             LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
                         }
                     }

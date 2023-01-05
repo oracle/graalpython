@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -982,7 +982,7 @@ public final class CApiContext extends CExtContext {
                  * Python exceptions that occur during the C API initialization are just passed
                  * through
                  */
-                throw e.getExceptionForReraise();
+                throw e;
             } catch (RuntimeException e) {
                 if (!context.isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);

@@ -298,16 +298,10 @@ public final class PBaseException extends PythonObject {
      * accumulating more frames by being reraised in the meantime. That's why this method takes an
      * explicit traceback argument
      * </p>
-     *
-     * <p>
-     * Reraises shouldn't be visible in the stacktrace. We mark them as such.
-     * </p>
      **/
     public PException getExceptionForReraise(LazyTraceback reraiseTraceback) {
         setTraceback(reraiseTraceback);
-        PException newException = PException.fromObject(this, exception.getLocation(), false);
-        newException.skipFirstTracebackFrame();
-        return newException;
+        return PException.fromObject(this, exception.getLocation(), false);
     }
 
     @ExportMessage

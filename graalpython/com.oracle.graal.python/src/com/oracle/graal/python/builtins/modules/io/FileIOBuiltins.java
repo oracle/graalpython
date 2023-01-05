@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,7 +100,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.O_RDONLY;
 import static com.oracle.graal.python.runtime.PosixConstants.O_RDWR;
 import static com.oracle.graal.python.runtime.PosixConstants.O_TRUNC;
 import static com.oracle.graal.python.runtime.PosixConstants.O_WRONLY;
-import static com.oracle.graal.python.runtime.exception.ExceptionUtils.chainExceptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -896,8 +895,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 try {
                     internalClose(frame, self, posixClose);
                 } catch (PException ee) {
-                    chainExceptions(ee.getEscapedException(), e);
-                    throw ee.getExceptionForReraise();
+                    throw ee.chainException(e);
                 }
                 throw e;
             }
@@ -925,8 +923,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 internalClose(frame, self, posixClose);
             } catch (PException ee) {
                 if (rawIOException != null) {
-                    chainExceptions(ee.getEscapedException(), rawIOException);
-                    throw ee.getExceptionForReraise();
+                    throw ee.chainException(rawIOException);
                 } else {
                     throw ee;
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,10 +65,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class ExitWithNode extends PNodeWithContext {
-    public abstract int execute(Frame frame, int stackTop);
+    public abstract int execute(Frame frame, int stackTop, boolean rootNodeVisible);
 
     @Specialization
-    int exit(VirtualFrame virtualFrame, int stackTopIn,
+    int exit(VirtualFrame virtualFrame, int stackTopIn, boolean rootNodeVisible,
                     @Cached CallQuaternaryMethodNode callExit,
                     @Cached GetClassNode getClassNode,
                     @Cached GetExceptionTracebackNode getTracebackNode,
@@ -96,7 +96,7 @@ public abstract class ExitWithNode extends PNodeWithContext {
                 Object result = callExit.execute(virtualFrame, exit, contextManager, excType, pythonException, excTraceback);
                 if (!isTrueNode.execute(virtualFrame, result)) {
                     if (exception instanceof PException) {
-                        throw ((PException) exception).getExceptionForReraise();
+                        throw ((PException) exception).getExceptionForReraise(rootNodeVisible);
                     } else if (exception instanceof AbstractTruffleException) {
                         throw (AbstractTruffleException) exception;
                     } else {

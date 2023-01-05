@@ -86,7 +86,6 @@ public final class PException extends AbstractTruffleException {
     private LazyTraceback traceback;
     private boolean reified = false;
     private boolean skipFirstTracebackFrame;
-    private boolean needsToSkipFirstTracebackFrame;
     private int tracebackFrameCount;
 
     private PException(PBaseException actual, Node node) {
@@ -173,15 +172,11 @@ public final class PException extends AbstractTruffleException {
 
     public void skipFirstTracebackFrame() {
         this.skipFirstTracebackFrame = true;
-        this.needsToSkipFirstTracebackFrame = true;
-    }
-
-    public boolean needsToSkipFirstTracebackFrame() {
-        return needsToSkipFirstTracebackFrame;
+        this.tracebackFrameCount = -1;
     }
 
     public boolean catchingFrameWantedForTraceback() {
-        return !needsToSkipFirstTracebackFrame && catchRootNode != null && catchRootNode.visibleInTracebacks();
+        return tracebackFrameCount >= 0 && catchRootNode != null && catchRootNode.visibleInTracebacks();
     }
 
     public PBytecodeRootNode getCatchRootNode() {
@@ -311,9 +306,7 @@ public final class PException extends AbstractTruffleException {
     }
 
     public void notifyAddedTracebackFrame(boolean visible) {
-        if (needsToSkipFirstTracebackFrame) {
-            needsToSkipFirstTracebackFrame = false;
-        } else if (visible) {
+        if (visible) {
             tracebackFrameCount++;
         }
     }
@@ -325,8 +318,23 @@ public final class PException extends AbstractTruffleException {
      * traceback look like the last catch didn't happen, which is desired in `raise` without
      * arguments, at the end of `finally`, `__exit__`...
      */
-    public PException getExceptionForReraise() {
-        return pythonException.getExceptionForReraise(getTraceback());
+    public PException getExceptionForReraise(boolean rootNodeVisible) {
+        PException pe = pythonException.getExceptionForReraise(getTraceback());
+        if (rootNodeVisible) {
+            pe.skipFirstTracebackFrame();
+        }
+        return pe;
+    }
+
+    /**
+     * Equivalent of CPython's {_PyErr_ChainExceptions}. Performs a simple exception chaining
+     * without checking for cycles (not suitable to implement try-except).
+     */
+    public PException chainException(PException e) {
+        PBaseException chainedException = e.getEscapedException();
+        chainedException.setTraceback(e.getTraceback());
+        getUnreifiedException().setContext(chainedException);
+        return this;
     }
 
     @TruffleBoundary
@@ -351,7 +359,7 @@ public final class PException extends AbstractTruffleException {
     RuntimeException throwException(@Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            throw getExceptionForReraise();
+            throw getExceptionForReraise(false);
         } finally {
             gil.release(mustRelease);
         }

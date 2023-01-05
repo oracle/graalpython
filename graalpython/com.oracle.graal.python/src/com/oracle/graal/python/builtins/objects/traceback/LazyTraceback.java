@@ -146,7 +146,7 @@ public class LazyTraceback {
         if (catchingFrameWantedForTraceback()) {
             count++;
         }
-        return count == 0;
+        return count <= 0;
     }
 
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {

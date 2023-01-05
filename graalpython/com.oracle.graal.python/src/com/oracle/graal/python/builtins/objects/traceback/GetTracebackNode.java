@@ -104,7 +104,7 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
  * the program, because its Truffle stacktrace may already be frozen and it would not capture more
  * frames. If you need to rethrow without the catching site appearing in the traceback, use
- * {@link PException#getExceptionForReraise()} method to obtain a fresh {@link PException
+ * {@link PException#getExceptionForReraise(boolean)} method to obtain a fresh {@link PException
  * PException} to throw</li>
  * </ul>
  * </p>

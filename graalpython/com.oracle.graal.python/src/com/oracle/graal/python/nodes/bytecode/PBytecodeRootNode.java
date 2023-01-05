@@ -2420,7 +2420,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private int bytecodeExitWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         ExitWithNode exitWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_WITH_NODE, ExitWithNodeGen.class, NODE_EXIT_WITH, useCachedNodes);
-        return exitWithNode.execute(virtualFrame, stackTop);
+        return exitWithNode.execute(virtualFrame, stackTop, visibleInTracebacks());
     }
 
     @BytecodeInterpreterSwitch
@@ -4487,7 +4487,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private PException bytecodeEndExcHandler(VirtualFrame virtualFrame, int stackTop) {
         Object exception = virtualFrame.getObject(stackTop);
         if (exception instanceof PException) {
-            throw ((PException) exception).getExceptionForReraise();
+            throw ((PException) exception).getExceptionForReraise(visibleInTracebacks());
         } else if (exception instanceof AbstractTruffleException) {
             throw (AbstractTruffleException) exception;
         } else {
@@ -5127,7 +5127,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else {
             exception = PNone.NO_VALUE;
         }
-        raiseNode.execute(virtualFrame, exception, cause);
+        raiseNode.execute(virtualFrame, exception, cause, visibleInTracebacks());
         throw CompilerDirectives.shouldNotReachHere();
     }
 
