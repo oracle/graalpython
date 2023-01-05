@@ -2420,7 +2420,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     private int bytecodeExitWith(VirtualFrame virtualFrame, boolean useCachedNodes, int stackTop, Node[] localNodes, int beginBci) {
         ExitWithNode exitWithNode = insertChildNode(localNodes, beginBci, UNCACHED_EXIT_WITH_NODE, ExitWithNodeGen.class, NODE_EXIT_WITH, useCachedNodes);
-        return exitWithNode.execute(virtualFrame, stackTop, visibleInTracebacks());
+        return exitWithNode.execute(virtualFrame, stackTop, frameIsVisibleToPython());
     }
 
     @BytecodeInterpreterSwitch
@@ -2653,11 +2653,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private boolean isTracingEnabled(Assumption noTrace, MutableLoopData mutableData) {
-        return !noTrace.isValid() && mutableData.getThreadState(this).getTraceFun() != null;
+        return !noTrace.isValid() && mutableData.getThreadState(this).getTraceFun() != null && frameIsVisibleToPython();
     }
 
     private boolean isProfilingEnabled(Assumption noTracing, MutableLoopData mutableData) {
-        return !noTracing.isValid() && mutableData.getThreadState(this).getProfileFun() != null;
+        return !noTracing.isValid() && mutableData.getThreadState(this).getProfileFun() != null && frameIsVisibleToPython();
     }
 
     private void traceOrProfileYield(VirtualFrame virtualFrame, MutableLoopData mutableData, Object value, boolean tracingEnabled, boolean profilingEnabled) {
@@ -2981,7 +2981,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     int beginBci, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
         // For tracebacks
         setCurrentBci(virtualFrame, bciSlot, beginBci);
-        pe.notifyAddedTracebackFrame(visibleInTracebacks());
+        pe.notifyAddedTracebackFrame(frameIsVisibleToPython());
         if (isGeneratorOrCoroutine) {
             if (localFrame != virtualFrame) {
                 // Unwind the generator frame stack
@@ -4487,7 +4487,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private PException bytecodeEndExcHandler(VirtualFrame virtualFrame, int stackTop) {
         Object exception = virtualFrame.getObject(stackTop);
         if (exception instanceof PException) {
-            throw ((PException) exception).getExceptionForReraise(visibleInTracebacks());
+            throw ((PException) exception).getExceptionForReraise(frameIsVisibleToPython());
         } else if (exception instanceof AbstractTruffleException) {
             throw (AbstractTruffleException) exception;
         } else {
@@ -5127,7 +5127,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else {
             exception = PNone.NO_VALUE;
         }
-        raiseNode.execute(virtualFrame, exception, cause, visibleInTracebacks());
+        raiseNode.execute(virtualFrame, exception, cause, frameIsVisibleToPython());
         throw CompilerDirectives.shouldNotReachHere();
     }
 
@@ -5535,7 +5535,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return co.startLine;
     }
 
-    public boolean visibleInTracebacks() {
+    public boolean frameIsVisibleToPython() {
         return !internal;
     }
 

@@ -176,7 +176,7 @@ public final class PException extends AbstractTruffleException {
     }
 
     public boolean catchingFrameWantedForTraceback() {
-        return tracebackFrameCount >= 0 && catchRootNode != null && catchRootNode.visibleInTracebacks();
+        return tracebackFrameCount >= 0 && catchRootNode != null && catchRootNode.frameIsVisibleToPython();
     }
 
     public PBytecodeRootNode getCatchRootNode() {
