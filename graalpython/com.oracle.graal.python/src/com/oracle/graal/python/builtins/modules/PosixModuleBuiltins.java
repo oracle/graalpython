@@ -295,6 +295,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        Object posixSupport = core.getContext().getPosixSupport();
+
         // fill the environ dictionary with the current environment
         // TODO we should probably use PosixSupportLibrary to get environ
         Map<String, String> getenv = System.getenv();
@@ -312,10 +315,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
                 TruffleString value = core.getContext().getOption(PythonOptions.Executable);
-
                 try {
-                    PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
-                    Object posixSupport = core.getContext().getPosixSupport();
                     Object k = posixLib.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
                     Object v = posixLib.createPathFromString(posixSupport, value);
                     posixLib.setenv(posixSupport, k, v, true);
@@ -343,6 +343,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
         Object environAttr = posix.getAttribute(tsLiteral("environ"));
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
+
+        if (posixLib.getBackend(posixSupport).toJavaStringUncached().equals("java")) {
+            posix.setAttribute(toTruffleStringUncached("statvfs"), PNone.NO_VALUE);
+        }
     }
 
     @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)

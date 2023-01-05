@@ -123,7 +123,6 @@
 *graalpython.lib-python.3.test.test_os.OSErrorTests.test_oserror_filename
 *graalpython.lib-python.3.test.test_os.PathTConverterTests.test_path_t_converter
 *graalpython.lib-python.3.test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class
-*graalpython.lib-python.3.test.test_os.Pep383Tests.test_statvfs
 *graalpython.lib-python.3.test.test_os.PidTests.test_getppid
 *graalpython.lib-python.3.test.test_os.PidTests.test_waitpid_windows
 *graalpython.lib-python.3.test.test_os.PidTests.test_waitstatus_to_exitcode_windows
