@@ -40,15 +40,9 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -57,7 +51,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ReadNameNode extends PNodeWithContext implements AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
-    @Child protected IsBuiltinClassProfile keyError = IsBuiltinClassProfile.create();
     protected final TruffleString attributeId;
 
     public abstract Object execute(VirtualFrame frame);
@@ -78,40 +71,19 @@ public abstract class ReadNameNode extends PNodeWithContext implements AccessNam
         return readGlobalNode;
     }
 
-    private Object readGlobalsIfKeyError(VirtualFrame frame, PException e) {
-        e.expect(PythonBuiltinClassType.KeyError, keyError);
-        return getReadGlobalNode().execute(frame);
-    }
-
-    protected static HashingStorage getStorage(VirtualFrame frame) {
-        return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
-    }
-
     @Specialization(guards = "!hasLocals(frame)")
     protected Object readFromLocals(VirtualFrame frame) {
         return getReadGlobalNode().execute(frame);
     }
 
-    @Specialization(guards = "hasLocalsDict(frame)")
+    @Specialization(guards = "hasLocals(frame)")
     protected Object readFromLocalsDict(VirtualFrame frame,
-                    @Cached HashingStorageGetItem getItem) {
-        Object result = getItem.execute(frame, getStorage(frame), attributeId);
-        if (result == null) {
+                    @Cached ReadFromLocalsNode readFromLocals) {
+        Object result = readFromLocals.execute(frame, PArguments.getSpecialArgument(frame), attributeId);
+        if (result == PNone.NO_VALUE) {
             return getReadGlobalNode().execute(frame);
         } else {
             return result;
         }
     }
-
-    @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
-    protected Object readFromLocals(VirtualFrame frame,
-                    @Cached PyObjectGetItem getItem) {
-        Object frameLocals = PArguments.getSpecialArgument(frame);
-        try {
-            return getItem.execute(frame, frameLocals, attributeId);
-        } catch (PException e) {
-            return readGlobalsIfKeyError(frame, e);
-        }
-    }
-
 }
