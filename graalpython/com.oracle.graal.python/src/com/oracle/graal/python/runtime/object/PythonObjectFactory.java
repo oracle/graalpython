@@ -27,11 +27,9 @@ package com.oracle.graal.python.runtime.object;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
-import java.security.MessageDigest;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Semaphore;
 
-import javax.crypto.Mac;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
@@ -1493,11 +1491,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PUnionType(PythonBuiltinClassType.PUnionType, getShape(PythonBuiltinClassType.PUnionType), createTuple(args)));
     }
 
-    public final DigestObject createDigestObject(PythonBuiltinClassType type, MessageDigest digest) {
-        return trace(new DigestObject(type, getShape(type), digest));
-    }
-
-    public final DigestObject createDigestObject(PythonBuiltinClassType type, Mac mac) {
-        return trace(new DigestObject(type, getShape(type), mac));
+    public final DigestObject createDigestObject(PythonBuiltinClassType type, Object digest) {
+        return trace(DigestObject.create(type, getShape(type), digest));
     }
 }

@@ -51,73 +51,27 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
-public final class DigestObject extends PythonBuiltinObject {
-    private final MessageDigest digest;
-    private final Mac mac;
+public abstract class DigestObject extends PythonBuiltinObject {
     private byte[] finalDigest = null;
 
-    public DigestObject(PythonBuiltinClassType digestType, Shape instanceShape, MessageDigest digest) {
-        super(digestType, instanceShape);
-        this.digest = digest;
-        this.mac = null;
+    DigestObject(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
-    public DigestObject(PythonBuiltinClassType digestType, Shape instanceShape, Mac mac) {
-        super(digestType, instanceShape);
-        this.mac = mac;
-        this.digest = null;
-    }
-
-    Mac getMac() {
-        return mac;
-    }
-
-    MessageDigest getDigest() {
-        return digest;
+    public static DigestObject create(PythonBuiltinClassType digestType, Shape instanceShape, Object digest) {
+        if (digest instanceof MessageDigest md) {
+            return new MessageDigestObject(digestType, instanceShape, md);
+        } else if (digest instanceof Mac mac) {
+            return new MacDigestObject(digestType, instanceShape, mac);
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("unsupported digest type");
+        }
     }
 
     public PythonBuiltinClassType getType() {
         return (PythonBuiltinClassType) getInitialPythonClass();
     }
 
-    @TruffleBoundary
-    public DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
-        if (digest != null) {
-            return factory.createDigestObject(getType(), (MessageDigest) digest.clone());
-        } else {
-            return factory.createDigestObject(getType(), (Mac) mac.clone());
-        }
-    }
-
-    @TruffleBoundary
-    public byte[] digest() {
-        if (finalDigest == null) {
-            if (digest != null) {
-                finalDigest = digest.digest();
-            } else {
-                finalDigest = mac.doFinal();
-            }
-        }
-        return finalDigest;
-    }
-
-    @TruffleBoundary
-    public void update(byte[] data) {
-        if (digest != null) {
-            digest.update(data);
-        } else {
-            mac.update(data);
-        }
-    }
-
-    @TruffleBoundary
-    public int getDigestLength() {
-        if (digest != null) {
-            return digest.getDigestLength();
-        } else {
-            return mac.getMacLength();
-        }
-    }
 
     // The JDK does not expose the block sizes used by digests, so
     // they are hardcoded here. We use a switch over the type because
@@ -204,11 +158,97 @@ public final class DigestObject extends PythonBuiltinObject {
         }
     }
 
-    @TruffleBoundary
-    public String getAlgorithm() {
-        if (digest != null) {
+    byte[] digest() {
+        if (finalDigest == null) {
+            finalDigest = finalizeDigest();
+        }
+        return finalDigest;
+    }
+
+    abstract DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException;
+
+    abstract byte[] finalizeDigest();
+
+    abstract void update(byte[] data);
+
+    abstract int getDigestLength();
+
+    abstract String getAlgorithm();
+
+    private static final class MessageDigestObject extends DigestObject {
+        private final MessageDigest digest;
+
+        MessageDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, MessageDigest digest) {
+            super(digestType, instanceShape);
+            this.digest = digest;
+        }
+
+        @Override
+        @TruffleBoundary
+        DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
+            return factory.createDigestObject(getType(), digest.clone());
+        }
+
+        @Override
+        @TruffleBoundary
+        byte[] finalizeDigest() {
+            return digest.digest();
+        }
+
+        @Override
+        @TruffleBoundary
+        void update(byte[] data) {
+            digest.update(data);
+        }
+
+        @Override
+        @TruffleBoundary
+        int getDigestLength() {
+            return digest.getDigestLength();
+        }
+
+        @Override
+        @TruffleBoundary
+        public String getAlgorithm() {
             return digest.getAlgorithm().toLowerCase();
-        } else {
+        }
+    }
+
+    private static final class MacDigestObject extends DigestObject {
+        private final Mac mac;
+
+        MacDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, Mac mac) {
+            super(digestType, instanceShape);
+            this.mac = mac;
+        }
+
+        @Override
+        @TruffleBoundary
+        DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
+            return factory.createDigestObject(getType(), mac.clone());
+        }
+
+        @Override
+        @TruffleBoundary
+        byte[] finalizeDigest() {
+            return mac.doFinal();
+        }
+
+        @Override
+        @TruffleBoundary
+        void update(byte[] data) {
+            mac.update(data);
+        }
+
+        @Override
+        @TruffleBoundary
+        int getDigestLength() {
+            return mac.getMacLength();
+        }
+
+        @Override
+        @TruffleBoundary
+        public String getAlgorithm() {
             String algorithmWithHmacPrefix = mac.getAlgorithm();
             return algorithmWithHmacPrefix.replace("hmac", "hmac-").toLowerCase();
         }
