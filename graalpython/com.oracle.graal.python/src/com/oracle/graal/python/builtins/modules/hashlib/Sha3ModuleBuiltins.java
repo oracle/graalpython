@@ -64,17 +64,17 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
         return Sha3ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "sha3_sha224", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
+    @Builtin(name = "sha3_224", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA224Type)
-    @Builtin(name = "sha3_sha256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
+    @Builtin(name = "sha3_256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA256Type)
-    @Builtin(name = "sha3_sha384", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
+    @Builtin(name = "sha3_384", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA384Type)
-    @Builtin(name = "sha3_sha512", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
+    @Builtin(name = "sha3_512", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3SHA512Type)
-    @Builtin(name = "sha3_shake128", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
+    @Builtin(name = "shake_128", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake128Type)
-    @Builtin(name = "sha3_shake256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
+    @Builtin(name = "shake_256", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Sha3Shake256Type)
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {

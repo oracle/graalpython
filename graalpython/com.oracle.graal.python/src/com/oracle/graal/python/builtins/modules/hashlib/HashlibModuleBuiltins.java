@@ -109,10 +109,10 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
 
     private static final String OPENSSL_PREFIX = "openssl_";
     private static final Map<String, String> NAME_MAPPINGS = Map.of(
-                    "sha3_sha224", "sha3-sha224",
-                    "sha3_sha256", "sha3-sha256",
-                    "sha3_sha384", "sha3-sha384",
-                    "sha3_sha512", "sha3-sha512",
+                    "sha3_224", "sha3-sha224",
+                    "sha3_256", "sha3-sha256",
+                    "sha3_384", "sha3-sha384",
+                    "sha3_512", "sha3-sha512",
                     "shake_128", "SHAKE128",
                     "shake_256", "SHAKE256");
 
@@ -125,10 +125,10 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                     "sha256", "_sha256",
                     "sha384", "_sha512",
                     "sha512", "_sha512",
-                    "sha3_sha224", "_sha3",
-                    "sha3_sha256", "_sha3",
-                    "sha3_sha384", "_sha3",
-                    "sha3_sha512", "_sha3",
+                    "sha3_224", "_sha3",
+                    "sha3_256", "_sha3",
+                    "sha3_384", "_sha3",
+                    "sha3_512", "_sha3",
                     "shake_128", "_sha3",
                     "shake_256", "_sha3"
     };
