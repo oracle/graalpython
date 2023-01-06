@@ -96,9 +96,11 @@ public class Blake2ModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "blake2b", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "data"}, keywordOnlyNames = {"digest_size", "key", "salt", "person", "fanout", "depth", "leaf_size", "node_offset", "node_depth", "inner_size", "last_node",
+    @Builtin(name = "blake2b", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "data"}, keywordOnlyNames = {"digest_size", "key", "salt", "person", "fanout",
+                    "depth", "leaf_size", "node_offset", "node_depth", "inner_size", "last_node",
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Blake2bType)
-    @Builtin(name = "blake2s", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "data"}, keywordOnlyNames = {"digest_size", "key", "salt", "person", "fanout", "depth", "leaf_size", "node_offset", "node_depth", "inner_size", "last_node",
+    @Builtin(name = "blake2s", declaresExplicitSelf = true, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "data"}, keywordOnlyNames = {"digest_size", "key", "salt", "person", "fanout",
+                    "depth", "leaf_size", "node_offset", "node_depth", "inner_size", "last_node",
                     "usedforsecurity"}, constructsClass = PythonBuiltinClassType.Blake2sType)
     @ArgumentClinic(name = "digest_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @ArgumentClinic(name = "key", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = "PNone.NONE")
@@ -155,7 +157,8 @@ public class Blake2ModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         PException fail(VirtualFrame frame, Object type, Object data, Object digestSize,
-                        Object key, Object salt, Object person, Object fanout, Object depth, Object leafSize, Object nodeOffset, Object nodeDepth, Object innerSize, Object lastNode, Object usedforsecurity) {
+                        Object key, Object salt, Object person, Object fanout, Object depth, Object leafSize, Object nodeOffset, Object nodeDepth, Object innerSize, Object lastNode,
+                        Object usedforsecurity) {
             throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DIGEST_SIZE_BLAKE_ARGUMENT);
         }
     }
