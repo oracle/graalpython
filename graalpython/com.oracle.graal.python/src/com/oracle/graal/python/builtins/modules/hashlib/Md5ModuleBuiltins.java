@@ -68,7 +68,7 @@ public class Md5ModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.MD5Type, "md5", buffer, this);
+            return createNode.execute(frame, PythonBuiltinClassType.MD5Type, "md5", "md5", buffer, this);
         }
     }
 

@@ -68,7 +68,7 @@ public class Sha512ModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.SHA384Type, "sha384", buffer, this);
+            return createNode.execute(frame, PythonBuiltinClassType.SHA384Type, "sha384", "sha384", buffer, this);
         }
     }
 
@@ -78,7 +78,7 @@ public class Sha512ModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.SHA512Type, "sha512", buffer, this);
+            return createNode.execute(frame, PythonBuiltinClassType.SHA512Type, "sha512", "sha512", buffer, this);
         }
     }
 

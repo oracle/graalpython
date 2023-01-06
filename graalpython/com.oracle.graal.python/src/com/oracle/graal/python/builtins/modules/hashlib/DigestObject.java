@@ -63,17 +63,19 @@ import com.oracle.truffle.api.object.Shape;
  * forcing dependencies on e.g. BouncyCastle for hashing.
  */
 public abstract class DigestObject extends PythonBuiltinObject {
+    private final String name;
     private byte[] finalDigest = null;
 
-    DigestObject(Object cls, Shape instanceShape) {
+    DigestObject(Object cls, Shape instanceShape, String name) {
         super(cls, instanceShape);
+        this.name = name;
     }
 
-    public static DigestObject create(PythonBuiltinClassType digestType, Shape instanceShape, Object digest) {
+    public static DigestObject create(PythonBuiltinClassType digestType, Shape instanceShape, String name, Object digest) {
         if (digest instanceof MessageDigest md) {
-            return new MessageDigestObject(digestType, instanceShape, md);
+            return new MessageDigestObject(digestType, instanceShape, name, md);
         } else if (digest instanceof Mac mac) {
-            return new MacDigestObject(digestType, instanceShape, mac);
+            return new MacDigestObject(digestType, instanceShape, name, mac);
         } else {
             throw CompilerDirectives.shouldNotReachHere("unsupported digest type");
         }
@@ -123,6 +125,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
         PythonBuiltinClassType actualType = getType();
         switch (actualType) {
             case HashlibHash:
+            case HashlibHashXof:
             case HashlibHmac:
                 return determineMainDigestType();
             default:
@@ -151,31 +154,29 @@ public abstract class DigestObject extends PythonBuiltinObject {
             case "sha512":
             case "hmac-sha512":
                 return PythonBuiltinClassType.SHA512Type;
-            case "sha3-224":
-            case "hmac-sha3-224":
+            case "sha3_224":
+            case "hmac-sha3_224":
                 return PythonBuiltinClassType.Sha3SHA224Type;
-            case "sha3-256":
-            case "hmac-sha3-256":
+            case "sha3_256":
+            case "hmac-sha3_256":
                 return PythonBuiltinClassType.Sha3SHA256Type;
-            case "sha3-384":
-            case "hmac-sha3-384":
+            case "sha3_384":
+            case "hmac-sha3_384":
                 return PythonBuiltinClassType.Sha3SHA384Type;
-            case "sha3-512":
-            case "hmac-sha3-512":
+            case "sha3_512":
+            case "hmac-sha3_512":
                 return PythonBuiltinClassType.Sha3SHA512Type;
-            case "shake128":
+            case "shake_128":
                 return PythonBuiltinClassType.Sha3Shake128Type;
-            case "shake256":
+            case "shake_256":
                 return PythonBuiltinClassType.Sha3Shake256Type;
+            case "blake2s":
+                return PythonBuiltinClassType.Blake2sType;
+            case "blake2b":
+                return PythonBuiltinClassType.Blake2bType;
             default:
-                if (algorithm.contains("blake2s")) {
-                    return PythonBuiltinClassType.Blake2sType;
-                } else if (algorithm.contains("blake2b")) {
-                    return PythonBuiltinClassType.Blake2bType;
-                } else {
-                    // default to assume the same small blocksize as MD5
-                    return PythonBuiltinClassType.MD5Type;
-                }
+                // default to assume the same small blocksize as MD5
+                return PythonBuiltinClassType.MD5Type;
         }
     }
 
@@ -194,20 +195,22 @@ public abstract class DigestObject extends PythonBuiltinObject {
 
     abstract int getDigestLength();
 
-    abstract String getAlgorithm();
+    final String getAlgorithm() {
+        return name;
+    }
 
     private static final class MessageDigestObject extends DigestObject {
         private final MessageDigest digest;
 
-        MessageDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, MessageDigest digest) {
-            super(digestType, instanceShape);
+        MessageDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, String name, MessageDigest digest) {
+            super(digestType, instanceShape, name);
             this.digest = digest;
         }
 
         @Override
         @TruffleBoundary
         DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
-            return factory.createDigestObject(getType(), digest.clone());
+            return factory.createDigestObject(getType(), getAlgorithm(), digest.clone());
         }
 
         @Override
@@ -233,26 +236,20 @@ public abstract class DigestObject extends PythonBuiltinObject {
         int getDigestLength() {
             return digest.getDigestLength();
         }
-
-        @Override
-        @TruffleBoundary
-        public String getAlgorithm() {
-            return digest.getAlgorithm().toLowerCase().replace("sha3-", "sha3_");
-        }
     }
 
     private static final class MacDigestObject extends DigestObject {
         private final Mac mac;
 
-        MacDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, Mac mac) {
-            super(digestType, instanceShape);
+        MacDigestObject(PythonBuiltinClassType digestType, Shape instanceShape, String name, Mac mac) {
+            super(digestType, instanceShape, name);
             this.mac = mac;
         }
 
         @Override
         @TruffleBoundary
         DigestObject copy(PythonObjectFactory factory) throws CloneNotSupportedException {
-            return factory.createDigestObject(getType(), mac.clone());
+            return factory.createDigestObject(getType(), getAlgorithm(), mac.clone());
         }
 
         @Override
@@ -271,13 +268,6 @@ public abstract class DigestObject extends PythonBuiltinObject {
         @TruffleBoundary
         int getDigestLength() {
             return mac.getMacLength();
-        }
-
-        @Override
-        @TruffleBoundary
-        public String getAlgorithm() {
-            String algorithmWithHmacPrefix = mac.getAlgorithm();
-            return algorithmWithHmacPrefix.replace("hmac", "hmac-").toLowerCase();
         }
     }
 }

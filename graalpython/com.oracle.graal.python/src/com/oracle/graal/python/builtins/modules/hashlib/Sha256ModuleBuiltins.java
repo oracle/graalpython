@@ -68,7 +68,7 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.SHA224Type, "sha224", buffer, this);
+            return createNode.execute(frame, PythonBuiltinClassType.SHA224Type, "sha224", "sha224", buffer, this);
         }
     }
 
@@ -78,7 +78,7 @@ public class Sha256ModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
-            return createNode.execute(frame, PythonBuiltinClassType.SHA256Type, "sha256", buffer, this);
+            return createNode.execute(frame, PythonBuiltinClassType.SHA256Type, "sha256", "sha256", buffer, this);
         }
     }
 

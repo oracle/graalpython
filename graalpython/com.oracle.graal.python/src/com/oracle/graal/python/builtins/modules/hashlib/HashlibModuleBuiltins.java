@@ -288,6 +288,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Cached HashingStorageNodes.HashingStorageGetItem getItemNode,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStr,
+                        @Shared("castJStr") @Cached CastToJavaStringNode castJStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             // cast guaranteed in our initialize
@@ -295,7 +296,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
             Object name = getItemNode.execute(frame, constructors, digestmod);
             if (name != null) {
                 assert name instanceof TruffleString; // guaranteed in our initialize
-                return hmacNew(self, key, msg, name, castStr, acquireLib, bufferLib);
+                return hmacNew(self, key, msg, name, castStr, castJStr, acquireLib, bufferLib);
             } else {
                 throw raise(PythonBuiltinClassType.UnsupportedDigestmodError);
             }
@@ -304,6 +305,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isString(digestmodObj)")
         Object hmacNew(@SuppressWarnings("unused") PythonModule self, Object keyObj, Object msgObj, Object digestmodObj,
                         @Shared("castStr") @Cached CastToTruffleStringNode castStr,
+                        @Shared("castJStr") @Cached CastToJavaStringNode castJStr,
                         @Shared("acquireLib") @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
             TruffleString digestmod = castStr.execute(digestmodObj);
@@ -325,7 +327,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                 try {
                     byte[] msgBytes = msg == null ? null : bufferLib.getInternalOrCopiedByteArray(msg);
                     Mac mac = createMac(digestmod, bufferLib.getInternalOrCopiedByteArray(key), msgBytes);
-                    return factory().createDigestObject(PythonBuiltinClassType.HashlibHmac, mac);
+                    return factory().createDigestObject(PythonBuiltinClassType.HashlibHmac, castJStr.execute(digestmod), mac);
                 } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                     throw raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 } finally {
@@ -353,10 +355,10 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
     }
 
     abstract static class CreateDigestNode extends Node {
-        abstract Object execute(VirtualFrame frame, PythonBuiltinClassType type, String name, Object buffer, PythonBuiltinBaseNode indirectCallNode);
+        abstract Object execute(VirtualFrame frame, PythonBuiltinClassType type, String pythonName, String javaName, Object buffer, PythonBuiltinBaseNode indirectCallNode);
 
         @Specialization
-        Object create(VirtualFrame frame, PythonBuiltinClassType type, String name, Object value, PythonBuiltinBaseNode indirectCallNode,
+        Object create(VirtualFrame frame, PythonBuiltinClassType type, String pythonName, String javaName, Object value, PythonBuiltinBaseNode indirectCallNode,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
@@ -373,11 +375,11 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                 byte[] bytes = buffer == null ? null : bufferLib.getInternalOrCopiedByteArray(buffer);
                 MessageDigest digest;
                 try {
-                    digest = createDigest(name, bytes);
+                    digest = createDigest(javaName, bytes);
                 } catch (NoSuchAlgorithmException e) {
                     throw raise.raise(PythonBuiltinClassType.UnsupportedDigestmodError, e);
                 }
-                return factory.createDigestObject(type, digest);
+                return factory.createDigestObject(type, pythonName, digest);
             } finally {
                 if (buffer != null) {
                     bufferLib.release(buffer, frame, indirectCallNode);
@@ -409,10 +411,10 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
-            String pythonDigestName = castStr.execute(name);
-            String javaDigestName = getName(pythonDigestName);
+            String pythonDigestName = getPythonName(castStr.execute(name));
+            String javaDigestName = getJavaName(pythonDigestName);
             PythonBuiltinClassType digestType = getTypeFor(javaDigestName);
-            return createNode.execute(frame, digestType, getName(castStr.execute(name)), buffer, this);
+            return createNode.execute(frame, digestType, pythonDigestName, javaDigestName, buffer, this);
         }
 
         private static PythonBuiltinClassType getTypeFor(String digestName) {
@@ -426,7 +428,12 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String getName(String inputName) {
+        private static String getPythonName(String inputName) {
+            return inputName.toLowerCase();
+        }
+
+        @TruffleBoundary
+        private static String getJavaName(String inputName) {
             return NAME_MAPPINGS.getOrDefault(inputName, inputName);
         }
     }

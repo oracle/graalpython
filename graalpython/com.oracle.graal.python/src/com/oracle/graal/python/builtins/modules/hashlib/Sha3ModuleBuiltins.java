@@ -89,10 +89,10 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
-            return createNode.execute(frame, resultType, nameFromType(resultType), buffer, this);
+            return createNode.execute(frame, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer, this);
         }
 
-        private static String nameFromType(PythonBuiltinClassType type) {
+        private static String javaNameFromType(PythonBuiltinClassType type) {
             switch (type) {
                 case Sha3SHA224Type:
                     return "sha3-224";
@@ -106,6 +106,25 @@ public class Sha3ModuleBuiltins extends PythonBuiltins {
                     return "SHAKE128";
                 case Sha3Shake256Type:
                     return "SHAKE256";
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        private static String pythonNameFromType(PythonBuiltinClassType type) {
+            switch (type) {
+                case Sha3SHA224Type:
+                    return "sha3_224";
+                case Sha3SHA256Type:
+                    return "sha3_256";
+                case Sha3SHA384Type:
+                    return "sha3_384";
+                case Sha3SHA512Type:
+                    return "sha3_512";
+                case Sha3Shake128Type:
+                    return "shake_128";
+                case Sha3Shake256Type:
+                    return "shake_256";
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }

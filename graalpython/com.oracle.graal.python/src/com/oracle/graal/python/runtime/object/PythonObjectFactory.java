@@ -1491,7 +1491,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PUnionType(PythonBuiltinClassType.PUnionType, getShape(PythonBuiltinClassType.PUnionType), createTuple(args)));
     }
 
-    public final DigestObject createDigestObject(PythonBuiltinClassType type, Object digest) {
-        return trace(DigestObject.create(type, getShape(type), digest));
+    public final DigestObject createDigestObject(PythonBuiltinClassType type, String name, Object digest) {
+        return trace(DigestObject.create(type, getShape(type), name, digest));
     }
 }

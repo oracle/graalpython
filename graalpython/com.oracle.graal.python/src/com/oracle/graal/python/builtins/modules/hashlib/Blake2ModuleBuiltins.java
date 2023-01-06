@@ -135,18 +135,21 @@ public class Blake2ModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
             String javaName;
+            String pythonName;
             int javaDigestSize;
             if (resultType == PythonBuiltinClassType.Blake2bType) {
                 javaName = "BLAKE2B-%d";
+                pythonName = "blake2b";
                 javaDigestSize = digestSize == 0 ? 512 : digestSize;
             } else if (resultType == PythonBuiltinClassType.Blake2sType) {
                 javaName = "BLAKE2S-%d";
+                pythonName = "blake2s";
                 javaDigestSize = digestSize == 0 ? 256 : digestSize;
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             javaName = PythonUtils.formatJString(javaName, javaDigestSize);
-            return createNode.execute(frame, resultType, javaName, data, this);
+            return createNode.execute(frame, resultType, pythonName, javaName, data, this);
         }
 
         @SuppressWarnings("unused")
