@@ -80,3 +80,5 @@ graalpython/lib-python/3/lib2to3/PatternGrammar3.8.5.alpha.0.pickle
 graalpython.bench.src.zip.files/
 graalpython.tests.src.zip.files/
 graalpython.src.zip.files/
+graalpython/com.oracle.graal.python.test/src/tests/patched_package/build/
+graalpython/com.oracle.graal.python.test/src/tests/patched_package/src/patched_package.egg-info

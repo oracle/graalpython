@@ -1,0 +1,276 @@
+diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
+index 47ed92779..1d182ded3 100644
+--- a/pip/_internal/cli/cmdoptions.py
++++ b/pip/_internal/cli/cmdoptions.py
+@@ -891,7 +891,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
+     "--disable-pip-version-check",
+     dest="disable_pip_version_check",
+     action="store_true",
+-    default=False,
++    default=True, # GraalPy: we do not want to incentivize the upgrade
+     help="Don't periodically check PyPI to determine whether a new version "
+     "of pip is available for download. Implied with --no-index.",
+ )
+diff --git a/pip/_internal/commands/install.py b/pip/_internal/commands/install.py
+index 29907645c..bca73e7b9 100644
+--- a/pip/_internal/commands/install.py
++++ b/pip/_internal/commands/install.py
+@@ -7,6 +7,7 @@ import site
+ from optparse import SUPPRESS_HELP, Values
+ from typing import Iterable, List, Optional
+ 
++from pip._internal.utils.graalpy import GraalPyInstallCommandMixin
+ from pip._vendor.packaging.utils import canonicalize_name
+ from pip._vendor.rich import print_json
+ 
+@@ -61,7 +62,7 @@ def get_check_binary_allowed(format_control: FormatControl) -> BinaryAllowedPred
+     return check_binary_allowed
+ 
+ 
+-class InstallCommand(RequirementCommand):
++class InstallCommand(RequirementCommand, GraalPyInstallCommandMixin):
+     """
+     Install packages from:
+ 
+@@ -268,7 +269,7 @@ class InstallCommand(RequirementCommand):
+         )
+ 
+     @with_cleanup
+-    def run(self, options: Values, args: List[str]) -> int:
++    def run_original(self, options: Values, args: List[str]) -> int:
+         if options.use_user_site and options.target_dir is not None:
+             raise CommandError("Can not combine '--user' and '--target'")
+ 
+diff --git a/pip/_internal/commands/wheel.py b/pip/_internal/commands/wheel.py
+index 9dd6c82f2..f90b7c5f9 100644
+--- a/pip/_internal/commands/wheel.py
++++ b/pip/_internal/commands/wheel.py
+@@ -11,6 +11,7 @@ from pip._internal.cli.status_codes import SUCCESS
+ from pip._internal.exceptions import CommandError
+ from pip._internal.operations.build.build_tracker import get_build_tracker
+ from pip._internal.req.req_install import InstallRequirement
++from pip._internal.utils.graalpy import GraalPyInstallCommandMixin
+ from pip._internal.utils.misc import ensure_dir, normalize_path
+ from pip._internal.utils.temp_dir import TempDirectory
+ from pip._internal.wheel_builder import build, should_build_for_wheel_command
+@@ -18,7 +19,7 @@ from pip._internal.wheel_builder import build, should_build_for_wheel_command
+ logger = logging.getLogger(__name__)
+ 
+ 
+-class WheelCommand(RequirementCommand):
++class WheelCommand(RequirementCommand, GraalPyInstallCommandMixin):
+     """
+     Build Wheel archives for your requirements and dependencies.
+ 
+@@ -99,7 +100,7 @@ class WheelCommand(RequirementCommand):
+         self.parser.insert_option_group(0, self.cmd_opts)
+ 
+     @with_cleanup
+-    def run(self, options: Values, args: List[str]) -> int:
++    def run_original(self, options: Values, args: List[str]) -> int:
+         cmdoptions.check_install_build_global(options)
+ 
+         session = self.get_default_session(options)
+diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
+index 1af8978d4..15fee7f35 100644
+--- a/pip/_internal/operations/install/wheel.py
++++ b/pip/_internal/operations/install/wheel.py
+@@ -587,6 +587,9 @@ def _install_wheel(
+         file.save()
+         record_installed(file.src_record_path, file.dest_path, file.changed)
+ 
++    from pip._internal.utils.graalpy import apply_graalpy_patches
++    apply_graalpy_patches(wheel_path, lib_dir)
++
+     def pyc_source_file_paths() -> Generator[str, None, None]:
+         # We de-duplicate installation paths, since there can be overlap (e.g.
+         # file in .data maps to same location as file in wheel root).
+diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
+new file mode 100644
+index 000000000..789f4abce
+--- /dev/null
++++ b/pip/_internal/utils/graalpy.py
+@@ -0,0 +1,173 @@
++# ATTENTION: GraalPy uses existence of this module to verify that it is
++# running a patched pip in pip_hook.py
++import os
++from pip._internal.cli.base_command import Command
++from pip._vendor.packaging.requirements import Requirement
++
++NAME_VER_PATTERN = "(.+)-(\\d+)(.\\d+)?(.\\d+)?"
++PATCHES_BASE_DIRS = [os.path.join(__graalpython__.core_home, "patches")]
++if hasattr(__graalpython__, "tdebug"):
++    PATCHES_BASE_DIRS += os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
++
++BUNDLED_WHEELS_PATH = None
++
++def is_bundled_wheel(location, package_name):
++    return os.path.exists(os.path.join(location, package_name, '.graalpy_bundled'))
++
++
++def apply_graalpy_patches(filename, location):
++    """
++    Applies any GraalPy patches to package extracted from 'filename' into 'location'.
++    Note that 'location' must be the parent directory of the package directory itself.
++    For example: /path/to/site-package and not /path/to/site-packages/mypackage.
++    """
++    import re
++    import subprocess
++
++    # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
++    # some packages may have only major.minor or just major version
++    archive_name = os.path.basename(filename)
++    name_ver_match = re.search("^{0}.*\\.(tar\\.gz|tar|whl|zip)$".format(NAME_VER_PATTERN), archive_name)
++    if not name_ver_match:
++        print("GraalPy warning: could not parse package name, version, or format from '{}'.\n"
++              "Could not determine if any GraalPy specific patches need to be applied.".format(archive_name))
++
++    suffix = name_ver_match.group(5)
++    package_name = name_ver_match.group(1)
++
++    # Avoid applying patches to bundled wheels, they are already patched
++    if suffix == "whl" and is_bundled_wheel(location, package_name):
++        return
++
++    is_sdist = suffix in ("tar.gz", "zip")
++
++    # NOTE: Following 3 functions are duplicated in ginstall.py:
++    # creates a search list of a versioned file:
++    # {name}-X.Y.Z.{suffix}, {name}-X.Y.{suffix}, {name}-X.{suffix}, {name}.{suffix}
++    # 'versions' is a result of re.search
++    def list_versioned(pkg_name, versions, dir, suffix):
++        acc = ""
++        res = []
++        for i in range(2, 5):
++            v = versions.group(i)
++            if v is not None:
++                acc = acc + v
++                res.append(acc)
++        res.reverse()
++        res = [os.path.join(dir, pkg_name + "-" + ver + suffix) for ver in res]
++        res.append(os.path.join(dir, pkg_name + suffix))
++        return res
++
++    def first_existing(pkg_name, versions, dir, suffix):
++        for filename in list_versioned(pkg_name, versions, dir, suffix):
++            if os.path.exists(filename):
++                return filename
++
++    def read_first_existing(pkg_name, versions, dir, suffix):
++        filename = first_existing(pkg_name, versions, dir, suffix)
++        if filename:
++            with open(filename, "r") as f:
++                return f.read()
++
++    # end of code duplicated in ginstall.py
++
++    def apply_first_existing(dir, suffix, wd=''):
++        filename = first_existing(package_name, name_ver_match, dir, suffix)
++        if filename:
++            print("Patching package " + package_name + " using " + filename)
++            try:
++                subprocess.run(["patch", "-f", "-d", os.path.join(location, wd), "-p1", "-i", filename], check=True)
++            except FileNotFoundError:
++                print(
++                    "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
++            except subprocess.CalledProcessError:
++                print("Applying GraalPy patch failed for %s. The package may still work." % package_name)
++        elif os.path.isdir(dir):
++            patchfiles = [f for f in os.listdir(dir) if re.match("{0}{1}$".format(NAME_VER_PATTERN, suffix), f)]
++            if patchfiles:
++                print("We have patches to make this package work on GraalVM for some version(s).")
++                print(
++                    "If installing or running fails, consider using one of the versions that we have patches for:\n\t",
++                    "\n\t".join(patchfiles), sep="")
++
++    print("Looking for GraalPy patches for " + package_name)
++
++    for pbd in PATCHES_BASE_DIRS:
++        # patches intended for binary distribution:
++        # we may need to change wd if we are actually patching a source distribution
++        # with a patch intended for a binary distribution, because in the source
++        # distribution the actual deployed sources may be in a subdirectory (typically "src")
++        bdist_dir = os.path.join(pbd, package_name, "whl")
++        bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else ''
++        apply_first_existing(bdist_dir, ".patch", bdist_patch_wd)
++
++        # patches intended for source distribution if applicable
++        if is_sdist:
++            sdist_dir = os.path.join(pbd, package_name, "sdist")
++            apply_first_existing(sdist_dir, ".patch")
++
++
++class GraalPyInstallCommandMixin(Command):
++    """
++    Mixin for installations commands that narrows the versions of installed
++    packages to GraalPy tested version if it does not conflict with explicitly
++    requested versions. The classes that inherit this must rename their method
++    "run" to "run_original".
++    """
++    def __init__(self, name: str, summary: str, isolated: bool = False):
++        super().__init__(name, summary, isolated)
++        self.infos_printed = set()
++        self.original_init = Requirement.__init__
++        other = self
++        def new_init(self, req_string, *args, **kwargs):
++            req_string = other.narrow_requirement_to_supported_version(req_string)
++            return other.original_init(self, req_string, *args, **kwargs)
++        self.new_init = new_init
++
++    def narrow_requirement_to_supported_version(self, req_string):
++        # we may find a patch directory, and then we should prefer a
++        # version with a patch from that directory
++        import re
++
++        Requirement.__init__ = self.original_init
++        try:
++            req = Requirement(req_string)
++        except:
++            pass
++        else:
++            patchfiles = []
++            for pbd in PATCHES_BASE_DIRS:
++                for sfx in ["whl", "sdist"]:
++                    dir = os.path.join(pbd, req.name, sfx)
++                    if os.path.isdir(dir):
++                        for f in os.listdir(dir):
++                            if f == f"{req.name}.patch":
++                                # generic patch available, don't care about
++                                # the version
++                                return req_string
++                            m = re.match(f"{NAME_VER_PATTERN}\\.patch", f)
++                            if m:
++                                version = "".join([g for g in m.group(2, 3, 4) if g])
++                                if version in req.specifier:
++                                    patchfiles.append(version)
++
++            if patchfiles:
++                version = sorted(patchfiles)[-1]
++                if req.name not in self.infos_printed:
++                    print(f"INFO: Choosing GraalPy tested version {version} for {req}")
++                    self.infos_printed.add(req.name)
++                req.specifier = Requirement(f"{req.name}=={version}").specifier
++                req_string = str(req)
++        finally:
++            Requirement.__init__ = self.new_init
++
++        return req_string
++
++    def run(self, options, args, *splat, **kwargs):
++        args = [self.narrow_requirement_to_supported_version(a) for a in args]
++
++        Requirement.__init__ = self.new_init
++        try:
++            return self.run_original(options=options, args=args, *splat, **kwargs)
++        finally:
++            Requirement.__init__ = self.original_init
+diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
+index 78b5c13ce..18a184c4f 100644
+--- a/pip/_internal/utils/unpacking.py
++++ b/pip/_internal/utils/unpacking.py
+@@ -255,3 +255,5 @@ def unpack_file(
+             content_type,
+         )
+         raise InstallationError(f"Cannot determine archive format of {location}")
++    from pip._internal.utils.graalpy import apply_graalpy_patches
++    apply_graalpy_patches(filename, location)

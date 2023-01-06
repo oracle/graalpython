@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,28 +36,23 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
 
-
-class PipImportHook:
-    @staticmethod
-    def find_spec(fullname, path, target=None):
-        if fullname.startswith("pip."):
-            sys.meta_path.remove(PipImportHook)
-            try:
-                import pip._internal.utils.graalpy
-            except ImportError:
-                print("WARNING: You are using an untested version of pip. GraalPy",
-                      "provides patches and workarounds for a number of packages when used with",
-                      "compatible pip versions. We recommend to stick with the pip version that",
-                      "ships with this version of GraalPy.")
-            except:
-                from os import environ
-                if 'GRAALPY_DEBUG_PIP_IMPORT_HOOK' in environ:
-                    raise
-                print("WARNING: Unexpected error when checking if we are running a GraalPy tested",
-                      "version of pip. Rerun with GRAALPY_DEBUG_PIP_IMPORT_HOOK env variable to see",
-                      "the error.")
-
-
-sys.meta_path.insert(0, PipImportHook)
+# Dummy package for testing pip patching mechanism
+# The source and binary distributions located next to this file must be
+# manually updated every time this package is updated. To do that, run:
+#
+# PKG_VERSION='1.0.0' python3 setup.py bdist_wheel
+# PKG_VERSION='1.1.0' python3 setup.py bdist_wheel
+# PKG_VERSION='1.0.0' python3 setup.py sdist
+# PKG_VERSION='1.1.0' python3 setup.py sdist
+#
+from setuptools import setup, find_packages
+import os
+setup(
+    name='patched_package',
+    version=os.environ['PKG_VERSION'],
+    author='GraalPy developers',
+    author_email='graalvm-users@oss.oracle.com',
+    package_dir={'': 'src'},
+    packages=find_packages(where='src'),
+)

@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,20 @@ set -eo pipefail
 GIT_DIR="$(realpath "$(dirname "$0")/..")"
 BUNDLED_DIR="graalpython/lib-python/3/ensurepip/_bundled"
 
+check_file() {
+    if [ ! -f "$1" ]; then
+        echo "File $1 does not exist"
+        exit 1
+    fi
+}
+
 patch_wheel() {
     cd "$GIT_DIR"
     local name="$1"
     local patch="$2"
     local wheel="$(echo $BUNDLED_DIR/$name-*.whl)"
-    test -f "$patch"
-    test -f "$wheel"
+    check_file "$patch"
+    check_file "$wheel"
     local tmpdir="$(basename -s '.whl' "$wheel")"
     rm -rf "$tmpdir"
     mkdir "$tmpdir"
@@ -57,8 +64,10 @@ patch_wheel() {
     unzip ../tmp.whl
     rm ../tmp.whl
     patch -p1 < "../$patch"
+    echo 'Marker file for GraalPy' > "$name/.graalpy_bundled"
     zip -r "../$wheel" .
     rm -rf "$tmpdir"
 }
 
 patch_wheel setuptools graalpython/lib-graalpython/patches/setuptools/whl/setuptools-63.patch
+patch_wheel pip graalpython/lib-graalpython/patches/pip/whl/pip-22.2.2.patch
