@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -66,6 +67,15 @@ public class ShakeDigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ShakeDigestObjectBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "digest_size", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class DigestSizeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(DigestObject self) {
+            return 0;
+        }
     }
 
     @Builtin(name = "digest", parameterNames = {"self", "length"})
