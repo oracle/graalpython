@@ -69,7 +69,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type,
                 PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac,
                 PythonBuiltinClassType.Sha3SHA224Type, PythonBuiltinClassType.Sha3SHA256Type, PythonBuiltinClassType.Sha3SHA384Type,
-                PythonBuiltinClassType.Sha3SHA512Type, PythonBuiltinClassType.Sha3Shake128Type, PythonBuiltinClassType.Sha3Shake256Type})
+                PythonBuiltinClassType.Sha3SHA512Type, PythonBuiltinClassType.Sha3Shake128Type, PythonBuiltinClassType.Sha3Shake256Type,
+                PythonBuiltinClassType.Blake2bType, PythonBuiltinClassType.Blake2sType})
 public class DigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -142,7 +143,6 @@ public class DigestObjectBuiltins extends PythonBuiltins {
     @Builtin(name = "digest_size", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class DigestSizeNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
         @Specialization
         static int get(DigestObject self) {
             return self.getDigestLength();

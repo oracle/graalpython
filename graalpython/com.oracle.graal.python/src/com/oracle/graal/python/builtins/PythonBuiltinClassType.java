@@ -274,6 +274,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Sha3SHA512Type("sha3_512", "_sha3", Flags.PUBLIC_BASE_WODICT),
     Sha3Shake128Type("shake_128", "_sha3", Flags.PUBLIC_BASE_WODICT),
     Sha3Shake256Type("shake_256", "_sha3", Flags.PUBLIC_BASE_WODICT),
+    Blake2bType("blake2b", "_blake2", Flags.PUBLIC_BASE_WODICT),
+    Blake2sType("blake2s", "_blake2", Flags.PUBLIC_BASE_WODICT),
     HashlibHash("HASH", "_hashlib", Flags.PUBLIC_BASE_WODICT),
     HashlibHashXof("HASHXOF", "_hashlib", Flags.PUBLIC_DERIVED_WODICT),
     HashlibHmac("HMAC", "_hashlib", Flags.PUBLIC_BASE_WODICT),

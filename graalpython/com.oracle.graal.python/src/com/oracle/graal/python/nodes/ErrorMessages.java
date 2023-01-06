@@ -1456,4 +1456,5 @@ public abstract class ErrorMessages {
     // hashlib
     public static final TruffleString COMPARING_STRINGS_WITH_NON_ASCII = tsLiteral("comparing strings with non-ASCII characters is not supported");
     public static final TruffleString ONLY_DEFAULT_DIGEST_LENGTHS = tsLiteral("only default digest lengths supported for shake");
+    public static final TruffleString ONLY_DIGEST_SIZE_BLAKE_ARGUMENT = tsLiteral("blake2b/blake2s only supported for digest_size with non-default value");
 }

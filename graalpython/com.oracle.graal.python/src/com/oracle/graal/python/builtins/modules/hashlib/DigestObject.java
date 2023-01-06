@@ -110,6 +110,10 @@ public abstract class DigestObject extends PythonBuiltinObject {
                 return 168;
             case Sha3Shake256Type:
                 return 136;
+            case Blake2bType:
+                return 128;
+            case Blake2sType:
+                return 64;
             default:
                 throw CompilerDirectives.shouldNotReachHere();
         }
@@ -164,8 +168,14 @@ public abstract class DigestObject extends PythonBuiltinObject {
             case "shake256":
                 return PythonBuiltinClassType.Sha3Shake256Type;
             default:
-                // default to assume the same blocksize as MD5
-                return PythonBuiltinClassType.MD5Type;
+                if (algorithm.contains("blake2s")) {
+                    return PythonBuiltinClassType.Blake2sType;
+                } else if (algorithm.contains("blake2b")) {
+                    return PythonBuiltinClassType.Blake2bType;
+                } else {
+                    // default to assume the same small blocksize as MD5
+                    return PythonBuiltinClassType.MD5Type;
+                }
         }
     }
 
