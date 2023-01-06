@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -365,6 +365,10 @@ def test_argument_must_be_mapping():
         def __getitem__(self, item):
             return self.delegate[item]
 
+    assert f26(**MyDict1(a=1)) == {'a': 1}
+    assert f26(**MyDict2(a=1, A='ignored')) == {'a': 1}
+    assert f26(**MyDict3(a=1)) == {'a': 1}
+    assert f26(**MyMapping1(a=1)) == {'a': 1}
     assert f26(**MyDict1(a=1), **MyMapping1(b=2), **MyDict2(c=3, C='ignored'), **MyDict3(d=4)) == {'a': 1, 'b': 2, 'c': 3, 'd': 4}
 
 def test_doesnt_modify_passed_dict():

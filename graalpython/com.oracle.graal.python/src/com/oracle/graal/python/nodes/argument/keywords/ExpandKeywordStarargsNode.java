@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,99 +40,42 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @GenerateUncached
-@ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
 
-    public abstract PKeyword[] execute(Object starargs);
+    public abstract PKeyword[] execute(VirtualFrame frame, Object starargs);
 
-    @Specialization
-    static PKeyword[] doKeywordsArray(PKeyword[] starargs) {
-        return starargs;
+    public final PKeyword[] execute(Object starargs) {
+        return execute(null, starargs);
     }
 
-    @Specialization(guards = "isKeywordsStorage(starargs)")
-    static PKeyword[] doKeywordsStorage(PDict starargs) {
-        return ((KeywordsStorage) starargs.getDictStorage()).getStore();
-    }
-
-    @Specialization(guards = "isEmptyStorage(starargs)")
-    static PKeyword[] doEmptyStorage(@SuppressWarnings("unused") PDict starargs) {
+    @Specialization(guards = "isNoValue(starargs)")
+    static PKeyword[] convert(@SuppressWarnings("unused") Object starargs) {
         return PKeyword.EMPTY_KEYWORDS;
     }
 
-    @Specialization(guards = {"len(lenNode, starargs) == cachedLen", "cachedLen < 32", "!isKeywordsStorage(starargs)", "!isEmptyStorage(starargs)"}, limit = "getVariableArgumentInlineCacheLimit()")
-    static PKeyword[] doDictCached(PDict starargs,
-                    @Cached CopyKeywordsNode copyKeywordsNode,
-                    @SuppressWarnings("unused") @Cached HashingStorageLen lenNode,
-                    @Cached("len(lenNode, starargs)") int cachedLen) {
-        PKeyword[] keywords = PKeyword.create(cachedLen);
-        copyKeywordsNode.execute(starargs, keywords);
-        return keywords;
-    }
-
-    @Specialization(guards = {"!isKeywordsStorage(starargs)", "!isEmptyStorage(starargs)"}, replaces = "doDictCached")
-    static PKeyword[] doDict(PDict starargs,
-                    @Shared("copyKwds") @Cached CopyKeywordsNode copyKeywordsNode,
-                    @Shared("lenNode") @Cached HashingStorageLen lenNode) {
-        return doDictCached(starargs, copyKeywordsNode, lenNode, len(lenNode, starargs));
-    }
-
-    @Specialization(guards = {"!isPNone(object)", "!isDict(object)"})
-    static PKeyword[] doNonMapping(@SuppressWarnings("unused") Object object) {
-        throw new NonMappingException(object);
-    }
-
-    @Specialization
-    static PKeyword[] doPNone(@SuppressWarnings("unused") PNone object) {
-        return PKeyword.EMPTY_KEYWORDS;
-    }
-
-    @Specialization(replaces = {"doKeywordsArray", "doKeywordsStorage", "doEmptyStorage", "doDictCached", "doDict", "doNonMapping", "doPNone"})
-    static PKeyword[] doGeneric(Object kwargs,
-                    @Shared("copyKwds") @Cached CopyKeywordsNode copyKeywordsNode,
-                    @Shared("lenNode") @Cached HashingStorageLen lenNode) {
-        if (kwargs instanceof PDict) {
-            PDict d = (PDict) kwargs;
-            if (isKeywordsStorage(d)) {
-                return doKeywordsStorage(d);
-            } else if (isEmptyStorage(d)) {
-                return doEmptyStorage(d);
-            }
-            return doDict(d, copyKeywordsNode, lenNode);
-        } else if (kwargs instanceof PKeyword[]) {
-            return (PKeyword[]) kwargs;
-        } else if (kwargs instanceof PNone) {
-            return PKeyword.EMPTY_KEYWORDS;
+    @Specialization(guards = "!isNoValue(starargs)")
+    static PKeyword[] convert(VirtualFrame frame, Object starargs,
+                    @Cached MappingToKeywordsNode convertNode,
+                    @Cached PRaiseNode raiseNode) {
+        try {
+            return convertNode.execute(frame, starargs);
+        } catch (SameDictKeyException e) {
+            throw raiseNode.raise(TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, e.getKey());
+        } catch (NonMappingException e) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_ISNT_MAPPING, starargs);
         }
-        throw new NonMappingException(kwargs);
-    }
-
-    static boolean isKeywordsStorage(PDict dict) {
-        return dict.getDictStorage() instanceof KeywordsStorage;
-    }
-
-    static boolean isEmptyStorage(PDict dict) {
-        return dict.getDictStorage() instanceof EmptyStorage;
-    }
-
-    static int len(HashingStorageLen lenNode, PDict dict) {
-        return lenNode.execute(dict.getDictStorage());
     }
 
     public static ExpandKeywordStarargsNode create() {

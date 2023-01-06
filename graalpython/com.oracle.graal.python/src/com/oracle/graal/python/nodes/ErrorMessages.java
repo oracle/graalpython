@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -337,8 +337,9 @@ public abstract class ErrorMessages {
     public static final TruffleString GLOBALS_MUST_BE_DICT = tsLiteral("%s() globals must be a dict, not %p");
     public static final TruffleString GOT_AN_INVALID_TYPE_IN_CONSTANT = tsLiteral("got an invalid type in Constant: %p");
     public static final TruffleString S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S = tsLiteral("%s() got multiple sub-patterns for attribute '%s'");
-    public static final TruffleString GOT_MULTIPLE_VALUES_FOR_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
-    public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
+    public static final TruffleString S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s() got multiple values for keyword argument '%s'");
+    public static final TruffleString S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("%s got multiple values for keyword argument '%s'");
+    public static final TruffleString GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG = tsLiteral("got multiple values for keyword argument '%s'");
     public static final TruffleString GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = tsLiteral("%s() got some positional-only arguments passed as keyword arguments: '%s'");
     public static final TruffleString GOT_UNEXPECTED_KEYWORD_ARG = tsLiteral("%s() got an unexpected keyword argument '%s'");
     public static final TruffleString HANDLER_MUST_BE_CALLABLE = tsLiteral("handler must be callable");
@@ -435,7 +436,7 @@ public abstract class ErrorMessages {
     public static final TruffleString ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = tsLiteral("issubclass() arg 2 must be a class or tuple of classes");
     public static final TruffleString ITER_V_MUST_BE_CALLABLE = tsLiteral("iter(v, w): v must be callable");
     public static final TruffleString KEYWORD_NAMES_MUST_BE_STR_GOT_P = tsLiteral("keyword names must be str, get %p");
-    public static final TruffleString KEYWORDS_S_MUST_BE_STRINGS = tsLiteral("%s() keywords must be strings");
+    public static final TruffleString KEYWORDS_S_MUST_BE_STRINGS = tsLiteral("keywords must be strings");
     public static final TruffleString KLASS_ARG_IS_NOT_HOST_OBJ = tsLiteral("klass argument '%p' is not a host object");
     public static final TruffleString LAZY_INITIALIZATION_FAILED = tsLiteral("lazy initialization of type %s failed");
     public static final TruffleString LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = tsLiteral("')' without '(' in argument parsing");

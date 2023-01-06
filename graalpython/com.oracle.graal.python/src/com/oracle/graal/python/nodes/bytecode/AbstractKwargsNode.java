@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,43 +40,33 @@
  */
 package com.oracle.graal.python.nodes.bytecode;
 
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.lib.PyObjectFunctionStr;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
-@GenerateUncached
-public abstract class KeywordsNode extends AbstractKwargsNode {
-    public abstract PKeyword[] execute(Frame frame, Object sourceCollection, int stackTop);
-
-    @Specialization
-    static PKeyword[] kwords(VirtualFrame frame, Object sourceCollection, int stackTop,
-                    @Cached MappingToKeywordsNode expandKeywordStarargsNode,
-                    @Cached BranchProfile keywordsError,
-                    @Cached PRaiseNode raise) {
-        try {
-            return expandKeywordStarargsNode.execute(frame, sourceCollection);
-        } catch (SameDictKeyException e) {
-            keywordsError.enter();
-            throw handleSameKey(frame, raise, stackTop, e);
-        } catch (NonMappingException e) {
-            keywordsError.enter();
-            throw handleNonMapping(frame, raise, stackTop, e);
-        }
+public class AbstractKwargsNode extends PNodeWithContext {
+    protected static PException handleNonMapping(VirtualFrame frame, PRaiseNode raise, int stackTop, NonMappingException e) {
+        Object functionName = AbstractKwargsNode.getFunctionName(frame, stackTop);
+        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
     }
 
-    public static KeywordsNode create() {
-        return KeywordsNodeGen.create();
+    protected static PException handleSameKey(VirtualFrame frame, PRaiseNode raise, int stackTop, SameDictKeyException e) {
+        Object functionName = AbstractKwargsNode.getFunctionName(frame, stackTop);
+        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, e.getKey());
     }
 
-    public static KeywordsNode getUncached() {
-        return KeywordsNodeGen.getUncached();
+    private static Object getFunctionName(VirtualFrame frame, int stackTop) {
+        /*
+         * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
+         * this point is [kwargs dict, varargs, callable].
+         */
+        Object callable = frame.getObject(stackTop - 2);
+        return PyObjectFunctionStr.execute(callable);
     }
 }

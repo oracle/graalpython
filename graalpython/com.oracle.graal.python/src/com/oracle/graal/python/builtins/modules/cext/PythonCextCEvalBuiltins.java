@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockN
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.ReleaseLockNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -177,15 +176,14 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode codeAsPythonObjectNode,
                         @Cached CExtNodes.AsPythonObjectNode globalsAsPythonObjectNode,
                         @Cached CExtNodes.AsPythonObjectNode localsAsPythonObjectNode,
-                        @Cached CExtNodes.AsPythonObjectNode kwdefaultsAsPythonObjectNode,
                         @Cached CExtNodes.AsPythonObjectNode closureAsPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode elementToJavaNode,
+                        @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached CodeNodes.GetCodeSignatureNode getSignatureNode,
                         @Cached CodeNodes.GetCodeCallTargetNode getCallTargetNode,
                         @Cached CreateArgumentsNode.CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                        @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached GenericInvokeNode invokeNode) {
@@ -193,7 +191,7 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
             Object globals = globalsAsPythonObjectNode.execute(globalsWrapper);
             Object locals = localsAsPythonObjectNode.execute(localsWrapper);
             Object[] defaults = unwrapArray(defaultValueArrayPtr, ptrLib, elementToJavaNode);
-            PKeyword[] kwdefaults = expandKeywordStarargsNode.execute(kwdefaultsAsPythonObjectNode.execute(kwdefaultsWrapper));
+            PKeyword[] kwdefaults = castKwargsNode.execute(kwdefaultsWrapper);
             PCell[] closure = null;
             Object closureObj = closureAsPythonObjectNode.execute(closureWrapper);
             if (closureObj != PNone.NO_VALUE) {
