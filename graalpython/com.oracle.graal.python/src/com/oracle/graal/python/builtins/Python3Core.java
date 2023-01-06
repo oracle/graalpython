@@ -181,12 +181,14 @@ import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.DigestObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.HashObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.HashlibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Md5ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha1ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha256ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha3ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.hashlib.Sha512ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.hashlib.ShakeDigestObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
@@ -655,6 +657,8 @@ public abstract class Python3Core {
                         PythonOptions.WITHOUT_DIGEST ? null : new Sha512ModuleBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new Sha3ModuleBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new DigestObjectBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new HashObjectBuiltins(),
+                        PythonOptions.WITHOUT_DIGEST ? null : new ShakeDigestObjectBuiltins(),
                         PythonOptions.WITHOUT_DIGEST ? null : new HashlibModuleBuiltins(),
 
                         // itertools

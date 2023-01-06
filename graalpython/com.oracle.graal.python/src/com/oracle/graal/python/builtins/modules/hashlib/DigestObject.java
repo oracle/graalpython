@@ -51,6 +51,17 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
+/**
+ * Implementation class for all types coming out of the hashlib modules.
+ *
+ * We only use the JDK classes to implement these, expecting appropriate
+ * providers to be registered. CPython is more flexible and implements each
+ * hashing strategy separately, and thus expose some more custom state such as
+ * the block size or generating digests of varying lengths for SHAKE. For now
+ * we only emulate this as far as possible with base JDK interfaces in favor of
+ * giving embedders the flexibility to replace Security providers and not
+ * forcing dependencies on e.g. BouncyCastle for hashing.
+ */
 public abstract class DigestObject extends PythonBuiltinObject {
     private byte[] finalDigest = null;
 
