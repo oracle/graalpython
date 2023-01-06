@@ -213,7 +213,13 @@ public abstract class DigestObject extends PythonBuiltinObject {
         @Override
         @TruffleBoundary
         byte[] finalizeDigest() {
-            return digest.digest();
+            try {
+                // Try to finalize a clone, because CPython supports updating
+                // after retrieving the digest and the JDK does not.
+                return ((MessageDigest) digest.clone()).digest();
+            } catch (CloneNotSupportedException e) {
+                return digest.digest();
+            }
         }
 
         @Override
