@@ -83,6 +83,7 @@ import com.oracle.graal.python.processor.CodeWriter.Block;
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
     private static final String BuiltinAnnotationClass = "com.oracle.graal.python.builtins.Builtin";
+    private static final String BuiltinsAnnotationClass = "com.oracle.graal.python.builtins.Builtins";
     private static final String BUILTINS_BASE_CLASSES_PACKAGE = "com.oracle.graal.python.nodes.function.builtins";
 
     private Element[] clinicBuiltinBaseClasses;
@@ -362,6 +363,21 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         Stream<?> keywordOnlyNames = null;
         int minNumOfPositionalArgs = -1;
         AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
+        if (annot == null) {
+            annot = findAnnotationMirror(type, BuiltinsAnnotationClass);
+            if (annot != null) {
+                // Multiple builtin annotations, we will use the first. The
+                // number of arguments must be compatible, otherwise the node
+                // will not work anyway. The user is in charge of keeping the
+                // argument names consistent.
+                for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
+                    if (item.getKey().getSimpleName().toString().equals("value")) {
+                        annot = (AnnotationMirror) ((List<AnnotationValue>) item.getValue().getValue()).get(0);
+                        break;
+                    }
+                }
+            }
+        }
         if (annot != null) {
             for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
                 if (item.getKey().getSimpleName().toString().equals("parameterNames")) {
@@ -375,11 +391,15 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                 }
             }
         }
-        if (parameterNames == null || builtinName == null) {
-            throw error(type, "In order to use Argument Clinic, the Builtin annotation must contain 'name' and 'parameterNames' fields.");
+        if ((parameterNames == null && keywordOnlyNames == null) || builtinName == null) {
+            throw error(type, "In order to use Argument Clinic, the Builtin annotation must contain 'name' and 'parameterNames' and/or 'keywordOnlyNames' fields.");
         }
         if (keywordOnlyNames != null) {
-            parameterNames = Stream.concat(parameterNames, keywordOnlyNames);
+            if (parameterNames == null) {
+                parameterNames = keywordOnlyNames;
+            } else {
+                parameterNames = Stream.concat(parameterNames, keywordOnlyNames);
+            }
         }
         return new BuiltinAnnotation(builtinName, parameterNames.toArray(String[]::new), minNumOfPositionalArgs);
     }
