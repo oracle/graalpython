@@ -67,7 +67,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.MD5Type, PythonBuiltinClassType.SHA1Type, PythonBuiltinClassType.SHA224Type, PythonBuiltinClassType.SHA256Type,
-                PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac})
+                PythonBuiltinClassType.SHA384Type, PythonBuiltinClassType.SHA512Type, PythonBuiltinClassType.HashlibHash, PythonBuiltinClassType.HashlibHmac,
+                PythonBuiltinClassType.Sha3SHA224Type, PythonBuiltinClassType.Sha3SHA256Type, PythonBuiltinClassType.Sha3SHA384Type,
+                PythonBuiltinClassType.Sha3SHA512Type, PythonBuiltinClassType.Sha3Shake128Type, PythonBuiltinClassType.Sha3Shake256Type})
 public class DigestObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

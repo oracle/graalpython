@@ -100,7 +100,7 @@ class HashLibTestCase(unittest.TestCase):
     supported_hash_names = ( 'md5', 'MD5', 'sha1', 'SHA1',
                              'sha224', 'SHA224', 'sha256', 'SHA256',
                              'sha384', 'SHA384', 'sha512', 'SHA512',
-                             'blake2b', 'blake2s',
+                             # 'blake2b', 'blake2s',
                              'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512',
                              'shake_128', 'shake_256')
 

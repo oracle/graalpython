@@ -418,6 +418,15 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_fips_mode")
+    @GenerateNodeFactory
+    abstract static class GetFipsNode extends PythonBuiltinNode {
+        @Specialization
+        int getFips() {
+            return 0;
+        }
+    }
+
     @Builtin(name = "HASH", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHash, isPublic = false)
     @GenerateNodeFactory
     abstract static class HashNode extends PythonBuiltinNode {
@@ -425,6 +434,16 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object hash(Object args, Object kwargs) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASH");
+        }
+    }
+
+    @Builtin(name = "HASHXOF", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.HashlibHashXof, isPublic = false)
+    @GenerateNodeFactory
+    abstract static class HashXofNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object hash(Object args, Object kwargs) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "_hashlib.HASHXOF");
         }
     }
 

@@ -162,7 +162,7 @@ public final class DigestObject extends PythonBuiltinObject {
     }
 
     private PythonBuiltinClassType determineMainDigestType() {
-        String algorithm = getAlgorithm().toLowerCase();
+        String algorithm = getAlgorithm();
         switch (algorithm) {
             case "md5":
             case "hmac-md5":
@@ -204,12 +204,13 @@ public final class DigestObject extends PythonBuiltinObject {
         }
     }
 
+    @TruffleBoundary
     public String getAlgorithm() {
         if (digest != null) {
-            return digest.getAlgorithm();
+            return digest.getAlgorithm().toLowerCase();
         } else {
             String algorithmWithHmacPrefix = mac.getAlgorithm();
-            return algorithmWithHmacPrefix.replace("hmac", "hmac-");
+            return algorithmWithHmacPrefix.replace("hmac", "hmac-").toLowerCase();
         }
     }
 }

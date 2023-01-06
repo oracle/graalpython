@@ -275,6 +275,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Sha3Shake128Type("shake_128", "_sha3", Flags.PUBLIC_BASE_WODICT),
     Sha3Shake256Type("shake_256", "_sha3", Flags.PUBLIC_BASE_WODICT),
     HashlibHash("HASH", "_hashlib", Flags.PUBLIC_BASE_WODICT),
+    HashlibHashXof("HASHXOF", "_hashlib", Flags.PUBLIC_DERIVED_WODICT),
     HashlibHmac("HMAC", "_hashlib", Flags.PUBLIC_BASE_WODICT),
     UnsupportedDigestmodError("UnsupportedDigestmodError", "_hashlib", Flags.EXCEPTION),
 
@@ -740,6 +741,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         // hashlib
         UnsupportedDigestmodError.base = ValueError;
+        HashlibHashXof.base = HashlibHash;
 
         // _ctypes
         StgDict.base = PDict;
