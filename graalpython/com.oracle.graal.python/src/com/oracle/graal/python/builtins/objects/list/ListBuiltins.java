@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -317,7 +317,7 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile generalizedProfile = ConditionProfile.create();
 
         @Specialization
         protected Object doInt(PList self, int index, Object value,

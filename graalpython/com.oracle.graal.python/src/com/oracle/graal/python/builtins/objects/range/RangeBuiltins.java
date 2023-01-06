@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -517,8 +517,8 @@ public class RangeBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
-        private final ConditionProfile stepOneProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile stepMinusOneProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile stepOneProfile = ConditionProfile.create();
+        private final ConditionProfile stepMinusOneProfile = ConditionProfile.create();
         private static final BigInteger MINUS_ONE = BigInteger.ONE.negate();
 
         public abstract boolean execute(VirtualFrame frame, PRange self, Object value);

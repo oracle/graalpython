@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,7 +136,7 @@ public final class ReadCallerFrameNode extends Node {
         PFrame.Reference curFrameInfo = startFrameInfo;
         if (cachedCallerFrameProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            cachedCallerFrameProfile = ConditionProfile.createBinaryProfile();
+            cachedCallerFrameProfile = ConditionProfile.create();
             // executed the first time - don't pollute the profile
             for (int i = 0; i <= level;) {
                 PFrame.Reference callerInfo = curFrameInfo.getCallerInfo();

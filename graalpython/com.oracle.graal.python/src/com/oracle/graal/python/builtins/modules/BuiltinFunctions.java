@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -2241,7 +2241,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "globals")
     @GenerateNodeFactory
     public abstract static class GlobalsNode extends PythonBuiltinNode {
-        private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile condProfile = ConditionProfile.create();
 
         @Specialization
         public Object globals(VirtualFrame frame,

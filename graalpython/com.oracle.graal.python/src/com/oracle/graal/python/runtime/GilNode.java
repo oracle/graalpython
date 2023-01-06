@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ public abstract class GilNode extends Node {
     private static final class Cached extends GilNode {
         // The same profile is used for all methods. The profile condition should always be so that
         // we profile if a boundary call needs to be made at all.
-        private final ConditionProfile binaryProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile binaryProfile = ConditionProfile.create();
 
         @Override
         public boolean isAdoptable() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -1226,8 +1226,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final double TWO_POW_P28 = 0x1.0p28;
         private static final double LN_2 = 6.93147180559945286227e-01;
 
-        private final ConditionProfile largeProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile smallProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile largeProfile = ConditionProfile.create();
+        private final ConditionProfile smallProfile = ConditionProfile.create();
 
         @Specialization
         @TruffleBoundary
@@ -1350,8 +1350,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private static final double TWO_POW_M28 = 0x1.0p-28;
 
-        private final ConditionProfile closeToZeroProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile lessThanHalfProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile closeToZeroProfile = ConditionProfile.create();
+        private final ConditionProfile lessThanHalfProfile = ConditionProfile.create();
 
         @Override
         public double count(double value) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -995,7 +995,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonTernaryBuiltinNode {
 
-        private final ConditionProfile invalidBase = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile invalidBase = ConditionProfile.create();
         private final BranchProfile invalidValueProfile = BranchProfile.create();
         private final BranchProfile bigIntegerProfile = BranchProfile.create();
         private final BranchProfile primitiveIntProfile = BranchProfile.create();
@@ -1992,7 +1992,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private ConditionProfile getIsStringProfile() {
             if (isStringProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isStringProfile = ConditionProfile.createBinaryProfile();
+                isStringProfile = ConditionProfile.create();
             }
             return isStringProfile;
         }
@@ -2000,7 +2000,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private ConditionProfile getIsPStringProfile() {
             if (isPStringProfile == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isPStringProfile = ConditionProfile.createBinaryProfile();
+                isPStringProfile = ConditionProfile.create();
             }
             return isPStringProfile;
         }

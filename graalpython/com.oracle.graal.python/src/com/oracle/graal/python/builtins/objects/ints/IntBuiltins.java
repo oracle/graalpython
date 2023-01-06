@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -2309,9 +2309,9 @@ public class IntBuiltins extends PythonBuiltins {
             return fromLong(self, byteCount, byteorder, false);
         }
 
-        private final ConditionProfile negativeByteCountProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile negativeNumberProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile overflowProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile negativeByteCountProfile = ConditionProfile.create();
+        private final ConditionProfile negativeNumberProfile = ConditionProfile.create();
+        private final ConditionProfile overflowProfile = ConditionProfile.create();
 
         @Specialization
         PBytes fromLong(long self, int byteCount, TruffleString byteorder, boolean signed) {

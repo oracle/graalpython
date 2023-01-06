@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -534,8 +534,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private MaterializeFrameNode traceMaterializeFrameNode = null;
 
-    private final LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
-    private final LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
+    private final LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.create();
+    private final LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.create();
 
     @CompilationFinal private Object osrMetadata;
 
