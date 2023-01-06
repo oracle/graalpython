@@ -100,7 +100,19 @@ type_defs = {
     'b': ('Boolean', None)
 }
 
-# Asterisks mark optional constants
+# Explanation of the format:
+# Names in square brackets specify an option group name for all following entries.
+# Normal entries:
+# Column #1 - fallback specifier:
+#   empty - mandatory constant
+#   `*` - optional constant
+#   `0` - if not defined, it will default to 0
+#   `u` - if not defined, it will use the constant prefixed with an underscore
+# Column #2 - type specifier:
+#   `i` - int
+#   `x` - int, appearing in hexadecimal in the generated source
+#   `b` - boolean, will be true if the plaform is Linux (WTF?)
+# Column #3 - the name of the constant
 constant_defs = '''
   b HAVE_FUTIMENS
   b HAVE_UTIMENSAT
