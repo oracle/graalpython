@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -265,10 +265,11 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         }
 
-        @Specialization(guards = {"!lib.isBoolean(left)", "lib.fitsInLong(left)"})
+        @Specialization(guards = "lib.fitsInLong(left)")
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil) {
+            assert !lib.isBoolean(left);
             long leftLong;
             gil.release(true);
             try {
@@ -286,10 +287,11 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.isBoolean(left)", "!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil) {
+            assert !lib.isBoolean(left);
             double leftDouble;
             gil.release(true);
             try {
@@ -307,11 +309,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.isBoolean(left)", "!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
+        @Specialization(guards = {"!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached GilNode gil) {
+            assert !lib.isBoolean(left);
             TruffleString leftString;
             gil.release(true);
             try {
