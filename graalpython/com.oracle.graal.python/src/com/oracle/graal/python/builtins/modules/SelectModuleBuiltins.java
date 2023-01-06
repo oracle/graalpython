@@ -106,7 +106,9 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        addBuiltinConstant("PIPE_BUF", PosixConstants.PIPE_BUF.value);
+        if (PosixConstants.PIPE_BUF.defined) {
+            addBuiltinConstant("PIPE_BUF", PosixConstants.PIPE_BUF.getValueIfDefined());
+        }
     }
 
     @Builtin(name = "select", minNumOfPositionalArgs = 3, parameterNames = {"rlist", "wlist", "xlist", "timeout"})

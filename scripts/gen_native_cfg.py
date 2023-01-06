@@ -126,7 +126,7 @@ constant_defs = '''
 
   i SOMAXCONN
 
-  i PIPE_BUF
+* i PIPE_BUF
 
 [openFlags]
 0 x O_ACCMODE
