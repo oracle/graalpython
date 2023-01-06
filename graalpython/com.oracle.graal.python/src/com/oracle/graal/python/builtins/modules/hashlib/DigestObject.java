@@ -231,7 +231,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
         @Override
         @TruffleBoundary
         public String getAlgorithm() {
-            return digest.getAlgorithm().toLowerCase();
+            return digest.getAlgorithm().toLowerCase().replace("sha3-", "sha3_");
         }
     }
 
