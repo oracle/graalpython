@@ -467,7 +467,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, new PFrame.Reference(null), factory());
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory());
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getRootNode().getFirstLineno());
                 PTraceback existingTraceback = null;
@@ -575,7 +575,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             } else {
                 MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
                 Node location = ((FrameInfo) generatorFrame.getFrameDescriptor().getInfo()).getRootNode();
-                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, new PFrame.Reference(null), factory);
+                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY, factory);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 int bci = self.getBci();
                 frame.setLasti(bci);

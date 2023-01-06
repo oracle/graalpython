@@ -95,19 +95,16 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(VirtualFrame curFrame, PFrame self) {
-            if (self.isAssociated()) {
-                PythonObject globals = self.getGlobals();
-                if (globals instanceof PythonModule) {
-                    if (getDictNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
-                    }
-                    return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
-                } else {
-                    return globals != null ? globals : factory().createDict();
+            PythonObject globals = self.getGlobals();
+            if (globals instanceof PythonModule) {
+                if (getDictNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
                 }
+                return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
+            } else {
+                return globals != null ? globals : factory().createDict();
             }
-            return factory().createDict();
         }
     }
 
@@ -222,7 +219,6 @@ public final class FrameBuiltins extends PythonBuiltins {
         Object getUpdating(VirtualFrame frame, PFrame self,
                         @Cached ConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode) {
-            assert self.isAssociated() : "It's impossible to call f_locals on a frame without that frame having escaped";
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the values of the frame if and only if 'self' represents the current
             // frame. If 'self' represents another frame on the stack, the values are already

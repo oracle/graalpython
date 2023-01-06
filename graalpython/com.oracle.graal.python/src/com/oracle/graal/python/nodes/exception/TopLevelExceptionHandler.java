@@ -60,7 +60,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -297,9 +297,9 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setGlobals(arguments, pythonContext.factory().createDict());
         } else {
             PythonModule mainModule = pythonContext.getMainModule();
-            PDict mainDict = GetDictIfExistsNode.getUncached().execute(mainModule);
+            PDict mainDict = GetOrCreateDictNode.getUncached().execute(mainModule);
             PArguments.setGlobals(arguments, mainModule);
-            PArguments.setCustomLocals(arguments, mainDict);
+            PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
         Object state = IndirectCalleeContext.enterIndirect(getPythonLanguage(), pythonContext, arguments);

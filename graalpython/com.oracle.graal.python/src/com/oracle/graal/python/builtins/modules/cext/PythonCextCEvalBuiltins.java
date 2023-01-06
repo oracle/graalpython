@@ -216,7 +216,6 @@ public final class PythonCextCEvalBuiltins extends PythonBuiltins {
             // set custom locals
             if (!(locals instanceof PNone)) {
                 PArguments.setSpecialArgument(pArguments, locals);
-                PArguments.setCustomLocals(pArguments, locals);
             }
             PArguments.setClosure(pArguments, closure);
             // TODO(fa): set builtins in globals

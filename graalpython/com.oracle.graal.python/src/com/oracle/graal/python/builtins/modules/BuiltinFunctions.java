@@ -861,7 +861,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static void setCustomLocals(Object[] args, Object locals) {
             PArguments.setSpecialArgument(args, locals);
-            PArguments.setCustomLocals(args, locals);
         }
 
         private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
@@ -2459,7 +2458,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // we want to subclass a Java class
                 PDict ns = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(PythonLanguage.get(null)));
                 Object[] args = PArguments.create(0);
-                PArguments.setCustomLocals(args, ns);
                 PArguments.setSpecialArgument(args, ns);
                 callBody.executeCall(frame, (PFunction) function, args);
                 return buildJavaClass(ns, name, arguments[1]);
@@ -2534,7 +2532,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             Object[] bodyArguments = PArguments.create(0);
-            PArguments.setCustomLocals(bodyArguments, ns);
             PArguments.setSpecialArgument(bodyArguments, ns);
             callBody.executeCall(frame, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {

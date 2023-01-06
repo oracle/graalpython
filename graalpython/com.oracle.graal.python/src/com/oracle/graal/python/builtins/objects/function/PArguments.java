@@ -208,18 +208,6 @@ public final class PArguments {
         arguments[INDEX_CALLER_FRAME_INFO] = info;
     }
 
-    /**
-     * This is only safe before the frame has started executing.
-     */
-    public static Object getCustomLocals(Frame frame) {
-        return frame.getArguments()[INDEX_CURRENT_FRAME_INFO];
-    }
-
-    public static void setCustomLocals(Object[] args, Object locals) {
-        assert args[INDEX_CURRENT_FRAME_INFO] == null : "cannot set custom locals if the frame is already available";
-        args[INDEX_CURRENT_FRAME_INFO] = locals;
-    }
-
     public static PFrame.Reference getCurrentFrameInfo(Frame frame) {
         return getCurrentFrameInfo(frame.getArguments());
     }
