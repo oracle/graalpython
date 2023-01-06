@@ -409,7 +409,20 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
                         @Cached CreateDigestNode createNode,
                         @Cached CastToJavaStringNode castStr) {
-            return createNode.execute(frame, PythonBuiltinClassType.HashlibHash, getName(castStr.execute(name)), buffer, this);
+            String pythonDigestName = castStr.execute(name);
+            String javaDigestName = getName(pythonDigestName);
+            PythonBuiltinClassType digestType = getTypeFor(javaDigestName);
+            return createNode.execute(frame, digestType, getName(castStr.execute(name)), buffer, this);
+        }
+
+        private static PythonBuiltinClassType getTypeFor(String digestName) {
+            switch (digestName) {
+                case "SHAKE256":
+                case "SHAKE128":
+                    return PythonBuiltinClassType.HashlibHashXof;
+                default:
+                    return PythonBuiltinClassType.HashlibHash;
+            }
         }
 
         @TruffleBoundary
