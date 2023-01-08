@@ -38,6 +38,12 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecObject;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderObject;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalEncoderObject;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderObject;
+import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterObject;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialect;
 import com.oracle.graal.python.builtins.modules.csv.CSVReader;
 import com.oracle.graal.python.builtins.modules.csv.CSVWriter;
@@ -1491,4 +1497,25 @@ public abstract class PythonObjectFactory extends Node {
     public final PyCapsule createCapsule(Object pointer, Object name, Object destructor) {
         return trace(new PyCapsule(getLanguage(), pointer, name, destructor));
     }
+
+    public final MultibyteIncrementalDecoderObject createMultibyteIncrementalDecoderObject(Object type) {
+        return trace(new MultibyteIncrementalDecoderObject(type, getShape(type)));
+    }
+
+    public final MultibyteIncrementalEncoderObject createMultibyteIncrementalEncoderObject(Object type) {
+        return trace(new MultibyteIncrementalEncoderObject(type, getShape(type)));
+    }
+
+    public final MultibyteStreamReaderObject createMultibyteStreamReaderObject(Object type) {
+        return trace(new MultibyteStreamReaderObject(type, getShape(type)));
+    }
+
+    public final MultibyteStreamWriterObject createMultibyteStreamWriterObject(Object type) {
+        return trace(new MultibyteStreamWriterObject(type, getShape(type)));
+    }
+
+    public final MultibyteCodecObject createMultibyteCodecObject(Object type, MultibyteCodec codec) {
+        return trace(new MultibyteCodecObject(type, getShape(type), codec));
+    }
+
 }

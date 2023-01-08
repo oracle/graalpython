@@ -307,6 +307,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     StructParam("StructParam_Type", J__CTYPES, Flags.PUBLIC_BASE_WDICT),
     ArgError("ArgumentError", "ctypes", Flags.EXCEPTION),
 
+    // _multibytecodec
+    MultibyteCodec("MultibyteCodec", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
+    MultibyteIncrementalEncoder("MultibyteIncrementalEncoder", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
+    MultibyteIncrementalDecoder("MultibyteIncrementalDecoder", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
+    MultibyteStreamReader("MultibyteStreamReader", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
+    MultibyteStreamWriter("MultibyteStreamWriter", "_multibytecodec", Flags.PUBLIC_BASE_WDICT),
+
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
