@@ -40,26 +40,20 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import com.oracle.graal.python.runtime.exception.StacktracelessCheckedException;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class SameDictKeyException extends Exception {
+public final class SameDictKeyException extends StacktracelessCheckedException {
 
     private static final long serialVersionUID = 301451134733299948L;
 
     private final TruffleString key;
 
     public SameDictKeyException(TruffleString key) {
-        super(null, null);
         this.key = key;
     }
 
     public TruffleString getKey() {
         return key;
-    }
-
-    @SuppressWarnings("sync-override")
-    @Override
-    public Throwable fillInStackTrace() {
-        return this;
     }
 }
