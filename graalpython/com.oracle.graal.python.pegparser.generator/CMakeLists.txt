@@ -31,7 +31,6 @@ file(GLOB_RECURSE ASDL_FILES
     LIST_DIRECTORIES TRUE
     "${CMAKE_CURRENT_LIST_DIR}/asdl/*.py")
 
-set(GRAMMAR_STAMP "python.gram.stamp")
 set(ASDL_STAMP "Python.asdl.stamp")
 
 add_custom_target(grammar ALL 
@@ -39,11 +38,9 @@ add_custom_target(grammar ALL
 add_custom_command(
     OUTPUT "${PARSER_OUTPUT}"
     COMMAND ${PYTHON_EXE} "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_OUTPUT}"
-    # COMMAND ${CMAKE_COMMAND} -E touch "${GRAMMAR_STAMP}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${PARSER_OUTPUT}
 	    ${PARSER_TARGET}
-    # BYPRODUCTS "${GRAMMAR_STAMP}"
     DEPENDS "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_TARGET}" ${PEGEN_FILES} ${PEGJAVA_FILES})
 
 add_custom_target(asdl ALL 
