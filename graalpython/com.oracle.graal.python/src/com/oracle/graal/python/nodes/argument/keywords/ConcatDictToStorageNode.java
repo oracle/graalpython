@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
@@ -93,12 +94,13 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
                     @Cached HashingStorageNodes.HashingStorageIteratorNext iterNext,
                     @Cached HashingStorageNodes.HashingStorageIteratorKey iterKey,
                     @Cached HashingStorageNodes.HashingStorageIteratorValue iterValue,
+                    @Cached LoopConditionProfile loopProfile,
                     @Cached.Shared("cast") @Cached StringNodes.CastToTruffleStringCheckedNode castToStringNode,
                     @Cached.Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) throws SameDictKeyException {
         HashingStorage result = dest;
         HashingStorage otherStorage = other.getDictStorage();
         HashingStorageNodes.HashingStorageIterator it = getIterator.execute(otherStorage);
-        while (iterNext.execute(otherStorage, it)) {
+        while (loopProfile.profile(iterNext.execute(otherStorage, it))) {
             Object key = iterKey.execute(otherStorage, it);
             Object value = iterValue.execute(otherStorage, it);
             if (resultGetItem.hasKey(frame, result, key)) {
@@ -122,13 +124,15 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
                     @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
                     @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                     @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
+                    @Cached LoopConditionProfile loopProfile,
                     @Cached PyObjectGetItem getItem) throws SameDictKeyException, NonMappingException {
         HashingStorage result = dest;
         try {
             PSequence keys = asList.execute(frame, callKeys.execute(frame, other, T_KEYS));
             SequenceStorage keysStorage = getSequenceStorage.execute(keys);
             int keysLen = keysStorage.length();
-            for (int i = 0; i < keysLen; i++) {
+            loopProfile.profileCounted(keysLen);
+            for (int i = 0; loopProfile.inject(i < keysLen); i++) {
                 Object key = sequenceGetItem.execute(keysStorage, i);
                 if (resultGetItem.hasKey(frame, result, key)) {
                     sameKeyProfile.enter();
