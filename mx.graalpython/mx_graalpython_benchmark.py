@@ -442,7 +442,9 @@ class GraalPythonVm(GraalPythonVmBase):
             cp = self.get_classpath()
             if len(cp) > 0:
                 extra_polyglot_args.append("--vm.classpath=" + ":".join(cp))
-            return host_vm.run_launcher('graalpy', extra_polyglot_args + args, cwd)
+            managed = '--llvm.managed' in extra_polyglot_args or '--llvm.managed=true' in extra_polyglot_args
+            launcher_name = 'graalpy-managed' if managed else 'graalpy'
+            return host_vm.run_launcher(launcher_name, extra_polyglot_args + args, cwd)
 
     def get_extra_polyglot_args(self):
         return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
