@@ -535,8 +535,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private MaterializeFrameNode traceMaterializeFrameNode = null;
 
-    private final LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.createCountingProfile();
-    private final LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.createCountingProfile();
+    private final LoopConditionProfile exceptionChainProfile1 = LoopConditionProfile.create();
+    private final LoopConditionProfile exceptionChainProfile2 = LoopConditionProfile.create();
 
     @CompilationFinal private Object osrMetadata;
 

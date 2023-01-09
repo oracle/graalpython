@@ -1975,8 +1975,8 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"dest == left", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == left.getClass()"})
-        SequenceStorage doManagedManagedSameTypeInplace(@SuppressWarnings("unused") SequenceStorage dest, SequenceStorage left, SequenceStorage right,
+        @Specialization(guards = {"dest == left", "left.getClass() == right.getClass()", "cachedClass == left.getClass()"})
+        SequenceStorage doManagedManagedSameTypeInplace(@SuppressWarnings("unused") BasicSequenceStorage dest, BasicSequenceStorage left, BasicSequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
             SequenceStorage leftProfiled = cachedClass.cast(left);
             SequenceStorage rightProfiled = cachedClass.cast(right);
@@ -1989,8 +1989,8 @@ public abstract class SequenceStorageNodes {
             return leftProfiled;
         }
 
-        @Specialization(guards = {"dest != left", "dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
-        SequenceStorage doManagedManagedSameType(SequenceStorage dest, SequenceStorage left, SequenceStorage right,
+        @Specialization(guards = {"dest != left", "dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "cachedClass == dest.getClass()"})
+        SequenceStorage doManagedManagedSameType(BasicSequenceStorage dest, BasicSequenceStorage left, BasicSequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
             SequenceStorage destProfiled = cachedClass.cast(dest);
             SequenceStorage leftProfiled = cachedClass.cast(left);
@@ -2004,8 +2004,8 @@ public abstract class SequenceStorageNodes {
             return destProfiled;
         }
 
-        @Specialization(guards = {"dest.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
-        SequenceStorage doEmptyManagedSameType(SequenceStorage dest, @SuppressWarnings("unused") EmptySequenceStorage left, SequenceStorage right,
+        @Specialization(guards = {"dest.getClass() == right.getClass()", "cachedClass == dest.getClass()"})
+        SequenceStorage doEmptyManagedSameType(BasicSequenceStorage dest, @SuppressWarnings("unused") EmptySequenceStorage left, BasicSequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
             SequenceStorage destProfiled = cachedClass.cast(dest);
             SequenceStorage rightProfiled = cachedClass.cast(right);
@@ -2016,8 +2016,8 @@ public abstract class SequenceStorageNodes {
             return destProfiled;
         }
 
-        @Specialization(guards = {"dest.getClass() == left.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
-        SequenceStorage doManagedEmptySameType(SequenceStorage dest, SequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
+        @Specialization(guards = {"dest.getClass() == left.getClass()", "cachedClass == dest.getClass()"})
+        SequenceStorage doManagedEmptySameType(BasicSequenceStorage dest, BasicSequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
             SequenceStorage destProfiled = cachedClass.cast(dest);
             SequenceStorage leftProfiled = cachedClass.cast(left);

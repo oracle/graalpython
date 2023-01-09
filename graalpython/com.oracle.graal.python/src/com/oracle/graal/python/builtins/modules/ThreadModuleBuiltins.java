@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -179,7 +179,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "stack_size", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetThreadStackSizeNode extends PythonUnaryBuiltinNode {
-        private final ConditionProfile invalidSizeProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile invalidSizeProfile = ConditionProfile.create();
 
         @Specialization
         long getStackSize(@SuppressWarnings("unused") PNone stackSize) {

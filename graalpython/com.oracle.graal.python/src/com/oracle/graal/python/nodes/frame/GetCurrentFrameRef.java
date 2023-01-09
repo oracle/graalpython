@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,7 +78,7 @@ public abstract class GetCurrentFrameRef extends Node {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             // executed the first time, don't pollute the profile, we'll mark the caller to
             // pass the info on the next call
-            flag[0] = ConditionProfile.createBinaryProfile();
+            flag[0] = ConditionProfile.create();
             if (ref == null) {
                 ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }

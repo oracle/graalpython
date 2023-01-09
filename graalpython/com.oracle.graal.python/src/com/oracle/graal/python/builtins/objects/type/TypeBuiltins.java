@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -452,9 +452,9 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private TypeNodes.GetNameNode getNameNode;
         @Child private GetClassNode getClassNode;
 
-        @CompilationFinal private ConditionProfile hasNew = ConditionProfile.createBinaryProfile();
-        @CompilationFinal private ConditionProfile hasInit = ConditionProfile.createBinaryProfile();
-        @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ConditionProfile hasNew = ConditionProfile.create();
+        @CompilationFinal private ConditionProfile hasInit = ConditionProfile.create();
+        @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.create();
 
         abstract Object execute(VirtualFrame frame, Object self, Object[] args, PKeyword[] keywords);
 
@@ -874,7 +874,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 
-        private final ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile typeErrorProfile = ConditionProfile.create();
 
         public abstract boolean executeWith(VirtualFrame frame, Object cls, Object instance);
 

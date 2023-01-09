@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,12 +59,20 @@ public abstract class PForeignToPTypeNode extends Node {
     public abstract Object executeConvert(Object value);
 
     protected static boolean isOtherClass(Class<?> clazz) {
-        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class || clazz == PException.class || clazz == String.class);
+        // ATTENTION: this is basically a fallback guard, review it when adding a new specialization
+        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class ||
+                        clazz == Character.class || clazz == PException.class ||
+                        clazz == String.class || clazz == TruffleString.class);
     }
 
-    @Specialization(guards = {"value.getClass() == cachedClass", "isOtherClass(cachedClass)"}, limit = "1")
+    @Specialization(guards = {"isOtherClass(cachedClass)", "value.getClass() == cachedClass"}, limit = "1")
     protected static Object fromObjectCached(Object value,
                     @Cached("value.getClass()") @SuppressWarnings("unused") Class<?> cachedClass) {
+        return value;
+    }
+
+    @Specialization(replaces = "fromObjectCached", guards = "isOtherClass(value.getClass())")
+    protected static Object fromObjectGeneric(Object value) {
         return value;
     }
 
@@ -105,11 +112,6 @@ public abstract class PForeignToPTypeNode extends Node {
     @Specialization
     protected static PBaseException fromPException(PException pe) {
         return pe.getUnreifiedException();
-    }
-
-    @Fallback
-    protected static Object fromObjectGeneric(Object value) {
-        return value;
     }
 
     public static PForeignToPTypeNode create() {

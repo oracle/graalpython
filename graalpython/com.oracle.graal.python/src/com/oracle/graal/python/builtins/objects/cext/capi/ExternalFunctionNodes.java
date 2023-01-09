@@ -1516,7 +1516,7 @@ public abstract class ExternalFunctionNodes {
         MethPowRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readVarargsNode = ReadVarArgsNode.create(true);
-            this.profile = ConditionProfile.createBinaryProfile();
+            this.profile = ConditionProfile.create();
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -421,7 +421,7 @@ public abstract class MaterializeFrameNode extends Node {
         protected static ConditionProfile[] getProfiles(int n) {
             ConditionProfile[] profiles = new ConditionProfile[n];
             for (int i = 0; i < profiles.length; i++) {
-                profiles[i] = ConditionProfile.createBinaryProfile();
+                profiles[i] = ConditionProfile.create();
             }
             return profiles;
         }
