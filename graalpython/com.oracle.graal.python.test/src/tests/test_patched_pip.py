@@ -87,6 +87,11 @@ if sys.implementation.name == "graalpy":
             out = subprocess.getoutput(f"{self.venv_python} -c '{code}'").strip()
             return out
 
+        def test_pip_launcher(self):
+            subprocess.check_output([
+                os.path.join(self.env_dir, 'bin', 'pip'),
+                'install', '--help'])
+
         def test_wheel_unpatched_version(self):
             self.run_venv_pip_install(BDIST_1_0_0)
             assert self.run_test_fun() == "Unpatched"
