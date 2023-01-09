@@ -2981,7 +2981,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     int beginBci, PException pe, boolean tracingEnabled, boolean profilingEnabled) {
         // For tracebacks
         setCurrentBci(virtualFrame, bciSlot, beginBci);
-        pe.notifyAddedTracebackFrame(frameIsVisibleToPython());
+        if (pe != null) {
+            pe.notifyAddedTracebackFrame(frameIsVisibleToPython());
+        }
         if (isGeneratorOrCoroutine) {
             if (localFrame != virtualFrame) {
                 // Unwind the generator frame stack
