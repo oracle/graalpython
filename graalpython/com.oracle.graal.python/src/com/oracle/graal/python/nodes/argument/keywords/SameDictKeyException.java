@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,20 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-public final class SameDictKeyException extends RuntimeException {
+import com.oracle.graal.python.runtime.exception.StacktracelessCheckedException;
+import com.oracle.truffle.api.strings.TruffleString;
+
+public final class SameDictKeyException extends StacktracelessCheckedException {
 
     private static final long serialVersionUID = 301451134733299948L;
 
-    private final Object key;
+    private final TruffleString key;
 
-    public SameDictKeyException(Object key) {
-        super(null, null);
+    public SameDictKeyException(TruffleString key) {
         this.key = key;
     }
 
-    public Object getKey() {
+    public TruffleString getKey() {
         return key;
-    }
-
-    @SuppressWarnings("sync-override")
-    @Override
-    public Throwable fillInStackTrace() {
-        return this;
     }
 }

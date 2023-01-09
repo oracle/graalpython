@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -612,7 +612,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
@@ -665,7 +665,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
+                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, CreateArgumentsNode.getName(callee), name);
                         }
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }

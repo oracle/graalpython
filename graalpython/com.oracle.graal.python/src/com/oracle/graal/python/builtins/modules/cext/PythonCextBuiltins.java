@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,8 +86,8 @@ import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugN
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -149,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -1573,30 +1572,19 @@ public final class PythonCextBuiltins extends PythonBuiltins {
 
         public abstract PKeyword[] execute(Object kwargsObj);
 
-        @Specialization(guards = "lib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)", limit = "1")
+        @Specialization(guards = "lib.isNull(kwargsObj)")
         @SuppressWarnings("unused")
         static PKeyword[] doNoKeywords(Object kwargsObj,
-                        @Shared("lenNode") @Cached HashingStorageLen lenNode,
-                        @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             return PKeyword.EMPTY_KEYWORDS;
         }
 
-        @Specialization(guards = {"!lib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "1")
+        @Specialization(guards = "!lib.isNull(kwargsObj)")
         static PKeyword[] doKeywords(Object kwargsObj,
-                        @Shared("lenNode") @Cached HashingStorageLen lenNode,
-                        @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
             return expandKwargsNode.execute(kwargsToJavaNode.execute(kwargsObj));
-        }
-
-        static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingStorageLen lenNode, Object kwargsObj) {
-            Object unwrapped = asPythonObjectNode.execute(kwargsObj);
-            if (unwrapped instanceof PDict) {
-                return lenNode.execute(((PDict) unwrapped).getDictStorage()) == 0;
-            }
-            return false;
         }
     }
 

@@ -83,6 +83,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -209,7 +210,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("try")
-        long start(Object cls, Object callable, Object args, Object kwargs,
+        long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
@@ -217,14 +218,14 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             TruffleLanguage.Env env = context.getEnv();
             PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
 
+            // if args is an arbitrary iterable, converting it to an Object[] may run Python code
+            Object[] arguments = getArgsNode.executeWith(frame, args);
+            PKeyword[] keywords = getKwArgsNode.execute(frame, kwargs);
+
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-                    // if args is an arbitrary iterable, converting it to an Object[] may run
-                    // Python code
-                    Object[] arguments = getArgsNode.executeWith(null, args);
-                    PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
                     // the increment is protected by the gil
                     DynamicObjectLibrary lib = DynamicObjectLibrary.getUncached();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,45 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
+package com.oracle.graal.python.runtime.exception;
 
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
-import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
-import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+/**
+ * Partial evaluation-friendly exception class. It suppresses creating stacktraces.
+ */
+public class StacktracelessCheckedException extends Exception {
+    private static final long serialVersionUID = -9210915556670912831L;
 
-@GenerateUncached
-public abstract class KeywordsNode extends AbstractKwargsNode {
-    public abstract PKeyword[] execute(Frame frame, Object sourceCollection, int stackTop);
-
-    @Specialization
-    static PKeyword[] kwords(VirtualFrame frame, Object sourceCollection, int stackTop,
-                    @Cached MappingToKeywordsNode expandKeywordStarargsNode,
-                    @Cached BranchProfile keywordsError,
-                    @Cached PRaiseNode raise) {
-        try {
-            return expandKeywordStarargsNode.execute(frame, sourceCollection);
-        } catch (SameDictKeyException e) {
-            keywordsError.enter();
-            throw handleSameKey(frame, raise, stackTop, e);
-        } catch (NonMappingException e) {
-            keywordsError.enter();
-            throw handleNonMapping(frame, raise, stackTop, e);
-        }
+    public StacktracelessCheckedException() {
+        super(null, null);
     }
 
-    public static KeywordsNode create() {
-        return KeywordsNodeGen.create();
-    }
-
-    public static KeywordsNode getUncached() {
-        return KeywordsNodeGen.getUncached();
+    @SuppressWarnings("sync-override")
+    @Override
+    public final Throwable fillInStackTrace() {
+        return this;
     }
 }
