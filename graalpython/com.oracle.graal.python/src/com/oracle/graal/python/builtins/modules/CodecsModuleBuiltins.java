@@ -1036,7 +1036,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "lookup_error", minNumOfPositionalArgs = 1, parameterNames = {"name"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
-    abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
+    public abstract static class LookupErrorNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

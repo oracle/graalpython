@@ -71,11 +71,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.UnicodeError)
 public final class UnicodeErrorBuiltins extends PythonBuiltins {
-    static final int IDX_ENCODING = 0;
-    static final int IDX_OBJECT = 1;
-    static final int IDX_START = 2;
-    static final int IDX_END = 3;
-    static final int IDX_REASON = 4;
+    public static final int IDX_ENCODING = 0;
+    public static final int IDX_OBJECT = 1;
+    public static final int IDX_START = 2;
+    public static final int IDX_END = 3;
+    public static final int IDX_REASON = 4;
     public static final int UNICODE_ERR_NUM_ATTRS = IDX_REASON + 1;
 
     public static final BaseExceptionAttrNode.StorageFactory UNICODE_ERROR_ATTR_FACTORY = (args, factory) -> new Object[UNICODE_ERR_NUM_ATTRS];

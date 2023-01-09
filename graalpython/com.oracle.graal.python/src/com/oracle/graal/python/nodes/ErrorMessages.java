@@ -1473,4 +1473,25 @@ public abstract class ErrorMessages {
     public static final TruffleString NO_RUNNING_EVENT_LOOP = tsLiteral("no running event loop");
     public static final TruffleString CANT_ENTER_TASK_ALREADY_RUNNING = tsLiteral("Cannot enter into task %s while another task %s is being executed.");
     public static final TruffleString TASK_NOT_ENTERED = tsLiteral("Leaving task %s does not match the current task %s.");
+    public static final TruffleString ENCODING_NAME_MUST_BE_A_STRING = tsLiteral("encoding name must be a string.");
+    public static final TruffleString NO_SUCH_CODEC_IS_SUPPORTED = tsLiteral("no such codec is supported.");
+    public static final TruffleString COULDN_T_CONVERT_THE_OBJECT_TO_UNICODE = tsLiteral("couldn't convert the object to unicode.");
+    public static final TruffleString ARGUMENT_TYPE_INVALID = tsLiteral("argument type invalid");
+    public static final TruffleString INTEGER_ARGUMENT_EXPECTED_GOT_FLOAT = tsLiteral("integer argument expected, got float");
+    public static final TruffleString PENDING_BUFFER_TOO_LARGE = tsLiteral("pending buffer too large");
+    public static final TruffleString CODEC_IS_UNEXPECTED_TYPE = tsLiteral("codec is unexpected type");
+    public static final TruffleString PENDING_BUFFER_OVERFLOW = tsLiteral("pending buffer overflow");
+    public static final TruffleString COULDN_T_CONVERT_THE_OBJECT_TO_STR = tsLiteral("couldn't convert the object to str.");
+    public static final TruffleString ERRORS_MUST_BE_A_STRING = tsLiteral("errors must be a string");
+    public static final TruffleString ILLEGAL_MULTIBYTE_SEQUENCE = tsLiteral("illegal multibyte sequence");
+    public static final TruffleString INCOMPLETE_MULTIBYTE_SEQUENCE = tsLiteral("incomplete multibyte sequence");
+    public static final TruffleString INTERNAL_CODEC_ERROR = tsLiteral("internal codec error");
+    public static final TruffleString UNKNOWN_RUNTIME_ERROR = tsLiteral("unknown runtime error");
+    public static final TruffleString ENCODING_ERROR_HANDLER_MUST_RETURN = tsLiteral("encoding error handler must return (str, int) tuple");
+
+    public static final TruffleString DECODING_ERROR_HANDLER_MUST_RETURN = tsLiteral("decoding error handler must return (str, int) tuple");
+    public static final TruffleString POSITION_D_FROM_ERROR_HANDLER_OUT_OF_BOUNDS = tsLiteral("position %d from error handler out of bounds");
+
+    public static final TruffleString ARG_MUST_BE_A_SEQUENCE_OBJECT = tsLiteral("arg must be a sequence object");
+    public static final TruffleString STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_S = tsLiteral("stream function returned a non-bytes object (%s)");
 }
