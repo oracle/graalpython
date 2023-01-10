@@ -92,7 +92,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -198,7 +197,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isString(a)", "isString(b)"})
         Object cmpStrings(Object a, Object b,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached TruffleString.CopyToByteArrayNode getByteArrayNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached CastToTruffleStringNode castA,
                         @Cached CastToTruffleStringNode castB) {
@@ -209,9 +208,9 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
             if (!(crA.isSubsetOf(CodeRange.ASCII) && crB.isSubsetOf(CodeRange.ASCII))) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
             }
-            InternalByteArray bytesA = getInternalByteArrayNode.execute(tsA, TS_ENCODING);
-            InternalByteArray bytesB = getInternalByteArrayNode.execute(castB.execute(b), TS_ENCODING);
-            return cmp(bytesA.getArray(), bytesA.getOffset(), bytesA.getLength(), bytesB.getArray(), bytesB.getOffset(), bytesB.getLength());
+            byte[] bytesA = getByteArrayNode.execute(tsA, TS_ENCODING);
+            byte[] bytesB = getByteArrayNode.execute(castB.execute(b), TS_ENCODING);
+            return cmp(bytesA, bytesB);
         }
 
         @Specialization(guards = {"!isString(a) || !isString(b)"})
@@ -225,7 +224,7 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
                     try {
                         byte[] bytesA = accessLib.getInternalOrCopiedByteArray(bufferA);
                         byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
-                        return cmp(bytesA, 0, bytesA.length, bytesB, 0, bytesB.length);
+                        return cmp(bytesA, bytesB);
                     } finally {
                         accessLib.release(bufferB);
                     }
@@ -238,23 +237,8 @@ public class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        boolean cmp(byte[] a, int offA, int lenA, byte[] b, int offB, int lenB) {
-            MessageDigest mda, mdb;
-            try {
-                mda = MessageDigest.getInstance("sha256");
-                mdb = MessageDigest.getInstance("sha256");
-            } catch (NoSuchAlgorithmException e) {
-                return false;
-            }
-            mda.update(a, offA, lenA);
-            byte[] da = mda.digest();
-            mdb.update(b, offB, lenB);
-            byte[] db = mdb.digest();
-            int res = 0;
-            for (int i = 0; i < da.length; i++) {
-                res |= da[i] ^ db[i];
-            }
-            return res == 0;
+        boolean cmp(byte[] a, byte[] b) {
+            return MessageDigest.isEqual(a, b);
         }
     }
 
