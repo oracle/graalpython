@@ -174,11 +174,8 @@ public class AsyncHandler {
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(6, runnable -> {
-        Thread t = Executors.defaultThreadFactory().newThread(runnable);
-        t.setDaemon(true);
-        return t;
-    });
+    private final ScheduledExecutorService executorService;
+    private final ArrayList<AsyncRunnable> registeredActions;
 
     private final WeakReference<PythonContext> context;
     private final Queue<AsyncAction> rescheduled = new ConcurrentLinkedDeque<>();
@@ -295,14 +292,43 @@ public class AsyncHandler {
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
         this.callTarget = context.getLanguage().createCachedCallTarget(CallRootNode::new, CallRootNode.class);
+        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            this.executorService = Executors.newScheduledThreadPool(6, runnable -> {
+                Thread t = Executors.defaultThreadFactory().newThread(runnable);
+                t.setDaemon(true);
+                return t;
+            });
+            this.registeredActions = null;
+        } else {
+            this.executorService = null;
+            this.registeredActions = new ArrayList<>();
+        }
     }
 
+    /**
+     * Register an async action for regular execution. The value of {@link
+     * PythonOptions.AUTOMATIC_ASYNC_ACTIONS} determines if the action is scheduled at regular
+     * intervals to run on a separate thread, or if it will be polled. The caller needs to ensure
+     * that the AsyncAction passed into this method does not block in the latter case.
+     */
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
         if (ImageInfo.inImageBuildtimeCode() || context.get().getOption(PythonOptions.NoAsyncActions)) {
             return;
         }
-        executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
+        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
+        } else {
+            registeredActions.add(new AsyncRunnable(actionSupplier));
+        }
+    }
+
+    void poll() {
+        if (!PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            for (AsyncRunnable r : registeredActions) {
+                r.run();
+            }
+        }
     }
 
     void activateGIL() {
@@ -313,7 +339,7 @@ public class AsyncHandler {
         }
         final Env env = ctx.getEnv();
         final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
-        executorService.scheduleWithFixedDelay(() -> {
+        final Runnable gilReleaseRunnable = () -> {
             if (gilReleaseRequested.compareAndSet(false, true)) {
                 Thread gilOwner = ctx.getGilOwner();
                 // There is a race, but that's no problem. The gil owner may release the gil before
@@ -349,11 +375,22 @@ public class AsyncHandler {
                     gilReleaseRequested.set(false);
                 }
             }
-        }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
+        };
+        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            executorService.scheduleWithFixedDelay(gilReleaseRunnable, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
+        } else {
+            // we will release the gil when polled to do so
+            registeredActions.add(new AsyncRunnable(() -> {
+                gilReleaseRunnable.run();
+                return null;
+            }));
+        }
     }
 
     public void shutdown() {
-        executorService.shutdownNow();
+        if (executorService != null) {
+            executorService.shutdownNow();
+        }
     }
 
     public static class SharedFinalizer {
@@ -465,10 +502,14 @@ public class AsyncHandler {
         public void registerAsyncAction() {
             pythonContext.registerAsyncAction(() -> {
                 Reference<? extends Object> reference = null;
-                try {
-                    reference = queue.remove();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+                    try {
+                        reference = queue.remove();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    reference = queue.poll();
                 }
                 ArrayList<AsyncAction> actions = new ArrayList<>();
                 do {

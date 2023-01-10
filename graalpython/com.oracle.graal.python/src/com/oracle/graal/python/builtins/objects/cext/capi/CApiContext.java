@@ -228,10 +228,14 @@ public final class CApiContext extends CExtContext {
 
         context.registerAsyncAction(() -> {
             Reference<?> reference = null;
-            try {
-                reference = nativeObjectsQueue.remove();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+                try {
+                    reference = nativeObjectsQueue.remove();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } else {
+                reference = nativeObjectsQueue.poll();
             }
 
             ArrayList<NativeObjectReference> refs = new ArrayList<>();

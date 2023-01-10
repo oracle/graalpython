@@ -2092,8 +2092,21 @@ public final class PythonContext extends Python3Core {
         return handler;
     }
 
+    /**
+     * Register an action for regular execution. Refer to {@link AsyncHandler#registerAction} for
+     * details.
+     */
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
         handler.registerAction(actionSupplier);
+    }
+
+    /**
+     * Poll async actions in case they are not set to run automatically.
+     *
+     * @see PythonOptions.AUTOMATIC_ASYNC_ACTIONS
+     */
+    public void pollAsyncActions() {
+        handler.poll();
     }
 
     @TruffleBoundary

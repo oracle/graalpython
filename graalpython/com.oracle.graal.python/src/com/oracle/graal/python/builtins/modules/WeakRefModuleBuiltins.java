@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -145,10 +146,14 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 return null;
             }
             Reference<? extends Object> reference = null;
-            try {
-                reference = weakRefQueue.remove();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+                try {
+                    reference = weakRefQueue.remove();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            } else {
+                reference = weakRefQueue.poll();
             }
             ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
             do {
