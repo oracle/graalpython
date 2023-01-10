@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -138,6 +138,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.truffle.api.dsl.Bind;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -875,6 +880,53 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected static TruffleString getFileSystemEncoding() {
             return T_SURROGATEESCAPE;
+        }
+    }
+
+    @Builtin(name = "getrefcount", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetRefCountNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static long doBoolean(boolean obj) {
+            return Integer.MAX_VALUE - 1;
+        }
+
+        @Specialization
+        static long doInt(int obj) {
+            return Integer.MAX_VALUE - 1;
+        }
+
+        @Specialization
+        static long doLong(long obj) {
+            return Integer.MAX_VALUE - 1;
+        }
+
+        @Specialization
+        static long doDouble(double obj) {
+            return Integer.MAX_VALUE - 1;
+        }
+
+        @Specialization
+        static long doString(TruffleString obj) {
+            return Integer.MAX_VALUE - 1;
+        }
+
+        @Specialization(guards = "nativeWrapper == null")
+        static long doObj(PythonAbstractObject obj,
+                        @Bind("obj.getNativeWrapper()") PythonNativeWrapper nativeWrapper) {
+            return Integer.MAX_VALUE - 1;
+        }
+
+        @Specialization(guards = "nativeWrapper != null")
+        static long doNativeWrapper(PythonAbstractObject obj,
+                        @Bind("obj.getNativeWrapper()") PythonNativeWrapper nativeWrapper) {
+            return nativeWrapper.getRefCount();
+        }
+
+        @Specialization
+        static long doNative(PythonAbstractNativeObject obj,
+                        @Cached CExtNodes.GetRefCntNode getRefCntNode) {
+            return getRefCntNode.execute(obj.getPtr());
         }
     }
 
