@@ -1907,7 +1907,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         protected static NativeFunction create(DLHandler handle, PythonContext context) {
-            String name = NativeCAPISymbol.FUN_MEMSET.getName();
+            String name = NativeCAPISymbol.FUN_MEMMOVE.getName();
             Object sym, f;
             long adr;
             try {
@@ -1980,7 +1980,8 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         static Object memset(PtrValue ptr, int value, int num,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib) {
             PMemoryView memoryView = ((MemoryViewStorage) ptr.ptr).value;
-            for (int i = ptr.offset; i < (ptr.offset + num); i++) {
+            int len = accessLib.getBufferLength(memoryView);
+            for (int i = Math.max(0, ptr.offset); i < (ptr.offset + num) && i < len; i++) {
                 accessLib.writeByte(memoryView, i, (byte) value);
             }
             return ptr;
