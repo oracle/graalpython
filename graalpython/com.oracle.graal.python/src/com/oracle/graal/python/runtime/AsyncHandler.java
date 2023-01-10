@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -306,10 +306,10 @@ public class AsyncHandler {
     }
 
     /**
-     * Register an async action for regular execution. The value of {@link
-     * PythonOptions.AUTOMATIC_ASYNC_ACTIONS} determines if the action is scheduled at regular
-     * intervals to run on a separate thread, or if it will be polled. The caller needs to ensure
-     * that the AsyncAction passed into this method does not block in the latter case.
+     * Register an async action for regular execution. The value of
+     * {@link PythonOptions.AUTOMATIC_ASYNC_ACTIONS} determines if the action is scheduled at
+     * regular intervals to run on a separate thread, or if it will be polled. The caller needs to
+     * ensure that the AsyncAction passed into this method does not block in the latter case.
      */
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
