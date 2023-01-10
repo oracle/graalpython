@@ -403,7 +403,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnicodeWarning("UnicodeWarning", J_BUILTINS, Flags.EXCEPTION),
     UserWarning("UserWarning", J_BUILTINS, Flags.EXCEPTION),
     EncodingWarning("EncodingWarning", J_BUILTINS, Flags.EXCEPTION),
-    GraalPyWarning("GraalPyWarning", J_BUILTINS, Flags.EXCEPTION),
 
     // contextvars
     ContextVarsToken("Token", J__CONTEXTVARS, Flags.PUBLIC_DERIVED_WODICT),
@@ -705,7 +704,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
         EncodingWarning.base = Warning;
-        GraalPyWarning.base = Warning;
 
         PStatResult.base = PTuple;
         PTerminalSize.base = PTuple;

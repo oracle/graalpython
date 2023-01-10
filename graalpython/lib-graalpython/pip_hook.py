@@ -49,11 +49,11 @@ class PipImportHook:
             warn("You are using an untested version of pip. GraalPy " +
                  "provides patches and workarounds for a number of packages when used with " +
                  "compatible pip versions. We recommend to stick with the pip version that " +
-                 "ships with this version of GraalPy.", GraalPyWarning)
+                 "ships with this version of GraalPy.", RuntimeWarning)
             WARNED = True
 
     @staticmethod
-    def _is_patched_pip(fullname, path, target):
+    def _check_patched_pip(fullname, path, target):
         from os.path import join, exists
         for finder in meta_path:
             if finder is PipImportHook:
@@ -64,15 +64,13 @@ class PipImportHook:
                 for location in search_locations:
                     path_to_check = join(location, '_internal', 'utils', 'graalpy.py')
                     if exists(path_to_check):
-                        return True
-                return False
-        return False
+                        return
+                PipImportHook.print_version_warning()
 
     @staticmethod
     def find_spec(fullname, path, target=None):
         if fullname == "pip":
-            if not PipImportHook._is_patched_pip(fullname, path, target):
-                PipImportHook.print_version_warning()
+            PipImportHook._check_patched_pip(fullname, path, target)
 
 
 meta_path.insert(0, PipImportHook)
