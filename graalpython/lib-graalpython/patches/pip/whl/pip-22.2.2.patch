@@ -11,66 +11,26 @@ index 47ed92779..1d182ded3 100644
      help="Don't periodically check PyPI to determine whether a new version "
      "of pip is available for download. Implied with --no-index.",
  )
-diff --git a/pip/_internal/commands/install.py b/pip/_internal/commands/install.py
-index 29907645c..bca73e7b9 100644
---- a/pip/_internal/commands/install.py
-+++ b/pip/_internal/commands/install.py
-@@ -7,6 +7,7 @@ import site
- from optparse import SUPPRESS_HELP, Values
- from typing import Iterable, List, Optional
+diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
+index 9bf247f02..816734859 100644
+--- a/pip/_internal/index/package_finder.py
++++ b/pip/_internal/index/package_finder.py
+@@ -38,6 +38,7 @@ from pip._internal.utils.logging import indent_log
+ from pip._internal.utils.misc import build_netloc
+ from pip._internal.utils.packaging import check_requires_python
+ from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
++from pip._internal.utils.graalpy import apply_graalpy_sort_order
  
-+from pip._internal.utils.graalpy import GraalPyInstallCommandMixin
- from pip._vendor.packaging.utils import canonicalize_name
- from pip._vendor.rich import print_json
+ __all__ = ["FormatControl", "BestCandidateResult", "PackageFinder"]
  
-@@ -61,7 +62,7 @@ def get_check_binary_allowed(format_control: FormatControl) -> BinaryAllowedPred
-     return check_binary_allowed
+@@ -487,6 +488,7 @@ class CandidateEvaluator:
  
+         return sorted(filtered_applicable_candidates, key=self._sort_key)
  
--class InstallCommand(RequirementCommand):
-+class InstallCommand(RequirementCommand, GraalPyInstallCommandMixin):
-     """
-     Install packages from:
- 
-@@ -268,7 +269,7 @@ class InstallCommand(RequirementCommand):
-         )
- 
-     @with_cleanup
--    def run(self, options: Values, args: List[str]) -> int:
-+    def run_original(self, options: Values, args: List[str]) -> int:
-         if options.use_user_site and options.target_dir is not None:
-             raise CommandError("Can not combine '--user' and '--target'")
- 
-diff --git a/pip/_internal/commands/wheel.py b/pip/_internal/commands/wheel.py
-index 9dd6c82f2..f90b7c5f9 100644
---- a/pip/_internal/commands/wheel.py
-+++ b/pip/_internal/commands/wheel.py
-@@ -11,6 +11,7 @@ from pip._internal.cli.status_codes import SUCCESS
- from pip._internal.exceptions import CommandError
- from pip._internal.operations.build.build_tracker import get_build_tracker
- from pip._internal.req.req_install import InstallRequirement
-+from pip._internal.utils.graalpy import GraalPyInstallCommandMixin
- from pip._internal.utils.misc import ensure_dir, normalize_path
- from pip._internal.utils.temp_dir import TempDirectory
- from pip._internal.wheel_builder import build, should_build_for_wheel_command
-@@ -18,7 +19,7 @@ from pip._internal.wheel_builder import build, should_build_for_wheel_command
- logger = logging.getLogger(__name__)
- 
- 
--class WheelCommand(RequirementCommand):
-+class WheelCommand(RequirementCommand, GraalPyInstallCommandMixin):
-     """
-     Build Wheel archives for your requirements and dependencies.
- 
-@@ -99,7 +100,7 @@ class WheelCommand(RequirementCommand):
-         self.parser.insert_option_group(0, self.cmd_opts)
- 
-     @with_cleanup
--    def run(self, options: Values, args: List[str]) -> int:
-+    def run_original(self, options: Values, args: List[str]) -> int:
-         cmdoptions.check_install_build_global(options)
- 
-         session = self.get_default_session(options)
++    @apply_graalpy_sort_order
+     def _sort_key(self, candidate: InstallationCandidate) -> CandidateSortingKey:
+         """
+         Function to pass as the `key` argument to a call to sorted() to sort
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
 index 1af8978d4..15fee7f35 100644
 --- a/pip/_internal/operations/install/wheel.py
@@ -87,10 +47,10 @@ index 1af8978d4..15fee7f35 100644
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 000000000..789f4abce
+index 000000000..d8d97eb4b
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,173 @@
+@@ -0,0 +1,144 @@
 +# ATTENTION: GraalPy uses existence of this module to verify that it is
 +# running a patched pip in pip_hook.py
 +import os
@@ -200,70 +160,41 @@ index 000000000..789f4abce
 +            apply_first_existing(sdist_dir, ".patch")
 +
 +
-+class GraalPyInstallCommandMixin(Command):
-+    """
-+    Mixin for installations commands that narrows the versions of installed
-+    packages to GraalPy tested version if it does not conflict with explicitly
-+    requested versions. The classes that inherit this must rename their method
-+    "run" to "run_original".
-+    """
-+    def __init__(self, name: str, summary: str, isolated: bool = False):
-+        super().__init__(name, summary, isolated)
-+        self.infos_printed = set()
-+        self.original_init = Requirement.__init__
-+        other = self
-+        def new_init(self, req_string, *args, **kwargs):
-+            req_string = other.narrow_requirement_to_supported_version(req_string)
-+            return other.original_init(self, req_string, *args, **kwargs)
-+        self.new_init = new_init
++AVAILABLE_PATCHES = {}
 +
-+    def narrow_requirement_to_supported_version(self, req_string):
-+        # we may find a patch directory, and then we should prefer a
-+        # version with a patch from that directory
-+        import re
 +
-+        Requirement.__init__ = self.original_init
-+        try:
-+            req = Requirement(req_string)
-+        except:
-+            pass
-+        else:
-+            patchfiles = []
-+            for pbd in PATCHES_BASE_DIRS:
-+                for sfx in ["whl", "sdist"]:
-+                    dir = os.path.join(pbd, req.name, sfx)
-+                    if os.path.isdir(dir):
-+                        for f in os.listdir(dir):
-+                            if f == f"{req.name}.patch":
-+                                # generic patch available, don't care about
-+                                # the version
-+                                return req_string
-+                            m = re.match(f"{NAME_VER_PATTERN}\\.patch", f)
-+                            if m:
-+                                version = "".join([g for g in m.group(2, 3, 4) if g])
-+                                if version in req.specifier:
-+                                    patchfiles.append(version)
++def apply_graalpy_sort_order(sort_key_func):
++    def wrapper(self, candidate):
++        default_sort_key = sort_key_func(self, candidate)
++        name = candidate.name
++        if name not in AVAILABLE_PATCHES:
++            AVAILABLE_PATCHES[name] = find_patched_version(name)
++        patched_version_candidates = AVAILABLE_PATCHES[name]
++        for patched_version in patched_version_candidates:
++            if candidate.version.release[:len(patched_version)] == patched_version:
++                return (1,) + default_sort_key
++        return (0,) + default_sort_key
++    return wrapper
 +
-+            if patchfiles:
-+                version = sorted(patchfiles)[-1]
-+                if req.name not in self.infos_printed:
-+                    print(f"INFO: Choosing GraalPy tested version {version} for {req}")
-+                    self.infos_printed.add(req.name)
-+                req.specifier = Requirement(f"{req.name}=={version}").specifier
-+                req_string = str(req)
-+        finally:
-+            Requirement.__init__ = self.new_init
 +
-+        return req_string
-+
-+    def run(self, options, args, *splat, **kwargs):
-+        args = [self.narrow_requirement_to_supported_version(a) for a in args]
-+
-+        Requirement.__init__ = self.new_init
-+        try:
-+            return self.run_original(options=options, args=args, *splat, **kwargs)
-+        finally:
-+            Requirement.__init__ = self.original_init
++def find_patched_version(name):
++    # we may find a patch directory, and then we should prefer a
++    # version with a patch from that directory
++    import re
++    patchfiles = []
++    for pbd in PATCHES_BASE_DIRS:
++        for sfx in ["whl", "sdist"]:
++            dir = os.path.join(pbd, name, sfx)
++            if os.path.isdir(dir):
++                for f in os.listdir(dir):
++                    if f == f"{name}.patch":
++                        # generic patch available, don't care about
++                        # the version
++                        return []
++                    if m := re.match(f"{NAME_VER_PATTERN}\\.patch", f):
++                        version = (int(g.strip(".")) for g in m.group(2, 3, 4) if g)
++                        patchfiles.append(tuple(version))
++    return patchfiles
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
 index 78b5c13ce..18a184c4f 100644
 --- a/pip/_internal/utils/unpacking.py
