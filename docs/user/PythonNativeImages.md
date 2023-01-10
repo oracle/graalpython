@@ -23,6 +23,8 @@ These are:
 
 * `python.WithoutSSL=true` - This flag removes the `ssl` module from the build.
   If no secure network access or certificate checking is required, this removes the usage Java's SSL classes and the BouncyCastle library.
+* `python.WithoutDigest=true` - This flag removes the `_md5`, `_sha1`, `_sha256`, `_sha512`, `_sha3`, and `_hashlib` modules from the build.
+  This removes the direct usages of `java.security.MessageDigest` and `javax.crypto.Mac` from GraalPy.
 * `python.WithoutPlatformAccess=true` - This removes the `signal` and `subprocess` modules, removes accesses to process properties such as the Unix UID and GID, or setting the Java default time zone.
   This has no significant impact on binary size, but if these are unwanted capabilities that are dynamically disabled with context options anyway, they can also be removed ahead of time.
 * `python.WithoutCompressionLibraries=true` - This removes the `zlib`, `lzma`, `bzip2`, and `zipimporter` modules and related classes.

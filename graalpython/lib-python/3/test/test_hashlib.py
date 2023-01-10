@@ -105,6 +105,7 @@ class HashLibTestCase(unittest.TestCase):
                              'shake_128', 'shake_256')
 
     shakes = {'shake_128', 'shake_256'}
+    shake_length = lambda self, shake: 32 if shake == "shake_128" else 64
 
     # Issue #14693: fallback modules are always compiled under POSIX
     _warn_on_extension_import = os.name == 'posix' or COMPILED_WITH_PYDEBUG
@@ -209,7 +210,7 @@ class HashLibTestCase(unittest.TestCase):
         for cons in self.hash_constructors:
             c = cons(a, usedforsecurity=False)
             if c.name in self.shakes:
-                c.hexdigest(16)
+                c.hexdigest(self.shake_length(c.name))
             else:
                 c.hexdigest()
 
@@ -287,8 +288,8 @@ class HashLibTestCase(unittest.TestCase):
         for cons in self.hash_constructors:
             h = cons(usedforsecurity=False)
             if h.name in self.shakes:
-                self.assertIsInstance(h.digest(16), bytes)
-                self.assertEqual(hexstr(h.digest(16)), h.hexdigest(16))
+                self.assertIsInstance(h.digest(self.shake_length(h.name)), bytes)
+                self.assertEqual(hexstr(h.digest(self.shake_length(h.name))), h.hexdigest(self.shake_length(h.name)))
             else:
                 self.assertIsInstance(h.digest(), bytes)
                 self.assertEqual(hexstr(h.digest()), h.hexdigest())
@@ -335,7 +336,7 @@ class HashLibTestCase(unittest.TestCase):
             m1.update(cees)
             m1.update(dees)
             if m1.name in self.shakes:
-                args = (16,)
+                args = (self.shake_length(m1.name),)
             else:
                 args = ()
 

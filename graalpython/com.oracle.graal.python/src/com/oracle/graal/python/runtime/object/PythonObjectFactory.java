@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
 import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
+import com.oracle.graal.python.builtins.modules.hashlib.DigestObject;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PBytesIO;
 import com.oracle.graal.python.builtins.modules.io.PBytesIOBuffer;
@@ -1488,5 +1489,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PUnionType createUnionType(Object[] args) {
         return trace(new PUnionType(PythonBuiltinClassType.PUnionType, getShape(PythonBuiltinClassType.PUnionType), createTuple(args)));
+    }
+
+    public final DigestObject createDigestObject(PythonBuiltinClassType type, String name, Object digest) {
+        return trace(DigestObject.create(type, getShape(type), name, digest));
     }
 }

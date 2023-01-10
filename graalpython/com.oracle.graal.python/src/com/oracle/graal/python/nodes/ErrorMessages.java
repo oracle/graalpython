@@ -1453,4 +1453,9 @@ public abstract class ErrorMessages {
     public static final TruffleString RAISE_WITH_CAUSE_BUT_NO_EXCEPTION = tsLiteral("Raise with cause but no exception");
     public static final TruffleString TRY_HAS_NEITHER_EXCEPT_HANDLERS_NOR_FINALBODY = tsLiteral("Try has neither except handlers nor finalbody");
     public static final TruffleString TRY_HAS_ORELSE_BUT_NO_EXCEPT_HANDLERS = tsLiteral("Try has orelse but no except handlers");
+
+    // hashlib
+    public static final TruffleString COMPARING_STRINGS_WITH_NON_ASCII = tsLiteral("comparing strings with non-ASCII characters is not supported");
+    public static final TruffleString ONLY_DEFAULT_DIGEST_LENGTHS = tsLiteral("only default digest lengths supported for shake");
+    public static final TruffleString ONLY_DIGEST_SIZE_BLAKE_ARGUMENT = tsLiteral("blake2b/blake2s only supported for digest_size with non-default value");
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -81,6 +81,12 @@ public final class PythonOptions {
      * sun.security
      */
     public static final boolean WITHOUT_SSL = Boolean.getBoolean("python.WithoutSSL");
+
+    /**
+     * Whether cryptographic hashing functions are implemented via java.security.MessageDigest,
+     * javax.crypto.Mac and related functions.
+     */
+    public static final boolean WITHOUT_DIGEST = Boolean.getBoolean("python.WithoutDigest");
 
     /**
      * Whether Java classes are included that relate to Unix-specific access, modify process
