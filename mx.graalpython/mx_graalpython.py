@@ -288,15 +288,20 @@ def punittest(ars):
     in the arguments array, then we append filter that includes all GraalPython junit tests.
     """
     args = []
+    args2 = []
     skip_leak_tests = False
     if "--regex" not in ars:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
+        args2 += ['-Dpython.AutomaticAsyncActions=false', '--regex', r'com\.oracle\.graal\.python\.test\.advance\.AsyncActionThreadingTest']
     if "--no-leak-tests" in ars:
         skip_leak_tests = True
         ars.remove("--no-leak-tests")
     args += ars
+    args2 += ars
     with _pythonhome_context():
         mx_unittest.unittest(args)
+        if len(args2) > len(ars):
+            mx_unittest.unittest(args2)
 
         if skip_leak_tests:
             return

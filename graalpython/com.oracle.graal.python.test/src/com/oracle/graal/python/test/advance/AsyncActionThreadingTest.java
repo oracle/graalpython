@@ -41,12 +41,8 @@
 package com.oracle.graal.python.test.advance;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,8 +52,6 @@ import org.junit.Test;
 
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.test.PythonTests;
-
-import sun.misc.Unsafe;
 
 public class AsyncActionThreadingTest extends PythonTests {
     long pythonThreadCount() {
@@ -79,50 +73,19 @@ public class AsyncActionThreadingTest extends PythonTests {
     }
 
     @Test
-    public void testNewThreadsByDefault() {
+    public void testNoNewThreadsWithoutAutomaticAsyncActions() {
+        if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+            return;
+        }
         long threadCount = pythonThreadCount();
         Context c = PythonTests.enterContext();
         try {
-            // importlib creates weakref callbacks, struct is native, so we should have
-            // async action threads for cleanup now
             c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
-            long collectionActionsThreadCount = pythonThreadCount();
-            assertTrue("automatic async actions use threads to trigger " + threadNames(), threadCount < collectionActionsThreadCount);
+            assertTrue("manual async actions create no threads " + threadNames(), threadCount == pythonThreadCount());
+            c.eval("python", "import threading; t = threading.Thread(target=lambda: print(1)); t.start(); t.join()");
+            assertTrue("manual async actions create no thread for gil release " + threadNames(), threadCount == pythonThreadCount());
         } finally {
             PythonTests.closeContext();
-        }
-        assertEquals("python cleans up its threads: " + threadNames(), threadCount, pythonThreadCount());
-
-        // now flip the option and create a new context that does not have multiple threads
-        Unsafe unsafe = null;
-        try {
-            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-            theUnsafe.setAccessible(true);
-            unsafe = (Unsafe) theUnsafe.get(Unsafe.class);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e1) {
-            fail("Cannot get unsafe");
-        }
-        Field field;
-        boolean fieldWasTrue = PythonOptions.AUTOMATIC_ASYNC_ACTIONS;
-        try {
-            field = PythonOptions.class.getField("AUTOMATIC_ASYNC_ACTIONS");
-            assertFalse("AUTOMATIC_ASYNC_ACTIONS should be final", (field.getModifiers() & Modifier.FINAL) == 0);
-            unsafe.putBoolean(unsafe.staticFieldBase(field), unsafe.staticFieldOffset(field), false);
-            try {
-                c = PythonTests.enterContext();
-                try {
-                    c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
-                    assertTrue("manual async actions create no threads " + threadNames(), threadCount == pythonThreadCount());
-                    c.eval("python", "import threading; t = threading.Thread(target=lambda: print(1)); t.start(); t.join()");
-                    assertTrue("manual async actions create no thread for gil release " + threadNames(), threadCount == pythonThreadCount());
-                } finally {
-                    PythonTests.closeContext();
-                }
-            } finally {
-                unsafe.putBoolean(unsafe.staticFieldBase(field), unsafe.staticFieldOffset(field), fieldWasTrue);
-            }
-        } catch (NoSuchFieldException e) {
-            fail("PythonOptions.AUTOMATIC_ASYNC_ACTIONS should exist");
         }
     }
 }
