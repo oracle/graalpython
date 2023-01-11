@@ -10,7 +10,9 @@ from test.support.os_helper import (TESTFN, skip_unless_symlink,
 
 # GraalVm skip
 def skip_if_aarch64(test):
-    return test if (os.uname().machine not in ("aarch64")) else unittest.skip(msg)(test)
+    if os.uname().machine == 'aarch64':
+        return unittest.skip("Skipped on Aarch64")(test)
+    return test
 
 
 @skip_if_aarch64
