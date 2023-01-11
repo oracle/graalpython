@@ -36,28 +36,41 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
+from sys import meta_path
+WARNED = False
 
 
 class PipImportHook:
     @staticmethod
+    def print_version_warning():
+        global WARNED
+        if not WARNED:
+            from warnings import warn
+            warn("You are using an untested version of pip. GraalPy " +
+                 "provides patches and workarounds for a number of packages when used with " +
+                 "compatible pip versions. We recommend to stick with the pip version that " +
+                 "ships with this version of GraalPy.", RuntimeWarning)
+            WARNED = True
+
+    @staticmethod
+    def _check_patched_pip(fullname, path, target):
+        from os.path import join, exists
+        for finder in meta_path:
+            if finder is PipImportHook:
+                continue
+            real_spec = finder.find_spec(fullname, path, target)
+            if real_spec:
+                search_locations = getattr(real_spec, 'submodule_search_locations', [])
+                for location in search_locations:
+                    path_to_check = join(location, '_internal', 'utils', 'graalpy.py')
+                    if exists(path_to_check):
+                        return
+                PipImportHook.print_version_warning()
+
+    @staticmethod
     def find_spec(fullname, path, target=None):
-        if fullname.startswith("pip."):
-            sys.meta_path.remove(PipImportHook)
-            try:
-                import pip._internal.utils.graalpy
-            except ImportError:
-                print("WARNING: You are using an untested version of pip. GraalPy",
-                      "provides patches and workarounds for a number of packages when used with",
-                      "compatible pip versions. We recommend to stick with the pip version that",
-                      "ships with this version of GraalPy.")
-            except:
-                from os import environ
-                if 'GRAALPY_DEBUG_PIP_IMPORT_HOOK' in environ:
-                    raise
-                print("WARNING: Unexpected error when checking if we are running a GraalPy tested",
-                      "version of pip. Rerun with GRAALPY_DEBUG_PIP_IMPORT_HOOK env variable to see",
-                      "the error.")
+        if fullname == "pip":
+            PipImportHook._check_patched_pip(fullname, path, target)
 
 
-sys.meta_path.insert(0, PipImportHook)
+meta_path.insert(0, PipImportHook)
