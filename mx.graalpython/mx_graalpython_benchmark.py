@@ -621,7 +621,10 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                 vc = SUITE.vc
                 if vc is None:
                     return d
-                branch = vc.active_branch(SUITE.dir, abortOnError=False) or "<unknown>"
+                # We want to report the commit from graalpython repo, but the branch from the current repo. The
+                # reason is that apptests benchmarks may be run from a PR and then the branch detection misbehaves in
+                # the gates, always reporting master for some reason.
+                branch = vc.active_branch(os.getcwd(), abortOnError=False) or "<unknown>"
                 info = vc.parent_info(SUITE.dir)
                 url = vc.default_pull(SUITE.dir, abortOnError=False) or "unknown"
                 d.update({
