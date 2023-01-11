@@ -246,10 +246,6 @@ public abstract class StringNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
-
-        public static CastToJavaStringCheckedNode create() {
-            return StringNodesFactory.CastToJavaStringCheckedNodeGen.create();
-        }
     }
 
     @GenerateUncached
@@ -274,10 +270,6 @@ public abstract class StringNodes {
             } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
-        }
-
-        public static CastToTruffleStringCheckedNode create() {
-            return StringNodesFactory.CastToTruffleStringCheckedNodeGen.create();
         }
     }
 

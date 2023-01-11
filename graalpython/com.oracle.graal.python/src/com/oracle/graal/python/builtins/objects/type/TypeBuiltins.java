@@ -583,10 +583,6 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = J___GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
-        public static GetattributeNode create() {
-            return TypeBuiltinsFactory.GetattributeNodeFactory.create();
-        }
-
         private final BranchProfile hasDescProfile = BranchProfile.create();
         private final BranchProfile isDescProfile = BranchProfile.create();
         private final BranchProfile hasValueProfile = BranchProfile.create();
@@ -599,7 +595,6 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private CallTernaryMethodNode invokeGet;
         @Child private CallTernaryMethodNode invokeValueGet;
         @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
-        @Child private TypeNodes.GetNameNode getNameNode;
         @Child private GetClassNode getDescClassNode;
 
         @Specialization
