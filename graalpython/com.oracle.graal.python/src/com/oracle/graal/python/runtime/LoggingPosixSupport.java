@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -678,6 +678,17 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("mmapReadByte", "%s", lib.mmapReadByte(delegate, mmap, index));
         } catch (PosixException e) {
             throw logException("mmapReadByte", e);
+        }
+    }
+
+    @ExportMessage
+    public void mmapWriteByte(Object mmap, long index, byte value,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmapWriteByte", "%s, %d, %d", mmap, index, value);
+        try {
+            lib.mmapWriteByte(delegate, mmap, index, value);
+        } catch (PosixException e) {
+            throw logException("mmapWriteByte", e);
         }
     }
 

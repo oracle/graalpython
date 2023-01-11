@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -2375,6 +2375,14 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw posixException(OSErrorEnum.ENODATA);
         }
         return getByte(readingBuffer);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void mmapWriteByte(Object mmap, long index, byte value,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
+        mmapWriteBytes(mmap, index, new byte[]{value}, 1, errBranch, eqNode);
     }
 
     @ExportMessage

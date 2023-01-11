@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltinsClini
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -134,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EndsWithNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -1421,13 +1423,13 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (restype == null) {
                 throw raise(RuntimeError, NO_FFI_TYPE_FOR_RESULT);
             }
-        
+
             int cc = FFI_DEFAULT_ABI;
             ffi_cif cif;
             if (FFI_OK != ffi_prep_cif(&cif, cc, argcount, restype, atypes)) {
                 throw raise(RuntimeError, FFI_PREP_CIF_FAILED);
             }
-        
+
             Object error_object = null;
             if ((flags & (FUNCFLAG_USE_ERRNO | FUNCFLAG_USE_LASTERROR)) != 0) {
                 error_object = state.errno;
@@ -1905,7 +1907,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         }
 
         protected static NativeFunction create(DLHandler handle, PythonContext context) {
-            String name = NativeCAPISymbol.FUN_MEMSET.getName();
+            String name = NativeCAPISymbol.FUN_MEMMOVE.getName();
             Object sym, f;
             long adr;
             try {
@@ -1961,6 +1963,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             return cdata.b_ptr.isManagedBytes();
         }
 
+        protected static boolean isMemoryView(PtrValue ptr) {
+            return ptr.isMemoryView();
+        }
+
         @Specialization(guards = "isManagedBytes(ptr)")
         static Object memset(CDataObject ptr, int value, int num) {
             byte[] ptrBytes = ((ByteArrayStorage) ptr.b_ptr.ptr).value;
@@ -1970,6 +1976,16 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             return ptr;
         }
 
+        @Specialization(guards = "isMemoryView(ptr)")
+        static Object memset(PtrValue ptr, int value, int num,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib) {
+            PMemoryView memoryView = ((MemoryViewStorage) ptr.ptr).value;
+            int len = accessLib.getBufferLength(memoryView);
+            for (int i = Math.max(0, ptr.offset); i < (ptr.offset + num) && i < len; i++) {
+                accessLib.writeByte(memoryView, i, (byte) value);
+            }
+            return ptr;
+        }
     }
 
     @ExportLibrary(InteropLibrary.class)
