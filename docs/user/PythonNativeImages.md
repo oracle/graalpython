@@ -33,6 +33,10 @@ These are:
   The native POSIX backend of GraalPy is recommended only for 100% compatibility with CPython's POSIX interfaces, and if not used, can be removed from the build with this option.
 * `python.WithoutJavaInet=true` - The Java implementation of Python's `socket` module is based on Java's networking classes.
   If network access is denied for an embedding scenario anyway, this option can reduce the binary size further.
+* `python.AutomaticAsyncActions=false` - Signal handling, Python weakref callbacks, and cleaning up native resources is usually done automatically by spawning GraalPy daemon threads that submit safepoint actions to the Python main thread.
+  This uses an `ExecutorService` with a thread pool.
+  If embedders want to disallow such extra threads or avoid pulling in `ExecutorService` and related classes, they can set this property to `false` and retrieve the `PollPythonAsyncActions` object from the context's polyglot bindings.
+  This object is executable and can be used to trigger Python async actions at locations the embedder desires.
 
 Another useful option to reduce the image size is to omit including a pre-initialized Python context in the image.
 By default, a default Python context is already pre-initialized and ready for immediate execution.

@@ -961,6 +961,20 @@ public abstract class Python3Core {
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());
             getContext().getSharedFinalizer().registerAsyncAction();
+
+            if (!PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+                if (getContext().getEnv().isPolyglotBindingsAccessAllowed()) {
+                    getContext().getEnv().exportSymbol("PollPythonAsyncActions", getContext().getEnv().asGuestValue(new Runnable() {
+                        public void run() {
+                            getContext().pollAsyncActions();
+                        }
+                    }));
+                } else {
+                    LOGGER.log(Level.SEVERE, "AutomaticAsyncActions are disabled, but PolyglotBindingsAccess is not allowed. " +
+                                    "Cannot expose `PollPythonAsyncActions'. If this is not called regularly, Python will leak memory.");
+                }
+            }
+
             initialized = true;
         }
     }

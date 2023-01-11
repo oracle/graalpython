@@ -80,10 +80,13 @@ public class AsyncActionThreadingTest extends PythonTests {
         long threadCount = pythonThreadCount();
         Context c = PythonTests.enterContext();
         try {
+            Runnable poll = c.getPolyglotBindings().getMember("PollPythonAsyncActions").asHostObject();
             c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
             assertTrue("manual async actions create no threads " + threadNames(), threadCount == pythonThreadCount());
+            poll.run();
             c.eval("python", "import threading; t = threading.Thread(target=lambda: print(1)); t.start(); t.join()");
             assertTrue("manual async actions create no thread for gil release " + threadNames(), threadCount == pythonThreadCount());
+            poll.run();
         } finally {
             PythonTests.closeContext();
         }
