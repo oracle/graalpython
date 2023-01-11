@@ -296,6 +296,7 @@ public class AsyncHandler {
             this.executorService = Executors.newScheduledThreadPool(6, runnable -> {
                 Thread t = Executors.defaultThreadFactory().newThread(runnable);
                 t.setDaemon(true);
+                t.setName(String.format("python-actions-%s", t.getName()));
                 return t;
             });
             this.registeredActions = null;

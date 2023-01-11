@@ -48,6 +48,8 @@ import static org.junit.Assert.fail;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.graalvm.polyglot.Context;
 import org.junit.Test;
@@ -58,27 +60,38 @@ import com.oracle.graal.python.test.PythonTests;
 import sun.misc.Unsafe;
 
 public class AsyncActionThreadingTest extends PythonTests {
+    long pythonThreadCount() {
+        return pythonThreads().count();
+    }
+
+    String threadNames() {
+        return pythonThreads().map((t) -> t.getName()).collect(Collectors.joining(","));
+    }
+
+    Stream<Thread> pythonThreads() {
+        int c;
+        Thread[] threads;
+        do {
+            c = Thread.activeCount() + 1;
+            threads = new Thread[c];
+        } while (Thread.enumerate(threads) >= c);
+        return Arrays.stream(threads).filter((t) -> t != null && t.getName().startsWith("python"));
+    }
+
     @Test
     public void testNewThreadsByDefault() {
-        // we first ensure that any truffle threads (looking at you NFI) are started
-        PythonTests.eval("import _struct; _struct.pack('i', 1)");
-        int threadCount = Thread.activeCount();
-
+        long threadCount = pythonThreadCount();
         Context c = PythonTests.enterContext();
         try {
             // importlib creates weakref callbacks, struct is native, so we should have
             // async action threads for cleanup now
             c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
-            int collectionActionsThreadCount = Thread.activeCount();
-            assertTrue("automatic async actions use threads to trigger", threadCount < collectionActionsThreadCount);
-            c.eval("python", "import threading; t = threading.Thread(target=lambda: print(1)); t.start(); t.join()");
-            assertTrue("automatic async actions create a thread for gil release", collectionActionsThreadCount < Thread.activeCount());
+            long collectionActionsThreadCount = pythonThreadCount();
+            assertTrue("automatic async actions use threads to trigger " + threadNames(), threadCount < collectionActionsThreadCount);
         } finally {
             PythonTests.closeContext();
         }
-        Thread[] threads = new Thread[Thread.activeCount()];
-        Thread.enumerate(threads);
-        assertEquals("python cleans up its threads: " + Arrays.toString(threads), threadCount, Thread.activeCount());
+        assertEquals("python cleans up its threads: " + threadNames(), threadCount, pythonThreadCount());
 
         // now flip the option and create a new context that does not have multiple threads
         Unsafe unsafe = null;
@@ -99,9 +112,9 @@ public class AsyncActionThreadingTest extends PythonTests {
                 c = PythonTests.enterContext();
                 try {
                     c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
-                    assertTrue("manual async actions create no threads", threadCount == Thread.activeCount());
+                    assertTrue("manual async actions create no threads " + threadNames(), threadCount == pythonThreadCount());
                     c.eval("python", "import threading; t = threading.Thread(target=lambda: print(1)); t.start(); t.join()");
-                    assertTrue("manual async actions create no thread for gil release", threadCount == Thread.activeCount());
+                    assertTrue("manual async actions create no thread for gil release " + threadNames(), threadCount == pythonThreadCount());
                 } finally {
                     PythonTests.closeContext();
                 }
