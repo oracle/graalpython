@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,13 +109,5 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
             return lib.hasArrayElements(object);
         }
         return lookupGetItem.execute(type) != PNone.NO_VALUE;
-    }
-
-    public static PySequenceCheckNode create() {
-        return PySequenceCheckNodeGen.create();
-    }
-
-    public static PySequenceCheckNode getUncached() {
-        return PySequenceCheckNodeGen.getUncached();
     }
 }

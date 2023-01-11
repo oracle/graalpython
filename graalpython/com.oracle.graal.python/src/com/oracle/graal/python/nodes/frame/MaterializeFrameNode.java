@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -455,10 +454,6 @@ public abstract class MaterializeFrameNode extends Node {
                 return frameProfile.profile(((LocalsStorage) storage).getFrame()).getFrameDescriptor();
             }
             return null;
-        }
-
-        public static SyncFrameValuesNode create() {
-            return SyncFrameValuesNodeGen.create();
         }
     }
 }

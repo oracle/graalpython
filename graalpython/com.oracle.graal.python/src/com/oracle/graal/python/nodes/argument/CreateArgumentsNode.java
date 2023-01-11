@@ -65,13 +65,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
@@ -105,10 +99,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 public abstract class CreateArgumentsNode extends PNodeWithContext {
     public static CreateArgumentsNode create() {
         return CreateArgumentsNodeGen.create();
-    }
-
-    public static CreateArgumentsNode getUncached() {
-        return CreateArgumentsNodeGen.getUncached();
     }
 
     @Specialization(guards = {"isSingleContext()", "isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
@@ -229,14 +219,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @GenerateUncached
     public abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
-        public static CreateAndCheckArgumentsNode create() {
-            return CreateAndCheckArgumentsNodeGen.create();
-        }
-
-        public static CreateAndCheckArgumentsNode getUncached() {
-            return CreateAndCheckArgumentsNodeGen.getUncached();
-        }
-
         public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject, Object[] defaults,
                         PKeyword[] kwdefaults,
                         boolean methodcall);
@@ -481,10 +463,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
         }
 
-        protected static HandleTooManyArgumentsNode create() {
-            return HandleTooManyArgumentsNodeGen.create();
-        }
-
         protected static HandleTooManyArgumentsNode getUncached() {
             return HandleTooManyArgumentsNodeGen.getUncached();
         }
@@ -542,10 +520,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return 0;
         }
 
-        protected static ApplyPositionalArguments create() {
-            return ApplyPositionalArgumentsNodeGen.create();
-        }
-
         protected static ApplyPositionalArguments getUncached() {
             return ApplyPositionalArgumentsNodeGen.getUncached();
         }
@@ -562,14 +536,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @com.oracle.truffle.api.dsl.GenerateUncached
     protected abstract static class ApplyKeywordsNode extends PNodeWithContext {
         public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
-
-        public static ApplyKeywordsNode create() {
-            return ApplyKeywordsNodeGen.create();
-        }
-
-        int getUserArgumentLength(Object[] arguments) {
-            return PArguments.getUserArgumentLength(arguments);
-        }
 
         @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"})
         @ExplodeLoop
@@ -734,14 +700,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
                 return -1;
             }
-
-            protected static SearchNamedParameterNode create() {
-                return SearchNamedParameterNodeGen.create();
-            }
-
-            protected static SearchNamedParameterNode getUncached() {
-                return SearchNamedParameterNodeGen.getUncached();
-            }
         }
     }
 
@@ -833,14 +791,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("positional"), raise);
             }
         }
-
-        protected static FillDefaultsNode create() {
-            return FillDefaultsNodeGen.create();
-        }
-
-        protected static FillDefaultsNode getUncached() {
-            return FillDefaultsNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
@@ -899,14 +849,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 throw raiseMissing(callable, missingNames, missingCnt, toTruffleStringUncached("keyword-only"), raise);
             }
         }
-
-        protected static FillKwDefaultsNode create() {
-            return FillKwDefaultsNodeGen.create();
-        }
-
-        protected static FillKwDefaultsNode getUncached() {
-            return FillKwDefaultsNodeGen.getUncached();
-        }
     }
 
     /** finds a keyword-default value by a given name */
@@ -937,14 +879,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             return null;
-        }
-
-        protected static FindKwDefaultNode create() {
-            return FindKwDefaultNodeGen.create();
-        }
-
-        protected static FindKwDefaultNode getUncached() {
-            return FindKwDefaultNodeGen.getUncached();
         }
     }
 

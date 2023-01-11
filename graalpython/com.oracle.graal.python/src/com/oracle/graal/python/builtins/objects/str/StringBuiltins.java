@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -505,11 +505,6 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = J___ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
-
-        public static AddNode create() {
-            return StringBuiltinsFactory.AddNodeFactory.create();
-        }
-
         @Specialization
         TruffleString doIt(TruffleString self, TruffleString other,
                         @Shared("concat") @Cached TruffleString.ConcatNode concatNode) {
