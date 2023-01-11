@@ -115,7 +115,7 @@ public final class PythonOptions {
      * This property can be used to control if async actions are automatically scheduled using
      * daemon threads or via embedder calling a polling API on the main thread.
      */
-    public static final boolean AUTOMATIC_ASYNC_ACTIONS = !"false".equals(System.getProperty("python.AutomaticAsyncActions"));
+    public static final boolean AUTOMATIC_ASYNC_ACTIONS = !"false".equalsIgnoreCase(System.getProperty("python.AutomaticAsyncActions"));
 
     public enum HPyBackendMode {
         NFI,
