@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
 import org.junit.Test;
 
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -83,10 +84,20 @@ public class AsyncActionThreadingTest extends PythonTests {
             Runnable poll = c.getPolyglotBindings().getMember("PollPythonAsyncActions").asHostObject();
             c.eval("python", "import re, itertools, functools, _struct; _struct.pack('i', 1)");
             assertTrue("manual async actions create no threads " + threadNames(), threadCount == pythonThreadCount());
-            poll.run();
-            c.eval("python", "import threading; t = threading.Thread(target=lambda: print(1)); t.start(); t.join()");
+            c.eval("python", "import threading; t = threading.Thread(target=lambda: 1); t.start(); t.join()");
             assertTrue("manual async actions create no thread for gil release " + threadNames(), threadCount == pythonThreadCount());
+            c.eval("python", "import signal; signal.signal(signal.SIGALRM, lambda *s: undefined_name); signal.raise_signal(signal.SIGALRM)");
+            // wait for truffle safepoints to trigger signal handling. this shouldn't happen and
+            // thus not throw
+            c.eval("python", "import time\nfor i in range(100):\n time.sleep(0.01)");
+            // poll explicitly and wait for truffle safepoints
             poll.run();
+            try {
+                c.eval("python", "import time\nfor i in range(100):\n time.sleep(0.01)");
+            } catch (PolyglotException e) {
+                // the signal handler throws, so assert that
+                assertEquals("Signal handled when polling", "NameError: name 'undefined_name' is not defined", e.getMessage());
+            }
         } finally {
             PythonTests.closeContext();
         }
