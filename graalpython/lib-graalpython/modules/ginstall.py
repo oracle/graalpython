@@ -400,7 +400,7 @@ library_dirs = {lapack_lib}"""
             append_env_var(numpy_build_env, 'CFLAGS', '-Wno-error=implicit-function-declaration')
             info(f"have lapack or blas ... CLFAGS={numpy_build_env['CFLAGS']}")
 
-        install_from_pypi("numpy==1.23.1", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
+        install_from_pypi("numpy==1.23.5", build_cmd=["build_ext", "--disable-optimization"], env=numpy_build_env,
                           pre_install_hook=make_site_cfg, **kwargs)
 
         # print numpy configuration
