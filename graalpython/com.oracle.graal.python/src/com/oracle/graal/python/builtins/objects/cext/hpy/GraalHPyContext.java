@@ -3279,10 +3279,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         } else {
             getContext().registerAsyncAction(() -> {
                 Reference<?> reference = null;
-                try {
-                    reference = referenceQueue.remove();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+                    try {
+                        reference = referenceQueue.remove();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    referenceQueue.poll();
                 }
 
                 ArrayList<GraalHPyHandleReference> refs = new ArrayList<>();

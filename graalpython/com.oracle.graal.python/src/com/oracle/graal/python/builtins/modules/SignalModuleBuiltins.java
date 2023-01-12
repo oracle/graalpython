@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -134,13 +135,15 @@ public class SignalModuleBuiltins extends PythonBuiltins {
 
         core.getContext().registerAsyncAction(() -> {
             SignalTriggerAction poll = moduleData.signalQueue.poll();
-            try {
-                while (poll == null) {
-                    moduleData.signalSema.acquire();
-                    poll = moduleData.signalQueue.poll();
+            if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
+                try {
+                    while (poll == null) {
+                        moduleData.signalSema.acquire();
+                        poll = moduleData.signalQueue.poll();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
             }
             return poll;
         });
