@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,8 +51,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetCallTargetNodeGen;
-import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetDefaultsNodeGen;
-import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetKeywordDefaultsNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetSignatureNodeGen;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
@@ -119,9 +117,6 @@ public abstract class FunctionNodes {
             return builtinMethod.getFunction().getDefaults();
         }
 
-        public static GetDefaultsNode create() {
-            return GetDefaultsNodeGen.create();
-        }
     }
 
     @GenerateUncached
@@ -178,9 +173,6 @@ public abstract class FunctionNodes {
             return builtinMethod.getFunction().getKwDefaults();
         }
 
-        public static GetKeywordDefaultsNode create() {
-            return GetKeywordDefaultsNodeGen.create();
-        }
     }
 
     @GenerateUncached
@@ -237,10 +229,6 @@ public abstract class FunctionNodes {
         @Specialization
         static Signature doBuiltinMethod(PBuiltinMethod builtinMethod) {
             return builtinMethod.getFunction().getSignature();
-        }
-
-        public static GetSignatureNode create() {
-            return GetSignatureNodeGen.create();
         }
 
         public static GetSignatureNode getUncached() {

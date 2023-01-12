@@ -43,8 +43,6 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.RestoreExceptionStateNodeGen;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.SaveExceptionStateNodeGen;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
@@ -230,10 +228,6 @@ public abstract class ExceptionStateNodes {
             return doContext(frame, getThreadStateNode);
         }
 
-        public static SaveExceptionStateNode create() {
-            return SaveExceptionStateNodeGen.create();
-        }
-
     }
 
     /**
@@ -284,9 +278,6 @@ public abstract class ExceptionStateNodes {
             return state.source == ExceptionState.SOURCE_CONTEXT;
         }
 
-        public static RestoreExceptionStateNode create() {
-            return RestoreExceptionStateNodeGen.create();
-        }
     }
 
     @ValueType
