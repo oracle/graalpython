@@ -993,10 +993,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         void doAudit(@SuppressWarnings("unused") String event, @SuppressWarnings("unused") Object[] arguments) {
         }
-
-        public static AuditNode create() {
-            return SysModuleBuiltinsFactory.AuditNodeGen.create();
-        }
     }
 
     @Builtin(name = "audit", minNumOfPositionalArgs = 1, takesVarArgs = true, doc = "audit(event, *args)\n" +

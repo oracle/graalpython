@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -202,10 +201,6 @@ public abstract class BytesNodes {
                 }
             }
             return joinedBytes;
-        }
-
-        public static BytesJoinNode create() {
-            return BytesJoinNodeGen.create();
         }
     }
 
@@ -504,9 +499,6 @@ public abstract class BytesNodes {
             }
         }
 
-        public static FromIteratorNode create() {
-            return BytesNodesFactory.FromIteratorNodeGen.create();
-        }
     }
 
     public abstract static class CmpNode extends PNodeWithContext {
@@ -891,14 +883,6 @@ public abstract class BytesNodes {
                 result = 31 * result + bufferLib.readByte(buffer, i);
             }
             return result;
-        }
-
-        public static HashBufferNode create() {
-            return BytesNodesFactory.HashBufferNodeGen.create();
-        }
-
-        public static HashBufferNode getUncached() {
-            return BytesNodesFactory.HashBufferNodeGen.getUncached();
         }
     }
 

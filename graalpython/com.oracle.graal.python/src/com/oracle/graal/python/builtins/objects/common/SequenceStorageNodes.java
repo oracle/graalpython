@@ -262,10 +262,6 @@ public abstract class SequenceStorageNodes {
             return false;
         }
 
-        public static IsDataTypeCompatibleNode create() {
-            return IsDataTypeCompatibleNodeGen.create();
-        }
-
         public static IsDataTypeCompatibleNode getUncached() {
             return IsDataTypeCompatibleNodeGen.getUncached();
         }
@@ -589,10 +585,6 @@ public abstract class SequenceStorageNodes {
                         @Cached LenOfRangeNode sliceLen) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
-        }
-
-        public static GetItemDynamicNode create() {
-            return GetItemDynamicNodeGen.create();
         }
 
         public static GetItemDynamicNode getUncached() {
@@ -924,10 +916,6 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        public static SetItemDynamicNode create() {
-            return SetItemDynamicNodeGen.create();
-        }
-
         public static SetItemDynamicNode getUncached() {
             return SetItemDynamicNodeGen.getUncached();
         }
@@ -949,10 +937,6 @@ public abstract class SequenceStorageNodes {
         @Specialization(replaces = "doCached")
         static SequenceStorage doUncached(GenNodeSupplier supplier, SequenceStorage storage, Object value) {
             return supplier.getUncached().execute(storage, value);
-        }
-
-        public static DoGeneralizationNode create() {
-            return DoGeneralizationNodeGen.create();
         }
 
         public static DoGeneralizationNode getUncached() {
@@ -1313,10 +1297,6 @@ public abstract class SequenceStorageNodes {
             setStorageSliceNode.execute(s, info, list.getSequenceStorage(), canGeneralize);
         }
 
-        public static SetItemSliceNode create() {
-            return SetItemSliceNodeGen.create();
-        }
-
         public static SetItemSliceNode getUncached() {
             return SetItemSliceNodeGen.getUncached();
         }
@@ -1576,10 +1556,6 @@ public abstract class SequenceStorageNodes {
             return profile.profile(res);
         }
 
-        public static VerifyNativeItemNode create() {
-            return VerifyNativeItemNodeGen.create();
-        }
-
         public static VerifyNativeItemNode getUncached() {
             return VerifyNativeItemNodeGen.getUncached();
         }
@@ -1630,10 +1606,6 @@ public abstract class SequenceStorageNodes {
 
         private static Object wrap(PythonContext context, Object arr) {
             return context.getEnv().asGuestValue(arr);
-        }
-
-        public static StorageToNativeNode create() {
-            return StorageToNativeNodeGen.create();
         }
 
         public static StorageToNativeNode getUncached() {
@@ -3132,10 +3104,6 @@ public abstract class SequenceStorageNodes {
         @TruffleBoundary
         static void doGeneric(SequenceStorage s, int to, int from) {
             s.copyItem(to, from);
-        }
-
-        public static CopyItemNode create() {
-            return CopyItemNodeGen.create();
         }
 
         public static CopyItemNode getUncached() {

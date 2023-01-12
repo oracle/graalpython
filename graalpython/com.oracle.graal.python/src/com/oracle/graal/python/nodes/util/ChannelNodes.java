@@ -331,6 +331,5 @@ public abstract class ChannelNodes {
             }
             return toByteArrayNode.execute(s);
         }
-
     }
 }

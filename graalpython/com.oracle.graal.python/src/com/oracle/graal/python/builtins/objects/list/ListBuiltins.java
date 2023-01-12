@@ -772,9 +772,6 @@ public class ListBuiltins extends PythonBuiltins {
             return list;
         }
 
-        public static ListReverseNode create() {
-            return ListReverseNodeFactory.create();
-        }
     }
 
     // list.sort(key=None, reverse=False)

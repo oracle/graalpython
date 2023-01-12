@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1132,10 +1132,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
         }
 
-        public static IsImmutable create() {
-            return PythonAbstractObjectFactory.IsImmutableNodeGen.create();
-        }
-
         public static IsImmutable getUncached() {
             return PythonAbstractObjectFactory.IsImmutableNodeGen.getUncached();
         }
@@ -1163,10 +1159,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, primary);
             }
             return callGetItemNode.executeObject(attrGetItem, primary, index);
-        }
-
-        public static PInteropSubscriptNode create() {
-            return PythonAbstractObjectFactory.PInteropSubscriptNodeGen.create();
         }
 
         public static PInteropSubscriptNode getUncached() {
@@ -1204,17 +1196,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             return object instanceof PBuiltinMethod || object instanceof PBuiltinFunction;
         }
 
-        public static PExecuteNode create() {
-            return PythonAbstractObjectFactory.PExecuteNodeGen.create();
-        }
-
         public static PExecuteNode getUncached() {
             return PythonAbstractObjectFactory.PExecuteNodeGen.getUncached();
         }
 
         @Override
         public Node copy() {
-            return create();
+            return PythonAbstractObjectFactory.PExecuteNodeGen.create();
         }
     }
 
@@ -1243,10 +1231,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
             }
             return convertedArgs;
-        }
-
-        public static ArgumentsFromForeignNode create() {
-            return PythonAbstractObjectFactory.ArgumentsFromForeignNodeGen.create();
         }
 
         public static ArgumentsFromForeignNode getUncached() {
@@ -1401,10 +1385,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
         }
 
-        public static PInteropSetAttributeNode create() {
-            return PythonAbstractObjectFactory.PInteropSetAttributeNodeGen.create();
-        }
-
         public static PInteropSetAttributeNode getUncached() {
             return PythonAbstractObjectFactory.PInteropSetAttributeNodeGen.getUncached();
         }
@@ -1430,10 +1410,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             } else {
                 throw UnsupportedMessageException.create();
             }
-        }
-
-        public static PInteropDeleteItemNode create() {
-            return PythonAbstractObjectFactory.PInteropDeleteItemNodeGen.create();
         }
 
         public static PInteropDeleteItemNode getUncached() {
@@ -1469,10 +1445,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             } else {
                 throw UnsupportedMessageException.create();
             }
-        }
-
-        public static PInteropDeleteAttributeNode create() {
-            return PythonAbstractObjectFactory.PInteropDeleteAttributeNodeGen.create();
         }
 
         public static PInteropDeleteAttributeNode getUncached() {

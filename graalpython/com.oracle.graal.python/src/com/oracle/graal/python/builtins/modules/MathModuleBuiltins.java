@@ -375,9 +375,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static FactorialNode create() {
-            return MathModuleBuiltinsFactory.FactorialNodeFactory.create();
-        }
     }
 
     @Builtin(name = "comb", minNumOfPositionalArgs = 2)
@@ -443,9 +440,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
-        public static CombNode create() {
-            return MathModuleBuiltinsFactory.CombNodeFactory.create();
-        }
     }
 
     @Builtin(name = "perm", minNumOfPositionalArgs = 1, parameterNames = {"n", "k"})
@@ -518,9 +512,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
-        public static PermNode create() {
-            return MathModuleBuiltinsFactory.PermNodeFactory.create();
-        }
     }
 
     @Builtin(name = "floor", minNumOfPositionalArgs = 1)
@@ -570,9 +561,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        protected static FloorNode create() {
-            return MathModuleBuiltinsFactory.FloorNodeFactory.create();
-        }
     }
 
     @Builtin(name = "fmod", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"left", "right"})

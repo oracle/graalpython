@@ -873,10 +873,6 @@ public class TypeBuiltins extends PythonBuiltins {
 
         public abstract boolean executeWith(VirtualFrame frame, Object cls, Object instance);
 
-        public static InstanceCheckNode create() {
-            return TypeBuiltinsFactory.InstanceCheckNodeFactory.create();
-        }
-
         private PythonObject getInstanceClassAttr(VirtualFrame frame, Object instance) {
             Object classAttr = getAttributeNode.executeObject(frame, instance, T___CLASS__);
             if (classAttr instanceof PythonObject) {

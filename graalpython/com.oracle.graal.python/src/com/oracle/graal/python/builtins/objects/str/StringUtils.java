@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -369,10 +369,6 @@ public final class StringUtils {
             return UCharacter.hasBinaryProperty(codePoint, property);
         }
 
-        public static IsIdentifierNode create() {
-            return StringUtilsFactory.IsIdentifierNodeGen.create();
-        }
-
         public static IsIdentifierNode getUncached() {
             return StringUtilsFactory.IsIdentifierNodeGen.getUncached();
         }
@@ -577,10 +573,6 @@ public final class StringUtils {
                 return (Character) arg;
             }
             throw shouldNotReachHere("Expected an int or char argument");
-        }
-
-        public static SimpleTruffleStringFormatNode create() {
-            return StringUtilsFactory.SimpleTruffleStringFormatNodeGen.create();
         }
 
         public static SimpleTruffleStringFormatNode getUncached() {

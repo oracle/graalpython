@@ -501,10 +501,6 @@ public abstract class StringNodes {
             return null;
         }
 
-        public static InternStringNode create() {
-            return StringNodesFactory.InternStringNodeGen.create();
-        }
-
         public static InternStringNode getUncached() {
             return StringNodesFactory.InternStringNodeGen.getUncached();
         }
