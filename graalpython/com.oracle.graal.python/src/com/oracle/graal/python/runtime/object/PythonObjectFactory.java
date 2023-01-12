@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
@@ -1493,5 +1494,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public final DigestObject createDigestObject(PythonBuiltinClassType type, String name, Object digest) {
         return trace(DigestObject.create(type, getShape(type), name, digest));
+    }
+
+    public final PyCapsule createCapsule(Object pointer, Object name, Object destructor) {
+        return trace(new PyCapsule(getLanguage(), pointer, name, destructor));
     }
 }

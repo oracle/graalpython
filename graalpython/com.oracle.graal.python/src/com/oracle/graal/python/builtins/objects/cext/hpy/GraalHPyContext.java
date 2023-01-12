@@ -2371,17 +2371,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     public long ctxCapsuleNew(long pointer, long name, long destructor) {
-        PyCapsule result = new PyCapsule();
         if (pointer == 0) {
             return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, ValueError, GraalHPyCapsuleNew.NULL_PTR_ERROR);
         }
-        result.setPointer(pointer);
-        if (name != 0) {
-            result.setName(name);
-        }
-        if (destructor != 0) {
-            result.setDestructor(destructor);
-        }
+        PyCapsule result = getSlowPathFactory().createCapsule(pointer, name, destructor);
         return GraalHPyBoxing.boxHandle(getHPyHandleForObject(result));
     }
 

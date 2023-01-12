@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -22,8 +22,7 @@
 extern "C" {
 #endif
 
-PyAPI_DATA(PyTypeObject*) PyCapsule_TypeReference;
-#define PyCapsule_Type (*PyCapsule_TypeReference)
+PyAPI_DATA(PyTypeObject) PyCapsule_Type;
 
 typedef void (*PyCapsule_Destructor)(PyObject *);
 

@@ -123,6 +123,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBoolBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBytesBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCEvalBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextClassBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextComplexBuiltins;
@@ -534,6 +535,7 @@ public abstract class Python3Core {
                         new PythonCextAbstractBuiltins(),
                         new PythonCextBoolBuiltins(),
                         new PythonCextBytesBuiltins(),
+                        new PythonCextCapsuleBuiltins(),
                         new PythonCextCEvalBuiltins(),
                         new PythonCextCodeBuiltins(),
                         new PythonCextComplexBuiltins(),

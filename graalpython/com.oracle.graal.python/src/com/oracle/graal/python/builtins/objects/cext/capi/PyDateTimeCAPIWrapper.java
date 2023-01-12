@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CREATE_DATETIME_CAPSULE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATETIME_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DATE_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_DATETIME_DELTA_BASICSIZE;
@@ -126,6 +125,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
+    static final TruffleString T_PYDATETIME_CAPSULE_NAME = tsLiteral("datetime.datetime_CAPI");
 
     private static final String J_DATE_TYPE = "DateType";
     private static final String J_DATETIME_TYPE = "DateTimeType";
@@ -235,7 +235,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
         wrapper.nativeType = callCapiFunction.call(FUN_SET_PY_DATETIME_IDS, toSulongNode.execute(wrapper.dateType), toSulongNode.execute(wrapper.datetimeType),
                         toSulongNode.execute(wrapper.timeType), toSulongNode.execute(wrapper.deltaType), toSulongNode.execute(wrapper.tzInfoType));
 
-        setAttr.execute(null, datetime, T_DATETIME_CAPI, CExtNodesFactory.ToJavaNodeGen.getUncached().execute(callCapiFunction.call(FUN_CREATE_DATETIME_CAPSULE, wrapper)));
+        setAttr.execute(null, datetime, T_DATETIME_CAPI, PythonObjectFactory.getUncached().createCapsule(wrapper, T_PYDATETIME_CAPSULE_NAME, null));
         assert getAttr.execute(null, datetime, T_DATETIME_CAPI) != PythonContext.get(null).getNativeNull();
     }
 

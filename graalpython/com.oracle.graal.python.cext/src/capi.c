@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,17 @@ typedef struct {
     arrayobject *ao;
     PyObject* (*getitem)(struct arrayobject *, Py_ssize_t);
 } arrayiterobject;
+
+// add structure hint for declaring PyCapsule type
+/* Internal structure of PyCapsule */
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
+
 
 PyTypeObject PyArrayIter_Type = PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
 
@@ -209,6 +220,7 @@ declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
 declare_type(PyCMethod_Type, builtin_method, PyCMethodObject);
 declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
+declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
 // tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
 // PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
 // that the dynamic type for method_descriptor is always going to be

@@ -417,6 +417,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | SEQUENCE;
                     break;
                 case PythonModuleDef:
+                case Capsule:
                     result = 0;
                     break;
                 case PByteArray:
