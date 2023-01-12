@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.ReadByteFromChannelNodeGen;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteByteToChannelNodeGen;
-import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteToChannelNodeGen;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -333,8 +332,5 @@ public abstract class ChannelNodes {
             return toByteArrayNode.execute(s);
         }
 
-        public static WriteToChannelNode create() {
-            return WriteToChannelNodeGen.create();
-        }
     }
 }

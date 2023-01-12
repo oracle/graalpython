@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
-import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -180,9 +179,6 @@ public abstract class ListNodes {
             return constructListNode.execute(frame, PythonBuiltinClassType.PList, value);
         }
 
-        public static FastConstructListNode create() {
-            return FastConstructListNodeGen.create();
-        }
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)

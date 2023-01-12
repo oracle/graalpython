@@ -111,7 +111,4 @@ public abstract class GetCurrentFrameRef extends Node {
         return PythonUtils.DISABLED;
     }
 
-    public static GetCurrentFrameRef create() {
-        return GetCurrentFrameRefNodeGen.create();
-    }
 }

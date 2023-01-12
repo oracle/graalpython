@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,10 +68,6 @@ public abstract class SetDictNode extends PNodeWithContext {
     static void doPythonObjectNotClass(PythonObject object, PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         object.setDict(dylib, dict);
-    }
-
-    public static SetDictNode create() {
-        return SetDictNodeGen.create();
     }
 
     public static SetDictNode getUncached() {
