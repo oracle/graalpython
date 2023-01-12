@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@SuppressPackageWarnings({"truffle-inlining", "truffle-sharing", "truffle-neverdefault", "truffle-limit", "deprecated", "truffle-static-method"})
+@SuppressPackageWarnings({"truffle-inlining", "truffle-sharing", "truffle-limit", "deprecated", "truffle-static-method"})
 package com.oracle.graal.python.builtins.objects.map;
 
 import com.oracle.truffle.api.dsl.SuppressPackageWarnings;
