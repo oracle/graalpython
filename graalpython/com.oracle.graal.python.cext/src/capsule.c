@@ -20,10 +20,11 @@ typedef struct {
 
 PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
 
-UPCALL_ID(PyCapsule_New)
+typedef PyObject* (*capsule_new)(void*, void*, void*);
+UPCALL_TYPED_ID(PyCapsule_New, capsule_new);
 PyObject *
 PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return ((PyObject* (*)(void*, void*, void*))_jls_PyCapsule_New)(pointer, name ? polyglot_from_string(name, SRC_CS) : NULL, destructor);
+    return _jls_PyCapsule_New(pointer, name ? polyglot_from_string(name, SRC_CS) : NULL, destructor);
 }
 
 UPCALL_ID(PyCapsule_IsValid);
@@ -56,10 +57,11 @@ PyCapsule_GetContext(PyObject *o) {
     return UPCALL_CEXT_PTR(_jls_PyCapsule_GetContext, native_to_java(o));
 }
 
-UPCALL_ID(PyCapsule_SetPointer);
+typedef int (*capsule_setpointer)(void*, void*);
+UPCALL_TYPED_ID(PyCapsule_SetPointer, capsule_setpointer);
 int
 PyCapsule_SetPointer(PyObject *o, void *pointer) {
-    return ((int (*)(void*, void*))_jls_PyCapsule_SetPointer)(native_to_java(o), pointer);
+    return _jls_PyCapsule_SetPointer(native_to_java(o), pointer);
 }
 
 UPCALL_ID(PyCapsule_SetName);
@@ -69,16 +71,18 @@ PyCapsule_SetName(PyObject *o, const char *name) {
 }
 
 
-UPCALL_ID(PyCapsule_SetDestructor);
+typedef int (*capsule_setdestructor)(void*, void*);
+UPCALL_TYPED_ID(PyCapsule_SetDestructor, capsule_setdestructor);
 int
 PyCapsule_SetDestructor(PyObject *o, PyCapsule_Destructor destructor) {
-    return ((int (*)(void*, void*))_jls_PyCapsule_SetDestructor)(native_to_java(o), (intptr_t)destructor);
+    return _jls_PyCapsule_SetDestructor(native_to_java(o), (intptr_t)destructor);
 }
 
-UPCALL_ID(PyCapsule_SetContext);
+typedef int (*capsule_setctx)(void*, void*);
+UPCALL_TYPED_ID(PyCapsule_SetContext, capsule_setctx);
 int
 PyCapsule_SetContext(PyObject *o, void *context) {
-    return ((int (*)(void*, void*))_jls_PyCapsule_SetContext)(native_to_java(o), (intptr_t)context);
+    return _jls_PyCapsule_SetContext(native_to_java(o), (intptr_t)context);
 }
 
 UPCALL_ID(PyCapsule_Import);
