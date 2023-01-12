@@ -74,7 +74,7 @@ public abstract class ForIterINode extends PNodeWithContext {
                      * Not using LoopConditionProfile because when OSR-compiled, we might never
                      * register the condition being false
                      */
-                    @Cached ConditionProfile conditionProfile) {
+                    @Cached("createCountingProfile()") ConditionProfile conditionProfile) {
         if (conditionProfile.profile(iterator.hasNextInt())) {
             frame.setInt(stackTop, iterator.nextInt());
             return true;
