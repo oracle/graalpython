@@ -59,6 +59,17 @@ typedef struct {
     PyObject* (*getitem)(struct arrayobject *, Py_ssize_t);
 } arrayiterobject;
 
+// add structure hint for declaring PyCapsule type
+/* Internal structure of PyCapsule */
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
+
+
 PyTypeObject PyArrayIter_Type = PY_TRUFFLE_TYPE("arrayiterator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(arrayiterobject));
 
 void *PY_TRUFFLE_CEXT;

@@ -9,6 +9,14 @@
 
 #include "capi.h"
 
+/* Internal structure of PyCapsule */
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
 
 PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
 
@@ -78,8 +86,6 @@ void *
 PyCapsule_Import(const char *name, int no_block) {
     return UPCALL_CEXT_PTR(_jls_PyCapsule_Import, name ? polyglot_from_string(name, SRC_CS) : NULL, no_block);
 }
-
-PyTypeObject* PyCapsule_TypeReference = &PyCapsule_Type;
 
 PyTypeObject* getPyCapsuleTypeReference() {
 	return &PyCapsule_Type;

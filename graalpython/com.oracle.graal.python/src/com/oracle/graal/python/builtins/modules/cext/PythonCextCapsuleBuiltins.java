@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -227,6 +228,9 @@ public final class PythonCextCapsuleBuiltins extends PythonBuiltins {
                 }
                 if (o.getName() == null) {
                     return getContext().getNativeNull();
+                }
+                if (o.getName() instanceof TruffleString) {
+                    return new CArrayWrappers.CStringWrapper((TruffleString) o.getName());
                 }
                 return o.getName();
             } catch (PException e) {
