@@ -782,3 +782,30 @@ index 3aa7504..6ab7210 100755
          entry_points={
              'console_scripts': f2py_cmds,
              'array_api': ['numpy = numpy.array_api'],
+diff --git a/tools/cythonize.py b/tools/cythonize.py
+index 002b2fa..367ec0a 100755
+--- a/tools/cythonize.py
++++ b/tools/cythonize.py
+@@ -48,10 +48,19 @@ def process_pyx(fromfile, tofile):
+     if tofile.endswith('.cxx'):
+         flags.append('--cplus')
+ 
+-    subprocess.check_call(
+-        [sys.executable, '-m', 'cython'] + flags + ["-o", tofile, fromfile])
+-
++    # subprocess.check_call(
++    #     [sys.executable, '-m', 'cython'] + flags + ["-o", tofile, fromfile])
+ 
++    from Cython.Compiler.Main import setuptools_main
++    prev_argv = sys.argv[1:]
++    try:
++        sys.argv[1:] = flags + ["-o", tofile, fromfile]
++        retcode = setuptools_main()
++        if retcode:
++            sys.exit(retcode)
++    finally:
++        sys.argv[1:] = prev_argv
++    
+ def process_tempita_pyx(fromfile, tofile):
+     import npy_tempita as tempita
+ 
