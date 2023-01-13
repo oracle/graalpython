@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -75,3 +75,49 @@ class TestHPyGlobal(HPyTest):
         obj = {'hello': 'world'}
         assert mod.setg(obj) is None
         assert mod.getg() is obj
+
+    def test_twoglobals(self):
+        mod = self.make_module("""
+            HPyGlobal myglobal1;
+            HPyGlobal myglobal2;
+
+            HPyDef_METH(setg1, "setg1", setg1_impl, HPyFunc_O)
+            static HPy setg1_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                HPyGlobal_Store(ctx, &myglobal1, arg);
+                return HPy_Dup(ctx, ctx->h_None);
+            }
+
+            HPyDef_METH(setg2, "setg2", setg2_impl, HPyFunc_O)
+            static HPy setg2_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                HPyGlobal_Store(ctx, &myglobal2, arg);
+                return HPy_Dup(ctx, ctx->h_None);
+            }
+
+            HPyDef_METH(getg1, "getg1", getg1_impl, HPyFunc_NOARGS)
+            static HPy getg1_impl(HPyContext *ctx, HPy self)
+            {
+                return HPyGlobal_Load(ctx, myglobal1);
+            }
+
+            HPyDef_METH(getg2, "getg2", getg2_impl, HPyFunc_NOARGS)
+            static HPy getg2_impl(HPyContext *ctx, HPy self)
+            {
+                return HPyGlobal_Load(ctx, myglobal2);
+            }
+
+            @EXPORT(setg1)
+            @EXPORT(setg2)
+            @EXPORT(getg1)
+            @EXPORT(getg2)
+            @EXPORT_GLOBAL(myglobal1)
+            @EXPORT_GLOBAL(myglobal2)
+            @INIT
+        """)
+        obj1 = {'hello': 'world'}
+        obj2 = {'foo': 'bar'}
+        assert mod.setg1(obj1) is None
+        assert mod.setg2(obj2) is None
+        assert mod.getg1() is obj1
+        assert mod.getg2() is obj2

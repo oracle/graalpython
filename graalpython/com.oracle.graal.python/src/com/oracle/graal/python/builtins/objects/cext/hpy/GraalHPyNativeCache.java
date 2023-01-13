@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,8 +55,12 @@ public abstract class GraalHPyNativeCache {
 
     private static final long HANDLE_MIRROR_OFFSET = 1;
 
+    static long toBytes(long idx) {
+        return (HANDLE_MIRROR_OFFSET + idx) * SIZEOF_LONG;
+    }
+
     static long allocateNativeCache(int nHandleTable, int nGlobalsTable) {
-        long arraySize = (nHandleTable + nGlobalsTable + HANDLE_MIRROR_OFFSET) * SIZEOF_LONG;
+        long arraySize = toBytes(nHandleTable + nGlobalsTable);
         long arrayPtr = UNSAFE.allocateMemory(arraySize);
         UNSAFE.setMemory(arrayPtr, arraySize, (byte) 0);
         UNSAFE.putLong(arrayPtr, nHandleTable);
@@ -67,22 +71,26 @@ public abstract class GraalHPyNativeCache {
         if (nHandleTableOld > nHandleTable || nGlobalsTableOld > nGlobalsTable) {
             throw new RuntimeException("shrinking HPy handle/globals table is not yet supported");
         }
-        long arraySize = (nHandleTable + nGlobalsTable + HANDLE_MIRROR_OFFSET) * SIZEOF_LONG;
+        long arraySize = toBytes(nHandleTable + nGlobalsTable);
         long newCachePtr = UNSAFE.reallocateMemory(cachePtr, arraySize);
         if (nHandleTableOld != nHandleTable) {
             // update handle table size
             UNSAFE.putLong(newCachePtr, nHandleTable);
             // move globals table entries (only if the handle table size changed)
-            UNSAFE.copyMemory(newCachePtr + (HANDLE_MIRROR_OFFSET + nHandleTableOld) * SIZEOF_LONG, newCachePtr + (HANDLE_MIRROR_OFFSET + nHandleTable) * SIZEOF_LONG, nGlobalsTableOld * SIZEOF_LONG);
+            UNSAFE.copyMemory(newCachePtr + toBytes(nHandleTableOld), newCachePtr + toBytes(nHandleTable), nGlobalsTableOld * SIZEOF_LONG);
         }
         return newCachePtr;
     }
 
     static void putHandleNativeSpacePointer(long cachePtr, int handleID, long value) {
-        UNSAFE.putLong(cachePtr + (HANDLE_MIRROR_OFFSET + handleID) * SIZEOF_LONG, value);
+        UNSAFE.putLong(cachePtr + toBytes(handleID), value);
     }
 
     static void putGlobalNativeSpacePointer(long cachePtr, long nHandleTable, int globalID, long value) {
-        UNSAFE.putLong(cachePtr + (HANDLE_MIRROR_OFFSET + nHandleTable + globalID) * SIZEOF_LONG, value);
+        UNSAFE.putLong(cachePtr + toBytes(nHandleTable + globalID), value);
+    }
+
+    static void initGlobalsNativeSpacePointer(long cachePtr, long nHandleTable, int globalStartID, int numElem) {
+        UNSAFE.setMemory(cachePtr + toBytes(nHandleTable + globalStartID), numElem * SIZEOF_LONG, (byte) 0);
     }
 }

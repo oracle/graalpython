@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -317,6 +317,18 @@ void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
 	    return polyglot_from_HPyDefPtr_array(moduleDef->defines, len);
 	}
 	return NULL;
+}
+
+uint64_t graal_hpy_module_init_globals(HPyModuleDef *moduleDef, intptr_t startID) {
+	uint64_t len=0;
+	if (moduleDef->globals) {
+	    while (moduleDef->globals[len] != NULL) {
+            moduleDef->globals[len]->_i = startID++;
+		    len++;
+	    }
+	    return len;
+	}
+	return 0;
 }
 
 void* graal_hpy_from_string(const char *ptr) {

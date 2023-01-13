@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,6 +81,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_POINTER_ARRAY_TO_NATIVE("graal_hpy_pointer_array_to_native"),
     GRAAL_HPY_FROM_HPY_MODULE_DEF("graal_hpy_from_HPyModuleDef"),
     GRAAL_HPY_MODULE_GET_DEFINES("graal_hpy_module_get_defines"),
+    GRAAL_HPY_MODULE_INIT_GLOBALS("graal_hpy_module_init_globals"),
     GRAAL_HPY_DEF_GET_KIND("graal_hpy_def_get_kind"),
     GRAAL_HPY_DEF_GET_SLOT("graal_hpy_def_get_slot"),
     GRAAL_HPY_DEF_GET_METH("graal_hpy_def_get_meth"),

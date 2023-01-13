@@ -57,6 +57,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_DEFINES;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_INIT_GLOBALS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
@@ -437,6 +438,16 @@ public abstract class GraalHPyContextFunctions {
                         // elements
                         throw CompilerDirectives.shouldNotReachHere();
                     }
+                }
+
+                // allocate module's HPyGlobals
+                try {
+                    int globalStartIdx = context.getEndIndexOfGlobalTable();
+                    int nModuleGlobals = ptrLib.asInt(callGetterNode.call(context, GRAAL_HPY_MODULE_INIT_GLOBALS, moduleDef, globalStartIdx));
+                    context.initBatchGlobals(globalStartIdx, nModuleGlobals);
+                } catch (UnsupportedMessageException e) {
+                    // should not happen unless the number of module global is larger than an `int`
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
 
                 writeAttrNode.execute(module, SpecialAttributeNames.T___DOC__, mDoc);
@@ -2966,7 +2977,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
-                        @Cached HPyAsHandleNode asHandleNode,
                         @Cached("createClassProfile()") ValueProfile typeProfile,
                         @CachedLibrary(limit = "3") InteropLibrary lib) throws ArityException {
             checkArity(arguments, 3);
@@ -3003,7 +3013,8 @@ public abstract class GraalHPyContextFunctions {
 
             // TODO: (tfel) do not actually allocate the index / free the existing one when
             // value can be stored as tagged handle
-            GraalHPyHandle newHandle = asHandleNode.executeGlobal(context, value, idx);
+            idx = context.createGlobal(value, idx);
+            GraalHPyHandle newHandle = GraalHPyHandle.createGlobal(value, idx);
             callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_SET_GLOBAL_I, hpyGlobalPtr, newHandle);
             return 0;
         }

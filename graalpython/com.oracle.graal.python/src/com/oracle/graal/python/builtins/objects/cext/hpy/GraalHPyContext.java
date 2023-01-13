@@ -2956,6 +2956,36 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return newIdx;
     }
 
+    protected int getEndIndexOfGlobalTable() {
+        for (int i = hpyGlobalsTable.length - 1; i > 0; i--) {
+            if (hpyGlobalsTable[i] != null) {
+                return i + 1;
+            }
+        }
+        return hpyGlobalsTable.length;
+    }
+
+    protected void initBatchGlobals(int startIdx, int nModuleGlobals) {
+        if (nModuleGlobals == 0) {
+            return;
+        }
+        int gtLen = hpyGlobalsTable.length;
+        int endIdx = startIdx + nModuleGlobals;
+        if (endIdx >= gtLen) {
+            int newSize = endIdx + 1;
+            LOGGER.fine(() -> "resizing HPy globals table to " + newSize);
+            hpyGlobalsTable = Arrays.copyOf(hpyGlobalsTable, newSize);
+            if (useNativeFastPaths && isPointer()) {
+                reallocateNativeSpacePointersMirror(hpyHandleTable.length, gtLen);
+            }
+        }
+        Arrays.fill(hpyGlobalsTable, startIdx, endIdx, GraalHPyHandle.NULL_HANDLE_DELEGATE);
+        if (useNativeFastPaths && isPointer()) {
+            GraalHPyNativeCache.initGlobalsNativeSpacePointer(nativeSpacePointers, hpyHandleTable.length, startIdx, nModuleGlobals);
+        }
+    }
+
+    @TruffleBoundary
     private int allocateHPyGlobal() {
         int handle = 0;
         for (int i = 1; i < hpyGlobalsTable.length; i++) {
