@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,14 +36,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import abc
 import argparse
+import json
 import os
 import re
 import shlex
 import sys
 import types
-import json
 
 import mx
 
@@ -83,7 +83,7 @@ def get_message(suite, commit):
     return suite.vc.git_command(suite.vc_dir, ['log', '--format=%s', '-n', '1', commit]).strip()
 
 
-def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
+def run_bisect_benchmark(suite, bad, good, callback, good_result=None, bad_result=None):
     git_dir = suite.vc_dir
     commits = suite.vc.git_command(
         git_dir,
@@ -93,19 +93,23 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
     if not commits:
         raise RuntimeError("No merge commits found in the range. Did you swap good and bad?")
     downstream_suite = get_downstream_suite(suite)
-    values = [None] * len(commits)
-    if threshold is None:
+    results = [None] * len(commits)
+    if good_result is None and bad_result is None:
         bad_index = 0
         good_index = len(commits) - 1
-        values[bad_index] = callback(suite, bad)
+        bad_result = results[bad_index] = callback(suite, bad)
         downstream_bad = get_commit(downstream_suite)
-        values[good_index] = callback(suite, good)
+        good_result = results[good_index] = callback(suite, good)
         downstream_good = get_commit(downstream_suite)
-        threshold = (values[bad_index] + values[good_index]) / 2
-        if values[good_index] * 1.03 > values[bad_index]:
+        if not good_result.bound_is_valid(bad_result):
             raise RuntimeError(
-                "Didn't detect a regression - less that 3% difference between good value "
-                "{} and bad value {}".format(values[good_index], values[bad_index])
+                "Didn't detect a regression: "
+                f"'good' value ({good_result}) is worse than or same as than 'bad' value ({bad_result})"
+            )
+        if not good_result.bound_is_significant(bad_result, 0.03):
+            raise RuntimeError(
+                "Didn't detect a regression: "
+                f"less that 3% difference between 'good' value ({good_result}) and 'bad' value ({bad_result})"
             )
     else:
         bad_index = -1
@@ -118,8 +122,8 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
             assert good_index - bad_index == 1
             break
         commit = commits[index]
-        values[index] = callback(suite, commit)
-        if values[index] < threshold:
+        result = results[index] = callback(suite, commit)
+        if result.is_good(good_result, bad_result):
             good_index = index
             downstream_good = get_commit(downstream_suite)
         else:
@@ -128,19 +132,20 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
     subresults = {}
     if downstream_bad and downstream_good and downstream_bad != downstream_good:
         suite.vc.update_to_branch(suite.vc_dir, commits[good_index])
-        subresult = run_bisect_benchmark(downstream_suite, downstream_bad, downstream_good, callback, threshold)
+        subresult = run_bisect_benchmark(downstream_suite, downstream_bad, downstream_good, callback, good_result,
+                                         bad_result)
         subresults[bad_index] = subresult
-    return BisectResult(suite, commits, values, good_index, bad_index, subresults)
+    return BisectResult(suite, commits, results, good_index, bad_index, subresults)
 
 
 class BisectResult:
-    def __init__(self, suite, commits, values, good_index, bad_index, subresults):
+    def __init__(self, suite, commits, results, good_index, bad_index, dependency_results):
         self.suite = suite
         self.commits = commits
-        self.values = values
+        self.results = results
         self.good_index = good_index
         self.bad_index = bad_index
-        self.subresults = subresults
+        self.dependency_results = dependency_results
 
     @property
     def repo_name(self):
@@ -159,25 +164,70 @@ class BisectResult:
     def visualize(self, level=1):
         level_marker = '=' * level
         out = ["{} {}".format(level_marker, self.repo_name)]
-        for index, (commit, value) in enumerate(zip(self.commits, self.values)):
+        for index, (commit, value) in enumerate(zip(self.commits, self.results)):
             if value is not None:
-                out.append("{} {} {:6.6} s {}".format(level_marker, commit, value, get_message(self.suite, commit)))
-            if self.subresults and index in self.subresults:
-                out.append(self.subresults[index].visualize(level + 1))
+                out.append(f"{level_marker} {commit} {value} {get_message(self.suite, commit)}")
+            if self.dependency_results and index in self.dependency_results:
+                out.append(self.dependency_results[index].visualize(level + 1))
         return '\n'.join(out)
 
     def summarize(self):
         if self.bad_commit and self.good_commit:
-            for subresult in self.subresults.values():
-                sub = subresult.summarize()
-                if sub:
-                    return sub
+            for dependency_result in self.dependency_results.values():
+                summary = dependency_result.summarize()
+                if summary:
+                    return summary
             return ("Detected bad commit in {} repository:\n{} {}"
                     .format(self.repo_name, self.bad_commit, get_message(self.suite, self.bad_commit)))
         return ''
 
 
+class BenchmarkResult(abc.ABC):
+    def __init__(self, value, unit=None):
+        self.value = value
+        self.unit = unit
+
+    def __str__(self):
+        return f'{self.value:6.6} {self.unit}'
+
+    def bound_is_valid(self, bad_result):
+        return self.is_good(self, bad_result) or not bad_result.is_good(self, bad_result)
+
+    def bound_is_significant(self, bad_result, epsilon):
+        avg = (self.value + bad_result.value) / 2
+        diff = abs(self.value - bad_result.value)
+        return diff / avg >= epsilon
+
+    @abc.abstractmethod
+    def is_good(self, good_result, bad_result):
+        pass
+
+
+class LowerIsBetterResult(BenchmarkResult):
+    def is_good(self, good_result, bad_result):
+        threshold = (good_result.value + bad_result.value) / 2
+        return self.value < threshold
+
+
+class HigherIsBetterResult(BenchmarkResult):
+    def is_good(self, good_result, bad_result):
+        threshold = (good_result.value + bad_result.value) / 2
+        return self.value > threshold
+
+
+class WorksResult(BenchmarkResult):
+    def is_good(self, good_result, bad_result):
+        return self.value != 0
+
+    def bound_is_significant(self, bad_result, epsilon):
+        return True
+
+    def __str__(self):
+        return "works" if self.value == 0 else "doesn't work"
+
+
 def _bisect_benchmark(argv, bisect_id, email_to):
+    default_metric = 'time'
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
         import configparser
         cp = configparser.ConfigParser()
@@ -188,7 +238,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args.good = sec['good']
         args.build_command = sec['build_command']
         args.benchmark_command = sec['benchmark_command']
-        args.benchmark_criterion = sec.get('benchmark_criterion', 'BEST')
+        args.benchmark_metric = sec.get('benchmark_metric', default_metric)
         args.enterprise = sec.getboolean('enterprise', False)
         args.no_clean = sec.getboolean('no_clean', False)
         args.rerun_with_commands = sec.get('rerun_with_commands')
@@ -202,8 +252,13 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         parser.add_argument('--rerun-with-commands',
                             help="Re-run the bad and good commits with this benchmark command(s) "
                                  "(multiple commands separated by ';')")
-        parser.add_argument('--benchmark-criterion', default='BEST',
-                            help="Which result parameter should be used for comparisons")
+        parser.add_argument(
+            '--benchmark-metric', default=default_metric,
+            help=(
+                "Which result metric should be used for comparisons (metric.name in the result json). "
+                "A special value 'WORKS' can be used to consider only the success of the benchmark command."
+            ),
+        )
         parser.add_argument('--enterprise', action='store_true', help="Whether to checkout graal-enterprise")
         parser.add_argument('--no-clean', action='store_true', help="Do not run 'mx clean' between runs")
         args = parser.parse_args(argv)
@@ -258,19 +313,22 @@ def _bisect_benchmark(argv, bisect_id, email_to):
 
     def benchmark_callback(suite, commit, bench_command=args.benchmark_command):
         checkout_and_build_suite(suite, commit)
-        output = mx.OutputCapture()
-        retcode = mx.run(shlex.split(bench_command), out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
+        retcode = mx.run(shlex.split(bench_command), nonZeroIsFatal=False)
+        if args.benchmark_metric == 'WORKS':
+            return WorksResult(retcode)
         if retcode:
-            if args.benchmark_criterion == 'WORKS':
-                return sys.maxsize
-            else:
-                raise RuntimeError("Failed to execute benchmark for {}".format(commit))
-        elif args.benchmark_criterion == 'WORKS':
-            return 0
-        match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
-        if not match:
-            raise RuntimeError("Failed to get result from the benchmark")
-        return float(match.group(1))
+            raise RuntimeError("Failed to execute benchmark for {}".format(commit))
+
+        with open('bench-results.json') as f:
+            data = json.load(f)
+        docs = [x for x in data['queries'] if x['metric.name'] == args.benchmark_metric]
+        if not docs:
+            raise RuntimeError(f"Couldn't find specified metric {args.benchmark_metric!r} in the results")
+        if len(docs) > 1:
+            print("WARNING: found multiple results for the metric, picking first")
+        doc = docs[0]
+        result_class = HigherIsBetterResult if doc.get('metric.better', 'lower') == 'higher' else LowerIsBetterResult
+        return result_class(doc['metric.value'], doc['metric.unit'])
 
     bad = get_commit(primary_suite, args.bad)
     good = get_commit(primary_suite, args.good)
@@ -322,11 +380,7 @@ def bisect_benchmark(argv):
     initial_commit = suite.vc.git_command(suite.vc_dir, ['log', '--format=%s', '-n', '1']).strip()
     email_to = suite.vc.git_command(suite.vc_dir, ['log', '--format=%cE', '-n', '1']).strip()
     bisect_id = f'{initial_branch}: {initial_commit}'
-    try:
-        _bisect_benchmark(argv, bisect_id, email_to)
-    except Exception:
-        send_email(bisect_id, email_to, "Job failed.\n {}".format(os.environ.get('BUILD_URL', 'Unknown URL')))
-        raise
+    _bisect_benchmark(argv, bisect_id, email_to)
 
 
 def send_email(bisect_id, email_to, content):
